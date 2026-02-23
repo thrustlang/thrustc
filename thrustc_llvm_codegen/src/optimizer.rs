@@ -31,6 +31,7 @@ use thrustc_options::backends::llvm::Sanitizer;
 use thrustc_options::backends::llvm::SymbolLinkageMergeStrategy;
 use thrustc_options::backends::llvm::passes::LLVMModificatorPasses;
 
+use crate::targettriple::LLVMTargetTriple;
 use crate::utils;
 
 #[derive(Debug)]
@@ -1249,86 +1250,110 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
 
 impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
     pub fn run(&self) {
-        let same_name: Vec<(GlobalValue, FunctionValue)> = self
-            .module
-            .get_globals()
-            .filter_map(|global| {
-                let global_name: Cow<'_, str> = utils::clean_llvm_name(global.get_name());
+        let target: LLVMTargetTriple = LLVMTargetTriple::new(&self.module.get_triple());
 
-                let global_is_linkage_external: bool = matches!(
-                    global.get_linkage(),
-                    Linkage::External
-                        | Linkage::DLLExport
-                        | Linkage::WeakAny
-                        | Linkage::WeakODR
-                        | Linkage::Common
-                        | Linkage::ExternalWeak
-                );
+        if !target.is_xcoff_object_format() && !target.is_object_format_mach_o() {
+            
+            let same_name: Vec<(GlobalValue, FunctionValue)> = self
+                .module
+                .get_globals()
+                .filter_map(|global| {
+                    let global_name: Cow<'_, str> = utils::clean_llvm_name(global.get_name());
+    
+                    let global_is_linkage_external: bool = matches!(
+                        global.get_linkage(),
+                        Linkage::External
+                            | Linkage::DLLExport
+                            | Linkage::WeakAny
+                            | Linkage::WeakODR
+                            | Linkage::Common
+                            | Linkage::ExternalWeak
+                    );
+    
+                    self.module
+                        .get_functions()
+                        .find(|func| {
+                            let function_name: Cow<'_, str> = utils::clean_llvm_name(func.get_name());
+    
+                            let function_is_linkage_external: bool = matches!(
+                                global.get_linkage(),
+                                Linkage::External
+                                    | Linkage::DLLExport
+                                    | Linkage::WeakAny
+                                    | Linkage::WeakODR
+                                    | Linkage::Common
+                                    | Linkage::ExternalWeak
+                            );
+    
+                            global_name == function_name
+                                && global_is_linkage_external
+                                && function_is_linkage_external
+                        })
+                        .map(|func| (global, func))
+                })
+                .collect();
+    
+            {
+                let mut merge_strategy: ComdatSelectionKind =
+                    match self.config.get_symbol_linkage_strategy() {
+                        SymbolLinkageMergeStrategy::Any => ComdatSelectionKind::Any,
+                        SymbolLinkageMergeStrategy::Exact => ComdatSelectionKind::ExactMatch,
+                        SymbolLinkageMergeStrategy::Large => ComdatSelectionKind::Largest,
+                        SymbolLinkageMergeStrategy::SameSize => ComdatSelectionKind::SameSize,
+                        SymbolLinkageMergeStrategy::NoDuplicates => ComdatSelectionKind::NoDuplicates,
+                    };
+    
+                if target.get_arch().contains("wasm") && merge_strategy != ComdatSelectionKind::Any {
+                    thrustc_logging::print_warn(
+                        thrustc_logging::LoggingType::Warning,
+                        "WebAssembly target only support the any mode for the symbol linkage strategy!",
+                    );
+    
+                    merge_strategy = ComdatSelectionKind::Any;
+                }
 
-                self.module
-                    .get_functions()
-                    .find(|func| {
-                        let function_name: Cow<'_, str> = utils::clean_llvm_name(func.get_name());
-
-                        let function_is_linkage_external: bool = matches!(
-                            global.get_linkage(),
-                            Linkage::External
-                                | Linkage::DLLExport
-                                | Linkage::WeakAny
-                                | Linkage::WeakODR
-                                | Linkage::Common
-                                | Linkage::ExternalWeak
-                        );
-
-                        global_name == function_name
-                            && global_is_linkage_external
-                            && function_is_linkage_external
-                    })
-                    .map(|func| (global, func))
-            })
-            .collect();
-
-        {
-            let merge_strategy: ComdatSelectionKind =
-                match self.config.get_symbol_linkage_strategy() {
-                    SymbolLinkageMergeStrategy::Any => ComdatSelectionKind::Any,
-                    SymbolLinkageMergeStrategy::Exact => ComdatSelectionKind::ExactMatch,
-                    SymbolLinkageMergeStrategy::Large => ComdatSelectionKind::Largest,
-                    SymbolLinkageMergeStrategy::SameSize => ComdatSelectionKind::SameSize,
-                    SymbolLinkageMergeStrategy::NoDuplicates => ComdatSelectionKind::NoDuplicates,
-                };
-
-            for (gl, func) in same_name.iter().rev() {
-                let cleaned: Cow<'_, str> = utils::clean_llvm_name(gl.get_name());
-
-                let c_string_str: CString =
-                    CString::new(cleaned.as_ref()).unwrap_or_else(|error| {
-                        thrustc_logging::print_warn(
-                            thrustc_logging::LoggingType::Warning,
-                            &format!(
-                                "Failed to prepare the object-matching linkage configurator for the upcoming binding phase due '{}'.",
-                                error
-                            ),
-                        );
-
-                        CString::default()
-                    });
-
-                let c_str: &CStr = c_string_str.as_c_str();
-
-                let comdat: Comdat = unsafe {
-                    Comdat::new(LLVMGetOrInsertComdat(
-                        self.module.as_mut_ptr(),
-                        c_str.as_ptr(),
-                    ))
-                };
-
-                comdat.set_selection_kind(merge_strategy);
-
-                gl.set_comdat(comdat);
-                func.as_global_value().set_comdat(comdat);
+                if target.is_object_format_elf() && merge_strategy != ComdatSelectionKind::Any && merge_strategy != ComdatSelectionKind::NoDuplicates {
+                    thrustc_logging::print_warn(
+                        thrustc_logging::LoggingType::Warning,
+                        "ELF-based target only support the any and noduplicates modes for the symbol linkage strategy!",
+                    );
+                    
+                    merge_strategy = ComdatSelectionKind::Any;
+                }
+    
+                for (gl, func) in same_name.iter().rev() {
+                    let cleaned: Cow<'_, str> = utils::clean_llvm_name(gl.get_name());
+    
+                    let c_string_str: CString =
+                        CString::new(cleaned.as_ref()).unwrap_or_else(|error| {
+                            thrustc_logging::print_warn(
+                                thrustc_logging::LoggingType::Warning,
+                                &format!(
+                                    "Failed to prepare the object-matching linkage configurator for the upcoming binding phase due '{}'.",
+                                    error
+                                ),
+                            );
+    
+                            CString::default()
+                        });
+    
+                    let c_str: &CStr = c_string_str.as_c_str();
+    
+                    let comdat: Comdat = unsafe {
+                        Comdat::new(LLVMGetOrInsertComdat(
+                            self.module.as_mut_ptr(),
+                            c_str.as_ptr(),
+                        ))
+                    };
+    
+                    comdat.set_selection_kind(merge_strategy);
+    
+                    gl.set_comdat(comdat);
+                    func.as_global_value().set_comdat(comdat);
+                }
             }
         }
+
     }
 }
 
