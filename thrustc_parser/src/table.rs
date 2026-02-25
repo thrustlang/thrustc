@@ -131,33 +131,30 @@ impl SymbolsTable<'_> {
 }
 
 impl<'parser> SymbolsTable<'parser> {
-    pub fn declare_parameters(
-        &mut self,
-        parameters: &[Ast<'parser>],
-    ) -> Result<(), CompilationIssue> {
-        parameters.iter().try_for_each(|parameter| {
-            if let Ast::FunctionParameter {
-                name: id,
-                kind,
-                span,
-                metadata,
-                ..
-            } = parameter
-            {
-                if self.parameters.contains_key(id) {
-                    return Err(CompilationIssue::Error(
-                        CompilationIssueCode::E0004,
-                        format!("'{}' parameter was already declared before.", id),
-                        None,
-                        *span,
-                    ));
+    pub fn new_parameters(&mut self, parameters: &[Ast<'parser>]) -> Result<(), CompilationIssue> {
+        {
+            for node in parameters.iter() {
+                if let Ast::FunctionParameter {
+                    name: id,
+                    kind,
+                    span,
+                    metadata,
+                    ..
+                } = node
+                {
+                    if self.parameters.contains_key(id) {
+                        return Err(CompilationIssue::Error(
+                            CompilationIssueCode::E0004,
+                            format!("'{}' parameter was already declared before.", id),
+                            None,
+                            *span,
+                        ));
+                    }
+
+                    self.parameters.insert(id, (kind.clone(), *metadata, *span));
                 }
-
-                self.parameters.insert(id, (kind.clone(), *metadata, *span));
             }
-
-            Ok(())
-        })?;
+        }
 
         Ok(())
     }

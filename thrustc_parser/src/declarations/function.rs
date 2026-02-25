@@ -159,7 +159,7 @@ pub fn build_function<'parser>(
             return Ok(proto);
         }
 
-        ctx.get_mut_symbols().declare_parameters(&parameters)?;
+        ctx.get_mut_symbols().new_parameters(&parameters)?;
 
         let function_body: Ast = block::build_block(ctx)?;
 

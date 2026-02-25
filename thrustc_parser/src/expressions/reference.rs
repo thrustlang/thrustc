@@ -34,16 +34,26 @@ pub fn build_reference<'parser>(
     name: &'parser str,
     span: Span,
 ) -> Result<Ast<'parser>, CompilationIssue> {
-    let object: FoundSymbolId = ctx.get_symbols().get_symbols_id(name, span)?;
+    let reference: Result<FoundSymbolId, CompilationIssue> =
+        ctx.get_symbols().get_symbols_id(name, span);
+
+    let Ok(object) = reference else {
+        return Ok(Ast::invalid_ast(span));
+    };
 
     if object.is_function() {
         let id: &str = object.expected_function(span)?;
 
-        let function: Function = ctx.get_symbols().get_function_by_id(span, id)?;
+        let reference: Result<Function, CompilationIssue> =
+            ctx.get_symbols().get_function_by_id(span, id);
 
-        let function_type: Type = function.get_type();
-        let function_parameter_types: Vec<Type> = function.1.0;
-        let has_ignore_attr: bool = function.2;
+        let Ok(object) = reference else {
+            return Ok(Ast::invalid_ast(span));
+        };
+
+        let function_type: Type = object.get_type();
+        let function_parameter_types: Vec<Type> = object.1.0;
+        let has_ignore_attr: bool = object.2;
 
         return Ok(Ast::Reference {
             name,
@@ -67,13 +77,16 @@ pub fn build_reference<'parser>(
         let static_id: &str = static_var.0;
         let scope_idx: usize = static_var.1;
 
-        let static_var: StaticSymbol = ctx
+        let reference: Result<StaticSymbol, CompilationIssue> = ctx
             .get_symbols()
-            .get_static_by_id(static_id, scope_idx, span)?;
+            .get_static_by_id(static_id, scope_idx, span);
 
-        let static_type: Type = static_var.get_type();
+        let Ok(object) = reference else {
+            return Ok(Ast::invalid_ast(span));
+        };
 
-        let metadata: StaticMetadata = static_var.get_metadata();
+        let static_type: Type = object.get_type();
+        let metadata: StaticMetadata = object.get_metadata();
 
         let is_mutable: bool = metadata.is_mutable();
 
@@ -91,11 +104,14 @@ pub fn build_reference<'parser>(
         let const_id: &str = constant.0;
         let scope_idx: usize = constant.1;
 
-        let constant: ConstantSymbol = ctx
-            .get_symbols()
-            .get_const_by_id(const_id, scope_idx, span)?;
+        let reference: Result<ConstantSymbol, CompilationIssue> =
+            ctx.get_symbols().get_const_by_id(const_id, scope_idx, span);
 
-        let constant_type: Type = constant.get_type();
+        let Ok(object) = reference else {
+            return Ok(Ast::invalid_ast(span));
+        };
+
+        let constant_type: Type = object.get_type();
 
         return Ok(Ast::Reference {
             name,
@@ -108,13 +124,17 @@ pub fn build_reference<'parser>(
     if object.is_parameter() {
         let parameter_id: &str = object.expected_parameter(span)?;
 
-        let parameter: ParameterSymbol =
-            ctx.get_symbols().get_parameter_by_id(parameter_id, span)?;
+        let reference: Result<ParameterSymbol, CompilationIssue> =
+            ctx.get_symbols().get_parameter_by_id(parameter_id, span);
 
-        let metadata: FunctionParameterMetadata = parameter.get_metadata();
+        let Ok(object) = reference else {
+            return Ok(Ast::invalid_ast(span));
+        };
+
+        let metadata: FunctionParameterMetadata = object.get_metadata();
+        let parameter_type: Type = object.get_type();
+
         let is_mutable: bool = metadata.is_mutable();
-
-        let parameter_type: Type = parameter.get_type();
         let is_allocated: bool = parameter_type.is_ptr_like_type();
 
         return Ok(Ast::Reference {
@@ -132,7 +152,6 @@ pub fn build_reference<'parser>(
         let scope_idx: usize = lli.1;
 
         let parameter: &LLISymbol = ctx.get_symbols().get_lli_by_id(lli_id, scope_idx, span)?;
-
         let lli_type: Type = parameter.get_type();
 
         let is_allocated: bool = lli_type.is_ptr_type() || lli_type.is_address_type();
@@ -150,14 +169,17 @@ pub fn build_reference<'parser>(
         let local_id: &str = local_position.0;
         let scope_idx: usize = local_position.1;
 
-        let local: &LocalSymbol = ctx
-            .get_symbols()
-            .get_local_by_id(local_id, scope_idx, span)?;
+        let reference: Result<&LocalSymbol, CompilationIssue> =
+            ctx.get_symbols().get_local_by_id(local_id, scope_idx, span);
 
-        let metadata: LocalMetadata = local.get_metadata();
+        let Ok(object) = reference else {
+            return Ok(Ast::invalid_ast(span));
+        };
+
+        let metadata: LocalMetadata = object.get_metadata();
+        let local_type: Type = object.get_type();
+
         let is_mutable: bool = metadata.is_mutable();
-
-        let local_type: Type = local.get_type();
 
         let reference: Ast = Ast::Reference {
             name,

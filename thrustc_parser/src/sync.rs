@@ -101,16 +101,15 @@ fn sync_with_statement<'parser>(ctx: &mut ParserContext<'parser>) -> Either<Ast<
                         ctx.get_mut_symbols().end_scope();
                         ctx.end_scope();
 
-                        if ctx.is_main_scope() {
-                            ctx.get_mut_symbols().finish_parameters();
-                            ctx.get_mut_symbols().finish_scopes();
-                        }
+                        let fixed_block: Result<Ast<'_>, thrustc_errors::CompilationIssue> =
+                            block::build_block_without_start(ctx);
 
-                        if let Ok(ast) = block::build_block_without_start(ctx) {
-                            return Either::Left(ast);
-                        } else {
-                            return Either::Right(());
-                        }
+                        // We need to figure out how to erradicate the issue related with superior ast nodes.
+
+                        return match fixed_block {
+                            Ok(ast) => Either::Left(ast),
+                            Err(_) => Either::Right(()),
+                        };
                     }
 
                     break;
@@ -183,11 +182,13 @@ fn sync_with_expression<'parser>(ctx: &mut ParserContext<'parser>) -> Either<Ast
                             ctx.get_mut_symbols().finish_scopes();
                         }
 
-                        if let Ok(ast) = block::build_block_without_start(ctx) {
-                            return Either::Left(ast);
-                        } else {
-                            return Either::Right(());
-                        }
+                        let fixed_block: Result<Ast<'_>, thrustc_errors::CompilationIssue> =
+                            block::build_block_without_start(ctx);
+
+                        return match fixed_block {
+                            Ok(ast) => Either::Left(ast),
+                            Err(_) => Either::Right(()),
+                        };
                     }
 
                     break;

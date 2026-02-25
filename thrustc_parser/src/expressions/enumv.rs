@@ -19,6 +19,12 @@ pub fn build_enum_value<'parser>(
     name: &'parser str,
     span: Span,
 ) -> Result<Ast<'parser>, CompilationIssue> {
+    let field_tk: &Token = ctx.consume(
+        TokenType::Identifier,
+        CompilationIssueCode::E0001,
+        "Expected enum name.".into(),
+    )?;
+
     let object: FoundSymbolId = ctx.get_symbols().get_symbols_id(name, span)?;
 
     let enum_id: (&str, usize) = object.expected_enum(span)?;
@@ -30,21 +36,17 @@ pub fn build_enum_value<'parser>(
         .get_enum_by_id(id, scope_idx, span)?
         .get_fields();
 
-    let field_tk: &Token = ctx.consume(
-        TokenType::Identifier,
-        CompilationIssueCode::E0001,
-        "Expected enum name.".into(),
-    )?;
-
     let field_name: &str = field_tk.get_lexeme();
 
     if !data.contain_field(field_name) {
-        return Err(CompilationIssue::Error(
+        ctx.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0001,
             format!("Not found '{}' field in '{}' enum.", name, field_name),
             None,
             span,
         ));
+
+        return Ok(Ast::invalid_ast(span));
     }
 
     let field: EnumDataField = data.get_field(field_name);

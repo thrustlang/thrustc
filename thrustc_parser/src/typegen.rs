@@ -90,55 +90,119 @@ pub fn build_type(ctx: &mut ParserContext<'_>, parse_expr: bool) -> Result<Type,
             let name: &str = identifier_tk.get_lexeme();
             let span: Span = identifier_tk.get_span();
 
-            let object: FoundSymbolId = ctx.get_symbols().get_symbols_id(name, span)?;
+            let object: Result<FoundSymbolId, CompilationIssue> =
+                ctx.get_symbols().get_symbols_id(name, span);
 
             match object {
-                _ if object.is_structure() => {
+                Ok(object) if object.is_structure() => {
                     let (id, scope_idx) = object.expected_struct(span)?;
-                    let structure: Struct =
-                        ctx.get_symbols().get_struct_by_id(id, scope_idx, span)?;
-                    let data: StructureData = structure.get_data();
+                    let reference: Result<Struct, CompilationIssue> =
+                        ctx.get_symbols().get_struct_by_id(id, scope_idx, span);
+
+                    let Ok(object) = reference else {
+                        return Err(CompilationIssue::Error(
+                            CompilationIssueCode::E0001,
+                            format!("Not found type '{}'.", name),
+                            None,
+                            span,
+                        ));
+                    };
+
+                    let data: StructureData = object.get_data();
 
                     Ok(data.get_type())
                 }
-                _ if object.is_custom_type() => {
+                Ok(object) if object.is_custom_type() => {
                     let (id, scope_idx) = object.expected_custom_type(span)?;
-                    let custom: CustomTypeSymbol = ctx
-                        .get_symbols()
-                        .get_custom_type_by_id(id, scope_idx, span)?;
+                    let reference: Result<CustomTypeSymbol, CompilationIssue> =
+                        ctx.get_symbols().get_custom_type_by_id(id, scope_idx, span);
 
-                    Ok(custom.0)
+                    let Ok(object) = reference else {
+                        return Err(CompilationIssue::Error(
+                            CompilationIssueCode::E0001,
+                            format!("Not found type '{}'.", name),
+                            None,
+                            span,
+                        ));
+                    };
+
+                    let object_type: Type = object.0;
+
+                    Ok(object_type)
                 }
-                _ if object.is_parameter() => {
+                Ok(object) if object.is_parameter() => {
                     let parameter_id: &str = object.expected_parameter(span)?;
-                    let parameter: ParameterSymbol =
-                        ctx.get_symbols().get_parameter_by_id(parameter_id, span)?;
+                    let reference: Result<ParameterSymbol, CompilationIssue> =
+                        ctx.get_symbols().get_parameter_by_id(parameter_id, span);
 
-                    Ok(parameter.0)
+                    let Ok(object) = reference else {
+                        return Err(CompilationIssue::Error(
+                            CompilationIssueCode::E0001,
+                            format!("Not found type '{}'.", name),
+                            None,
+                            span,
+                        ));
+                    };
+
+                    let object_type: Type = object.0;
+
+                    Ok(object_type)
                 }
-                _ if object.is_local() => {
+                Ok(object) if object.is_local() => {
                     let (id, scope_idx) = object.expected_local(span)?;
-                    let local: LocalSymbol = ctx
-                        .get_symbols()
-                        .get_local_by_id(id, scope_idx, span)?
-                        .clone();
+                    let reference: Result<&LocalSymbol, CompilationIssue> =
+                        ctx.get_symbols().get_local_by_id(id, scope_idx, span);
 
-                    Ok(local.0)
+                    let Ok(object) = reference.cloned() else {
+                        return Err(CompilationIssue::Error(
+                            CompilationIssueCode::E0001,
+                            format!("Not found type '{}'.", name),
+                            None,
+                            span,
+                        ));
+                    };
+
+                    let object_type: Type = object.0;
+
+                    Ok(object_type)
                 }
-                _ if object.is_static() => {
+                Ok(object) if object.is_static() => {
                     let (id, scope_idx) = object.expected_static(span)?;
-                    let staticvar: StaticSymbol =
-                        ctx.get_symbols().get_static_by_id(id, scope_idx, span)?;
+                    let reference: Result<StaticSymbol, CompilationIssue> =
+                        ctx.get_symbols().get_static_by_id(id, scope_idx, span);
 
-                    Ok(staticvar.0)
+                    let Ok(object) = reference else {
+                        return Err(CompilationIssue::Error(
+                            CompilationIssueCode::E0001,
+                            format!("Not found type '{}'.", name),
+                            None,
+                            span,
+                        ));
+                    };
+
+                    let object_type: Type = object.0;
+
+                    Ok(object_type)
                 }
-                _ if object.is_constant() => {
+                Ok(object) if object.is_constant() => {
                     let (id, scope_idx) = object.expected_constant(span)?;
-                    let constant: ConstantSymbol =
-                        ctx.get_symbols().get_const_by_id(id, scope_idx, span)?;
+                    let reference: Result<ConstantSymbol, CompilationIssue> =
+                        ctx.get_symbols().get_const_by_id(id, scope_idx, span);
 
-                    Ok(constant.0)
+                    let Ok(object) = reference else {
+                        return Err(CompilationIssue::Error(
+                            CompilationIssueCode::E0001,
+                            format!("Not found type '{}'.", name),
+                            None,
+                            span,
+                        ));
+                    };
+
+                    let object_type: Type = object.0;
+
+                    Ok(object_type)
                 }
+
                 _ => Err(CompilationIssue::Error(
                     CompilationIssueCode::E0001,
                     format!("Not found type '{}'.", name),

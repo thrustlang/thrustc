@@ -46,19 +46,28 @@ pub fn build_property<'parser>(
         property_names.push(property.get_lexeme());
     }
 
-    let decomposed: (Type, PropertyData) =
-        self::decompose(ctx, 0, &source, property_names, base_type, span)?;
+    let properties_result: Result<(Type, PropertyData), CompilationIssue> =
+        self::decompose(ctx, 0, &source, property_names, base_type, span);
 
-    let kind: Type = decomposed.0;
-    let data: PropertyData = decomposed.1;
+    match properties_result {
+        Ok(properties) => {
+            let kind: Type = properties.0;
+            let data: PropertyData = properties.1;
 
-    Ok(Ast::Property {
-        source: source.into(),
-        data,
-        kind,
-        metadata,
-        span,
-    })
+            Ok(Ast::Property {
+                source: source.into(),
+                data,
+                kind,
+                metadata,
+                span,
+            })
+        }
+        Err(error) => {
+            ctx.add_error(error);
+
+            Ok(Ast::invalid_ast(span))
+        }
+    }
 }
 
 fn decompose<'parser>(

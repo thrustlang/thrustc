@@ -18,26 +18,6 @@ pub fn build_call<'parser>(
     name: &'parser str,
     span: Span,
 ) -> Result<Ast<'parser>, CompilationIssue> {
-    let object: FoundSymbolId = ctx.get_symbols().get_symbols_id(name, span)?;
-
-    let function_type: Type = if object.is_intrinsic() {
-        let id: &str = object.expected_intrinsic(span)?;
-        let intrinsic: Intrinsic = ctx.get_symbols().get_intrinsic_by_id(span, id)?;
-
-        crate::traits::IntrinsicExtensions::get_type(&intrinsic)
-    } else if object.is_function_asm() {
-        let id: &str = object.expected_asm_function(span)?;
-        let asm_function: thrustc_entities::parser::AssemblerFunction =
-            ctx.get_symbols().get_asm_function_by_id(span, id)?;
-
-        crate::traits::FunctionAssemblerExtensions::get_type(&asm_function)
-    } else {
-        let id: &str = object.expected_function(span)?;
-        let function: Function = ctx.get_symbols().get_function_by_id(span, id)?;
-
-        crate::traits::FunctionExtensions::get_type(&function)
-    };
-
     let mut args: Vec<Ast> = Vec::with_capacity(10);
 
     loop {
@@ -65,6 +45,26 @@ pub fn build_call<'parser>(
         CompilationIssueCode::E0001,
         "Expected ')'.".into(),
     )?;
+
+    let object: FoundSymbolId = ctx.get_symbols().get_symbols_id(name, span)?;
+
+    let function_type: Type = if object.is_intrinsic() {
+        let id: &str = object.expected_intrinsic(span)?;
+        let intrinsic: Intrinsic = ctx.get_symbols().get_intrinsic_by_id(span, id)?;
+
+        crate::traits::IntrinsicExtensions::get_type(&intrinsic)
+    } else if object.is_function_asm() {
+        let id: &str = object.expected_asm_function(span)?;
+        let asm_function: thrustc_entities::parser::AssemblerFunction =
+            ctx.get_symbols().get_asm_function_by_id(span, id)?;
+
+        crate::traits::FunctionAssemblerExtensions::get_type(&asm_function)
+    } else {
+        let id: &str = object.expected_function(span)?;
+        let function: Function = ctx.get_symbols().get_function_by_id(span, id)?;
+
+        crate::traits::FunctionExtensions::get_type(&function)
+    };
 
     Ok(Ast::Call {
         name,
