@@ -46,32 +46,67 @@ pub fn build_call<'parser>(
         "Expected ')'.".into(),
     )?;
 
-    let object: FoundSymbolId = ctx.get_symbols().get_symbols_id(name, span)?;
+    let reference: Result<FoundSymbolId, CompilationIssue> =
+        ctx.get_symbols().get_symbols_id(name, span);
 
-    let function_type: Type = if object.is_intrinsic() {
-        let id: &str = object.expected_intrinsic(span)?;
-        let intrinsic: Intrinsic = ctx.get_symbols().get_intrinsic_by_id(span, id)?;
+    match reference {
+        Ok(object) => {
+            let function_type: Type = if object.is_intrinsic() {
+                let id: &str = object.expected_intrinsic(span)?;
+                let intrinsic: Result<Intrinsic, CompilationIssue> =
+                    ctx.get_symbols().get_intrinsic_by_id(span, id);
 
-        crate::traits::IntrinsicExtensions::get_type(&intrinsic)
-    } else if object.is_function_asm() {
-        let id: &str = object.expected_asm_function(span)?;
-        let asm_function: thrustc_entities::parser::AssemblerFunction =
-            ctx.get_symbols().get_asm_function_by_id(span, id)?;
+                match intrinsic {
+                    Ok(intrinsic) => crate::traits::IntrinsicExtensions::get_type(&intrinsic),
+                    Err(error) => {
+                        ctx.add_error(error);
+                        return Ok(Ast::invalid_ast(span));
+                    }
+                }
+            } else if object.is_function_asm() {
+                let id: &str = object.expected_asm_function(span)?;
+                let asm_function: Result<
+                    thrustc_entities::parser::AssemblerFunction,
+                    CompilationIssue,
+                > = ctx.get_symbols().get_asm_function_by_id(span, id);
 
-        crate::traits::FunctionAssemblerExtensions::get_type(&asm_function)
-    } else {
-        let id: &str = object.expected_function(span)?;
-        let function: Function = ctx.get_symbols().get_function_by_id(span, id)?;
+                match asm_function {
+                    Ok(asm_function) => {
+                        crate::traits::FunctionAssemblerExtensions::get_type(&asm_function)
+                    }
 
-        crate::traits::FunctionExtensions::get_type(&function)
-    };
+                    Err(error) => {
+                        ctx.add_error(error);
+                        return Ok(Ast::invalid_ast(span));
+                    }
+                }
+            } else {
+                let id: &str = object.expected_function(span)?;
+                let function: Result<Function, CompilationIssue> =
+                    ctx.get_symbols().get_function_by_id(span, id);
 
-    Ok(Ast::Call {
-        name,
-        args,
-        kind: function_type,
-        span,
-    })
+                match function {
+                    Ok(function) => crate::traits::FunctionExtensions::get_type(&function),
+                    Err(error) => {
+                        ctx.add_error(error);
+                        return Ok(Ast::invalid_ast(span));
+                    }
+                }
+            };
+
+            Ok(Ast::Call {
+                name,
+                args,
+                kind: function_type,
+                span,
+            })
+        }
+
+        Err(error) => {
+            ctx.add_error(error);
+            Ok(Ast::invalid_ast(span))
+        }
+    }
 }
 
 pub fn build_anonymous_call<'parser>(

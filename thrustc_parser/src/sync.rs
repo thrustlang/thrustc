@@ -104,7 +104,7 @@ fn sync_with_statement<'parser>(ctx: &mut ParserContext<'parser>) -> Either<Ast<
                         let fixed_block: Result<Ast<'_>, thrustc_errors::CompilationIssue> =
                             block::build_block_without_start(ctx);
 
-                        // We need to figure out how to erradicate the issue related with superior ast nodes.
+                        // We need to figure out how to erradicate the issue related to superior ast nodes.
 
                         return match fixed_block {
                             Ok(ast) => Either::Left(ast),
