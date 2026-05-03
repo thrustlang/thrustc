@@ -1,0 +1,82 @@
+name: Thrust Compiler (Linux - Ubuntu x86_64)
+
+on:
+  push:
+    tags:
+      - 'thrustc-x86_64-linux-ubuntu-v*.*.*'
+
+jobs:
+  thrustc-x86_64-linux-ubuntu:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+  
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+  
+    steps:
+      - name: Generating Unique ID
+        run: |
+          BASE_NAME=$(echo "$GITHUB_REF" | sed 's|^refs/tags/||')
+          VERSION=$(echo "$BASE_NAME" | sed 's|^thrushc-x86_64-linux-||')
+          BUILD_ID="${BASE_NAME}-${GITHUB_RUN_ID}" 
+          
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "TAG_NAME=$VERSION" >> $GITHUB_ENV
+
+          echo "VERSION=$TAG_NAME" >> $GITHUB_ENV
+
+          echo "Unique ID: $BUILD_ID"
+          echo "Base name: $VERSION"
+    
+      - name: Cloning Thrust Compiler
+        run: |
+          git clone --depth 1 https://github.com/thrustlang/thrustc
+
+      - name: Installing dependencies
+        run: |
+          sudo apt-get remove -y llvm-16* clang-16*
+          sudo rm -rf /usr/lib/llvm-16
+
+          sudo apt-get install -y upx-ucl build-essential python3 libz-dev binutils xz-utils libgccjit-12-dev clang
+
+          curl --proto '=https' --tlsv1.3 https://sh.rustup.rs -sSf | sh -s -- -y
+
+      - name: Installing the Compiler Dependency Builder
+        run: |
+          git clone --depth 1 https://github.com/thrustlang/compiler-dependency-builder
+
+      - name: Running the Compiler Dependency Builder
+        run: |
+          cargo run -- --llvm-major 18 \
+          --llvm-minor 1 \
+          --llvm-patch 8 \
+          --llvm-c-compiler "clang" \
+          --llvm-cpp-compiler "clang++" \
+          --llvm-cpp-flags "-include cstdint" \
+          --libclang-major 18 \
+          --libclang-minor 1 \
+          --libclang-patch 8 \
+          --libclang-c-compiler "clang" \
+          --libclang-cpp-compiler "clang++" \
+          --libclang-cpp-flags "-include cstdint" 
+          
+        working-directory: compiler-dependency-builder
+
+      - name: Building Thrush Compiler
+        run: |
+          cargo build --release
+        working-directory: thrustc
+
+      - name: Releasing Thrust Compiler
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.BUILD_ID }}
+          name: "${{ env.VERSION }}"
+          body: |
+            Thrust Compiler - ${{ env.VERSION }}
+          files: |
+            thrustc/target/release/thrustc
+            
+          draft: false
