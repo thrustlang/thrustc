@@ -52,15 +52,7 @@ jobs:
           cargo run -- --llvm-major 18 \
           --llvm-minor 1 \
           --llvm-patch 8 \
-          --llvm-c-compiler "clang" \
-          --llvm-cpp-compiler "clang++" \
-          --llvm-cpp-flags "-include cstdint" \
-          --libclang-major 18 \
-          --libclang-minor 1 \
-          --libclang-patch 8 \
-          --libclang-c-compiler "clang" \
-          --libclang-cpp-compiler "clang++" \
-          --libclang-cpp-flags "-include cstdint" 
+          --llvm-cpp-flags "-include cstdint" 
           
         working-directory: compiler-dependency-builder
 
