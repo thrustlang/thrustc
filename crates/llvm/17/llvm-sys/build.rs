@@ -612,7 +612,7 @@ fn get_backend_llvm_build_path() -> std::path::PathBuf {
         _ => {
             logging::log(
                 LoggingType::Panic,
-                "Unsopported operating system for installing the dependencies required to build the Thrust Compiler LLVM Backend.",
+                "OS unsupported for Thrust LLVM Backend dependencies.",
             );
 
             std::process::exit(1);
@@ -643,7 +643,7 @@ fn main() {
         None => {
             logging::log(
                 LoggingType::Panic,
-                "The LLVM libraries could not be found in '%HOME%/.thrustlang/backends/llvm/build/', compile and run the compiler-builder again.",
+                "LLVM libraries could not be found in '.thrustlang/backends/llvm/build/'.",
             );
 
             std::process::exit(1);
@@ -692,13 +692,14 @@ fn main() {
         println!("cargo:rustc-link-lib={}={}", sys_lib_kind.string(), name);
     }
 
-    let use_debug_msvcrt = env::var_os(&*ENV_USE_DEBUG_MSVCRT).is_some();
+    let use_debug_msvcrt: bool = env::var_os(&*ENV_USE_DEBUG_MSVCRT).is_some();
 
     if target_env_is("msvc") && (use_debug_msvcrt || is_llvm_debug(&llvm_config_path)) {
         println!("cargo:rustc-link-lib=msvcrtd");
     }
 
-    let force_ffi = env::var_os(&*ENV_FORCE_FFI).is_some();
+    let force_ffi: bool = env::var_os(&*ENV_FORCE_FFI).is_some();
+
     if force_ffi {
         println!("cargo:rustc-link-lib=dylib=ffi");
     }

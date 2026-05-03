@@ -88,7 +88,7 @@ fn get_clang_libraries<P: AsRef<Path>>(directory: P) -> Vec<String> {
 pub fn link() {
     let cep: common::CommandErrorPrinter = common::CommandErrorPrinter::default();
 
-    let directory: PathBuf = utils::get_backends_clang_build_path().join("lib");
+    let directory: PathBuf = utils::get_libclang_build_path().join("lib");
 
     println!("cargo:rustc-link-search=native={}", directory.display());
 

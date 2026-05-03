@@ -124,7 +124,7 @@ fn run_command(name: &str, path: &str, arguments: &[&str]) -> Option<String> {
 /// Executes the `llvm-config` command and returns the `stdout` output if the
 /// command was successfully executed (errors are added to `COMMAND_ERRORS`).
 pub fn run_llvm_config(arguments: &[&str]) -> Option<String> {
-    let llvm_config_path: PathBuf = utils::get_backends_clang_build_path()
+    let llvm_config_path: PathBuf = utils::get_libclang_build_path()
         .join("bin")
         .join(utils::get_llvm_config_os_termination());
 
@@ -300,10 +300,8 @@ pub fn search_libclang_directories(filenames: &[String]) -> Vec<(PathBuf, String
 
     // Determine the `libclang` directory patterns.
 
-    let thrust_clang_build_lib_folder: &str = &format!(
-        "{}",
-        utils::get_backends_clang_build_path().join("lib").display()
-    );
+    let thrust_clang_build_lib_folder: &str =
+        &format!("{}", utils::get_libclang_build_path().join("lib").display());
 
     let mut directories: Vec<&str> = if target_os!("haiku") {
         DIRECTORIES_HAIKU.into()

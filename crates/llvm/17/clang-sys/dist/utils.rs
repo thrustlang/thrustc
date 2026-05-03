@@ -1,6 +1,6 @@
 use crate::r#static::logging::{self, LoggingType};
 
-pub fn get_backends_clang_build_path() -> std::path::PathBuf {
+pub fn get_libclang_build_path() -> std::path::PathBuf {
     match std::env::consts::FAMILY {
         "unix" => std::path::PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| {
             logging::log(LoggingType::Panic, "Missing $HOME environment variable.\n");
@@ -20,7 +20,7 @@ pub fn get_backends_clang_build_path() -> std::path::PathBuf {
         _ => {
             logging::log(
                 LoggingType::Panic,
-                "Unsopported operating system for installing the dependencies required to build the Thrust Compiler CBindgen.",
+                "Unsupported OS for libclang dependencies.",
             );
 
             std::process::exit(1);
@@ -36,7 +36,7 @@ pub fn get_llvm_config_os_termination() -> std::path::PathBuf {
         _ => {
             logging::log(
                 LoggingType::Panic,
-                "Unsopported operating system for installing the dependencies required to build the Thrust Compiler CBindgen.",
+                "Unsupported OS for libclang dependencies.",
             );
 
             std::process::exit(1);
