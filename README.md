@@ -24,6 +24,14 @@ $ cargo build --release
 $ ./target/release/compiler-dependency-builder
 ```
 
+Another way:
+
+```console
+$ git clone --depth=1 https://github.com/thrustlang/compiler-dependency-builder 
+$ cd compiler-dependency-builder 
+$ cargo run 
+```
+
 You must first clone the repository and access it locally. 
 
 ```console
@@ -43,6 +51,12 @@ Now you need to compile the compiler with Rust.
 ```console
 $ cargo build --release
 $ ./target/release/thrustc --help
+```
+
+Another way:
+
+```console
+$ cargo run -- --help
 ```
 
 ## Commands & Flags
