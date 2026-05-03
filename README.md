@@ -7,8 +7,7 @@
 The **Thrust Compiler** is a compiler that transfers the source code of Thrust files directly to the specified destination. The process includes static type analysis, code generation, destination-specific optimizations, machine-specific code compilation, and finally, emitting or linking.
 
 > [!IMPORTANT]  
-> The compiler is in an early development phase. Continue on your own.
-
+> The compiler is in an early development phase
 
 ## Getting Started
 
@@ -19,10 +18,10 @@ Among the dependencies required by the compiler is LLVM infrastructure.
 Automatically:
 
 ```console
-$ git clone --depth=1 https://github.com/thrustlang/compiler-builder 
-$ cd compiler-builder 
+$ git clone --depth=1 https://github.com/thrustlang/compiler-dependency-builder 
+$ cd compiler-dependency-builder 
 $ cargo build --release
-$ ./target/release/compiler-builder
+$ ./target/release/compiler-dependency-builder
 ```
 
 You must first clone the repository and access it locally. 
