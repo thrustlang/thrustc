@@ -6,7 +6,7 @@ pub fn get_libclang_build_path() -> std::path::PathBuf {
             logging::log(LoggingType::Panic, "Missing $HOME environment variable.\n");
             std::process::exit(1);
         }))
-        .join(".thrustlang/backends/cbindgen/build"),
+        .join(".thrustlang/backends/llvm/build"),
 
         "windows" => std::path::PathBuf::from(std::env::var("APPDATA").unwrap_or_else(|_| {
             logging::log(
@@ -15,7 +15,7 @@ pub fn get_libclang_build_path() -> std::path::PathBuf {
             );
             std::process::exit(1);
         }))
-        .join(".thrustlang/backends/cbindgen/build"),
+        .join(".thrustlang/backends/llvm/build"),
 
         _ => {
             logging::log(
