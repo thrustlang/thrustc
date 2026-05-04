@@ -76,8 +76,8 @@ jobs:
       - name: Releasing Thrust Compiler
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.BUILD_ID }}
-          name: "Thrust Compiler ${{ env.VERSION }}"
+          tag_name: ${{ env.TAG_NAME }}
+          name: ${{ env.TAG_NAME }}
           body: |
             # Thrust Compiler
 
