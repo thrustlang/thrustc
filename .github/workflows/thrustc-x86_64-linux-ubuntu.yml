@@ -60,7 +60,7 @@ jobs:
         run: |
           cargo install sccache
           
-        working-directory: compiler-dependency-builder
+        working-directory: thrustc
 
       - name: Building Thrust Compiler
         run: |
