@@ -56,7 +56,13 @@ jobs:
           
         working-directory: compiler-dependency-builder
 
-      - name: Building Thrush Compiler
+      - name: Installing and Configuring Build Cache
+        run: |
+          cargo install sccache
+          
+        working-directory: compiler-dependency-builder
+
+      - name: Building Thrust Compiler
         run: |
           cargo build --release
         working-directory: thrustc
