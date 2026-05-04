@@ -39,6 +39,11 @@ jobs:
           sudo apt-get remove -y llvm-16* clang-16*
           sudo rm -rf /usr/lib/llvm-16
 
+          sudo apt-get install -y \
+          libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+          libx11-dev libxkbcommon-dev libxkbcommon-x11-dev \
+          libfontconfig1-dev libfreetype6-dev
+
           sudo apt-get install -y upx-ucl build-essential python3 libz-dev binutils xz-utils libgccjit-12-dev clang
 
           curl --proto '=https' --tlsv1.3 https://sh.rustup.rs -sSf | sh -s -- -y
@@ -49,9 +54,9 @@ jobs:
 
       - name: Running the Compiler Dependency Builder
         run: |
-          cargo run -- --llvm-major 18 \
-          --llvm-minor 1 \
-          --llvm-patch 8 \
+          cargo run -- --llvm-major 17 \
+          --llvm-minor 0 \
+          --llvm-patch 6 \
           --llvm-cpp-flags "-include cstdint" 
           
         working-directory: compiler-dependency-builder
