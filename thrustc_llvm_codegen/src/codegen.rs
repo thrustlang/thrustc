@@ -1176,7 +1176,7 @@ pub fn compile_constant_as_value<'ctx>(
             ..
         } => {
             if binaryop_type.is_integer_type() {
-                return expressions::binaryop::integer::compile_const(
+                return expressions::binaryop::integer::compile_constant(
                     context,
                     (left, operator, right, *span),
                     cast_type,
@@ -1184,7 +1184,7 @@ pub fn compile_constant_as_value<'ctx>(
             }
 
             if binaryop_type.is_bool_type() {
-                return expressions::binaryop::boolean::compile_const(
+                return expressions::binaryop::boolean::compile_constant(
                     context,
                     (left, operator, right, *span),
                     cast_type,
@@ -1192,7 +1192,7 @@ pub fn compile_constant_as_value<'ctx>(
             }
 
             if binaryop_type.is_float_type() {
-                return expressions::binaryop::float::compile_const(
+                return expressions::binaryop::float::compile_constant(
                     context,
                     (left, operator, right, *span),
                     cast_type,

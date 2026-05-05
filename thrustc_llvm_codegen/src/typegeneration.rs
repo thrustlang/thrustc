@@ -28,6 +28,8 @@ use inkwell::types::BasicType;
 use inkwell::types::BasicTypeEnum;
 use inkwell::types::FunctionType;
 
+use inkwell::types::IntType;
+use inkwell::values::FloatValue;
 use thrustc_ast::Ast;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeCodeLocation;
@@ -418,4 +420,16 @@ pub fn generate_pointer_arithmetic_type<'ctx>(
 
         _ => self::generate_type(context, kind),
     }
+}
+
+pub fn equivalent_integer_type_from_float_value<'ctx>(
+    context: &LLVMCodeGenContext<'_, 'ctx>,
+    float_value: FloatValue<'ctx>,
+) -> IntType<'ctx> {
+    let llvm_context: &Context = context.get_llvm_context();
+    let target_data: &TargetData = context.get_target_data();
+
+    let bits_size: u64 = target_data.get_bit_size(&float_value.get_type());
+
+    llvm_context.custom_width_int_type(bits_size as u32)
 }

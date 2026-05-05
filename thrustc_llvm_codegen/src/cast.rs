@@ -435,8 +435,7 @@ pub fn compile_constant_type_cast<'ctx>(
     let target_type: Type = cast_type.remove_all_constant_type();
 
     if from_type.is_numeric_type() && target_type.is_numeric_type() {
-        let value: BasicValueEnum =
-            codegen::compile_constant_as_ptr_value(context, expr, cast_type);
+        let value: BasicValueEnum = codegen::compile_constant_as_value(context, expr, cast_type);
 
         return self::compile_constant_numeric_cast(
             context,
@@ -514,26 +513,31 @@ pub fn compile_constant_numeric_cast<'ctx>(
 
     if value.is_int_value() && cast_type.is_int_type() {
         let int_value: IntValue = value.into_int_value();
-        let default_v: IntValue = cast_type.into_int_type().const_int(0, false);
 
         if is_signed {
             if let Some(value) = int_value.get_sign_extended_constant() {
                 let new_value: u64 = unsafe { std::mem::transmute::<i64, u64>(value) };
                 return cast_type.into_int_type().const_int(new_value, true).into();
             }
-        } else {
-            if let Some(value) = int_value.get_zero_extended_constant() {
-                return cast_type.into_int_type().const_int(value, false).into();
-            }
         }
 
-        return default_v.into();
+        if let Some(value) = int_value.get_zero_extended_constant() {
+            return cast_type.into_int_type().const_int(value, false).into();
+        }
+
+        abort::abort_codegen(
+            context,
+            "Failed to extract constant value from a supposed constant value!",
+            target.get_span(),
+            std::path::PathBuf::from(file!()),
+            line!(),
+        );
     }
 
     if value.is_float_value() && cast_type.is_float_type() {
         let float_value: FloatValue = value.into_float_value();
 
-        let constant_value: (f64, bool) = float_value.get_constant().unwrap_or_else(|| {
+        let (constant_value, ..) = float_value.get_constant().unwrap_or_else(|| {
             abort::abort_codegen(
                 context,
                 "Failed to extract constant value from a supposed constant value!",
@@ -545,11 +549,61 @@ pub fn compile_constant_numeric_cast<'ctx>(
 
         return cast_type
             .into_float_type()
-            .const_float(constant_value.0)
+            .const_float(constant_value)
             .into();
     }
 
-    value
+    if value.is_int_value() && cast_type.is_float_type() {
+        let int_value: IntValue<'_> = value.into_int_value();
+        let float_type: FloatType<'_> = cast_type.into_float_type();
+
+        if is_signed {
+            if let Some(value) = int_value.get_sign_extended_constant() {
+                let new_value: f64 = unsafe { std::mem::transmute::<i64, f64>(value) };
+                return float_type.const_float(new_value).into();
+            }
+        }
+
+        if let Some(value) = int_value.get_zero_extended_constant() {
+            let new_value: f64 = unsafe { std::mem::transmute::<u64, f64>(value) };
+            return float_type.const_float(new_value).into();
+        }
+
+        abort::abort_codegen(
+            context,
+            "Failed to extract constant value from a supposed constant value!",
+            target.get_span(),
+            std::path::PathBuf::from(file!()),
+            line!(),
+        );
+    }
+
+    if value.is_float_value() && cast_type.is_int_type() {
+        let float_value: FloatValue<'_> = value.into_float_value();
+        let int_type: IntType<'_> = cast_type.into_int_type();
+
+        let (constant_value, ..) = float_value.get_constant().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to extract constant value from a supposed constant value!",
+                target.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        });
+
+        let new_value: u64 = unsafe { std::mem::transmute::<f64, u64>(constant_value) };
+
+        return int_type.const_int(new_value, is_signed).into();
+    }
+
+    abort::abort_codegen(
+        context,
+        "Failed to cast a constant numeric value!",
+        target.get_span(),
+        std::path::PathBuf::from(file!()),
+        line!(),
+    );
 }
 
 #[inline]
@@ -583,15 +637,13 @@ pub fn compile_constant_int_together_cast<'ctx>(
         std::cmp::Ordering::Greater => {
             if signatures.0 || signatures.1 {
                 if let Some(lhs_number) = lhs.get_sign_extended_constant() {
-                    let lhs_number_transmuted: u64 =
-                        unsafe { std::mem::transmute::<i64, u64>(lhs_number) };
+                    let lhs_new_value: u64 = unsafe { std::mem::transmute::<i64, u64>(lhs_number) };
 
-                    return (rhs.get_type().const_int(lhs_number_transmuted, true), rhs);
+                    return (rhs.get_type().const_int(lhs_new_value, true), rhs);
                 } else if let Some(rhs_number) = rhs.get_sign_extended_constant() {
-                    let rhs_number_transmuted: u64 =
-                        unsafe { std::mem::transmute::<i64, u64>(rhs_number) };
+                    let rhs_new_value: u64 = unsafe { std::mem::transmute::<i64, u64>(rhs_number) };
 
-                    return (lhs, lhs.get_type().const_int(rhs_number_transmuted, true));
+                    return (lhs, lhs.get_type().const_int(rhs_new_value, true));
                 }
             }
 
@@ -608,15 +660,13 @@ pub fn compile_constant_int_together_cast<'ctx>(
         std::cmp::Ordering::Less => {
             if signatures.0 || signatures.1 {
                 if let Some(rhs_number) = rhs.get_sign_extended_constant() {
-                    let rhs_number_transmuted: u64 =
-                        unsafe { std::mem::transmute::<i64, u64>(rhs_number) };
+                    let rhs_new_value: u64 = unsafe { std::mem::transmute::<i64, u64>(rhs_number) };
 
-                    return (lhs, lhs.get_type().const_int(rhs_number_transmuted, true));
+                    return (lhs, lhs.get_type().const_int(rhs_new_value, true));
                 } else if let Some(lhs_number) = lhs.get_sign_extended_constant() {
-                    let lhs_number_transmuted: u64 =
-                        unsafe { std::mem::transmute::<i64, u64>(lhs_number) };
+                    let lhs_new_value: u64 = unsafe { std::mem::transmute::<i64, u64>(lhs_number) };
 
-                    return (rhs.get_type().const_int(lhs_number_transmuted, true), rhs);
+                    return (rhs.get_type().const_int(lhs_new_value, true), rhs);
                 }
             }
 
@@ -656,7 +706,7 @@ pub fn compile_int_together_cast<'ctx>(
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
                             context,
-                            "Failed to cast integers together!",
+                            "Failed to cast the integer together!",
                             span,
                             std::path::PathBuf::from(file!()),
                             line!(),
@@ -668,7 +718,7 @@ pub fn compile_int_together_cast<'ctx>(
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
                             context,
-                            "Failed to cast integers together!",
+                            "Failed to cast the integer together!",
                             span,
                             std::path::PathBuf::from(file!()),
                             line!(),
@@ -685,7 +735,7 @@ pub fn compile_int_together_cast<'ctx>(
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
                             context,
-                            "Failed to cast integers together!",
+                            "Failed to cast the integer together!",
                             span,
                             std::path::PathBuf::from(file!()),
                             line!(),
@@ -697,7 +747,7 @@ pub fn compile_int_together_cast<'ctx>(
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
                             context,
-                            "Failed to cast integers together!",
+                            "Failed to cast the integer together!",
                             span,
                             std::path::PathBuf::from(file!()),
                             line!(),

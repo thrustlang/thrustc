@@ -349,7 +349,7 @@ pub fn compile<'ctx>(
 }
 
 #[inline]
-pub fn compile_const_float_value_operation<'ctx>(
+fn compile_constant_float_value_operation<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     lhs: FloatValue<'ctx>,
     rhs: FloatValue<'ctx>,
@@ -443,7 +443,7 @@ pub fn compile_const_float_value_operation<'ctx>(
     }
 }
 
-pub fn compile_const<'ctx>(
+pub fn compile_constant<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     binary: BinaryOperation<'ctx>,
     cast: &Type,
@@ -472,7 +472,7 @@ pub fn compile_const<'ctx>(
         let lhs: BasicValueEnum = codegen::compile_constant_as_value(context, binary.0, cast);
         let rhs: BasicValueEnum = codegen::compile_constant_as_value(context, binary.2, cast);
 
-        return compile_const_float_value_operation(
+        return compile_constant_float_value_operation(
             context,
             lhs.into_float_value(),
             rhs.into_float_value(),

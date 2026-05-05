@@ -23,7 +23,9 @@ use crate::codegen;
 use crate::context::LLVMCodeGenContext;
 use crate::predicates;
 use crate::traits::AstLLVMGetType;
+use crate::typegeneration;
 
+use inkwell::types::IntType;
 use thrustc_entities::BinaryOperation;
 use thrustc_span::Span;
 use thrustc_token_type::TokenType;
@@ -36,7 +38,7 @@ use inkwell::values::PointerValue;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 
-pub fn bool_operation<'ctx>(
+fn compile_bool_operation<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     lhs: BasicValueEnum<'ctx>,
     rhs: BasicValueEnum<'ctx>,
@@ -221,7 +223,7 @@ pub fn compile<'ctx>(
         let lhs_type: &Type = binary.0.get_type_for_llvm();
         let rhs_type: &Type = binary.2.get_type_for_llvm();
 
-        return bool_operation(
+        return compile_bool_operation(
             context,
             lhs,
             rhs,
@@ -243,7 +245,7 @@ pub fn compile<'ctx>(
     );
 }
 
-pub fn const_bool_operation<'ctx>(
+fn compile_constant_boolean_operation<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     lhs: BasicValueEnum<'ctx>,
     rhs: BasicValueEnum<'ctx>,
@@ -347,6 +349,9 @@ pub fn const_bool_operation<'ctx>(
             rhs.into_float_value(),
         );
 
+        let int_type: IntType<'_> =
+            typegeneration::equivalent_integer_type_from_float_value(context, lhs);
+
         return match operator {
             op if op.is_logical_operator() => lhs
                 .const_compare(
@@ -355,14 +360,14 @@ pub fn const_bool_operation<'ctx>(
                 )
                 .into(),
 
-            /*TokenType::And => {
+            TokenType::And => {
                 if signatures.0 || signatures.1 {
                     if let Some((lhs_number, _)) = lhs.get_constant() {
                         if let Some((rhs_number, _)) = rhs.get_constant() {
-                            return lhs
-                                .get_type()
-                                .const_float(
-                                    ((lhs_number != 0.0) && (rhs_number != 0.0)) as u64 as f64,
+                            return int_type
+                                .const_int(
+                                    ((lhs_number != 0.0) && (rhs_number != 0.0)) as u64,
+                                    false,
                                 )
                                 .into();
                         }
@@ -371,9 +376,8 @@ pub fn const_bool_operation<'ctx>(
 
                 if let Some((lhs_number, _)) = lhs.get_constant() {
                     if let Some((rhs_number, _)) = rhs.get_constant() {
-                        return lhs
-                            .get_type()
-                            .const_int(((lhs_number != 0.0) && (rhs_number != 0.0)) as u64 as f64)
+                        return int_type
+                            .const_int(((lhs_number != 0.0) && (rhs_number != 0.0)) as u64, false)
                             .into();
                     }
                 }
@@ -384,10 +388,9 @@ pub fn const_bool_operation<'ctx>(
                 if signatures.0 || signatures.1 {
                     if let Some((lhs_number, _)) = lhs.get_constant() {
                         if let Some((rhs_number, _)) = rhs.get_constant() {
-                            return lhs
-                                .get_type()
+                            return int_type
                                 .const_int(
-                                    ((lhs_number != 0.0) || (rhs_number != 0.0)) as u64 as f64,
+                                    ((lhs_number != 0.0) || (rhs_number != 0.0)) as u64,
                                     false,
                                 )
                                 .into();
@@ -395,17 +398,17 @@ pub fn const_bool_operation<'ctx>(
                     }
                 }
 
-                if let Some(lhs_number) = lhs.get_zero_extended_constant() {
-                    if let Some(rhs_number) = rhs.get_zero_extended_constant() {
-                        return lhs
-                            .get_type()
-                            .const_int(((lhs_number != 0) || (rhs_number != 0)) as u64, false)
+                if let Some((lhs_number, _)) = lhs.get_constant() {
+                    if let Some((rhs_number, _)) = rhs.get_constant() {
+                        return int_type
+                            .const_int(((lhs_number != 0.0) || (rhs_number != 0.0)) as u64, false)
                             .into();
                     }
                 }
 
                 return lhs.get_type().const_zero().into();
-            }*/
+            }
+
             _ => abort::abort_codegen(
                 context,
                 "Failed to compile without a valid operator!",
@@ -424,6 +427,7 @@ pub fn const_bool_operation<'ctx>(
                     .bool_type()
                     .const_int((lhs.is_null() == rhs.is_null()) as u64, false)
                     .into(),
+
                 TokenType::BangEq => llvm_context
                     .bool_type()
                     .const_int((lhs.is_null() != rhs.is_null()) as u64, false)
@@ -456,7 +460,7 @@ pub fn const_bool_operation<'ctx>(
     );
 }
 
-pub fn compile_const<'ctx>(
+pub fn compile_constant<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     binary: BinaryOperation<'ctx>,
     cast_type: &Type,
@@ -486,7 +490,7 @@ pub fn compile_const<'ctx>(
         let lhs_type: &Type = binary.0.get_type_for_llvm();
         let rhs_type: &Type = binary.2.get_type_for_llvm();
 
-        return const_bool_operation(
+        return compile_constant_boolean_operation(
             context,
             lhs,
             rhs,

@@ -766,7 +766,7 @@ pub fn compile<'ctx>(
     );
 }
 
-fn compile_const_int_value_operation<'ctx>(
+fn compile_constant_int_value_operation<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     lhs: BasicValueEnum<'ctx>,
     rhs: BasicValueEnum<'ctx>,
@@ -1253,7 +1253,7 @@ fn compile_const_int_value_operation<'ctx>(
     );
 }
 
-pub fn compile_const<'ctx>(
+pub fn compile_constant<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     binary: BinaryOperation<'ctx>,
     cast: &Type,
@@ -1293,7 +1293,7 @@ pub fn compile_const<'ctx>(
         let lhs_type: &Type = binary.0.get_type_for_llvm();
         let rhs_type: &Type = binary.2.get_type_for_llvm();
 
-        return self::compile_const_int_value_operation(
+        return self::compile_constant_int_value_operation(
             context,
             lhs,
             rhs,
