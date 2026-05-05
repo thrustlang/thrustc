@@ -68,7 +68,7 @@ jobs:
           cargo install sccache
         working-directory: thrustc
 
-       - name: Building Thrust Compiler
+      - name: Building Thrust Compiler
         run: |
           cargo build --release
         working-directory: thrustc
