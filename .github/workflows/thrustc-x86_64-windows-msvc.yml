@@ -115,5 +115,5 @@ jobs:
             - ``WebAssembly``
 
           files: |
-            thrustc/target/release/thrustc
+            thrustc/target/release/thrustc.exe
           draft: false
