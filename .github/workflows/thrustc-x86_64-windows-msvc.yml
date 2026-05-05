@@ -67,6 +67,8 @@ jobs:
             --llvm-c-compiler "cl" `
             --llvm-cpp-compiler "cl"
 
+        working-directory: compiler-dependency-builder
+
       - name: Installing and Configuring Build Cache
         run: |
           cargo install sccache
