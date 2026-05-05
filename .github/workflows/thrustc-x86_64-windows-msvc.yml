@@ -62,7 +62,7 @@ jobs:
       - name: Running the Compiler Dependency Builder
         run: |
           cargo run -- --llvm-major 18 `
-            --llvm-minor 0 `
+            --llvm-minor 1 `
             --llvm-patch 8 `
             --llvm-c-compiler "cl" `
             --llvm-cpp-compiler "cl"
