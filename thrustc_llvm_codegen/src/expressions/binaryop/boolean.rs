@@ -354,6 +354,58 @@ pub fn const_bool_operation<'ctx>(
                     rhs,
                 )
                 .into(),
+
+            /*TokenType::And => {
+                if signatures.0 || signatures.1 {
+                    if let Some((lhs_number, _)) = lhs.get_constant() {
+                        if let Some((rhs_number, _)) = rhs.get_constant() {
+                            return lhs
+                                .get_type()
+                                .const_float(
+                                    ((lhs_number != 0.0) && (rhs_number != 0.0)) as u64 as f64,
+                                )
+                                .into();
+                        }
+                    }
+                }
+
+                if let Some((lhs_number, _)) = lhs.get_constant() {
+                    if let Some((rhs_number, _)) = rhs.get_constant() {
+                        return lhs
+                            .get_type()
+                            .const_int(((lhs_number != 0.0) && (rhs_number != 0.0)) as u64 as f64)
+                            .into();
+                    }
+                }
+
+                return lhs.get_type().const_zero().into();
+            }
+            TokenType::Or => {
+                if signatures.0 || signatures.1 {
+                    if let Some((lhs_number, _)) = lhs.get_constant() {
+                        if let Some((rhs_number, _)) = rhs.get_constant() {
+                            return lhs
+                                .get_type()
+                                .const_int(
+                                    ((lhs_number != 0.0) || (rhs_number != 0.0)) as u64 as f64,
+                                    false,
+                                )
+                                .into();
+                        }
+                    }
+                }
+
+                if let Some(lhs_number) = lhs.get_zero_extended_constant() {
+                    if let Some(rhs_number) = rhs.get_zero_extended_constant() {
+                        return lhs
+                            .get_type()
+                            .const_int(((lhs_number != 0) || (rhs_number != 0)) as u64, false)
+                            .into();
+                    }
+                }
+
+                return lhs.get_type().const_zero().into();
+            }*/
             _ => abort::abort_codegen(
                 context,
                 "Failed to compile without a valid operator!",

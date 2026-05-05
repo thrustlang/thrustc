@@ -456,9 +456,9 @@ pub fn compile_constant_type_cast<'ctx>(
             let ptr_value: PointerValue<'_> = value.into_pointer_value();
             let int_type: IntType<'_> = cast_type.into_int_type();
 
-            let casted: IntValue<'_> = ptr_value.const_to_int(int_type);
+            let casted_value: IntValue<'_> = ptr_value.const_to_int(int_type);
 
-            return casted.into();
+            return casted_value.into();
         };
     }
 
@@ -471,9 +471,9 @@ pub fn compile_constant_type_cast<'ctx>(
             let int_value: IntValue<'_> = value.into_int_value();
             let ptr_type: PointerType<'_> = cast_type.into_pointer_type();
 
-            let casted: PointerValue<'_> = int_value.const_to_pointer(ptr_type);
+            let casted_value: PointerValue<'_> = int_value.const_to_pointer(ptr_type);
 
-            return casted.into();
+            return casted_value.into();
         }
     }
 
@@ -482,14 +482,7 @@ pub fn compile_constant_type_cast<'ctx>(
             codegen::compile_constant_as_ptr_value(context, expr, cast_type);
 
         if value.is_pointer_value() {
-            let cast_type: BasicTypeEnum<'_> = typegeneration::generate_type(context, &target_type);
-
-            let ptr_value: PointerValue<'_> = value.into_pointer_value();
-            let ptr_type: PointerType<'_> = cast_type.into_pointer_type();
-
-            let casted: PointerValue<'_> = ptr_value.const_cast(ptr_type);
-
-            return casted.into();
+            return value;
         };
     }
 
@@ -657,7 +650,7 @@ pub fn compile_int_together_cast<'ctx>(
         .cmp(&right.get_type().get_bit_width())
     {
         std::cmp::Ordering::Greater => {
-            let new_right: IntValue = if signatures.0 || signatures.1 {
+            let new_right_value: IntValue = if signatures.0 || signatures.1 {
                 llvm_builder
                     .build_int_cast_sign_flag(right, left.get_type(), true, "")
                     .unwrap_or_else(|_| {
@@ -683,10 +676,10 @@ pub fn compile_int_together_cast<'ctx>(
                     })
             };
 
-            (left, new_right)
+            (left, new_right_value)
         }
         std::cmp::Ordering::Less => {
-            let new_left: IntValue = if signatures.0 || signatures.1 {
+            let new_left_value: IntValue = if signatures.0 || signatures.1 {
                 llvm_builder
                     .build_int_cast_sign_flag(left, right.get_type(), true, "")
                     .unwrap_or_else(|_| {
@@ -712,7 +705,7 @@ pub fn compile_int_together_cast<'ctx>(
                     })
             };
 
-            (new_left, right)
+            (new_left_value, right)
         }
         _ => (left, right),
     }
@@ -737,9 +730,9 @@ pub fn compile_constant_float_together_cast<'ctx>(
         return (left, right);
     }
 
-    let new_left: FloatValue = if left_type != right_type {
-        if let Some((n, ..)) = left.get_constant() {
-            right.get_type().const_float(n)
+    let new_left_value: FloatValue = if left_type != right_type {
+        if let Some((value, ..)) = left.get_constant() {
+            right.get_type().const_float(value)
         } else {
             left
         }
@@ -747,9 +740,9 @@ pub fn compile_constant_float_together_cast<'ctx>(
         left
     };
 
-    let new_right: FloatValue = if right_type != left_type {
-        if let Some((n, ..)) = right.get_constant() {
-            left.get_type().const_float(n)
+    let new_right_value: FloatValue = if right_type != left_type {
+        if let Some((value, ..)) = right.get_constant() {
+            left.get_type().const_float(value)
         } else {
             right
         }
@@ -757,7 +750,7 @@ pub fn compile_constant_float_together_cast<'ctx>(
         right
     };
 
-    (new_left, new_right)
+    (new_left_value, new_right_value)
 }
 
 pub fn compile_float_together_cast<'ctx>(
@@ -775,7 +768,7 @@ pub fn compile_float_together_cast<'ctx>(
         return (left, right);
     }
 
-    let new_left: FloatValue = if left_type != right_type {
+    let new_left_value: FloatValue = if left_type != right_type {
         llvm_builder
             .build_float_cast(left, right_type, "")
             .unwrap_or_else(|_| {
@@ -791,7 +784,7 @@ pub fn compile_float_together_cast<'ctx>(
         left
     };
 
-    let new_right: FloatValue = if right_type != left_type {
+    let new_right_value: FloatValue = if right_type != left_type {
         llvm_builder
             .build_float_cast(right, left_type, "")
             .unwrap_or_else(|_| {
@@ -807,5 +800,5 @@ pub fn compile_float_together_cast<'ctx>(
         right
     };
 
-    (new_left, new_right)
+    (new_left_value, new_right_value)
 }
