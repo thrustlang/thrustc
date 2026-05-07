@@ -24,10 +24,29 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Unique ID: $BUILD_ID"
           echo "Version: $VERSION"
-    
+
       - name: Cloning Thrust Compiler
         run: |
           git clone --depth 1 https://github.com/thrustlang/thrustc
+
+      - name: Reading Changelog
+        run: |
+          CHANGELOG_PATH="thrustc/changelogs/${{ env.TAG_NAME }}/README.md"
+
+          if [ ! -f "$CHANGELOG_PATH" ]; then
+            echo "::error::No changelog found for tag '${{ env.TAG_NAME }}'. A changelog must exist at $CHANGELOG_PATH before releasing a compiler version."
+            exit 1
+          fi
+
+          CHANGELOG_CONTENT=$(cat "$CHANGELOG_PATH")
+
+          {
+            echo "CHANGELOG<<EOF"
+            echo "$CHANGELOG_CONTENT"
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+          echo "Version changelog loaded successfully."
 
       - name: Installing dependencies
         run: |
@@ -108,6 +127,10 @@ jobs:
             - ``SPIR-V``
             - ``WebAssembly``
 
+            ## Changelog
+
+            ${{ env.CHANGELOG }}
+
             ## Dynamic Dependencies
 
             ${{ env.DYNAMIC_DEPS }}
@@ -115,4 +138,3 @@ jobs:
           files: |
             thrustc/target/release/thrustc
           draft: false
-        

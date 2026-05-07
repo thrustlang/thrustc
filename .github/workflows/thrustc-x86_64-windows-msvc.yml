@@ -35,6 +35,24 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/thrustlang/thrustc
 
+      - name: Reading Changelog
+        shell: pwsh
+        run: |
+          $CHANGELOG_PATH = "thrustc/changelogs/${{ env.TAG_NAME }}/README.md"
+
+          if (-Not (Test-Path $CHANGELOG_PATH)) {
+            Write-Host "::error::No changelog found for tag '${{ env.TAG_NAME }}'. A changelog must exist at $CHANGELOG_PATH before releasing a compiler version."
+            exit 1
+          }
+
+          $CHANGELOG_CONTENT = Get-Content $CHANGELOG_PATH -Raw
+
+          "CHANGELOG<<EOF" >> $env:GITHUB_ENV
+          $CHANGELOG_CONTENT >> $env:GITHUB_ENV
+          "EOF" >> $env:GITHUB_ENV
+
+          echo "Version changelog loaded successfully."
+
       - name: Setup MSVC
         uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
@@ -113,6 +131,10 @@ jobs:
             - ``BPF``
             - ``SPIR-V``
             - ``WebAssembly``
+
+            ## Changelog
+
+            ${{ env.CHANGELOG }}
 
           files: |
             thrustc/target/release/thrustc.exe
