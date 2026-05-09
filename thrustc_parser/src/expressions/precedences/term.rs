@@ -56,7 +56,7 @@ pub fn term_precedence<'parser>(
         let kind: Type = left_type.get_term_precedence_type(right_type, operator);
 
         left = Ast::BinaryOp {
-            left: left.clone().into(),
+            left: left.into(),
             operator,
             right: right.into(),
             kind,

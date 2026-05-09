@@ -182,6 +182,7 @@ impl<'parser> ParserContext<'parser> {
 }
 
 impl<'parser> ParserContext<'parser> {
+    #[inline(always)]
     #[must_use]
     pub fn peek(&mut self) -> &'parser Token {
         self.tokens.get(self.position).unwrap_or_else(|| {
@@ -198,6 +199,7 @@ impl<'parser> ParserContext<'parser> {
         })
     }
 
+    #[inline(always)]
     #[must_use]
     pub fn previous(&mut self) -> &'parser Token {
         let index: (usize, bool) = self.position.overflowing_sub(1);
@@ -234,6 +236,7 @@ impl<'parser> ParserContext<'parser> {
 }
 
 impl<'parser> ParserContext<'parser> {
+    #[inline(always)]
     #[must_use]
     pub fn check(&mut self, kind: TokenType) -> bool {
         if self.is_eof() {
@@ -243,6 +246,7 @@ impl<'parser> ParserContext<'parser> {
         self.peek().kind == kind
     }
 
+    #[inline(always)]
     #[must_use]
     pub fn check_to(&mut self, kind: TokenType, modifier: usize) -> bool {
         if self.is_eof() {
@@ -258,6 +262,7 @@ impl<'parser> ParserContext<'parser> {
         self.tokens[next_index].kind == kind
     }
 
+    #[inline(always)]
     #[must_use]
     pub fn check_ahead(&mut self, target: TokenType, breakers: &[TokenType]) -> bool {
         let mut last_position: usize = self.position;
@@ -283,7 +288,7 @@ impl<'parser> ParserContext<'parser> {
 }
 
 impl<'parser> ParserContext<'parser> {
-    #[inline]
+    #[inline(always)]
     pub fn consume(
         &mut self,
         kind: TokenType,
@@ -303,7 +308,7 @@ impl<'parser> ParserContext<'parser> {
         ))
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn consume_these(
         &mut self,
         these: &[TokenType],
@@ -323,12 +328,12 @@ impl<'parser> ParserContext<'parser> {
         ))
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn go_back(&mut self) {
         self.position = self.position.saturating_sub(1);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn match_token(&mut self, kind: TokenType) -> Result<bool, CompilationIssue> {
         if self.peek().kind == kind {
             self.only_advance()?;
@@ -338,7 +343,7 @@ impl<'parser> ParserContext<'parser> {
         Ok(false)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn only_advance(&mut self) -> Result<(), CompilationIssue> {
         if !self.is_eof() {
             self.position = self.position.saturating_add(1);
@@ -354,7 +359,7 @@ impl<'parser> ParserContext<'parser> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn advance(&mut self) -> Result<&'parser Token, CompilationIssue> {
         if !self.is_eof() {
             self.position = self.position.saturating_add(1);
@@ -372,6 +377,7 @@ impl<'parser> ParserContext<'parser> {
 }
 
 impl<'parser> ParserContext<'parser> {
+    #[inline(always)]
     pub fn enter_expression(&mut self) -> Result<(), CompilationIssue> {
         let control: &mut ControlContext = self.get_mut_control_context();
 
@@ -392,68 +398,68 @@ impl<'parser> ParserContext<'parser> {
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn leave_expression(&mut self) {
         self.get_mut_control_context().decrease_expression_depth();
     }
 }
 
 impl ParserContext<'_> {
-    #[inline]
+    #[inline(always)]
     pub fn reset_position(&mut self) {
         self.position = 0;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn reset_scope(&mut self) {
         self.scope = 0;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn begin_scope(&mut self) {
         self.scope = self.scope.saturating_add(1);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn end_scope(&mut self) {
         self.scope = self.scope.saturating_sub(1);
     }
 }
 
 impl<'parser> ParserContext<'parser> {
-    #[inline]
+    #[inline(always)]
     pub fn get_symbols(&self) -> &SymbolTable<'parser> {
         &self.table
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get_control_context(&self) -> &ControlContext {
         &self.control_context
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get_type_context(&self) -> &TypeContext {
         &self.type_context
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get_options(&self) -> &CompilerOptions {
         self.options
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get_ast(&self) -> &[Ast<'parser>] {
         &self.ast
     }
 }
 
 impl<'parser> ParserContext<'parser> {
-    #[inline]
+    #[inline(always)]
     pub fn get_mut_symbols(&mut self) -> &mut SymbolTable<'parser> {
         &mut self.table
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get_mut_control_context(&mut self) -> &mut ControlContext {
         &mut self.control_context
     }
@@ -463,24 +469,24 @@ impl<'parser> ParserContext<'parser> {
         &mut self.type_context
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get_mut_diagnostician(&mut self) -> &mut Diagnostician {
         &mut self.diagnostician
     }
 }
 
 impl<'parser> ParserContext<'parser> {
-    #[inline]
+    #[inline(always)]
     pub fn add_ast_node(&mut self, ast: Ast<'parser>) {
         self.ast.push(ast);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn add_error_report(&mut self, error: CompilationIssue) {
         self.errors.push(error);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn add_bug_report(&mut self, error: CompilationIssue) {
         self.bugs.push(error);
     }
@@ -488,16 +494,19 @@ impl<'parser> ParserContext<'parser> {
 
 impl ParserContext<'_> {
     #[must_use]
+    #[inline(always)]
     pub fn is_main_scope(&self) -> bool {
         self.scope == 0
     }
 
-    #[inline]
+    #[must_use]
+    #[inline(always)]
     pub fn get_scope(&self) -> usize {
         self.scope
     }
 
     #[must_use]
+    #[inline(always)]
     pub fn is_eof(&mut self) -> bool {
         self.peek().kind == TokenType::Eof
     }

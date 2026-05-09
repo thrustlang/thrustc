@@ -21,6 +21,7 @@ use inkwell::module::Linkage;
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
+use serde::Serialize;
 
 pub const LINKAGES_AVAILABLE: &[&str] = &[
     "standard",
@@ -35,7 +36,7 @@ pub const LINKAGES_AVAILABLE: &[&str] = &[
 ];
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub enum ThrustLinkage {
     Standard,
     Common,

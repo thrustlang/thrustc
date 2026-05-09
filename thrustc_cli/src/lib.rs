@@ -821,6 +821,12 @@ impl CommandLine {
                 self.advance();
             }
 
+            "--disable-all-warnings" => {
+                self.advance();
+
+                self.get_mut_options().set_disable_all_warnings();
+            }
+
             "--copy-output-to-clipboard" => {
                 self.advance();
                 self.validate_llvm_required(arg);

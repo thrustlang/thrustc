@@ -9,6 +9,7 @@ rust-version.workspace = true
 [dependencies]
 ahash = "0.8.11"
 either = "1.15.0"
+serde = { version = "1.0.228", features = ["derive"] }
 
 thrustc_span = { path = "../thrustc_span" }
 thrustc_token_type = { path = "../thrustc_token_type" }

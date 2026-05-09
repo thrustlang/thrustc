@@ -17,10 +17,10 @@
 
 */
 
-
 mod impls;
 pub mod traits;
 
+use serde::Serialize;
 use thrustc_span::Span;
 
 #[cfg(feature = "fuzz")]
@@ -31,7 +31,7 @@ use thrustc_token_type::TokenType;
 use crate::traits::TokenExtensions;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Token {
     pub lexeme: String,
     pub ascii: String,

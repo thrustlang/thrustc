@@ -7,6 +7,8 @@ version.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
+
 thrustc_span = { path = "../thrustc_span" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_errors = { path = "../thrustc_errors" }

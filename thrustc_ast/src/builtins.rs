@@ -17,6 +17,7 @@
 
 */
 
+use serde::Serialize;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
 
@@ -26,7 +27,7 @@ use crate::Ast;
 use arbitrary::Arbitrary;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum AstBuiltin<'mir> {
     Halloc {
         of: Type,

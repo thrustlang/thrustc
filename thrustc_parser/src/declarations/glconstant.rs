@@ -67,7 +67,7 @@ pub fn build_global_const<'parser>(
         "Expected ':'.".into(),
     )?;
 
-    let mut const_type: Type = typegeneration::build_type(ctx, false)?;
+    let mut constant_type: Type = typegeneration::build_type(ctx, false)?;
 
     let attributes: ThrustAttributes =
         attributes::build_compiler_attributes(ctx, &[TokenType::Eq])?;
@@ -81,7 +81,7 @@ pub fn build_global_const<'parser>(
     ctx.get_mut_control_context()
         .set_position(Position::Constant);
     ctx.get_mut_type_context()
-        .add_infered_type(const_type.clone());
+        .add_infered_type(constant_type.clone());
 
     let value: Ast = expressions::parse_expression(ctx)?;
     let value_type: &Type = value.get_value_type()?;
@@ -89,21 +89,21 @@ pub fn build_global_const<'parser>(
     ctx.get_mut_type_context().pop_infered_type();
     ctx.get_mut_control_context().reset_position();
 
-    const_type.inferer_inner_type_from_type(value_type);
+    constant_type.inferer_inner_type_from_type(value_type);
 
     let metadata: ConstantMetadata =
         ConstantMetadata::new(true, thread_local, is_volatile, atomic_ord);
 
     if parse_forward {
         ctx.get_mut_symbols()
-            .new_global_constant(name, (const_type, attributes))?;
+            .new_global_constant(name, (constant_type, attributes))?;
 
         Ok(Ast::new_nullptr(span))
     } else {
         let constant: Ast<'_> = Ast::Const {
             name,
             ascii_name,
-            kind: const_type,
+            kind: constant_type,
             value: value.into(),
             attributes,
             modificators,

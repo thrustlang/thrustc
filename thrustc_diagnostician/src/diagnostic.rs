@@ -44,17 +44,17 @@ impl Diagnostic {
 
 impl Diagnostic {
     #[inline]
-    pub fn get_code(&self) -> &str {
+    pub fn code(&self) -> &str {
         &self.code
     }
 
     #[inline]
-    pub fn get_signaler(&self) -> &str {
+    pub fn signaler(&self) -> &str {
         &self.signaler
     }
 
     #[inline]
-    pub fn get_span(&self) -> Span {
+    pub fn span(&self) -> Span {
         self.span
     }
 }
@@ -172,25 +172,37 @@ pub(crate) fn generate(
 
     let line_num: usize = position.get_line();
 
+    let max_line_num: usize = lines.len();
+
+    let line_num_width: usize = if max_line_num >= 100000 {
+        6
+    } else if max_line_num >= 10000 {
+        5
+    } else {
+        4
+    };
+
     let mut signaler: String = String::new();
 
     if line_idx > 0 {
         if let Some(prev) = lines.get(line_idx.saturating_sub(1)) {
             signaler.push_str(&format!(
-                "{:>4} │ {}\n",
+                "{:>width$} │ {}\n",
                 line_num.saturating_sub(1),
-                prev.bright_black()
+                prev.bright_black(),
+                width = line_num_width
             ));
         }
     }
 
     signaler.push_str(&format!(
-        "{:>4} │ {}\n",
+        "{:>width$} │ {}\n",
         line_num,
-        display_line.bright_white().bold()
+        display_line.bright_white().bold(),
+        width = line_num_width
     ));
 
-    signaler.push_str(&format!("{:>4} │ ", ""));
+    signaler.push_str(&format!("{:>width$} │ ", "", width = line_num_width));
 
     for _ in 0..visible_start {
         signaler.push(' ');
@@ -212,7 +224,7 @@ pub(crate) fn generate(
         let down_depth: u8 = fastrand::u8(2..4);
 
         for _ in 0..down_depth {
-            signaler.push_str(&format!("{:>4} │ ", ""));
+            signaler.push_str(&format!("{:>width$} │ ", "", width = line_num_width));
 
             for _ in 0..visible_start {
                 signaler.push(' ');
@@ -221,7 +233,7 @@ pub(crate) fn generate(
             signaler.push_str("|\n");
         }
 
-        signaler.push_str(&format!("{:>4} │ ", ""));
+        signaler.push_str(&format!("{:>width$} │ ", "", width = line_num_width));
 
         {
             let right_depth: usize = fastrand::usize(15..30);
@@ -242,9 +254,10 @@ pub(crate) fn generate(
 
     if let Some(next) = lines.get(line_idx.saturating_add(1)) {
         signaler.push_str(&format!(
-            "{:>4} │ {}\n",
+            "{:>width$} │ {}\n",
             line_num.saturating_add(1),
-            next.bright_black()
+            next.bright_black(),
+            width = line_num_width
         ));
     }
 

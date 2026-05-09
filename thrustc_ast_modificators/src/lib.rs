@@ -20,6 +20,7 @@
 mod impls;
 pub mod traits;
 
+use serde::Serialize;
 use thrustc_mir::{atomicord::ThrustAtomicOrdering, threadmode::ThrustThreadMode};
 
 #[cfg(feature = "fuzz")]
@@ -28,7 +29,7 @@ use arbitrary::Arbitrary;
 pub type Modificators = Vec<Modificator>;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub enum Modificator {
     ThreadMode(ThrustThreadMode),
     AtomicOrdering(ThrustAtomicOrdering),

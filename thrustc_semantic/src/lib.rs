@@ -34,6 +34,8 @@ pub struct SemanticAnalysis<'semantic_analyzer> {
     scoper: Scoper<'semantic_analyzer>,
     verifier: AstVerifier<'semantic_analyzer>,
     linter: Linter<'semantic_analyzer>,
+
+    options: &'semantic_analyzer CompilerOptions,
 }
 
 impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
@@ -41,7 +43,7 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
     pub fn new(
         ast: &'semantic_analyzer [Ast<'semantic_analyzer>],
         file: &'semantic_analyzer CompilationUnit,
-        options: &CompilerOptions,
+        options: &'semantic_analyzer CompilerOptions,
     ) -> Self {
         let type_checker: TypeChecker<'_> = TypeChecker::new(ast, file, options);
         let analyzer: Analyzer<'_> = Analyzer::new(ast, file, options);
@@ -57,6 +59,8 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
             scoper,
             verifier,
             linter,
+
+            options,
         }
     }
 }
@@ -87,6 +91,7 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
             && !analyzer_threw_errors
             && !attr_checker_threw_errors
             && !scoper_threw_errors
+            && !self.options.disable_all_warnings()
         {
             self.linter.check();
         }

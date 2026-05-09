@@ -8,6 +8,8 @@ rust-version.workspace = true
 
 [dependencies]
 colored = "3.0.0"
+smallvec = "1.15.1"
+serde = { version = "1.0.228", features = ["derive"] }
 clipboard = { version = "0.5.0", optional = true }
 
 thrustc_ast_external = { path = "../thrustc_ast_external"}

@@ -56,8 +56,8 @@ pub fn build_function<'parser>(
         "Expected '('.".into(),
     )?;
 
-    let mut parameters: Vec<Ast> = Vec::with_capacity(12);
-    let mut parameters_types: Vec<Type> = Vec::with_capacity(12);
+    let mut parameters: Vec<Ast> = Vec::with_capacity(16);
+    let mut parameters_types: Vec<Type> = Vec::with_capacity(16);
     let mut parameter_position: u32 = 0;
 
     loop {
@@ -137,18 +137,6 @@ pub fn build_function<'parser>(
     let function_has_ignore: bool = attributes.has_ignore_attribute();
 
     if parse_forward {
-        let proto: Ast = Ast::Function {
-            name,
-            ascii_name,
-            parameters: parameters.clone(),
-            parameter_types: parameters_types.clone(),
-            body: None,
-            return_type: return_type.clone(),
-            attributes,
-            span,
-            id: NodeId::new(),
-        };
-
         ctx.get_mut_symbols().new_function(
             name,
             (
@@ -158,11 +146,7 @@ pub fn build_function<'parser>(
             ),
         )?;
 
-        if ctx.match_token(TokenType::SemiColon)? {
-            Ok(proto)
-        } else {
-            Ok(Ast::new_nullptr(span))
-        }
+        Ok(Ast::new_nullptr(span))
     } else {
         if ctx.check(TokenType::SemiColon) {
             ctx.consume(
@@ -171,7 +155,7 @@ pub fn build_function<'parser>(
                 "Expected ';'.".into(),
             )?;
 
-            let proto: Ast = Ast::Function {
+            let prototype: Ast = Ast::Function {
                 name,
                 ascii_name,
                 parameters,
@@ -183,7 +167,7 @@ pub fn build_function<'parser>(
                 id: NodeId::new(),
             };
 
-            return Ok(proto);
+            return Ok(prototype);
         }
 
         ctx.get_mut_symbols().new_parameters(&parameters)?;
@@ -192,7 +176,7 @@ pub fn build_function<'parser>(
 
         ctx.get_mut_symbols().finish_parameters();
 
-        let mut proto: Ast = Ast::Function {
+        let mut prototype: Ast = Ast::Function {
             name,
             ascii_name,
             parameters,
@@ -204,10 +188,10 @@ pub fn build_function<'parser>(
             id: NodeId::new(),
         };
 
-        if let Ast::Function { body, .. } = &mut proto {
+        if let Ast::Function { body, .. } = &mut prototype {
             *body = Some(function_body.into());
         }
 
-        Ok(proto)
+        Ok(prototype)
     }
 }

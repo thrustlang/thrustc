@@ -40,8 +40,9 @@ fn main() -> ! {
 
     let start_time: std::time::Instant = std::time::Instant::now();
 
-    let mut compiler_instance: ThrustCompiler<'_> =
-        ThrustCompiler::new(options.get_files(), options);
+    let compilation_units: &[thrustc_options::CompilationUnit] = options.get_units();
+
+    let mut compiler_instance: ThrustCompiler<'_> = ThrustCompiler::new(compilation_units, options);
 
     let compile_time: CompileTime = compiler_instance.compile();
 

@@ -24,7 +24,6 @@ use std::fmt::Write as WriteFmt;
 use std::fs::File;
 use std::io::Write as WriteIO;
 use std::path::Path;
-use std::path::PathBuf;
 
 use crate::Ast;
 
@@ -32,25 +31,21 @@ pub fn print_to_file_pretty(
     ast: &[Ast],
     build_dir: &Path,
     file_name: &str,
-) -> Result<(), std::io::Error> {
-    let base_ast_path: PathBuf = build_dir.join("emit").join("ast");
+) -> Result<(), Box<dyn std::error::Error>> {
+    let base: std::path::PathBuf = build_dir.join("emit").join("ast");
+    std::fs::create_dir_all(&base)?;
 
-    if !base_ast_path.exists() {
-        let _ = std::fs::create_dir_all(&base_ast_path);
-    }
-
-    let formatted_file_name: String = format!(
-        "{}_{}.ast",
+    let path: std::path::PathBuf = base.join(format!(
+        "{}_{}.json",
         thrustc_utils::generate_random_string(),
         file_name
-    );
+    ));
 
-    let file_path: PathBuf = base_ast_path.join(formatted_file_name);
+    let file: File = std::fs::File::create(path)?;
+    let mut writer: std::io::BufWriter<File> = std::io::BufWriter::new(file);
 
-    let mut file: File = File::create(&file_path)?;
-
-    ast.iter()
-        .try_for_each(|token| writeln!(file, "{}", token))?;
+    serde_json::to_writer_pretty(&mut writer, ast)?;
+    writer.flush()?;
 
     Ok(())
 }

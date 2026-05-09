@@ -17,7 +17,6 @@
 
 */
 
-
 use thrustc_ast::{Ast, NodeId};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
@@ -36,13 +35,13 @@ pub fn build_import<'parser>(
         "Expected 'import' keyword.".into(),
     )?;
 
-    let path_literal_tk: &Token = ctx.consume_these(
+    let tk: &Token = ctx.consume_these(
         &[TokenType::CString, TokenType::CNString],
         CompilationIssueCode::E0001,
         "Expected string literal.".into(),
     )?;
 
-    let span: Span = path_literal_tk.get_span();
+    let span: Span = tk.get_span();
 
     ctx.consume(
         TokenType::SemiColon,

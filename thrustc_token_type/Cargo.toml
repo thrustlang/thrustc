@@ -10,6 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
 arbitrary =  { version = "1.4.2", features = ["derive"], optional = true }
 
 [features]

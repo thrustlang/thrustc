@@ -21,10 +21,11 @@ use inkwell::AtomicOrdering;
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
+use serde::Serialize;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[allow(clippy::enum_variant_names)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub enum ThrustAtomicOrdering {
     AtomicNone,
     AtomicFree,

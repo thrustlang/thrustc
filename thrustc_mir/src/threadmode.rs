@@ -21,9 +21,10 @@
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
+use serde::Serialize;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub enum ThrustThreadMode {
     GeneralDynamicTLSModel,
     LocalDynamicTLSModel,

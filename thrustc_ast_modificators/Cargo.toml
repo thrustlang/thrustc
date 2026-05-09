@@ -10,6 +10,8 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
+
 thrustc_mir = { path = "../thrustc_mir" }
 
 arbitrary =  { version = "1.4.2", features = ["derive"], optional = true }

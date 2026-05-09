@@ -1,3 +1,4 @@
+use serde::Serialize;
 use thrustc_attributes::ThrustAttributes;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
@@ -6,7 +7,7 @@ use thrustc_typesystem::Type;
 use arbitrary::Arbitrary;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ExternalSymbol {
     pub name: String,
     pub signature: ExternalSignature,
@@ -25,7 +26,7 @@ impl ExternalSymbol {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize)]
 pub enum ExternalVariant {
     Function,
     Constant,
@@ -36,7 +37,7 @@ pub enum ExternalVariant {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum ExternalSignature {
     Function {
         kind: Type,

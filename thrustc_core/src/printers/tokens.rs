@@ -20,7 +20,6 @@
 use std::fmt::Write as WriteFmt;
 use std::fs::File;
 use std::io;
-use std::io::Write as WriteIO;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -29,26 +28,29 @@ use thrustc_logging::OutputIn;
 use thrustc_options::CompilerOptions;
 use thrustc_token::Token;
 
-pub fn print_to_file(tokens: &[Token], build_dir: &Path, file_name: &str) -> Result<(), io::Error> {
+use serde_json;
+
+pub fn print_to_file(
+    tokens: &[Token],
+    build_dir: &Path,
+    file_name: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     let base_tokens_path: PathBuf = build_dir.join("emit").join("tokens");
 
-    if !base_tokens_path.exists() {
-        let _ = std::fs::create_dir_all(&base_tokens_path);
-    }
+    std::fs::create_dir_all(&base_tokens_path)?;
 
-    let formatted_file_name: String = format!(
-        "{}_{}.tokens",
+    let formatted_file_name = format!(
+        "{}_{}.json",
         thrustc_utils::generate_random_string(),
         file_name
     );
 
     let file_path: PathBuf = base_tokens_path.join(formatted_file_name);
+    let file: File = std::fs::File::create(file_path)?;
 
-    let mut file: File = File::create(&file_path)?;
+    let writer: io::BufWriter<File> = std::io::BufWriter::new(file);
 
-    tokens
-        .iter()
-        .try_for_each(|token| writeln!(file, "{}", token))?;
+    serde_json::to_writer_pretty(writer, tokens)?;
 
     Ok(())
 }

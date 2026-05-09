@@ -36,7 +36,7 @@ pub fn unary_precedence<'parser>(
 
     if ctx.match_token(TokenType::Bang)? {
         let operator_tk: &Token = ctx.previous();
-        let operator: TokenType = operator_tk.get_type();
+        let operator: TokenType = operator_tk.kind;
         let span: Span = operator_tk.get_span();
 
         let expr: Ast = precedences::indirect::indirect_precedence(ctx)?;
@@ -55,7 +55,7 @@ pub fn unary_precedence<'parser>(
 
     if ctx.match_token(TokenType::Minus)? {
         let operator_tk: &Token = ctx.previous();
-        let operator: TokenType = operator_tk.get_type();
+        let operator: TokenType = operator_tk.kind;
         let span: Span = operator_tk.get_span();
 
         let expr: Ast = precedences::indirect::indirect_precedence(ctx)?;
@@ -67,7 +67,7 @@ pub fn unary_precedence<'parser>(
 
         return Ok(Ast::UnaryOp {
             operator,
-            node: expr.clone().into(),
+            node: expr.into(),
             kind,
             before: false,
             span,
@@ -77,18 +77,18 @@ pub fn unary_precedence<'parser>(
 
     if ctx.match_token(TokenType::Not)? {
         let operator_tk: &Token = ctx.previous();
-        let operator: TokenType = operator_tk.get_type();
+        let operator: TokenType = operator_tk.kind;
         let span: Span = operator_tk.get_span();
 
         let expr: Ast = precedences::indirect::indirect_precedence(ctx)?;
-        let expr_type: &Type = expr.get_value_type()?;
+        let expr_type: Type = expr.get_value_type()?.clone();
 
         ctx.leave_expression();
 
         return Ok(Ast::UnaryOp {
             operator,
-            node: expr.clone().into(),
-            kind: expr_type.clone(),
+            node: expr.into(),
+            kind: expr_type,
             before: false,
             span,
             id: NodeId::new(),
@@ -97,46 +97,42 @@ pub fn unary_precedence<'parser>(
 
     if ctx.match_token(TokenType::PlusPlus)? {
         let operator_tk: &Token = ctx.previous();
-        let operator: TokenType = operator_tk.get_type();
+        let operator: TokenType = operator_tk.kind;
         let span: Span = operator_tk.get_span();
 
         let expr: Ast = expressions::parse_expr(ctx)?;
-        let expr_type: &Type = expr.get_value_type()?;
-
-        let unaryop: Ast = Ast::UnaryOp {
-            operator,
-            node: expr.clone().into(),
-            kind: expr_type.clone(),
-            before: true,
-            span,
-            id: NodeId::new(),
-        };
+        let expr_type: Type = expr.get_value_type()?.clone();
 
         ctx.leave_expression();
 
-        return Ok(unaryop);
+        return Ok(Ast::UnaryOp {
+            operator,
+            node: expr.into(),
+            kind: expr_type,
+            before: true,
+            span,
+            id: NodeId::new(),
+        });
     }
 
     if ctx.match_token(TokenType::MinusMinus)? {
         let operator_tk: &Token = ctx.previous();
-        let operator: TokenType = operator_tk.get_type();
+        let operator: TokenType = operator_tk.kind;
         let span: Span = operator_tk.get_span();
 
         let expr: Ast = expressions::parse_expr(ctx)?;
-        let expr_type: &Type = expr.get_value_type()?;
-
-        let unaryop: Ast = Ast::UnaryOp {
-            operator,
-            node: expr.clone().into(),
-            kind: expr_type.clone(),
-            before: true,
-            span,
-            id: NodeId::new(),
-        };
+        let expr_type: Type = expr.get_value_type()?.clone();
 
         ctx.leave_expression();
 
-        return Ok(unaryop);
+        return Ok(Ast::UnaryOp {
+            operator,
+            node: expr.into(),
+            kind: expr_type,
+            before: true,
+            span,
+            id: NodeId::new(),
+        });
     }
 
     let instr: Ast = precedences::indirect::indirect_precedence(ctx)?;

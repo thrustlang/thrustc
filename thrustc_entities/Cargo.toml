@@ -8,6 +8,7 @@ rust-version.workspace = true
 
 [dependencies]
 ahash = "0.8.11"
+smallvec = "1.15.1"
 
 thrustc_ast = { path = "../thrustc_ast" }
 thrustc_span = { path = "../thrustc_span" }

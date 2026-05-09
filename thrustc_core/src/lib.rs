@@ -86,10 +86,10 @@ pub type CompileTime = (
 );
 
 impl<'thrustc> ThrustCompiler<'thrustc> {
-    pub fn new(files: &'thrustc [CompilationUnit], options: &'thrustc CompilerOptions) -> Self {
+    pub fn new(units: &'thrustc [CompilationUnit], options: &'thrustc CompilerOptions) -> Self {
         Self {
-            ready: Vec::with_capacity(files.len()),
-            unready: files,
+            ready: Vec::with_capacity(units.len()),
+            unready: units,
 
             options,
 

@@ -22,13 +22,9 @@ pub mod linkage;
 use crate::linkage::LinkingCompilersConfiguration;
 use thrustc_backends::llvm::LLVMBackend;
 
-use inkwell::targets::CodeModel;
-use inkwell::targets::RelocMode;
 use thrustc_ast::Ast;
 use thrustc_logging::{self, LoggingType};
 use thrustc_token::Token;
-
-use inkwell::OptimizationLevel;
 
 use std::path::Path;
 use std::path::PathBuf;
@@ -41,6 +37,8 @@ pub struct CompilerOptions {
     llvm_backend: LLVMBackend,
     files: Vec<CompilationUnit>,
     build_dir: PathBuf,
+
+    disable_all_warnings: bool,
 
     emit: Vec<EmitableUnit>,
     printable: Vec<PrintableUnit>,
@@ -133,6 +131,8 @@ impl CompilerOptions {
 
             build_dir: "build".into(),
 
+            disable_all_warnings: false,
+
             enable_ansi_colors: false,
             omit_default_optimizations: false,
 
@@ -187,6 +187,11 @@ impl CompilerOptions {
     #[inline]
     pub fn set_build_dir(&mut self, build_dir: PathBuf) {
         self.build_dir = build_dir;
+    }
+
+    #[inline]
+    pub fn set_disable_all_warnings(&mut self) {
+        self.disable_all_warnings = true;
     }
 
     #[inline]
@@ -287,7 +292,7 @@ impl CompilerOptions {
     }
 
     #[inline]
-    pub fn get_files(&self) -> &[CompilationUnit] {
+    pub fn get_units(&self) -> &[CompilationUnit] {
         self.files.as_slice()
     }
 
@@ -302,7 +307,7 @@ impl CompilerOptions {
             std::fs::create_dir_all(&self.build_dir).unwrap_or_else(|_| {
                 thrustc_logging::print_critical_error(
                     LoggingType::Panic,
-                    "The compiler build directory could not be created automatically.",
+                    "The compiler build directory couldn't be created automatically.",
                 );
             });
         }
@@ -416,8 +421,13 @@ impl CompilerOptions {
     }
 
     #[inline]
-    pub fn get_build_id(&self) -> &uuid::Uuid {
+    pub fn build_id(&self) -> &uuid::Uuid {
         &self.build_id
+    }
+
+    #[inline]
+    pub fn disable_all_warnings(&self) -> bool {
+        self.disable_all_warnings
     }
 
     #[inline]

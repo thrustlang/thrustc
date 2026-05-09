@@ -33,7 +33,7 @@ pub fn factor<'parser>(ctx: &mut ParserContext<'parser>) -> Result<Ast<'parser>,
 
     while ctx.match_token(TokenType::Slash)? || ctx.match_token(TokenType::Star)? {
         let operator_tk: &Token = ctx.previous();
-        let operator: TokenType = operator_tk.get_type();
+        let operator: TokenType = operator_tk.kind;
         let span: Span = operator_tk.get_span();
 
         let right: Ast = precedences::mutation::equal_precedence(ctx)?;

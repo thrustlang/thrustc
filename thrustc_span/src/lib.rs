@@ -19,9 +19,10 @@
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
+use serde::Serialize;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize)]
 pub struct Span {
     pub line: u32,
     pub span: (u32, u32),

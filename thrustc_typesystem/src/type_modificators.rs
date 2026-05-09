@@ -23,9 +23,10 @@ use std::fmt::Display;
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
+use serde::Serialize;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default, Serialize)]
 pub struct FunctionReferenceTypeModificator {
     llvm: LLVMFunctionReferenceTypeModificator,
     gcc: GCCFunctionReferenceTypeModificator,
@@ -54,7 +55,7 @@ impl FunctionReferenceTypeModificator {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default, Serialize)]
 pub struct LLVMFunctionReferenceTypeModificator {
     ignore_args: bool,
 }
@@ -72,7 +73,7 @@ impl LLVMFunctionReferenceTypeModificator {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default, Serialize)]
 pub struct GCCFunctionReferenceTypeModificator {}
 
 impl GCCFunctionReferenceTypeModificator {
@@ -83,7 +84,7 @@ impl GCCFunctionReferenceTypeModificator {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default, Serialize)]
 pub struct StructureTypeModificator {
     llvm: LLVMStructureTypeModificator,
     gcc: GCCStructureTypeModificator,
@@ -107,7 +108,7 @@ impl StructureTypeModificator {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default, Serialize)]
 pub struct GCCStructureTypeModificator {}
 
 impl GCCStructureTypeModificator {
@@ -118,7 +119,7 @@ impl GCCStructureTypeModificator {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default, Serialize)]
 pub struct LLVMStructureTypeModificator {
     packed: bool,
 }

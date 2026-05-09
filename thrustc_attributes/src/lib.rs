@@ -17,6 +17,7 @@
 
 */
 
+use serde::Serialize;
 use thrustc_span::Span;
 use thrustc_token_type::TokenType;
 
@@ -37,7 +38,7 @@ pub mod traits;
 pub type ThrustAttributes = Vec<ThrustAttribute>;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum ThrustAttribute {
     Extern(String, Span),
     Convention(String, Span),

@@ -19,6 +19,7 @@
 
 use std::sync::atomic::AtomicU64;
 
+use serde::Serialize;
 use thrustc_ast_external::ExternalSymbol;
 use thrustc_ast_modificators::Modificators;
 use thrustc_attributes::ThrustAttributes;
@@ -46,7 +47,7 @@ pub mod metadata;
 pub mod traits;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum Ast<'ast> {
     CString {
         bytes: std::vec::Vec<u8>,
@@ -618,7 +619,7 @@ impl<'ast> Ast<'ast> {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum ModuleExpressionValues<'ast> {
     Call {
         arguments: Vec<Ast<'ast>>,
@@ -631,7 +632,7 @@ pub enum ModuleExpressionValues<'ast> {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct NodeId {
     pub discriminat: u64,
 }

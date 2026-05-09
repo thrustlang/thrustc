@@ -7,6 +7,7 @@ version.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
 
 inkwell = { workspace = true, optional = true }
 clang = { workspace = true, optional = true }

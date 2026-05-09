@@ -17,13 +17,14 @@
 
 */
 
+use serde::Serialize;
 use thrustc_mir::{atomicord::ThrustAtomicOrdering, threadmode::ThrustThreadMode};
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct CastingMetadata {
     is_constant: bool,
     is_allocated: bool,
@@ -52,7 +53,7 @@ impl CastingMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct FunctionParameterMetadata {
     is_mutable: bool,
 }
@@ -72,7 +73,7 @@ impl FunctionParameterMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct PropertyMetadata {
     is_allocated: bool,
 }
@@ -92,7 +93,7 @@ impl PropertyMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct ReferenceMetadata {
     is_allocated: bool,
     is_mutable: bool,
@@ -100,7 +101,7 @@ pub struct ReferenceMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, Serialize)]
 pub enum ReferenceType {
     Constant,
     Static,
@@ -145,7 +146,7 @@ impl ReferenceMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct ConstantMetadata {
     is_global: bool,
 
@@ -153,7 +154,7 @@ pub struct ConstantMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct LLVMConstantMetadata {
     pub thread_local: bool,
     pub volatile: bool,
@@ -193,13 +194,13 @@ impl ConstantMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, Serialize)]
 pub struct DereferenceMetadata {
     llvm_metadata: LLVMDereferenceMetadata,
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, Serialize)]
 pub struct LLVMDereferenceMetadata {
     pub volatile: bool,
     pub atomic_ord: Option<ThrustAtomicOrdering>,
@@ -225,7 +226,7 @@ impl DereferenceMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct LocalMetadata {
     is_undefined: bool,
     is_mutable: bool,
@@ -234,7 +235,7 @@ pub struct LocalMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct LLVMLocalMetadata {
     pub volatile: bool,
     pub atomic_ord: Option<ThrustAtomicOrdering>,
@@ -278,7 +279,7 @@ impl LocalMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct StaticMetadata {
     is_global: bool,
     is_mutable: bool,
@@ -288,7 +289,7 @@ pub struct StaticMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct LLVMStaticMetadata {
     pub unnamed_addr: bool,
     pub constant: bool,

@@ -35,6 +35,7 @@ pub mod type_modificators;
 mod type_precedence;
 mod void_type;
 
+use serde::Serialize;
 use thrustc_span::Span;
 
 use crate::type_modificators::FunctionReferenceTypeModificator;
@@ -44,7 +45,7 @@ use crate::type_modificators::StructureTypeModificator;
 use arbitrary::Arbitrary;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq)]
+#[derive(Debug, Clone, Eq, Serialize)]
 pub enum Type {
     S8 {
         span: Span,

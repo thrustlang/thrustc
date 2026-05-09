@@ -170,6 +170,7 @@ impl Lexer {
 
 impl Lexer {
     #[must_use]
+    #[inline(always)]
     pub fn char_match(&mut self, char: char) -> bool {
         if !self.is_eof() && self.code[self.current] == char {
             self.current = self.current.saturating_add(1);
@@ -182,6 +183,7 @@ impl Lexer {
     }
 
     #[must_use]
+    #[inline(always)]
     pub fn advance(&mut self) -> char {
         if self.current >= self.code.len() {
             '\0'
@@ -195,13 +197,14 @@ impl Lexer {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn advance_only(&mut self) {
         self.current = self.current.saturating_add(1);
         self.column = self.column.saturating_add(1);
     }
 
-    #[inline]
+    #[must_use]
+    #[inline(always)]
     pub fn peek_at(&self, idx: usize) -> char {
         if idx >= self.code.len() {
             return '\0';
@@ -210,7 +213,8 @@ impl Lexer {
         self.code[idx]
     }
 
-    #[inline]
+    #[must_use]
+    #[inline(always)]
     pub fn peek_next(&self) -> char {
         let idx: usize = self.current.saturating_add(1);
 
@@ -222,6 +226,7 @@ impl Lexer {
     }
 
     #[must_use]
+    #[inline(always)]
     pub fn previous(&self) -> char {
         if self.current == 0 || self.current > self.code.len() {
             '\0'
@@ -233,7 +238,7 @@ impl Lexer {
     }
 
     #[must_use]
-    #[inline]
+    #[inline(always)]
     pub fn peek(&self) -> char {
         if self.is_eof() {
             return '\0';
@@ -249,7 +254,7 @@ impl Lexer {
 }
 
 impl Lexer {
-    #[inline]
+    #[inline(always)]
     pub fn lexeme(&self) -> String {
         if let Some(chars) = self.code.get(self.start..self.current) {
             return String::from_iter(chars);
@@ -262,7 +267,7 @@ impl Lexer {
 
 impl Lexer {
     #[must_use]
-    #[inline]
+    #[inline(always)]
     pub fn is_number_boundary(
         &self,
         is_hexadecimal: bool,
@@ -281,25 +286,25 @@ impl Lexer {
     }
 
     #[must_use]
-    #[inline]
+    #[inline(always)]
     pub fn is_identifier_boundary(&self, peeked: char) -> bool {
         peeked.is_alphanumeric() || peeked.is_symbol_other() || peeked == '_' || peeked == '@'
     }
 
     #[must_use]
-    #[inline]
+    #[inline(always)]
     pub fn is_ascii_char(&self, peeked: char) -> bool {
         self.is_alpha_char(peeked) || peeked.is_ascii_digit() || peeked == '_' || peeked == '@'
     }
 
     #[must_use]
-    #[inline]
+    #[inline(always)]
     pub fn is_alpha_char(&self, char: char) -> bool {
         char.is_ascii_lowercase() || char.is_ascii_uppercase()
     }
 
     #[must_use]
-    #[inline]
+    #[inline(always)]
     pub fn is_eof(&self) -> bool {
         self.current >= self.code.len()
     }
@@ -319,12 +324,12 @@ impl Lexer {
 }
 
 impl Lexer {
-    #[inline]
+    #[inline(always)]
     pub fn start_span(&mut self) {
         self.span.0 = self.column;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn end_span(&mut self) {
         self.span.1 = self.column;
     }

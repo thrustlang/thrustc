@@ -37,20 +37,11 @@ pub fn print_to_string(diagnostic: &Diagnostic, error: Error<'_>) -> String {
     let note: Option<&str> = error.get_note();
     let logging_type: LoggingType = error.get_logging_type();
 
-    let code: &str = diagnostic.get_code();
-    let signaler: &str = diagnostic.get_signaler();
+    let code: &str = diagnostic.code();
+    let signaler: &str = diagnostic.signaler();
 
-    let line: usize = diagnostic
-        .get_span()
-        .get_line()
-        .try_into()
-        .unwrap_or_default();
-
-    let start: usize = diagnostic
-        .get_span()
-        .get_span_start()
-        .try_into()
-        .unwrap_or_default();
+    let line: u32 = diagnostic.span().get_line();
+    let start: u32 = diagnostic.span().get_span_start();
 
     let mut buffer: String = String::new();
 
@@ -84,11 +75,11 @@ pub fn print_compiler_frontend_bug(diagnostic: &Diagnostic, error: FrontendError
     let compiler_source_path: &Path = error.get_compiler_source_path();
     let logging_type: LoggingType = error.get_logging_type();
 
-    let code: &str = diagnostic.get_code();
-    let signaler: &str = diagnostic.get_signaler();
+    let code: &str = diagnostic.code();
+    let signaler: &str = diagnostic.signaler();
 
-    let line: u32 = diagnostic.get_span().get_line();
-    let start: u32 = diagnostic.get_span().get_span_start();
+    let line: u32 = diagnostic.span().get_line();
+    let start: u32 = diagnostic.span().get_span_start();
 
     thrustc_logging::write(
         OutputIn::Stderr,
@@ -141,11 +132,11 @@ pub fn print_compiler_backend_bug(diagnostic: &Diagnostic, error: BackendError<'
     let compiler_source_path: &Path = error.get_compiler_source_path();
     let logging_type: LoggingType = error.get_logging_type();
 
-    let code: &str = diagnostic.get_code();
-    let signaler: &str = diagnostic.get_signaler();
+    let code: &str = diagnostic.code();
+    let signaler: &str = diagnostic.signaler();
 
-    let line: u32 = diagnostic.get_span().get_line();
-    let start: u32 = diagnostic.get_span().get_span_start();
+    let line: u32 = diagnostic.span().get_line();
+    let start: u32 = diagnostic.span().get_span_start();
 
     thrustc_logging::write(
         OutputIn::Stderr,

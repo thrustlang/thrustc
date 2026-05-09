@@ -21,7 +21,6 @@ use inkwell::attributes::Attribute;
 use inkwell::attributes::AttributeLoc;
 use inkwell::targets::CodeModel;
 use inkwell::targets::RelocMode;
-use thrustc_constants::COMPILER_ID;
 use thrustc_logging::{self, LoggingType};
 
 use inkwell::debug_info;
@@ -625,7 +624,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
         let version: MetadataValue = self
             .get_codegen_context()
             .get_llvm_context()
-            .metadata_string(COMPILER_ID);
+            .metadata_string(thrustc_constants::COMPILER_ID);
 
         let node: MetadataValue = self
             .get_codegen_context()
@@ -640,7 +639,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
 
     fn setup_build_id(&self) {
         let options: &CompilerOptions = self.get_codegen_context().get_compiler_options();
-        let id: String = options.get_build_id().to_string();
+        let id: String = options.build_id().to_string();
 
         let build_id: MetadataValue = self
             .get_codegen_context()

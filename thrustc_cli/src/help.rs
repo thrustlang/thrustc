@@ -47,7 +47,7 @@ pub fn show_help() -> ! {
             "•".bold(),
             "-h".custom_color((141, 141, 142)).bold(),
             "--help".custom_color((141, 141, 142)).bold(),
-            "optional[opt|emit|print|code-model|\n\treloc-model|sanitizer|symbol-linkage-strategy|denormal-floating-point-behavior|\n\tdenormal-floating-point-32-bits-behavior]"
+            "optional[opt|emit|print|code-model|\n\treloc-model|sanitizer|symbol-linkage-strategy|\n\tdenormal-floating-point-behavior|\n\tdenormal-floating-point-32-bits-behavior]"
                 .custom_color((141, 141, 142))
                 .bold(),
             "Show help message.",
@@ -565,7 +565,7 @@ pub fn show_help() -> ! {
             "--disable-all-sanitizers"
                 .custom_color((141, 141, 142))
                 .bold(),
-            "Disable all sanitizers that may be enabled.",
+            "Disable all sanitizers.",
         ),
     );
 
@@ -577,7 +577,24 @@ pub fn show_help() -> ! {
             "--disable-all-cpu-features"
                 .custom_color((141, 141, 142))
                 .bold(),
-            "Disable the all CPU features. that may be enabled.",
+            "Disable the all CPU features.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        "\nWarning compiler flags:\n\n",
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
+            "--disable-all-warnings"
+                .custom_color((141, 141, 142))
+                .bold(),
+            "Disable all the general and specific warnings.",
         ),
     );
 
