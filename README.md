@@ -74,7 +74,8 @@ Usage: thrustc [-flags|--flags] [files..]
 General Commands:
 
 • -h, --help optional[opt|emit|print|code-model|
-        reloc-model|sanitizer|symbol-linkage-strategy|denormal-floating-point-behavior|
+        reloc-model|sanitizer|symbol-linkage-strategy|
+        denormal-floating-point-behavior|
         denormal-floating-point-32-bits-behavior] Show help message.
 • -v, --version Show the version.
 
@@ -130,12 +131,16 @@ Disable compiler flags:
 • --disable-safe-trapping-math It allow trapping math operations that can cause exceptions. Useful for floating-point operations.
 • --disable-safe-math Disable safe math for integer operations (allows overflow and undefined behavior).
 • --disable-default-optimization It omits default optimization that occurs even without specified optimization.
-• --disable-all-sanitizers Disable all sanitizers that may be enabled.
-• --disable-all-cpu-features Disable the all CPU features. that may be enabled.
+• --disable-all-sanitizers Disable all sanitizers.
+• --disable-all-cpu-features Disable the all CPU features.
+
+Warning compiler flags:
+
+• --disable-all-warnings Disable all the general and specific warnings.
 
 Other compiler flags:
 
-• --copy-output-to-clipboard Copy the total printable output of the compiler into the operating system clipboard. It only works using '-print' compiler flag.
+• --copy-output-to-clipboard Copy the total printable output of the compiler into the operating system clipboard. ``It only works using '-print' compiler flag.
 • --debug-clang-command Displays the generated command for Clang in the phase of linking.
 • --debug-gcc-command Displays the generated command for GCC in the phase of linking.
 • --export-compiler-errors Export compiler error diagnostics to files.
