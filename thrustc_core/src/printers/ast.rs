@@ -17,35 +17,51 @@
 
 */
 
+#![allow(unused)]
+
 use colored::Colorize;
 use thrustc_options::CompilerOptions;
 
-use std::fmt::Write as WriteFmt;
-use std::fs::File;
-use std::io::Write as WriteIO;
-use std::path::Path;
-
 use crate::Ast;
 
-pub fn print_to_file_pretty(
+pub fn print_to_stdout(
+    options: &CompilerOptions,
     ast: &[Ast],
-    build_dir: &Path,
     file_name: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let base: std::path::PathBuf = build_dir.join("emit").join("ast");
-    std::fs::create_dir_all(&base)?;
+) -> Result<(), std::fmt::Error> {
+    let json: String = serde_json::to_string(ast).map_err(|_| std::fmt::Error)?;
 
-    let path: std::path::PathBuf = base.join(format!(
-        "{}_{}.json",
-        thrustc_utils::generate_random_string(),
-        file_name
-    ));
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stdout,
+        &format!("\n{}\n\n", file_name.bright_green().bold()),
+    );
 
-    let file: File = std::fs::File::create(path)?;
-    let mut writer: std::io::BufWriter<File> = std::io::BufWriter::new(file);
+    thrustc_logging::write(thrustc_logging::OutputIn::Stdout, &json);
+    thrustc_logging::write(thrustc_logging::OutputIn::Stdout, "\n");
 
-    serde_json::to_writer_pretty(&mut writer, ast)?;
-    writer.flush()?;
+    #[cfg(feature = "extra_utilities")]
+    {
+        if options.need_copy_output_to_clipboard() {
+            use clipboard::*;
+
+            let ctx: Result<ClipboardContext, Box<dyn std::error::Error>> =
+                ClipboardProvider::new();
+
+            if let Ok(mut ctx) = ctx {
+                ctx.set_contents(json).unwrap_or_else(|_| {
+                    thrustc_logging::print_warn(
+                        thrustc_logging::LoggingType::Warning,
+                        "Unable to copy the tokens stream into system clipboard.",
+                    );
+                });
+            } else {
+                thrustc_logging::print_warn(
+                    thrustc_logging::LoggingType::Warning,
+                    "Failed to initialize clipboard processes.",
+                );
+            }
+        }
+    }
 
     Ok(())
 }
@@ -55,20 +71,17 @@ pub fn print_to_stdout_pretty(
     ast: &[Ast],
     file_name: &str,
 ) -> Result<(), std::fmt::Error> {
-    let mut ast_formatted: String = String::with_capacity(ast.len());
-
-    ast.iter()
-        .try_for_each(|ast| writeln!(ast_formatted, "{}", ast))?;
+    let json: String = serde_json::to_string_pretty(ast).map_err(|_| std::fmt::Error)?;
 
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stdout,
         &format!("\n{}\n\n", file_name.bright_green().bold()),
     );
 
-    thrustc_logging::write(thrustc_logging::OutputIn::Stdout, &ast_formatted);
+    thrustc_logging::write(thrustc_logging::OutputIn::Stdout, &json);
     thrustc_logging::write(thrustc_logging::OutputIn::Stdout, "\n");
 
-    #[cfg(feature = "utils")]
+    #[cfg(feature = "extra_utilities")]
     {
         if options.need_copy_output_to_clipboard() {
             use clipboard::*;
@@ -77,7 +90,7 @@ pub fn print_to_stdout_pretty(
                 ClipboardProvider::new();
 
             if let Ok(mut ctx) = ctx {
-                ctx.set_contents(ast_formatted.clone()).unwrap_or_else(|_| {
+                ctx.set_contents(json).unwrap_or_else(|_| {
                     thrustc_logging::print_warn(
                         thrustc_logging::LoggingType::Warning,
                         "Unable to copy the tokens stream into system clipboard.",

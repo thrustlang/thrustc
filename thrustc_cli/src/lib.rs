@@ -464,7 +464,7 @@ impl CommandLine {
                 self.advance();
                 self.validate_llvm_required(arg);
 
-                let emitable: EmitableUnit = self.parse_emit_option(self.peek());
+                let emitable: EmitableUnit = self.parse_emission_value(self.peek());
 
                 self.get_mut_options().add_emit_option(emitable);
 
@@ -475,7 +475,7 @@ impl CommandLine {
                 self.advance();
                 self.validate_llvm_required(arg);
 
-                let pritable_unit: PrintableUnit = self.parse_print_option(self.peek());
+                let pritable_unit: PrintableUnit = self.parse_printable_emission_value(self.peek());
 
                 self.get_mut_options().add_print_option(pritable_unit);
 
@@ -1209,13 +1209,16 @@ impl CommandLine {
     }
 
     #[inline]
-    fn parse_print_option(&self, emit: &str) -> PrintableUnit {
+    fn parse_printable_emission_value(&self, emit: &str) -> PrintableUnit {
         match emit {
             "llvm-ir" => PrintableUnit::LLVMIR,
             "unopt-llvm-ir" => PrintableUnit::UnOptLLVMIR,
             "asm" => PrintableUnit::Assembly,
             "unopt-asm" => PrintableUnit::UnOptAssembly,
+            "pretty-tokens" => PrintableUnit::TokensPretty,
             "tokens" => PrintableUnit::Tokens,
+            "unchecked-pretty-ast" => PrintableUnit::UnCheckedAstPretty,
+            "pretty-ast" => PrintableUnit::AstPretty,
             "unchecked-ast" => PrintableUnit::UnCheckedAst,
             "ast" => PrintableUnit::Ast,
 
@@ -1226,7 +1229,7 @@ impl CommandLine {
     }
 
     #[inline]
-    fn parse_emit_option(&self, emit: &str) -> EmitableUnit {
+    fn parse_emission_value(&self, emit: &str) -> EmitableUnit {
         match emit {
             "llvm-bc" => EmitableUnit::LLVMBitcode,
             "llvm-ir" => EmitableUnit::LLVMIR,
@@ -1235,8 +1238,11 @@ impl CommandLine {
             "unopt-llvm-ir" => EmitableUnit::UnOptLLVMIR,
             "unopt-asm" => EmitableUnit::UnOptAssembly,
             "obj" => EmitableUnit::Object,
+            "unchecked-pretty-ast" => EmitableUnit::UnCheckedAstPretty,
             "unchecked-ast" => EmitableUnit::UnCheckedAst,
+            "pretty-ast" => EmitableUnit::AstPretty,
             "ast" => EmitableUnit::Ast,
+            "pretty-tokens" => EmitableUnit::TokensPretty,
             "tokens" => EmitableUnit::Tokens,
 
             any => {

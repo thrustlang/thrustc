@@ -23,7 +23,7 @@ use inkwell::module::Module;
 use inkwell::targets::TargetMachine;
 use thrustc_options::{CompilationUnit, CompilerOptions, EmitableUnit, Emited};
 
-use crate::{ThrustCompiler, emitters, interrupt, printers};
+use crate::{ThrustCompiler, emitters, interrupt};
 
 pub fn llvm_after_optimization(
     compiler: &mut ThrustCompiler,
@@ -164,7 +164,7 @@ pub fn llvm_before_optimization(
     Ok(false)
 }
 
-pub fn frontend_before(
+pub fn before_frontend(
     compiler: &mut ThrustCompiler,
     build_dir: &std::path::Path,
     file: &CompilationUnit,
@@ -172,9 +172,29 @@ pub fn frontend_before(
 ) -> bool {
     let compiler_options: &CompilerOptions = compiler.get_compilation_options();
 
+    if compiler_options.contains_emitable(EmitableUnit::TokensPretty) {
+        if let Emited::Tokens(tokens) = emited {
+            if emitters::tokens::to_file_pretty(tokens, build_dir, file.get_name()).is_err() {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
     if compiler_options.contains_emitable(EmitableUnit::Tokens) {
         if let Emited::Tokens(tokens) = emited {
-            if printers::tokens::print_to_file(tokens, build_dir, file.get_name()).is_err() {
+            if emitters::tokens::to_file(tokens, build_dir, file.get_name()).is_err() {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    if compiler_options.contains_emitable(EmitableUnit::UnCheckedAstPretty) {
+        if let Emited::Ast(ast) = emited {
+            if emitters::ast::to_file_pretty(ast, build_dir, file.get_name()).is_err() {
                 return false;
             }
 
@@ -184,7 +204,7 @@ pub fn frontend_before(
 
     if compiler_options.contains_emitable(EmitableUnit::UnCheckedAst) {
         if let Emited::Ast(ast) = emited {
-            if printers::ast::print_to_file_pretty(ast, build_dir, file.get_name()).is_err() {
+            if emitters::ast::to_file(ast, build_dir, file.get_name()).is_err() {
                 return false;
             }
 
@@ -195,7 +215,7 @@ pub fn frontend_before(
     false
 }
 
-pub fn frontend_after(
+pub fn after_frontend(
     compiler: &mut ThrustCompiler,
     build_dir: &std::path::Path,
     file: &CompilationUnit,
@@ -203,9 +223,29 @@ pub fn frontend_after(
 ) -> bool {
     let compiler_options: &CompilerOptions = compiler.get_compilation_options();
 
+    if compiler_options.contains_emitable(EmitableUnit::TokensPretty) {
+        if let Emited::Tokens(tokens) = emited {
+            if emitters::tokens::to_file_pretty(tokens, build_dir, file.get_name()).is_err() {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
     if compiler_options.contains_emitable(EmitableUnit::Tokens) {
         if let Emited::Tokens(tokens) = emited {
-            if printers::tokens::print_to_file(tokens, build_dir, file.get_name()).is_err() {
+            if emitters::tokens::to_file(tokens, build_dir, file.get_name()).is_err() {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    if compiler_options.contains_emitable(EmitableUnit::AstPretty) {
+        if let Emited::Ast(ast) = emited {
+            if emitters::ast::to_file_pretty(ast, build_dir, file.get_name()).is_err() {
                 return false;
             }
 
@@ -215,7 +255,7 @@ pub fn frontend_after(
 
     if compiler_options.contains_emitable(EmitableUnit::Ast) {
         if let Emited::Ast(ast) = emited {
-            if printers::ast::print_to_file_pretty(ast, build_dir, file.get_name()).is_err() {
+            if emitters::ast::to_file(ast, build_dir, file.get_name()).is_err() {
                 return false;
             }
 

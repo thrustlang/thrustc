@@ -61,7 +61,7 @@ $ cargo run -- --help
 
 ## Commands & Flags
 
-A list of the commands supported by the Thrust Compiler command line.
+A list of the commands and compiler flags supported by the command line interface.
 
 > [!WARNING]  
 > This might be a bit outdated, it could be information that's somewhat distant from the changes.
@@ -96,8 +96,8 @@ Compiler flags:
 • -cpu-enable-features [sse2;cx16;sahf;tbm] It specify to enable certain CPU features to use.
 • -cpu-disable-features [sse2;cx16;sahf;tbm] It specify to disable certain CPU features to use.
 • -cpu-features [+sse2,+cx16,+sahf,-tbm] It overwrites the CPU features to use.
-• -emit [llvm-bc|llvm-ir|asm|unopt-llvm-ir|unopt-llvm-bc|unopt-asm|obj|unchecked-ast|ast|tokens] Compile the code into specified representation.
-• -print [llvm-ir|unopt-llvm-ir|asm|unopt-asm|unchecked-ast|ast|tokens] Displays the final compilation on standard output.
+• -emit [llvm-bc|llvm-ir|asm|unopt-llvm-ir|unopt-llvm-bc|unopt-asm|obj|unchecked-pretty-ast|unchecked-ast|pretty-ast|ast|pretty-tokens|tokens] Compile the code into specified representation.
+• -print [llvm-ir|unopt-llvm-ir|asm|unopt-asm|unchecked-pretty-ast|unchecked-ast|pretty-ast|ast|pretty-tokens|tokens] Displays the final compilation on standard output.
 • -opt [O0|O1|O2|O3|Os|Oz] Optimization level.
 • -jit Enable the use of the JIT compiler for code execution.
 • -jit-libc [path/to/libc.so] Specify the C runtime to link for code execution via the JIT compiler.
@@ -140,7 +140,7 @@ Warning compiler flags:
 
 Other compiler flags:
 
-• --copy-output-to-clipboard Copy the total printable output of the compiler into the operating system clipboard. ``It only works using '-print' compiler flag.
+• --copy-output-to-clipboard Copy the total printable output of the compiler into the operating system clipboard. It only works using '-print' compiler flag.
 • --debug-clang-command Displays the generated command for Clang in the phase of linking.
 • --debug-gcc-command Displays the generated command for GCC in the phase of linking.
 • --export-compiler-errors Export compiler error diagnostics to files.

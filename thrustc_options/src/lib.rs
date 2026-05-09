@@ -82,8 +82,11 @@ pub enum EmitableUnit {
     Object,
     UnOptAssembly,
     Assembly,
-    UnCheckedAst,
+    UnCheckedAstPretty,
+    AstPretty,
     Ast,
+    UnCheckedAst,
+    TokensPretty,
     Tokens,
 }
 
@@ -93,9 +96,12 @@ pub enum PrintableUnit {
     LLVMIR,
     UnOptAssembly,
     Assembly,
+    TokensPretty,
     Tokens,
-    UnCheckedAst,
+    UnCheckedAstPretty,
+    AstPretty,
     Ast,
+    UnCheckedAst,
 }
 
 #[derive(Debug)]

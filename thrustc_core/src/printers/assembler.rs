@@ -58,7 +58,7 @@ pub fn print_llvm_assembler(
     let assembler_in_bytes: Vec<u8> = memory_buffer.as_slice().to_vec();
     let assembler: String = unsafe { String::from_utf8_unchecked(assembler_in_bytes) };
 
-    #[cfg(feature = "utils")]
+    #[cfg(feature = "extra_utilities")]
     {
         if compiler_options.need_copy_output_to_clipboard() {
             use clipboard::*;

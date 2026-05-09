@@ -58,7 +58,7 @@ pub fn print_llvm_ir(
         ),
     );
 
-    #[cfg(feature = "utils")]
+    #[cfg(feature = "extra_utilities")]
     {
         if compiler_options.need_copy_output_to_clipboard() {
             use clipboard::*;

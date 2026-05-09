@@ -203,7 +203,7 @@ pub fn show_help() -> ! {
             "{} {} [{}] {}\n",
             "•".bold(),
             "-emit".custom_color((141, 141, 142)).bold(),
-            "llvm-bc|llvm-ir|asm|unopt-llvm-ir|unopt-llvm-bc|unopt-asm|obj|unchecked-ast|ast|tokens",
+            "llvm-bc|llvm-ir|asm|unopt-llvm-ir|unopt-llvm-bc|unopt-asm|obj|unchecked-pretty-ast|unchecked-ast|pretty-ast|ast|pretty-tokens|tokens",
             "Compile the code into specified representation.",
         ),
     );
@@ -214,7 +214,7 @@ pub fn show_help() -> ! {
             "{} {} [{}] {}\n",
             "•".bold(),
             "-print".custom_color((141, 141, 142)).bold(),
-            "llvm-ir|unopt-llvm-ir|asm|unopt-asm|unchecked-ast|ast|tokens",
+            "llvm-ir|unopt-llvm-ir|asm|unopt-asm|unchecked-pretty-ast|unchecked-ast|pretty-ast|ast|pretty-tokens|tokens",
             "Displays the final compilation on standard output.",
         ),
     );
@@ -900,7 +900,7 @@ pub fn show_emission_help() -> ! {
             "-emit value; -emit=value; -emit:value;"
                 .custom_color((141, 141, 142))
                 .bold(),
-            "llvm-bc|llvm-ir|asm|unopt-llvm-ir|unopt-llvm-bc|unopt-asm|obj|tokens|unchecked-ast|ast",
+            "llvm-bc|llvm-ir|asm|unopt-llvm-ir|unopt-llvm-bc|unopt-asm|obj|unchecked-pretty-ast|unchecked-ast|pretty-ast|ast|pretty-tokens|tokens",
         ),
     );
 
@@ -979,8 +979,8 @@ pub fn show_emission_help() -> ! {
         &format!(
             "{} {} {}\n",
             "•".bold(),
-            "tokens".custom_color((141, 141, 142)).bold(),
-            "Emit the compiler lexical tokens.",
+            "unchecked-pretty-ast".custom_color((141, 141, 142)).bold(),
+            "Emit a pretty unchecked Abstract Syntax Tree before semantic analysis.",
         ),
     );
 
@@ -990,7 +990,17 @@ pub fn show_emission_help() -> ! {
             "{} {} {}\n",
             "•".bold(),
             "unchecked-ast".custom_color((141, 141, 142)).bold(),
-            "Emit the raw Abstract Syntax Tree before semantic analysis.",
+            "Emit a unchecked Abstract Syntax Tree before semantic analysis.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
+            "pretty-ast".custom_color((141, 141, 142)).bold(),
+            "Emit a pretty and validated Abstract Syntax Tree.",
         ),
     );
 
@@ -1000,7 +1010,27 @@ pub fn show_emission_help() -> ! {
             "{} {} {}\n",
             "•".bold(),
             "ast".custom_color((141, 141, 142)).bold(),
-            "Emit the validated and typed Abstract Syntax Tree.",
+            "Emit a validated and typed Abstract Syntax Tree.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
+            "pretty-tokens".custom_color((141, 141, 142)).bold(),
+            "Emit a pretty formated lexical tokens.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
+            "tokens".custom_color((141, 141, 142)).bold(),
+            "Emit the compiler lexical tokens.",
         ),
     );
 
@@ -1017,7 +1047,7 @@ pub fn show_printing_help() -> ! {
             "-print value; -print=value; -print:value;"
                 .custom_color((141, 141, 142))
                 .bold(),
-            "llvm-ir|unopt-llvm-ir|asm|unopt-asm|tokens|unchecked-ast|ast",
+            "llvm-ir|unopt-llvm-ir|asm|unopt-asm|unchecked-pretty-ast|unchecked-ast|pretty-ast|ast|pretty-tokens|tokens",
         ),
     );
 
@@ -1027,7 +1057,7 @@ pub fn show_printing_help() -> ! {
             "{} {} {}\n",
             "•".bold(),
             "llvm-ir".custom_color((141, 141, 142)).bold(),
-            "Print optimized LLVM Intermediate Representation.",
+            "Show on console the optimized LLVM Intermediate Representation.",
         ),
     );
 
@@ -1037,7 +1067,7 @@ pub fn show_printing_help() -> ! {
             "{} {} {}\n",
             "•".bold(),
             "unopt-llvm-ir".custom_color((141, 141, 142)).bold(),
-            "Print unoptimized LLVM IR before any optimization passes.",
+            "Show on console the unoptimized LLVM IR before any optimization passes.",
         ),
     );
 
@@ -1047,7 +1077,7 @@ pub fn show_printing_help() -> ! {
             "{} {} {}\n",
             "•".bold(),
             "asm".custom_color((141, 141, 142)).bold(),
-            "Print optimized target-specific assembly code.",
+            "Show on console the optimized target-specific assembly code.",
         ),
     );
 
@@ -1057,7 +1087,7 @@ pub fn show_printing_help() -> ! {
             "{} {} {}\n",
             "•".bold(),
             "unopt-asm".custom_color((141, 141, 142)).bold(),
-            "Print unoptimized assembly code before any optimizations.",
+            "Show on console the unoptimized assembly code before any optimizations.",
         ),
     );
 
@@ -1066,8 +1096,8 @@ pub fn show_printing_help() -> ! {
         &format!(
             "{} {} {}\n",
             "•".bold(),
-            "tokens".custom_color((141, 141, 142)).bold(),
-            "Print the compiler lexical tokens.",
+            "unchecked-pretty-ast".custom_color((141, 141, 142)).bold(),
+            "Show on console a unchecked pretty-formated Abstract Syntax Tree before semantic analysis.",
         ),
     );
 
@@ -1077,7 +1107,17 @@ pub fn show_printing_help() -> ! {
             "{} {} {}\n",
             "•".bold(),
             "unchecked-ast".custom_color((141, 141, 142)).bold(),
-            "Print the raw Abstract Syntax Tree before semantic analysis.",
+            "Show on console the unchecked Abstract Syntax Tree before semantic analysis.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
+            "pretty-ast".custom_color((141, 141, 142)).bold(),
+            "Show on console a typed, validated and pretty formated Abstract Syntax Tree.",
         ),
     );
 
@@ -1087,7 +1127,27 @@ pub fn show_printing_help() -> ! {
             "{} {} {}\n",
             "•".bold(),
             "ast".custom_color((141, 141, 142)).bold(),
-            "Print the typed and validated Abstract Syntax Tree.",
+            "Show on console a typed and validated Abstract Syntax Tree.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
+            "pretty-tokens".custom_color((141, 141, 142)).bold(),
+            "Show on console a pretty formated lexical tokens.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
+            "tokens".custom_color((141, 141, 142)).bold(),
+            "Show on console the lexical tokens.",
         ),
     );
 

@@ -192,11 +192,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-        if print::frontend_before(self, file, Emited::Tokens(&tokens)) {
+        if print::before_frontend(self, file, Emited::Tokens(&tokens)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if emit::frontend_before(self, build_dir, file, Emited::Tokens(&tokens)) {
+        if emit::before_frontend(self, build_dir, file, Emited::Tokens(&tokens)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -231,11 +231,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let ast: &[Ast] = parser_context.get_ast();
 
-        if emit::frontend_before(self, build_dir, file, Emited::Ast(ast)) {
+        if emit::before_frontend(self, build_dir, file, Emited::Ast(ast)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if print::frontend_before(self, file, Emited::Ast(ast)) {
+        if print::before_frontend(self, file, Emited::Ast(ast)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -263,11 +263,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return interrupt::archive_compilation_unit(self, file, file_time);
         }
 
-        if print::frontend_after(self, file, Emited::Ast(ast)) {
+        if print::after_frontend(self, file, Emited::Ast(ast)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if emit::frontend_after(self, build_dir, file, Emited::Ast(ast)) {
+        if emit::after_frontend(self, build_dir, file, Emited::Ast(ast)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -530,11 +530,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-        if print::frontend_before(self, file, Emited::Tokens(&tokens)) {
+        if print::before_frontend(self, file, Emited::Tokens(&tokens)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if emit::frontend_before(self, build_dir, file, Emited::Tokens(&tokens)) {
+        if emit::before_frontend(self, build_dir, file, Emited::Tokens(&tokens)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
@@ -567,11 +567,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let ast: &[Ast] = parser_context.get_ast();
 
-        if print::frontend_before(self, file, Emited::Ast(ast)) {
+        if print::before_frontend(self, file, Emited::Ast(ast)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if emit::frontend_before(self, build_dir, file, Emited::Ast(ast)) {
+        if emit::before_frontend(self, build_dir, file, Emited::Ast(ast)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
@@ -599,11 +599,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return interrupt::archive_compilation_unit_jit(self, file, file_time);
         }
 
-        if print::frontend_after(self, file, Emited::Ast(ast)) {
+        if print::after_frontend(self, file, Emited::Ast(ast)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if emit::frontend_after(self, build_dir, file, Emited::Ast(ast)) {
+        if emit::after_frontend(self, build_dir, file, Emited::Ast(ast)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 

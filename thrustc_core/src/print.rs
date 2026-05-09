@@ -93,16 +93,36 @@ pub fn llvm_after_optimization(
 }
 
 #[inline]
-pub fn frontend_before(
+pub fn before_frontend(
     compiler: &mut ThrustCompiler,
     file: &CompilationUnit,
     emited: Emited,
 ) -> bool {
     let options: &CompilerOptions = compiler.get_compilation_options();
 
+    if options.contains_printable(PrintableUnit::TokensPretty) {
+        if let Emited::Tokens(tokens) = emited {
+            if printers::tokens::print_to_stdout_pretty(options, tokens, file.get_name()).is_err() {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
     if options.contains_printable(PrintableUnit::Tokens) {
         if let Emited::Tokens(tokens) = emited {
-            if printers::tokens::print_to_stdout_fine(options, tokens, file.get_name()).is_err() {
+            if printers::tokens::print_to_stdout(options, tokens, file.get_name()).is_err() {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    if options.contains_printable(PrintableUnit::UnCheckedAstPretty) {
+        if let Emited::Ast(ast) = emited {
+            if printers::ast::print_to_stdout_pretty(options, ast, file.get_name()).is_err() {
                 return false;
             }
 
@@ -112,7 +132,7 @@ pub fn frontend_before(
 
     if options.contains_printable(PrintableUnit::UnCheckedAst) {
         if let Emited::Ast(ast) = emited {
-            if printers::ast::print_to_stdout_pretty(options, ast, file.get_name()).is_err() {
+            if printers::ast::print_to_stdout(options, ast, file.get_name()).is_err() {
                 return false;
             }
 
@@ -124,16 +144,36 @@ pub fn frontend_before(
 }
 
 #[inline]
-pub fn frontend_after(
+pub fn after_frontend(
     compiler: &mut ThrustCompiler,
     file: &CompilationUnit,
     emited: Emited,
 ) -> bool {
     let options: &CompilerOptions = compiler.get_compilation_options();
 
+    if options.contains_printable(PrintableUnit::TokensPretty) {
+        if let Emited::Tokens(tokens) = emited {
+            if printers::tokens::print_to_stdout_pretty(options, tokens, file.get_name()).is_err() {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
     if options.contains_printable(PrintableUnit::Tokens) {
         if let Emited::Tokens(tokens) = emited {
-            if printers::tokens::print_to_stdout_fine(options, tokens, file.get_name()).is_err() {
+            if printers::tokens::print_to_stdout(options, tokens, file.get_name()).is_err() {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    if options.contains_printable(PrintableUnit::AstPretty) {
+        if let Emited::Ast(ast) = emited {
+            if printers::ast::print_to_stdout_pretty(options, ast, file.get_name()).is_err() {
                 return false;
             }
 
@@ -143,7 +183,7 @@ pub fn frontend_after(
 
     if options.contains_printable(PrintableUnit::Ast) {
         if let Emited::Ast(ast) = emited {
-            if printers::ast::print_to_stdout_pretty(options, ast, file.get_name()).is_err() {
+            if printers::ast::print_to_stdout(options, ast, file.get_name()).is_err() {
                 return false;
             }
 
