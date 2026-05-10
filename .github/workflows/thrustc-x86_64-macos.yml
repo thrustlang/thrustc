@@ -56,6 +56,11 @@ jobs:
           sudo rm -rf /Library/Developer/CommandLineTools/usr/lib/clang
           sudo xcode-select --reset
 
+      - name: Installing Rust
+        run: |
+          curl --proto '=https' --tlsv1.3 https://sh.rustup.rs -sSf | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       - name: Installing dependencies
         run: |
           brew install cmake ninja llvm upx
