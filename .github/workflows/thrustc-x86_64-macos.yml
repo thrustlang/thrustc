@@ -61,7 +61,7 @@ jobs:
 
       - name: Installing dependencies
         run: |
-          brew install cmake ninja
+          brew install cmake ninja zstd
           brew install llvm@18 
           echo "$(brew --prefix llvm@18)/bin" >> $GITHUB_PATH
 
