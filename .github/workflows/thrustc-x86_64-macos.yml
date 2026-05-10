@@ -64,6 +64,7 @@ jobs:
       - name: Installing dependencies
         run: |
           brew install cmake ninja llvm upx
+          echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
 
       - name: Cloning the Compiler Dependency Builder
         run: |
