@@ -48,6 +48,12 @@ jobs:
 
           echo "Version changelog loaded successfully."
 
+      - name: Removing pre-installed LLVM/Clang versions
+        run: |
+          for pkg in $(brew list | grep -E '^llvm(@[0-9]+)?$|^clang-format(@[0-9]+)?$'); do
+            brew uninstall --ignore-dependencies "$pkg" || true
+          done
+
       - name: Installing Rust
         run: |
           curl --proto '=https' --tlsv1.3 https://sh.rustup.rs -sSf | sh -s -- -y
@@ -56,6 +62,8 @@ jobs:
       - name: Installing dependencies
         run: |
           brew install cmake ninja
+          brew install llvm@18 
+          echo "$(brew --prefix llvm@18)/bin" >> $GITHUB_PATH
 
       - name: Cloning the Compiler Dependency Builder
         run: |
@@ -63,9 +71,9 @@ jobs:
 
       - name: Running the Compiler Dependency Builder
         run: |
-          LLVM_PREFIX=$(brew --prefix llvm@17)
+          LLVM_PREFIX=$(brew --prefix llvm@18)
           SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
-          
+
           export LLVM_PREFIX
           export SDKROOT
 
