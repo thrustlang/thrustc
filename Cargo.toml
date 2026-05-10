@@ -89,7 +89,7 @@ opt-level = 'z'
 
 [profile.release]
 incremental = true
-opt-level = 'z'
+opt-level = 3
 codegen-units = 1
 lto = false
 panic = "abort"
