@@ -92,6 +92,7 @@ jobs:
 
       - name: Building Thrust Compiler
         run: |
+          export LIBRARY_PATH="$(brew --prefix zstd)/lib:${LIBRARY_PATH:-}"
           cargo build --release
         working-directory: thrustc
 
