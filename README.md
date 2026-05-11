@@ -7,7 +7,7 @@
 The **Thrust Compiler** is a compiler that transfers the source code of Thrust files directly to the specified destination. The process includes static type analysis, code generation, destination-specific optimizations, machine-specific code compilation, and finally, emitting or linking.
 
 > [!IMPORTANT]  
-> The compiler is in an early development phase
+> The compiler is in an early development phase. It still hasn't made the major releases.
 
 ## Getting Started
 
@@ -32,6 +32,8 @@ $ cd compiler-dependency-builder
 $ cargo run 
 ```
 
+> A high-level command line check out localized on: https://github.com/thrustlang/compiler-dependency-builder/blob/master/README.md
+
 You must first clone the repository and access it locally. 
 
 ```console
@@ -43,27 +45,27 @@ $ cd thrustc
 
 Among other obligatory dependencies we need also other libraries.
 
-You must install the Cargo dependencies:
+You must install each Cargo dependency automatically:
 
-#### Bash (Unix)
+#### Bash
 
 ```console
 sh scripts/cargo-dependencies.sh
 ```
 
-#### Fish (Unix)
+#### Fish
 
 ```console
 fish scripts/cargo-dependencies.fish
 ```
 
-#### CMD (Windows)
+#### CMD
 
 ```console
 scripts\cargo-dependencies.bat
 ```
 
-#### PowerShell (Windows)
+#### PowerShell
 
 ```console
 .\scripts\cargo-dependencies.ps1
