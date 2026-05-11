@@ -39,6 +39,36 @@ $ git clone --depth=1 https://github.com/thrustlang/thrustc
 $ cd thrustc
 ```
 
+### Build Cargo dependencies 
+
+Among other obligatory dependencies we need also other libraries.
+
+You must install the Cargo dependencies:
+
+#### Bash (Unix)
+
+```console
+sh scripts/cargo-dependencies.sh
+```
+
+#### Fish (Unix)
+
+```console
+fish scripts/cargo-dependencies.fish
+```
+
+#### CMD (Windows)
+
+```console
+scripts\cargo-dependencies.bat
+```
+
+#### PowerShell (Windows)
+
+```console
+.\scripts\cargo-dependencies.ps1
+```
+
 ### Build the Compiler
 
 Now you need to have Rust installed with a recent version.
