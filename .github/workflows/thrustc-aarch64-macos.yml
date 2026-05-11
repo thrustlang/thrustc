@@ -1,4 +1,4 @@
-name: Thrust Compiler (macOS - latest)
+name: Thrust Compiler (macOS - Aarch64)
 on:
   push:
     tags:
