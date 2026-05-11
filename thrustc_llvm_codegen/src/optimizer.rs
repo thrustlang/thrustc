@@ -115,7 +115,7 @@ impl LLVMOptimizer<'_, '_> {
                 .get_module()
                 .run_passes(custom_passes, machine, options)
             {
-                thrustc_logging::print_warn(
+                thrustc_logging::print_warning(
                     thrustc_logging::LoggingType::Warning,
                     &format!(
                         "Some optimizations passes couldn't be performed because: '{}'.",
@@ -132,7 +132,7 @@ impl LLVMOptimizer<'_, '_> {
                         self.get_module()
                             .run_passes("default<O1>", machine, options)
                     {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             thrustc_logging::LoggingType::Warning,
                             &format!(
                                 "Some optimizations passes couldn't be performed because: '{}'.",
@@ -147,7 +147,7 @@ impl LLVMOptimizer<'_, '_> {
                         self.get_module()
                             .run_passes("default<O2>", machine, options)
                     {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             thrustc_logging::LoggingType::Warning,
                             &format!(
                                 "Some optimizations passes couldn't be performed because: '{}'.",
@@ -162,7 +162,7 @@ impl LLVMOptimizer<'_, '_> {
                         self.get_module()
                             .run_passes("default<O3>", machine, options)
                     {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             thrustc_logging::LoggingType::Warning,
                             &format!(
                                 "Some optimizations passes couldn't be performed because: '{:?}'.",
@@ -177,7 +177,7 @@ impl LLVMOptimizer<'_, '_> {
                         self.get_module()
                             .run_passes("default<Os>", machine, options)
                     {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             thrustc_logging::LoggingType::Warning,
                             &format!(
                                 "Some optimizations passes couldn't be performed because: '{:?}'.",
@@ -192,7 +192,7 @@ impl LLVMOptimizer<'_, '_> {
                         self.get_module()
                             .run_passes("default<Oz>", machine, options)
                     {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             thrustc_logging::LoggingType::Warning,
                             &format!(
                                 "Some optimizations passes couldn't be performed because: '{:?}'.",
@@ -1327,7 +1327,7 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
                     };
     
                 if target_triple.get_arch().contains("wasm") && merge_strategy != ComdatSelectionKind::Any {
-                    thrustc_logging::print_warn(
+                    thrustc_logging::print_warning(
                         thrustc_logging::LoggingType::Warning,
                         "WebAssembly target only support the any mode for the symbol linkage strategy!",
                     );
@@ -1336,7 +1336,7 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
                 }
 
                 if target_triple.is_object_format_elf() && merge_strategy != ComdatSelectionKind::Any && merge_strategy != ComdatSelectionKind::NoDuplicates {
-                    thrustc_logging::print_warn(
+                    thrustc_logging::print_warning(
                         thrustc_logging::LoggingType::Warning,
                         "ELF-based target only support the any and noduplicates modes for the symbol linkage strategy!",
                     );
@@ -1349,7 +1349,7 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
     
                     let c_string_str: CString =
                         CString::new(cleaned.as_ref()).unwrap_or_else(|error| {
-                            thrustc_logging::print_warn(
+                            thrustc_logging::print_warning(
                                 thrustc_logging::LoggingType::Warning,
                                 &format!(
                                     "Failed to prepare the object-matching linkage configurator for the upcoming binding phase due '{}'.",

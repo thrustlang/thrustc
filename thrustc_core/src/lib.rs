@@ -55,6 +55,7 @@ use thrustc_llvm_codegen::optimizer::LLVMOptimizationConfig;
 use thrustc_llvm_codegen::optimizer::LLVMOptimizerFlags;
 use thrustc_llvm_codegen::optimizer::LLVMOptimizerPasses;
 use thrustc_llvm_intrinsic_checker::LLVMIntrinsicChecker;
+use thrustc_options::CompilationPhase;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
 use thrustc_options::Emited;
@@ -116,7 +117,7 @@ impl ThrustCompiler<'_> {
                 return self.compile_aot_llvm();
             }
         } else {
-            thrustc_logging::print_warn(
+            thrustc_logging::print_warning(
                 thrustc_logging::LoggingType::Warning,
                 "Unrecognizable code generator selection. You should select either LLVM or GCC.",
             );
@@ -187,7 +188,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let build_dir: &std::path::PathBuf = self.options.get_build_dir();
 
         let Ok(tokens) = Lexer::lex(file, self.options) else {
-            return interrupt::archive_compilation_unit(self, file, file_time);
+            return interrupt::archive_compilation_module(self, file, file_time);
         };
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
@@ -200,6 +201,10 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return finisher::archive_compilation(self, file_time, file);
         }
 
+        if self.options.stop_compilation_at(CompilationPhase::Lexer) {
+            return finisher::archive_compilation(self, file_time, file);
+        }
+
         let mut preprocessor: Preprocessor = Preprocessor::new();
         let modules: Result<&[thrustc_preprocessor::module::Module], ()> =
             preprocessor.generate_modules(&tokens, self.options, file);
@@ -209,7 +214,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
         if modules.is_err() {
-            return interrupt::archive_compilation_unit(self, file, file_time);
+            return interrupt::archive_compilation_module(self, file, file_time);
         }
 
         let modules: &[thrustc_preprocessor::module::Module] = modules.map_err(|_| {
@@ -225,7 +230,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let parser: (ParserContext, bool) = Parser::parse(&tokens, modules, file, self.options);
 
         let parser_result: (ParserContext, bool) = parser;
-        let parser_throwed_errors: bool = parser_result.1;
+        let parser_fail: bool = parser_result.1;
 
         let parser_context: ParserContext = parser_result.0;
 
@@ -239,28 +244,60 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        let semantic_analysis_throwed_errors: bool =
-            SemanticAnalysis::new(ast, file, self.options).analyze(parser_throwed_errors);
-
-        self.update_thrustc_frontend_time(frontend_time.elapsed());
-
-        if parser_throwed_errors || semantic_analysis_throwed_errors {
+        if self.options.stop_compilation_at(CompilationPhase::Parser) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        let mut intrinsic_checker: LLVMIntrinsicChecker<'_> =
-            LLVMIntrinsicChecker::new(ast, file, self.options);
+        {
+            let semantic_analysis_fail: either::Either<bool, ()> =
+                SemanticAnalysis::new(ast, file, self.options).analyze(parser_fail);
 
-        let mut call_conv_checker: LLVMCallConventionsChecker<'_> =
-            LLVMCallConventionsChecker::new(ast, self.get_compilation_options(), file);
+            self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-        let intrinsic_result: bool = intrinsic_checker.analyze();
-        let call_conv_result: bool = call_conv_checker.analyze();
+            match semantic_analysis_fail {
+                either::Either::Left(semantic_analysis_fail) => {
+                    if parser_fail || semantic_analysis_fail {
+                        return interrupt::archive_compilation_module(self, file, file_time);
+                    }
+                }
+                either::Either::Right(()) => {
+                    return finisher::archive_compilation(self, file_time, file);
+                }
+            }
+        }
 
-        self.update_thrustc_frontend_time(frontend_time.elapsed());
+        {
+            let mut intrinsic_checker: LLVMIntrinsicChecker<'_> =
+                LLVMIntrinsicChecker::new(ast, file, self.options);
 
-        if intrinsic_result || call_conv_result {
-            return interrupt::archive_compilation_unit(self, file, file_time);
+            let mut call_conv_checker: LLVMCallConventionsChecker<'_> =
+                LLVMCallConventionsChecker::new(ast, self.options, file);
+
+            let intrinsic_checker_fail: bool = intrinsic_checker.analyze();
+
+            self.update_thrustc_frontend_time(frontend_time.elapsed());
+
+            if self
+                .options
+                .stop_compilation_at(CompilationPhase::LLVMIntrinsicChecker)
+            {
+                return finisher::archive_compilation(self, file_time, file);
+            }
+
+            let call_convention_checker_fail: bool = call_conv_checker.analyze();
+
+            self.update_thrustc_frontend_time(frontend_time.elapsed());
+
+            if self
+                .options
+                .stop_compilation_at(CompilationPhase::LLVMCallConventionChecker)
+            {
+                return finisher::archive_compilation(self, file_time, file);
+            }
+
+            if intrinsic_checker_fail || call_convention_checker_fail {
+                return interrupt::archive_compilation_module(self, file, file_time);
+            }
         }
 
         if print::after_frontend(self, file, Emited::Ast(ast)) {
@@ -359,6 +396,13 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             file,
             file_time,
         )? {
+            return finisher::archive_compilation(self, file_time, file);
+        }
+
+        if self
+            .options
+            .stop_compilation_at(CompilationPhase::LLVMCodegen)
+        {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -497,7 +541,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
             std::process::exit(llvm_jit_result)
         } else {
-            thrustc_logging::print_warn(
+            thrustc_logging::print_warning(
                 thrustc_logging::LoggingType::Warning,
                 "There's nothing to compile for the JIT compiler. Skipping compilation.",
             );
@@ -525,7 +569,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let build_dir: &std::path::PathBuf = self.options.get_build_dir();
 
         let Ok(tokens) = Lexer::lex(file, self.options) else {
-            return interrupt::archive_compilation_unit_jit(self, file, file_time);
+            return interrupt::archive_compilation_module_jit(self, file, file_time);
         };
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
@@ -538,6 +582,10 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
+        if self.options.stop_compilation_at(CompilationPhase::Lexer) {
+            return finisher::archive_compilation_module_jit(self, file_time, file);
+        }
+
         let mut preprocessor: Preprocessor = Preprocessor::new();
         let modules: Result<&[thrustc_preprocessor::module::Module], ()> =
             preprocessor.generate_modules(&tokens, self.options, file);
@@ -545,7 +593,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
         if modules.is_err() {
-            return interrupt::archive_compilation_unit_jit(self, file, file_time);
+            return interrupt::archive_compilation_module_jit(self, file, file_time);
         }
 
         let modules: &[thrustc_preprocessor::module::Module] = modules.map_err(|_| {
@@ -561,7 +609,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let parser: (ParserContext, bool) = Parser::parse(&tokens, modules, file, self.options);
 
         let parser_result: (ParserContext, bool) = parser;
-        let parser_throwed_errors: bool = parser_result.1;
+        let parser_fail: bool = parser_result.1;
 
         let parser_context: ParserContext = parser_result.0;
 
@@ -575,28 +623,58 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        let semantic_analysis_throwed_errors: bool =
-            SemanticAnalysis::new(ast, file, self.options).analyze(parser_throwed_errors);
-
-        self.update_thrustc_frontend_time(frontend_time.elapsed());
-
-        if parser_throwed_errors || semantic_analysis_throwed_errors {
+        if self.options.stop_compilation_at(CompilationPhase::Parser) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        let mut intrinsic_checker: LLVMIntrinsicChecker<'_> =
-            LLVMIntrinsicChecker::new(ast, file, self.options);
+        {
+            let semantic_analysis_fail: either::Either<bool, ()> =
+                SemanticAnalysis::new(ast, file, self.options).analyze(parser_fail);
 
-        let mut call_conv_checker: LLVMCallConventionsChecker<'_> =
-            LLVMCallConventionsChecker::new(ast, self.get_compilation_options(), file);
+            self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-        let intrinsic_result: bool = intrinsic_checker.analyze();
-        let call_conv_result: bool = call_conv_checker.analyze();
+            match semantic_analysis_fail {
+                either::Either::Left(semantic_analysis_fail) => {
+                    if parser_fail || semantic_analysis_fail {
+                        return interrupt::archive_compilation_module_jit(self, file, file_time);
+                    }
+                }
+                either::Either::Right(()) => {
+                    return finisher::archive_compilation_module_jit(self, file_time, file);
+                }
+            }
+        }
 
-        self.update_thrustc_frontend_time(frontend_time.elapsed());
+        {
+            let mut intrinsic_checker: LLVMIntrinsicChecker<'_> =
+                LLVMIntrinsicChecker::new(ast, file, self.options);
 
-        if intrinsic_result || call_conv_result {
-            return interrupt::archive_compilation_unit_jit(self, file, file_time);
+            let mut call_conv_checker: LLVMCallConventionsChecker<'_> =
+                LLVMCallConventionsChecker::new(ast, self.options, file);
+
+            let intrinsic_checker_fail: bool = intrinsic_checker.analyze();
+
+            if self
+                .options
+                .stop_compilation_at(CompilationPhase::LLVMIntrinsicChecker)
+            {
+                return finisher::archive_compilation_module_jit(self, file_time, file);
+            }
+
+            let call_convention_fail: bool = call_conv_checker.analyze();
+
+            if self
+                .options
+                .stop_compilation_at(CompilationPhase::LLVMCallConventionChecker)
+            {
+                return finisher::archive_compilation_module_jit(self, file_time, file);
+            }
+
+            self.update_thrustc_frontend_time(frontend_time.elapsed());
+
+            if intrinsic_checker_fail || call_convention_fail {
+                return interrupt::archive_compilation_module_jit(self, file, file_time);
+            }
         }
 
         if print::after_frontend(self, file, Emited::Ast(ast)) {
@@ -687,6 +765,13 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             file,
             file_time,
         )? {
+            return finisher::archive_compilation_module_jit(self, file_time, file);
+        }
+
+        if self
+            .options
+            .stop_compilation_at(CompilationPhase::LLVMCodegen)
+        {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 

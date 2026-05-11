@@ -106,7 +106,7 @@ impl Diagnostician {
                     let base_path: PathBuf = self.get_config().export_path().join("errors");
 
                     std::fs::create_dir_all(&base_path).unwrap_or_else(|_| {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             LoggingType::Warning,
                             "Unable to create errors diagnostics path for export purposes!",
                         );
@@ -145,7 +145,7 @@ impl Diagnostician {
                     let base_path: PathBuf = self.get_config().export_path().join("warnings");
 
                     std::fs::create_dir_all(&base_path).unwrap_or_else(|_| {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             LoggingType::Warning,
                             "Unable to create warnings diagnostics path for export purposes!",
                         );

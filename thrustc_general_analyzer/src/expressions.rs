@@ -29,10 +29,10 @@ use thrustc_typesystem::{
     traits::{TypeExtensions, TypePointerExtensions},
 };
 
-use crate::Analyzer;
+use crate::GeneralAnalyzer;
 
 pub fn validate<'analyzer>(
-    analyzer: &mut Analyzer<'analyzer>,
+    analyzer: &mut GeneralAnalyzer<'analyzer>,
     node: &'analyzer Ast,
 ) -> Result<(), CompilationIssue> {
     match node {

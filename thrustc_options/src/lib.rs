@@ -40,6 +40,8 @@ pub struct CompilerOptions {
 
     disable_all_warnings: bool,
 
+    stop_compilation_at: CompilationPhase,
+
     emit: Vec<EmitableUnit>,
     printable: Vec<PrintableUnit>,
 
@@ -110,6 +112,24 @@ pub enum Emited<'emited> {
     Ast(&'emited [Ast<'emited>]),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CompilationPhase {
+    None,
+
+    Lexer,
+    Parser,
+    Scoper,
+    AstVerifier,
+    TypeChecker,
+    GeneralAnalyzer,
+    AttributeChecker,
+    Linter,
+
+    LLVMIntrinsicChecker,
+    LLVMCallConventionChecker,
+    LLVMCodegen,
+}
+
 impl CompilationUnit {
     #[inline]
     pub fn new(name: String, path: PathBuf, content: String, base_name: String) -> Self {
@@ -138,6 +158,7 @@ impl CompilerOptions {
             build_dir: "build".into(),
 
             disable_all_warnings: false,
+            stop_compilation_at: CompilationPhase::None,
 
             enable_ansi_colors: false,
             omit_default_optimizations: false,
@@ -173,7 +194,7 @@ impl CompilerOptions {
         base_name: String,
     ) {
         if self.files.iter().any(|file| file.path == path) {
-            thrustc_logging::print_warn(
+            thrustc_logging::print_warning(
                 LoggingType::Warning,
                 &format!("File skipped due to repetition '{}'.", path.display()),
             );
@@ -278,6 +299,11 @@ impl CompilerOptions {
     #[inline]
     pub fn set_compiler_tools_path(&mut self, path: PathBuf) {
         self.compiler_tools_path = path;
+    }
+
+    #[inline]
+    pub fn set_stop_compilation_at(&mut self, phase: CompilationPhase) {
+        self.stop_compilation_at = phase;
     }
 
     #[inline]
@@ -404,6 +430,11 @@ impl CompilerOptions {
     #[inline]
     pub fn get_was_printed(&self) -> bool {
         !self.printable.is_empty()
+    }
+
+    #[inline]
+    pub fn stop_compilation_at(&self, phase: CompilationPhase) -> bool {
+        self.stop_compilation_at == phase
     }
 
     #[inline]

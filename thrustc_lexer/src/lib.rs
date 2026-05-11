@@ -260,7 +260,7 @@ impl Lexer {
             return String::from_iter(chars);
         }
 
-        thrustc_logging::print_warn(LoggingType::Warning, "Couldn't get some lexeme.");
+        thrustc_logging::print_warning(LoggingType::Warning, "Couldn't get some token lexeme.");
         String::default()
     }
 }

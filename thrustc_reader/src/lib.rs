@@ -29,7 +29,7 @@ use thrustc_logging::LoggingType;
 pub fn get_file_source_code(file_path: &std::path::Path) -> String {
     if let Ok(total_lines) = self::count_lines_exact(file_path) {
         if total_lines > 100_000 {
-            thrustc_logging::print_warn(
+            thrustc_logging::print_warning(
                 LoggingType::Warning,
                 &format!(
                     "'{}' exceeds 100000 lines. You should split it into as a minimal two diferent files.",

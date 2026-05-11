@@ -11,3 +11,4 @@ repository.workspace = true
 
 [dependencies]
 thrustc_logging = { path = "../thrustc_logging" }
+thrustc_constants = { path = "../thrustc_constants" }

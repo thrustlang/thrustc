@@ -51,7 +51,7 @@ pub fn llvm_after_optimization(
                 ),
             );
 
-            interrupt::archive_compilation_unit(compiler, file, file_time)?;
+            interrupt::archive_compilation_module(compiler, file, file_time)?;
         }
 
         return Ok(true);
@@ -62,7 +62,7 @@ pub fn llvm_after_optimization(
             emitters::llvmir::emit_llvm_ir(compiler, llvm_module, build_dir, file.get_name(), false)
         {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, &error.to_string());
-            interrupt::archive_compilation_unit(compiler, file, file_time)?;
+            interrupt::archive_compilation_module(compiler, file, file_time)?;
         }
 
         return Ok(true);
@@ -78,7 +78,7 @@ pub fn llvm_after_optimization(
             false,
         ) {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, error);
-            interrupt::archive_compilation_unit(compiler, file, file_time)?;
+            interrupt::archive_compilation_module(compiler, file, file_time)?;
         };
 
         return Ok(true);
@@ -94,7 +94,7 @@ pub fn llvm_after_optimization(
             false,
         ) {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, &error.to_string());
-            interrupt::archive_compilation_unit(compiler, file, file_time)?;
+            interrupt::archive_compilation_module(compiler, file, file_time)?;
         }
 
         return Ok(true);
@@ -118,7 +118,7 @@ pub fn llvm_before_optimization(
             emitters::llvmir::emit_llvm_ir(compiler, llvm_module, build_dir, file.get_name(), true)
         {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, &error.to_string());
-            interrupt::archive_compilation_unit(compiler, file, file_time)?;
+            interrupt::archive_compilation_module(compiler, file, file_time)?;
         }
 
         return Ok(true);
@@ -139,7 +139,7 @@ pub fn llvm_before_optimization(
                     file.get_path().display()
                 ),
             );
-            interrupt::archive_compilation_unit(compiler, file, file_time)?;
+            interrupt::archive_compilation_module(compiler, file, file_time)?;
         }
 
         return Ok(true);
@@ -155,7 +155,7 @@ pub fn llvm_before_optimization(
             true,
         ) {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, error);
-            interrupt::archive_compilation_unit(compiler, file, file_time)?;
+            interrupt::archive_compilation_module(compiler, file, file_time)?;
         }
 
         return Ok(true);

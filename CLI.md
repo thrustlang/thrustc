@@ -38,6 +38,11 @@ Compiler flags:
 • -emit [llvm-bc|llvm-ir|asm|unopt-llvm-ir|unopt-llvm-bc|unopt-asm|obj|unchecked-pretty-ast|unchecked-ast|pretty-ast|ast|pretty-tokens|tokens] Compile the code into specified representation.
 • -print [llvm-ir|unopt-llvm-ir|asm|unopt-asm|unchecked-pretty-ast|unchecked-ast|pretty-ast|ast|pretty-tokens|tokens] Displays the final compilation on standard output.
 • -opt [O0|O1|O2|O3|Os|Oz] Optimization level.
+• -stop-at [lexing|parsing|scope-analysis|ast-verification|type-checking|general-analysis|attribute-checking|linter|compiler-intrinsic-checking|compiler-callconventions-checking|codegen] Stop the compilation at specific stage.
+• -reloc-model [static|pic|dynamic] Indicate how references to memory addresses and linkage symbols are handled.
+• -code-model [small|medium|large|kernel] Define how code is organized and accessed at machine code level.
+• -macos-version [15.0.0] Specify the MacOS SDK version.
+• -ios-version [17.4.0] Specify the iOS SDK version.
 • -jit Enable the use of the JIT compiler for code execution.
 • -jit-libc [path/to/libc.so] Specify the C runtime to link for code execution via the JIT compiler.
 • -jit-link [path/to/raylib.so] Specify, add, and link an external dynamic library for code execution via the JIT compiler.
@@ -54,11 +59,7 @@ Compiler flags:
 • --no-sanitize [bounds;coverage] Modifies certain code emissions for the selected sanitizer.
 • --opt-passes [-p{passname,passname}] Pass a list of custom optimization passes. For more information, see: 'https://releases.llvm.org/17.0.1/docs/CommandGuide/opt.html#cmdoption-opt-passname'.
 • --modificator-passes [loopvectorization;loopunroll;loopinterleaving;loopsimplifyvectorization;mergefunctions;callgraphprofile;forgetallscevinloopunroll;licmmssaaccpromcap=0;licmmssaoptcap=0;] Pass a list of custom modificator optimization passes.
-• --reloc-model [static|pic|dynamic] Indicate how references to memory addresses and linkage symbols are handled.
-• --code-model [small|medium|large|kernel] Define how code is organized and accessed at machine code level.
 • --target-triple-darwin-variant [arm64-apple-ios15.0-macabi] Specify the darwin target variant triple.
-• --macos-version [15.0.0] Specify the MacOS SDK version.
-• --ios-version [17.4.0] Specify the iOS SDK version.
 • --enable-ansi-color It allows ANSI color formatting in compiler diagnostics.
 
 Disable compiler flags:

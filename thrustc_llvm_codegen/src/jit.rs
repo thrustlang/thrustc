@@ -171,7 +171,7 @@ impl<'ctx> LLVMJITCompiler<'ctx> {
                         });
                 }
                 Err(e) => {
-                    thrustc_logging::print_warn(
+                    thrustc_logging::print_warning(
                         thrustc_logging::LoggingType::Warning,
                         &format!(
                             "The dynamic library '{}' can't be loaded: '{}'.",

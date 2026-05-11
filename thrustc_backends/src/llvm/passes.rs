@@ -51,7 +51,7 @@ impl LLVMModificatorPasses {
                         Ok(cap) => {
                             passes.push(LLVMModificatorPasses::LicmMssaNoAccForPromotionCap(cap))
                         }
-                        Err(_) => thrustc_logging::print_warn(
+                        Err(_) => thrustc_logging::print_warning(
                             LoggingType::Warning,
                             &format!(
                                 "Invalid cap value for LicmMssaNoAccForPromotionCap: '{}'",
@@ -62,15 +62,18 @@ impl LLVMModificatorPasses {
 
                     "licmmssaoptcap" => match value.parse::<u32>() {
                         Ok(cap) => passes.push(LLVMModificatorPasses::LicmMssaOptCap(cap)),
-                        Err(_) => thrustc_logging::print_warn(
+                        Err(_) => thrustc_logging::print_warning(
                             LoggingType::Warning,
                             &format!("Invalid cap value for LicmMssaOptCap: '{}'", value),
                         ),
                     },
 
-                    _ => thrustc_logging::print_warn(
+                    _ => thrustc_logging::print_warning(
                         LoggingType::Warning,
-                        &format!("Unknown parameterized LLVM pass: '{}={}'", key, value),
+                        &format!(
+                            "Unknown parameterized LLVM optimization pass: '{}={}'",
+                            key, value
+                        ),
                     ),
                 }
             } else {
@@ -87,7 +90,7 @@ impl LLVMModificatorPasses {
                         passes.push(LLVMModificatorPasses::ForgetAllScevInLoopUnroll)
                     }
 
-                    _ => thrustc_logging::print_warn(
+                    _ => thrustc_logging::print_warning(
                         LoggingType::Warning,
                         &format!("Unknown LLVM modificator pass: '{}'", pass),
                     ),

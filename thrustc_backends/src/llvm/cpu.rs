@@ -83,7 +83,7 @@ impl LLVMTargetCPU {
 
         for supposed_to_be_replaced in blacklist.iter() {
             if !changed.contains(supposed_to_be_replaced) {
-                thrustc_logging::print_warn(
+                thrustc_logging::print_warning(
                     thrustc_logging::LoggingType::Warning,
                     &format!(
                         "Unable to remove '{}' as a cpu feature, it doesn't exist or match differently.",
@@ -119,7 +119,7 @@ impl LLVMTargetCPU {
 
         for supposed_to_be_replaced in blacklist.iter() {
             if !changed.contains(supposed_to_be_replaced) {
-                thrustc_logging::print_warn(
+                thrustc_logging::print_warning(
                     thrustc_logging::LoggingType::Warning,
                     &format!(
                         "Unable to add '{}' as a cpu feature, it doesn't exist or match differently.",

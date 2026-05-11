@@ -47,7 +47,7 @@ pub fn print_debug(ltype: LoggingType, msg: &str) {
 }
 
 #[inline]
-pub fn print_warn(ltype: LoggingType, msg: &str) {
+pub fn print_warning(ltype: LoggingType, msg: &str) {
     let _ = io::stderr().write_all(format!("{} {}", ltype.as_styled(), msg).as_bytes());
 }
 

@@ -327,9 +327,12 @@ impl CompilationIssueCode {
         COMPILATION_ISSUE_CODE_EXPLANATIONS
             .get(self)
             .unwrap_or_else(|| {
-                thrustc_logging::print_warn(
+                thrustc_logging::print_warning(
                     LoggingType::Warning,
-                    "Unable to get the properly issue explanation.",
+                    &format!(
+                        "Unable to get the properly '{}' issue explanation.",
+                        self.to_title()
+                    ),
                 );
 
                 &""

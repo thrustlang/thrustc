@@ -1,5 +1,5 @@
 [package]
-name = "thrustc_analyzer"
+name = "thrustc_general_analyzer"
 description.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -17,19 +17,19 @@
 
 */
 
-use thrustc_analyzer::Analyzer;
 use thrustc_ast::Ast;
 use thrustc_ast_verifier::AstVerifier;
 use thrustc_attribute_checker::AttributeChecker;
+use thrustc_general_analyzer::GeneralAnalyzer;
 use thrustc_linter::Linter;
-use thrustc_options::{CompilationUnit, CompilerOptions};
+use thrustc_options::{CompilationPhase, CompilationUnit, CompilerOptions};
 use thrustc_scoper::Scoper;
 use thrustc_typechecker::TypeChecker;
 
 #[derive(Debug)]
 pub struct SemanticAnalysis<'semantic_analyzer> {
     type_checker: TypeChecker<'semantic_analyzer>,
-    analyzer: Analyzer<'semantic_analyzer>,
+    general_analyzer: GeneralAnalyzer<'semantic_analyzer>,
     attr_checker: AttributeChecker<'semantic_analyzer>,
     scoper: Scoper<'semantic_analyzer>,
     verifier: AstVerifier<'semantic_analyzer>,
@@ -46,7 +46,7 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
         options: &'semantic_analyzer CompilerOptions,
     ) -> Self {
         let type_checker: TypeChecker<'_> = TypeChecker::new(ast, file, options);
-        let analyzer: Analyzer<'_> = Analyzer::new(ast, file, options);
+        let general_analyzer: GeneralAnalyzer<'_> = GeneralAnalyzer::new(ast, file, options);
         let attr_checker: AttributeChecker<'_> = AttributeChecker::new(ast, file, options);
         let scoper: Scoper<'_> = Scoper::new(ast, file, options);
         let verifier: AstVerifier<'_> = AstVerifier::new(ast, file, options);
@@ -54,7 +54,7 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
 
         Self {
             type_checker,
-            analyzer,
+            general_analyzer,
             attr_checker,
             scoper,
             verifier,
@@ -66,39 +66,77 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
 }
 
 impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
-    pub fn analyze(&mut self, parser_throwed_errors: bool) -> bool {
+    pub fn analyze(&mut self, parser_throwed_errors: bool) -> either::Either<bool, ()> {
         if parser_throwed_errors {
-            return true;
+            return either::Either::Left(true);
         }
 
-        let scoper_threw_errors: bool = self.scoper.start();
+        let scoper_fail: bool = self.scoper.start();
 
-        if scoper_threw_errors {
-            return true;
+        if scoper_fail {
+            return either::Either::Left(true);
         }
 
-        let verifier_threw_errors: bool = self.verifier.analyze_top();
-
-        if verifier_threw_errors {
-            return true;
+        if self.options.stop_compilation_at(CompilationPhase::Scoper) {
+            return either::Either::Right(());
         }
 
-        let type_checker_threw_errors: bool = self.type_checker.start();
-        let analyzer_threw_errors: bool = self.analyzer.start();
-        let attr_checker_threw_errors: bool = self.attr_checker.start();
+        let verifier_fail: bool = self.verifier.analyze_top();
 
-        if !type_checker_threw_errors
-            && !analyzer_threw_errors
-            && !attr_checker_threw_errors
-            && !scoper_threw_errors
+        if verifier_fail {
+            return either::Either::Left(true);
+        }
+
+        if self
+            .options
+            .stop_compilation_at(CompilationPhase::AstVerifier)
+        {
+            return either::Either::Right(());
+        }
+
+        let type_checker_fail: bool = self.type_checker.start();
+
+        if self
+            .options
+            .stop_compilation_at(CompilationPhase::TypeChecker)
+        {
+            return either::Either::Right(());
+        }
+
+        let general_analyzer_fail: bool = self.general_analyzer.start();
+
+        if self
+            .options
+            .stop_compilation_at(CompilationPhase::GeneralAnalyzer)
+        {
+            return either::Either::Right(());
+        }
+
+        let attribute_checker_fail: bool = self.attr_checker.start();
+
+        if self
+            .options
+            .stop_compilation_at(CompilationPhase::AttributeChecker)
+        {
+            return either::Either::Right(());
+        }
+
+        if !type_checker_fail
+            && !general_analyzer_fail
+            && !attribute_checker_fail
+            && !scoper_fail
             && !self.options.disable_all_warnings()
         {
             self.linter.check();
+
+            if self.options.stop_compilation_at(CompilationPhase::Linter) {
+                return either::Either::Right(());
+            }
         }
 
-        type_checker_threw_errors
-            || analyzer_threw_errors
-            || attr_checker_threw_errors
-            || scoper_threw_errors
+        let fail: bool =
+            type_checker_fail || general_analyzer_fail || attribute_checker_fail || scoper_fail;
+
+        either::Either::Left(fail)
     }
 }

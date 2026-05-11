@@ -168,7 +168,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                     .get_llvm_module()
                     .add_global_metadata("llvm.module.flags", &dwarf_v)
                     .unwrap_or_else(|_| {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             LoggingType::Warning,
                             "'Dwarf Version' metadata failed to set up.",
                         );
@@ -194,7 +194,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                     .get_llvm_module()
                     .add_global_metadata("llvm.module.flags", &debug_info_v)
                     .unwrap_or_else(|_| {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             LoggingType::Warning,
                             "'Debug Info Version' metadata failed to set up.",
                         );
@@ -229,7 +229,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                 .get_llvm_module()
                 .add_global_metadata("llvm.module.flags", &pic_level)
                 .unwrap_or_else(|_| {
-                    thrustc_logging::print_warn(
+                    thrustc_logging::print_warning(
                         LoggingType::Warning,
                         "'PIC Level' metadata failed to set up.",
                     );
@@ -263,7 +263,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                 .get_llvm_module()
                 .add_global_metadata("llvm.module.flags", &pie_level)
                 .unwrap_or_else(|_| {
-                    thrustc_logging::print_warn(
+                    thrustc_logging::print_warning(
                         LoggingType::Warning,
                         "'PIE Level' metadata failed to set up.",
                     );
@@ -300,7 +300,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                 .get_llvm_module()
                 .add_global_metadata("llvm.module.flags", &code_level)
                 .unwrap_or_else(|_| {
-                    thrustc_logging::print_warn(
+                    thrustc_logging::print_warning(
                         LoggingType::Warning,
                         "'Code Model' metadata failed to set up.",
                     );
@@ -353,7 +353,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                     .get_llvm_module()
                     .add_global_metadata("llvm.module.flags", &sdk_v)
                     .unwrap_or_else(|_| {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             LoggingType::Warning,
                             "'MacOS SDK Version' metadata failed to set up.",
                         );
@@ -398,7 +398,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                     .get_llvm_module()
                     .add_global_metadata("llvm.module.flags", &sdk_v)
                     .unwrap_or_else(|_| {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             LoggingType::Warning,
                             "'IOS SDK Version' metadata failed to set up.",
                         );
@@ -438,7 +438,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                     .get_llvm_module()
                     .add_global_metadata("llvm.module.flags", &metadata)
                     .unwrap_or_else(|_| {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             LoggingType::Warning,
                             "'Target ABI' metadata failed to set up.",
                         );
@@ -475,7 +475,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                     .get_llvm_module()
                     .add_global_metadata("llvm.module.flags", &direct_access_external_data)
                     .unwrap_or_else(|_| {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             LoggingType::Warning,
                             "'Direct Access External Data' metadata failed to set up.",
                         );
@@ -511,7 +511,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                     .get_llvm_module()
                     .add_global_metadata("llvm.module.flags", &code_level)
                     .unwrap_or_else(|_| {
-                        thrustc_logging::print_warn(
+                        thrustc_logging::print_warning(
                             LoggingType::Warning,
                             "'Darwin Target Triple' metadata failed to set up.",
                         );
@@ -554,7 +554,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                         .get_llvm_module()
                         .add_global_metadata("llvm.module.flags", &rt_lib_use_got)
                         .unwrap_or_else(|_| {
-                            thrustc_logging::print_warn(
+                            thrustc_logging::print_warning(
                                 LoggingType::Warning,
                                 "'RtLibUseGOT' metadata failed to set up.",
                             );
@@ -584,7 +584,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                 .get_llvm_module()
                 .add_global_metadata("llvm.module.flags", &frame_pointer)
                 .unwrap_or_else(|_| {
-                    thrustc_logging::print_warn(
+                    thrustc_logging::print_warning(
                         LoggingType::Warning,
                         "'Frame Pointer' metadata failed to set up.",
                     );
@@ -612,7 +612,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                 .get_llvm_module()
                 .add_global_metadata("llvm.module.flags", &uwtable)
                 .unwrap_or_else(|_| {
-                    thrustc_logging::print_warn(
+                    thrustc_logging::print_warning(
                         LoggingType::Warning,
                         "'Unwind Table' metadata failed to set up.",
                     );
@@ -667,7 +667,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
             .get_llvm_module()
             .add_global_metadata("build", &node)
             .unwrap_or_else(|_| {
-                thrustc_logging::print_warn(
+                thrustc_logging::print_warning(
                     LoggingType::Warning,
                     "'Build Compiler Info' metadata failed to set up.",
                 );

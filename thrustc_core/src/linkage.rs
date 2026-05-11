@@ -115,7 +115,7 @@ impl ClangLinker<'_> {
                     .to_string();
 
                 if !stdout.is_empty() {
-                    thrustc_logging::print_warn(thrustc_logging::LoggingType::Warning, &stdout);
+                    thrustc_logging::print_warning(thrustc_logging::LoggingType::Warning, &stdout);
                 }
 
                 false
@@ -195,7 +195,7 @@ impl GCCLinker<'_> {
                 }
 
                 if !output.stdout.is_empty() {
-                    thrustc_logging::print_warn(
+                    thrustc_logging::print_warning(
                         thrustc_logging::LoggingType::Warning,
                         String::from_utf8_lossy(&output.stdout).trim_end(),
                     );
@@ -221,7 +221,7 @@ pub fn link_with_clang(compiler: &mut ThrustCompiler) {
     if let Ok(clang_time) =
         ClangLinker::new(all_compiled_files, linking_compiler_config, llvm_backend).link()
     {
-        compiler.linking_time += clang_time;
+        compiler.linking_time = compiler.linking_time.saturating_add(clang_time);
 
         thrustc_logging::write(
             thrustc_logging::OutputIn::Stdout,
@@ -252,7 +252,7 @@ pub fn link_with_gcc(compiler: &mut ThrustCompiler) {
 
     if let Ok(gcc_time) = GCCLinker::new(all_compiled_files, linking_compiler_configuration).link()
     {
-        compiler.linking_time += gcc_time;
+        compiler.linking_time = compiler.linking_time.saturating_add(gcc_time);
 
         thrustc_logging::write(
             thrustc_logging::OutputIn::Stdout,

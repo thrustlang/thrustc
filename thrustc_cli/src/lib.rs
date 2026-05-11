@@ -29,6 +29,7 @@ use thrustc_backends::ThrustOptimization;
 use thrustc_core::CompileTime;
 use thrustc_logging::LoggingType;
 use thrustc_logging::OutputIn;
+use thrustc_options::CompilationPhase;
 use thrustc_options::CompilerOptions;
 use thrustc_options::EmitableUnit;
 use thrustc_options::PrintableUnit;
@@ -526,6 +527,78 @@ impl CommandLine {
                 self.advance();
             }
 
+            "-stop-at" => {
+                self.advance();
+                self.validate_llvm_required(arg);
+
+                let phase: CompilationPhase = self.parse_stop_compilation_phase_at(self.peek());
+
+                self.get_mut_options().set_stop_compilation_at(phase);
+
+                self.advance();
+            }
+
+            "-macos-version" => {
+                self.advance();
+                self.validate_llvm_required(arg);
+
+                let version: String = self.peek().to_string();
+
+                if !version.chars().all(|c| c.is_ascii_digit() || c == '.') {
+                    self.report_error("MacOS version must contain only numbers and dots.");
+                }
+
+                self.get_mut_options()
+                    .get_mut_llvm_backend()
+                    .get_mut_target()
+                    .set_macos_version(version);
+
+                self.advance();
+            }
+
+            "-ios-version" => {
+                self.advance();
+                self.validate_llvm_required(arg);
+
+                let version: String = self.peek().to_string();
+
+                if !version.chars().all(|c| c.is_ascii_digit() || c == '.') {
+                    self.report_error("iOS version must contain only numbers and dots.");
+                }
+
+                self.get_mut_options()
+                    .get_mut_llvm_backend()
+                    .get_mut_target()
+                    .set_ios_version(version);
+
+                self.advance();
+            }
+
+            "-reloc-model" => {
+                self.advance();
+                self.validate_llvm_required(arg);
+
+                let reloc_mode: ThrustRelocMode = self.parse_reloc_mode(self.peek());
+
+                self.get_mut_options()
+                    .get_mut_llvm_backend()
+                    .set_reloc_mode(reloc_mode);
+
+                self.advance();
+            }
+
+            "-code-model" => {
+                self.advance();
+
+                let code_model: ThrustCodeModel = self.parse_code_model(self.peek());
+
+                self.get_mut_options()
+                    .get_mut_llvm_backend()
+                    .set_code_model(code_model);
+
+                self.advance();
+            }
+
             "--link-check" => {
                 self.advance();
                 self.validate_llvm_required(arg);
@@ -638,42 +711,6 @@ impl CommandLine {
                 self.advance();
             }
 
-            "--macos-version" => {
-                self.advance();
-                self.validate_llvm_required(arg);
-
-                let version: String = self.peek().to_string();
-
-                if !version.chars().all(|c| c.is_ascii_digit() || c == '.') {
-                    self.report_error("MacOS version must contain only numbers and dots.");
-                }
-
-                self.get_mut_options()
-                    .get_mut_llvm_backend()
-                    .get_mut_target()
-                    .set_macos_version(version);
-
-                self.advance();
-            }
-
-            "--ios-version" => {
-                self.advance();
-                self.validate_llvm_required(arg);
-
-                let version: String = self.peek().to_string();
-
-                if !version.chars().all(|c| c.is_ascii_digit() || c == '.') {
-                    self.report_error("iOS version must contain only numbers and dots.");
-                }
-
-                self.get_mut_options()
-                    .get_mut_llvm_backend()
-                    .get_mut_target()
-                    .set_ios_version(version);
-
-                self.advance();
-            }
-
             "--target-triple-darwin-variant" => {
                 self.advance();
                 self.validate_llvm_required(arg);
@@ -766,31 +803,6 @@ impl CommandLine {
                 self.validate_llvm_required(arg);
 
                 self.get_mut_options().set_omit_default_optimizations();
-            }
-
-            "--reloc-model" => {
-                self.advance();
-                self.validate_llvm_required(arg);
-
-                let reloc_mode: ThrustRelocMode = self.parse_reloc_mode(self.peek());
-
-                self.get_mut_options()
-                    .get_mut_llvm_backend()
-                    .set_reloc_mode(reloc_mode);
-
-                self.advance();
-            }
-
-            "--code-model" => {
-                self.advance();
-
-                let code_model: ThrustCodeModel = self.parse_code_model(self.peek());
-
-                self.get_mut_options()
-                    .get_mut_llvm_backend()
-                    .set_code_model(code_model);
-
-                self.advance();
             }
 
             "--opt-passes" => {
@@ -1176,6 +1188,45 @@ impl CommandLine {
                     "Unknown symbol linkage merge strategy: '{}'.",
                     any
                 ));
+            }
+        }
+    }
+
+    #[inline]
+    fn parse_stop_compilation_phase_at(&self, phase: &str) -> CompilationPhase {
+        match phase.to_lowercase().as_str() {
+            "lexing" => CompilationPhase::Lexer,
+            "parsing" => CompilationPhase::Parser,
+            "scope-analysis" => CompilationPhase::Scoper,
+            "ast-verification" => CompilationPhase::AstVerifier,
+            "type-checking" => CompilationPhase::TypeChecker,
+            "general-analysis" => CompilationPhase::GeneralAnalyzer,
+            "attribute-checking" => CompilationPhase::AttributeChecker,
+            "linter" => CompilationPhase::Linter,
+            "compiler-intrinsic-checking" => {
+                if self.options.llvm() {
+                    CompilationPhase::LLVMIntrinsicChecker
+                } else {
+                    CompilationPhase::None
+                }
+            }
+            "compiler-callconventions-checking" => {
+                if self.options.llvm() {
+                    CompilationPhase::LLVMIntrinsicChecker
+                } else {
+                    CompilationPhase::None
+                }
+            }
+            "codegen" => {
+                if self.options.llvm() {
+                    CompilationPhase::LLVMCodegen
+                } else {
+                    CompilationPhase::None
+                }
+            }
+
+            any => {
+                self.report_error(&format!("Unknown compilation phase: '{}'.", any));
             }
         }
     }

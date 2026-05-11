@@ -37,7 +37,7 @@ mod context;
 mod expressions;
 
 #[derive(Debug)]
-pub struct Analyzer<'analyzer> {
+pub struct GeneralAnalyzer<'analyzer> {
     ast: &'analyzer [Ast<'analyzer>],
 
     bugs: Vec<CompilationIssue>,
@@ -49,7 +49,7 @@ pub struct Analyzer<'analyzer> {
     context: AnalyzerContext,
 }
 
-impl<'analyzer> Analyzer<'analyzer> {
+impl<'analyzer> GeneralAnalyzer<'analyzer> {
     #[inline]
     pub fn new(
         ast: &'analyzer [Ast<'analyzer>],
@@ -69,7 +69,7 @@ impl<'analyzer> Analyzer<'analyzer> {
     }
 }
 
-impl<'analyzer> Analyzer<'analyzer> {
+impl<'analyzer> GeneralAnalyzer<'analyzer> {
     pub fn start(&mut self) -> bool {
         for node in self.ast.iter() {
             if let Err(error) = self.analyze_decl(node) {
@@ -81,7 +81,7 @@ impl<'analyzer> Analyzer<'analyzer> {
     }
 }
 
-impl<'analyzer> Analyzer<'analyzer> {
+impl<'analyzer> GeneralAnalyzer<'analyzer> {
     fn check(&mut self) -> bool {
         self.warnings.iter().for_each(|warn| {
             self.diagnostician
@@ -106,7 +106,7 @@ impl<'analyzer> Analyzer<'analyzer> {
     }
 }
 
-impl<'analyzer> Analyzer<'analyzer> {
+impl<'analyzer> GeneralAnalyzer<'analyzer> {
     fn analyze_decl(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
         match node {
             Ast::AssemblerFunction {
@@ -455,7 +455,7 @@ impl<'analyzer> Analyzer<'analyzer> {
     }
 }
 
-impl Analyzer<'_> {
+impl GeneralAnalyzer<'_> {
     #[inline]
     fn add_error(&mut self, error: CompilationIssue) {
         self.errors.push(error);
@@ -467,7 +467,7 @@ impl Analyzer<'_> {
     }
 }
 
-impl Analyzer<'_> {
+impl GeneralAnalyzer<'_> {
     #[inline]
     fn get_context(&self) -> &AnalyzerContext {
         &self.context

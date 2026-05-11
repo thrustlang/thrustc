@@ -20,7 +20,7 @@ members = [
     "thrustc_attribute_checker",  
     "thrustc_typechecker", 
     "thrustc_scoper", 
-    "thrustc_analyzer", 
+    "thrustc_general_analyzer", 
     "thrustc_linter", 
     "thrustc_constants", 
     "thrustc_reader", 

@@ -233,6 +233,61 @@ pub fn show_help() -> ! {
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stderr,
         &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "-stop-at".custom_color((141, 141, 142)).bold(),
+            "lexing|parsing|scope-analysis|ast-verification|type-checking|general-analysis|attribute-checking|linter|compiler-intrinsic-checking|compiler-callconventions-checking|codegen",
+            "Stop the compilation at specific stage."
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "-reloc-model".custom_color((141, 141, 142)).bold(),
+            "static|pic|dynamic",
+            "Indicate how references to memory addresses and linkage symbols are handled."
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {} {}\n",
+            "•".bold(),
+            "-code-model".custom_color((141, 141, 142)).bold(),
+            "[small|medium|large|kernel]",
+            "Define how code is organized and accessed at machine code level."
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {} {}\n",
+            "•".bold(),
+            "-macos-version".custom_color((141, 141, 142)).bold(),
+            "[15.0.0]",
+            "Specify the MacOS SDK version."
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {} {}\n",
+            "•".bold(),
+            "-ios-version".custom_color((141, 141, 142)).bold(),
+            "[17.4.0]",
+            "Specify the iOS SDK version."
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
             "{} {} {}\n",
             "•".bold(),
             "-jit".custom_color((141, 141, 142)).bold(),
@@ -410,28 +465,6 @@ pub fn show_help() -> ! {
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stderr,
         &format!(
-            "{} {} [{}] {}\n",
-            "•".bold(),
-            "--reloc-model".custom_color((141, 141, 142)).bold(),
-            "static|pic|dynamic",
-            "Indicate how references to memory addresses and linkage symbols are handled."
-        ),
-    );
-
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{} {} {} {}\n",
-            "•".bold(),
-            "--code-model".custom_color((141, 141, 142)).bold(),
-            "[small|medium|large|kernel]",
-            "Define how code is organized and accessed at machine code level."
-        ),
-    );
-
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
             "{} {} {} {}\n",
             "•".bold(),
             "--target-triple-darwin-variant"
@@ -439,28 +472,6 @@ pub fn show_help() -> ! {
                 .bold(),
             "[arm64-apple-ios15.0-macabi]",
             "Specify the darwin target variant triple."
-        ),
-    );
-
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{} {} {} {}\n",
-            "•".bold(),
-            "--macos-version".custom_color((141, 141, 142)).bold(),
-            "[15.0.0]",
-            "Specify the MacOS SDK version."
-        ),
-    );
-
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{} {} {} {}\n",
-            "•".bold(),
-            "--ios-version".custom_color((141, 141, 142)).bold(),
-            "[17.4.0]",
-            "Specify the iOS SDK version."
         ),
     );
 

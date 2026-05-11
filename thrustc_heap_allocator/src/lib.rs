@@ -17,7 +17,6 @@
 
 */
 
-
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::io::Write;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -37,7 +36,7 @@ fn abort(msg: &[u8]) -> ! {
     let _ = handle.write_all(b"\n");
     let _ = handle.flush();
 
-    std::process::exit(1);
+    std::process::exit(thrustc_constants::FAILURE_CODE);
 }
 
 unsafe impl GlobalAlloc for ThrustCompilerHeapAllocator {

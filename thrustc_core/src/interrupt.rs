@@ -27,7 +27,7 @@ use thrustc_options::CompilationUnit;
 use crate::ThrustCompiler;
 
 #[inline]
-pub fn archive_compilation_unit(
+pub fn archive_compilation_module(
     compiler: &mut ThrustCompiler,
     file: &CompilationUnit,
     file_time: std::time::Instant,
@@ -48,7 +48,7 @@ pub fn archive_compilation_unit(
 }
 
 #[inline]
-pub fn archive_compilation_unit_jit(
+pub fn archive_compilation_module_jit(
     compiler: &mut ThrustCompiler,
     file: &CompilationUnit,
     file_time: std::time::Instant,
