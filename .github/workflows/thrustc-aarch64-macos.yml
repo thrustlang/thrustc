@@ -2,9 +2,9 @@ name: Thrust Compiler (macOS - latest)
 on:
   push:
     tags:
-      - 'thrustc-x86_64-macos-v*.*.*'
+      - 'thrustc-aarch64-macos-v*.*.*'
 jobs:
-  thrustc-x86_64-macos:
+  thrustc-aarch64-macos:
     runs-on: macos-latest
     permissions:
       contents: write
