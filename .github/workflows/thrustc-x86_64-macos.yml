@@ -96,14 +96,21 @@ jobs:
           cargo build --release
         working-directory: thrustc
 
-      - name: Extracting Dynamic Dependencies
+      - name: Extracting File Type and Dynamic Dependencies
         run: |
           BINARY="thrustc/target/release/thrustc"
           DYLIB_OUTPUT=$(otool -L "$BINARY" 2>/dev/null || echo "Could not inspect binary")
+          FILE_OUTPUT=$(file "$BINARY" 2>/dev/null || echo "Could not determine file type")
 
           {
             echo "DYNAMIC_DEPS<<EOF"
             echo "$DYLIB_OUTPUT"
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+          {
+            echo "FILE_TYPE<<EOF"
+            echo "$FILE_OUTPUT"
             echo "EOF"
           } >> $GITHUB_ENV
 
@@ -145,6 +152,10 @@ jobs:
             ## Changelog
 
             ${{ env.CHANGELOG }}
+
+            ## File Type
+
+            ${{ env.FILE_TYPE }}
 
             ## Dynamic Dependencies
 

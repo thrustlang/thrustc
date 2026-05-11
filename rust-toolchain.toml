@@ -3,6 +3,10 @@ channel = "nightly"
 components = ["rustfmt", "clippy"]
 
 targets = [
+    # macOS
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+
     # Linux
     "x86_64-unknown-linux-gnu",
     "x86_64-unknown-linux-musl",
