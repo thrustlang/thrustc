@@ -95,25 +95,6 @@ $ cargo run -- --help
 
 Thrust Compiler offers powerful cross-compilation support, just like [Clang](https://github.com/llvm/llvm-project/tree/main/clang).
 
-### ARM 64-bit
-
-```console
-./thrustc main.thrust my_library.thrust \
-  -target-triple aarch64-apple-darwin \
-  -cpu apple-m2 \
-  -opt O3 \
-  --macos-version 14.0 \
-  -o myprogram
-```
-
-### WebAssembly
-
-```console
-./thrustc main.thrust my_library.thrust \
-  -target-triple wasm32-unknown-unknown \
-  -opt O3 
-```
-
 ### RISC-V 64-bit
 
 ```console
@@ -123,12 +104,11 @@ Thrust Compiler offers powerful cross-compilation support, just like [Clang](htt
   -opt O3 
 ```
 
-### LoongArch 64-bit
+### WebAssembly
 
 ```console
 ./thrustc main.thrust my_library.thrust \
-  -target-triple loongarch64-unknown-linux-gnu \
-  -cpu la464 \               
+  -target-triple wasm32-unknown-unknown \
   -opt O3 
 ```
 
