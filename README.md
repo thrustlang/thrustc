@@ -100,7 +100,7 @@ Thrust Compiler offers powerful cross-compilation support, just like [Clang](htt
 ```console
 ./thrustc main.thrust my_library.thrust \
   -target-triple aarch64-apple-darwin \
-  -cpu apple-m2 \          # Puedes usar: apple-m1, apple-m2, apple-m3, apple-m4
+  -cpu apple-m2 \
   -opt O3 \
   --macos-version 14.0 \
   -o myprogram
@@ -120,6 +120,15 @@ Thrust Compiler offers powerful cross-compilation support, just like [Clang](htt
 ./thrustc main.thrust my_library.thrust \
   -target-triple riscv64-unknown-linux-gnu \
   -cpu sifive-u74 \
+  -opt O3 
+```
+
+### LoongArch 64-bit
+
+```console
+./thrustc main.thrust my_library.thrust \
+  -target-triple loongarch64-unknown-linux-gnu \
+  -cpu la464 \               
   -opt O3 
 ```
 
