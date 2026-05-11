@@ -1,24 +1,24 @@
-name: Thrust Compiler (macOS - latest)
+name: Thrust Compiler (macOS - x86_64)
 on:
   push:
     tags:
-      - 'thrustc-aarch64-macos-v*.*.*'
+      - 'thrustc-x86_64-macos-v*.*.*'
 jobs:
-  thrustc-aarch64-macos:
-    runs-on: macos-latest
+  thrustc-x86_64-macos:
+    runs-on: macos-13
     permissions:
       contents: write
-  
+
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
-  
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - name: Generating Unique ID
         run: |
           BASE_NAME=$(echo "$GITHUB_REF" | sed 's|^refs/tags/||')
-          VERSION=$(echo "$BASE_NAME" | sed 's|^thrustc-aarch64-macos-||')
+          VERSION=$(echo "$BASE_NAME" | sed 's|^thrustc-x86_64-macos-||')
           BUILD_ID="${BASE_NAME}-${GITHUB_RUN_ID}"
-          
+
           echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
           echo "TAG_NAME=$BASE_NAME" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
@@ -62,7 +62,7 @@ jobs:
       - name: Installing dependencies
         run: |
           brew install cmake ninja zstd
-          brew install llvm@18 
+          brew install llvm@18
           echo "$(brew --prefix llvm@18)/bin" >> $GITHUB_PATH
 
       - name: Cloning the Compiler Dependency Builder
@@ -118,11 +118,11 @@ jobs:
             Version: ${{ env.VERSION }}
 
             ## Backends
-            
+
             ### LLVM
 
             Architecture targets for which the compiler was compiled.
-            
+
             - ``x86_64``
             - ``AArch64``
             - ``RISC-V``
