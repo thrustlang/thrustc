@@ -23,9 +23,7 @@ use crate::codegen;
 use crate::context::LLVMCodeGenContext;
 use crate::predicates;
 use crate::traits::AstLLVMGetType;
-use crate::typegeneration;
 
-use inkwell::types::IntType;
 use thrustc_entities::BinaryOperation;
 use thrustc_span::Span;
 use thrustc_token_type::TokenType;
@@ -146,6 +144,7 @@ fn compile_bool_operation<'ctx>(
                     );
                 })
                 .into(),
+
             _ => abort::abort_codegen(
                 context,
                 "Failed to compile without a valid operator!",
@@ -278,8 +277,8 @@ fn compile_constant_boolean_operation<'ctx>(
                     if signatures.0 || signatures.1 {
                         if let Some(lhs_number) = lhs.get_sign_extended_constant() {
                             if let Some(rhs_number) = rhs.get_sign_extended_constant() {
-                                return lhs
-                                    .get_type()
+                                return llvm_context
+                                    .bool_type()
                                     .const_int(
                                         ((lhs_number != 0) && (rhs_number != 0)) as u64,
                                         false,
@@ -291,8 +290,8 @@ fn compile_constant_boolean_operation<'ctx>(
 
                     if let Some(lhs_number) = lhs.get_zero_extended_constant() {
                         if let Some(rhs_number) = rhs.get_zero_extended_constant() {
-                            return lhs
-                                .get_type()
+                            return llvm_context
+                                .bool_type()
                                 .const_int(((lhs_number != 0) && (rhs_number != 0)) as u64, false)
                                 .into();
                         }
@@ -304,8 +303,8 @@ fn compile_constant_boolean_operation<'ctx>(
                     if signatures.0 || signatures.1 {
                         if let Some(lhs_number) = lhs.get_sign_extended_constant() {
                             if let Some(rhs_number) = rhs.get_sign_extended_constant() {
-                                return lhs
-                                    .get_type()
+                                return llvm_context
+                                    .bool_type()
                                     .const_int(
                                         ((lhs_number != 0) || (rhs_number != 0)) as u64,
                                         false,
@@ -317,8 +316,8 @@ fn compile_constant_boolean_operation<'ctx>(
 
                     if let Some(lhs_number) = lhs.get_zero_extended_constant() {
                         if let Some(rhs_number) = rhs.get_zero_extended_constant() {
-                            return lhs
-                                .get_type()
+                            return llvm_context
+                                .bool_type()
                                 .const_int(((lhs_number != 0) || (rhs_number != 0)) as u64, false)
                                 .into();
                         }
@@ -349,9 +348,6 @@ fn compile_constant_boolean_operation<'ctx>(
             rhs.into_float_value(),
         );
 
-        let int_type: IntType<'_> =
-            typegeneration::equivalent_integer_type_from_float_value(context, lhs);
-
         return match operator {
             op if op.is_logical_operator() => lhs
                 .const_compare(
@@ -364,7 +360,8 @@ fn compile_constant_boolean_operation<'ctx>(
                 if signatures.0 || signatures.1 {
                     if let Some((lhs_number, _)) = lhs.get_constant() {
                         if let Some((rhs_number, _)) = rhs.get_constant() {
-                            return int_type
+                            return llvm_context
+                                .bool_type()
                                 .const_int(
                                     ((lhs_number != 0.0) && (rhs_number != 0.0)) as u64,
                                     false,
@@ -376,7 +373,8 @@ fn compile_constant_boolean_operation<'ctx>(
 
                 if let Some((lhs_number, _)) = lhs.get_constant() {
                     if let Some((rhs_number, _)) = rhs.get_constant() {
-                        return int_type
+                        return llvm_context
+                            .bool_type()
                             .const_int(((lhs_number != 0.0) && (rhs_number != 0.0)) as u64, false)
                             .into();
                     }
@@ -388,7 +386,8 @@ fn compile_constant_boolean_operation<'ctx>(
                 if signatures.0 || signatures.1 {
                     if let Some((lhs_number, _)) = lhs.get_constant() {
                         if let Some((rhs_number, _)) = rhs.get_constant() {
-                            return int_type
+                            return llvm_context
+                                .bool_type()
                                 .const_int(
                                     ((lhs_number != 0.0) || (rhs_number != 0.0)) as u64,
                                     false,
@@ -400,7 +399,8 @@ fn compile_constant_boolean_operation<'ctx>(
 
                 if let Some((lhs_number, _)) = lhs.get_constant() {
                     if let Some((rhs_number, _)) = rhs.get_constant() {
-                        return int_type
+                        return llvm_context
+                            .bool_type()
                             .const_int(((lhs_number != 0.0) || (rhs_number != 0.0)) as u64, false)
                             .into();
                     }

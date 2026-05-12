@@ -1090,11 +1090,10 @@ impl<'a, 'ctx> LLVMMachineSpecificFunctionOptimizer<'a, 'ctx> {
                     state_data.set_has_floating_point(true);
                 }
             }
-            InstructionOpcode::InsertValue => {
-                if is_float_involved(&instruction) {
+            InstructionOpcode::InsertValue
+                if is_float_involved(&instruction) => {
                     state_data.set_has_floating_point(true);
                 }
-            }
 
             _ => (),
         }

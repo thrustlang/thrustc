@@ -43,8 +43,8 @@ members = [
     "thrustc_heap_allocator", 
     "thrustc_ast_external", 
     "thrustc_cli",
-    "thrustc_utils", "thrustc_backends",
-]
+    "thrustc_utils", "thrustc_backends"
+, "thrustc_directive"]
 
 exclude = [
     "fuzz"  

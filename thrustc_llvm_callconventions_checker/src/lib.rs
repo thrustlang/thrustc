@@ -17,6 +17,8 @@
 
 */
 
+#![allow(clippy::collapsible_match)]
+
 use thrustc_ast::Ast;
 use thrustc_attributes::{
     ThrustAttribute, ThrustAttributeComparator, ThrustAttributes,

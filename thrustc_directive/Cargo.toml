@@ -1,0 +1,16 @@
+[package]
+name = "thrustc_directive"
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+ahash = "0.8.11"
+lazy_static = "1.5.0"
+
+thrustc_backends = { path = "../thrustc_backends" }

@@ -40,7 +40,7 @@ pub fn archive_compilation_module(
             "{} {} {}\n",
             "Compilation".custom_color((141, 141, 142)).bold(),
             "FAILED".bright_red().bold(),
-            &file.get_path().to_string_lossy()
+            file.get_path().to_string_lossy()
         ),
     );
 
@@ -61,7 +61,7 @@ pub fn archive_compilation_module_jit(
             "{} {} {}\n",
             "Compilation".custom_color((141, 141, 142)).bold(),
             "FAILED".bright_red().bold(),
-            &file.get_path().to_string_lossy()
+            file.get_path().to_string_lossy()
         ),
     );
 
@@ -86,7 +86,7 @@ pub fn archive_compilation_unit_with_message(
             "{} {} {}\n",
             "Compilation".custom_color((141, 141, 142)).bold(),
             "FAILED".bright_red().bold(),
-            &file.get_path().to_string_lossy()
+            file.get_path().to_string_lossy()
         ),
     );
 

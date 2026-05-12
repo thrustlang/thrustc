@@ -17,7 +17,6 @@
 
 */
 
-
 use colored::Colorize;
 
 use thrustc_options::CompilationUnit;
@@ -30,7 +29,7 @@ pub fn archive_compilation_unit(file: &CompilationUnit) {
             "{} {} {}\n",
             "Compilation".custom_color((141, 141, 142)).bold(),
             "STARTING".bright_green().bold(),
-            &file.get_path().display()
+            file.get_path().display()
         ),
     );
 }
