@@ -122,6 +122,10 @@ If you want to know a high-level command line view, you should check out: [Thrus
 
 If you want to know a little about the compiler's structure, you should check out: [Thrust Programming Language - Compiler Structure](https://github.com/thrustlang/blob/master/PROJECT_STRUCTURE.md)
 
+## Rust Code Documentation
+
+If you want to know about the rust code's structure that resides on the compiler, you must check out [Thrust Programming Language - Rust Code Documentation](https://thrustlang.github.io/thrustc/)
+
 ## Q&A
 
 #### > Why isn't the compiler designed to use it as a bootstrap compiler?
