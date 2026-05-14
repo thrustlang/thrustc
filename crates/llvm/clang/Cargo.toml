@@ -1,22 +1,14 @@
 [package]
-
 name = "clang"
 authors = ["Kyle Mayes <kyle@mayeses.com>"]
-
 version = "2.0.0"
-
 readme = "README.md"
 license = "Apache-2.0"
-
 description = "A somewhat idiomatic Rust wrapper for libclang."
-
-documentation = "https://docs.rs/clang"
-repository = "https://github.com/KyleMayes/clang-rs"
 
 autotests = false
 
 [features]
-
 clang_3_5 = ["clang-sys/clang_3_5"]
 clang_3_6 = ["clang-sys/clang_3_6", "clang_3_5"]
 clang_3_7 = ["clang-sys/clang_3_7", "clang_3_6"]
@@ -34,10 +26,5 @@ runtime = ["clang-sys/runtime"]
 static = ["clang-sys/static"]
 
 [dependencies]
-
 clang-sys = { path = "../17/clang-sys" }
 libc = "0.2.39"
-
-[package.metadata.docs.rs]
-
-features = ["clang_10_0"]

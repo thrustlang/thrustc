@@ -36,6 +36,8 @@ members = [
     "thrustc_llvm_target_triple",
     "thrustc_llvm_intrinsic_checker", 
     "thrustc_llvm_callconventions_checker", 
+    "thrustc_backends", 
+    "thrustc_directive",
     "thrustc_ast_modificators", 
     "thrustc_token_type", 
     "thrustc_preprocessor_type_resolver", 
@@ -43,8 +45,8 @@ members = [
     "thrustc_heap_allocator", 
     "thrustc_ast_external", 
     "thrustc_cli",
-    "thrustc_utils", "thrustc_backends"
-, "thrustc_directive"]
+    "thrustc_utils", 
+]
 
 exclude = [
     "fuzz"  
@@ -57,7 +59,7 @@ name = "thrustc"
 description = "The compiler for Thrust Programming Language."
 edition = "2024"
 license = "GPL-3.0"
-version = "0.1.0"
+version = "0.1.1"
 rust-version = "1.85.0"
 
 authors = [
@@ -94,3 +96,4 @@ codegen-units = 1
 lto = false
 panic = "abort"
 debug = true
+

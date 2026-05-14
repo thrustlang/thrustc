@@ -9,6 +9,10 @@ rustflags = [
     "-A", "clippy::new_without_default"
 ]
 
+[alias]
+docs = "doc --workspace --no-deps --document-private-items --exclude clang --exclude inkwell --exclude inkwell_internals --exclude llvm-sys --exclude clang-sys"
+docs-open = "doc --workspace --no-deps --document-private-items --open --exclude clang --exclude inkwell --exclude inkwell_internals --exclude llvm-sys --exclude clang-sys"
+
 [lints.clippy]
 style     = "allow"
 complexity = "allow"
