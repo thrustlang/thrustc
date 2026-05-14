@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CompilationPhase","EmitableUnit","Emited","PrintableUnit"],"mod":["linkage"],"struct":["CompilationUnit","CompilerOptions"]};

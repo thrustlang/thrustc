@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Ast","ModuleExpressionValues"],"fn":["get_unique_discriminat"],"mod":["builtins","data","getters","impls","metadata","traits"],"static":["NODE_DISCRIMINANT_COUNTER"],"struct":["NodeId"]};

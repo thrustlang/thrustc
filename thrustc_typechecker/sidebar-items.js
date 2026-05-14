@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["check","context","expressions","globals","metadata","operations","table"],"struct":["TypeChecker"]};

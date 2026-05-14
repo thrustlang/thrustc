@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["floating_point","integer"]};

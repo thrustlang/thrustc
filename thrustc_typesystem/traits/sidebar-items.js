@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["CastTypeExtensions","ConstantTypeExtensions","DereferenceExtensions","FunctionReferenceExtensions","IndexExtensions","InfererTypeExtensions","PrecedenceTypeExtensions","TypeArrayEntensions","TypeCodeLocation","TypeExtensions","TypeFixedArrayEntensions","TypeIsExtensions","TypePointerExtensions","TypeStructExtensions","VoidTypeExtensions"]};

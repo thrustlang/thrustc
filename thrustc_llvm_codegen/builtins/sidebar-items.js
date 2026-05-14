@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["LLVMBuiltin"],"fn":["compile","into_llvm_builtin"]};

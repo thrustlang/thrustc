@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["mark_as_mutated","mark_as_used"],"mod":["expressions","table"],"struct":["Linter"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["build_anonymous_call","build_call"]};

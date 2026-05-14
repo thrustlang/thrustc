@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["cmp_precedence"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["print_to_stdout","print_to_stdout_pretty"]};

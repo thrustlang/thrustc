@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["validate","validate_memcpy","validate_memmove","validate_memset"]};

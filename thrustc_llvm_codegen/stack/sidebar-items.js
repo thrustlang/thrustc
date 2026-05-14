@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["allocate_variable","try_allocate_at_stack"]};

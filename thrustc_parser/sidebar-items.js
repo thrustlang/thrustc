@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["attributes","builtins","declarations","expressions","modificators","reinterpret","statements","synchronize","typegeneration"],"struct":["Parser","ParserContext"]};

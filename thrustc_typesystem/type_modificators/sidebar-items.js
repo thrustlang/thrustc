@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["FunctionReferenceTypeModificator","GCCFunctionReferenceTypeModificator","GCCStructureTypeModificator","LLVMFunctionReferenceTypeModificator","LLVMStructureTypeModificator","StructureTypeModificator"]};

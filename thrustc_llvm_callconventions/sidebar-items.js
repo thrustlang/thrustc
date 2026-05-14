@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["LLVMCallConvention"],"fn":["get_call_convention"],"mod":["impls"],"struct":["CALL_CONVENTIONS"]};

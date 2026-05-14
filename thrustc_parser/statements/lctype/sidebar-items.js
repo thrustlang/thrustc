@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["parse_custom_type_stmt"]};

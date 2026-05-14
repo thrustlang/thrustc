@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Type"],"mod":["array_type","constant_type","fixed_array_type","function_reference_type","impls","pointer_dereference","pointer_type","structure_type","traits","type_cast","type_indexation","type_inference","type_layout","type_location","type_modificators","type_precedence","void_type"]};
