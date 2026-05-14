@@ -124,7 +124,7 @@ If you want to know a little about the compiler's structure, you should check ou
 
 ## Rust Code Documentation
 
-If you want to know about the rust code's structure that resides on the compiler, you must check out [Thrust Programming Language - Rust Code Documentation](https://thrustlang.github.io/thrustc/)
+If you want to know regarding Rust code's structure that resides in the compiler, you should check out: [Thrust Programming Language - Rust Code Documentation](https://thrustlang.github.io/thrustc/)
 
 ## Q&A
 
