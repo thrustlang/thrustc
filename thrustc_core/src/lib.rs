@@ -137,20 +137,20 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_aot_llvm(&mut self) -> CompileTime {
         cleaner::auto_clean(self.get_compilation_options());
 
-        let mut disrupted: bool = false;
+        let mut fail: bool = false;
 
         for file in self.unready.iter() {
-            disrupted = self.compile_file_with_llvm_aot(file).is_err();
+            fail = self.compile_file_with_llvm_aot(file).is_err();
         }
 
-        disrupted = disrupted
+        fail = fail
             || self.get_compilation_options().get_was_printed()
             || self.get_compilation_options().get_was_emited()
             || self.get_compiled_files().is_empty();
 
-        if disrupted {
+        if fail {
             return (
-                disrupted,
+                fail,
                 self.thrustc_time,
                 self.thrustc_frontend_time,
                 self.thrustc_backend_time,
@@ -170,7 +170,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         }
 
         (
-            disrupted,
+            fail,
             self.thrustc_time,
             self.thrustc_frontend_time,
             self.thrustc_backend_time,
@@ -476,14 +476,14 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let context: Context = Context::create();
 
-        let mut disrupted: bool = false;
+        let mut fail: bool = false;
         let mut modules: Vec<Module> = Vec::with_capacity(u8::MAX as usize);
 
         for file in self.unready.iter() {
             let compiled_file: Result<either::Either<MemoryBuffer, ()>, ()> =
                 self.compile_file_with_llvm_jit(file);
 
-            disrupted = compiled_file.is_err();
+            fail = compiled_file.is_err();
 
             if let Some(module) = compiled_file
                 .ok()
@@ -494,14 +494,14 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             }
         }
 
-        disrupted = disrupted
+        fail = fail
             || self.get_compilation_options().get_was_printed()
             || self.get_compilation_options().get_was_emited()
             || modules.is_empty();
 
-        if disrupted {
+        if fail {
             return (
-                disrupted,
+                fail,
                 self.thrustc_time,
                 self.thrustc_frontend_time,
                 self.thrustc_backend_time,
@@ -525,7 +525,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                     );
 
                     return (
-                        disrupted,
+                        fail,
                         self.thrustc_time,
                         self.thrustc_frontend_time,
                         self.thrustc_backend_time,
@@ -548,7 +548,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         }
 
         (
-            disrupted,
+            fail,
             self.thrustc_time,
             self.thrustc_frontend_time,
             self.thrustc_backend_time,

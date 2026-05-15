@@ -126,6 +126,10 @@ If you want to know a little about the compiler's structure, you should check ou
 
 If you want to know regarding Rust code's structure that resides in the compiler, you should check out: [Thrust Programming Language - Rust Code Documentation](https://thrustlang.github.io/thrustc/)
 
+## Cargo Alias
+
+If you require to know the command line shorcuts available in the project across rust-cargo, you should check out: [Thrust Programming Language - Cargo Alias](https://github.com/thrustlang/blob/master/CARGO_ALIAS.md)
+
 ## Q&A
 
 #### > Why isn't the compiler designed to use it as a bootstrap compiler?

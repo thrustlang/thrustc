@@ -3,6 +3,7 @@ name = "thrustc_compiler_fuzz"
 version = "0.0.0"
 publish = false
 edition = "2024"
+rust-version = "1.85.0"
 
 [package.metadata]
 cargo-fuzz = true
@@ -10,6 +11,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 chrono = "0.4.44"
+either = "1.15.0"
 
 arbitrary = { version = "1.4.2", features = ["derive"] }
 
@@ -17,9 +19,19 @@ thrustc_lexer = { path = "../thrustc_lexer" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_ast = { path = "../thrustc_ast" , features = ["fuzz"] }
 thrustc_semantic = { path = "../thrustc_semantic" }
+thrustc_llvm_codegen = { path = "../thrustc_llvm_codegen" }
+thrustc_backends = { path = "../thrustc_backends" }
+thrustc_diagnostician = { path = "../thrustc_diagnostician" }
+
+inkwell = { path = "../crates/llvm/inkwell" }
+clang = { path = "../crates/llvm/clang" }
+
+[patch.crates-io]
+clang-sys = { path = "../crates/llvm/17/clang-sys" }
+llvm-sys = { path = "../crates/llvm/17/llvm-sys" }
 
 [[bin]]
-name = "lexer-fuzz"
+name = "lexing"
 path = "fuzz_targets/lexer.rs"
 test = false
 doc = false
@@ -28,6 +40,12 @@ bench = false
 [[bin]]
 name = "pipeline"
 path = "fuzz_targets/pipeline.rs"
+test = false
+doc = false
+bench = false
+[[bin]]
+name = "llvm-codegen"
+path = "fuzz_targets/llvm_codegen.rs"
 test = false
 doc = false
 bench = false
