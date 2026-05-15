@@ -14,7 +14,7 @@ body = """
 {% for commit in commits %}\
 - {% if commit.scope %}**{{ commit.scope }}**: {% endif %}{{ commit.message | upper_first }}\
 {% if commit.breaking %} [**BREAKING**]{% endif %} \
-([`{{ commit.id | truncate(length=7, end="") }}`](https://github.com/thrustlang/thrustc/commit/{{ commit.id }}))\
+([`{{ commit.id | truncate(length=7, end="") }}`](https://github.com/thrustlang/thrustc/commit/{{ commit.id }}))
 {% endfor %}
 {% endfor %}\n
 """
@@ -28,32 +28,33 @@ trim = true
 conventional_commits = false
 filter_unconventional = false
 split_commits = false
-
 commit_parsers = [
-  { message = "^\\(feat\\(llvm_backend\\).*\\)", group = "Features", scope = "llvm_backend" },
-  { message = "^\\(feat\\(gcc_backend\\).*\\)", group = "Features", scope = "gcc_backend" },
-  { message = "^\\(feat\\(frontend\\).*\\)",     group = "Features", scope = "frontend" },
-  { message = "^\\(feat\\(project\\).*\\)",      group = "Features", scope = "project" },
-  { message = "^\\(.*fix.*\\)",                  group = "Bug Fixes" },
-  { message = "^\\(.*feat.*\\)",                 group = "Features" },
-
-  { message = "^feat\\(llvm_backend\\)",   group = "Features",      scope = "llvm_backend" },
-  { message = "^feat\\(gcc_backend\\)",    group = "Features",      scope = "gcc_backend" },
-  { message = "^feat\\(frontend\\)",       group = "Features",      scope = "frontend" },
-  { message = "^feat\\(project-visual\\)", group = "Documentation", scope = "project-visual" },
-  { message = "^feat\\(project\\)",        group = "Project",       scope = "project" },
-
-  { message = "^fix\\(llvm_backend\\)", group = "Bug Fixes", scope = "llvm_backend" },
-  { message = "^fix\\(gcc_backend\\)",  group = "Bug Fixes", scope = "gcc_backend" },
-  { message = "^fix\\(frontend\\)",     group = "Bug Fixes", scope = "frontend" },
-
+  { message = "^`\\(.*feat\\(frontend\\).*\\)`",       group = "Features",      scope = "frontend" },
+  { message = "^`\\(.*feat\\(llvm_backend\\).*\\)`",   group = "Features",      scope = "llvm_backend" },
+  { message = "^`\\(.*feat\\(gcc_backend\\).*\\)`",    group = "Features",      scope = "gcc_backend" },
+  { message = "^`\\(.*feat\\(project-visual\\).*\\)`", group = "Documentation", scope = "project-visual" },
+  { message = "^`\\(.*feat\\(project\\).*\\)`",        group = "Project",       scope = "project" },
+  { message = "^`\\(.*fix\\(frontend\\).*\\)`",        group = "Bug Fixes",     scope = "frontend" },
+  { message = "^`\\(.*fix\\(llvm_backend\\).*\\)`",    group = "Bug Fixes",     scope = "llvm_backend" },
+  { message = "^`\\(.*fix\\(gcc_backend\\).*\\)`",     group = "Bug Fixes",     scope = "gcc_backend" },
+  { message = "^`\\(.*fix\\(project\\).*\\)`",         group = "Bug Fixes",     scope = "project" },
+  { message = "^`feat\\(llvm_backend\\)`",   group = "Features",      scope = "llvm_backend" },
+  { message = "^`feat\\(gcc_backend\\)`",    group = "Features",      scope = "gcc_backend" },
+  { message = "^`feat\\(frontend\\)`",       group = "Features",      scope = "frontend" },
+  { message = "^`feat\\(project-visual\\)`", group = "Documentation", scope = "project-visual" },
+  { message = "^`feat\\(project\\)`",        group = "Project",       scope = "project" },
+  { message = "^`feat\\(",                   group = "Features" },
+  { message = "^`fix\\(llvm_backend\\)`",    group = "Bug Fixes",     scope = "llvm_backend" },
+  { message = "^`fix\\(gcc_backend\\)`",     group = "Bug Fixes",     scope = "gcc_backend" },
+  { message = "^`fix\\(frontend\\)`",        group = "Bug Fixes",     scope = "frontend" },
+  { message = "^`fix\\(project-visual\\)`",  group = "Bug Fixes",     scope = "project-visual" },
+  { message = "^`fix\\(project\\)`",         group = "Bug Fixes",     scope = "project" },
+  { message = "^`fix\\(",                    group = "Bug Fixes" },
   { message = ".*", skip = true },
 ]
-
 commit_preprocessors = [
   { pattern = "^Merge .*", replace = "" },
 ]
-
 filter_commits = true
 tag_pattern = "v[0-9].*"
 skip_tags = ""

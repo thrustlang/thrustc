@@ -132,8 +132,6 @@ jobs:
             - ``SPIR-V``
             - ``WebAssembly``
 
-            ## Changelog
-
             ${{ env.CHANGELOG }}
 
           files: |
