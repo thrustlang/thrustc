@@ -18,7 +18,6 @@
 */
 
 #![allow(stable_features)]
-#![feature(unbounded_shifts)]
 
 use thrustc_ast::Ast;
 

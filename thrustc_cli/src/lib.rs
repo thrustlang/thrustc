@@ -17,7 +17,6 @@
 
 */
 
-#![feature(duration_millis_float)]
 #![allow(clippy::upper_case_acronyms)]
 
 use std::path::Path;
@@ -1517,10 +1516,10 @@ pub fn report_compile_time(
 ) -> ! {
     let failed: bool = compile_time.0;
 
-    let thrustc_time_ms: f64 = compile_time.1.as_millis_f64();
-    let frontend_time_ms: f64 = compile_time.2.as_millis_f64();
-    let backend_time_ms: f64 = compile_time.3.as_millis_f64();
-    let linking_time_ms: f64 = compile_time.4.as_millis_f64();
+    let thrustc_time_ms: f64 = compile_time.1.as_secs_f64() * 1000.0;
+    let frontend_time_ms: f64 = compile_time.2.as_secs_f64() * 1000.0;
+    let backend_time_ms: f64 = compile_time.3.as_secs_f64() * 1000.0;
+    let linking_time_ms: f64 = compile_time.4.as_secs_f64() * 1000.0;
 
     let backend_identifier: &str = if options.llvm() { "LLVM" } else { "GCC" };
 

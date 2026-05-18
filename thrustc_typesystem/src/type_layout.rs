@@ -14,6 +14,9 @@ pub struct Layout {
     pub sizeof: u32,
     pub alignof: u32,
     pub field_offsets: Vec<u32>,
+
+    pub abi_size: u32,
+    pub abi_align: u32,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -22,6 +25,9 @@ pub struct TypeLayout {
     pub align: u32,
     pub alignof: u32,
     pub sizeof: u32,
+
+    pub abi_size: u32,
+    pub abi_align: u32,
 }
 
 impl TypeLayout {
@@ -32,6 +38,26 @@ impl TypeLayout {
             alignof: self.alignof,
             sizeof: self.sizeof,
             field_offsets: Vec::new(),
+            abi_size: self.abi_size,
+            abi_align: self.abi_align,
+        }
+    }
+}
+
+impl TypeLayout {
+    pub fn compute_abi_size(&mut self) {
+        if self.align == 0 {
+            self.abi_size = self.sizeof;
+        } else {
+            self.abi_size = (self.sizeof).div_ceil(self.align / 8) * (self.align / 8);
+        }
+    }
+
+    pub fn compute_abi_align(&mut self) {
+        if self.align == 0 {
+            self.abi_align = 1;
+        } else {
+            self.abi_align = self.align / 8;
         }
     }
 }
@@ -43,6 +69,47 @@ pub struct StructTypeLayout {
     pub alignof: u32,
     pub sizeof: u32,
     pub field_offsets: Vec<u32>,
+
+    pub abi_size: u32,
+    pub abi_align: u32,
+}
+
+impl StructTypeLayout {
+    pub fn new(
+        width: u32,
+        align: u32,
+        alignof: u32,
+        sizeof: u32,
+        fields_offsets: Vec<u32>,
+    ) -> Self {
+        Self {
+            width,
+            align,
+            alignof,
+            sizeof,
+            field_offsets: fields_offsets,
+            abi_size: 0,
+            abi_align: 0,
+        }
+    }
+}
+
+impl StructTypeLayout {
+    pub fn compute_abi_size(&mut self) {
+        if self.align == 0 {
+            self.abi_size = self.sizeof;
+        } else {
+            self.abi_size = (self.sizeof).div_ceil(self.align / 8) * (self.align / 8);
+        }
+    }
+
+    pub fn compute_abi_align(&mut self) {
+        if self.align == 0 {
+            self.abi_align = 1;
+        } else {
+            self.abi_align = self.align / 8;
+        }
+    }
 }
 
 impl StructTypeLayout {
@@ -53,6 +120,8 @@ impl StructTypeLayout {
             alignof: self.alignof,
             sizeof: self.sizeof,
             field_offsets: self.field_offsets,
+            abi_size: self.abi_size,
+            abi_align: self.abi_align,
         }
     }
 }
@@ -417,6 +486,9 @@ impl TargetInfo {
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
 
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
+
                 either::Either::Left(type_info)
             }
 
@@ -425,6 +497,9 @@ impl TargetInfo {
                 type_info.align = self.i8_align();
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
+
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
 
                 either::Either::Left(type_info)
             }
@@ -435,6 +510,9 @@ impl TargetInfo {
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
 
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
+
                 either::Either::Left(type_info)
             }
 
@@ -443,6 +521,9 @@ impl TargetInfo {
                 type_info.align = self.i32_align();
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
+
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
 
                 either::Either::Left(type_info)
             }
@@ -453,6 +534,9 @@ impl TargetInfo {
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
 
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
+
                 either::Either::Left(type_info)
             }
 
@@ -461,6 +545,9 @@ impl TargetInfo {
                 type_info.align = self.i128_align();
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
+
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
 
                 either::Either::Left(type_info)
             }
@@ -471,6 +558,9 @@ impl TargetInfo {
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
 
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
+
                 either::Either::Left(type_info)
             }
 
@@ -479,6 +569,9 @@ impl TargetInfo {
                 type_info.align = self.usize_align();
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
+
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
 
                 either::Either::Left(type_info)
             }
@@ -489,6 +582,9 @@ impl TargetInfo {
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
 
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
+
                 either::Either::Left(type_info)
             }
 
@@ -497,6 +593,9 @@ impl TargetInfo {
                 type_info.align = self.f32_align();
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
+
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
 
                 either::Either::Left(type_info)
             }
@@ -507,6 +606,9 @@ impl TargetInfo {
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
 
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
+
                 either::Either::Left(type_info)
             }
 
@@ -515,6 +617,9 @@ impl TargetInfo {
                 type_info.align = self.f128_align();
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
+
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
 
                 either::Either::Left(type_info)
             }
@@ -525,6 +630,9 @@ impl TargetInfo {
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
 
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
+
                 either::Either::Left(type_info)
             }
 
@@ -533,6 +641,9 @@ impl TargetInfo {
                 type_info.align = self.ptr_align();
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
+
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
 
                 either::Either::Left(type_info)
             }
@@ -552,6 +663,9 @@ impl TargetInfo {
                 type_info.align = element_align;
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
+
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
 
                 either::Either::Left(type_info)
             }
@@ -577,6 +691,9 @@ impl TargetInfo {
                     type_info.alignof = type_info.align / self.i8_width;
                     type_info.sizeof = type_info.width / self.i8_width;
 
+                    type_info.compute_abi_size();
+                    type_info.compute_abi_align();
+
                     either::Either::Left(type_info)
                 } else {
                     let element_width: u32 = match self.get_type_layout(element_type) {
@@ -593,6 +710,9 @@ impl TargetInfo {
                     type_info.align = element_align;
                     type_info.alignof = type_info.align / self.i8_width;
                     type_info.sizeof = type_info.width / self.i8_width;
+
+                    type_info.compute_abi_size();
+                    type_info.compute_abi_align();
 
                     either::Either::Left(type_info)
                 }
@@ -635,13 +755,18 @@ impl TargetInfo {
                     current_offset_bits.div_ceil(max_align_bits) * max_align_bits
                 };
 
-                either::Either::Right(StructTypeLayout {
-                    width: total_width_bits,
-                    align: max_align_bits,
-                    alignof: max_align_bits / self.i8_width,
-                    sizeof: total_width_bits / self.i8_width,
-                    field_offsets: field_offsets_bits,
-                })
+                let mut struct_type_layout: StructTypeLayout = StructTypeLayout::new(
+                    total_width_bits,
+                    max_align_bits,
+                    max_align_bits / self.i8_width,
+                    total_width_bits / self.i8_width,
+                    field_offsets_bits,
+                );
+
+                struct_type_layout.compute_abi_size();
+                struct_type_layout.compute_abi_align();
+
+                either::Either::Right(struct_type_layout)
             }
         };
 

@@ -10,4 +10,21 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+either = "1.15.0"
+
 thrustc_typesystem = { path = "../thrustc_typesystem" }
+thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
+thrustc_span = { path = "../thrustc_span" }
+
+inkwell = { workspace = true, optional = true }
+clang = { workspace = true, optional = true }
+
+[features]
+default = ["llvm_backend_static"]
+
+llvm_backend_dynamic = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-dynamic"]
+llvm_backend_static  = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-static"]
+
+cbindgen_static      = ["dep:clang", "clang/static"]
+cbindgen_dynamic     = ["dep:clang"]
+
