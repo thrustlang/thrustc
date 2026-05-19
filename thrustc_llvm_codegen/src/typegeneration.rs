@@ -45,32 +45,79 @@ pub fn compile_as_function_type<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     kind: &Type,
     parameters: &[Ast],
-    is_var_args: bool,
+    is_variatic: bool,
 ) -> FunctionType<'ctx> {
     let llvm_context: &Context = context.get_llvm_context();
+    let has_abi: bool = context.has_abi();
 
-    let mut llvm_parameters_types: Vec<BasicMetadataTypeEnum> =
-        Vec::with_capacity(parameters.len());
+    if !has_abi {
+        let llvm_context: &Context = context.get_llvm_context();
 
-    for parameter in parameters {
-        match parameter {
-            Ast::FunctionParameter { kind, .. }
-            | Ast::IntrinsicParameter { kind, .. }
-            | Ast::AssemblerFunctionParameter { kind, .. } => {
-                let generated_type: BasicTypeEnum<'_> = self::generate_type(context, kind);
-                llvm_parameters_types.push(generated_type.into());
+        let mut llvm_parameters_types: Vec<BasicMetadataTypeEnum> =
+            Vec::with_capacity(parameters.len());
+
+        for parameter in parameters {
+            match parameter {
+                Ast::FunctionParameter { kind, .. }
+                | Ast::IntrinsicParameter { kind, .. }
+                | Ast::AssemblerFunctionParameter { kind, .. } => {
+                    let generated_type: BasicTypeEnum<'_> = self::generate_type(context, kind);
+                    llvm_parameters_types.push(generated_type.into());
+                }
+
+                _ => {}
             }
-
-            _ => {}
         }
-    }
 
-    if kind.is_void_type() {
-        llvm_context
-            .void_type()
-            .fn_type(&llvm_parameters_types, is_var_args)
+        if kind.is_void_type() {
+            llvm_context
+                .void_type()
+                .fn_type(&llvm_parameters_types, is_variatic)
+        } else {
+            self::generate_type(context, kind).fn_type(&llvm_parameters_types, is_variatic)
+        }
     } else {
-        self::generate_type(context, kind).fn_type(&llvm_parameters_types, is_var_args)
+        
+        let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> = context.get_abi().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to compile as a function type, expected an ABI!",
+                kind.get_span(),
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+        let parameters_types: Vec<Type> = parameters
+            .iter()
+            .filter_map(|parameter| match parameter {
+                Ast::FunctionParameter { kind, .. }
+                | Ast::IntrinsicParameter { kind, .. }
+                | Ast::AssemblerFunctionParameter { kind, .. } => Some(kind.clone()),
+
+                _ => None,
+            })
+            .collect();
+
+        let function_type: FunctionType<'_> = thrustc_llvm_abi::decompose_function_type(
+            llvm_context,
+            abi,
+            kind,
+            &parameters_types,
+            is_variatic,
+        ).unwrap_or_else(|| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile as a function type, failed to decompose function type using the ABI!",
+                    kind.get_span(),
+                    PathBuf::from(file!()),
+                    line!(),
+                )
+            }  
+        );
+
+        function_type
+  
     }
 }
 
@@ -79,7 +126,7 @@ pub fn generate_type_function_type_to_function_type<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     kind: &Type,
     parameter_types: &[Type],
-    is_var_args: bool,
+    is_variatic: bool,
 ) -> FunctionType<'ctx> {
     let llvm_context: &Context = context.get_llvm_context();
 
@@ -94,9 +141,9 @@ pub fn generate_type_function_type_to_function_type<'ctx>(
     if kind.is_void_type() {
         llvm_context
             .void_type()
-            .fn_type(&llvm_parameters_types, is_var_args)
+            .fn_type(&llvm_parameters_types, is_variatic)
     } else {
-        self::generate_type(context, kind).fn_type(&llvm_parameters_types, is_var_args)
+        self::generate_type(context, kind).fn_type(&llvm_parameters_types, is_variatic)
     }
 }
 

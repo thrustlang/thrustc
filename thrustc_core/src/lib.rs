@@ -37,6 +37,7 @@ use inkwell::memory_buffer::MemoryBuffer;
 use inkwell::module::Module;
 use inkwell::targets::InitializationConfig;
 use inkwell::targets::Target;
+use inkwell::targets::TargetData;
 use inkwell::targets::TargetMachine;
 use inkwell::targets::TargetTriple;
 
@@ -48,6 +49,7 @@ use thrustc_backends::llvm::jit::JITConfiguration;
 use thrustc_backends::llvm::target::LLVMTarget;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_lexer::Lexer;
+use thrustc_llvm_abi_representation::LLVMABIRepresentation;
 use thrustc_llvm_callconventions_checker::LLVMCallConventionsChecker;
 use thrustc_llvm_codegen::context::LLVMCodeGenContext;
 use thrustc_llvm_codegen::jit::LLVMJITCompiler;
@@ -55,6 +57,7 @@ use thrustc_llvm_codegen::optimizer::LLVMOptimizationConfig;
 use thrustc_llvm_codegen::optimizer::LLVMOptimizerFlags;
 use thrustc_llvm_codegen::optimizer::LLVMOptimizerPasses;
 use thrustc_llvm_intrinsic_checker::LLVMIntrinsicChecker;
+use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::CompilationPhase;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
@@ -64,6 +67,7 @@ use thrustc_parser::Parser;
 use thrustc_parser::ParserContext;
 use thrustc_preprocessor::Preprocessor;
 use thrustc_semantic::SemanticAnalysis;
+use thrustc_typesystem::type_layout::TargetInfo;
 
 #[derive(Debug)]
 pub struct ThrustCompiler<'thrustc> {
@@ -310,20 +314,20 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let backend_time: std::time::Instant = std::time::Instant::now();
 
-        let llvm_context: Context = Context::create();
-        let llvm_builder: Builder = llvm_context.create_builder();
-        let llvm_module: Module = llvm_context.create_module(file.get_name());
-
         let target: &LLVMTarget = llvm_backend.get_target();
         let llvm_triple: &TargetTriple = target.get_target_triple();
+
+        let llvm_target_triple_formatted: String =
+            llvm_triple.as_str().to_string_lossy().to_string();
+
+        let llvm_target_triple: LLVMTargetTriple =
+            LLVMTargetTriple::new(llvm_target_triple_formatted.clone());
 
         let llvm_cpu_name: &str = llvm_backend.get_target_cpu().get_cpu_name();
         let llvm_cpu_features: &str = llvm_backend.get_target_cpu().get_cpu_features();
 
         let compiler_optimization: ThrustOptimization = llvm_backend.get_optimization();
         let llvm_opt: OptimizationLevel = compiler_optimization.to_llvm_opt();
-
-        llvm_module.set_triple(llvm_triple);
 
         let target: Target = Target::from_triple(llvm_triple).map_err(|_| {
             let _ = interrupt::archive_compilation_unit_with_message(
@@ -364,15 +368,36 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 );
             })?;
 
+        let target_data: TargetData = target_machine.get_target_data();
+        let target_triple: TargetTriple = target_machine.get_triple();
+
+        let target_info: TargetInfo =
+            TargetInfo::new(LLVMTargetTriple::new(llvm_target_triple_formatted));
+
+        let target_abi: Option<LLVMABIRepresentation> = thrustc_llvm_abi::get_abi(
+            file,
+            self.options,
+            &llvm_target_triple,
+            &target_info,
+            &target_data,
+        );
+
+        let llvm_context: Context = Context::create();
+        let llvm_builder: Builder = llvm_context.create_builder();
+        let llvm_module: Module = llvm_context.create_module(file.get_name());
+
+        llvm_module.set_triple(llvm_triple);
+
         llvm_module.set_data_layout(&target_machine.get_target_data().get_data_layout());
 
         let mut llvm_codegen_context: LLVMCodeGenContext = LLVMCodeGenContext::new(
             &llvm_module,
             &llvm_context,
             &llvm_builder,
-            target_machine.get_target_data(),
-            target_machine.get_triple(),
+            &target_data,
+            &target_triple,
             &target_machine,
+            target_abi.as_ref(),
             Diagnostician::new(file, self.options),
             self.options,
             file,
@@ -687,20 +712,20 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let backend_time: std::time::Instant = std::time::Instant::now();
 
-        let llvm_context: Context = Context::create();
-        let llvm_builder: Builder = llvm_context.create_builder();
-        let llvm_module: Module = llvm_context.create_module(file.get_name());
-
         let target: &LLVMTarget = llvm_backend.get_target();
         let llvm_triple: &TargetTriple = target.get_target_triple();
+
+        let llvm_target_triple_formatted: String =
+            llvm_triple.as_str().to_string_lossy().to_string();
+
+        let llvm_target_triple: LLVMTargetTriple =
+            LLVMTargetTriple::new(llvm_target_triple_formatted.clone());
 
         let llvm_cpu_name: &str = llvm_backend.get_target_cpu().get_cpu_name();
         let llvm_cpu_features: &str = llvm_backend.get_target_cpu().get_cpu_features();
 
         let compiler_optimization: ThrustOptimization = llvm_backend.get_optimization();
         let llvm_opt: OptimizationLevel = compiler_optimization.to_llvm_opt();
-
-        llvm_module.set_triple(llvm_triple);
 
         let target: Target = Target::from_triple(llvm_triple).map_err(|_| {
             let _ = interrupt::archive_compilation_unit_with_message(
@@ -731,6 +756,26 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 );
             })?;
 
+        let target_data: TargetData = target_machine.get_target_data();
+        let target_triple: TargetTriple = target_machine.get_triple();
+
+        let target_info: TargetInfo =
+            TargetInfo::new(LLVMTargetTriple::new(llvm_target_triple_formatted));
+
+        let target_abi: Option<LLVMABIRepresentation> = thrustc_llvm_abi::get_abi(
+            file,
+            self.options,
+            &llvm_target_triple,
+            &target_info,
+            &target_data,
+        );
+
+        let llvm_context: Context = Context::create();
+        let llvm_builder: Builder = llvm_context.create_builder();
+        let llvm_module: Module = llvm_context.create_module(file.get_name());
+
+        llvm_module.set_triple(llvm_triple);
+
         llvm_module.set_data_layout(&target_machine.get_target_data().get_data_layout());
 
         jit::has_jit_available(&target)?;
@@ -739,9 +784,10 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             &llvm_module,
             &llvm_context,
             &llvm_builder,
-            target_machine.get_target_data(),
-            target_machine.get_triple(),
+            &target_data,
+            &target_triple,
             &target_machine,
+            target_abi.as_ref(),
             Diagnostician::new(file, self.options),
             self.options,
             file,

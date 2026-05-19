@@ -30,6 +30,7 @@ use inkwell::values::BasicValueEnum;
 use inkwell::values::PointerValue;
 
 use thrustc_diagnostician::Diagnostician;
+use thrustc_llvm_abi_representation::LLVMABIRepresentation;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
@@ -57,9 +58,11 @@ pub struct LLVMCodeGenContext<'a, 'ctx> {
     context: &'ctx Context,
     builder: &'ctx Builder<'ctx>,
     target_info: TargetInfo,
-    target_data: TargetData,
-    target_triple: TargetTriple,
+    target_data: &'ctx TargetData,
+    target_triple: &'ctx TargetTriple,
     target_machine: &'a TargetMachine,
+    target_abi: Option<&'ctx LLVMABIRepresentation<'ctx>>,
+
     dbg_context: Option<LLVMDebugContext<'a, 'ctx>>,
 
     table: LLVMSymbolsTable<'ctx>,
@@ -83,12 +86,13 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
         module: &'a Module<'ctx>,
         context: &'ctx Context,
         builder: &'ctx Builder<'ctx>,
-        target_data: TargetData,
-        target_triple: TargetTriple,
+        target_data: &'ctx TargetData,
+        target_triple: &'ctx TargetTriple,
         target_machine: &'a TargetMachine,
+        target_abi: Option<&'ctx LLVMABIRepresentation<'ctx>>,
         diagnostician: Diagnostician,
         options: &'ctx CompilerOptions,
-        file: &CompilationUnit,
+        file: &'ctx CompilationUnit,
     ) -> Self {
         let dbg_context: Option<LLVMDebugContext> = if options
             .get_llvm_backend()
@@ -103,7 +107,7 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
         let target_triple_formatted: String = target_triple.as_str().to_string_lossy().to_string();
 
         let target_info: TargetInfo =
-            TargetInfo::new(LLVMTargetTriple::new(target_triple_formatted));
+            TargetInfo::new(LLVMTargetTriple::new(target_triple_formatted.clone()));
 
         Self {
             module,
@@ -113,6 +117,7 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
             target_data,
             target_triple,
             target_machine,
+            target_abi,
             dbg_context,
 
             table: LLVMSymbolsTable::new(),
@@ -149,6 +154,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
         }
     }
 
+    #[inline]
     pub fn add_global_constant(&mut self, name: &'ctx str, symbol: SymbolAllocated<'ctx>) {
         self.table.add_global_constant(name, symbol);
     }
@@ -169,6 +175,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
         }
     }
 
+    #[inline]
     pub fn add_global_static(&mut self, name: &'ctx str, static_: SymbolAllocated<'ctx>) {
         self.table.add_global_static(name, static_);
     }
@@ -315,12 +322,12 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
 
     #[inline]
     pub fn get_target_data(&self) -> &TargetData {
-        &self.target_data
+        self.target_data
     }
 
     #[inline]
     pub fn get_target_triple(&self) -> &TargetTriple {
-        &self.target_triple
+        self.target_triple
     }
 
     #[inline]
@@ -366,6 +373,16 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
     #[inline]
     pub fn get_table(&self) -> &LLVMSymbolsTable<'ctx> {
         &self.table
+    }
+
+    #[inline]
+    pub fn get_abi(&self) -> Option<&'ctx LLVMABIRepresentation<'ctx>> {
+        self.target_abi
+    }
+
+    #[inline]
+    pub fn has_abi(&self) -> bool {
+        self.target_abi.is_some()
     }
 
     #[inline]

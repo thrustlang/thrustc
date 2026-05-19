@@ -1,5 +1,5 @@
 [package]
-name = "thrustc_llvm_abi_x86"
+name = "thrustc_llvm_abi_representation"
 description.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,18 +10,16 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-either = "1.15.0"
-
-thrustc_typesystem = { path = "../thrustc_typesystem" }
+thrustc_options = { path = "../thrustc_options" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
-thrustc_span = { path = "../thrustc_span" }
+thrustc_typesystem = { path = "../thrustc_typesystem" }
 
 inkwell = { workspace = true, optional = true }
 clang = { workspace = true, optional = true }
 
 [features]
 default = ["llvm_backend_static"]
-
+ 
 llvm_backend_dynamic = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-dynamic"]
 llvm_backend_static  = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-static"]
 

@@ -16,6 +16,8 @@ uuid = { version = "1.19.0", features = ["v4"] }
 inkwell = { workspace = true, optional = true }
 clang = { workspace = true, optional = true }
 
+thrustc_llvm_abi = { path = "../thrustc_llvm_abi" }
+thrustc_llvm_abi_representation = { path = "../thrustc_llvm_abi_representation" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_llvm_attributes = { path = "../thrustc_llvm_attributes" }
 thrustc_llvm_callconventions = { path = "../thrustc_llvm_callconventions" }

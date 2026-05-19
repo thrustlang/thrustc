@@ -20,7 +20,7 @@
 mod impls;
 pub mod traits;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LLVMTargetTriple {
     arch: String,
     vendor: String,
@@ -80,6 +80,46 @@ impl LLVMTargetTriple {
             self.get_os(),
             "linux" | "android" | "freebsd" | "netbsd" | "openbsd"
         ) || matches!(self.get_abi(), "gnu")
+    }
+
+    #[inline]
+    pub fn has_sysv_abi(&self) -> bool {
+        // ref: https://llvm.org/doxygen/Triple_8cpp_source.html
+        // ref: https://github.com/hjl-tools/x86-psABI/wiki/X86-psABI
+
+        self.is_object_format_elf()
+            && matches!(
+                self.arch.as_str(),
+                "x86_64"
+                    | "amd64"
+                    | "x86"
+                    | "i386"
+                    | "i486"
+                    | "i586"
+                    | "i686"
+                    | "aarch64"
+                    | "aarch64_be"
+                    | "riscv32"
+                    | "riscv64"
+                    | "riscv32be"
+                    | "riscv64be"
+                    | "ppc64"
+                    | "ppc64le"
+                    | "powerpc64"
+                    | "powerpc64le"
+                    | "mips"
+                    | "mipsel"
+                    | "mips64"
+                    | "mips64el"
+                    | "sparc"
+                    | "sparcel"
+                    | "sparcv9"
+                    | "loongarch64"
+                    | "loongarch32"
+                    | "s390x"
+                    | "systemz"
+                    | "m68k"
+            )
     }
 }
 
@@ -269,49 +309,58 @@ impl LLVMTargetTriple {
 
         let arch_in_elf_list: bool = matches!(
             self.arch.as_str(),
-            "aarch64_be"
+            "aarch64"
+                | "aarch64_be"
+                | "aarch64_32"
                 | "amdgcn"
-                | "amdil64"
                 | "amdil"
+                | "amdil64"
                 | "arc"
                 | "armeb"
+                | "arm"
+                | "thumb"
+                | "thumbeb"
                 | "avr"
                 | "bpfeb"
                 | "bpfel"
                 | "csky"
                 | "hexagon"
-                | "hsail64"
                 | "hsail"
+                | "hsail64"
                 | "kalimba"
                 | "lanai"
                 | "loongarch32"
                 | "loongarch64"
                 | "m68k"
+                | "mips"
+                | "mipsel"
                 | "mips64"
                 | "mips64el"
-                | "mips"
                 | "msp430"
-                | "nvptx64"
                 | "nvptx"
-                | "ppc64le"
+                | "nvptx64"
+                | "ppc"
                 | "ppcle"
+                | "ppc64"
+                | "ppc64le"
                 | "r600"
-                | "renderscript32"
-                | "renderscript64"
                 | "riscv32"
                 | "riscv64"
-                | "riscv32be"
-                | "riscv64be"
                 | "shave"
                 | "sparc"
                 | "sparcel"
                 | "sparcv9"
-                | "spir64"
                 | "spir"
+                | "spir64"
+                | "s390x"
+                | "systemz"
                 | "tce"
                 | "tcele"
-                | "thumbeb"
                 | "ve"
+                | "wasm32"
+                | "wasm64"
+                | "x86"
+                | "x86_64"
                 | "xcore"
                 | "xtensa"
         );

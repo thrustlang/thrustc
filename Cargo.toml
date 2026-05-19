@@ -29,7 +29,7 @@ members = [
     "thrustc_entities", 
     "thrustc_preprocessor",
     "thrustc_llvm_abi",
-    "thrustc_llvm_abi_x86",
+    "thrustc_llvm_x86_abi",
     "thrustc_llvm_codegen", 
     "thrustc_llvm_attributes", 
     "thrustc_llvm_callconventions",
@@ -45,7 +45,7 @@ members = [
     "thrustc_heap_allocator", 
     "thrustc_ast_external", 
     "thrustc_cli",
-    "thrustc_utils", 
+    "thrustc_utils", "thrustc_llvm_abi_representation", 
 ]
 
 exclude = [
