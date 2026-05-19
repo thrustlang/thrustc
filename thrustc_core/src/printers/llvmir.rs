@@ -97,6 +97,7 @@ pub fn print_llvm_ir(
             let ranges = highlighter
                 .highlight_line(line, &syntax_set)
                 .expect("highlight_line failed");
+
             colored_ir.push_str(&syntect::util::as_24_bit_terminal_escaped(&ranges, false));
         }
 

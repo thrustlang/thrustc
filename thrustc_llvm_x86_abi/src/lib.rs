@@ -302,8 +302,8 @@ impl X86SystemVABITypeClass {
                         .first()
                         .is_some_and(|c| !matches!(c, X86SystemVABITypeClass::SSE))
                         || current_classes
-                            .get(1)
                             .iter()
+                            .skip(1)
                             .any(|c| !matches!(c, X86SystemVABITypeClass::SSEUP)))
                 {
                     return X86_SYSTEM_V_ABI_STACK;
@@ -809,7 +809,7 @@ pub fn decompose_function_type<'llvm_abi>(
                     let mut decomposed_indexes: Vec<usize> = Vec::new();
 
                     for _ in decomposed_types.iter() {
-                        decomposed_indexes.push(llvm_parameters_last_index + 1);
+                        decomposed_indexes.push(llvm_parameters_last_index);
                         llvm_parameters_last_index += 1;
                     }
 
