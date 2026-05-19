@@ -20,6 +20,11 @@
 use colored::Colorize;
 
 use inkwell::module::Module;
+use syntect::easy::HighlightLines;
+use syntect::highlighting::ThemeSet;
+use syntect::parsing::SyntaxDefinition;
+use syntect::parsing::SyntaxSetBuilder;
+use syntect::util::LinesWithEndings;
 use thrustc_options::CompilerOptions;
 
 use crate::ThrustCompiler;
@@ -49,14 +54,66 @@ pub fn print_llvm_ir(
 
     let module_print: String = llvm_module.print_to_string().to_string();
 
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stdout,
-        &format!(
-            "{}{}\n\n",
-            "LLVM IR FILE - ".bold(),
-            ir_file_name.bright_green().bold(),
-        ),
-    );
+    if !compiler_options.need_ansi_colors() {
+        thrustc_logging::write(
+            thrustc_logging::OutputIn::Stdout,
+            &format!(
+                "{}{}\n\n",
+                "LLVM IR FILE - ".bold(),
+                ir_file_name.bright_green().bold(),
+            ),
+        );
+
+        thrustc_logging::write(thrustc_logging::OutputIn::Stdout, &module_print);
+        thrustc_logging::write(thrustc_logging::OutputIn::Stdout, "\n");
+    } else {
+        let mut builder: SyntaxSetBuilder = SyntaxSetBuilder::new();
+
+        builder.add_plain_text_syntax();
+
+        let syntax_str: &str = std::str::from_utf8(thrustc_constants::LLVM_SYNTAX_HIGHLIGHTING)
+            .expect("llvm.sublime-syntax is not valid UTF-8");
+        let syntax: syntect::parsing::SyntaxDefinition =
+            SyntaxDefinition::load_from_str(syntax_str, true, None)
+                .expect("failed to parse llvm.sublime-syntax");
+
+        builder.add(syntax);
+
+        let syntax_set: syntect::parsing::SyntaxSet = builder.build();
+
+        let theme: syntect::highlighting::Theme = ThemeSet::load_from_reader(
+            &mut std::io::Cursor::new(thrustc_constants::ONE_DARK_THEME),
+        )
+        .expect("failed to load One Dark theme");
+
+        let syntax_ref = syntax_set
+            .find_syntax_by_name("LLVM IR")
+            .expect("LLVM IR syntax not found");
+
+        let mut highlighter: HighlightLines = HighlightLines::new(syntax_ref, &theme);
+        let mut colored_ir: String = String::with_capacity(module_print.len() * 2);
+
+        for line in LinesWithEndings::from(&module_print) {
+            let ranges = highlighter
+                .highlight_line(line, &syntax_set)
+                .expect("highlight_line failed");
+            colored_ir.push_str(&syntect::util::as_24_bit_terminal_escaped(&ranges, false));
+        }
+
+        colored_ir.push_str("\x1b[0m");
+
+        thrustc_logging::write(
+            thrustc_logging::OutputIn::Stdout,
+            &format!(
+                "{}{}\n\n",
+                "LLVM IR FILE - ".bold(),
+                ir_file_name.bright_green().bold(),
+            ),
+        );
+
+        thrustc_logging::write(thrustc_logging::OutputIn::Stdout, &colored_ir);
+        thrustc_logging::write(thrustc_logging::OutputIn::Stdout, "\n");
+    }
 
     #[cfg(feature = "extra_utilities")]
     {
@@ -81,7 +138,4 @@ pub fn print_llvm_ir(
             }
         }
     }
-
-    thrustc_logging::write(thrustc_logging::OutputIn::Stdout, &module_print);
-    thrustc_logging::write(thrustc_logging::OutputIn::Stdout, "\n");
 }

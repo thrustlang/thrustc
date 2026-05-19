@@ -1,0 +1,36 @@
+name: LLVM IR
+file_extensions: [ll]
+scope: source.llvm
+
+contexts:
+  main:
+    - include: comments
+    - include: strings
+    - include: keywords
+    - include: types
+    - include: values
+
+  comments:
+    - match: ';.*$'
+      scope: comment.line.llvm
+
+  strings:
+    - match: '"'
+      push:
+        - meta_scope: string.quoted.double.llvm
+        - match: '"'
+          pop: true
+
+  keywords:
+    - match: \b(define|declare|ret|br|switch|call|load|store|alloca|getelementptr|add|sub|mul|div|icmp|fcmp|phi|select|bitcast|trunc|zext|sext|sitofp|fptosi|inttoptr|ptrtoint|extractvalue|insertvalue|unreachable|global|constant|private|internal|external|linkonce|weak|common|appending|dllimport|dllexport|nounwind|noreturn|readonly|uwtable|align|target|datalayout|triple|attributes|metadata|label|to|type|opaque|null|true|false|undef|zeroinitializer|inbounds)\b
+      scope: keyword.control.llvm
+
+  types:
+    - match: \b(void|i1|i8|i16|i32|i64|i128|half|float|double|x86_fp80|fp128|ptr)\b
+      scope: storage.type.llvm
+    - match: \bx\b
+      scope: keyword.operator.llvm
+
+  values:
+    - match: '%[a-zA-Z0-9_.]+|@[a-zA-Z0-9_.]+|\b[0-9]+\b'
+      scope: variable.other.llvm

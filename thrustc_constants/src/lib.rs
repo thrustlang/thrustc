@@ -30,3 +30,8 @@ pub const FAILURE_CODE: i32 = 1;
 
 pub const COMPILER_HARD_OBFUSCATION_LEVEL: usize = 30;
 pub const COMPILER_LOW_OBFUSCATION_LEVEL: usize = 15;
+
+pub static LLVM_SYNTAX_HIGHLIGHTING: &[u8] =
+    include_bytes!("../../highlighting/llvm.sublime-syntax");
+
+pub static ONE_DARK_THEME: &[u8] = include_bytes!("../../highlighting/One Dark.tmTheme");
