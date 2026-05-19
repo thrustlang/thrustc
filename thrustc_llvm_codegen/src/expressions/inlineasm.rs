@@ -46,8 +46,12 @@ pub fn compile<'ctx>(
     let llvm_context: &Context = context.get_llvm_context();
     let llvm_builder: &Builder = context.get_llvm_builder();
 
-    let asm_function_type: FunctionType =
-        typegeneration::compile_as_function_type(context, kind, args, false);
+    let generated_asm_function_type: (
+        FunctionType<'_>,
+        Option<thrustc_llvm_abi::LLVMABIConfiguration>,
+    ) = typegeneration::compile_as_function_type(context, kind, args, false);
+
+    let asm_function_type: FunctionType<'_> = generated_asm_function_type.0;
 
     let compiled_args: Vec<BasicMetadataValueEnum> = args
         .iter()

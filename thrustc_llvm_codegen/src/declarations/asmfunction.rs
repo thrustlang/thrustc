@@ -97,8 +97,14 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
         )
     };
 
-    let function_type: FunctionType =
-        typegeneration::compile_as_function_type(context, return_type, parameters, false);
+    let generated_function_type: (
+        FunctionType<'_>,
+        Option<thrustc_llvm_abi::LLVMABIConfiguration>,
+    ) = typegeneration::compile_as_function_type(context, return_type, parameters, false);
+
+    let function_type: FunctionType<'_> = generated_function_type.0;
+    let function_abi_config: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
+        generated_function_type.1;
 
     let function_ptr: PointerValue = llvm_context.create_inline_asm(
         function_type,
@@ -174,13 +180,14 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
 
     llvm_builder.position_at_end(last_block);
 
-    let proto: LLVMFunction = (
+    let prototype: LLVMFunction = (
         asm_function,
         return_type,
         parameters_types,
         call_convention,
+        function_abi_config,
         span,
     );
 
-    context.new_function(name, proto);
+    context.new_function(name, prototype);
 }

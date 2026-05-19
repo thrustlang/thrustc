@@ -116,7 +116,7 @@ impl<'ctx> LLVMSymbolsTable<'ctx> {
     #[must_use]
     pub fn get_function(&self, name: &str) -> LLVMFunction<'ctx> {
         if let Some(function) = self.functions.get(name) {
-            return *function;
+            return function.clone();
         }
 
         self::codegen_abort(format!(

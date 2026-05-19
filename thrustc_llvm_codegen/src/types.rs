@@ -17,9 +17,9 @@
 
 */
 
-
 use ahash::{AHashMap as HashMap, AHashSet as HashSet};
 use inkwell::values::{FunctionValue, PointerValue};
+use thrustc_llvm_abi::LLVMABIConfiguration;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
 
@@ -41,7 +41,14 @@ pub type LLVMDBGFunction<'ctx> = (
     Span,
 );
 
-pub type LLVMFunction<'ctx> = (FunctionValue<'ctx>, &'ctx Type, &'ctx [Type], u32, Span);
+pub type LLVMFunction<'ctx> = (
+    FunctionValue<'ctx>,
+    &'ctx Type,
+    &'ctx [Type],
+    u32,
+    Option<LLVMABIConfiguration>,
+    Span,
+);
 pub type LLVMFunctions<'ctx> = HashMap<&'ctx str, LLVMFunction<'ctx>>;
 
 pub type LLVMInstructions<'ctx> = Vec<HashMap<&'ctx str, SymbolAllocated<'ctx>>>;

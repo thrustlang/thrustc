@@ -20,16 +20,29 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::large_enum_variant)]
 
-use inkwell::{context::Context, targets::TargetData, types::FunctionType};
+use inkwell::{
+    builder::Builder,
+    context::Context,
+    targets::TargetData,
+    types::FunctionType,
+    values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue},
+};
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
-use thrustc_llvm_x86_abi::x86SystemVABIType;
+use thrustc_llvm_x86_abi::{x86SystemVABIFunctionTypeConfiguration, x86SystemVABIType};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::{Type, type_layout::TargetInfo};
 
 #[derive(Debug, Clone)]
 pub enum LLVMABIType {
     x86SystemV(x86SystemVABIType),
+
+    None,
+}
+
+#[derive(Debug, Clone)]
+pub enum LLVMABIConfiguration {
+    x86SystemVFunctionArgumentConfiguration(x86SystemVABIFunctionTypeConfiguration),
 
     None,
 }
@@ -97,7 +110,7 @@ pub fn decompose_function_type<'llvm_abi>(
     kind: &Type,
     parameter_types: &[Type],
     is_var_args: bool,
-) -> Option<FunctionType<'llvm_abi>> {
+) -> Option<(FunctionType<'llvm_abi>, LLVMABIConfiguration)> {
     match abi {
         LLVMABIRepresentation::x86SystemV {
             file,
@@ -126,7 +139,57 @@ pub fn decompose_function_type<'llvm_abi>(
                 is_var_args,
             );
 
-            Some(function_type.0)
+            Some((
+                function_type.0,
+                LLVMABIConfiguration::x86SystemVFunctionArgumentConfiguration(function_type.1),
+            ))
+        }
+
+        _ => None,
+    }
+}
+
+pub fn lower_function_call<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    llvm_builder: &'llvm_abi Builder<'llvm_abi>,
+    abi: &LLVMABIRepresentation<'llvm_abi>,
+    function_value: FunctionValue<'llvm_abi>,
+    configuration: LLVMABIConfiguration,
+    args: &[BasicValueEnum<'llvm_abi>],
+) -> Option<Vec<BasicMetadataValueEnum<'llvm_abi>>> {
+    match abi {
+        LLVMABIRepresentation::x86SystemV {
+            file,
+            options,
+            target_triple,
+            target_info,
+            target_data,
+        } => {
+            let mut abi_context: thrustc_llvm_x86_abi::X86SystemVABIContext =
+                thrustc_llvm_x86_abi::X86SystemVABIContext::new(
+                    file,
+                    options,
+                    target_triple,
+                    (*target_info).clone(),
+                    target_data,
+                );
+
+            let config: x86SystemVABIFunctionTypeConfiguration = match configuration {
+                LLVMABIConfiguration::x86SystemVFunctionArgumentConfiguration(config) => config,
+                _ => unreachable!(),
+            };
+
+            let lowered_args: Vec<BasicMetadataValueEnum<'llvm_abi>> =
+                thrustc_llvm_x86_abi::lower_function_call(
+                    llvm_builder,
+                    llvm_context,
+                    &mut abi_context,
+                    function_value,
+                    &config,
+                    args,
+                );
+
+            Some(lowered_args)
         }
 
         _ => None,

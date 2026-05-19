@@ -387,7 +387,7 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
 
     #[inline]
     pub fn get_current_function(&mut self, span: Span) -> LLVMFunction<'ctx> {
-        self.current_function.unwrap_or_else(|| {
+        self.current_function.clone().unwrap_or_else(|| {
             abort::abort_codegen(
                 self,
                 "Failed to compile a function internal reference!",

@@ -29,6 +29,7 @@ use inkwell::types::BasicTypeEnum;
 use inkwell::types::FunctionType;
 
 use thrustc_ast::Ast;
+use thrustc_llvm_abi::LLVMABIConfiguration;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeCodeLocation;
 use thrustc_typesystem::traits::TypeIsExtensions;
@@ -46,7 +47,7 @@ pub fn compile_as_function_type<'ctx>(
     kind: &Type,
     parameters: &[Ast],
     is_variatic: bool,
-) -> FunctionType<'ctx> {
+) -> (FunctionType<'ctx>, Option<LLVMABIConfiguration>) {
     let llvm_context: &Context = context.get_llvm_context();
     let has_abi: bool = context.has_abi();
 
@@ -70,11 +71,11 @@ pub fn compile_as_function_type<'ctx>(
         }
 
         if kind.is_void_type() {
-            llvm_context
+            (llvm_context
                 .void_type()
-                .fn_type(&llvm_parameters_types, is_variatic)
+                .fn_type(&llvm_parameters_types, is_variatic), None)
         } else {
-            self::generate_type(context, kind).fn_type(&llvm_parameters_types, is_variatic)
+            (self::generate_type(context, kind).fn_type(&llvm_parameters_types, is_variatic), None)
         }
     } else {
         
@@ -99,7 +100,7 @@ pub fn compile_as_function_type<'ctx>(
             })
             .collect();
 
-        let function_type: FunctionType<'_> = thrustc_llvm_abi::decompose_function_type(
+        let function_type: (FunctionType<'_>, LLVMABIConfiguration) = thrustc_llvm_abi::decompose_function_type(
             llvm_context,
             abi,
             kind,
@@ -116,7 +117,7 @@ pub fn compile_as_function_type<'ctx>(
             }  
         );
 
-        function_type
+        (function_type.0, Some(function_type.1))
   
     }
 }

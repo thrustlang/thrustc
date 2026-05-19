@@ -58,8 +58,14 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, intrinsic: Intr
         LLVMCallConvention::Standard as u32
     };
 
-    let function_type: FunctionType =
-        typegeneration::compile_as_function_type(context, return_type, parameters, ignore_args);
+    let generated_function_type: (
+        FunctionType<'_>,
+        Option<thrustc_llvm_abi::LLVMABIConfiguration>,
+    ) = typegeneration::compile_as_function_type(context, return_type, parameters, ignore_args);
+
+    let function_type: FunctionType<'_> = generated_function_type.0;
+    let function_abi_config: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
+        generated_function_type.1;
 
     let llvm_function: FunctionValue = llvm_module.add_function(external_name, function_type, None);
 
@@ -71,6 +77,7 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, intrinsic: Intr
         return_type,
         parameters_types,
         convention,
+        function_abi_config,
         span,
     );
 

@@ -180,7 +180,7 @@ impl<'ctx> LLVMFunctionExtensions<'ctx> for LLVMFunction<'ctx> {
 
     #[inline]
     fn get_span(&self) -> Span {
-        self.4
+        self.5
     }
 }
 
