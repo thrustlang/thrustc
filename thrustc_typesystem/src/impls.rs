@@ -20,6 +20,8 @@
 use std::hash::Hash;
 use std::hash::Hasher;
 
+use thrustc_span::Span;
+
 use crate::{
     Type,
     traits::{TypeCodeLocation, TypeExtensions, TypeIsExtensions},
@@ -484,5 +486,11 @@ impl std::fmt::Display for Type {
             }
             Type::Void(..) => write!(f, "void"),
         }
+    }
+}
+
+impl std::default::Default for Type {
+    fn default() -> Self {
+        Type::Void(Span::nothing())
     }
 }

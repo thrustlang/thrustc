@@ -72,6 +72,11 @@ pub enum SymbolAllocated<'ctx> {
         kind: &'ctx Type,
         span: Span,
     },
+    AllocatedParameter {
+        ptr: PointerValue<'ctx>,
+        kind: &'ctx Type,
+        span: Span,
+    },
     Parameter {
         value: BasicValueEnum<'ctx>,
         kind: &'ctx Type,
@@ -85,6 +90,7 @@ pub enum SymbolAllocated<'ctx> {
 
 #[derive(Debug, Clone, Copy)]
 pub enum SymbolToAllocate {
+    AllocatedParameter,
     Parameter,
     LowLevelInstruction,
 }
@@ -105,6 +111,11 @@ impl<'ctx> SymbolAllocated<'ctx> {
         span: Span,
     ) -> Self {
         match allocate {
+            SymbolToAllocate::AllocatedParameter => Self::AllocatedParameter {
+                ptr: value.into_pointer_value(),
+                kind,
+                span,
+            },
             SymbolToAllocate::Parameter => Self::Parameter { value, kind, span },
             SymbolToAllocate::LowLevelInstruction => {
                 Self::LowLevelInstruction { value, kind, span }
@@ -300,28 +311,26 @@ impl<'ctx> SymbolAllocated<'ctx> {
             return *value;
         }
 
-        if let Self::Parameter { value, .. } = self {
-            if value.is_pointer_value() {
-                let ptr: PointerValue = value.into_pointer_value();
-
-                if let Ok(loaded_value) = llvm_builder.build_load(llvm_type, ptr, "") {
-                    if let Some(instruction) = loaded_value.as_instruction_value() {
-                        instruction.set_alignment(alignment).unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to set type alignment!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            );
-                        });
-                    }
-
-                    return loaded_value;
+        if let Self::AllocatedParameter { ptr, span, .. } = self {
+            if let Ok(loaded_value) = llvm_builder.build_load(llvm_type, *ptr, "") {
+                if let Some(instruction) = loaded_value.as_instruction_value() {
+                    instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to set type alignment!",
+                            *span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        );
+                    });
                 }
-            } else {
-                return *value;
+
+                return loaded_value;
             }
+        }
+
+        if let Self::Parameter { value, .. } = self {
+            return *value;
         }
 
         abort::abort_codegen(
@@ -347,6 +356,22 @@ impl<'ctx> SymbolAllocated<'ctx> {
         context.mark_dbg_location(self.get_span());
 
         if let Self::Local { ptr, .. } = self {
+            if let Ok(store) = llvm_builder.build_store(*ptr, new_value) {
+                store.set_alignment(alignment).unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to set type alignment!",
+                        span,
+                        PathBuf::from(file!()),
+                        line!(),
+                    );
+                });
+
+                return;
+            }
+        }
+
+        if let Self::AllocatedParameter { ptr, .. } = self {
             if let Ok(store) = llvm_builder.build_store(*ptr, new_value) {
                 store.set_alignment(alignment).unwrap_or_else(|_| {
                     abort::abort_codegen(
@@ -396,6 +421,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
             Self::Constant { span, .. } => *span,
             Self::Static { span, .. } => *span,
             Self::Parameter { span, .. } => *span,
+            Self::AllocatedParameter { span, .. } => *span,
             Self::LowLevelInstruction { span, .. } => *span,
             Self::Function { span, .. } => *span,
         }
@@ -408,6 +434,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
             Self::Constant { kind, .. } => kind,
             Self::Static { kind, .. } => kind,
             Self::Parameter { kind, .. } => kind,
+            Self::AllocatedParameter { kind, .. } => kind,
             Self::LowLevelInstruction { kind, .. } => kind,
 
             _ => {
@@ -429,6 +456,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
             Self::Local { ptr, .. } => *ptr,
             Self::Constant { ptr, .. } => *ptr,
             Self::Static { ptr, .. } => *ptr,
+            Self::AllocatedParameter { ptr, .. } => *ptr,
             Self::Parameter { value, .. } => value.into_pointer_value(),
             Self::LowLevelInstruction { value, .. } => value.into_pointer_value(),
         }
@@ -439,6 +467,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
         match self {
             Self::Local { ptr, .. } => (*ptr).into(),
             Self::Function { ptr, .. } => (*ptr).into(),
+            Self::AllocatedParameter { ptr, .. } => (*ptr).into(),
             Self::Constant { value, .. } => *value,
             Self::Static { value, .. } => value.unwrap_or_else(|| {
                 abort::abort_codegen(

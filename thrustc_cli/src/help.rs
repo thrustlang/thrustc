@@ -374,6 +374,27 @@ pub fn show_help() -> ! {
         &format!(
             "{} {} {} {}\n",
             "•".bold(),
+            "--abi".custom_color((141, 141, 142)).bold(),
+            "[system-v]",
+            "Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
+            "--disable-abi".custom_color((141, 141, 142)).bold(),
+            "Disable the ABI detection and utilization, which may lead to less optimized code but can be useful for debugging or targeting non-standard environments.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {} {}\n",
+            "•".bold(),
             "--denormal-floating-point-behavior"
                 .custom_color((141, 141, 142))
                 .bold(),

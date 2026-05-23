@@ -21,6 +21,7 @@ use inkwell::values::FunctionValue;
 
 use thrustc_ast::Ast;
 use thrustc_ast_external::{ExternalSignature, ExternalSymbol};
+use thrustc_llvm_abi::LLVMABIConfiguration;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
 
@@ -164,18 +165,23 @@ impl<'ctx> LLVMFunctionExtensions<'ctx> for LLVMFunction<'ctx> {
     }
 
     #[inline]
-    fn get_call_convention(&self) -> u32 {
-        self.3
-    }
-
-    #[inline]
     fn get_param_count(&self) -> usize {
         self.2.len()
     }
 
     #[inline]
-    fn get_parameters_types(&self) -> &[Type] {
+    fn get_parameters_types(&self) -> &'ctx [Type] {
         self.2
+    }
+
+    #[inline]
+    fn get_call_convention(&self) -> u32 {
+        self.3
+    }
+
+    #[inline]
+    fn get_abi_configuration(&self) -> Option<&LLVMABIConfiguration<'ctx>> {
+        self.4.as_ref()
     }
 
     #[inline]

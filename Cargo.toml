@@ -45,7 +45,7 @@ members = [
     "thrustc_heap_allocator", 
     "thrustc_ast_external", 
     "thrustc_cli",
-    "thrustc_utils", "thrustc_llvm_abi_representation", 
+    "thrustc_utils", "thrustc_llvm_abi_representation", "thrustc_abi", 
 ]
 
 exclude = [

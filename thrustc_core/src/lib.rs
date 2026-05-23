@@ -374,13 +374,18 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let target_info: TargetInfo =
             TargetInfo::new(LLVMTargetTriple::new(llvm_target_triple_formatted));
 
-        let target_abi: Option<LLVMABIRepresentation> = thrustc_llvm_abi::get_abi(
+        let mut target_abi: Option<LLVMABIRepresentation> = thrustc_llvm_abi::get_abi(
+            self.options.abi_configuration().specific(),
             file,
             self.options,
             &llvm_target_triple,
             &target_info,
             &target_data,
         );
+
+        if self.options.abi_configuration().disable() {
+            target_abi = None;
+        }
 
         let llvm_context: Context = Context::create();
         let llvm_builder: Builder = llvm_context.create_builder();
@@ -762,13 +767,18 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let target_info: TargetInfo =
             TargetInfo::new(LLVMTargetTriple::new(llvm_target_triple_formatted));
 
-        let target_abi: Option<LLVMABIRepresentation> = thrustc_llvm_abi::get_abi(
+        let mut target_abi: Option<LLVMABIRepresentation> = thrustc_llvm_abi::get_abi(
+            self.options.abi_configuration().specific(),
             file,
             self.options,
             &llvm_target_triple,
             &target_info,
             &target_data,
         );
+
+        if self.options.abi_configuration().disable() {
+            target_abi = None;
+        }
 
         let llvm_context: Context = Context::create();
         let llvm_builder: Builder = llvm_context.create_builder();

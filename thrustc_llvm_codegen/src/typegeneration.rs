@@ -40,44 +40,63 @@ use std::path::PathBuf;
 use crate::abort;
 use crate::context::LLVMCodeGenContext;
 use crate::debug_context::LLVMDebugContext;
+use crate::declarations::function::CompilerFunctionVariant;
 
 #[inline]
 pub fn compile_as_function_type<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
-    kind: &Type,
-    parameters: &[Ast],
+    kind: &'ctx Type,
+    parameters: &'ctx [Ast<'ctx>],
     is_variatic: bool,
-) -> (FunctionType<'ctx>, Option<LLVMABIConfiguration>) {
+    variant: CompilerFunctionVariant
+) -> (FunctionType<'ctx>, Option<LLVMABIConfiguration<'ctx>>) {
     let llvm_context: &Context = context.get_llvm_context();
     let has_abi: bool = context.has_abi();
 
-    if !has_abi {
-        let llvm_context: &Context = context.get_llvm_context();
-
-        let mut llvm_parameters_types: Vec<BasicMetadataTypeEnum> =
+    let mut standard_type_generation = |parameters: &[Ast<'ctx>], return_kind: &Type| {
+        let mut llvm_parameters_types: Vec<BasicMetadataTypeEnum<'ctx>> = 
             Vec::with_capacity(parameters.len());
-
+    
         for parameter in parameters {
             match parameter {
                 Ast::FunctionParameter { kind, .. }
                 | Ast::IntrinsicParameter { kind, .. }
                 | Ast::AssemblerFunctionParameter { kind, .. } => {
-                    let generated_type: BasicTypeEnum<'_> = self::generate_type(context, kind);
+                    let generated_type: BasicTypeEnum<'ctx> = self::generate_type(context, kind);
                     llvm_parameters_types.push(generated_type.into());
                 }
-
                 _ => {}
             }
         }
-
-        if kind.is_void_type() {
-            (llvm_context
-                .void_type()
-                .fn_type(&llvm_parameters_types, is_variatic), None)
+    
+        if return_kind.is_void_type() {
+            (
+                llvm_context
+                    .void_type()
+                    .fn_type(&llvm_parameters_types, is_variatic),
+                None,
+            )
         } else {
-            (self::generate_type(context, kind).fn_type(&llvm_parameters_types, is_variatic), None)
+            (
+                self::generate_type(context, return_kind)
+                    .fn_type(&llvm_parameters_types, is_variatic),
+                None,
+            )
         }
+    };
+
+    if !has_abi {
+        standard_type_generation(parameters, kind)
     } else {
+
+        if variant.is_assembler_function() {
+            return standard_type_generation(parameters, kind);
+        }
+
+        if variant.is_compiler_intrinsic() {
+            return standard_type_generation(parameters, kind);
+        }
+
         
         let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> = context.get_abi().unwrap_or_else(|| {
             abort::abort_codegen(
@@ -89,22 +108,11 @@ pub fn compile_as_function_type<'ctx>(
             )
         });
 
-        let parameters_types: Vec<Type> = parameters
-            .iter()
-            .filter_map(|parameter| match parameter {
-                Ast::FunctionParameter { kind, .. }
-                | Ast::IntrinsicParameter { kind, .. }
-                | Ast::AssemblerFunctionParameter { kind, .. } => Some(kind.clone()),
-
-                _ => None,
-            })
-            .collect();
-
-        let function_type: (FunctionType<'_>, LLVMABIConfiguration) = thrustc_llvm_abi::decompose_function_type(
+        let function_type: (FunctionType<'_>, LLVMABIConfiguration<'_>) = thrustc_llvm_abi::decompose_function_type(
             llvm_context,
             abi,
             kind,
-            &parameters_types,
+            parameters,
             is_variatic,
         ).unwrap_or_else(|| {
                 abort::abort_codegen(
@@ -116,6 +124,7 @@ pub fn compile_as_function_type<'ctx>(
                 )
             }  
         );
+
 
         (function_type.0, Some(function_type.1))
   

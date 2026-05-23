@@ -199,6 +199,20 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
 }
 
 impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
+    pub fn new_allocated_parameter(
+        &mut self,
+        name: &'ctx str,
+        kind: &'ctx Type,
+        ptr: PointerValue<'ctx>,
+        span: Span,
+    ) {
+        let allocated_parameter: SymbolAllocated =
+            SymbolAllocated::new(SymbolToAllocate::AllocatedParameter, kind, ptr.into(), span);
+
+        self.table
+            .add_allocated_parameter(name, allocated_parameter);
+    }
+
     #[inline]
     pub fn new_parameter(
         &mut self,

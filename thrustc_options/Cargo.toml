@@ -14,6 +14,7 @@ inkwell = { workspace = true, optional = true }
 clang = { workspace = true, optional = true }
 
 thrustc_backends = { path = "../thrustc_backends" }
+thrustc_abi = { path = "../thrustc_abi" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple"}
 thrustc_token = { path = "../thrustc_token" }
 thrustc_logging = { path = "../thrustc_logging" }

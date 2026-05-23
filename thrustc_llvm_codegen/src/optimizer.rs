@@ -1050,46 +1050,38 @@ impl<'a, 'ctx> LLVMMachineSpecificFunctionOptimizer<'a, 'ctx> {
             InstructionOpcode::FPExt => {
                 state_data.set_has_floating_point(true);
             }
-            InstructionOpcode::Phi => {
-                if is_float_involved(&instruction) {
+            InstructionOpcode::Phi
+                if is_float_involved(&instruction) => {
                     state_data.set_has_floating_point(true);
                 }
-            }
-            InstructionOpcode::Select => {
-                if is_float_involved(&instruction) {
+            InstructionOpcode::Select
+                if is_float_involved(&instruction) => {
                     state_data.set_has_floating_point(true);
                 }
-            }
-            InstructionOpcode::Load => {
-                if is_float_involved(&instruction) {
+            InstructionOpcode::Load
+                if is_float_involved(&instruction) => {
                     state_data.set_has_floating_point(true);
                 }
-            }
-            InstructionOpcode::Store => {
-                if is_float_involved(&instruction) {
+            InstructionOpcode::Store
+                if is_float_involved(&instruction) => {
                     state_data.set_has_floating_point(true);
                 }
-            }
-            InstructionOpcode::ExtractElement => {
-                if is_float_involved(&instruction) {
+            InstructionOpcode::ExtractElement
+                if is_float_involved(&instruction) => {
                     state_data.set_has_floating_point(true);
                 }
-            }
-            InstructionOpcode::InsertElement => {
-                if is_float_involved(&instruction) {
+            InstructionOpcode::InsertElement
+                if is_float_involved(&instruction) => {
                     state_data.set_has_floating_point(true);
                 }
-            }
-            InstructionOpcode::ShuffleVector => {
-                if is_float_involved(&instruction) {
+            InstructionOpcode::ShuffleVector
+                if is_float_involved(&instruction) => {
                     state_data.set_has_floating_point(true);
                 }
-            }
-            InstructionOpcode::ExtractValue => {
-                if is_float_involved(&instruction) {
+            InstructionOpcode::ExtractValue
+                if is_float_involved(&instruction) => {
                     state_data.set_has_floating_point(true);
                 }
-            }
             InstructionOpcode::InsertValue
                 if is_float_involved(&instruction) => {
                     state_data.set_has_floating_point(true);

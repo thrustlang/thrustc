@@ -14,6 +14,7 @@ ahash = "0.8.11"
 colored = "3.0.0"
 
 thrustc_core = { path = "../thrustc_core" }
+thrustc_abi = { path = "../thrustc_abi" }
 thrustc_backends = { path = "../thrustc_backends" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_logging = { path = "../thrustc_logging" }

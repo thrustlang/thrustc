@@ -10,6 +10,8 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+thrustc_abi = { path = "../thrustc_abi" }
+thrustc_ast = { path = "../thrustc_ast" }
 thrustc_llvm_abi_representation = { path = "../thrustc_llvm_abi_representation" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }

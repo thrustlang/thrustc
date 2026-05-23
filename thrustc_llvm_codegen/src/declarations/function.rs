@@ -22,6 +22,7 @@ use inkwell::IntPredicate;
 use inkwell::context::Context;
 use inkwell::targets::TargetData;
 use inkwell::values::BasicValue;
+use inkwell::values::BasicValueEnum;
 use inkwell::values::IntValue;
 use inkwell::values::PointerValue;
 use thrustc_ast::Ast;
@@ -32,6 +33,7 @@ use thrustc_llvm_attributes::LLVMAttributeComparator;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_llvm_callconventions::LLVMCallConvention;
+use thrustc_llvm_x86_abi::x86SystemVABIFunctionParameterConfiguration;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
@@ -53,6 +55,8 @@ use inkwell::builder::Builder;
 use inkwell::module::Module;
 use inkwell::types::FunctionType;
 use inkwell::values::FunctionValue;
+
+
 
 pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: Function<'ctx>) {
     let llvm_module: &Module = context.get_llvm_module();
@@ -95,7 +99,7 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
     let generated_function_type: (
         FunctionType<'_>,
         Option<thrustc_llvm_abi::LLVMABIConfiguration>,
-    ) = typegeneration::compile_as_function_type(context, return_type, parameters, ignore_args);
+    ) = typegeneration::compile_as_function_type(context, return_type, parameters, ignore_args, CompilerFunctionVariant::PureFunction);
 
     let function_type: FunctionType<'_> = generated_function_type.0;
     let function_abi_config: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
@@ -121,29 +125,37 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
 }
 
 pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Function<'ctx>) {
+    let llvm_context: &Context = codegen.get_context().get_llvm_context();
     let llvm_builder: &Builder = codegen.get_context().get_llvm_builder();
+
+    let has_abi: bool = codegen.get_context().has_abi();
 
     let function_name: &str = function.0;
     let function_type: &Type = function.2;
     let function_parameters: &[Ast<'ctx>] = function.3;
     let function_body: Option<&Ast> = function.5;
 
-    let proto: LLVMFunction = codegen
+    let prototype: LLVMFunction<'ctx> = codegen
         .get_context()
         .get_table()
         .get_function(function_name);
 
-    let value: FunctionValue<'_> = proto.get_value();
-    let return_type: &Type = proto.get_return_type();
-    let parameters_types: Vec<Type> = proto.get_parameters_types().to_vec();
-    let span: Span = proto.get_span();
+    let function_value: FunctionValue = prototype.get_value();
+    let return_type: &Type = prototype.get_return_type();
+    let parameters_types: Vec<Type> = prototype.get_parameters_types().to_vec();
 
-    let llvm_function: FunctionValue = proto.0;
-    let llvm_function_block: BasicBlock = block::append_block(codegen.get_context(), llvm_function);
+    let abi_configuration: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
+        prototype.get_abi_configuration().cloned();
+
+    let span: Span = prototype.get_span();
+    
+    codegen.get_mut_context().set_current_function(prototype.clone());
+
+    let llvm_function_block: BasicBlock =
+        block::append_block(codegen.get_context(), function_value);
 
     llvm_builder.position_at_end(llvm_function_block);
 
-    codegen.get_mut_context().set_current_function(proto);
 
     if codegen
         .get_context()
@@ -159,32 +171,126 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
             .set_function_stackguard_protector_pointer(stack_protector_ptr_value);
     }
 
-    {
-        for parameter in function_parameters
-            .iter()
-            .map(|node| thrustc_entities::function_parameter_from_ast(node))
+    if let Some(function_body) = function_body {
         {
-            let name: &str = parameter.0;
-            let ascii_name: &str = parameter.1;
+            if !has_abi {
+                for parameter in function_parameters
+                    .iter()
+                    .map(|node| thrustc_entities::function_parameter_from_ast(node))
+                {
+                    let name: &str = parameter.0;
+                    let ascii_name: &str = parameter.1;
 
-            let kind: &Type = parameter.2;
-            let position: u32 = parameter.3;
+                    let kind: &Type = parameter.2;
+                    let position: u32 = parameter.3;
 
-            let span: Span = parameter.4;
+                    let span: Span = parameter.4;
 
-            if let Some(value) = llvm_function.get_nth_param(position) {
-                codegen
-                    .get_mut_context()
-                    .new_parameter(name, ascii_name, kind, value, span);
+                    if let Some(parameter_value) = function_value.get_nth_param(position) {
+                        codegen.get_mut_context().new_parameter(
+                            name,
+                            ascii_name,
+                            kind,
+                            parameter_value,
+                            span,
+                        );
+                    }
+                }
+            } else {
+                let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
+                    codegen.get_context().get_abi().unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            codegen.get_mut_context(),
+                            "Failed to get the ABI of the current function!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+
+                let configuration: &thrustc_llvm_abi::LLVMABIConfiguration = &abi_configuration
+                    .unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            codegen.get_mut_context(),
+                            "Failed to get the ABI configuration of the current function!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let lowered_parameters: Vec<thrustc_llvm_abi::LLVMABIFunctionLoweredParameter> =
+                    thrustc_llvm_abi::lower_function_parameters(
+                        llvm_builder,
+                        llvm_context,
+                        abi,
+                        function_value,
+                        configuration,
+                    )
+                    .unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            codegen.get_mut_context(),
+                            "Failed to lower the function parameters to the current ABI!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                {
+                    for lowered_parameter in lowered_parameters {
+                        let name: &str = lowered_parameter.get_name();
+                        let ascii_name: &str = lowered_parameter.get_ascii_name();
+                        let ty: &Type = lowered_parameter.get_type();
+                        let value: BasicValueEnum = lowered_parameter.get_value();
+                        let configuration: &thrustc_llvm_abi::LLVMABIConfiguration =
+                            lowered_parameter.get_abi_configuration();
+
+                        if let thrustc_llvm_abi::LLVMABIConfiguration::x86SystemVFunctionParameterConfiguration(
+                                configuration,
+                            ) = configuration {
+                            match configuration {
+                                x86SystemVABIFunctionParameterConfiguration::Normal => {
+                                    codegen.get_mut_context().new_parameter(
+                                        name,
+                                        ascii_name,
+                                        ty,
+                                        value,
+                                        span,
+                                    );
+                                }
+
+                                x86SystemVABIFunctionParameterConfiguration::FromMemory => {
+                                    codegen.get_mut_context().new_allocated_parameter(
+                                        name,
+                                        ty,
+                                        value.into_pointer_value(),
+                                        span,
+                                    );
+                                  
+                                }
+                                
+                            }
+                        } else {
+                            abort::abort_codegen(
+                                codegen.get_mut_context(),
+                                "Unsupported ABI configuration for function parameters!",
+                                span,
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        }
+
+                    }
+                }
             }
         }
-    }
 
-    if let Some(function_body) = function_body {
         {
             let dbg_prototype: LLVMDBGFunction = (
                 function_name.to_owned(),
-                value,
+                function_value,
                 return_type,
                 parameters_types,
                 true,
@@ -455,4 +561,30 @@ pub fn emit_stack_protector_epilogue<'ctx>(context: &mut LLVMCodeGenContext<'_, 
     });
 
     llvm_builder.position_at_end(sucessbranch);
+}
+
+
+#[derive(Debug, Clone, Copy)]
+pub enum CompilerFunctionVariant {
+    CompilerIntrinsic,
+    AssemblerFunction,
+    PureFunction,
+    
+}
+
+impl CompilerFunctionVariant {
+    #[inline]
+    pub fn is_compiler_intrinsic(&self) -> bool {
+        matches!(self, CompilerFunctionVariant::CompilerIntrinsic)
+    }
+
+    #[inline]
+    pub fn is_assembler_function(&self) -> bool {
+        matches!(self, CompilerFunctionVariant::AssemblerFunction)
+    }
+
+    #[inline]
+    pub fn is_pure_function(&self) -> bool {
+        matches!(self, CompilerFunctionVariant::PureFunction)
+    }
 }

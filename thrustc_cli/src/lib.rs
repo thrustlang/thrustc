@@ -598,6 +598,21 @@ impl CommandLine {
                 self.advance();
             }
 
+            "--abi" => {
+                self.advance();
+
+                let specific: thrustc_abi::SpecificABI = self.parse_specific_abi(self.peek());
+
+                self.get_mut_options().set_utilize_specific_abi(specific);
+
+                self.advance();
+            }
+
+            "--disable-abi" => {
+                self.advance();
+                self.get_mut_options().set_disable_abi_detection(true);
+            }
+
             "--link-check" => {
                 self.advance();
                 self.validate_llvm_required(arg);
@@ -1093,6 +1108,17 @@ impl CommandLine {
         }
 
         (bounds, coverage)
+    }
+
+    #[inline]
+    fn parse_specific_abi(&self, abi: &str) -> thrustc_abi::SpecificABI {
+        match abi.to_lowercase().as_str() {
+            "system-v" => thrustc_abi::SpecificABI::SystemV,
+
+            any => {
+                self.report_error(&format!("Unknown specific ABI: '{}'.", any));
+            }
+        }
     }
 
     #[inline]

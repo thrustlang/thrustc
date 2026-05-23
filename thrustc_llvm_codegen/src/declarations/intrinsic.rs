@@ -30,6 +30,7 @@ use thrustc_typesystem::Type;
 use crate::attributebuilder::AttributeBuilder;
 use crate::attributebuilder::LLVMAttributeApplicant;
 use crate::context::LLVMCodeGenContext;
+use crate::declarations::function::CompilerFunctionVariant;
 use crate::typegeneration;
 use crate::types::LLVMFunction;
 
@@ -61,7 +62,13 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, intrinsic: Intr
     let generated_function_type: (
         FunctionType<'_>,
         Option<thrustc_llvm_abi::LLVMABIConfiguration>,
-    ) = typegeneration::compile_as_function_type(context, return_type, parameters, ignore_args);
+    ) = typegeneration::compile_as_function_type(
+        context,
+        return_type,
+        parameters,
+        ignore_args,
+        CompilerFunctionVariant::CompilerIntrinsic,
+    );
 
     let function_type: FunctionType<'_> = generated_function_type.0;
     let function_abi_config: Option<thrustc_llvm_abi::LLVMABIConfiguration> =

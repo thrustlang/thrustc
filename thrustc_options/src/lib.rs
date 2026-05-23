@@ -20,6 +20,7 @@
 pub mod linkage;
 
 use crate::linkage::LinkingCompilersConfiguration;
+use thrustc_abi::ABIConfiguration;
 use thrustc_backends::llvm::LLVMBackend;
 
 use thrustc_ast::Ast;
@@ -38,6 +39,7 @@ pub struct CompilerOptions {
     files: Vec<CompilationUnit>,
     build_dir: PathBuf,
 
+    abi_configuration: ABIConfiguration,
     disable_all_warnings: bool,
 
     stop_compilation_at: CompilationPhase,
@@ -157,6 +159,7 @@ impl CompilerOptions {
 
             build_dir: "build".into(),
 
+            abi_configuration: ABIConfiguration::new(false, thrustc_abi::SpecificABI::None),
             disable_all_warnings: false,
             stop_compilation_at: CompilationPhase::None,
 
@@ -307,6 +310,16 @@ impl CompilerOptions {
     }
 
     #[inline]
+    pub fn set_disable_abi_detection(&mut self, value: bool) {
+        self.abi_configuration.set_disable(value);
+    }
+
+    #[inline]
+    pub fn set_utilize_specific_abi(&mut self, specific: thrustc_abi::SpecificABI) {
+        self.abi_configuration.set_specific(specific);
+    }
+
+    #[inline]
     pub fn add_emit_option(&mut self, emit: EmitableUnit) {
         self.emit.push(emit);
     }
@@ -321,6 +334,11 @@ impl CompilerOptions {
     #[inline]
     pub fn llvm(&self) -> bool {
         self.llvm
+    }
+
+    #[inline]
+    pub fn abi_configuration(&self) -> &ABIConfiguration {
+        &self.abi_configuration
     }
 
     #[inline]

@@ -23,8 +23,9 @@ use crate::{
     memory::SymbolAllocated,
     traits::LLVMFunctionExtensions,
     types::{
-        LLVMFunction, LLVMFunctions, LLVMFunctionsParameters, LLVMGlobalConstants,
-        LLVMGlobalStatics, LLVMInstructions, LLVMLocalConstants, LLVMLocalStatics,
+        LLVMAllocatedParameters, LLVMFunction, LLVMFunctions, LLVMFunctionsParameters,
+        LLVMGlobalConstants, LLVMGlobalStatics, LLVMInstructions, LLVMLocalConstants,
+        LLVMLocalStatics,
     },
 };
 
@@ -39,6 +40,8 @@ pub struct LLVMSymbolsTable<'ctx> {
     local_constants: LLVMLocalConstants<'ctx>,
 
     locals: LLVMInstructions<'ctx>,
+
+    allocated_parameters: LLVMAllocatedParameters<'ctx>,
     parameters: LLVMFunctionsParameters<'ctx>,
 
     scope: usize,
@@ -56,6 +59,7 @@ impl LLVMSymbolsTable<'_> {
             local_constants: Vec::with_capacity(u8::MAX as usize),
 
             locals: Vec::with_capacity(u8::MAX as usize),
+            allocated_parameters: HashMap::with_capacity(u8::MAX as usize),
             parameters: HashMap::with_capacity(u8::MAX as usize),
 
             scope: 0,
@@ -68,6 +72,10 @@ impl<'ctx> LLVMSymbolsTable<'ctx> {
     pub fn get_symbol(&self, name: &str) -> SymbolAllocated<'ctx> {
         if let Some(parameter) = self.parameters.get(name) {
             return *parameter;
+        }
+
+        if let Some(allocated_parameter) = self.allocated_parameters.get(name) {
+            return *allocated_parameter;
         }
 
         for position in (0..self.scope).rev() {
@@ -135,6 +143,15 @@ impl<'ctx> LLVMSymbolsTable<'ctx> {
     #[inline]
     pub fn add_parameter(&mut self, name: &'ctx str, parameter: SymbolAllocated<'ctx>) {
         self.parameters.insert(name, parameter);
+    }
+
+    #[inline]
+    pub fn add_allocated_parameter(
+        &mut self,
+        name: &'ctx str,
+        allocated_parameter: SymbolAllocated<'ctx>,
+    ) {
+        self.allocated_parameters.insert(name, allocated_parameter);
     }
 
     #[inline]

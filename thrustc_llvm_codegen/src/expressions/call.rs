@@ -113,8 +113,8 @@ pub fn compile<'ctx>(
                 )
             });
 
-        let configuration: thrustc_llvm_abi::LLVMABIConfiguration = llvm_abi_type_config
-            .unwrap_or_else(|| {
+        let configuration: &thrustc_llvm_abi::LLVMABIConfiguration =
+            llvm_abi_type_config.as_ref().unwrap_or_else(|| {
                 abort::abort_codegen(
                     context,
                     "Failed to compile the function call, expected an ABI type configuration!",

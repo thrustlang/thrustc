@@ -33,6 +33,7 @@ use crate::attributebuilder::AttributeBuilder;
 use crate::attributebuilder::LLVMAttributeApplicant;
 use crate::block;
 use crate::context::LLVMCodeGenContext;
+use crate::declarations::function::CompilerFunctionVariant;
 use crate::typegeneration;
 use crate::types::LLVMFunction;
 use crate::utils;
@@ -100,7 +101,13 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
     let generated_function_type: (
         FunctionType<'_>,
         Option<thrustc_llvm_abi::LLVMABIConfiguration>,
-    ) = typegeneration::compile_as_function_type(context, return_type, parameters, false);
+    ) = typegeneration::compile_as_function_type(
+        context,
+        return_type,
+        parameters,
+        false,
+        CompilerFunctionVariant::AssemblerFunction,
+    );
 
     let function_type: FunctionType<'_> = generated_function_type.0;
     let function_abi_config: Option<thrustc_llvm_abi::LLVMABIConfiguration> =

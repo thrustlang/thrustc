@@ -46,12 +46,14 @@ pub type LLVMFunction<'ctx> = (
     &'ctx Type,
     &'ctx [Type],
     u32,
-    Option<LLVMABIConfiguration>,
+    Option<LLVMABIConfiguration<'ctx>>,
     Span,
 );
 pub type LLVMFunctions<'ctx> = HashMap<&'ctx str, LLVMFunction<'ctx>>;
 
 pub type LLVMInstructions<'ctx> = Vec<HashMap<&'ctx str, SymbolAllocated<'ctx>>>;
+
+pub type LLVMAllocatedParameters<'ctx> = HashMap<&'ctx str, SymbolAllocated<'ctx>>;
 pub type LLVMFunctionsParameters<'ctx> = HashMap<&'ctx str, SymbolAllocated<'ctx>>;
 
 pub type LLVMCtors<'ctx> = HashSet<(PointerValue<'ctx>, u32)>;

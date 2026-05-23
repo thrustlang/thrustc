@@ -32,6 +32,7 @@ use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::abort;
 use crate::context::LLVMCodeGenContext;
+use crate::declarations::function::CompilerFunctionVariant;
 use crate::{codegen, typegeneration};
 
 pub fn compile<'ctx>(
@@ -39,7 +40,7 @@ pub fn compile<'ctx>(
     assembler: &str,
     constraints: &str,
     args: &'ctx [Ast],
-    kind: &Type,
+    kind: &'ctx Type,
     attributes: LLVMAttributes,
     span: Span,
 ) -> BasicValueEnum<'ctx> {
@@ -49,7 +50,13 @@ pub fn compile<'ctx>(
     let generated_asm_function_type: (
         FunctionType<'_>,
         Option<thrustc_llvm_abi::LLVMABIConfiguration>,
-    ) = typegeneration::compile_as_function_type(context, kind, args, false);
+    ) = typegeneration::compile_as_function_type(
+        context,
+        kind,
+        args,
+        false,
+        CompilerFunctionVariant::AssemblerFunction,
+    );
 
     let asm_function_type: FunctionType<'_> = generated_asm_function_type.0;
 
