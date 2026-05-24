@@ -331,6 +331,17 @@ pub fn show_help() -> ! {
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stderr,
         &format!(
+            "{} {} {} {}\n",
+            "•".bold(),
+            "-abi".custom_color((141, 141, 142)).bold(),
+            "[system-v]",
+            "Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
             "{} {} {}\n",
             "•".bold(),
             "-dbg".custom_color((141, 141, 142)).bold(),
@@ -366,17 +377,6 @@ pub fn show_help() -> ! {
             "-dbg-dwarf-version".custom_color((141, 141, 142)).bold(),
             "v4|v5",
             "Configure the Dwarf version for debugging purposes.",
-        ),
-    );
-
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{} {} {} {}\n",
-            "•".bold(),
-            "--abi".custom_color((141, 141, 142)).bold(),
-            "[system-v]",
-            "Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.",
         ),
     );
 

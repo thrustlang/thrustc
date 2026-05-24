@@ -19,12 +19,14 @@ pub struct Layout {
     pub abi_align: u32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct TypeLayout {
     pub width: u32,
     pub align: u32,
     pub alignof: u32,
     pub sizeof: u32,
+
+    pub field_offsets: Vec<u32>,
 
     pub abi_size: u32,
     pub abi_align: u32,
@@ -37,7 +39,7 @@ impl TypeLayout {
             align: self.align,
             alignof: self.alignof,
             sizeof: self.sizeof,
-            field_offsets: Vec::new(),
+            field_offsets: self.field_offsets,
             abi_size: self.abi_size,
             abi_align: self.abi_align,
         }
@@ -649,20 +651,22 @@ impl TargetInfo {
             }
 
             Type::FixedArray(element_type, size, ..) => {
-                let element_width: u32 = match self.get_type_layout(element_type) {
-                    either::Either::Left(left) => left.width,
-                    either::Either::Right(right) => right.width,
+                let (element_width, element_align) = match self.get_type_layout(element_type) {
+                    either::Either::Left(left) => (left.width, left.align),
+                    either::Either::Right(right) => (right.width, right.align),
                 };
 
-                let element_align: u32 = match self.get_type_layout(element_type) {
-                    either::Either::Left(left) => left.align,
-                    either::Either::Right(right) => right.align,
-                };
+                let mut field_offsets_bits: Vec<u32> = Vec::with_capacity(*size as usize);
+
+                for i in 0..*size {
+                    field_offsets_bits.push(element_width * i);
+                }
 
                 type_info.width = element_width * size;
                 type_info.align = element_align;
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
+                type_info.field_offsets = field_offsets_bits;
 
                 type_info.compute_abi_size();
                 type_info.compute_abi_align();

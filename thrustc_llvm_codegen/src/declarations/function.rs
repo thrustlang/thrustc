@@ -117,6 +117,7 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
         parameters_types,
         call_convention,
         function_abi_config,
+        ignore_args,
         span,
     );
 

@@ -38,7 +38,7 @@ use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::{
     Type,
-    traits::{TypeCodeLocation, TypeIsExtensions, TypePointerExtensions},
+    traits::{TypeCodeLocation, TypeFixedArrayEntensions, TypeIsExtensions, TypePointerExtensions},
     type_layout::TargetInfo,
 };
 
@@ -239,22 +239,87 @@ impl X86SystemVABITypeClass {
 
             t if t.is_ptr_like_type() => X86_SYSTEM_V_ABI_ONE_INTEGER,
 
-            Type::FixedArray(..) => {
-                let abi_size: u32 = layout.abi_size;
-
-                if abi_size <= 8 {
-                    X86_SYSTEM_V_ABI_ONE_INTEGER
-                } else if abi_size <= 16 {
-                    X86_SYSTEMV_ABI_TWO_INTEGERS
-                } else {
-                    X86_SYSTEM_V_ABI_STACK
-                }
-            }
-
-            Type::Struct { fields, .. } => {
+            Type::FixedArray(subtype, ..) => {
                 let abi_size: u32 = layout.abi_size;
 
                 if abi_size > 16 {
+                    return X86_SYSTEM_V_ABI_STACK;
+                }
+
+                let mut current_classes: [X86SystemVABITypeClass; 8] =
+                    [X86SystemVABITypeClass::NO_CLASS; 8];
+
+                let subty_classes: [X86SystemVABITypeClass; 8] =
+                    Self::get_system_v_type_class(abi_context, subtype);
+
+                for field_offset_bits in layout.field_offsets.iter() {
+                    let field_offset_bytes: u32 = field_offset_bits / 8;
+                    let subty_class: X86SystemVABITypeClass = subty_classes[0];
+
+                    if matches!(subty_class, X86SystemVABITypeClass::NO_CLASS) {
+                        break;
+                    }
+
+                    let target_eightbyte_idx: u32 = field_offset_bytes / 8;
+
+                    if target_eightbyte_idx < 8 {
+                        current_classes[target_eightbyte_idx as usize] = Self::combine(
+                            current_classes[target_eightbyte_idx as usize],
+                            subty_class,
+                        );
+                    }
+                }
+
+                if current_classes.contains(&X86SystemVABITypeClass::MEMORY) {
+                    return X86_SYSTEM_V_ABI_STACK;
+                }
+
+                // https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig
+                /*
+
+                   "If the size of the aggregate exceeds two eightbytes and the first eight-
+                    byte isn’t SSE or any other eightbyte isn’t SSEUP, the whole argument
+                    is passed in memory."
+
+                */
+                if abi_size > 16
+                    && (current_classes
+                        .first()
+                        .is_some_and(|c| !matches!(c, X86SystemVABITypeClass::SSE))
+                        || current_classes
+                            .iter()
+                            .skip(1)
+                            .any(|c| !matches!(c, X86SystemVABITypeClass::SSEUP)))
+                {
+                    return X86_SYSTEM_V_ABI_STACK;
+                }
+
+                for (idx, _) in current_classes.clone().iter().enumerate() {
+                    if matches!(current_classes[idx], X86SystemVABITypeClass::SSEUP) && idx > 0 {
+                        match current_classes[idx.saturating_sub(1)] {
+                            X86SystemVABITypeClass::SSE | X86SystemVABITypeClass::SSEUP => {
+                                continue;
+                            }
+                            _ => {
+                                current_classes[idx] = X86SystemVABITypeClass::SSE;
+                            }
+                        }
+                    }
+                }
+
+                current_classes
+            }
+
+            Type::Struct {
+                fields, modifier, ..
+            } => {
+                let abi_size: u32 = layout.abi_size;
+
+                if abi_size > 16 {
+                    return X86_SYSTEM_V_ABI_STACK;
+                }
+
+                if modifier.llvm().is_packed() {
                     return X86_SYSTEM_V_ABI_STACK;
                 }
 
@@ -285,10 +350,8 @@ impl X86SystemVABITypeClass {
                     }
                 }
 
-                for (idx, _) in current_classes.iter().enumerate() {
-                    if matches!(current_classes[idx], X86SystemVABITypeClass::MEMORY) {
-                        return X86_SYSTEM_V_ABI_STACK;
-                    }
+                if current_classes.contains(&X86SystemVABITypeClass::MEMORY) {
+                    return X86_SYSTEM_V_ABI_STACK;
                 }
 
                 // https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig
@@ -349,10 +412,11 @@ pub enum x86SystemVABIType<'llvm_abi> {
     Ignore,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum x86SystemVABITypeDecomposeAndExpandVariant {
     DecomposeAndExpandStructure,
     DecomposeAndExpandInteger128,
+    DecomposeAndExpandArray,
 }
 
 impl x86SystemVABITypeDecomposeAndExpandVariant {
@@ -369,6 +433,14 @@ impl x86SystemVABITypeDecomposeAndExpandVariant {
         matches!(
             self,
             x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandInteger128
+        )
+    }
+
+    #[inline]
+    pub fn is_decompose_and_expand_array(&self) -> bool {
+        matches!(
+            self,
+            x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray
         )
     }
 }
@@ -397,9 +469,20 @@ impl x86SystemVABIType<'_> {
 
 impl<'llvm_abi> x86SystemVABIType<'llvm_abi> {
     pub fn class_to_general_abi_strategy(
+        abi_context: &mut X86SystemVABIContext,
         classes: &[X86SystemVABITypeClass; 8],
         ty: &'llvm_abi Type,
     ) -> x86SystemVABIType<'llvm_abi> {
+        let type_layout: either::Either<
+            thrustc_typesystem::type_layout::TypeLayout,
+            thrustc_typesystem::type_layout::StructTypeLayout,
+        > = abi_context.get_mut_target_info().get_type_layout(ty);
+
+        let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
+            either::Either::Left(ty) => ty.into_layout(),
+            either::Either::Right(ty) => ty.into_layout(),
+        };
+
         if classes.contains(&X86SystemVABITypeClass::MEMORY) {
             return x86SystemVABIType::ToMemory(ty);
         }
@@ -415,6 +498,82 @@ impl<'llvm_abi> x86SystemVABIType<'llvm_abi> {
 
         match used {
             1 => match classes[0] {
+                X86SystemVABITypeClass::INTEGER if ty.is_fixed_array_type() => {
+                    let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+
+                    if array_fixed_ty.is_array_type()
+                        || array_fixed_ty.is_fixed_array_type()
+                        || array_fixed_ty.is_struct_type()
+                        || array_fixed_ty.is_ptr_like_type()
+                    {
+                        return x86SystemVABIType::ToMemory(ty);
+                    }
+
+                    let is_integer: bool = array_fixed_ty.is_integer_type();
+
+                    if is_integer {
+                        let first_integer_ty: Type = if array_fixed_ty.is_signed_integer_type() {
+                            Type::S64 {
+                                span: ty.get_span(),
+                            }
+                        } else {
+                            Type::U64 {
+                                span: ty.get_span(),
+                            }
+                        };
+
+                        let second_integer_ty: Type = first_integer_ty.clone();
+
+                        if layout.abi_size == 8 {
+                            return x86SystemVABIType::DecomposeAndExpand(
+                                vec![first_integer_ty],
+                                x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                            );
+                        }
+
+                        return x86SystemVABIType::DecomposeAndExpand(
+                            vec![first_integer_ty, second_integer_ty],
+                            x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                        );
+                    }
+
+                    x86SystemVABIType::Same(ty)
+                }
+
+                X86SystemVABITypeClass::SSE if ty.is_fixed_array_type() => {
+                    let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+
+                    let is_float: bool = array_fixed_ty.is_float_type();
+
+                    if is_float {
+                        let first_float_ty: Type = if let Type::F32 { .. } = array_fixed_ty {
+                            Type::F32 {
+                                span: ty.get_span(),
+                            }
+                        } else {
+                            Type::F64 {
+                                span: ty.get_span(),
+                            }
+                        };
+
+                        let second_float_ty: Type = first_float_ty.clone();
+
+                        if layout.abi_size == 8 {
+                            return x86SystemVABIType::DecomposeAndExpand(
+                                vec![first_float_ty],
+                                x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                            );
+                        }
+
+                        return x86SystemVABIType::DecomposeAndExpand(
+                            vec![first_float_ty, second_float_ty],
+                            x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                        );
+                    }
+
+                    x86SystemVABIType::Same(ty)
+                }
+
                 X86SystemVABITypeClass::INTEGER | X86SystemVABITypeClass::SSE => {
                     x86SystemVABIType::Same(ty)
                 }
@@ -423,11 +582,121 @@ impl<'llvm_abi> x86SystemVABIType<'llvm_abi> {
 
             2 => {
                 match (classes[0], classes[1]) {
+                    (X86SystemVABITypeClass::INTEGER, X86SystemVABITypeClass::INTEGER)
+                        if ty.is_fixed_array_type() =>
+                    {
+                        let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+
+                        if array_fixed_ty.is_array_type()
+                            || array_fixed_ty.is_fixed_array_type()
+                            || array_fixed_ty.is_struct_type()
+                            || array_fixed_ty.is_ptr_like_type()
+                        {
+                            return x86SystemVABIType::ToMemory(ty);
+                        }
+
+                        let is_integer: bool = array_fixed_ty.is_integer_type();
+
+                        if is_integer {
+                            let first_integer_ty: Type = if array_fixed_ty.is_signed_integer_type()
+                            {
+                                Type::S64 {
+                                    span: ty.get_span(),
+                                }
+                            } else {
+                                Type::U64 {
+                                    span: ty.get_span(),
+                                }
+                            };
+
+                            let second_integer_ty: Type = first_integer_ty.clone();
+
+                            if layout.abi_size == 8 {
+                                return x86SystemVABIType::DecomposeAndExpand(
+                                    vec![first_integer_ty],
+                                    x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                                );
+                            }
+
+                            return x86SystemVABIType::DecomposeAndExpand(
+                                vec![first_integer_ty, second_integer_ty],
+                                x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                            );
+                        }
+
+                        x86SystemVABIType::Same(ty)
+                    }
+
                     (X86SystemVABITypeClass::INTEGER, X86SystemVABITypeClass::INTEGER) => {
                         x86SystemVABIType::Same(ty)
                     }
 
+                    (X86SystemVABITypeClass::SSE, X86SystemVABITypeClass::SSE)
+                        if ty.is_fixed_array_type() =>
+                    {
+                        let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+
+                        let is_float: bool = array_fixed_ty.is_float_type();
+
+                        if is_float {
+                            let first_float_ty: Type = if let Type::F32 { .. } = array_fixed_ty {
+                                Type::F32 {
+                                    span: ty.get_span(),
+                                }
+                            } else {
+                                Type::F64 {
+                                    span: ty.get_span(),
+                                }
+                            };
+
+                            let second_float_ty: Type = first_float_ty.clone();
+
+                            if layout.abi_size == 8 {
+                                return x86SystemVABIType::DecomposeAndExpand(
+                                    vec![first_float_ty],
+                                    x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                                );
+                            }
+
+                            return x86SystemVABIType::DecomposeAndExpand(
+                                vec![first_float_ty, second_float_ty],
+                                x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                            );
+                        }
+
+                        x86SystemVABIType::Same(ty)
+                    }
+
                     (X86SystemVABITypeClass::SSE, X86SystemVABITypeClass::SSE) => {
+                        let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+
+                        let is_float: bool = array_fixed_ty.is_float_type();
+
+                        if is_float {
+                            let first_float_ty: Type = if let Type::F32 { .. } = array_fixed_ty {
+                                Type::F32 {
+                                    span: ty.get_span(),
+                                }
+                            } else {
+                                Type::F64 {
+                                    span: ty.get_span(),
+                                }
+                            };
+
+                            let second_float_ty: Type = first_float_ty.clone();
+
+                            return x86SystemVABIType::DecomposeAndExpand(
+                                vec![first_float_ty, second_float_ty],
+                                x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                            );
+                        }
+
+                        x86SystemVABIType::Same(ty)
+                    }
+
+                    (X86SystemVABITypeClass::SSE, X86SystemVABITypeClass::SSEUP)
+                        if ty.is_fixed_array_type() =>
+                    {
                         x86SystemVABIType::Same(ty)
                     }
 
@@ -497,6 +766,8 @@ pub enum x86SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi> {
         old_type: &'llvm_abi Type,
         struct_field_indexes: Vec<usize>,
         decomposed_indexes: Vec<usize>,
+        array_decomposed_types: Vec<Type>,
+        variant: x86SystemVABITypeDecomposeAndExpandVariant,
         index: usize,
     },
     Ignore {
@@ -659,13 +930,24 @@ pub fn lower_function_parameters<'llvm_abi>(
                 old_type,
                 struct_field_indexes,
                 decomposed_indexes,
+                variant,
                 ..
             } => {
-                let ty: BasicTypeEnum<'_> =
-                    self::decompose_type(llvm_context, abi_context, old_type);
+                let type_layout: either::Either<
+                    thrustc_typesystem::type_layout::TypeLayout,
+                    thrustc_typesystem::type_layout::StructTypeLayout,
+                > = abi_context.get_mut_target_info().get_type_layout(old_type);
 
-                let ptr: PointerValue<'_> =
-                    llvm_builder.build_alloca(ty, "").unwrap_or_else(|_| {
+                let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
+                    either::Either::Left(ty) => ty.into_layout(),
+                    either::Either::Right(ty) => ty.into_layout(),
+                };
+
+                if variant.is_decompose_and_expand_structure() {
+                    let ty: BasicTypeEnum<'_> =
+                        self::decompose_type(llvm_context, abi_context, old_type);
+
+                    let ptr: PointerValue<'_> = llvm_builder.build_alloca(ty, "").unwrap_or_else(|_| {
                         abort::abort_codegen(
                             abi_context,
                             "Failed to allocate memory for a decomposed and expanded parameter in System V ABI!",
@@ -675,15 +957,15 @@ pub fn lower_function_parameters<'llvm_abi>(
                         )
                     });
 
-                let alignment: u32 = abi_context.get_target_data().get_preferred_alignment(&ty);
+                    let alignment: u32 = abi_context.get_target_data().get_preferred_alignment(&ty);
 
-                assert!(struct_field_indexes.len() == decomposed_indexes.len());
+                    assert!(struct_field_indexes.len() == decomposed_indexes.len());
 
-                for (field_idx, decomposed_idx) in
-                    struct_field_indexes.iter().zip(decomposed_indexes.iter())
-                {
-                    if let Some(decomposed_value) = function_params.get(*decomposed_idx) {
-                        let element_ptr: PointerValue<'_> = llvm_builder.build_struct_gep(ty, ptr, (*field_idx) as u32, "").unwrap_or_else(|_| {
+                    for (field_idx, decomposed_idx) in
+                        struct_field_indexes.iter().zip(decomposed_indexes.iter())
+                    {
+                        if let Some(decomposed_value) = function_params.get(*decomposed_idx) {
+                            let element_ptr: PointerValue<'_> = llvm_builder.build_struct_gep(ty, ptr, (*field_idx) as u32, "").unwrap_or_else(|_| {
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to build a GEP instruction for a decomposed and expanded parameter in System V ABI!",
@@ -693,7 +975,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             )
                         });
 
-                        let store: InstructionValue<'_> = llvm_builder.build_store(element_ptr, *decomposed_value).unwrap_or_else(|_| {
+                            let store: InstructionValue<'_> = llvm_builder.build_store(element_ptr, *decomposed_value).unwrap_or_else(|_| {
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to store a decomposed and expanded parameter value in memory for System V ABI!",
@@ -703,7 +985,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             )
                         });
 
-                        store.set_alignment(alignment).unwrap_or_else(|_| {
+                            store.set_alignment(alignment).unwrap_or_else(|_| {
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to set the alignment of a store instruction for a decomposed and expanded parameter in System V ABI!",
@@ -712,24 +994,176 @@ pub fn lower_function_parameters<'llvm_abi>(
                                 line!(),
                             )
                         });
-                    } else {
-                        abort::abort_codegen(
-                            abi_context,
-                            "Failed to get the decomposed and expanded parameter value from the function declaration for System V ABI!",
-                            old_type.get_span(),
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        );
+                        } else {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to get the decomposed and expanded parameter value from the function declaration for System V ABI!",
+                                old_type.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            );
+                        }
                     }
+
+                    processed_parameters.push((
+                        name,
+                        ascii_name,
+                        old_type,
+                        x86SystemVABIFunctionParameterConfiguration::FromMemory,
+                        ptr.into(),
+                    ));
                 }
 
-                processed_parameters.push((
-                    name,
-                    ascii_name,
-                    old_type,
-                    x86SystemVABIFunctionParameterConfiguration::FromMemory,
-                    ptr.into(),
-                ));
+                if variant.is_decompose_and_expand_array() {
+                    let ty: BasicTypeEnum<'_> =
+                        self::decompose_type(llvm_context, abi_context, old_type);
+
+                    let ptr: PointerValue<'_> =
+                        llvm_builder.build_alloca(ty, "").unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to allocate memory for a decomposed and expanded parameter in System V ABI!",
+                                old_type.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                    let alignment: u32 = abi_context.get_target_data().get_preferred_alignment(&ty);
+
+                    assert!(!decomposed_indexes.is_empty());
+
+                    if layout.abi_size == 8 {
+                        if let Some(first_decomposed_value) =
+                            function_params.get(decomposed_indexes[0])
+                        {
+                            llvm_builder
+                                .build_store(ptr, *first_decomposed_value)
+                                .unwrap_or_else(|_| {
+                                    abort::abort_codegen(
+                                        abi_context,
+                                        "Failed to store a decomposed and expanded parameter value in memory for System V ABI!",
+                                        old_type.get_span(),
+                                        std::path::PathBuf::from(file!()),
+                                        line!(),
+                                    )
+                                })
+                                .set_alignment(alignment)
+                                .unwrap_or_else(|_| {
+                                    abort::abort_codegen(
+                                        abi_context,
+                                        "Failed to set the alignment of a store instruction for a decomposed and expanded parameter in System V ABI!",
+                                        old_type.get_span(),
+                                        std::path::PathBuf::from(file!()),
+                                        line!(),
+                                    )
+                                });
+                        } else {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to get the decomposed and expanded parameter value from the function declaration for System V ABI!",
+                                old_type.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            );
+                        }
+                    } else {
+                        if let Some(first_decomposed_value) =
+                            function_params.get(decomposed_indexes[0])
+                        {
+                            llvm_builder
+                            .build_store(ptr, *first_decomposed_value)
+                            .unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to store a decomposed and expanded parameter value in memory for System V ABI!",
+                                    old_type.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
+                            })
+                            .set_alignment(alignment)
+                            .unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to set the alignment of a store instruction for a decomposed and expanded parameter in System V ABI!",
+                                    old_type.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
+                            });
+
+                            if let Some(second_decomposed_value) =
+                                function_params.get(decomposed_indexes[1])
+                            {
+                                let second_element_ptr: PointerValue<'_> = unsafe {
+                                    llvm_builder.build_gep(
+                                        second_decomposed_value.get_type(),
+                                        ptr,
+                                        &[
+                                            llvm_context.i32_type().const_int(1, false),
+                                        ],
+                                        "",
+                                    )
+                                }.unwrap_or_else(|_| {
+                                    abort::abort_codegen(
+                                        abi_context,
+                                        "Failed to build a GEP instruction for the second element of a decomposed and expanded array parameter in System V ABI!",
+                                        old_type.get_span(),
+                                        std::path::PathBuf::from(file!()),
+                                        line!(),
+                                    )
+                                });
+
+                                llvm_builder
+                                    .build_store(second_element_ptr, *second_decomposed_value)
+                                    .unwrap_or_else(|_| {
+                                        abort::abort_codegen(
+                                            abi_context,
+                                            "Failed to store the second element of a decomposed and expanded array parameter in memory for System V ABI!",
+                                            old_type.get_span(),
+                                            std::path::PathBuf::from(file!()),
+                                            line!(),
+                                        )
+                                    })
+                                    .set_alignment(alignment)
+                                    .unwrap_or_else(|_| {
+                                        abort::abort_codegen(
+                                            abi_context,
+                                            "Failed to set the alignment of a store instruction for the second element of a decomposed and expanded array parameter in System V ABI!",
+                                            old_type.get_span(),
+                                            std::path::PathBuf::from(file!()),
+                                            line!(),
+                                        )
+                                    });
+
+                                processed_parameters.push((
+                                    name,
+                                    ascii_name,
+                                    old_type,
+                                    x86SystemVABIFunctionParameterConfiguration::FromMemory,
+                                    ptr.into(),
+                                ));
+                            } else {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to get the second decomposed and expanded parameter value from the function declaration for System V ABI!",
+                                    old_type.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                );
+                            }
+                        } else {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to get the decomposed and expanded parameter value from the function declaration for System V ABI!",
+                                old_type.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            );
+                        }
+                    }
+                }
             }
         }
     }
@@ -862,40 +1296,211 @@ pub fn lower_function_call<'llvm_abi>(
             }
 
             x86SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
-                old_type, ..
+                old_type,
+                array_decomposed_types,
+                variant,
+                ..
             } => {
-                if !arg_value.is_struct_value() {
-                    abort::abort_codegen(
-                        abi_context,
-                        "Expected a struct value to decompose and expand, but got a non-struct value!",
-                        old_type.get_span(),
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
+                let type_layout: either::Either<
+                    thrustc_typesystem::type_layout::TypeLayout,
+                    thrustc_typesystem::type_layout::StructTypeLayout,
+                > = abi_context.get_mut_target_info().get_type_layout(old_type);
+
+                let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
+                    either::Either::Left(ty) => ty.into_layout(),
+                    either::Either::Right(ty) => ty.into_layout(),
+                };
+
+                if variant.is_decompose_and_expand_structure() {
+                    if !arg_value.is_struct_value() {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Expected a struct value to decompose and expand, but got a non-struct value!",
+                            old_type.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    }
+
+                    let struct_value: inkwell::values::StructValue<'_> =
+                        arg_value.into_struct_value();
+
+                    let mut extracted_fields_values: Vec<BasicValueEnum> = Vec::new();
+
+                    for field_idx in 0..=struct_value.count_fields() {
+                        let field_value: BasicValueEnum<'_> = llvm_builder
+                            .build_extract_value(struct_value, field_idx, "")
+                            .unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to extract a value from a struct!",
+                                    old_type.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                );
+                            });
+
+                        extracted_fields_values.push(field_value);
+                    }
+
+                    for field_value in extracted_fields_values.iter() {
+                        processed_args.push((*field_value).into());
+                    }
                 }
 
-                let struct_value: inkwell::values::StructValue<'_> = arg_value.into_struct_value();
+                if variant.is_decompose_and_expand_array() {
+                    if !arg_value.is_array_value() {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Expected an array value to decompose and expand, but got a non-array value!",
+                            old_type.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    }
 
-                let mut extracted_fields_values: Vec<BasicValueEnum> = Vec::new();
-
-                for field_idx in 0..=struct_value.count_fields() {
-                    let field_value: BasicValueEnum<'_> = llvm_builder
-                        .build_extract_value(struct_value, field_idx, "")
+                    let ptr: PointerValue<'_> = llvm_builder
+                        .build_alloca(arg_value.get_type(), "")
                         .unwrap_or_else(|_| {
                             abort::abort_codegen(
                                 abi_context,
-                                "Failed to extract a value from a struct!",
+                                "Failed to allocate memory for a decomposed and expanded array parameter in System V ABI!",
                                 old_type.get_span(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
-                            );
+                            )
                         });
 
-                    extracted_fields_values.push(field_value);
-                }
+                    let alignment: u32 = abi_context
+                        .get_target_data()
+                        .get_preferred_alignment(&arg_value.get_type());
 
-                for field_value in extracted_fields_values.iter() {
-                    processed_args.push((*field_value).into());
+                    let array_value: inkwell::values::ArrayValue<'_> = arg_value.into_array_value();
+
+                    let store_instruction: InstructionValue<'_> = llvm_builder
+                        .build_store(ptr, array_value)
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to store an array value in memory for System V ABI!",
+                                old_type.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                    store_instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to set the alignment of a store instruction for a decomposed and expanded array parameter in System V ABI!",
+                            old_type.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                    if layout.abi_size == 8 {
+                        let first_element_decomposed_ty: &Type = array_decomposed_types.first().unwrap_or_else(|| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to get the first decomposed type for an array decomposition and expansion!",
+                                old_type.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                        let first_element_decomposed_llvm_ty: BasicTypeEnum<'_> =
+                            self::decompose_type(
+                                llvm_context,
+                                abi_context,
+                                first_element_decomposed_ty,
+                            );
+
+                        let value: BasicValueEnum<'_> =
+                            llvm_builder.build_load(first_element_decomposed_llvm_ty, ptr, "").unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to load a decomposed and expanded array element from memory for System V ABI!",
+                                    old_type.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
+                            });
+
+                        processed_args.push(value.into());
+                    } else {
+                        let first_element_decomposed_ty: &Type = array_decomposed_types.first().unwrap_or_else(|| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to get the first decomposed type for an array decomposition and expansion!",
+                                old_type.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                        let second_element_decomposed_ty: &Type = array_decomposed_types.get(1).unwrap_or_else(|| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to get the second decomposed type for an array decomposition and expansion!",
+                                old_type.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                        let first_element_decomposed_llvm_ty: BasicTypeEnum<'_> =
+                            self::decompose_type(
+                                llvm_context,
+                                abi_context,
+                                first_element_decomposed_ty,
+                            );
+
+                        let second_element_decomposed_llvm_ty: BasicTypeEnum<'_> =
+                            self::decompose_type(
+                                llvm_context,
+                                abi_context,
+                                second_element_decomposed_ty,
+                            );
+
+                        let first_value: BasicValueEnum<'_> =
+                            llvm_builder.build_load(first_element_decomposed_llvm_ty, ptr, "").unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to load a decomposed and expanded array element from memory for System V ABI!",
+                                    old_type.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
+                            });
+
+                        let ptr_to_second_element: PointerValue<'_> = unsafe {
+                            llvm_builder.build_in_bounds_gep(second_element_decomposed_llvm_ty, ptr, &[llvm_context.i32_type().const_int(1, false)], "").unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to build a GEP instruction to get the second element of a decomposed and expanded array parameter in System V ABI!",
+                                    old_type.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
+                            })
+                        };
+
+                        let second_value: BasicValueEnum<'_> =
+                            llvm_builder.build_load(second_element_decomposed_llvm_ty, ptr_to_second_element, "").unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to load a decomposed and expanded array element from memory for System V ABI!",
+                                    old_type.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
+                            });
+
+                        processed_args.push(first_value.into());
+                        processed_args.push(second_value.into());
+                    }
                 }
             }
         }
@@ -935,7 +1540,7 @@ pub fn decompose_function_type<'llvm_abi>(
                     X86SystemVABITypeClass::get_system_v_type_class(abi_context, ty);
 
                 let abi_ty: x86SystemVABIType =
-                    x86SystemVABIType::class_to_general_abi_strategy(&ty_claseses, ty);
+                    x86SystemVABIType::class_to_general_abi_strategy(abi_context, &ty_claseses, ty);
 
                 match abi_ty {
                     x86SystemVABIType::Ignore => {
@@ -986,7 +1591,7 @@ pub fn decompose_function_type<'llvm_abi>(
                             .push(llvm_context.ptr_type(AddressSpace::default()).into());
                     }
 
-                    x86SystemVABIType::DecomposeAndExpand(field_types, variant) => {
+                    x86SystemVABIType::DecomposeAndExpand(field_types, ref variant) => {
                         if variant.is_decompose_and_expand_structure() {
                             let mut decomposed_types: Vec<BasicMetadataTypeEnum> = Vec::new();
                             let mut struct_field_indexes: Vec<usize> = Vec::new();
@@ -1005,6 +1610,7 @@ pub fn decompose_function_type<'llvm_abi>(
 
                                 let abi_ty: x86SystemVABIType =
                                     x86SystemVABIType::class_to_general_abi_strategy(
+                                        abi_context,
                                         &ty_claseses,
                                         field_type,
                                     );
@@ -1047,15 +1653,53 @@ pub fn decompose_function_type<'llvm_abi>(
                             }
 
                             configuration_parameter_types.push(
-                                    x86SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
-                                        name,
-                                        ascii_name,
-                                        old_type: ty,
-                                        struct_field_indexes,
-                                        decomposed_indexes,
-                                        index: idx,
-                                    },
-                                );
+                                x86SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
+                                    name,
+                                    ascii_name,
+                                    old_type: ty,
+                                    struct_field_indexes,
+                                    array_decomposed_types: Vec::new(),
+                                    decomposed_indexes,
+                                    variant: *variant,
+                                    index: idx,
+                                },
+                            );
+
+                            llvm_parameters_types.extend(decomposed_types.iter());
+                        }
+
+                        if variant.is_decompose_and_expand_array() {
+                            let mut decomposed_types: Vec<BasicMetadataTypeEnum> = Vec::new();
+
+                            let mut llvm_parameters_last_index: usize =
+                                llvm_parameters_types.len().saturating_sub(1);
+
+                            for field_type in field_types.iter() {
+                                let llvm_ty: BasicTypeEnum<'_> =
+                                    self::decompose_type(llvm_context, abi_context, field_type);
+
+                                decomposed_types.push(llvm_ty.into());
+                            }
+
+                            let mut decomposed_indexes: Vec<usize> = Vec::new();
+
+                            for _ in decomposed_types.iter() {
+                                decomposed_indexes.push(llvm_parameters_last_index);
+                                llvm_parameters_last_index += 1;
+                            }
+
+                            configuration_parameter_types.push(
+                                x86SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
+                                    name,
+                                    ascii_name,
+                                    old_type: ty,
+                                    struct_field_indexes: Vec::new(),
+                                    array_decomposed_types: field_types.clone(),
+                                    decomposed_indexes,
+                                    variant: *variant,
+                                    index: idx,
+                                },
+                            );
 
                             llvm_parameters_types.extend(decomposed_types.iter());
                         }
@@ -1082,8 +1726,11 @@ pub fn decompose_function_type<'llvm_abi>(
         let return_ty_classes: [X86SystemVABITypeClass; 8] =
             X86SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
 
-        let abi_return_ty: x86SystemVABIType =
-            x86SystemVABIType::class_to_general_abi_strategy(&return_ty_classes, return_type);
+        let abi_return_ty: x86SystemVABIType = x86SystemVABIType::class_to_general_abi_strategy(
+            abi_context,
+            &return_ty_classes,
+            return_type,
+        );
 
         match abi_return_ty {
             x86SystemVABIType::Ignore => {

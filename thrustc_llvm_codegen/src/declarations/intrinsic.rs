@@ -85,6 +85,7 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, intrinsic: Intr
         parameters_types,
         convention,
         function_abi_config,
+        false,
         span,
     );
 

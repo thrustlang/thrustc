@@ -34,6 +34,7 @@ pub trait LLVMFunctionExtensions<'ctx> {
     fn get_param_count(&self) -> usize;
     fn get_parameters_types(&self) -> &[Type];
     fn get_abi_configuration(&self) -> Option<&LLVMABIConfiguration<'ctx>>;
+    fn is_variadic(&self) -> bool;
     fn get_span(&self) -> Span;
 }
 

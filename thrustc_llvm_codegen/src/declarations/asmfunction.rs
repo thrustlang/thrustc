@@ -193,6 +193,7 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
         parameters_types,
         call_convention,
         function_abi_config,
+        false,
         span,
     );
 

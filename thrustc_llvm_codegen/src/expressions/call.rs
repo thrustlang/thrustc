@@ -46,10 +46,18 @@ pub fn compile<'ctx>(
 
     let function: LLVMFunction = context.get_table().get_function(name);
 
-    let (llvm_function, function_arg_types, function_convention, llvm_abi_type_config, span) =
-        (function.0, function.2, function.3, function.4, function.5);
+    let (
+        llvm_function,
+        function_arg_types,
+        function_convention,
+        llvm_abi_type_config,
+        is_variatic,
+        span,
+    ) = (
+        function.0, function.2, function.3, function.4, function.5, function.6,
+    );
 
-    if !has_abi {
+    let mut build_standard_call = || -> BasicValueEnum {
         let compiled_args: Vec<BasicMetadataValueEnum> = args
             .iter()
             .enumerate()
@@ -59,40 +67,46 @@ pub fn compile<'ctx>(
             })
             .collect();
 
-        let ret_value: BasicValueEnum =
-            match llvm_builder.build_call(llvm_function, &compiled_args, "") {
-                Ok(call) => {
-                    call.set_call_convention(function_convention);
-
-                    if !kind.is_void_type() {
-                        call.try_as_basic_value().left().unwrap_or_else(|| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile function call!",
-                                span,
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            )
-                        })
-                    } else {
-                        context
-                            .get_llvm_context()
-                            .ptr_type(AddressSpace::default())
-                            .const_null()
-                            .into()
-                    }
+        let ret_value = match llvm_builder.build_call(llvm_function, &compiled_args, "") {
+            Ok(call) => {
+                call.set_call_convention(function_convention);
+                if !kind.is_void_type() {
+                    call.try_as_basic_value().left().unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile function call!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                } else {
+                    context
+                        .get_llvm_context()
+                        .ptr_type(AddressSpace::default())
+                        .const_null()
+                        .into()
                 }
-                Err(_) => abort::abort_codegen(
-                    context,
-                    "Failed to compile the function call!",
-                    span,
-                    std::path::PathBuf::from(file!()),
-                    line!(),
-                ),
-            };
+            }
+            Err(_) => abort::abort_codegen(
+                context,
+                "Failed to compile the function call!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            ),
+        };
 
         cast::try_smart_cast(context, cast, kind, ret_value, span)
+    };
+
+    if !has_abi {
+        build_standard_call()
     } else {
+        if is_variatic {
+            return build_standard_call();
+        }
+
         let compiled_args: Vec<BasicValueEnum> = args
             .iter()
             .enumerate()

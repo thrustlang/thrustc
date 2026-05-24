@@ -598,7 +598,7 @@ impl CommandLine {
                 self.advance();
             }
 
-            "--abi" => {
+            "-abi" => {
                 self.advance();
 
                 let specific: thrustc_abi::SpecificABI = self.parse_specific_abi(self.peek());

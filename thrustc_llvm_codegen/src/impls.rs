@@ -185,8 +185,13 @@ impl<'ctx> LLVMFunctionExtensions<'ctx> for LLVMFunction<'ctx> {
     }
 
     #[inline]
-    fn get_span(&self) -> Span {
+    fn is_variadic(&self) -> bool {
         self.5
+    }
+
+    #[inline]
+    fn get_span(&self) -> Span {
+        self.6
     }
 }
 

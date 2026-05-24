@@ -97,6 +97,9 @@ pub fn compile_as_function_type<'ctx>(
             return standard_type_generation(parameters, kind);
         }
 
+        if is_variatic {
+            return standard_type_generation(parameters, kind);
+        }
         
         let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> = context.get_abi().unwrap_or_else(|| {
             abort::abort_codegen(

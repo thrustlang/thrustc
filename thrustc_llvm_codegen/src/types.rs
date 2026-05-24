@@ -47,6 +47,7 @@ pub type LLVMFunction<'ctx> = (
     &'ctx [Type],
     u32,
     Option<LLVMABIConfiguration<'ctx>>,
+    bool,
     Span,
 );
 pub type LLVMFunctions<'ctx> = HashMap<&'ctx str, LLVMFunction<'ctx>>;

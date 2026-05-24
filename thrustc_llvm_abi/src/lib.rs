@@ -133,7 +133,7 @@ pub fn get_type<'llvm_abi>(
                 );
 
             let abi_ty: x86SystemVABIType =
-                x86SystemVABIType::class_to_general_abi_strategy(&ty_classes, ty);
+                x86SystemVABIType::class_to_general_abi_strategy(&mut abi_context, &ty_classes, ty);
 
             Some(LLVMABIType::x86SystemV(abi_ty))
         }
