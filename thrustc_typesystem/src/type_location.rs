@@ -41,13 +41,13 @@ impl TypeCodeLocation for Type {
             | Type::F128 { span }
             | Type::FX8680 { span }
             | Type::FPPC128 { span }
-            | Type::Bool(span)
+            | Type::Bool { span }
             | Type::Void(span)
             | Type::Addr(span)
             | Type::Array { span, .. }
             | Type::FixedArray(_, _, span)
             | Type::Const(_, span)
-            | Type::Ptr(_, span)
+            | Type::Ptr { span, .. }
             | Type::Struct { span, .. }
             | Type::Fn(_, _, _, span) => *span,
             Type::Unresolved { span, .. } => *span,

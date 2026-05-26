@@ -21,7 +21,10 @@ use thrustc_ast::{Ast, traits::AstGetType};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, traits::IndexExtensions};
+use thrustc_typesystem::{
+    Type,
+    traits::{IndexExtensions, TypePointerExtensions},
+};
 
 use crate::{ParserContext, expressions};
 
@@ -39,10 +42,11 @@ pub fn build_index<'parser>(
         "Expected ']'.".into(),
     )?;
 
-    let index_type: Type = Type::Ptr(
-        Some(index_type.calculate_index_type(1).clone().into()),
+    let index_type: Type = Type::Ptr {
+        subtype: Some(index_type.calculate_index_type(1).clone().into()),
+        address_space: index_type.get_address_space(),
         span,
-    );
+    };
 
     Ok(Ast::Index {
         source: source.into(),

@@ -49,13 +49,18 @@ pub fn compile<'ctx>(
     let (
         llvm_function,
         function_arg_types,
-        function_convention,
+        call_convention,
         llvm_abi_type_config,
+        attributes,
         is_variatic,
         span,
     ) = (
-        function.0, function.2, function.3, function.4, function.5, function.6,
+        function.0, function.2, function.3, function.4, function.5, function.6, function.7,
     );
+
+    let override_call_convention: Option<u32> = attributes
+        .iter()
+        .find_map(|attribute| thrustc_llvm_attributes::interpret_as_callconvention(attribute));
 
     let mut build_standard_call = || -> BasicValueEnum {
         let compiled_args: Vec<BasicMetadataValueEnum> = args
@@ -69,7 +74,12 @@ pub fn compile<'ctx>(
 
         let ret_value = match llvm_builder.build_call(llvm_function, &compiled_args, "") {
             Ok(call) => {
-                call.set_call_convention(function_convention);
+                if let Some(call_convention) = override_call_convention {
+                    call.set_call_convention(call_convention);
+                } else {
+                    call.set_call_convention(call_convention);
+                }
+
                 if !kind.is_void_type() {
                     call.try_as_basic_value().left().unwrap_or_else(|| {
                         abort::abort_codegen(
@@ -159,7 +169,11 @@ pub fn compile<'ctx>(
         let ret_value: BasicValueEnum =
             match llvm_builder.build_call(llvm_function, &lowered_args, "") {
                 Ok(call) => {
-                    call.set_call_convention(function_convention);
+                    if let Some(call_convention) = override_call_convention {
+                        call.set_call_convention(call_convention);
+                    } else {
+                        call.set_call_convention(call_convention);
+                    }
 
                     if !kind.is_void_type() {
                         call.try_as_basic_value().left().unwrap_or_else(|| {

@@ -17,7 +17,6 @@
 
 */
 
-
 use thrustc_ast::{Ast, NodeId};
 use thrustc_errors::CompilationIssue;
 use thrustc_span::Span;
@@ -46,7 +45,7 @@ pub fn or_precedence<'parser>(
             left: expression.into(),
             operator,
             right: right.into(),
-            kind: Type::Bool(span),
+            kind: Type::Bool { span },
             span,
             id: NodeId::new(),
         }

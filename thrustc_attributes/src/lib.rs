@@ -75,6 +75,9 @@ pub enum ThrustAttribute {
     //Ctors & Dtors
     Constructor(Span),
     Destructor(Span),
+
+    // Nvidia Cuda
+    Cuda(Span),
 }
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
@@ -111,6 +114,8 @@ pub enum ThrustAttributeComparator {
 
     Constructor,
     Destructor,
+
+    Cuda,
 }
 
 impl ThrustAttribute {
@@ -208,6 +213,11 @@ impl ThrustAttribute {
     pub fn is_align_attribute(&self) -> bool {
         matches!(self, ThrustAttribute::Align(..))
     }
+
+    #[inline]
+    pub fn is_cuda_attribute(&self) -> bool {
+        matches!(self, ThrustAttribute::Cuda(..))
+    }
 }
 
 impl ThrustAttribute {
@@ -242,6 +252,7 @@ impl ThrustAttribute {
             ThrustAttribute::Thunk(span) => *span,
             ThrustAttribute::Constructor(span) => *span,
             ThrustAttribute::Destructor(span) => *span,
+            ThrustAttribute::Cuda(span) => *span,
         }
     }
 }
@@ -270,6 +281,7 @@ pub fn as_attribute(token_type: TokenType, span: Span) -> Option<ThrustAttribute
         TokenType::Thunk => Some(ThrustAttribute::Thunk(span)),
         TokenType::Constructor => Some(ThrustAttribute::Constructor(span)),
         TokenType::Destructor => Some(ThrustAttribute::Destructor(span)),
+        TokenType::Cuda => Some(ThrustAttribute::Cuda(span)),
 
         _ => None,
     }
@@ -366,6 +378,11 @@ impl ThrustAttributesExtensions for ThrustAttributes {
     }
 
     #[inline]
+    fn has_cuda_attribute(&self) -> bool {
+        self.iter().any(|attr| attr.is_cuda_attribute())
+    }
+
+    #[inline]
     fn match_attr(&self, cmp: ThrustAttributeComparator) -> Option<Span> {
         if let Some(attr_found) = self.iter().find(|attr| attr.as_attr_cmp() == cmp) {
             return Some(attr_found.get_span());
@@ -416,6 +433,7 @@ impl ThrustAttributeComparatorExtensions for ThrustAttribute {
             ThrustAttribute::Thunk(..) => ThrustAttributeComparator::Thunk,
             ThrustAttribute::Constructor(..) => ThrustAttributeComparator::Constructor,
             ThrustAttribute::Destructor(..) => ThrustAttributeComparator::Destructor,
+            ThrustAttribute::Cuda(..) => ThrustAttributeComparator::Cuda,
         }
     }
 }

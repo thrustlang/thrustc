@@ -23,7 +23,10 @@ impl VoidTypeExtensions for Type {
     fn contains_void_type(&self) -> bool {
         fn contains_void_type_inner_type(inner_type: &Type) -> bool {
             match inner_type {
-                Type::Ptr(Some(inner_type), ..) => contains_void_type_inner_type(inner_type),
+                Type::Ptr {
+                    subtype: Some(inner_type),
+                    ..
+                } => contains_void_type_inner_type(inner_type),
                 Type::Const(inner_type, ..) => contains_void_type_inner_type(inner_type),
                 Type::Array {
                     infered_type: Some((inner_type, _)),
@@ -47,7 +50,10 @@ impl VoidTypeExtensions for Type {
         }
 
         match self {
-            Type::Ptr(Some(inner_type), ..) => contains_void_type_inner_type(inner_type),
+            Type::Ptr {
+                subtype: Some(inner_type),
+                ..
+            } => contains_void_type_inner_type(inner_type),
             Type::Const(inner_type, ..) => contains_void_type_inner_type(inner_type),
             Type::Array {
                 infered_type: Some((inner_type, _)),

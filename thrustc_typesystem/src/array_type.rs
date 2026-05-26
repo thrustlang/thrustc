@@ -41,7 +41,11 @@ impl TypeArrayEntensions for Type {
             return *(*inner).clone();
         }
 
-        if let Type::Ptr(Some(inner), ..) = self {
+        if let Type::Ptr {
+            subtype: Some(inner),
+            ..
+        } = self
+        {
             return inner.get_array_base_type();
         }
 
@@ -55,7 +59,7 @@ impl TypeArrayEntensions for Type {
     #[inline(always)]
     fn get_array_type_herarchy(&self) -> u8 {
         match self {
-            Type::Bool(..) => 1,
+            Type::Bool { .. } => 1,
             Type::Char(..) => 2,
 
             Type::U8 { .. } => 3,
@@ -80,8 +84,11 @@ impl TypeArrayEntensions for Type {
             Type::Const(subtype, ..) => subtype.get_array_type_herarchy(),
 
             Type::Addr(..) => 20,
-            Type::Ptr(Some(subtype), ..) => subtype.get_array_type_herarchy(),
-            Type::Ptr(None, ..) => 21,
+            Type::Ptr {
+                subtype: Some(subtype),
+                ..
+            } => subtype.get_array_type_herarchy(),
+            Type::Ptr { subtype: None, .. } => 21,
 
             Type::Fn(..) => 22,
 

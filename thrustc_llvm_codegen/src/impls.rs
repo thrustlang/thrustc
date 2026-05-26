@@ -22,6 +22,7 @@ use inkwell::values::FunctionValue;
 use thrustc_ast::Ast;
 use thrustc_ast_external::{ExternalSignature, ExternalSymbol};
 use thrustc_llvm_abi::LLVMABIConfiguration;
+use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
 
@@ -185,13 +186,18 @@ impl<'ctx> LLVMFunctionExtensions<'ctx> for LLVMFunction<'ctx> {
     }
 
     #[inline]
+    fn get_attributes(&self) -> &LLVMAttributes<'ctx> {
+        &self.5
+    }
+
+    #[inline]
     fn is_variadic(&self) -> bool {
-        self.5
+        self.6
     }
 
     #[inline]
     fn get_span(&self) -> Span {
-        self.6
+        self.7
     }
 }
 

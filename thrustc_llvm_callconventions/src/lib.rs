@@ -17,7 +17,6 @@
 
 */
 
-
 #![allow(clippy::upper_case_acronyms, non_camel_case_types)]
 
 use ahash::AHashMap as HashMap;
@@ -271,6 +270,8 @@ impl LLVMCallConvention {
                 | LLVMCallConvention::X86_INTR
                 | LLVMCallConvention::X86_VectorCall
                 | LLVMCallConvention::X86_RegCall
+                | LLVMCallConvention::PTX_Kernel
+                | LLVMCallConvention::PTX_Device
         )
     }
 }

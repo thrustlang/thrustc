@@ -17,6 +17,7 @@
 
 */
 
+use ahash::{HashMap, HashMapExt};
 use inkwell::module::Linkage;
 
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
@@ -65,6 +66,9 @@ pub enum LLVMAttribute<'ctx> {
 
     Constructor,
     Destructor,
+
+    // Nvidia Cuda
+    Cuda,
 }
 
 impl LLVMAttribute<'_> {
@@ -152,6 +156,11 @@ impl LLVMAttribute<'_> {
     pub fn is_destructor_attribute(&self) -> bool {
         matches!(self, LLVMAttribute::Destructor)
     }
+
+    #[inline]
+    pub fn is_cuda_attribute(&self) -> bool {
+        matches!(self, LLVMAttribute::Cuda)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
@@ -188,6 +197,8 @@ pub enum LLVMAttributeComparator {
 
     Constructor,
     Destructor,
+
+    Cuda,
 }
 
 #[inline]
@@ -223,6 +234,7 @@ pub fn into_llvm_attribute(attribute: &ThrustAttribute) -> LLVMAttribute<'_> {
         ThrustAttribute::Thunk(..) => LLVMAttribute::Thunk,
         ThrustAttribute::Constructor(..) => LLVMAttribute::Constructor,
         ThrustAttribute::Destructor(..) => LLVMAttribute::Destructor,
+        ThrustAttribute::Cuda(..) => LLVMAttribute::Cuda,
     }
 }
 
@@ -234,4 +246,18 @@ pub fn into_llvm_attributes(thrust_attributes: &ThrustAttributes) -> Vec<LLVMAtt
     }
 
     llvm_attributes
+}
+
+pub fn interpret_as_callconvention(llvm_attribute: &LLVMAttribute) -> Option<u32> {
+    let mut attributes_call_conventions: HashMap<&'static str, LLVMCallConvention> = HashMap::new();
+
+    attributes_call_conventions.insert("cuda", LLVMCallConvention::PTX_Kernel);
+
+    if llvm_attribute.is_cuda_attribute() {
+        if let Some(cuda_call_conv) = attributes_call_conventions.get("cuda") {
+            return Some((*cuda_call_conv) as u32);
+        }
+    }
+
+    None
 }

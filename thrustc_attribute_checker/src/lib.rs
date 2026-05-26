@@ -119,7 +119,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                     self.add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0011,
                         "A FFI function without body always need the external attribute.".into(),
-                        " Add the '@extern(\"externalName\")' attribute.".into(),
+                        "Add the '@extern(\"externalName\")' attribute.".into(),
                         None,
                         *span,
                     ));
@@ -498,6 +498,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             ThrustAttributeComparator::Thunk,
             ThrustAttributeComparator::Constructor,
             ThrustAttributeComparator::Destructor,
+            ThrustAttributeComparator::Cuda,
         ];
 
         const VALID_INTRINSIC_ATTRIBUTES: &[ThrustAttributeComparator] = &[

@@ -96,6 +96,11 @@ impl LLVMAttributesExtensions for LLVMAttributes<'_> {
     }
 
     #[inline]
+    fn has_cuda_attribute(&self) -> bool {
+        self.iter().any(|attr| attr.is_cuda_attribute())
+    }
+
+    #[inline]
     fn get_attr(&self, cmp: LLVMAttributeComparator) -> Option<LLVMAttribute<'_>> {
         if let Some(attr_found) = self.iter().find(|attr| attr.as_llvm_attribute_cmp() == cmp) {
             return Some(*attr_found);
@@ -136,6 +141,7 @@ impl LLVMAttributeComparatorExtensions for LLVMAttribute<'_> {
             LLVMAttribute::Thunk => LLVMAttributeComparator::Thunk,
             LLVMAttribute::Constructor => LLVMAttributeComparator::Constructor,
             LLVMAttribute::Destructor => LLVMAttributeComparator::Destructor,
+            LLVMAttribute::Cuda => LLVMAttributeComparator::Cuda,
         }
     }
 }
@@ -195,6 +201,7 @@ impl std::fmt::Display for LLVMAttribute<'_> {
             LLVMAttribute::Thunk => write!(f, "@thunk"),
             LLVMAttribute::Constructor => write!(f, "@constructor"),
             LLVMAttribute::Destructor => write!(f, "@destructor"),
+            LLVMAttribute::Cuda => write!(f, "@cuda"),
         }
     }
 }

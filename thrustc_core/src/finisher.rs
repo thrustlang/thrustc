@@ -27,6 +27,7 @@ use inkwell::targets::FileType;
 use inkwell::targets::TargetMachine;
 
 use thrustc_options::CompilationUnit;
+use thrustc_options::CompilerOptions;
 
 use crate::ThrustCompiler;
 use crate::utils;
@@ -75,12 +76,20 @@ pub fn archive_compilation_module_jit(
 
 #[inline]
 pub fn llvm_obj_compilation(
+    options: &CompilerOptions,
     llvm_module: &Module,
     target_machine: &TargetMachine,
     build_dir: &std::path::Path,
     file_name: &str,
 ) -> std::path::PathBuf {
+    let llvm_backend: &thrustc_backends::llvm::LLVMBackend = options.get_llvm_backend();
+    let target: &thrustc_backends::llvm::target::LLVMTarget = llvm_backend.get_target();
+
+    let is_nvidia_target: bool = target.get_normalized_target_triple().is_nvptx_arch();
+
     let path: std::path::PathBuf = build_dir.join("obj");
+
+    let extension: &str = if is_nvidia_target { "ptx" } else { "o" };
 
     if !path.exists() {
         std::fs::create_dir_all(&path).unwrap_or_else(|_| {
@@ -95,23 +104,41 @@ pub fn llvm_obj_compilation(
     }
 
     let obj_file_path: std::path::PathBuf = path.join(format!(
-        "{}_{}.o",
+        "{}_{}.{}",
         utils::generate_random_string(thrustc_constants::COMPILER_HARD_OBFUSCATION_LEVEL),
-        file_name
+        file_name,
+        extension
     ));
 
-    target_machine
-        .write_to_file(llvm_module, FileType::Object, &obj_file_path)
-        .unwrap_or_else(|error| {
-            thrustc_logging::print_backend_panic(
-                thrustc_logging::LoggingType::BackendPanic,
-                &format!(
-                    "'{}' cannot be emited as object file '{}'.",
-                    obj_file_path.display(),
-                    error
-                ),
-            );
-        });
+    if is_nvidia_target {
+        target_machine
+            .write_to_file(llvm_module, FileType::Assembly, &obj_file_path)
+            .unwrap_or_else(|error| {
+                thrustc_logging::print_backend_panic(
+                    thrustc_logging::LoggingType::BackendPanic,
+                    &format!(
+                        "'{}' cannot be emited as PTX file '{}'.",
+                        obj_file_path.display(),
+                        error
+                    ),
+                );
+            });
 
-    obj_file_path
+        obj_file_path
+    } else {
+        target_machine
+            .write_to_file(llvm_module, FileType::Object, &obj_file_path)
+            .unwrap_or_else(|error| {
+                thrustc_logging::print_backend_panic(
+                    thrustc_logging::LoggingType::BackendPanic,
+                    &format!(
+                        "'{}' cannot be emited as object file '{}'.",
+                        obj_file_path.display(),
+                        error
+                    ),
+                );
+            });
+
+        obj_file_path
+    }
 }

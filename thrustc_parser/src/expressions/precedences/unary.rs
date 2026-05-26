@@ -46,7 +46,7 @@ pub fn unary_precedence<'parser>(
         return Ok(Ast::UnaryOp {
             operator,
             node: expr.into(),
-            kind: Type::Bool(span),
+            kind: Type::Bool { span },
             before: false,
             span,
             id: NodeId::new(),

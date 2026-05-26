@@ -28,6 +28,7 @@ pub struct LLVMTarget {
     pub target_triple_darwin_variant: Option<TargetTriple>,
     pub macos_version: Option<String>,
     pub ios_version: Option<String>,
+    pub cuda_version: Option<String>,
 }
 
 impl LLVMTarget {
@@ -75,6 +76,16 @@ impl LLVMTarget {
         Some((major, minor, patch))
     }
 
+    pub fn get_cuda_version(&self) -> Option<(u64, u64)> {
+        let cuda_version: &str = self.cuda_version.as_ref()?;
+        let mut split: std::str::Split<'_, char> = cuda_version.split('.');
+
+        let major: u64 = split.next()?.parse::<u64>().ok()?;
+        let minor: u64 = split.next()?.parse::<u64>().ok()?;
+
+        Some((major, minor))
+    }
+
     pub fn dissamble_target_triple(&self) -> (String, String, String, String) {
         let triple: std::borrow::Cow<'_, str> = self.target_triple.as_str().to_string_lossy();
         let mut split: std::str::Split<'_, char> = triple.split('-');
@@ -97,11 +108,18 @@ impl LLVMTarget {
     #[inline]
     pub fn set_target_triple(&mut self, raw_target_triple: String) {
         self.target_triple = TargetTriple::create(&raw_target_triple);
+        self.normalized_target_triple =
+            LLVMTargetTriple::new(self.target_triple.as_str().to_string_lossy().to_string())
     }
 
     #[inline]
     pub fn set_target_triple_darwin_variant(&mut self, raw_target_triple: String) {
         self.target_triple_darwin_variant = Some(TargetTriple::create(&raw_target_triple));
+    }
+
+    #[inline]
+    pub fn set_nvidia_cuda_version(&mut self, version: String) {
+        self.cuda_version = Some(version);
     }
 
     #[inline]

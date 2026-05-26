@@ -36,6 +36,7 @@ pub trait LLVMAttributesExtensions {
     fn has_asmthrow_attribute(&self) -> bool;
     fn has_asmsideffects_attribute(&self) -> bool;
     fn has_asmsyntax_attribute(&self) -> bool;
+    fn has_cuda_attribute(&self) -> bool;
 
     fn get_attr(&self, cmp: LLVMAttributeComparator) -> Option<LLVMAttribute<'_>>;
 }

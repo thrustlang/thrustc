@@ -52,6 +52,7 @@ impl std::fmt::Display for ThrustAttribute {
             ThrustAttribute::Thunk(..) => write!(f, "@thunk"),
             ThrustAttribute::Constructor(..) => write!(f, "@constructor"),
             ThrustAttribute::Destructor(..) => write!(f, "@destructor"),
+            ThrustAttribute::Cuda(..) => write!(f, "@cuda"),
         }
     }
 }

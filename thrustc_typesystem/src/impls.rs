@@ -22,6 +22,7 @@ use std::hash::Hasher;
 
 use thrustc_span::Span;
 
+use crate::traits::TypePointerExtensions;
 use crate::{
     Type,
     traits::{TypeCodeLocation, TypeExtensions, TypeIsExtensions},
@@ -39,7 +40,11 @@ impl TypeIsExtensions for Type {
             return subtype.is_void_type();
         }
 
-        if let Type::Ptr(Some(subtype), ..) = self {
+        if let Type::Ptr {
+            subtype: Some(subtype),
+            ..
+        } = self
+        {
             return subtype.is_void_type();
         }
 
@@ -48,7 +53,7 @@ impl TypeIsExtensions for Type {
 
     #[inline(always)]
     fn is_bool_type(&self) -> bool {
-        matches!(self, Type::Bool(..))
+        matches!(self, Type::Bool { .. })
     }
 
     #[inline(always)]
@@ -80,7 +85,7 @@ impl TypeIsExtensions for Type {
 
     #[inline(always)]
     fn is_ptr_type(&self) -> bool {
-        matches!(self, Type::Ptr(..))
+        matches!(self, Type::Ptr { .. })
     }
 
     #[inline(always)]
@@ -160,7 +165,7 @@ impl TypeIsExtensions for Type {
     #[inline(always)]
     fn get_type_herarchy(&self) -> u8 {
         match self {
-            Type::Bool(..) => 1,
+            Type::Bool { .. } => 1,
             Type::Char(..) => 2,
 
             Type::U8 { .. } => 3,
@@ -185,8 +190,11 @@ impl TypeIsExtensions for Type {
             Type::Const(subtype, ..) => subtype.get_type_herarchy(),
 
             Type::Addr(..) => 20,
-            Type::Ptr(Some(subtype), ..) => subtype.get_type_herarchy(),
-            Type::Ptr(None, ..) => 21,
+            Type::Ptr {
+                subtype: Some(subtype),
+                ..
+            } => subtype.get_type_herarchy(),
+            Type::Ptr { subtype: None, .. } => 21,
 
             Type::Fn(..) => 22,
 
@@ -234,7 +242,10 @@ impl TypeExtensions for Type {
                 ..
             } => element_type.get_type_with_depth(base_depth - 1),
             Type::Const(inner_type, ..) => inner_type.get_type_with_depth(base_depth - 1),
-            Type::Ptr(Some(inner_type), ..) => inner_type.get_type_with_depth(base_depth - 1),
+            Type::Ptr {
+                subtype: Some(inner_type),
+                ..
+            } => inner_type.get_type_with_depth(base_depth - 1),
             Type::Struct { .. } => self,
             Type::S8 { .. }
             | Type::S16 { .. }
@@ -252,11 +263,11 @@ impl TypeExtensions for Type {
             | Type::F128 { .. }
             | Type::FX8680 { .. }
             | Type::FPPC128 { .. }
-            | Type::Bool(..)
+            | Type::Bool { .. }
             | Type::Char(..)
             | Type::Addr(..)
             | Type::Void(..)
-            | Type::Ptr(None, ..)
+            | Type::Ptr { subtype: None, .. }
             | Type::Fn(..)
             | Type::Unresolved { .. } => self,
         }
@@ -264,7 +275,11 @@ impl TypeExtensions for Type {
 
     #[inline]
     fn get_type_ref(&self) -> Type {
-        Type::Ptr(Some(self.clone().into()), self.get_span())
+        Type::Ptr {
+            subtype: Some(self.clone().into()),
+            address_space: self.get_address_space(),
+            span: self.get_span(),
+        }
     }
 }
 
@@ -289,13 +304,13 @@ impl Hash for Type {
             | Type::F128 { .. }
             | Type::FX8680 { .. }
             | Type::FPPC128 { .. }
-            | Type::Bool(_)
+            | Type::Bool { .. }
             | Type::Char(_)
             | Type::Addr(_)
             | Type::Void(_) => {}
 
             Type::Const(inner, _) => inner.hash(state),
-            Type::Ptr(inner, _) => inner.hash(state),
+            Type::Ptr { subtype: inner, .. } => inner.hash(state),
             Type::Struct {
                 name,
                 fields,
@@ -391,11 +406,18 @@ impl PartialEq for Type {
             (Type::F128 { .. }, Type::F128 { .. }) => true,
             (Type::FX8680 { .. }, Type::FX8680 { .. }) => true,
             (Type::FPPC128 { .. }, Type::FPPC128 { .. }) => true,
-            (Type::Ptr(None, ..), Type::Ptr(None, ..)) => true,
-            (Type::Ptr(Some(lhs), ..), Type::Ptr(Some(rhs), ..)) => lhs == rhs,
-            (Type::Ptr(..), Type::Ptr(..)) => true,
+            (Type::Ptr { subtype: None, .. }, Type::Ptr { subtype: None, .. }) => true,
+            (
+                Type::Ptr {
+                    subtype: Some(lhs), ..
+                },
+                Type::Ptr {
+                    subtype: Some(rhs), ..
+                },
+            ) => lhs == rhs,
+            (Type::Ptr { .. }, Type::Ptr { .. }) => true,
             (Type::Void(..), Type::Void(..)) => true,
-            (Type::Bool(..), Type::Bool(..)) => true,
+            (Type::Bool { .. }, Type::Bool { .. }) => true,
             (Type::Addr(..), Type::Addr(..)) => true,
 
             _ => false,
@@ -422,7 +444,7 @@ impl std::fmt::Display for Type {
             Type::F128 { .. } => write!(f, "f128"),
             Type::FX8680 { .. } => write!(f, "fx86_80"),
             Type::FPPC128 { .. } => write!(f, "fppc_128"),
-            Type::Bool(..) => write!(f, "bool"),
+            Type::Bool { .. } => write!(f, "bool"),
             Type::Char(..) => write!(f, "char"),
             Type::Unresolved { hint, .. } => write!(f, "unresolved[{}]", hint),
             Type::Fn(params, kind, modificator, ..) => {
@@ -471,7 +493,10 @@ impl std::fmt::Display for Type {
 
                 write!(f, "}}")
             }
-            Type::Ptr(nested_type, ..) => {
+            Type::Ptr {
+                subtype: nested_type,
+                ..
+            } => {
                 if let Some(nested_type) = nested_type {
                     write!(f, "ptr[")?;
                     write!(f, "{}", nested_type)?;

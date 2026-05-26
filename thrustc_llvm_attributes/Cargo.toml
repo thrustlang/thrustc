@@ -7,6 +7,8 @@ version.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+ahash = "0.8.11"
+
 inkwell = { workspace = true, optional = true }
 clang = { workspace = true, optional = true }
 

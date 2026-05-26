@@ -126,8 +126,11 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
     let asm_function: FunctionValue =
         llvm_module.add_function(&llvm_function_name, function_type, None);
 
-    AttributeBuilder::new(attributes, LLVMAttributeApplicant::Function(asm_function))
-        .add_function_attributes(context);
+    AttributeBuilder::add_function_attributes(
+        context,
+        &attributes,
+        LLVMAttributeApplicant::Function(asm_function),
+    );
 
     let last_block: BasicBlock = context.get_last_builder_block(span);
     let function_block: BasicBlock = block::append_block(context, asm_function);
@@ -193,6 +196,7 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
         parameters_types,
         call_convention,
         function_abi_config,
+        attributes,
         false,
         span,
     );

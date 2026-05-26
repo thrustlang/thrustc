@@ -49,7 +49,7 @@ pub fn cmp_precedence<'parser>(
             left: left.into(),
             operator,
             right: right.into(),
-            kind: Type::Bool(span),
+            kind: Type::Bool { span },
             span,
             id: NodeId::new(),
         };

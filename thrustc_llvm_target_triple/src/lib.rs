@@ -239,6 +239,11 @@ impl LLVMTargetTriple {
     }
 
     #[inline]
+    pub fn is_nvptx_arch(&self) -> bool {
+        self.arch.contains("nvptx") || self.arch.contains("nvidia")
+    }
+
+    #[inline]
     pub fn get_normalized(&self) -> String {
         format!("{}-{}-{}-{}", self.arch, self.vendor, self.os, self.abi)
     }

@@ -604,7 +604,11 @@ impl<'ast> Ast<'ast> {
     pub fn new_nullptr(span: Span) -> Ast<'ast> {
         Ast::NullPtr {
             span,
-            kind: Type::Ptr(None, span),
+            kind: Type::Ptr {
+                subtype: None,
+                address_space: None,
+                span,
+            },
         }
     }
 

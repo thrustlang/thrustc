@@ -177,7 +177,7 @@ pub fn generate_type<'ctx>(
                 .ptr_sized_int_type(context.get_target_data(), None)
                 .into(),
 
-            Type::Bool(..) => llvm_context.bool_type().into(),
+            Type::Bool { .. } => llvm_context.bool_type().into(),
             Type::Const(subtype, ..) => self::generate_type(context, subtype),
 
             any => abort::abort_codegen(
@@ -211,6 +211,14 @@ pub fn generate_type<'ctx>(
             infered_type: Some((infered_type, ..)),
             ..
         } => self::generate_type(context, infered_type),
+
+        t if t.is_ptr_type() => {
+            if let Type::Ptr { address_space: Some(address_space), .. } = t {
+                llvm_context.ptr_type(AddressSpace::from(*address_space)).into()
+            } else {
+                llvm_context.ptr_type(AddressSpace::default()).into()
+            }
+        }
 
         t if t.is_ptr_like_type() => llvm_context.ptr_type(AddressSpace::default()).into(),
 
@@ -265,7 +273,7 @@ pub fn generate_load_type<'ctx>(
                 .ptr_sized_int_type(context.get_target_data(), None)
                 .into(),
 
-            Type::Bool(..) => llvm_context.bool_type().into(),
+            Type::Bool { .. } => llvm_context.bool_type().into(),
             Type::Const(subtype, ..) => self::generate_load_type(context, subtype),
 
             any => abort::abort_codegen(
@@ -294,6 +302,15 @@ pub fn generate_load_type<'ctx>(
                 line!(),
             ),
         },
+
+        
+        t if t.is_ptr_type() => {
+            if let Type::Ptr { address_space: Some(address_space), .. } = t {
+                llvm_context.ptr_type(AddressSpace::from(*address_space)).into()
+            } else {
+                llvm_context.ptr_type(AddressSpace::default()).into()
+            }
+        }
 
         t if t.is_ptr_like_type() => llvm_context.ptr_type(AddressSpace::default()).into(),
 
@@ -410,7 +427,7 @@ pub fn compile_as_dbg_type<'ctx>(
 
         BasicTypeEnum::PointerType(pt_ty) => {
             let inner_type: DIType = self::compile_as_dbg_type(context, from_type, pt_ty.into());
-
+            
             context
                 .get_debug_builder()
                 .create_pointer_type(
@@ -418,7 +435,7 @@ pub fn compile_as_dbg_type<'ctx>(
                     inner_type,
                     target_data.get_bit_size(&pt_ty),
                     target_data.get_abi_alignment(&pt_ty),
-                    AddressSpace::default(),
+                    pt_ty.get_address_space(),
                 )
                 .as_type()
         }
@@ -474,7 +491,7 @@ pub fn generate_pointer_arithmetic_type<'ctx>(
         Type::Array {
             base_type: subtype, ..
         } => self::generate_type(context, subtype),
-        Type::Ptr(Some(subtype), ..) => self::generate_type(context, subtype),
+        Type::Ptr { subtype: Some(subtype), .. } => self::generate_type(context, subtype),
 
         _ => self::generate_type(context, kind),
     }

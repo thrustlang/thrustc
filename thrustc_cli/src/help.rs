@@ -288,6 +288,17 @@ pub fn show_help() -> ! {
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stderr,
         &format!(
+            "{} {} {} {}\n",
+            "•".bold(),
+            "-cuda-version".custom_color((141, 141, 142)).bold(),
+            "[2.0]",
+            "Specify the Nvidia CUDA version."
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
             "{} {} {}\n",
             "•".bold(),
             "-jit".custom_color((141, 141, 142)).bold(),

@@ -90,6 +90,8 @@ pub trait TypePointerExtensions {
     fn is_ptr_fixed_array_type(&self) -> bool;
     fn is_ptr_array_type(&self) -> bool;
     fn is_ptr_numeric_type(&self) -> bool;
+
+    fn get_address_space(&self) -> Option<u16>;
 }
 
 pub trait TypeStructExtensions {

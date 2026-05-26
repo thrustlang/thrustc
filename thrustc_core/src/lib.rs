@@ -484,6 +484,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         }
 
         let obj_file: std::path::PathBuf = finisher::llvm_obj_compilation(
+            self.options,
             &llvm_module,
             &target_machine,
             build_dir,

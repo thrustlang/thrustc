@@ -31,13 +31,13 @@ impl TypePointerExtensions for Type {
 
         matches!(
             self,
-            Type::Ptr(..) | Type::Addr(..) | Type::Array { .. } | Type::Fn(..)
+            Type::Ptr { .. } | Type::Addr(..) | Type::Array { .. } | Type::Fn(..)
         )
     }
 
     #[inline]
     fn is_flat_ptr_type(&self) -> bool {
-        matches!(self, Type::Ptr(..) | Type::Fn(..))
+        matches!(self, Type::Ptr { .. } | Type::Fn(..))
     }
 
     #[inline]
@@ -70,11 +70,15 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_typed_ptr_type(&self) -> bool {
-        if let Type::Ptr(Some(inner), ..) = self {
+        if let Type::Ptr {
+            subtype: Some(inner),
+            ..
+        } = self
+        {
             return inner.is_typed_ptr_type();
         }
 
-        if let Type::Ptr(None, ..) = self {
+        if let Type::Ptr { subtype: None, .. } = self {
             return false;
         }
 
@@ -83,7 +87,11 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_ptr_struct_type(&self) -> bool {
-        if let Type::Ptr(Some(inner), ..) = self {
+        if let Type::Ptr {
+            subtype: Some(inner),
+            ..
+        } = self
+        {
             return inner.is_struct_type();
         }
 
@@ -92,7 +100,11 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_ptr_fixed_array_type(&self) -> bool {
-        if let Type::Ptr(Some(inner), ..) = self {
+        if let Type::Ptr {
+            subtype: Some(inner),
+            ..
+        } = self
+        {
             return inner.is_fixed_array_type();
         }
 
@@ -101,7 +113,11 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_ptr_numeric_type(&self) -> bool {
-        if let Type::Ptr(Some(inner), ..) = self {
+        if let Type::Ptr {
+            subtype: Some(inner),
+            ..
+        } = self
+        {
             return inner.is_numeric_type();
         }
 
@@ -110,10 +126,23 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_ptr_array_type(&self) -> bool {
-        if let Type::Ptr(Some(inner), ..) = self {
+        if let Type::Ptr {
+            subtype: Some(inner),
+            ..
+        } = self
+        {
             return inner.is_array_type();
         }
 
         false
+    }
+
+    #[inline]
+    fn get_address_space(&self) -> Option<u16> {
+        if let Type::Ptr { address_space, .. } = self {
+            return *address_space;
+        }
+
+        None
     }
 }

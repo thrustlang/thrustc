@@ -137,17 +137,24 @@ pub fn compile<'ctx>(
             let llvm_builder: &Builder = context.get_llvm_builder();
 
             let src_span: Span = source.get_span();
+            let cast_type: Option<&Type> = Some(&Type::Ptr {
+                subtype: None,
+                address_space: None,
+                span: src_span,
+            });
+
             let src: PointerValue =
-                codegen::compile_as_ptr_value(context, source, Some(&Type::Ptr(None, src_span)))
-                    .into_pointer_value();
+                codegen::compile_as_ptr_value(context, source, cast_type).into_pointer_value();
 
             let dest_span: Span = destination.get_span();
-            let dest: PointerValue = codegen::compile_as_ptr_value(
-                context,
-                destination,
-                Some(&Type::Ptr(None, dest_span)),
-            )
-            .into_pointer_value();
+            let cast_type: Option<&Type> = Some(&Type::Ptr {
+                subtype: None,
+                address_space: None,
+                span: dest_span,
+            });
+
+            let dest: PointerValue =
+                codegen::compile_as_ptr_value(context, destination, cast_type).into_pointer_value();
 
             let size: IntValue = codegen::compile_as_value(context, size, None).into_int_value();
 
@@ -184,17 +191,24 @@ pub fn compile<'ctx>(
             let llvm_builder: &Builder = context.get_llvm_builder();
 
             let src_span: Span = source.get_span();
+            let cast_type: Option<&Type> = Some(&Type::Ptr {
+                subtype: None,
+                address_space: None,
+                span: src_span,
+            });
+
             let src: PointerValue =
-                codegen::compile_as_ptr_value(context, source, Some(&Type::Ptr(None, src_span)))
-                    .into_pointer_value();
+                codegen::compile_as_ptr_value(context, source, cast_type).into_pointer_value();
 
             let dest_span: Span = destination.get_span();
-            let dest: PointerValue = codegen::compile_as_ptr_value(
-                context,
-                destination,
-                Some(&Type::Ptr(None, dest_span)),
-            )
-            .into_pointer_value();
+            let cast_type: Option<&Type> = Some(&Type::Ptr {
+                subtype: None,
+                address_space: None,
+                span: dest_span,
+            });
+
+            let dest: PointerValue =
+                codegen::compile_as_ptr_value(context, destination, cast_type).into_pointer_value();
 
             let size: IntValue = codegen::compile_as_value(context, size, None).into_int_value();
 
@@ -231,12 +245,14 @@ pub fn compile<'ctx>(
             let llvm_builder: &Builder = context.get_llvm_builder();
 
             let dest_span: Span = destination.get_span();
-            let dest: PointerValue = codegen::compile_as_ptr_value(
-                context,
-                destination,
-                Some(&Type::Ptr(None, dest_span)),
-            )
-            .into_pointer_value();
+            let cast_type: Option<&Type> = Some(&Type::Ptr {
+                subtype: None,
+                address_space: None,
+                span: dest_span,
+            });
+
+            let dest: PointerValue =
+                codegen::compile_as_ptr_value(context, destination, cast_type).into_pointer_value();
 
             let new_size: IntValue =
                 codegen::compile_as_value(context, new_size, None).into_int_value();

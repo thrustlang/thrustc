@@ -66,15 +66,36 @@ impl InfererTypeExtensions for Type {
                 base_type.inferer_inner_type_from_type(other_type);
             }
 
-            (Type::Ptr(Some(base_type), ..), Type::Ptr(Some(other_type), ..)) => {
+            (
+                Type::Ptr {
+                    subtype: Some(base_type),
+                    ..
+                },
+                Type::Ptr {
+                    subtype: Some(other_type),
+                    ..
+                },
+            ) => {
                 base_type.inferer_inner_type_from_type(other_type);
             }
 
-            (base_type, Type::Ptr(Some(other_type), ..)) => {
+            (
+                base_type,
+                Type::Ptr {
+                    subtype: Some(other_type),
+                    ..
+                },
+            ) => {
                 base_type.inferer_inner_type_from_type(other_type);
             }
 
-            (Type::Ptr(Some(base_type), ..), other_type) => {
+            (
+                Type::Ptr {
+                    subtype: Some(base_type),
+                    ..
+                },
+                other_type,
+            ) => {
                 base_type.inferer_inner_type_from_type(other_type);
             }
 

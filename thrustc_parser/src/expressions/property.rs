@@ -28,7 +28,10 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, traits::TypeCodeLocation};
+use thrustc_typesystem::{
+    Type,
+    traits::{TypeCodeLocation, TypePointerExtensions},
+};
 
 use thrustc_parser_table::traits::{FoundSymbolEitherExtensions, StructSymbolExtensions};
 
@@ -106,7 +109,10 @@ fn decompose_structure_property<'parser>(
     }
 
     let current_type: &Type = match base_type {
-        Type::Ptr(Some(inner_type), ..) => {
+        Type::Ptr {
+            subtype: Some(inner_type),
+            ..
+        } => {
             is_parent_ptr = true;
             inner_type
         }
@@ -152,7 +158,11 @@ fn decompose_structure_property<'parser>(
         };
 
         let adjusted_inner_type: Type = if is_parent_ptr || source.is_memory_assigned_value()? {
-            Type::Ptr(Some(field_type.clone().into()), field_type.get_span())
+            Type::Ptr {
+                subtype: Some(field_type.clone().into()),
+                address_space: field_type.get_address_space(),
+                span: field_type.get_span(),
+            }
         } else {
             field_type.clone()
         };
@@ -179,7 +189,11 @@ fn decompose_structure_property<'parser>(
         {
             for (base_subtype, ..) in nested_indices.iter_mut() {
                 *base_subtype = if is_parent_ptr || source.is_memory_assigned_value()? {
-                    Type::Ptr(Some(base_subtype.clone().into()), base_subtype.get_span())
+                    Type::Ptr {
+                        subtype: Some(base_subtype.clone().into()),
+                        address_space: base_subtype.get_address_space(),
+                        span: base_subtype.get_span(),
+                    }
                 } else {
                     base_subtype.clone()
                 };
@@ -189,10 +203,11 @@ fn decompose_structure_property<'parser>(
         indices.append(&mut nested_indices);
 
         let adjusted_inner_type: Type = if is_parent_ptr || source.is_memory_assigned_value()? {
-            Type::Ptr(
-                Some(field_inner_type.clone().into()),
-                field_inner_type.get_span(),
-            )
+            Type::Ptr {
+                subtype: Some(field_inner_type.clone().into()),
+                address_space: field_inner_type.get_address_space(),
+                span: field_inner_type.get_span(),
+            }
         } else {
             field_inner_type
         };

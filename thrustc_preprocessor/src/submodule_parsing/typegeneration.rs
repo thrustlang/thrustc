@@ -55,7 +55,13 @@ pub fn build_type(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
                 _ if tk_kind.is_fn_ref() => self::parse_anonymous_function_type(ctx, span),
                 _ => match tk_kind {
                     ty if ty.is_ptr() && ctx.check(TokenType::LBracket) => {
-                        self::parse_pointer_type(ctx, Type::Ptr(None, span), span)
+                        let ptr_type: Type = Type::Ptr {
+                            subtype: None,
+                            address_space: None,
+                            span,
+                        };
+
+                        self::parse_pointer_type(ctx, ptr_type, span)
                     }
                     TokenType::Char => Ok(Type::Char(span)),
 
@@ -72,7 +78,7 @@ pub fn build_type(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
                     TokenType::U128 => Ok(Type::U128 { span }),
                     TokenType::Usize => Ok(Type::USize { span }),
 
-                    TokenType::Bool => Ok(Type::Bool(span)),
+                    TokenType::Bool => Ok(Type::Bool { span }),
 
                     TokenType::F32 => Ok(Type::F32 { span }),
                     TokenType::F64 => Ok(Type::F64 { span }),
@@ -81,7 +87,11 @@ pub fn build_type(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
                     TokenType::FX8680 => Ok(Type::FX8680 { span }),
                     TokenType::FPPC128 => Ok(Type::FPPC128 { span }),
 
-                    TokenType::Ptr => Ok(Type::Ptr(None, span)),
+                    TokenType::Ptr => Ok(Type::Ptr {
+                        subtype: None,
+                        address_space: None,
+                        span,
+                    }),
                     TokenType::Addr => Ok(Type::Addr(span)),
                     TokenType::Void => Ok(Type::Void(span)),
 
@@ -235,16 +245,77 @@ fn parse_pointer_type(
 ) -> Result<Type, ()> {
     ctx.consume(TokenType::LBracket)?;
 
-    if let Type::Ptr(..) = &mut before_type {
+    if let Type::Ptr { .. } = &mut before_type {
         let mut inner_type: Type = self::build_type(ctx)?;
 
         while ctx.check(TokenType::LBracket) {
             inner_type = self::parse_pointer_type(ctx, inner_type, span)?;
         }
 
+        let mut address_space: Option<u16> = None;
+
+        if ctx.check(TokenType::Comma) {
+            ctx.consume(TokenType::Comma)?;
+
+            let memory_address_expr: Ast<'_> = expressions::parse_expr(ctx)?;
+            let memory_address_type: &Type =
+                memory_address_expr.get_value_type().map_err(|_| ())?;
+
+            if !memory_address_expr.is_integer() {
+                ctx.add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0001,
+                    "Expected literal integer value".into(),
+                    "You should pass an integer expression.".into(),
+                    None,
+                    span,
+                ));
+            }
+
+            if !memory_address_type.is_unsigned_integer_type()
+                || !memory_address_type.is_lesseq_unsigned32bit_integer()
+            {
+                ctx.add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0001,
+                    "Expected unsigned integer value.".into(),
+                    "You should pass a unsigned integer value less than or equal to 32 bits."
+                        .into(),
+                    None,
+                    span,
+                ));
+            }
+
+            let memery_address_unprocessed: u64 =
+                if let Ast::Integer { value, .. } = memory_address_expr {
+                    value
+                } else {
+                    0
+                };
+
+            let memory_address_value: Result<u16, std::num::TryFromIntError> =
+                u16::try_from(memery_address_unprocessed);
+
+            if memory_address_value.is_err() {
+                ctx.add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0001,
+                    "Expected literal integer value".into(),
+                    "You should pass an integer expression.".into(),
+                    None,
+                    span,
+                ));
+            }
+
+            address_space = Some(memory_address_value.unwrap_or_default());
+        }
+
         ctx.consume(TokenType::RBracket)?;
 
-        Ok(Type::Ptr(Some(inner_type.into()), span))
+        let ptr_type: Type = Type::Ptr {
+            subtype: Some(inner_type.into()),
+            address_space,
+            span,
+        };
+
+        Ok(ptr_type)
     } else {
         Err(())
     }

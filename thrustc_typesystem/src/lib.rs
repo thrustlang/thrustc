@@ -101,7 +101,9 @@ pub enum Type {
     },
 
     // Boolean Type
-    Bool(Span),
+    Bool {
+        span: Span,
+    },
 
     // Char Type
     Char(Span),
@@ -110,7 +112,11 @@ pub enum Type {
     Const(std::boxed::Box<Type>, Span),
 
     // Ptr Type
-    Ptr(Option<std::boxed::Box<Type>>, Span),
+    Ptr {
+        subtype: Option<std::boxed::Box<Type>>,
+        address_space: Option<u16>,
+        span: Span,
+    },
 
     // Struct Type
     Struct {

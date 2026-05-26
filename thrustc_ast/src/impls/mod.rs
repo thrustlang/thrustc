@@ -185,6 +185,7 @@ impl AstStatementExtensions for Ast<'_> {
                 | Ast::Const { .. }
                 | Ast::Static { .. }
                 | Ast::Defer { .. }
+                | Ast::Mut { .. }
         )
     }
 }

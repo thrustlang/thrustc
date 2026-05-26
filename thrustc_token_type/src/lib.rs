@@ -96,6 +96,7 @@ pub enum TokenType {
     Align,
     Linkage,
     Pure,
+    Cuda,
     Thunk,
     Constructor,
     Destructor,

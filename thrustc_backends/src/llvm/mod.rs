@@ -98,6 +98,7 @@ impl LLVMBackend {
                 target_triple_darwin_variant: None,
                 macos_version: None,
                 ios_version: None,
+                cuda_version: None,
             },
             target_cpu: LLVMTargetCPU {
                 target_cpu: TargetMachine::get_host_cpu_name().to_string(),
@@ -121,8 +122,8 @@ impl LLVMBackend {
             sanitizer: Sanitizer::None,
             dbg_config: DebugConfiguration::new(),
 
-            modificator_passes: Vec::with_capacity(10),
-            opt_passes: String::with_capacity(100),
+            modificator_passes: Vec::with_capacity(u8::MAX as usize),
+            opt_passes: String::with_capacity(u8::MAX as usize),
 
             omit_frame_pointer: false,
             omit_uwtable: false,

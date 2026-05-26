@@ -19,7 +19,6 @@
 
 use inkwell::{
     module::Module,
-    support::LLVMString,
     targets::{FileType, TargetMachine},
 };
 use thrustc_options::CompilerOptions;
@@ -33,7 +32,7 @@ pub fn emit_llvm_object(
     build_dir: &std::path::Path,
     file_name: &str,
     unoptimized: bool,
-) -> Result<(), LLVMString> {
+) -> Result<(), &'static str> {
     let compiler_options: &CompilerOptions = compiler.get_compilation_options();
     let need_obfuscation: bool = compiler_options.need_obfuscate_archive_names();
 
@@ -50,7 +49,7 @@ pub fn emit_llvm_object(
             "{}{}_{}.o",
             optimization_name_modifier,
             utils::generate_random_string(thrustc_constants::COMPILER_HARD_OBFUSCATION_LEVEL),
-            file_name
+            file_name,
         )
     } else {
         format!("{}{}.o", optimization_name_modifier, file_name)
@@ -58,7 +57,9 @@ pub fn emit_llvm_object(
 
     let object_file_path: std::path::PathBuf = objects_base_path.join(object_file_name);
 
-    target_machine.write_to_file(llvm_module, FileType::Object, &object_file_path)?;
+    target_machine
+        .write_to_file(llvm_module, FileType::Object, &object_file_path)
+        .map_err(|_| "Failed to compile to machine core representation")?;
 
     Ok(())
 }

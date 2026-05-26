@@ -117,8 +117,7 @@ pub fn allocate_local_constant<'ctx>(
     let global: GlobalValue =
         llvm_module.add_global(llvm_type, Some(AddressSpace::default()), &name);
 
-    AttributeBuilder::new(attributes, LLVMAttributeApplicant::Global(global))
-        .add_global_attributes();
+    AttributeBuilder::add_global_attributes(&attributes, LLVMAttributeApplicant::Global(global));
 
     self::set_global_common(
         &global,
@@ -159,8 +158,7 @@ pub fn allocate_global_constant<'ctx>(
             None
         };
 
-    AttributeBuilder::new(attributes, LLVMAttributeApplicant::Global(global))
-        .add_global_attributes();
+    AttributeBuilder::add_global_attributes(&attributes, LLVMAttributeApplicant::Global(global));
 
     self::set_global_common(
         &global,
@@ -194,8 +192,7 @@ pub fn allocate_local_static<'ctx>(
     let global: GlobalValue =
         llvm_module.add_global(llvm_type, Some(AddressSpace::default()), &name);
 
-    AttributeBuilder::new(attributes, LLVMAttributeApplicant::Global(global))
-        .add_global_attributes();
+    AttributeBuilder::add_global_attributes(&attributes, LLVMAttributeApplicant::Global(global));
 
     if value.is_none() {
         global.set_initializer(&llvm_type.const_zero());
@@ -248,8 +245,7 @@ pub fn allocate_global_static<'ctx>(
         global.set_initializer(&llvm_type.const_zero());
     }
 
-    AttributeBuilder::new(attributes, LLVMAttributeApplicant::Global(global))
-        .add_global_attributes();
+    AttributeBuilder::add_global_attributes(&attributes, LLVMAttributeApplicant::Global(global));
 
     self::set_global_common(
         &global,

@@ -263,14 +263,20 @@ pub fn check_type_together(
         }
 
         (
-            Type::Ptr(None, ..),
-            Type::Ptr(None, ..),
+            Type::Ptr { subtype: None, .. },
+            Type::Ptr { subtype: None, .. },
             Some(TokenType::EqEq | TokenType::BangEq) | None,
         ) => Ok(()),
 
         (
-            Type::Ptr(Some(target), ..),
-            Type::Ptr(Some(provided), ..),
+            Type::Ptr {
+                subtype: Some(target),
+                ..
+            },
+            Type::Ptr {
+                subtype: Some(provided),
+                ..
+            },
             Some(TokenType::EqEq | TokenType::BangEq) | None,
         ) => {
             self::check_type_together(
@@ -285,11 +291,13 @@ pub fn check_type_together(
             Ok(())
         }
 
-        (Type::Ptr(..), Type::Ptr(..), Some(TokenType::EqEq | TokenType::BangEq) | None) => Ok(()),
+        (Type::Ptr { .. }, Type::Ptr { .. }, Some(TokenType::EqEq | TokenType::BangEq) | None) => {
+            Ok(())
+        }
 
         (
-            Type::Bool(..),
-            Type::Bool(..),
+            Type::Bool { .. },
+            Type::Bool { .. },
             Some(
                 TokenType::BangEq
                 | TokenType::EqEq
@@ -816,7 +824,7 @@ pub fn check_type_cast(
         (Type::FPPC128 { .. }, Type::FPPC128 { .. }) => Ok(()),
 
         (
-            Type::Ptr(..) | Type::Addr(..),
+            Type::Ptr { .. } | Type::Addr(..),
             Type::S8 { .. }
             | Type::S16 { .. }
             | Type::S32 { .. }
@@ -830,9 +838,9 @@ pub fn check_type_cast(
             | Type::SSize { .. },
         ) => Ok(()),
 
-        (Type::Ptr(..) | Type::Addr(..), Type::Ptr(..) | Type::Addr(..)) => Ok(()),
-        (Type::Ptr(..), Type::Array { .. }) if is_allocated => Ok(()),
-        (Type::Ptr(None, ..), Type::Fn { .. }) if is_allocated => Ok(()),
+        (Type::Ptr { .. } | Type::Addr(..), Type::Ptr { .. } | Type::Addr(..)) => Ok(()),
+        (Type::Ptr { .. }, Type::Array { .. }) if is_allocated => Ok(()),
+        (Type::Ptr { subtype: None, .. }, Type::Fn { .. }) if is_allocated => Ok(()),
 
         (
             Type::S8 { .. }
@@ -852,12 +860,12 @@ pub fn check_type_cast(
             | Type::F128 { .. }
             | Type::FX8680 { .. }
             | Type::FPPC128 { .. }
-            | Type::Bool(..)
+            | Type::Bool { .. }
             | Type::Struct { .. }
             | Type::Array { .. }
             | Type::FixedArray(..)
             | Type::Fn(..),
-            Type::Ptr(..) | Type::Addr(..),
+            Type::Ptr { .. } | Type::Addr(..),
         ) if is_allocated => Ok(()),
 
         (
@@ -872,7 +880,7 @@ pub fn check_type_cast(
             | Type::U128 { .. }
             | Type::USize { .. }
             | Type::SSize { .. },
-            Type::Ptr(..),
+            Type::Ptr { .. },
         ) => Ok(()),
 
         (Type::Const(from_type, ..), cast_type) => {

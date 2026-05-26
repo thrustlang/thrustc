@@ -196,6 +196,11 @@ impl LLVMCallConventionsChecker<'_> {
             LLVMCallConvention::AMDGPU_VS,
         ];
 
+        const CUDA_CALL_CONVENTIONS: &[LLVMCallConvention] = &[
+            LLVMCallConvention::PTX_Kernel,
+            LLVMCallConvention::PTX_Device,
+        ];
+
         const WASM_CALL_CONVENTIONS: &[LLVMCallConvention] =
             &[LLVMCallConvention::WASM_EmscriptenInvoke];
 
@@ -203,6 +208,7 @@ impl LLVMCallConventionsChecker<'_> {
             "{}-{}-{}-{}",
             target_triple.0, target_triple.1, target_triple.2, target_triple.3
         );
+
         let lower_arch: String = target_triple.0.to_lowercase();
         let arch: &str = lower_arch.trim();
 
@@ -319,6 +325,28 @@ impl LLVMCallConventionsChecker<'_> {
 
                     arch if arch.contains("wasm") => {
                         if !WASM_CALL_CONVENTIONS.contains(&call_conv) {
+                            let transformed: Vec<String> = WASM_CALL_CONVENTIONS
+                                .iter()
+                                .map(|callconv| callconv.to_string())
+                                .collect();
+
+                            let displayed: String = transformed.join(", ");
+
+                            self.add_error_report(CompilationIssue::Error(
+                                CompilationIssueCode::E0024,
+                                format!(
+                                    "Unsupported calling convention '{}' for target '{}'",
+                                    arch, formatted_target_triple
+                                ),
+                                format!("You can use any '{}'.", displayed),
+                                None,
+                                span,
+                            ));
+                        }
+                    }
+
+                    arch if arch.contains("nvidia") || arch.contains("nvptx") => {
+                        if !CUDA_CALL_CONVENTIONS.contains(&call_conv) {
                             let transformed: Vec<String> = WASM_CALL_CONVENTIONS
                                 .iter()
                                 .map(|callconv| callconv.to_string())

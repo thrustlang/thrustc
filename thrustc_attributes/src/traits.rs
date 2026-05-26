@@ -43,6 +43,8 @@ pub trait ThrustAttributesExtensions {
     fn has_asmsyntax_attribute(&self) -> bool;
     fn has_convention_attribute(&self) -> bool;
 
+    fn has_cuda_attribute(&self) -> bool;
+
     fn match_attr(&self, cmp: ThrustAttributeComparator) -> Option<Span>;
     fn get_attr(&self, cmp: ThrustAttributeComparator) -> Option<ThrustAttribute>;
 

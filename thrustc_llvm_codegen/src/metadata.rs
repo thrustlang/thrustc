@@ -407,6 +407,39 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
         }
 
         {
+            if let Some(nvidia_cuda_version) = llvm_backend.get_target().get_cuda_version() {
+                let major: u64 = nvidia_cuda_version.0;
+                let minor: u64 = nvidia_cuda_version.1;
+
+                let cuda_version: MetadataValue = self
+                    .get_codegen_context()
+                    .get_llvm_context()
+                    .metadata_node(&[
+                        self.get_codegen_context()
+                            .get_llvm_context()
+                            .i32_type()
+                            .const_int(major, false)
+                            .into(),
+                        self.get_codegen_context()
+                            .get_llvm_context()
+                            .i32_type()
+                            .const_int(minor, false)
+                            .into(),
+                    ]);
+
+                self.get_codegen_context()
+                    .get_llvm_module()
+                    .add_global_metadata("nvvmir.version", &cuda_version)
+                    .unwrap_or_else(|_| {
+                        thrustc_logging::print_warning(
+                            LoggingType::Warning,
+                            "'Nvidia Cuda Version' metadata failed to set up.",
+                        );
+                    });
+            }
+        }
+
+        {
             let triple_formatted: String = self
                 .get_codegen_context()
                 .get_target_triple()

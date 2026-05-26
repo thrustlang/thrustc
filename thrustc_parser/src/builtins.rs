@@ -89,7 +89,11 @@ pub fn build_halloc<'parser>(
             of: of.clone(),
             span,
         },
-        kind: Type::Ptr(Some(of.into()), span),
+        kind: Type::Ptr {
+            subtype: Some(of.into()),
+            address_space: None,
+            span,
+        },
         span,
         id: NodeId::new(),
     })
@@ -143,7 +147,11 @@ pub fn build_memcpy<'parser>(
             size: size.into(),
             span,
         },
-        kind: Type::Ptr(None, span),
+        kind: Type::Ptr {
+            subtype: None,
+            address_space: None,
+            span,
+        },
         span,
         id: NodeId::new(),
     })
@@ -197,7 +205,11 @@ pub fn build_memmove<'parser>(
             size: size.into(),
             span,
         },
-        kind: Type::Ptr(None, span),
+        kind: Type::Ptr {
+            subtype: None,
+            address_space: None,
+            span,
+        },
         span,
         id: NodeId::new(),
     })
@@ -251,7 +263,11 @@ pub fn build_memset<'parser>(
             size: size.into(),
             span,
         },
-        kind: Type::Ptr(None, span),
+        kind: Type::Ptr {
+            subtype: None,
+            address_space: None,
+            span,
+        },
         span,
         id: NodeId::new(),
     })

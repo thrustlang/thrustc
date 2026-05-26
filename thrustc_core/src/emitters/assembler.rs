@@ -21,6 +21,7 @@ use inkwell::{
     module::Module,
     targets::{FileType, TargetMachine},
 };
+use thrustc_backends::llvm::{LLVMBackend, target::LLVMTarget};
 use thrustc_options::CompilerOptions;
 
 use crate::{ThrustCompiler, utils};
@@ -33,14 +34,14 @@ pub fn emit_llvm_assembler(
     file_name: &str,
     unoptimized: bool,
 ) -> Result<(), &'static str> {
-    if !target_machine.get_target().has_asm_backend() {
-        return Err(
-            "The backend doesn't support emitting readable assembly; aborting assembly emission.",
-        );
-    }
-
     let compiler_options: &CompilerOptions = compiler.get_compilation_options();
+    let llvm_backend: &LLVMBackend = compiler_options.get_llvm_backend();
+    let target: &LLVMTarget = llvm_backend.get_target();
+
     let need_obfuscation: bool = compiler_options.need_obfuscate_archive_names();
+    let is_nvidia_target: bool = target.get_normalized_target_triple().is_nvptx_arch();
+
+    let extension: &str = if is_nvidia_target { "ptx" } else { "s" };
 
     let assembler_base_path: std::path::PathBuf = build_dir.join("emit").join("assembler");
 
@@ -52,13 +53,14 @@ pub fn emit_llvm_assembler(
 
     let assembler_file_name: String = if need_obfuscation {
         format!(
-            "{}{}_{}.s",
+            "{}{}_{}.{}",
             optimization_name_modifier,
             utils::generate_random_string(thrustc_constants::COMPILER_HARD_OBFUSCATION_LEVEL),
-            file_name
+            file_name,
+            extension
         )
     } else {
-        format!("{}{}.s", optimization_name_modifier, file_name)
+        format!("{}{}.{}", optimization_name_modifier, file_name, extension)
     };
 
     let assembler_file_path: std::path::PathBuf = assembler_base_path.join(assembler_file_name);

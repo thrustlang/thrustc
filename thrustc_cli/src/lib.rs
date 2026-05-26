@@ -127,7 +127,7 @@ impl CommandLine {
             args.remove(0);
         }
 
-        args.iter().for_each(|arg| {
+        for arg in args.iter() {
             let parsed: ParsedArg = ParsedArg::new(arg);
 
             processed.push(parsed.key);
@@ -135,7 +135,7 @@ impl CommandLine {
             if let Some(value) = parsed.value {
                 processed.push(value);
             }
-        });
+        }
 
         processed
     }
@@ -569,6 +569,24 @@ impl CommandLine {
                     .get_mut_llvm_backend()
                     .get_mut_target()
                     .set_ios_version(version);
+
+                self.advance();
+            }
+
+            "-cuda-version" => {
+                self.advance();
+                self.validate_llvm_required(arg);
+
+                let version: String = self.peek().to_string();
+
+                if !version.chars().all(|c| c.is_ascii_digit() || c == '.') {
+                    self.report_error("Nvidia Cuda version must contain only numbers and dots.");
+                }
+
+                self.get_mut_options()
+                    .get_mut_llvm_backend()
+                    .get_mut_target()
+                    .set_nvidia_cuda_version(version);
 
                 self.advance();
             }

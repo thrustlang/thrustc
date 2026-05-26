@@ -273,11 +273,11 @@ pub fn lower_precedence<'parser>(
 
         TokenType::True => {
             let span: Span = ctx.advance()?.get_span();
-            Ast::new_boolean(Type::Bool(span), 1, span)
+            Ast::new_boolean(Type::Bool { span }, 1, span)
         }
         TokenType::False => {
             let span: Span = ctx.advance()?.get_span();
-            Ast::new_boolean(Type::Bool(span), 0, span)
+            Ast::new_boolean(Type::Bool { span }, 0, span)
         }
         TokenType::Unreachable => {
             let span: Span = ctx.advance()?.get_span();

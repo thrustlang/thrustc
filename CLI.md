@@ -43,6 +43,7 @@ Compiler flags:
 • -code-model [small|medium|large|kernel] Define how code is organized and accessed at machine code level.
 • -macos-version [15.0.0] Specify the MacOS SDK version.
 • -ios-version [17.4.0] Specify the iOS SDK version.
+• -cuda-version [2.0] Specify the Nvidia CUDA version.
 • -jit Enable the use of the JIT compiler for code execution.
 • -jit-libc [path/to/libc.so] Specify the C runtime to link for code execution via the JIT compiler.
 • -jit-link [path/to/raylib.so] Specify, add, and link an external dynamic library for code execution via the JIT compiler.

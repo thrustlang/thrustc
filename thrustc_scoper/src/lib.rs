@@ -231,27 +231,25 @@ impl<'scoper> Scoper<'scoper> {
             Ast::Continue { .. }
             | Ast::ContinueAll { .. }
             | Ast::Break { .. }
-            | Ast::BreakAll { .. } => {
-                if !self.get_context().is_inside_loop() {
-                    self.add_error(CompilationIssue::Error(
-                        CompilationIssueCode::E0018,
-                        "Loop control statement outside of a loop.".into(),
-                        "It should be inside a loop. Reposition inside it.".into(),
-                        None,
-                        node.get_span(),
-                    ));
-                }
+            | Ast::BreakAll { .. }
+                if !self.get_context().is_inside_loop() =>
+            {
+                self.add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0018,
+                    "Loop control statement outside of a loop.".into(),
+                    "It should be inside a loop. Reposition inside it.".into(),
+                    None,
+                    node.get_span(),
+                ));
             }
-            Ast::Return { span, .. } => {
-                if !self.get_context().is_inside_function() {
-                    self.add_error(CompilationIssue::Error(
-                        CompilationIssueCode::E0018,
-                        "Terminator is outside a function.".into(),
-                        "It should be inside a function. Reposition inside it.".into(),
-                        None,
-                        *span,
-                    ));
-                }
+            Ast::Return { span, .. } if !self.get_context().is_inside_function() => {
+                self.add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0018,
+                    "Terminator is outside a function.".into(),
+                    "It should be inside a function. Reposition inside it.".into(),
+                    None,
+                    *span,
+                ));
             }
 
             Ast::Defer { node, .. } => {

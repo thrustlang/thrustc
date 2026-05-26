@@ -223,7 +223,7 @@ impl X86SystemVABITypeClass {
             | Type::S32 { .. }
             | Type::S64 { .. }
             | Type::Char(..)
-            | Type::Bool(..) => X86_SYSTEM_V_ABI_ONE_INTEGER,
+            | Type::Bool { .. } => X86_SYSTEM_V_ABI_ONE_INTEGER,
 
             Type::SSize { .. } | Type::USize { .. } if layout.sizeof <= 8 || layout.sizeof <= 4 => {
                 X86_SYSTEM_V_ABI_ONE_INTEGER
@@ -1782,7 +1782,7 @@ pub fn decompose_type<'llvm_abi>(
                 .ptr_sized_int_type(abi_context.get_target_data(), None)
                 .into(),
 
-            Type::Bool(..) => llvm_context.bool_type().into(),
+            Type::Bool { .. } => llvm_context.bool_type().into(),
             Type::Const(subtype, ..) => self::decompose_type(llvm_context, abi_context, subtype),
 
             any => abort::abort_codegen(
@@ -1816,6 +1816,20 @@ pub fn decompose_type<'llvm_abi>(
             infered_type: Some((infered_type, ..)),
             ..
         } => self::decompose_type(llvm_context, abi_context, infered_type),
+
+        t if t.is_ptr_type() => {
+            if let Type::Ptr {
+                address_space: Some(address_space),
+                ..
+            } = t
+            {
+                llvm_context
+                    .ptr_type(AddressSpace::from(*address_space))
+                    .into()
+            } else {
+                llvm_context.ptr_type(AddressSpace::default()).into()
+            }
+        }
 
         t if t.is_ptr_like_type() => llvm_context.ptr_type(AddressSpace::default()).into(),
 

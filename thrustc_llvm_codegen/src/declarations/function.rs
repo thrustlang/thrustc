@@ -108,8 +108,7 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
     let llvm_function: FunctionValue =
         llvm_module.add_function(&canonical_name, function_type, None);
 
-    AttributeBuilder::new(attributes, LLVMAttributeApplicant::Function(llvm_function))
-        .add_function_attributes(context);
+    AttributeBuilder::add_function_attributes(context, &attributes, LLVMAttributeApplicant::Function(llvm_function));
 
     let prototype: LLVMFunction = (
         llvm_function,
@@ -117,6 +116,7 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
         parameters_types,
         call_convention,
         function_abi_config,
+        attributes,
         ignore_args,
         span,
     );

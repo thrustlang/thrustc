@@ -42,10 +42,14 @@ impl IndexExtensions for Type {
                 base_type.get_type_with_depth(decreased_type)
             }
             Type::Const(inner_type, ..) => inner_type.get_type_with_depth(depth),
-            Type::Ptr(Some(inner_type), ..) if !inner_type.is_ptr_like_type() => {
-                inner_type.get_type_with_depth(depth)
-            }
-            Type::Ptr(Some(inner_type), ..) => {
+            Type::Ptr {
+                subtype: Some(inner_type),
+                ..
+            } if !inner_type.is_ptr_like_type() => inner_type.get_type_with_depth(depth),
+            Type::Ptr {
+                subtype: Some(inner_type),
+                ..
+            } => {
                 let decreased_type: u64 = depth.saturating_sub(1);
                 inner_type.get_type_with_depth(decreased_type)
             }
@@ -66,11 +70,11 @@ impl IndexExtensions for Type {
             | Type::F128 { .. }
             | Type::FX8680 { .. }
             | Type::FPPC128 { .. }
-            | Type::Bool(..)
+            | Type::Bool { .. }
             | Type::Char(..)
             | Type::Addr(..)
             | Type::Void(..)
-            | Type::Ptr(None, ..)
+            | Type::Ptr { subtype: None, .. }
             | Type::Fn(..)
             | Type::Unresolved { .. } => self,
         }

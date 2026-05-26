@@ -482,7 +482,7 @@ impl TargetInfo {
         let layout: Either<TypeLayout, StructTypeLayout> = match r#type {
             Type::Const(subtype, ..) => self.get_type_layout(subtype),
 
-            Type::Bool(..) => {
+            Type::Bool { .. } => {
                 type_info.width = self.bool_width();
                 type_info.align = self.bool_align();
                 type_info.alignof = type_info.align / self.i8_width;
@@ -638,7 +638,7 @@ impl TargetInfo {
                 either::Either::Left(type_info)
             }
 
-            Type::Ptr(..) | Type::Fn(..) | Type::Addr(..) => {
+            Type::Ptr { .. } | Type::Fn(..) | Type::Addr(..) => {
                 type_info.width = self.ptr_width();
                 type_info.align = self.ptr_align();
                 type_info.alignof = type_info.align / self.i8_width;

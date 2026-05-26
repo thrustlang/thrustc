@@ -143,7 +143,6 @@ pub fn write(output_in: OutputIn, text: &str) {
         OutputIn::Stdout => {
             let _ = io::stdout().write_all(text.as_bytes());
         }
-
         OutputIn::Stderr => {
             let _ = io::stderr().write_all(text.as_bytes());
         }

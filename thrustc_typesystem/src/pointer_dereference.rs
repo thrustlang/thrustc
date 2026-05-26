@@ -24,7 +24,10 @@ use crate::{
 
 impl DereferenceExtensions for Type {
     fn dereference(&self) -> Type {
-        if let Type::Ptr(Some(any), ..) = self {
+        if let Type::Ptr {
+            subtype: Some(any), ..
+        } = self
+        {
             return (**any).clone();
         }
 
@@ -32,7 +35,10 @@ impl DereferenceExtensions for Type {
     }
 
     fn dereference_until_value(&self) -> Type {
-        if let Type::Ptr(Some(any), ..) = self {
+        if let Type::Ptr {
+            subtype: Some(any), ..
+        } = self
+        {
             return any.dereference_until_value();
         }
 

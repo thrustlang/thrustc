@@ -207,7 +207,7 @@ fn validate_binary_gate_expression(
     span: Span,
 ) -> Result<(), CompilationIssue> {
     match (left, right) {
-        (Type::Bool(..), Type::Bool(..)) => Ok(()),
+        (Type::Bool { .. }, Type::Bool { .. }) => Ok(()),
 
         _ => Err(CompilationIssue::Error(
             CompilationIssueCode::E0030,
@@ -352,7 +352,7 @@ fn validate_binary_equality_expression(
             Type::F32 { .. } | Type::F64 { .. } | Type::F128 { .. },
             Type::F32 { .. } | Type::F64 { .. } | Type::F128 { .. },
         ) => Ok(()),
-        (Type::Bool(..), Type::Bool(..)) => Ok(()),
+        (Type::Bool { .. }, Type::Bool { .. }) => Ok(()),
         (Type::Char(..), Type::Char(..)) => Ok(()),
         (Type::FX8680 { .. }, Type::FX8680 { .. }) => Ok(()),
         (Type::FPPC128 { .. }, Type::FPPC128 { .. }) => Ok(()),
@@ -408,7 +408,9 @@ fn validate_binary_arithmetic_expression(
             Type::F32 { .. } | Type::F64 { .. } | Type::F128 { .. },
             Type::F32 { .. } | Type::F64 { .. } | Type::F128 { .. },
         ) => Ok(()),
-        (Type::Ptr(..), Type::Ptr(..)) if left == right && *operator == TokenType::Minus => Ok(()),
+        (Type::Ptr { .. }, Type::Ptr { .. }) if left == right && *operator == TokenType::Minus => {
+            Ok(())
+        }
 
         _ => Err(CompilationIssue::Error(
             CompilationIssueCode::E0030,

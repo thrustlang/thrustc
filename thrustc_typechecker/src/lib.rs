@@ -402,8 +402,11 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                 if is_ptr_type {
                     {
-                        let ptr_type: Type =
-                            Type::Ptr(Some(value_type.clone().into()), value_type.get_span());
+                        let ptr_type: Type = Type::Ptr {
+                            subtype: Some(value_type.clone().into()),
+                            address_space: value_type.get_address_space(),
+                            span: value_type.get_span(),
+                        };
 
                         let control_context: &mut TypeCheckerControlContext =
                             self.get_mut_control_context();
@@ -491,7 +494,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                     control_context.reset_checking_depth();
 
                     if let Err(error) = check::check_type_together(
-                        &Type::Bool(span),
+                        &Type::Bool { span },
                         condition.get_value_type()?,
                         Some(condition),
                         None,
@@ -533,8 +536,12 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
+                    let target_type: Type = Type::Bool {
+                        span: condition.get_span(),
+                    };
+
                     if let Err(error) = check::check_type_together(
-                        &Type::Bool(condition.get_span()),
+                        &target_type,
                         condition.get_value_type()?,
                         Some(condition),
                         None,
@@ -576,8 +583,10 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
+                    let target_type: Type = Type::Bool { span };
+
                     if let Err(error) = check::check_type_together(
-                        &Type::Bool(span),
+                        &target_type,
                         condition.get_value_type()?,
                         Some(condition),
                         None,
@@ -612,8 +621,10 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
+                    let target_type: Type = Type::Bool { span };
+
                     if let Err(error) = check::check_type_together(
-                        &Type::Bool(span),
+                        &target_type,
                         condition.get_value_type()?,
                         Some(condition),
                         None,

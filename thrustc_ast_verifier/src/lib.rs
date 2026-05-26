@@ -259,6 +259,14 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
             | Ast::BreakAll { .. }
             | Ast::Struct { .. } => {}
 
+            Ast::Mut { source, value, .. } => {
+                self.expected_expression(source);
+                self.analyze_expression(source);
+
+                self.expected_expression(value);
+                self.analyze_expression(value);
+            }
+
             Ast::Return { expression, .. } => {
                 if let Some(node) = expression {
                     self.expected_expression(node);
@@ -267,8 +275,8 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
             }
 
             Ast::Defer { node, .. } => {
-                self.expected_statement_or_loose_expression(node);
-                self.analyze_stmt(node);
+                self.expected_expression(node);
+                self.analyze_expression(node);
             }
 
             node => self.analyze_expression(node),

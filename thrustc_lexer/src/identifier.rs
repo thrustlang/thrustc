@@ -80,6 +80,7 @@ lazy_static! {
         attributes.insert("@convention", TokenType::Convention);
         attributes.insert("@pure", TokenType::Pure);
         attributes.insert("@thunk", TokenType::Thunk);
+        attributes.insert("@cuda", TokenType::Cuda);
         attributes.insert("@constructor", TokenType::Constructor);
         attributes.insert("@destructor", TokenType::Destructor);
 

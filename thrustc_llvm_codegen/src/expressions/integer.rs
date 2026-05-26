@@ -51,7 +51,7 @@ pub fn compile<'ctx>(
             .const_int(value, signed)
             .const_neg(),
         Type::U128 { .. } => llvm_context.i128_type().const_int(value, signed),
-        Type::Bool(..) => llvm_context.bool_type().const_int(value, false),
+        Type::Bool { .. } => llvm_context.bool_type().const_int(value, false),
 
         what => abort::abort_codegen(
             context,
