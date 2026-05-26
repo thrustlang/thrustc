@@ -29,9 +29,9 @@ impl IndexExtensions for Type {
         }
 
         match self {
-            Type::FixedArray(inner_type, ..) => {
+            Type::FixedArray { base_type, .. } => {
                 let decreased_type: u64 = depth.saturating_sub(1);
-                inner_type.get_type_with_depth(decreased_type)
+                base_type.get_type_with_depth(decreased_type)
             }
             Type::Array {
                 infered_type: Some((infered_type, 0)),

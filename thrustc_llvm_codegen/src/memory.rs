@@ -21,6 +21,7 @@ use std::path::PathBuf;
 
 use inkwell::AddressSpace;
 use inkwell::builder::Builder;
+use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::targets::TargetData;
 use inkwell::types::BasicTypeEnum;
@@ -36,6 +37,7 @@ use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::traits::TypeExtensions;
 use thrustc_typesystem::traits::TypePointerExtensions;
 
 use crate::abort;
@@ -676,7 +678,7 @@ pub fn alloc_anon<'ctx>(
 
 pub fn gep_struct_anon<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
-    ptr_value: PointerValue<'ctx>,
+    mut ptr_value: PointerValue<'ctx>,
     ptr_type: &Type,
     index: u32,
     span: Span,
@@ -685,6 +687,8 @@ pub fn gep_struct_anon<'ctx>(
 
     let ptr_type: BasicTypeEnum<'_> =
         typegeneration::generate_pointer_arithmetic_type(context, ptr_type);
+
+    ptr_value = self::address_space_to_normal(context, ptr_value, span);
 
     if let Ok(new_ptr_value) = llvm_builder.build_struct_gep(ptr_type, ptr_value, index, "") {
         context.mark_dbg_location(span);
@@ -703,7 +707,7 @@ pub fn gep_struct_anon<'ctx>(
 
 pub fn gep_anon<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
-    ptr_value: PointerValue<'ctx>,
+    mut ptr_value: PointerValue<'ctx>,
     ptr_type: &Type,
     indexes: &[IntValue<'ctx>],
     span: Span,
@@ -712,6 +716,8 @@ pub fn gep_anon<'ctx>(
 
     let ptr_type: BasicTypeEnum<'_> =
         typegeneration::generate_pointer_arithmetic_type(context, ptr_type);
+
+    ptr_value = self::address_space_to_normal(context, ptr_value, span);
 
     if let Ok(new_ptr_value) =
         unsafe { llvm_builder.build_in_bounds_gep(ptr_type, ptr_value, indexes, "") }
@@ -728,6 +734,45 @@ pub fn gep_anon<'ctx>(
             line!(),
         );
     }
+}
+
+#[inline]
+pub fn get_address_space(ty: &Type) -> Option<AddressSpace> {
+    if let Some(address_space) = ty.get_address_space() {
+        return Some(AddressSpace::from(address_space));
+    }
+
+    None
+}
+
+#[inline]
+pub fn constant_address_space_to_normal<'ctx>(
+    llvm_context: &'ctx Context,
+    ptr: PointerValue<'ctx>,
+) -> PointerValue<'ctx> {
+    ptr.const_address_space_cast(llvm_context.ptr_type(AddressSpace::default()))
+}
+
+#[inline]
+pub fn address_space_to_normal<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    ptr: PointerValue<'ctx>,
+    span: Span,
+) -> PointerValue<'ctx> {
+    let llvm_builder: &Builder<'_> = context.get_llvm_builder();
+    let llvm_context: &Context = context.get_llvm_context();
+
+    llvm_builder
+        .build_address_space_cast(ptr, llvm_context.ptr_type(AddressSpace::default()), "")
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                context,
+                "Failed to compile a address space cast!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            );
+        })
 }
 
 #[derive(Debug, Clone, Copy)]

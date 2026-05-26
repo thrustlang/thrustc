@@ -37,10 +37,12 @@ use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributeComparator;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
+use thrustc_typesystem::Type;
 
 use crate::attributebuilder::AttributeBuilder;
 use crate::attributebuilder::LLVMAttributeApplicant;
 use crate::context::LLVMCodeGenContext;
+use crate::memory;
 use crate::utils;
 
 fn generate_name(
@@ -103,6 +105,7 @@ fn set_global_common<'ctx>(
 pub fn allocate_local_constant<'ctx>(
     context: &LLVMCodeGenContext<'_, 'ctx>,
     name: &str,
+    ty: &Type,
     llvm_type: BasicTypeEnum<'ctx>,
     value: BasicValueEnum<'ctx>,
     attributes: LLVMAttributes<'ctx>,
@@ -114,8 +117,9 @@ pub fn allocate_local_constant<'ctx>(
 
     let name: String = self::generate_name(context, name, "local.const", None);
 
-    let global: GlobalValue =
-        llvm_module.add_global(llvm_type, Some(AddressSpace::default()), &name);
+    let address_space: Option<AddressSpace> = memory::get_address_space(ty);
+
+    let global: GlobalValue = llvm_module.add_global(llvm_type, address_space, &name);
 
     AttributeBuilder::add_global_attributes(&attributes, LLVMAttributeApplicant::Global(global));
 
@@ -136,6 +140,7 @@ pub fn allocate_local_constant<'ctx>(
 pub fn allocate_global_constant<'ctx>(
     context: &LLVMCodeGenContext<'_, 'ctx>,
     name: &str,
+    ty: &Type,
     llvm_type: BasicTypeEnum<'ctx>,
     value: BasicValueEnum<'ctx>,
     attributes: LLVMAttributes<'ctx>,
@@ -148,8 +153,9 @@ pub fn allocate_global_constant<'ctx>(
 
     let name: String = self::generate_name(context, name, "global.constant", Some(&attributes));
 
-    let global: GlobalValue =
-        llvm_module.add_global(llvm_type, Some(AddressSpace::default()), &name);
+    let address_space: Option<AddressSpace> = memory::get_address_space(ty);
+
+    let global: GlobalValue = llvm_module.add_global(llvm_type, address_space, &name);
 
     let linkage: Option<Linkage> =
         if !attributes.has_public_attribute() && !attributes.has_linkage_attribute() {
@@ -177,6 +183,7 @@ pub fn allocate_global_constant<'ctx>(
 pub fn allocate_local_static<'ctx>(
     context: &LLVMCodeGenContext<'_, 'ctx>,
     name: &str,
+    ty: &Type,
     llvm_type: BasicTypeEnum<'ctx>,
     value: Option<BasicValueEnum<'ctx>>,
     attributes: LLVMAttributes<'ctx>,
@@ -189,8 +196,9 @@ pub fn allocate_local_static<'ctx>(
 
     let name: String = self::generate_name(context, name, "local.static", None);
 
-    let global: GlobalValue =
-        llvm_module.add_global(llvm_type, Some(AddressSpace::default()), &name);
+    let address_space: Option<AddressSpace> = memory::get_address_space(ty);
+
+    let global: GlobalValue = llvm_module.add_global(llvm_type, address_space, &name);
 
     AttributeBuilder::add_global_attributes(&attributes, LLVMAttributeApplicant::Global(global));
 
@@ -217,6 +225,7 @@ pub fn allocate_local_static<'ctx>(
 pub fn allocate_global_static<'ctx>(
     context: &LLVMCodeGenContext<'_, 'ctx>,
     name: &str,
+    ty: &Type,
     llvm_type: BasicTypeEnum<'ctx>,
     value: Option<BasicValueEnum<'ctx>>,
     attributes: LLVMAttributes<'ctx>,
@@ -229,8 +238,9 @@ pub fn allocate_global_static<'ctx>(
 
     let name: String = self::generate_name(context, name, "global.static", Some(&attributes));
 
-    let global: GlobalValue =
-        llvm_module.add_global(llvm_type, Some(AddressSpace::default()), &name);
+    let address_space: Option<AddressSpace> = memory::get_address_space(ty);
+
+    let global: GlobalValue = llvm_module.add_global(llvm_type, address_space, &name);
 
     let linkage: Option<Linkage> = if !attributes.has_public_attribute()
         && !attributes.has_extern_attribute()

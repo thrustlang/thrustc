@@ -22,7 +22,7 @@ use std::hash::Hasher;
 
 use thrustc_span::Span;
 
-use crate::traits::TypePointerExtensions;
+use crate::traits::ConstantTypeExtensions;
 use crate::{
     Type,
     traits::{TypeCodeLocation, TypeExtensions, TypeIsExtensions},
@@ -63,7 +63,7 @@ impl TypeIsExtensions for Type {
 
     #[inline(always)]
     fn is_fixed_array_type(&self) -> bool {
-        matches!(self, Type::FixedArray(..))
+        matches!(self, Type::FixedArray { .. })
     }
 
     #[inline(always)]
@@ -199,7 +199,7 @@ impl TypeIsExtensions for Type {
             Type::Fn(..) => 22,
 
             Type::Array { .. } => 23,
-            Type::FixedArray(..) => 24,
+            Type::FixedArray { .. } => 24,
             Type::Struct { .. } => 25,
 
             Type::Void(..) => 26,
@@ -209,6 +209,25 @@ impl TypeIsExtensions for Type {
 }
 
 impl TypeExtensions for Type {
+    #[inline]
+    fn get_address_space(&self) -> Option<u16> {
+        let non_constant_ty: Type = self.remove_all_constant_type();
+
+        if let Type::Ptr { address_space, .. } = non_constant_ty {
+            return address_space;
+        }
+
+        if let Type::Array { address_space, .. } = non_constant_ty {
+            return address_space;
+        }
+
+        if let Type::FixedArray { address_space, .. } = non_constant_ty {
+            return address_space;
+        }
+
+        None
+    }
+
     #[inline]
     fn is_value(&self) -> bool {
         self.is_numeric_type()
@@ -232,7 +251,10 @@ impl TypeExtensions for Type {
         }
 
         match self {
-            Type::FixedArray(element_type, ..) => element_type.get_type_with_depth(base_depth - 1),
+            Type::FixedArray {
+                base_type: element_type,
+                ..
+            } => element_type.get_type_with_depth(base_depth - 1),
             Type::Array {
                 infered_type: Some((infered_type, 0)),
                 ..
@@ -321,8 +343,10 @@ impl Hash for Type {
                 fields.hash(state);
                 modifier.hash(state);
             }
-            Type::FixedArray(inner, size, _) => {
-                inner.hash(state);
+            Type::FixedArray {
+                base_type, size, ..
+            } => {
+                base_type.hash(state);
                 size.hash(state);
             }
             Type::Array {
@@ -375,9 +399,18 @@ impl PartialEq for Type {
                     && mod1 == mod2
             }
 
-            (Type::FixedArray(type_a, size_a, ..), Type::FixedArray(type_b, size_b, ..)) => {
-                type_a == type_b && size_a == size_b
-            }
+            (
+                Type::FixedArray {
+                    base_type: type_a,
+                    size: size_a,
+                    ..
+                },
+                Type::FixedArray {
+                    base_type: type_b,
+                    size: size_b,
+                    ..
+                },
+            ) => type_a == type_b && size_a == size_b,
 
             (
                 Type::Array {
@@ -467,8 +500,10 @@ impl std::fmt::Display for Type {
                 )
             }
             Type::Const(inner_type, ..) => write!(f, "const {}", inner_type),
-            Type::FixedArray(kind, size, ..) => {
-                write!(f, "array[{}; {}]", kind, size)
+            Type::FixedArray {
+                base_type, size, ..
+            } => {
+                write!(f, "array[{}; {}]", base_type, size)
             }
             Type::Array { base_type, .. } => {
                 write!(f, "array[{}]", base_type)

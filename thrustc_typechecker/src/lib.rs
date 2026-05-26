@@ -29,8 +29,8 @@ use thrustc_span::Span;
 use thrustc_typesystem::{
     Type,
     traits::{
-        DereferenceExtensions, TypeCodeLocation, TypeIsExtensions, TypePointerExtensions,
-        VoidTypeExtensions,
+        DereferenceExtensions, TypeCodeLocation, TypeExtensions, TypeIsExtensions,
+        TypePointerExtensions, VoidTypeExtensions,
     },
 };
 

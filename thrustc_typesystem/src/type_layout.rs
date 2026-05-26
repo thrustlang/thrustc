@@ -650,8 +650,10 @@ impl TargetInfo {
                 either::Either::Left(type_info)
             }
 
-            Type::FixedArray(element_type, size, ..) => {
-                let (element_width, element_align) = match self.get_type_layout(element_type) {
+            Type::FixedArray {
+                base_type, size, ..
+            } => {
+                let (element_width, element_align) = match self.get_type_layout(base_type) {
                     either::Either::Left(left) => (left.width, left.align),
                     either::Either::Right(right) => (right.width, right.align),
                 };
@@ -680,7 +682,7 @@ impl TargetInfo {
                 ..
             } => {
                 let size: u32 = if let Some((subtype, _)) = infered_type {
-                    if let Type::FixedArray(_, size, ..) = &**subtype {
+                    if let Type::FixedArray { size, .. } = &**subtype {
                         *size
                     } else {
                         0

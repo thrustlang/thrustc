@@ -37,7 +37,7 @@ impl VoidTypeExtensions for Type {
                     ..
                 } => contains_void_type_inner_type(inner_type),
                 Type::Struct { fields, .. } => fields.iter().any(contains_void_type_inner_type),
-                Type::FixedArray(inner_type, ..) => contains_void_type_inner_type(inner_type),
+                Type::FixedArray { base_type, .. } => contains_void_type_inner_type(base_type),
                 Type::Fn(fields_types, return_type, ..) => {
                     fields_types.iter().any(contains_void_type_inner_type)
                         || contains_void_type_inner_type(return_type)
@@ -63,7 +63,7 @@ impl VoidTypeExtensions for Type {
                 base_type: inner_type,
                 ..
             } => contains_void_type_inner_type(inner_type),
-            Type::FixedArray(inner_type, ..) => contains_void_type_inner_type(inner_type),
+            Type::FixedArray { base_type, .. } => contains_void_type_inner_type(base_type),
             Type::Struct { fields, .. } => fields.iter().any(contains_void_type_inner_type),
             Type::Fn(fields_types, return_type, ..) => {
                 fields_types.iter().any(contains_void_type_inner_type)

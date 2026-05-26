@@ -108,11 +108,12 @@ pub fn build_fixed_array<'parser>(
             ));
         }
 
-        array_type = Type::FixedArray(
-            item.get_value_type()?.clone().into(),
-            size.unwrap_or_default(),
+        array_type = Type::FixedArray {
+            base_type: item.get_value_type()?.clone().into(),
+            size: size.unwrap_or_default(),
+            address_space: None,
             span,
-        );
+        };
     }
 
     {

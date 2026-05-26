@@ -63,6 +63,7 @@ pub fn build_embedded<'parser>(
         kind: Type::Array {
             base_type: Type::U8 { span }.into(),
             infered_type: None,
+            address_space: None,
             span,
         },
         span,

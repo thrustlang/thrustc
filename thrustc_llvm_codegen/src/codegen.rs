@@ -140,6 +140,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         let ptr: PointerValue = r#static::allocate_global_constant(
                             self.get_mut_context(),
                             ascii_name,
+                            kind,
                             llvm_type,
                             value,
                             attributes,
@@ -199,6 +200,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             let ptr: PointerValue = r#static::allocate_global_static(
                                 self.get_mut_context(),
                                 ascii_name,
+                                kind,
                                 llvm_type,
                                 Some(value),
                                 attributes,
@@ -221,6 +223,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             let ptr: PointerValue = r#static::allocate_global_static(
                                 self.get_mut_context(),
                                 ascii_name,
+                                kind,
                                 llvm_type,
                                 None,
                                 attributes,
@@ -543,6 +546,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 let ptr: PointerValue = r#static::allocate_local_constant(
                     self.get_mut_context(),
                     ascii_name,
+                    kind,
                     llvm_type,
                     value,
                     llvm_attributes,
@@ -600,6 +604,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let ptr: PointerValue = r#static::allocate_local_static(
                         self.get_mut_context(),
                         ascii_name,
+                        kind,
                         llvm_type,
                         Some(value),
                         llvm_attributes,
@@ -622,6 +627,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let ptr: PointerValue = r#static::allocate_local_static(
                         self.get_mut_context(),
                         ascii_name,
+                        kind,
                         llvm_type,
                         None,
                         llvm_attributes,

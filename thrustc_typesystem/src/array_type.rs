@@ -20,7 +20,7 @@
 use crate::{Type, traits::TypeArrayEntensions};
 
 impl TypeArrayEntensions for Type {
-    #[inline(always)]
+    #[inline]
     fn get_array_skipping_array_as_base_type(&self) -> Type {
         if let Type::Array {
             base_type: inner, ..
@@ -32,7 +32,7 @@ impl TypeArrayEntensions for Type {
         self.clone()
     }
 
-    #[inline(always)]
+    #[inline]
     fn get_array_base_type(&self) -> Type {
         if let Type::Array {
             base_type: inner, ..
@@ -56,7 +56,7 @@ impl TypeArrayEntensions for Type {
         self.clone()
     }
 
-    #[inline(always)]
+    #[inline]
     fn get_array_type_herarchy(&self) -> u8 {
         match self {
             Type::Bool { .. } => 1,
@@ -93,7 +93,7 @@ impl TypeArrayEntensions for Type {
             Type::Fn(..) => 22,
 
             Type::Array { .. } => 23,
-            Type::FixedArray(..) => 24,
+            Type::FixedArray { .. } => 24,
             Type::Struct { .. } => 25,
 
             Type::Void(..) => 26,

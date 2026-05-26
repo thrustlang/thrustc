@@ -20,18 +20,23 @@
 use inkwell::attributes::Attribute;
 use inkwell::attributes::AttributeLoc;
 use inkwell::context::Context;
+use inkwell::llvm_sys::core::LLVMSetFunctionCallConv;
 use inkwell::module::Linkage;
+use inkwell::values::AsValueRef;
 use inkwell::values::FunctionValue;
 use inkwell::values::GlobalValue;
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
+use thrustc_llvm_callconventions::LLVMCallConvention;
 
 use crate::context::LLVMCodeGenContext;
 
 #[derive(Debug)]
 pub enum LLVMAttributeApplicant<'ctx> {
     Function(FunctionValue<'ctx>),
+    AsmFunction(FunctionValue<'ctx>),
+    CompilerIntrinsic(FunctionValue<'ctx>),
     Global(GlobalValue<'ctx>),
 }
 
@@ -176,6 +181,168 @@ impl<'ctx> AttributeBuilder {
 
                     function.add_attribute(AttributeLoc::Function, thunk_attribute);
                 }
+
+                LLVMAttribute::Convention(convention) => unsafe {
+                    LLVMSetFunctionCallConv(function.as_value_ref(), (*convention) as u32);
+                },
+
+                LLVMAttribute::Cuda => unsafe {
+                    LLVMSetFunctionCallConv(
+                        function.as_value_ref(),
+                        LLVMCallConvention::PTX_Kernel as u32,
+                    );
+                },
+
+                LLVMAttribute::Constructor => {
+                    context.add_ctor(function.as_global_value().as_pointer_value());
+                }
+
+                LLVMAttribute::Destructor => {
+                    context.add_dtor(function.as_global_value().as_pointer_value());
+                }
+
+                _ => (),
+            })
+        }
+
+        if let LLVMAttributeApplicant::AsmFunction(function)
+        | LLVMAttributeApplicant::CompilerIntrinsic(function) = applicant
+        {
+            let llvm_context: &Context = context.get_llvm_context();
+
+            let is_public: bool = attributes.has_public_attribute();
+            let is_extern: bool = attributes.has_extern_attribute();
+
+            if !is_public && !is_extern {
+                function.set_linkage(Linkage::LinkerPrivate);
+            }
+
+            attributes.iter().for_each(|attribute| match attribute {
+                LLVMAttribute::Linkage(linkage) => {
+                    function.set_linkage(*linkage);
+                }
+
+                LLVMAttribute::AlwaysInline => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context.create_enum_attribute(
+                            Attribute::get_named_enum_kind_id("alwaysinline"),
+                            0,
+                        ),
+                    );
+                }
+
+                LLVMAttribute::InlineHint => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context.create_enum_attribute(
+                            Attribute::get_named_enum_kind_id("inlinehint"),
+                            0,
+                        ),
+                    );
+                }
+
+                LLVMAttribute::NoInline => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context.create_enum_attribute(
+                            Attribute::get_named_enum_kind_id("noinline"),
+                            0,
+                        ),
+                    );
+                }
+
+                LLVMAttribute::Hot => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context
+                            .create_enum_attribute(Attribute::get_named_enum_kind_id("hot"), 0),
+                    );
+                }
+
+                LLVMAttribute::MinSize => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context
+                            .create_enum_attribute(Attribute::get_named_enum_kind_id("optsize"), 0),
+                    );
+                }
+
+                LLVMAttribute::SafeStack => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context.create_enum_attribute(
+                            Attribute::get_named_enum_kind_id("safestack"),
+                            0,
+                        ),
+                    );
+                }
+
+                LLVMAttribute::WeakStack => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context
+                            .create_enum_attribute(Attribute::get_named_enum_kind_id("ssp"), 0),
+                    );
+                }
+
+                LLVMAttribute::StrongStack => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context.create_enum_attribute(
+                            Attribute::get_named_enum_kind_id("sspstrong"),
+                            0,
+                        ),
+                    );
+                }
+
+                LLVMAttribute::PreciseFloats => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context.create_enum_attribute(
+                            Attribute::get_named_enum_kind_id("strictfp"),
+                            0,
+                        ),
+                    );
+                }
+
+                LLVMAttribute::NoUnwind => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context.create_enum_attribute(
+                            Attribute::get_named_enum_kind_id("nounwind"),
+                            0,
+                        ),
+                    );
+                }
+
+                LLVMAttribute::OptFuzzing => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context.create_enum_attribute(
+                            Attribute::get_named_enum_kind_id("optforfuzzing"),
+                            0,
+                        ),
+                    );
+                }
+                LLVMAttribute::Pure => {
+                    function.add_attribute(
+                        AttributeLoc::Function,
+                        llvm_context
+                            .create_enum_attribute(Attribute::get_named_enum_kind_id("naked"), 0),
+                    );
+                }
+
+                LLVMAttribute::Thunk => {
+                    let thunk_attribute: Attribute =
+                        llvm_context.create_string_attribute("thunk", "");
+
+                    function.add_attribute(AttributeLoc::Function, thunk_attribute);
+                }
+
+                LLVMAttribute::Convention(convention) => unsafe {
+                    LLVMSetFunctionCallConv(function.as_value_ref(), (*convention) as u32);
+                },
 
                 LLVMAttribute::Constructor => {
                     context.add_ctor(function.as_global_value().as_pointer_value());

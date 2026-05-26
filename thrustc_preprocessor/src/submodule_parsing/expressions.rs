@@ -44,8 +44,6 @@ pub fn parse_expr<'module_parser>(ctx: &mut ModuleParser) -> Result<Ast<'module_
         TokenType::Identifier => {
             ctx.advance()?;
 
-            if ctx.match_token(TokenType::ColonColon)? {}
-
             Err(())
         }
 

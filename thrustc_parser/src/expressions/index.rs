@@ -23,7 +23,7 @@ use thrustc_span::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
-    traits::{IndexExtensions, TypePointerExtensions},
+    traits::{IndexExtensions, TypeExtensions},
 };
 
 use crate::{ParserContext, expressions};

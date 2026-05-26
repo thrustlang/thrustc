@@ -102,12 +102,17 @@ pub fn build_array<'parser>(
 
         let base_type: Type = item.get_value_type()?.clone();
 
-        let fixed_type: Type =
-            Type::FixedArray(base_type.clone().into(), size.unwrap_or_default(), span);
+        let fixed_type: Type = Type::FixedArray {
+            base_type: base_type.clone().into(),
+            size: size.unwrap_or_default(),
+            address_space: None,
+            span,
+        };
 
         array_type = Type::Array {
             base_type: base_type.into(),
             infered_type: Some((fixed_type.into(), 0)),
+            address_space: None,
             span,
         };
     }
@@ -119,11 +124,18 @@ pub fn build_array<'parser>(
         if is_unknown_array_type && has_top_infered_type {
             if let Some(infered_type) = infered_type {
                 let base_type: Type = infered_type.get_array_skipping_array_as_base_type();
-                let fixed_type: Type = Type::FixedArray(base_type.clone().into(), 0, span);
+
+                let fixed_type: Type = Type::FixedArray {
+                    base_type: base_type.clone().into(),
+                    size: 0,
+                    address_space: None,
+                    span,
+                };
 
                 array_type = Type::Array {
                     base_type: base_type.into(),
                     infered_type: Some((fixed_type.into(), 0)),
+                    address_space: None,
                     span,
                 }
             }

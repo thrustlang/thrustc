@@ -236,12 +236,13 @@ pub fn generate_type<'ctx>(
                     field_types.push(self::generate_type(context, ty));
                 }
             }
+            
 
             llvm_context.struct_type(&field_types, packed).into()
         }
 
-        Type::FixedArray(type_, size, ..) => {
-            let array_type: BasicTypeEnum = self::generate_type(context, type_);
+        Type::FixedArray { base_type,  size, .. } => {
+            let array_type: BasicTypeEnum = self::generate_type(context, base_type);
             array_type.array_type(*size).into()
         }
 
@@ -332,8 +333,8 @@ pub fn generate_load_type<'ctx>(
             llvm_context.struct_type(&field_types, packed).into()
         }
 
-        Type::FixedArray(subtype, size, ..) => {
-            let array_type: BasicTypeEnum = self::generate_load_type(context, subtype);
+        Type::FixedArray { base_type, size, .. } => {
+            let array_type: BasicTypeEnum = self::generate_load_type(context, base_type);
             array_type.array_type(*size).into()
         }
 

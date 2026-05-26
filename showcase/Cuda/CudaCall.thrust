@@ -1,0 +1,72 @@
+/*
+ * Thrust CUDA Kernels
+ *
+ * Implements two GPU-accelerated compute kernels compiled with the Thrust
+ * language and executed via the CUDA Driver API.
+ *
+ * Kernels:
+ *   - vecAdd(a, b, c, n): element-wise addition of two float arrays on the GPU.
+ *       Each thread computes c[i] = a[i] + b[i] in parallel.
+ *
+ *   - vectorSum(input, output, n): parallel block-level reduction.
+ *       Each block sums its 256 elements into a single output value
+ *       using shared memory (sdata) and a stride-halving loop with syncthreads().
+ *
+ */
+
+intrinsic("llvm.nvvm.read.ptx.sreg.tid.x")   threadIdxX() u32 @public;
+intrinsic("llvm.nvvm.read.ptx.sreg.ctaid.x") blockIdxX()  u32 @public;
+intrinsic("llvm.nvvm.read.ptx.sreg.ntid.x")  blockDimX()  u32 @public;
+intrinsic("llvm.nvvm.barrier0") syncthreads() void @public;
+
+static mut sdata: array[f32; 256, 3] @linkage("internal") @public;
+
+fn vecAdd(
+    a: ptr[f32, 1],
+    b: ptr[f32, 1],
+    c: ptr[f32, 1],
+    n: s32
+) void @cuda @public {
+    var tid: u32 = blockIdxX() * blockDimX() + threadIdxX();
+
+    if (tid as s32 < n) {
+        c[tid] = (deref a[tid]) + (deref b[tid]);
+    }
+}
+
+fn vectorSum(
+    input:  ptr[f32, 1],    
+    output: ptr[f32, 1],   
+    n:      u32
+) void @cuda @public
+{
+    var tid:   u32 = threadIdxX();
+    var bid:   u32 = blockIdxX();
+    var bdim:  u32 = blockDimX();
+
+    var idx: u32 = bid * bdim + tid;
+
+    if (idx < n) {
+        sdata[tid] = deref(input[idx]);
+    } else {
+        sdata[tid] = 0.0;
+    }
+
+    syncthreads();
+
+    var stride: u32 = bdim >> 1;       
+
+    while (stride > 0) {
+        if (tid < stride) {
+            sdata[tid] = (deref(sdata[tid])) + deref(sdata[tid + stride]);
+        }
+        
+        syncthreads();
+
+        stride = stride >> 1;
+    }
+
+    if (tid == 0) {
+        output[bid] = deref(sdata[0]);
+    }
+}

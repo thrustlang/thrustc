@@ -30,7 +30,7 @@ use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
-    traits::{TypeCodeLocation, TypePointerExtensions},
+    traits::{TypeCodeLocation, TypeExtensions},
 };
 
 use thrustc_parser_table::traits::{FoundSymbolEitherExtensions, StructSymbolExtensions};

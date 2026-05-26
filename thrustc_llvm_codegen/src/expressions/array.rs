@@ -20,7 +20,7 @@
 use thrustc_ast::Ast;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
-use thrustc_typesystem::traits::TypeArrayEntensions;
+use thrustc_typesystem::traits::{TypeArrayEntensions, TypeExtensions};
 
 use crate::anchor::PointerAnchor;
 use crate::context::LLVMCodeGenContext;
@@ -149,7 +149,12 @@ fn compile_array_without_anchor<'ctx>(
         )
     });
 
-    let fixed_array_type: Type = Type::FixedArray(base_type.clone().into(), array_size, span);
+    let fixed_array_type: Type = Type::FixedArray {
+        base_type: base_type.clone().into(),
+        size: array_size,
+        address_space: array_type.get_address_space(),
+        span,
+    };
 
     let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, &fixed_array_type);
 
@@ -218,7 +223,13 @@ fn compile_array_with_anchor<'ctx>(
     let array_type: &Type = cast_type.unwrap_or(array_type);
     let base_type: Type = array_type.get_array_base_type();
 
-    let fixed_array_type: Type = Type::FixedArray(base_type.clone().into(), array_size, span);
+    let fixed_array_type: Type = Type::FixedArray {
+        base_type: base_type.clone().into(),
+        size: array_size,
+        address_space: array_type.get_address_space(),
+        span,
+    };
+
     let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, &fixed_array_type);
 
     context.set_pointer_anchor(PointerAnchor::new(anchor, true));

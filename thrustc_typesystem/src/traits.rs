@@ -57,6 +57,8 @@ pub trait TypeExtensions {
     fn get_type_with_depth(&self, base_depth: u64) -> &Type;
     fn get_type_ref(&self) -> Type;
 
+    fn get_address_space(&self) -> Option<u16>;
+
     fn is_value(&self) -> bool;
     fn is_const_value(&self) -> bool;
 }
@@ -90,8 +92,6 @@ pub trait TypePointerExtensions {
     fn is_ptr_fixed_array_type(&self) -> bool;
     fn is_ptr_array_type(&self) -> bool;
     fn is_ptr_numeric_type(&self) -> bool;
-
-    fn get_address_space(&self) -> Option<u16>;
 }
 
 pub trait TypeStructExtensions {

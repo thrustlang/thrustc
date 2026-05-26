@@ -127,12 +127,18 @@ pub enum Type {
     },
 
     // Fixed FixedArray
-    FixedArray(std::boxed::Box<Type>, u32, Span),
+    FixedArray {
+        base_type: std::boxed::Box<Type>,
+        size: u32,
+        address_space: Option<u16>,
+        span: Span,
+    },
 
     // Array Type
     Array {
         base_type: std::boxed::Box<Type>,
         infered_type: Option<(std::boxed::Box<Type>, usize)>,
+        address_space: Option<u16>,
         span: Span,
     },
 

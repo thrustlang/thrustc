@@ -22,8 +22,8 @@ use crate::{Type, traits::TypeFixedArrayEntensions};
 impl TypeFixedArrayEntensions for Type {
     #[inline(always)]
     fn get_fixed_array_base_type(&self) -> Type {
-        if let Type::FixedArray(inner, ..) = self {
-            return *(*inner).clone();
+        if let Type::FixedArray { base_type, .. } = self {
+            return *(*base_type).clone();
         }
 
         if let Type::Ptr {
@@ -76,7 +76,7 @@ impl TypeFixedArrayEntensions for Type {
             Type::Ptr { subtype: None, .. } => 21,
 
             Type::Array { .. } => 22,
-            Type::FixedArray(..) => 23,
+            Type::FixedArray { .. } => 23,
             Type::Struct { .. } => 24,
 
             Type::Fn(..) => 25,

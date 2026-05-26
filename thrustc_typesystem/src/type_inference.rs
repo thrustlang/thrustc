@@ -21,7 +21,7 @@ use thrustc_span::Span;
 
 use crate::{
     Type,
-    traits::{InfererTypeExtensions, TypeCodeLocation, TypeIsExtensions},
+    traits::{InfererTypeExtensions, TypeCodeLocation, TypeExtensions, TypeIsExtensions},
 };
 
 impl InfererTypeExtensions for Type {
@@ -40,7 +40,7 @@ impl InfererTypeExtensions for Type {
                     ..
                 },
             ) => {
-                let (Type::FixedArray(_, size, ..), mut refcounter) =
+                let (Type::FixedArray { size, .. }, mut refcounter) =
                     (&*rhs_infered_type.0, rhs_infered_type.1)
                 else {
                     return;
@@ -49,7 +49,13 @@ impl InfererTypeExtensions for Type {
                 refcounter = refcounter.saturating_add(1);
 
                 *lhs_infered_type = Some((
-                    Type::FixedArray((*base_type).clone(), *size, span).into(),
+                    Type::FixedArray {
+                        base_type: (*base_type).clone(),
+                        size: *size,
+                        address_space: base_type.get_address_space(),
+                        span,
+                    }
+                    .into(),
                     refcounter,
                 ));
             }

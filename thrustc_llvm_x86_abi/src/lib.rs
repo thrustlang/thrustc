@@ -36,6 +36,7 @@ use thrustc_ast::Ast;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
+use thrustc_span::Span;
 use thrustc_typesystem::{
     Type,
     traits::{TypeCodeLocation, TypeFixedArrayEntensions, TypeIsExtensions, TypePointerExtensions},
@@ -239,7 +240,7 @@ impl X86SystemVABITypeClass {
 
             t if t.is_ptr_like_type() => X86_SYSTEM_V_ABI_ONE_INTEGER,
 
-            Type::FixedArray(subtype, ..) => {
+            Type::FixedArray { base_type, .. } => {
                 let abi_size: u32 = layout.abi_size;
 
                 if abi_size > 16 {
@@ -250,7 +251,7 @@ impl X86SystemVABITypeClass {
                     [X86SystemVABITypeClass::NO_CLASS; 8];
 
                 let subty_classes: [X86SystemVABITypeClass; 8] =
-                    Self::get_system_v_type_class(abi_context, subtype);
+                    Self::get_system_v_type_class(abi_context, base_type);
 
                 for field_offset_bits in layout.field_offsets.iter() {
                     let field_offset_bytes: u32 = field_offset_bits / 8;
@@ -1359,7 +1360,7 @@ pub fn lower_function_call<'llvm_abi>(
                         );
                     }
 
-                    let ptr: PointerValue<'_> = llvm_builder
+                    let mut ptr: PointerValue<'_> = llvm_builder
                         .build_alloca(arg_value.get_type(), "")
                         .unwrap_or_else(|_| {
                             abort::abort_codegen(
@@ -1474,6 +1475,14 @@ pub fn lower_function_call<'llvm_abi>(
                                     line!(),
                                 )
                             });
+
+                        ptr = self::address_space_to_normal(
+                            abi_context,
+                            llvm_builder,
+                            llvm_context,
+                            ptr,
+                            old_type.get_span(),
+                        );
 
                         let ptr_to_second_element: PointerValue<'_> = unsafe {
                             llvm_builder.build_in_bounds_gep(second_element_decomposed_llvm_ty, ptr, &[llvm_context.i32_type().const_int(1, false)], "").unwrap_or_else(|_| {
@@ -1851,8 +1860,11 @@ pub fn decompose_type<'llvm_abi>(
             llvm_context.struct_type(&field_types, packed).into()
         }
 
-        Type::FixedArray(type_, size, ..) => {
-            let array_type: BasicTypeEnum = self::decompose_type(llvm_context, abi_context, type_);
+        Type::FixedArray {
+            base_type, size, ..
+        } => {
+            let array_type: BasicTypeEnum =
+                self::decompose_type(llvm_context, abi_context, base_type);
             array_type.array_type(*size).into()
         }
 
@@ -1864,4 +1876,33 @@ pub fn decompose_type<'llvm_abi>(
             line!(),
         ),
     }
+}
+
+#[inline]
+pub fn constant_address_space_to_normal<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    ptr: PointerValue<'llvm_abi>,
+) -> PointerValue<'llvm_abi> {
+    ptr.const_address_space_cast(llvm_context.ptr_type(AddressSpace::default()))
+}
+
+#[inline]
+pub fn address_space_to_normal<'llvm_abi>(
+    abi_context: &mut X86SystemVABIContext,
+    llvm_builder: &'llvm_abi Builder<'llvm_abi>,
+    llvm_context: &'llvm_abi Context,
+    ptr: PointerValue<'llvm_abi>,
+    span: Span,
+) -> PointerValue<'llvm_abi> {
+    llvm_builder
+        .build_address_space_cast(ptr, llvm_context.ptr_type(AddressSpace::default()), "")
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to compile a address space cast!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        })
 }

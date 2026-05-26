@@ -136,13 +136,4 @@ impl TypePointerExtensions for Type {
 
         false
     }
-
-    #[inline]
-    fn get_address_space(&self) -> Option<u16> {
-        if let Type::Ptr { address_space, .. } = self {
-            return *address_space;
-        }
-
-        None
-    }
 }

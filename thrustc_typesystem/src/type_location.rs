@@ -45,7 +45,7 @@ impl TypeCodeLocation for Type {
             | Type::Void(span)
             | Type::Addr(span)
             | Type::Array { span, .. }
-            | Type::FixedArray(_, _, span)
+            | Type::FixedArray { span, .. }
             | Type::Const(_, span)
             | Type::Ptr { span, .. }
             | Type::Struct { span, .. }

@@ -93,7 +93,7 @@ pub fn llvm_after_optimization(
             file.get_name(),
             false,
         ) {
-            thrustc_logging::print_error(thrustc_logging::LoggingType::Error, &error.to_string());
+            thrustc_logging::print_error(thrustc_logging::LoggingType::Error, error);
             interrupt::archive_compilation_module(compiler, file, file_time)?;
         }
 

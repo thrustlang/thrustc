@@ -220,8 +220,16 @@ pub fn check_type_together(
         ),
 
         (
-            Type::FixedArray(target, target_size, ..),
-            Type::FixedArray(provided, provided_size, ..),
+            Type::FixedArray {
+                base_type: target,
+                size: target_size,
+                ..
+            },
+            Type::FixedArray {
+                base_type: provided,
+                size: provided_size,
+                ..
+            },
             None,
         ) => {
             if target_size == provided_size {
@@ -863,7 +871,7 @@ pub fn check_type_cast(
             | Type::Bool { .. }
             | Type::Struct { .. }
             | Type::Array { .. }
-            | Type::FixedArray(..)
+            | Type::FixedArray { .. }
             | Type::Fn(..),
             Type::Ptr { .. } | Type::Addr(..),
         ) if is_allocated => Ok(()),
@@ -903,12 +911,15 @@ pub fn check_type_cast(
         ) if from_type == target_type => Ok(()),
 
         (
-            Type::FixedArray(from_type, ..),
+            Type::FixedArray {
+                base_type: provided_type,
+                ..
+            },
             Type::Array {
                 base_type: target_type,
                 ..
             },
-        ) if from_type == target_type && is_allocated => Ok(()),
+        ) if provided_type == target_type && is_allocated => Ok(()),
 
         _ => Err(CompilationIssue::Error(
             CompilationIssueCode::E0032,
