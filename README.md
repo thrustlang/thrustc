@@ -141,3 +141,10 @@ The decision was made to fully implement all the programming language functions 
 #### > When will this be released as a stable?
 
 https://github.com/user-attachments/assets/2cb6a406-eb2d-41d5-b5d8-784074a490d5
+
+#### > Agentic AI
+
+No, I don't use it and I never will. This compiler will always have code analyzed, processed, and studied by a human.
+
+I don't care. 
+You can't use agentic AI in this project.
