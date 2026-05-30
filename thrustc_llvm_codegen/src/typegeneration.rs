@@ -111,7 +111,7 @@ pub fn compile_as_function_type<'ctx>(
             )
         });
 
-        let function_type: (FunctionType<'_>, LLVMABIConfiguration<'_>) = thrustc_llvm_abi::decompose_function_type(
+        let function_type: (FunctionType<'_>, LLVMABIConfiguration<'_>) = thrustc_llvm_abi::create_abi_function_type(
             llvm_context,
             abi,
             kind,

@@ -22,10 +22,10 @@ use thrustc_errors::{CompilationIssue, CompilationPosition};
 use thrustc_logging::LoggingType;
 use thrustc_span::Span;
 
-use crate::X86SystemVABIContext;
+use crate::SystemVABIContext;
 
 pub fn abort_codegen(
-    context: &mut X86SystemVABIContext,
+    context: &mut SystemVABIContext,
     message: &str,
     span: Span,
     file: std::path::PathBuf,

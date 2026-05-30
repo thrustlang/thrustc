@@ -16,7 +16,7 @@ thrustc_llvm_abi_representation = { path = "../thrustc_llvm_abi_representation" 
 thrustc_options = { path = "../thrustc_options" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
-thrustc_llvm_x86_abi = { path = "../thrustc_llvm_x86_abi" }
+thrustc_llvm_system_v_abi = { path = "../thrustc_llvm_system_v_abi" }
 thrustc_span = { path = "../thrustc_span" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_errors = { path = "../thrustc_errors" }

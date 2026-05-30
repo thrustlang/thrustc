@@ -18,6 +18,7 @@
 */
 
 #![allow(non_camel_case_types)]
+#![allow(clippy::collapsible_match)]
 
 mod abort;
 
@@ -29,8 +30,8 @@ use inkwell::{
     targets::TargetData,
     types::{AnyType, BasicMetadataTypeEnum, BasicType, BasicTypeEnum, FunctionType},
     values::{
-        BasicMetadataValueEnum, BasicValueEnum, CallSiteValue, FunctionValue, InstructionValue,
-        PointerValue,
+        BasicMetadataValueEnum, BasicValue, BasicValueEnum, CallSiteValue, FunctionValue,
+        InstructionValue, PointerValue,
     },
 };
 use thrustc_ast::Ast;
@@ -40,19 +41,22 @@ use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_span::Span;
 use thrustc_typesystem::{
     Type,
-    traits::{TypeCodeLocation, TypeFixedArrayEntensions, TypeIsExtensions, TypePointerExtensions},
+    traits::{
+        DereferenceExtensions, TypeCodeLocation, TypeFixedArrayEntensions, TypeIsExtensions,
+        TypePointerExtensions,
+    },
     type_layout::TargetInfo,
 };
 
 #[derive(Debug)]
-pub struct X86SystemVABIContext<'system_v_abi> {
+pub struct SystemVABIContext<'system_v_abi> {
     target_triple: &'system_v_abi LLVMTargetTriple,
     diagnostician: Diagnostician,
     target_info: TargetInfo,
     target_data: &'system_v_abi TargetData,
 }
 
-impl<'system_v_abi> X86SystemVABIContext<'system_v_abi> {
+impl<'system_v_abi> SystemVABIContext<'system_v_abi> {
     pub fn new(
         file: &CompilationUnit,
         options: &CompilerOptions,
@@ -69,7 +73,7 @@ impl<'system_v_abi> X86SystemVABIContext<'system_v_abi> {
     }
 }
 
-impl X86SystemVABIContext<'_> {
+impl SystemVABIContext<'_> {
     #[inline]
     pub fn get_mut_diagnostician(&mut self) -> &mut Diagnostician {
         &mut self.diagnostician
@@ -81,7 +85,7 @@ impl X86SystemVABIContext<'_> {
     }
 }
 
-impl X86SystemVABIContext<'_> {
+impl SystemVABIContext<'_> {
     #[inline]
     pub fn get_target_data(&self) -> &TargetData {
         self.target_data
@@ -90,7 +94,7 @@ impl X86SystemVABIContext<'_> {
 
 // https://gitlab.com/x86-psABIs/x86-64-ABI - System V
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum X86SystemVABITypeClass {
+pub enum SystemVABITypeClass {
     INTEGER,
     SSE,
     SSEUP,
@@ -101,108 +105,108 @@ pub enum X86SystemVABITypeClass {
     MEMORY,
 }
 
-impl std::fmt::Display for X86SystemVABITypeClass {
+impl std::fmt::Display for SystemVABITypeClass {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let class_str: &str = match self {
-            X86SystemVABITypeClass::INTEGER => "INTEGER",
-            X86SystemVABITypeClass::SSE => "SSE",
-            X86SystemVABITypeClass::SSEUP => "SSEUP",
-            X86SystemVABITypeClass::X87 => "X87",
-            X86SystemVABITypeClass::X87UP => "X87UP",
-            X86SystemVABITypeClass::COMPLEX_X87 => "COMPLEX_X87",
-            X86SystemVABITypeClass::NO_CLASS => "NO_CLASS",
-            X86SystemVABITypeClass::MEMORY => "MEMORY",
+            SystemVABITypeClass::INTEGER => "INTEGER",
+            SystemVABITypeClass::SSE => "SSE",
+            SystemVABITypeClass::SSEUP => "SSEUP",
+            SystemVABITypeClass::X87 => "X87",
+            SystemVABITypeClass::X87UP => "X87UP",
+            SystemVABITypeClass::COMPLEX_X87 => "COMPLEX_X87",
+            SystemVABITypeClass::NO_CLASS => "NO_CLASS",
+            SystemVABITypeClass::MEMORY => "MEMORY",
         };
 
         write!(f, "{}", class_str)
     }
 }
 
-pub const X86_SYSTEMV_ABI_TWO_INTEGERS: [X86SystemVABITypeClass; 8] = [
-    X86SystemVABITypeClass::INTEGER,
-    X86SystemVABITypeClass::INTEGER,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
+pub const SYSTEMV_ABI_TWO_INTEGERS: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::INTEGER,
+    SystemVABITypeClass::INTEGER,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
 ];
 
-pub const X86_SYSTEM_V_ABI_ONE_INTEGER: [X86SystemVABITypeClass; 8] = [
-    X86SystemVABITypeClass::INTEGER,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
+pub const SYSTEM_V_ABI_ONE_INTEGER: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::INTEGER,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
 ];
 
-pub const X86_SYSTEM_V_ABI_F32_F64: [X86SystemVABITypeClass; 8] = [
-    X86SystemVABITypeClass::SSE,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
+pub const SYSTEM_V_ABI_F32_F64: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::SSE,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
 ];
 
-pub const X86_SYSTEM_V_ABI_F128: [X86SystemVABITypeClass; 8] = [
-    X86SystemVABITypeClass::SSE,
-    X86SystemVABITypeClass::SSEUP,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
+pub const SYSTEM_V_ABI_F128: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::SSE,
+    SystemVABITypeClass::SSEUP,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
 ];
 
-pub const X86_SYSTEM_V_ABI_STACK: [X86SystemVABITypeClass; 8] = [
-    X86SystemVABITypeClass::MEMORY,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
-    X86SystemVABITypeClass::NO_CLASS,
+pub const SYSTEM_V_ABI_STACK: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::MEMORY,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
 ];
 
 // https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig#L412
 
-impl X86SystemVABITypeClass {
+impl SystemVABITypeClass {
     pub fn combine(
-        accum: X86SystemVABITypeClass,
-        current: X86SystemVABITypeClass,
-    ) -> X86SystemVABITypeClass {
+        accum: SystemVABITypeClass,
+        current: SystemVABITypeClass,
+    ) -> SystemVABITypeClass {
         if accum == current {
             return accum;
         }
 
-        if accum == X86SystemVABITypeClass::NO_CLASS {
+        if accum == SystemVABITypeClass::NO_CLASS {
             return current;
         }
 
-        if accum == X86SystemVABITypeClass::MEMORY || current == X86SystemVABITypeClass::MEMORY {
-            return X86SystemVABITypeClass::MEMORY;
+        if accum == SystemVABITypeClass::MEMORY || current == SystemVABITypeClass::MEMORY {
+            return SystemVABITypeClass::MEMORY;
         }
 
-        if accum == X86SystemVABITypeClass::INTEGER || current == X86SystemVABITypeClass::INTEGER {
-            return X86SystemVABITypeClass::INTEGER;
+        if accum == SystemVABITypeClass::INTEGER || current == SystemVABITypeClass::INTEGER {
+            return SystemVABITypeClass::INTEGER;
         }
 
-        X86SystemVABITypeClass::SSE
+        SystemVABITypeClass::SSE
     }
 
     pub fn get_system_v_type_class(
-        abi_context: &mut X86SystemVABIContext,
+        abi_context: &mut SystemVABIContext,
         ty: &Type,
-    ) -> [X86SystemVABITypeClass; 8] {
+    ) -> [SystemVABITypeClass; 8] {
         let type_layout: either::Either<
             thrustc_typesystem::type_layout::TypeLayout,
             thrustc_typesystem::type_layout::StructTypeLayout,
@@ -225,55 +229,47 @@ impl X86SystemVABITypeClass {
             | Type::S32 { .. }
             | Type::S64 { .. }
             | Type::Char(..)
-            | Type::Bool { .. } => X86_SYSTEM_V_ABI_ONE_INTEGER,
+            | Type::Bool { .. } => SYSTEM_V_ABI_ONE_INTEGER,
 
             Type::SSize { .. } | Type::USize { .. } if layout.sizeof <= 8 || layout.sizeof <= 4 => {
-                X86_SYSTEM_V_ABI_ONE_INTEGER
+                SYSTEM_V_ABI_ONE_INTEGER
             }
 
-            Type::SSize { .. } | Type::USize { .. } => X86_SYSTEMV_ABI_TWO_INTEGERS,
+            Type::SSize { .. } | Type::USize { .. } => SYSTEMV_ABI_TWO_INTEGERS,
 
-            Type::U128 { .. } => X86_SYSTEMV_ABI_TWO_INTEGERS,
+            Type::U128 { .. } => SYSTEMV_ABI_TWO_INTEGERS,
 
-            Type::F32 { .. } | Type::F64 { .. } => X86_SYSTEM_V_ABI_F32_F64,
+            Type::F32 { .. } | Type::F64 { .. } => SYSTEM_V_ABI_F32_F64,
 
-            Type::F128 { .. } => X86_SYSTEM_V_ABI_F128,
+            Type::F128 { .. } => SYSTEM_V_ABI_F128,
 
-            t if t.is_ptr_like_type() => X86_SYSTEM_V_ABI_ONE_INTEGER,
+            t if t.is_ptr_like_type() => SYSTEM_V_ABI_ONE_INTEGER,
 
             Type::FixedArray { base_type, .. } => {
                 let abi_size: u32 = layout.abi_size;
 
                 if abi_size > 16 {
-                    return X86_SYSTEM_V_ABI_STACK;
+                    return SYSTEM_V_ABI_STACK;
                 }
 
-                let mut current_classes: [X86SystemVABITypeClass; 8] =
-                    [X86SystemVABITypeClass::NO_CLASS; 8];
+                let mut current_classes: [SystemVABITypeClass; 8] =
+                    [SystemVABITypeClass::NO_CLASS; 8];
 
-                let subty_classes: [X86SystemVABITypeClass; 8] =
+                let subty_classes: [SystemVABITypeClass; 8] =
                     Self::get_system_v_type_class(abi_context, base_type);
 
-                for field_offset_bits in layout.field_offsets.iter() {
-                    let field_offset_bytes: u32 = field_offset_bits / 8;
-                    let subty_class: X86SystemVABITypeClass = subty_classes[0];
+                for (i, _) in subty_classes.iter().enumerate() {
+                    let current_subty_class: SystemVABITypeClass = subty_classes[i];
 
-                    if matches!(subty_class, X86SystemVABITypeClass::NO_CLASS) {
+                    if matches!(current_subty_class, SystemVABITypeClass::NO_CLASS) {
                         break;
                     }
 
-                    let target_eightbyte_idx: u32 = field_offset_bytes / 8;
-
-                    if target_eightbyte_idx < 8 {
-                        current_classes[target_eightbyte_idx as usize] = Self::combine(
-                            current_classes[target_eightbyte_idx as usize],
-                            subty_class,
-                        );
-                    }
+                    current_classes[i] = Self::combine(current_classes[i], current_subty_class);
                 }
 
-                if current_classes.contains(&X86SystemVABITypeClass::MEMORY) {
-                    return X86_SYSTEM_V_ABI_STACK;
+                if current_classes.contains(&SystemVABITypeClass::MEMORY) {
+                    return SYSTEM_V_ABI_STACK;
                 }
 
                 // https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig
@@ -287,23 +283,23 @@ impl X86SystemVABITypeClass {
                 if abi_size > 16
                     && (current_classes
                         .first()
-                        .is_some_and(|c| !matches!(c, X86SystemVABITypeClass::SSE))
+                        .is_some_and(|c| !matches!(c, SystemVABITypeClass::SSE))
                         || current_classes
                             .iter()
                             .skip(1)
-                            .any(|c| !matches!(c, X86SystemVABITypeClass::SSEUP)))
+                            .any(|c| !matches!(c, SystemVABITypeClass::SSEUP)))
                 {
-                    return X86_SYSTEM_V_ABI_STACK;
+                    return SYSTEM_V_ABI_STACK;
                 }
 
                 for (idx, _) in current_classes.clone().iter().enumerate() {
-                    if matches!(current_classes[idx], X86SystemVABITypeClass::SSEUP) && idx > 0 {
+                    if matches!(current_classes[idx], SystemVABITypeClass::SSEUP) && idx > 0 {
                         match current_classes[idx.saturating_sub(1)] {
-                            X86SystemVABITypeClass::SSE | X86SystemVABITypeClass::SSEUP => {
+                            SystemVABITypeClass::SSE | SystemVABITypeClass::SSEUP => {
                                 continue;
                             }
                             _ => {
-                                current_classes[idx] = X86SystemVABITypeClass::SSE;
+                                current_classes[idx] = SystemVABITypeClass::SSE;
                             }
                         }
                     }
@@ -318,42 +314,33 @@ impl X86SystemVABITypeClass {
                 let abi_size: u32 = layout.abi_size;
 
                 if abi_size > 16 {
-                    return X86_SYSTEM_V_ABI_STACK;
+                    return SYSTEM_V_ABI_STACK;
                 }
 
                 if modifier.llvm().is_packed() {
-                    return X86_SYSTEM_V_ABI_STACK;
+                    return SYSTEM_V_ABI_STACK;
                 }
 
-                let mut current_classes: [X86SystemVABITypeClass; 8] =
-                    [X86SystemVABITypeClass::NO_CLASS; 8];
+                let mut current_classes: [SystemVABITypeClass; 8] =
+                    [SystemVABITypeClass::NO_CLASS; 8];
 
                 for (i, field_type) in fields.iter().enumerate() {
-                    let field_offset_bytes: u32 = layout.field_offsets[i] / 8;
-
-                    let field_classes: [X86SystemVABITypeClass; 8] =
+                    let field_classes: [SystemVABITypeClass; 8] =
                         Self::get_system_v_type_class(abi_context, field_type);
 
                     for (sub_idx, _) in field_classes.iter().enumerate() {
-                        let field_class: X86SystemVABITypeClass = field_classes[sub_idx];
+                        let current_field_class: SystemVABITypeClass = field_classes[sub_idx];
 
-                        if matches!(field_class, X86SystemVABITypeClass::NO_CLASS) {
+                        if matches!(current_field_class, SystemVABITypeClass::NO_CLASS) {
                             continue;
                         }
 
-                        let target_eightbyte_idx: u32 = (field_offset_bytes / 8) + sub_idx as u32;
-
-                        if target_eightbyte_idx < 8 {
-                            current_classes[target_eightbyte_idx as usize] = Self::combine(
-                                current_classes[target_eightbyte_idx as usize],
-                                field_class,
-                            );
-                        }
+                        current_classes[i] = Self::combine(current_classes[i], current_field_class);
                     }
                 }
 
-                if current_classes.contains(&X86SystemVABITypeClass::MEMORY) {
-                    return X86_SYSTEM_V_ABI_STACK;
+                if current_classes.contains(&SystemVABITypeClass::MEMORY) {
+                    return SYSTEM_V_ABI_STACK;
                 }
 
                 // https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig
@@ -367,23 +354,23 @@ impl X86SystemVABITypeClass {
                 if abi_size > 16
                     && (current_classes
                         .first()
-                        .is_some_and(|c| !matches!(c, X86SystemVABITypeClass::SSE))
+                        .is_some_and(|c| !matches!(c, SystemVABITypeClass::SSE))
                         || current_classes
                             .iter()
                             .skip(1)
-                            .any(|c| !matches!(c, X86SystemVABITypeClass::SSEUP)))
+                            .any(|c| !matches!(c, SystemVABITypeClass::SSEUP)))
                 {
-                    return X86_SYSTEM_V_ABI_STACK;
+                    return SYSTEM_V_ABI_STACK;
                 }
 
                 for (idx, _) in current_classes.clone().iter().enumerate() {
-                    if matches!(current_classes[idx], X86SystemVABITypeClass::SSEUP) && idx > 0 {
+                    if matches!(current_classes[idx], SystemVABITypeClass::SSEUP) && idx > 0 {
                         match current_classes[idx.saturating_sub(1)] {
-                            X86SystemVABITypeClass::SSE | X86SystemVABITypeClass::SSEUP => {
+                            SystemVABITypeClass::SSE | SystemVABITypeClass::SSEUP => {
                                 continue;
                             }
                             _ => {
-                                current_classes[idx] = X86SystemVABITypeClass::SSE;
+                                current_classes[idx] = SystemVABITypeClass::SSE;
                             }
                         }
                     }
@@ -407,26 +394,26 @@ impl X86SystemVABITypeClass {
 }
 
 #[derive(Debug, Clone)]
-pub enum x86SystemVABIType<'llvm_abi> {
+pub enum SystemVABIType<'llvm_abi> {
     Same(&'llvm_abi Type),
     ToMemory(&'llvm_abi Type),
-    DecomposeAndExpand(Vec<Type>, x86SystemVABITypeDecomposeAndExpandVariant),
+    DecomposeAndExpand(Vec<Type>, SystemVABITypeDecomposeAndExpandVariant),
     Ignore,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum x86SystemVABITypeDecomposeAndExpandVariant {
+pub enum SystemVABITypeDecomposeAndExpandVariant {
     DecomposeAndExpandStructure,
     DecomposeAndExpandInteger128,
     DecomposeAndExpandArray,
 }
 
-impl x86SystemVABITypeDecomposeAndExpandVariant {
+impl SystemVABITypeDecomposeAndExpandVariant {
     #[inline]
     pub fn is_decompose_and_expand_structure(&self) -> bool {
         matches!(
             self,
-            x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandStructure
+            SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandStructure
         )
     }
 
@@ -434,7 +421,7 @@ impl x86SystemVABITypeDecomposeAndExpandVariant {
     pub fn is_decompose_and_expand_integer128(&self) -> bool {
         matches!(
             self,
-            x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandInteger128
+            SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandInteger128
         )
     }
 
@@ -442,39 +429,39 @@ impl x86SystemVABITypeDecomposeAndExpandVariant {
     pub fn is_decompose_and_expand_array(&self) -> bool {
         matches!(
             self,
-            x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray
+            SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray
         )
     }
 }
 
-impl x86SystemVABIType<'_> {
+impl SystemVABIType<'_> {
     #[inline]
     pub fn is_the_same(&self) -> bool {
-        matches!(self, x86SystemVABIType::Same(_))
+        matches!(self, SystemVABIType::Same(_))
     }
 
     #[inline]
     pub fn is_ignore(&self) -> bool {
-        matches!(self, x86SystemVABIType::Ignore)
+        matches!(self, SystemVABIType::Ignore)
     }
 
     #[inline]
     pub fn is_to_memory(&self) -> bool {
-        matches!(self, x86SystemVABIType::ToMemory(_))
+        matches!(self, SystemVABIType::ToMemory(_))
     }
 
     #[inline]
     pub fn is_decompose_and_expand(&self) -> bool {
-        matches!(self, x86SystemVABIType::DecomposeAndExpand(..))
+        matches!(self, SystemVABIType::DecomposeAndExpand(..))
     }
 }
 
-impl<'llvm_abi> x86SystemVABIType<'llvm_abi> {
+impl<'llvm_abi> SystemVABIType<'llvm_abi> {
     pub fn class_to_general_abi_strategy(
-        abi_context: &mut X86SystemVABIContext,
-        classes: &[X86SystemVABITypeClass; 8],
+        abi_context: &mut SystemVABIContext,
+        classes: &[SystemVABITypeClass; 8],
         ty: &'llvm_abi Type,
-    ) -> x86SystemVABIType<'llvm_abi> {
+    ) -> SystemVABIType<'llvm_abi> {
         let type_layout: either::Either<
             thrustc_typesystem::type_layout::TypeLayout,
             thrustc_typesystem::type_layout::StructTypeLayout,
@@ -485,22 +472,26 @@ impl<'llvm_abi> x86SystemVABIType<'llvm_abi> {
             either::Either::Right(ty) => ty.into_layout(),
         };
 
-        if classes.contains(&X86SystemVABITypeClass::MEMORY) {
-            return x86SystemVABIType::ToMemory(ty);
+        if classes.contains(&SystemVABITypeClass::MEMORY) {
+            return SystemVABIType::ToMemory(ty);
         }
 
         let used: usize = classes
             .iter()
-            .take_while(|&&c| c != X86SystemVABITypeClass::NO_CLASS)
+            .take_while(|&&c| c != SystemVABITypeClass::NO_CLASS)
             .count();
 
         if used == 0 {
-            return x86SystemVABIType::Ignore;
+            return SystemVABIType::Ignore;
+        }
+
+        if classes.contains(&SystemVABITypeClass::MEMORY) {
+            return SystemVABIType::ToMemory(ty);
         }
 
         match used {
             1 => match classes[0] {
-                X86SystemVABITypeClass::INTEGER if ty.is_fixed_array_type() => {
+                SystemVABITypeClass::INTEGER if ty.is_fixed_array_type() => {
                     let array_fixed_ty: Type = ty.get_fixed_array_base_type();
 
                     if array_fixed_ty.is_array_type()
@@ -508,7 +499,7 @@ impl<'llvm_abi> x86SystemVABIType<'llvm_abi> {
                         || array_fixed_ty.is_struct_type()
                         || array_fixed_ty.is_ptr_like_type()
                     {
-                        return x86SystemVABIType::ToMemory(ty);
+                        return SystemVABIType::ToMemory(ty);
                     }
 
                     let is_integer: bool = array_fixed_ty.is_integer_type();
@@ -527,22 +518,22 @@ impl<'llvm_abi> x86SystemVABIType<'llvm_abi> {
                         let second_integer_ty: Type = first_integer_ty.clone();
 
                         if layout.abi_size == 8 {
-                            return x86SystemVABIType::DecomposeAndExpand(
+                            return SystemVABIType::DecomposeAndExpand(
                                 vec![first_integer_ty],
-                                x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                                SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
                             );
                         }
 
-                        return x86SystemVABIType::DecomposeAndExpand(
+                        return SystemVABIType::DecomposeAndExpand(
                             vec![first_integer_ty, second_integer_ty],
-                            x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                            SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
                         );
                     }
 
-                    x86SystemVABIType::Same(ty)
+                    SystemVABIType::Same(ty)
                 }
 
-                X86SystemVABITypeClass::SSE if ty.is_fixed_array_type() => {
+                SystemVABITypeClass::SSE if ty.is_fixed_array_type() => {
                     let array_fixed_ty: Type = ty.get_fixed_array_base_type();
 
                     let is_float: bool = array_fixed_ty.is_float_type();
@@ -561,172 +552,173 @@ impl<'llvm_abi> x86SystemVABIType<'llvm_abi> {
                         let second_float_ty: Type = first_float_ty.clone();
 
                         if layout.abi_size == 8 {
-                            return x86SystemVABIType::DecomposeAndExpand(
+                            return SystemVABIType::DecomposeAndExpand(
                                 vec![first_float_ty],
-                                x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                                SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
                             );
                         }
 
-                        return x86SystemVABIType::DecomposeAndExpand(
+                        return SystemVABIType::DecomposeAndExpand(
                             vec![first_float_ty, second_float_ty],
-                            x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                            SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
                         );
                     }
 
-                    x86SystemVABIType::Same(ty)
+                    SystemVABIType::Same(ty)
                 }
 
-                X86SystemVABITypeClass::INTEGER | X86SystemVABITypeClass::SSE => {
-                    x86SystemVABIType::Same(ty)
-                }
-                _ => x86SystemVABIType::Same(ty),
+                SystemVABITypeClass::MEMORY => SystemVABIType::ToMemory(ty),
+
+                SystemVABITypeClass::INTEGER | SystemVABITypeClass::SSE => SystemVABIType::Same(ty),
+
+                _ => SystemVABIType::Same(ty),
             },
 
-            2 => {
-                match (classes[0], classes[1]) {
-                    (X86SystemVABITypeClass::INTEGER, X86SystemVABITypeClass::INTEGER)
-                        if ty.is_fixed_array_type() =>
+            2 => match (classes[0], classes[1]) {
+                (SystemVABITypeClass::INTEGER, SystemVABITypeClass::INTEGER)
+                    if ty.is_fixed_array_type() =>
+                {
+                    let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+
+                    if array_fixed_ty.is_array_type()
+                        || array_fixed_ty.is_fixed_array_type()
+                        || array_fixed_ty.is_struct_type()
+                        || array_fixed_ty.is_ptr_like_type()
                     {
-                        let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+                        return SystemVABIType::ToMemory(ty);
+                    }
 
-                        if array_fixed_ty.is_array_type()
-                            || array_fixed_ty.is_fixed_array_type()
-                            || array_fixed_ty.is_struct_type()
-                            || array_fixed_ty.is_ptr_like_type()
-                        {
-                            return x86SystemVABIType::ToMemory(ty);
-                        }
+                    let is_integer: bool = array_fixed_ty.is_integer_type();
 
-                        let is_integer: bool = array_fixed_ty.is_integer_type();
-
-                        if is_integer {
-                            let first_integer_ty: Type = if array_fixed_ty.is_signed_integer_type()
-                            {
-                                Type::S64 {
-                                    span: ty.get_span(),
-                                }
-                            } else {
-                                Type::U64 {
-                                    span: ty.get_span(),
-                                }
-                            };
-
-                            let second_integer_ty: Type = first_integer_ty.clone();
-
-                            if layout.abi_size == 8 {
-                                return x86SystemVABIType::DecomposeAndExpand(
-                                    vec![first_integer_ty],
-                                    x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
-                                );
+                    if is_integer {
+                        let first_integer_ty: Type = if array_fixed_ty.is_signed_integer_type() {
+                            Type::S64 {
+                                span: ty.get_span(),
                             }
-
-                            return x86SystemVABIType::DecomposeAndExpand(
-                                vec![first_integer_ty, second_integer_ty],
-                                x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
-                            );
-                        }
-
-                        x86SystemVABIType::Same(ty)
-                    }
-
-                    (X86SystemVABITypeClass::INTEGER, X86SystemVABITypeClass::INTEGER) => {
-                        x86SystemVABIType::Same(ty)
-                    }
-
-                    (X86SystemVABITypeClass::SSE, X86SystemVABITypeClass::SSE)
-                        if ty.is_fixed_array_type() =>
-                    {
-                        let array_fixed_ty: Type = ty.get_fixed_array_base_type();
-
-                        let is_float: bool = array_fixed_ty.is_float_type();
-
-                        if is_float {
-                            let first_float_ty: Type = if let Type::F32 { .. } = array_fixed_ty {
-                                Type::F32 {
-                                    span: ty.get_span(),
-                                }
-                            } else {
-                                Type::F64 {
-                                    span: ty.get_span(),
-                                }
-                            };
-
-                            let second_float_ty: Type = first_float_ty.clone();
-
-                            if layout.abi_size == 8 {
-                                return x86SystemVABIType::DecomposeAndExpand(
-                                    vec![first_float_ty],
-                                    x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
-                                );
-                            }
-
-                            return x86SystemVABIType::DecomposeAndExpand(
-                                vec![first_float_ty, second_float_ty],
-                                x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
-                            );
-                        }
-
-                        x86SystemVABIType::Same(ty)
-                    }
-
-                    (X86SystemVABITypeClass::SSE, X86SystemVABITypeClass::SSE) => {
-                        let array_fixed_ty: Type = ty.get_fixed_array_base_type();
-
-                        let is_float: bool = array_fixed_ty.is_float_type();
-
-                        if is_float {
-                            let first_float_ty: Type = if let Type::F32 { .. } = array_fixed_ty {
-                                Type::F32 {
-                                    span: ty.get_span(),
-                                }
-                            } else {
-                                Type::F64 {
-                                    span: ty.get_span(),
-                                }
-                            };
-
-                            let second_float_ty: Type = first_float_ty.clone();
-
-                            return x86SystemVABIType::DecomposeAndExpand(
-                                vec![first_float_ty, second_float_ty],
-                                x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
-                            );
-                        }
-
-                        x86SystemVABIType::Same(ty)
-                    }
-
-                    (X86SystemVABITypeClass::SSE, X86SystemVABITypeClass::SSEUP)
-                        if ty.is_fixed_array_type() =>
-                    {
-                        x86SystemVABIType::Same(ty)
-                    }
-
-                    (X86SystemVABITypeClass::SSE, X86SystemVABITypeClass::SSEUP) => {
-                        x86SystemVABIType::Same(ty)
-                    }
-
-                    _ => {
-                        if let Type::Struct { fields, .. } = &ty {
-                            x86SystemVABIType::DecomposeAndExpand(fields.clone(), x86SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandStructure)
                         } else {
-                            x86SystemVABIType::ToMemory(ty)
+                            Type::U64 {
+                                span: ty.get_span(),
+                            }
+                        };
+
+                        let second_integer_ty: Type = first_integer_ty.clone();
+
+                        if layout.abi_size == 8 {
+                            return SystemVABIType::DecomposeAndExpand(
+                                vec![first_integer_ty],
+                                SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                            );
                         }
+
+                        return SystemVABIType::DecomposeAndExpand(
+                            vec![first_integer_ty, second_integer_ty],
+                            SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                        );
+                    }
+
+                    SystemVABIType::Same(ty)
+                }
+
+                (SystemVABITypeClass::INTEGER, SystemVABITypeClass::INTEGER) => {
+                    SystemVABIType::Same(ty)
+                }
+
+                (SystemVABITypeClass::SSE, SystemVABITypeClass::SSE)
+                    if ty.is_fixed_array_type() =>
+                {
+                    let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+
+                    let is_float: bool = array_fixed_ty.is_float_type();
+
+                    if is_float {
+                        let first_float_ty: Type = if let Type::F32 { .. } = array_fixed_ty {
+                            Type::F32 {
+                                span: ty.get_span(),
+                            }
+                        } else {
+                            Type::F64 {
+                                span: ty.get_span(),
+                            }
+                        };
+
+                        let second_float_ty: Type = first_float_ty.clone();
+
+                        if layout.abi_size == 8 {
+                            return SystemVABIType::DecomposeAndExpand(
+                                vec![first_float_ty],
+                                SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                            );
+                        }
+
+                        return SystemVABIType::DecomposeAndExpand(
+                            vec![first_float_ty, second_float_ty],
+                            SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                        );
+                    }
+
+                    SystemVABIType::Same(ty)
+                }
+
+                (SystemVABITypeClass::SSE, SystemVABITypeClass::SSE) => {
+                    let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+
+                    let is_float: bool = array_fixed_ty.is_float_type();
+
+                    if is_float {
+                        let first_float_ty: Type = if let Type::F32 { .. } = array_fixed_ty {
+                            Type::F32 {
+                                span: ty.get_span(),
+                            }
+                        } else {
+                            Type::F64 {
+                                span: ty.get_span(),
+                            }
+                        };
+
+                        let second_float_ty: Type = first_float_ty.clone();
+
+                        return SystemVABIType::DecomposeAndExpand(
+                            vec![first_float_ty, second_float_ty],
+                            SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
+                        );
+                    }
+
+                    SystemVABIType::Same(ty)
+                }
+
+                (SystemVABITypeClass::SSE, SystemVABITypeClass::SSEUP)
+                    if ty.is_fixed_array_type() =>
+                {
+                    SystemVABIType::Same(ty)
+                }
+
+                (SystemVABITypeClass::SSE, SystemVABITypeClass::SSEUP) => SystemVABIType::Same(ty),
+
+                (SystemVABITypeClass::MEMORY, _) => SystemVABIType::ToMemory(ty),
+
+                _ => {
+                    if let Type::Struct { fields, .. } = &ty {
+                        SystemVABIType::DecomposeAndExpand(
+                            fields.clone(),
+                            SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandStructure,
+                        )
+                    } else {
+                        SystemVABIType::ToMemory(ty)
                     }
                 }
-            }
+            },
 
-            _ => x86SystemVABIType::ToMemory(ty),
+            _ => SystemVABIType::ToMemory(ty),
         }
     }
 
-    fn is_valid_sse_sequence(classes: &[X86SystemVABITypeClass; 8]) -> bool {
+    fn is_valid_sse_sequence(classes: &[SystemVABITypeClass; 8]) -> bool {
         let mut seen_sse: bool = false;
 
         for &c in classes {
             match c {
-                X86SystemVABITypeClass::SSE | X86SystemVABITypeClass::SSEUP => seen_sse = true,
-                X86SystemVABITypeClass::NO_CLASS => continue,
+                SystemVABITypeClass::SSE | SystemVABITypeClass::SSEUP => seen_sse = true,
+                SystemVABITypeClass::NO_CLASS => continue,
                 _ if seen_sse => return false,
                 _ => {}
             }
@@ -737,14 +729,14 @@ impl<'llvm_abi> x86SystemVABIType<'llvm_abi> {
 }
 
 #[derive(Debug, Clone)]
-pub enum x86SystemVABIFunctionParameterConfiguration {
+pub enum SystemVABIFunctionParameterConfiguration {
     Normal,
     FromMemory,
 }
 
 #[derive(Debug, Clone)]
-pub enum x86SystemVABIFunctionTypeArgumentConfigurationAttributes {
-    byVal,
+pub enum SystemVABIFunctionTypeArgumentConfigurationAttributes {
+    byVal(Type),
     InReg,
     Sret(Type),
 
@@ -752,20 +744,19 @@ pub enum x86SystemVABIFunctionTypeArgumentConfigurationAttributes {
 }
 
 #[derive(Debug, Clone)]
-pub enum x86SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi> {
+pub enum SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi> {
     Same {
         name: &'llvm_abi str,
         ascii_name: &'llvm_abi str,
         ty: &'llvm_abi Type,
         index: usize,
-        attribute: x86SystemVABIFunctionTypeArgumentConfigurationAttributes,
     },
     ToMemory {
         name: &'llvm_abi str,
         ascii_name: &'llvm_abi str,
         ty: &'llvm_abi Type,
         index: usize,
-        attribute: x86SystemVABIFunctionTypeArgumentConfigurationAttributes,
+        attribute: SystemVABIFunctionTypeArgumentConfigurationAttributes,
         is_sret: bool,
     },
     DecomposeAndExpand {
@@ -775,7 +766,7 @@ pub enum x86SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi> {
         struct_field_indexes: Vec<usize>,
         decomposed_indexes: Vec<usize>,
         array_decomposed_types: Vec<Type>,
-        variant: x86SystemVABITypeDecomposeAndExpandVariant,
+        variant: SystemVABITypeDecomposeAndExpandVariant,
         index: usize,
     },
     Ignore {
@@ -787,13 +778,13 @@ pub enum x86SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi> {
 }
 
 #[derive(Debug, Clone)]
-pub struct x86SystemVABIFunctionTypeConfiguration<'llvm_abi> {
-    parameter_types: Vec<x86SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi>>,
+pub struct SystemVABIFunctionTypeConfiguration<'llvm_abi> {
+    parameter_types: Vec<SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi>>,
     is_memory_return: bool,
     is_variatic: bool,
 }
 
-impl<'llvm_abi> x86SystemVABIFunctionTypeConfiguration<'llvm_abi> {
+impl<'llvm_abi> SystemVABIFunctionTypeConfiguration<'llvm_abi> {
     #[inline]
     pub fn new(is_variatic: bool, is_memory_return: bool) -> Self {
         Self {
@@ -804,7 +795,7 @@ impl<'llvm_abi> x86SystemVABIFunctionTypeConfiguration<'llvm_abi> {
     }
 }
 
-impl x86SystemVABIFunctionTypeConfiguration<'_> {
+impl SystemVABIFunctionTypeConfiguration<'_> {
     #[inline]
     pub fn is_variatic(&self) -> bool {
         self.is_variatic
@@ -816,18 +807,18 @@ impl x86SystemVABIFunctionTypeConfiguration<'_> {
     }
 }
 
-impl x86SystemVABIFunctionTypeConfiguration<'_> {
+impl SystemVABIFunctionTypeConfiguration<'_> {
     #[inline]
     pub fn set_memory_return(&mut self, value: bool) {
         self.is_memory_return = value
     }
 }
 
-impl<'llvm_abi> x86SystemVABIFunctionTypeConfiguration<'llvm_abi> {
+impl<'llvm_abi> SystemVABIFunctionTypeConfiguration<'llvm_abi> {
     #[inline]
     pub fn get_mut_configuration_parameter_types(
         &mut self,
-    ) -> &mut Vec<x86SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi>> {
+    ) -> &mut Vec<SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi>> {
         &mut self.parameter_types
     }
 }
@@ -835,52 +826,52 @@ impl<'llvm_abi> x86SystemVABIFunctionTypeConfiguration<'llvm_abi> {
 pub fn lower_function_parameters<'llvm_abi>(
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     llvm_context: &'llvm_abi Context,
-    abi_context: &mut X86SystemVABIContext,
+    abi_context: &mut SystemVABIContext,
     function_value: FunctionValue<'llvm_abi>,
-    configuration: &x86SystemVABIFunctionTypeConfiguration<'llvm_abi>,
+    configuration: &SystemVABIFunctionTypeConfiguration<'llvm_abi>,
 ) -> Vec<(
     &'llvm_abi str,
     &'llvm_abi str,
     &'llvm_abi Type,
-    x86SystemVABIFunctionParameterConfiguration,
+    SystemVABIFunctionParameterConfiguration,
     BasicValueEnum<'llvm_abi>,
 )> {
     let function_value: FunctionValue<'_> = function_value;
-    let function_params: Vec<BasicValueEnum<'_>> = function_value.get_params();
+    let function_parameters: Vec<BasicValueEnum<'_>> = function_value.get_params();
 
-    let ordered_configurations: Vec<&x86SystemVABIFunctionTypeArgumentConfiguration> =
+    let ordered_configurations: Vec<&SystemVABIFunctionTypeArgumentConfiguration> =
         configuration.parameter_types.iter().collect();
 
     let _ = ordered_configurations.is_sorted_by_key(|config| match config {
-        x86SystemVABIFunctionTypeArgumentConfiguration::Same { index, .. } => *index,
-        x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory { index, .. } => *index,
-        x86SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
-        x86SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::Same { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::ToMemory { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
     });
 
     let mut processed_parameters: Vec<(
         &'llvm_abi str,
         &'llvm_abi str,
         &'llvm_abi Type,
-        x86SystemVABIFunctionParameterConfiguration,
+        SystemVABIFunctionParameterConfiguration,
         BasicValueEnum<'_>,
     )> = Vec::new();
 
     for arg_config in ordered_configurations.iter() {
         match arg_config {
-            x86SystemVABIFunctionTypeArgumentConfiguration::Ignore {
+            SystemVABIFunctionTypeArgumentConfiguration::Ignore {
                 name,
                 ascii_name,
                 ty,
                 index,
                 ..
             } => {
-                if let Some(value) = function_params.get(*index) {
+                if let Some(value) = function_parameters.get(*index) {
                     processed_parameters.push((
                         name,
                         ascii_name,
                         ty,
-                        x86SystemVABIFunctionParameterConfiguration::Normal,
+                        SystemVABIFunctionParameterConfiguration::Normal,
                         (*value),
                     ));
                 } else {
@@ -894,19 +885,19 @@ pub fn lower_function_parameters<'llvm_abi>(
                 }
             }
 
-            x86SystemVABIFunctionTypeArgumentConfiguration::Same {
+            SystemVABIFunctionTypeArgumentConfiguration::Same {
                 name,
                 ascii_name,
                 ty,
                 index,
                 ..
             } => {
-                if let Some(value) = function_params.get(*index) {
+                if let Some(value) = function_parameters.get(*index) {
                     processed_parameters.push((
                         name,
                         ascii_name,
                         ty,
-                        x86SystemVABIFunctionParameterConfiguration::Normal,
+                        SystemVABIFunctionParameterConfiguration::Normal,
                         (*value),
                     ));
                 } else {
@@ -920,19 +911,19 @@ pub fn lower_function_parameters<'llvm_abi>(
                 }
             }
 
-            x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+            SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
                 name,
                 ascii_name,
                 ty,
                 index,
                 ..
             } => {
-                if let Some(value) = function_params.get(*index) {
+                if let Some(value) = function_parameters.get(*index) {
                     processed_parameters.push((
                         name,
                         ascii_name,
                         ty,
-                        x86SystemVABIFunctionParameterConfiguration::FromMemory,
+                        SystemVABIFunctionParameterConfiguration::FromMemory,
                         *value,
                     ));
                 } else {
@@ -946,7 +937,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                 }
             }
 
-            x86SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
+            SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
                 name,
                 ascii_name,
                 old_type,
@@ -967,7 +958,7 @@ pub fn lower_function_parameters<'llvm_abi>(
 
                 if variant.is_decompose_and_expand_structure() {
                     let ty: BasicTypeEnum<'_> =
-                        self::decompose_type(llvm_context, abi_context, old_type);
+                        self::generate_type(llvm_context, abi_context, old_type);
 
                     let ptr: PointerValue<'_> = llvm_builder.build_alloca(ty, "").unwrap_or_else(|_| {
                         abort::abort_codegen(
@@ -986,26 +977,26 @@ pub fn lower_function_parameters<'llvm_abi>(
                     for (field_idx, decomposed_idx) in
                         struct_field_indexes.iter().zip(decomposed_indexes.iter())
                     {
-                        if let Some(decomposed_value) = function_params.get(*decomposed_idx) {
+                        if let Some(decomposed_value) = function_parameters.get(*decomposed_idx) {
                             let element_ptr: PointerValue<'_> = llvm_builder.build_struct_gep(ty, ptr, (*field_idx) as u32, "").unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                abi_context,
-                                "Failed to build a GEP instruction for a decomposed and expanded parameter in System V ABI!",
-                                old_type.get_span(),
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            )
-                        });
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to build a GEP instruction for a decomposed and expanded parameter in System V ABI!",
+                                    old_type.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
+                            });
 
                             let store: InstructionValue<'_> = llvm_builder.build_store(element_ptr, *decomposed_value).unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                abi_context,
-                                "Failed to store a decomposed and expanded parameter value in memory for System V ABI!",
-                                old_type.get_span(),
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            )
-                        });
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to store a decomposed and expanded parameter value in memory for System V ABI!",
+                                    old_type.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
+                            });
 
                             store.set_alignment(alignment).unwrap_or_else(|_| {
                             abort::abort_codegen(
@@ -1031,14 +1022,14 @@ pub fn lower_function_parameters<'llvm_abi>(
                         name,
                         ascii_name,
                         old_type,
-                        x86SystemVABIFunctionParameterConfiguration::FromMemory,
+                        SystemVABIFunctionParameterConfiguration::FromMemory,
                         ptr.into(),
                     ));
                 }
 
                 if variant.is_decompose_and_expand_array() {
                     let ty: BasicTypeEnum<'_> =
-                        self::decompose_type(llvm_context, abi_context, old_type);
+                        self::generate_type(llvm_context, abi_context, old_type);
 
                     let ptr: PointerValue<'_> =
                         llvm_builder.build_alloca(ty, "").unwrap_or_else(|_| {
@@ -1057,7 +1048,7 @@ pub fn lower_function_parameters<'llvm_abi>(
 
                     if layout.abi_size == 8 {
                         if let Some(first_decomposed_value) =
-                            function_params.get(decomposed_indexes[0])
+                            function_parameters.get(decomposed_indexes[0])
                         {
                             llvm_builder
                                 .build_store(ptr, *first_decomposed_value)
@@ -1091,7 +1082,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                         }
                     } else {
                         if let Some(first_decomposed_value) =
-                            function_params.get(decomposed_indexes[0])
+                            function_parameters.get(decomposed_indexes[0])
                         {
                             llvm_builder
                             .build_store(ptr, *first_decomposed_value)
@@ -1116,7 +1107,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             });
 
                             if let Some(second_decomposed_value) =
-                                function_params.get(decomposed_indexes[1])
+                                function_parameters.get(decomposed_indexes[1])
                             {
                                 let second_element_ptr: PointerValue<'_> = unsafe {
                                     llvm_builder.build_gep(
@@ -1163,7 +1154,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                     name,
                                     ascii_name,
                                     old_type,
-                                    x86SystemVABIFunctionParameterConfiguration::FromMemory,
+                                    SystemVABIFunctionParameterConfiguration::FromMemory,
                                     ptr.into(),
                                 ));
                             } else {
@@ -1193,19 +1184,19 @@ pub fn lower_function_parameters<'llvm_abi>(
     processed_parameters
 }
 
-pub fn lower_function_call<'llvm_abi>(
+pub fn lower_call_prologue<'llvm_abi>(
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     llvm_context: &'llvm_abi Context,
-    abi_context: &mut X86SystemVABIContext,
+    abi_context: &mut SystemVABIContext,
     function_value: FunctionValue<'llvm_abi>,
-    configuration: &x86SystemVABIFunctionTypeConfiguration,
-    mut args: Vec<BasicValueEnum<'llvm_abi>>,
+    configuration: &SystemVABIFunctionTypeConfiguration,
+    args: Vec<BasicValueEnum<'llvm_abi>>,
     span: Span,
 ) -> Vec<BasicMetadataValueEnum<'llvm_abi>> {
     let function_value: FunctionValue<'_> = function_value;
     let callee_args_values: Vec<BasicValueEnum> = function_value.get_params();
 
-    let mut ordered_configuration: Vec<&x86SystemVABIFunctionTypeArgumentConfiguration> =
+    let mut ordered_configuration: Vec<&SystemVABIFunctionTypeArgumentConfiguration> =
         configuration.parameter_types.iter().collect();
 
     let mut processed_args: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len());
@@ -1214,10 +1205,8 @@ pub fn lower_function_call<'llvm_abi>(
         let buffer_type: &Type = ordered_configuration
             .iter()
             .find_map(|config| match config {
-                x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
-                    ty,
-                    is_sret: true,
-                    ..
+                SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                    ty, is_sret: true, ..
                 } => Some(*ty),
                 _ => None,
             })
@@ -1232,7 +1221,7 @@ pub fn lower_function_call<'llvm_abi>(
             });
 
         let llvm_ty: BasicTypeEnum<'_> =
-            self::decompose_type(llvm_context, abi_context, buffer_type);
+            self::generate_type(llvm_context, abi_context, buffer_type);
 
         let ptr: PointerValue<'_> = llvm_builder.build_alloca(llvm_ty, "").unwrap_or_else(|_| {
             abort::abort_codegen(
@@ -1249,55 +1238,25 @@ pub fn lower_function_call<'llvm_abi>(
     }
 
     let _ = ordered_configuration.is_sorted_by_key(|config| match config {
-        x86SystemVABIFunctionTypeArgumentConfiguration::Same { index, .. } => *index,
-        x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory { index, .. } => *index,
-        x86SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
-        x86SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::Same { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::ToMemory { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
     });
 
     assert!(args.len() == ordered_configuration.len());
 
     for (arg_value, arg_config) in args.iter().zip(ordered_configuration.iter()) {
         match arg_config {
-            x86SystemVABIFunctionTypeArgumentConfiguration::Ignore { .. } => {
+            SystemVABIFunctionTypeArgumentConfiguration::Ignore { .. } => {
                 processed_args.push((*arg_value).into());
             }
 
-            x86SystemVABIFunctionTypeArgumentConfiguration::Same {
-                ty,
-                attribute,
-                index,
-                ..
-            } => {
-                if matches!(
-                    attribute,
-                    x86SystemVABIFunctionTypeArgumentConfigurationAttributes::InReg
-                ) {
-                    let Some(_) = callee_args_values.get(*index) else {
-                        abort::abort_codegen(
-                            abi_context,
-                            "Failed to get the function parameter value from the function declaration for ABI lowering!",
-                            ty.get_span(),
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        );
-                    };
-
-                    let inreg_id: u32 = Attribute::get_named_enum_kind_id("inreg");
-
-                    let inreg_id_attribute: Attribute =
-                        llvm_context.create_enum_attribute(inreg_id, 0);
-
-                    function_value.add_attribute(
-                        AttributeLoc::Param((*index).try_into().unwrap_or_default()),
-                        inreg_id_attribute,
-                    );
-                }
-
+            SystemVABIFunctionTypeArgumentConfiguration::Same { .. } => {
                 processed_args.push((*arg_value).into());
             }
 
-            x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+            SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
                 ty,
                 index,
                 attribute,
@@ -1320,7 +1279,7 @@ pub fn lower_function_call<'llvm_abi>(
 
                 if *is_sret {
                     match attribute {
-                        x86SystemVABIFunctionTypeArgumentConfigurationAttributes::Sret(ty) => {
+                        SystemVABIFunctionTypeArgumentConfigurationAttributes::Sret(ty) => {
                             let Some(_) = callee_args_values.get(*index) else {
                                 abort::abort_codegen(
                                     abi_context,
@@ -1332,7 +1291,7 @@ pub fn lower_function_call<'llvm_abi>(
                             };
 
                             let llvm_ty: BasicTypeEnum<'_> =
-                                self::decompose_type(llvm_context, abi_context, ty);
+                                self::generate_type(llvm_context, abi_context, ty);
 
                             let alignment: u32 = abi_context
                                 .get_target_data()
@@ -1397,10 +1356,7 @@ pub fn lower_function_call<'llvm_abi>(
                                         );
                                     });
 
-                                if matches!(
-                                    attribute,
-                                    x86SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal
-                                ) {
+                                if let  SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal(ty) = attribute {
                                     let Some(_) = callee_args_values.get(*index) else {
                                         abort::abort_codegen(
                                             abi_context,
@@ -1411,12 +1367,14 @@ pub fn lower_function_call<'llvm_abi>(
                                         );
                                     };
 
+                                    let llvm_ty: BasicTypeEnum<'_> = self::generate_type(llvm_context, abi_context, ty);
+
                                     let byval_id: u32 = Attribute::get_named_enum_kind_id("byval");
 
                                     let byval_attribute: Attribute = llvm_context
                                         .create_type_attribute(
                                             byval_id,
-                                            arg_value.get_type().as_any_type_enum(),
+                                            llvm_ty.as_any_type_enum(),
                                         );
 
                                     function_value.add_attribute(
@@ -1478,10 +1436,9 @@ pub fn lower_function_call<'llvm_abi>(
                                 );
                             });
 
-                        if matches!(
-                            attribute,
-                            x86SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal
-                        ) {
+                        if let SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal(ty) =
+                            attribute
+                        {
                             let Some(_) = callee_args_values.get(*index) else {
                                 abort::abort_codegen(
                                     abi_context,
@@ -1492,12 +1449,13 @@ pub fn lower_function_call<'llvm_abi>(
                                 );
                             };
 
+                            let llvm_ty: BasicTypeEnum<'_> =
+                                self::generate_type(llvm_context, abi_context, ty);
+
                             let byval_id: u32 = Attribute::get_named_enum_kind_id("byval");
 
-                            let byval_attribute: Attribute = llvm_context.create_type_attribute(
-                                byval_id,
-                                arg_value.get_type().as_any_type_enum(),
-                            );
+                            let byval_attribute: Attribute = llvm_context
+                                .create_type_attribute(byval_id, llvm_ty.as_any_type_enum());
 
                             function_value.add_attribute(
                                 AttributeLoc::Param((*index).try_into().unwrap_or_default()),
@@ -1517,7 +1475,7 @@ pub fn lower_function_call<'llvm_abi>(
                 processed_args.push((arg_value).into());
             }
 
-            x86SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
+            SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
                 old_type,
                 array_decomposed_types,
                 variant,
@@ -1633,7 +1591,7 @@ pub fn lower_function_call<'llvm_abi>(
                         });
 
                         let first_element_decomposed_llvm_ty: BasicTypeEnum<'_> =
-                            self::decompose_type(
+                            self::generate_type(
                                 llvm_context,
                                 abi_context,
                                 first_element_decomposed_ty,
@@ -1673,14 +1631,14 @@ pub fn lower_function_call<'llvm_abi>(
                         });
 
                         let first_element_decomposed_llvm_ty: BasicTypeEnum<'_> =
-                            self::decompose_type(
+                            self::generate_type(
                                 llvm_context,
                                 abi_context,
                                 first_element_decomposed_ty,
                             );
 
                         let second_element_decomposed_llvm_ty: BasicTypeEnum<'_> =
-                            self::decompose_type(
+                            self::generate_type(
                                 llvm_context,
                                 abi_context,
                                 second_element_decomposed_ty,
@@ -1739,66 +1697,328 @@ pub fn lower_function_call<'llvm_abi>(
     processed_args
 }
 
-pub fn lower_call_return<'llvm_abi>(
+pub fn lower_call_epilogue<'llvm_abi>(
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     llvm_context: &'llvm_abi Context,
-    abi_context: &mut X86SystemVABIContext,
+    abi_context: &mut SystemVABIContext,
     callsite: CallSiteValue<'llvm_abi>,
     lowered_args: &[BasicMetadataValueEnum<'llvm_abi>],
-    configuration: &x86SystemVABIFunctionTypeConfiguration,
+    configuration: &SystemVABIFunctionTypeConfiguration,
     span: Span,
 ) -> BasicValueEnum<'llvm_abi> {
-    let called_function: FunctionValue<'_> = callsite.get_called_fn_value();
-    let is_void_type: bool = called_function.get_type().get_return_type().is_none();
+    let function_value: FunctionValue<'_> = callsite.get_called_fn_value();
+    let is_void_type: bool = function_value.get_type().get_return_type().is_none();
 
     if configuration.is_memory_return() && is_void_type {
-        todo!()
+        let memory_ptr_arg: BasicMetadataValueEnum<'_> =
+            *lowered_args.first().unwrap_or_else(|| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to lower the call epilogue!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
 
-        /*
-            let first_arg: &BasicMetadataValueEnum<'_> = lowered_args.first().unwrap();
-            let ptr: PointerValue<'_> = first_arg.into_pointer_value();
-            let ty: &&Type = configuration
-                .parameter_types
-                .iter()
-                .find_map(|config| match config {
-                    x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
-                        ty,
-                        is_sret: true,
-                        ..
-                    } => Some(ty),
-                    _ => None,
-                })
-                .unwrap();
+        if !memory_ptr_arg.is_pointer_value() {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to lower the call epilogue!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        }
 
-            let llvm_ptr_ty: BasicTypeEnum<'_> = self::decompose_type(llvm_context, abi_context, ty);
+        let ptr: PointerValue<'_> = memory_ptr_arg.into_pointer_value();
 
-            let value: BasicValueEnum<'_> = llvm_builder.build_load(llvm_ptr_ty, ptr, "").unwrap();
+        let ty: &&Type = configuration
+            .parameter_types
+            .iter()
+            .find_map(|config| match config {
+                SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                    ty, is_sret: true, ..
+                } => Some(ty),
+                _ => None,
+            })
+            .unwrap_or_else(|| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to compile lower a function call!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
 
-            return value;
-        */
+        let type_layout: either::Either<
+            thrustc_typesystem::type_layout::TypeLayout,
+            thrustc_typesystem::type_layout::StructTypeLayout,
+        > = abi_context.get_mut_target_info().get_type_layout(r#ty);
+
+        let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
+            either::Either::Left(ty) => ty.into_layout(),
+            either::Either::Right(ty) => ty.into_layout(),
+        };
+
+        let llvm_ty: BasicTypeEnum<'_> = self::generate_type(llvm_context, abi_context, ty);
+
+        let value: BasicValueEnum<'_> =
+            llvm_builder
+                .build_load(llvm_ty, ptr, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to compile lower a function call!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+
+        let alignment: u32 = layout.alignof;
+
+        let load_instruction: InstructionValue<'_> =
+            value.as_instruction_value().unwrap_or_else(|| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to compile lower a function call!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        load_instruction
+            .set_alignment(alignment)
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to set alignment to an instruction!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        value
+    } else {
+        callsite.try_as_basic_value().left().unwrap_or_else(|| {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to compile lower a function call!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        })
     }
-
-    callsite.try_as_basic_value().left().unwrap_or_else(|| {
-        abort::abort_codegen(
-            abi_context,
-            "Failed to compile lower a function call!",
-            span,
-            std::path::PathBuf::from(file!()),
-            line!(),
-        )
-    })
 }
 
-pub fn lower_return<'llvm_abi>(
+pub fn lower_terminator<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
-    abi_context: &mut X86SystemVABIContext,
-    configuration: &x86SystemVABIFunctionTypeConfiguration,
+    abi_context: &mut SystemVABIContext,
+    configuration: &SystemVABIFunctionTypeConfiguration,
+    function_value: FunctionValue<'llvm_abi>,
     return_value: Option<BasicValueEnum<'llvm_abi>>,
     span: Span,
 ) -> bool {
     if configuration.is_memory_return() {
-        if let Some(return_value) = return_value {}
+        if let Some(return_value) = return_value {
+            let is_ptr_value: bool = return_value.is_pointer_value();
+            let is_any_other_value: bool = !is_ptr_value;
+
+            if is_ptr_value {
+                let memory_ptr_arg: BasicValueEnum<'_> =
+                    function_value.get_first_param().unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to get the memory pointer return value!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                if !memory_ptr_arg.is_pointer_value() {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to lower the return instruction!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                }
+
+                let ptr: PointerValue<'_> = return_value.into_pointer_value();
+
+                let ty: &&Type = configuration
+                    .parameter_types
+                    .iter()
+                    .find_map(|config| match config {
+                        SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                            ty,
+                            is_sret: true,
+                            ..
+                        } => Some(ty),
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to compile lower a function call!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let type_layout: either::Either<
+                    thrustc_typesystem::type_layout::TypeLayout,
+                    thrustc_typesystem::type_layout::StructTypeLayout,
+                > = abi_context.get_mut_target_info().get_type_layout(r#ty);
+
+                let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
+                    either::Either::Left(ty) => ty.into_layout(),
+                    either::Either::Right(ty) => ty.into_layout(),
+                };
+
+                let llvm_ty: BasicTypeEnum<'_> = self::generate_type(llvm_context, abi_context, ty);
+
+                let value: BasicValueEnum<'_> = llvm_builder
+                    .build_load(llvm_ty, ptr, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to compile lower a function call!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let alignment: u32 = layout.alignof;
+
+                let load_instruction: InstructionValue<'_> =
+                    value.as_instruction_value().unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to compile lower a function call!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                load_instruction
+                    .set_alignment(alignment)
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to set alignment to an instruction!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let store_instruction: InstructionValue<'_> = llvm_builder
+                    .build_store(memory_ptr_arg.into_pointer_value(), value)
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to set alignment to an instruction!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                store_instruction
+                    .set_alignment(alignment)
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to set alignment to an instruction!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+            }
+
+            if is_any_other_value {
+                let memory_ptr_arg: BasicValueEnum<'_> =
+                    function_value.get_first_param().unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to get the memory pointer return value!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let ty: &&Type = configuration
+                    .parameter_types
+                    .iter()
+                    .find_map(|config| match config {
+                        SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                            ty,
+                            is_sret: true,
+                            ..
+                        } => Some(ty),
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to compile lower a function call!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let type_layout: either::Either<
+                    thrustc_typesystem::type_layout::TypeLayout,
+                    thrustc_typesystem::type_layout::StructTypeLayout,
+                > = abi_context.get_mut_target_info().get_type_layout(r#ty);
+
+                let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
+                    either::Either::Left(ty) => ty.into_layout(),
+                    either::Either::Right(ty) => ty.into_layout(),
+                };
+
+                let alignment: u32 = layout.alignof;
+
+                let store_instruction: InstructionValue<'_> = llvm_builder
+                    .build_store(memory_ptr_arg.into_pointer_value(), return_value)
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to set alignment to an instruction!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                store_instruction
+                    .set_alignment(alignment)
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to set alignment to an instruction!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+            }
+        }
 
         if llvm_builder.build_return(None).is_err() {
             abort::abort_codegen(
@@ -1818,55 +2038,50 @@ pub fn lower_return<'llvm_abi>(
 
 pub fn decompose_function_type<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
-    abi_context: &mut X86SystemVABIContext,
+    abi_context: &mut SystemVABIContext,
     return_type: &'llvm_abi Type,
     parameters: &'llvm_abi [Ast<'llvm_abi>],
     is_variatic: bool,
 ) -> (
     FunctionType<'llvm_abi>,
-    x86SystemVABIFunctionTypeConfiguration<'llvm_abi>,
+    SystemVABIFunctionTypeConfiguration<'llvm_abi>,
 ) {
     let mut llvm_parameters_types: Vec<BasicMetadataTypeEnum<'llvm_abi>> =
         Vec::with_capacity(parameters.len());
 
-    let mut configuration: x86SystemVABIFunctionTypeConfiguration =
-        x86SystemVABIFunctionTypeConfiguration::new(is_variatic, false);
+    let mut configuration: SystemVABIFunctionTypeConfiguration =
+        SystemVABIFunctionTypeConfiguration::new(is_variatic, false);
 
-    let return_ty_classes: [X86SystemVABITypeClass; 8] =
-        X86SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
+    let return_ty_classes: [SystemVABITypeClass; 8] =
+        SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
 
     let mut is_memory_return: bool = false;
     let mut idx: usize = 0;
 
-    let abi_return_ty: x86SystemVABIType = x86SystemVABIType::class_to_general_abi_strategy(
-        abi_context,
-        &return_ty_classes,
-        return_type,
-    );
+    let abi_return_ty: SystemVABIType =
+        SystemVABIType::class_to_general_abi_strategy(abi_context, &return_ty_classes, return_type);
 
     if abi_return_ty.is_to_memory() {
         is_memory_return = true;
         configuration.set_memory_return(true);
     }
 
-    let configuration_parameter_types: &mut Vec<x86SystemVABIFunctionTypeArgumentConfiguration> =
+    let configuration_parameter_types: &mut Vec<SystemVABIFunctionTypeArgumentConfiguration> =
         configuration.get_mut_configuration_parameter_types();
 
     if is_memory_return {
         llvm_parameters_types.insert(0, llvm_context.ptr_type(AddressSpace::default()).into());
 
-        configuration_parameter_types.push(
-            x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
-                name: "",
-                ascii_name: "",
-                ty: return_type,
-                index: idx,
-                attribute: x86SystemVABIFunctionTypeArgumentConfigurationAttributes::Sret(
-                    return_type.clone(),
-                ),
-                is_sret: true,
-            },
-        );
+        configuration_parameter_types.push(SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+            name: "",
+            ascii_name: "",
+            ty: return_type,
+            index: idx,
+            attribute: SystemVABIFunctionTypeArgumentConfigurationAttributes::Sret(
+                return_type.clone(),
+            ),
+            is_sret: true,
+        });
 
         idx = idx.saturating_add(1);
     }
@@ -1879,19 +2094,19 @@ pub fn decompose_function_type<'llvm_abi>(
                 kind: ty,
                 ..
             } => {
-                let ty_claseses: [X86SystemVABITypeClass; 8] =
-                    X86SystemVABITypeClass::get_system_v_type_class(abi_context, ty);
+                let ty_classes: [SystemVABITypeClass; 8] =
+                    SystemVABITypeClass::get_system_v_type_class(abi_context, ty);
 
-                let abi_ty: x86SystemVABIType =
-                    x86SystemVABIType::class_to_general_abi_strategy(abi_context, &ty_claseses, ty);
+                let abi_ty: SystemVABIType =
+                    SystemVABIType::class_to_general_abi_strategy(abi_context, &ty_classes, ty);
 
                 match abi_ty {
-                    x86SystemVABIType::Ignore => {
+                    SystemVABIType::Ignore => {
                         let llvm_ty: BasicTypeEnum<'_> =
-                            self::decompose_type(llvm_context, abi_context, ty);
+                            self::generate_type(llvm_context, abi_context, ty);
 
                         configuration_parameter_types.push(
-                            x86SystemVABIFunctionTypeArgumentConfiguration::Ignore {
+                            SystemVABIFunctionTypeArgumentConfiguration::Ignore {
                                 name,
                                 ascii_name,
                                 ty,
@@ -1902,33 +2117,35 @@ pub fn decompose_function_type<'llvm_abi>(
                         llvm_parameters_types.push(llvm_ty.into());
                     }
 
-                    x86SystemVABIType::Same(ty) => {
+                    SystemVABIType::Same(ty) => {
                         let llvm_ty: BasicTypeEnum<'_> =
-                            self::decompose_type(llvm_context, abi_context, ty);
+                            self::generate_type(llvm_context, abi_context, ty);
 
                         configuration_parameter_types.push(
-                            x86SystemVABIFunctionTypeArgumentConfiguration::Same {
+                            SystemVABIFunctionTypeArgumentConfiguration::Same {
                                 name,
                                 ascii_name,
                                 ty,
                                 index: idx,
-                                attribute:
-                                    x86SystemVABIFunctionTypeArgumentConfigurationAttributes::InReg,
                             },
                         );
 
                         llvm_parameters_types.push(llvm_ty.into());
                     }
 
-                    x86SystemVABIType::ToMemory(_) => {
+                    SystemVABIType::ToMemory(ty) => {
+                        let byval_ty: Type = ty.dereference();
+
                         configuration_parameter_types.push(
-                            x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                            SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
                                 name,
                                 ascii_name,
                                 ty,
                                 index: idx,
                                 attribute:
-                                    x86SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal,
+                                    SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal(
+                                        byval_ty,
+                                    ),
                                 is_sret: false,
                             },
                         );
@@ -1937,7 +2154,7 @@ pub fn decompose_function_type<'llvm_abi>(
                             .push(llvm_context.ptr_type(AddressSpace::default()).into());
                     }
 
-                    x86SystemVABIType::DecomposeAndExpand(field_types, ref variant) => {
+                    SystemVABIType::DecomposeAndExpand(field_types, ref variant) => {
                         if variant.is_decompose_and_expand_structure() {
                             let mut decomposed_types: Vec<BasicMetadataTypeEnum> = Vec::new();
                             let mut struct_field_indexes: Vec<usize> = Vec::new();
@@ -1948,14 +2165,14 @@ pub fn decompose_function_type<'llvm_abi>(
                             let mut finish_decompose_process: bool = false;
 
                             for (field_idx, field_type) in field_types.iter().enumerate() {
-                                let ty_claseses: [X86SystemVABITypeClass; 8] =
-                                    X86SystemVABITypeClass::get_system_v_type_class(
+                                let ty_claseses: [SystemVABITypeClass; 8] =
+                                    SystemVABITypeClass::get_system_v_type_class(
                                         abi_context,
                                         field_type,
                                     );
 
-                                let abi_ty: x86SystemVABIType =
-                                    x86SystemVABIType::class_to_general_abi_strategy(
+                                let abi_ty: SystemVABIType =
+                                    SystemVABIType::class_to_general_abi_strategy(
                                         abi_context,
                                         &ty_claseses,
                                         field_type,
@@ -1963,13 +2180,13 @@ pub fn decompose_function_type<'llvm_abi>(
 
                                 if abi_ty.is_decompose_and_expand() || abi_ty.is_to_memory() {
                                     configuration_parameter_types
-                                            .push(x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                                            .push(SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
                                             name,
                                             ascii_name,
                                             ty,
                                             index: idx,
                                             attribute:
-                                                x86SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal,
+                                                SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal(ty.clone()),
                                             is_sret: false,
                                         });
 
@@ -1981,7 +2198,7 @@ pub fn decompose_function_type<'llvm_abi>(
                                     break;
                                 } else {
                                     let llvm_ty: BasicTypeEnum<'_> =
-                                        self::decompose_type(llvm_context, abi_context, field_type);
+                                        self::generate_type(llvm_context, abi_context, field_type);
 
                                     struct_field_indexes.push(field_idx);
                                     decomposed_types.push(llvm_ty.into());
@@ -2000,7 +2217,7 @@ pub fn decompose_function_type<'llvm_abi>(
                             }
 
                             configuration_parameter_types.push(
-                                x86SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
+                                SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
                                     name,
                                     ascii_name,
                                     old_type: ty,
@@ -2023,7 +2240,7 @@ pub fn decompose_function_type<'llvm_abi>(
 
                             for field_type in field_types.iter() {
                                 let llvm_ty: BasicTypeEnum<'_> =
-                                    self::decompose_type(llvm_context, abi_context, field_type);
+                                    self::generate_type(llvm_context, abi_context, field_type);
 
                                 decomposed_types.push(llvm_ty.into());
                             }
@@ -2036,7 +2253,7 @@ pub fn decompose_function_type<'llvm_abi>(
                             }
 
                             configuration_parameter_types.push(
-                                x86SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
+                                SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
                                     name,
                                     ascii_name,
                                     old_type: ty,
@@ -2057,7 +2274,6 @@ pub fn decompose_function_type<'llvm_abi>(
             }
 
             Ast::AssemblerFunctionParameter { .. } => (),
-
             Ast::IntrinsicParameter { .. } => (),
 
             _ => (),
@@ -2073,9 +2289,9 @@ pub fn decompose_function_type<'llvm_abi>(
         )
     } else {
         match abi_return_ty {
-            x86SystemVABIType::Ignore => {
+            SystemVABIType::Ignore => {
                 let llvm_return_ty: BasicTypeEnum<'_> =
-                    self::decompose_type(llvm_context, abi_context, return_type);
+                    self::generate_type(llvm_context, abi_context, return_type);
 
                 (
                     llvm_return_ty.fn_type(&llvm_parameters_types, is_variatic),
@@ -2083,9 +2299,9 @@ pub fn decompose_function_type<'llvm_abi>(
                 )
             }
 
-            x86SystemVABIType::Same(ty) => {
+            SystemVABIType::Same(ty) => {
                 let llvm_return_ty: BasicTypeEnum<'_> =
-                    self::decompose_type(llvm_context, abi_context, ty);
+                    self::generate_type(llvm_context, abi_context, ty);
 
                 (
                     llvm_return_ty.fn_type(&llvm_parameters_types, is_variatic),
@@ -2093,7 +2309,7 @@ pub fn decompose_function_type<'llvm_abi>(
                 )
             }
 
-            x86SystemVABIType::ToMemory(..) => {
+            SystemVABIType::ToMemory(..) => {
                 if is_memory_return {
                     (
                         llvm_context
@@ -2103,7 +2319,7 @@ pub fn decompose_function_type<'llvm_abi>(
                     )
                 } else {
                     let llvm_return_ty: BasicTypeEnum<'_> =
-                        self::decompose_type(llvm_context, abi_context, return_type);
+                        self::generate_type(llvm_context, abi_context, return_type);
 
                     (
                         llvm_return_ty.fn_type(&llvm_parameters_types, is_variatic),
@@ -2112,9 +2328,9 @@ pub fn decompose_function_type<'llvm_abi>(
                 }
             }
 
-            x86SystemVABIType::DecomposeAndExpand(..) => {
+            SystemVABIType::DecomposeAndExpand(..) => {
                 let llvm_return_ty: BasicTypeEnum<'_> =
-                    self::decompose_type(llvm_context, abi_context, return_type);
+                    self::generate_type(llvm_context, abi_context, return_type);
 
                 (
                     llvm_return_ty.fn_type(&llvm_parameters_types, is_variatic),
@@ -2125,9 +2341,117 @@ pub fn decompose_function_type<'llvm_abi>(
     }
 }
 
-pub fn decompose_type<'llvm_abi>(
+pub fn lower_function_parameter_conventions<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
-    abi_context: &mut X86SystemVABIContext,
+    abi_context: &mut SystemVABIContext,
+    function_value: FunctionValue<'llvm_abi>,
+    configuration: &SystemVABIFunctionTypeConfiguration,
+) {
+    let function_parameters: Vec<BasicValueEnum<'_>> = function_value.get_params();
+
+    let ordered_configurations: Vec<&SystemVABIFunctionTypeArgumentConfiguration> =
+        configuration.parameter_types.iter().collect();
+
+    let _ = ordered_configurations.is_sorted_by_key(|config| match config {
+        SystemVABIFunctionTypeArgumentConfiguration::Same { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::ToMemory { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
+    });
+
+    for parameter_configuration in ordered_configurations.iter() {
+        match parameter_configuration {
+            SystemVABIFunctionTypeArgumentConfiguration::Ignore { .. } => {}
+            SystemVABIFunctionTypeArgumentConfiguration::Same { .. } => {}
+
+            SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                ty,
+                index,
+                attribute,
+                ..
+            } => {
+                let type_layout: either::Either<
+                    thrustc_typesystem::type_layout::TypeLayout,
+                    thrustc_typesystem::type_layout::StructTypeLayout,
+                > = abi_context.get_mut_target_info().get_type_layout(r#ty);
+
+                let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
+                    either::Either::Left(ty) => ty.into_layout(),
+                    either::Either::Right(ty) => ty.into_layout(),
+                };
+
+                let alignment: u32 = layout.alignof;
+
+                if let SystemVABIFunctionTypeArgumentConfigurationAttributes::Sret(ty) = attribute {
+                    let Some(_) = function_parameters.get(*index) else {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to get the function parameter value from the function declaration for ABI lowering!",
+                            ty.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    };
+
+                    let llvm_ty: BasicTypeEnum<'_> =
+                        self::generate_type(llvm_context, abi_context, ty);
+
+                    let alignment: u32 = abi_context
+                        .get_target_data()
+                        .get_preferred_alignment(&llvm_ty);
+
+                    let sret_id: u32 = Attribute::get_named_enum_kind_id("sret");
+
+                    let sret_attribute: Attribute =
+                        llvm_context.create_type_attribute(sret_id, llvm_ty.as_any_type_enum());
+
+                    function_value.add_attribute(
+                        AttributeLoc::Param((*index).try_into().unwrap_or_default()),
+                        sret_attribute,
+                    );
+
+                    function_value
+                        .set_param_alignment((*index).try_into().unwrap_or_default(), alignment);
+                }
+
+                if let SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal(ty) = attribute
+                {
+                    let Some(_) = function_parameters.get(*index) else {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to get the function parameter value from the function declaration for ABI lowering!",
+                            ty.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    };
+
+                    let llvm_ty: BasicTypeEnum<'_> =
+                        self::generate_type(llvm_context, abi_context, ty);
+
+                    let byval_id: u32 = Attribute::get_named_enum_kind_id("byval");
+
+                    let byval_attribute: Attribute =
+                        llvm_context.create_type_attribute(byval_id, llvm_ty.as_any_type_enum());
+
+                    function_value.add_attribute(
+                        AttributeLoc::Param((*index).try_into().unwrap_or_default()),
+                        byval_attribute,
+                    );
+
+                    function_value
+                        .set_param_alignment((*index).try_into().unwrap_or_default(), alignment);
+                }
+            }
+
+            _ => (),
+        }
+    }
+}
+
+pub fn generate_type<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    abi_context: &mut SystemVABIContext,
     ty: &Type,
 ) -> BasicTypeEnum<'llvm_abi> {
     match ty {
@@ -2142,7 +2466,7 @@ pub fn decompose_type<'llvm_abi>(
                 .into(),
 
             Type::Bool { .. } => llvm_context.bool_type().into(),
-            Type::Const(subtype, ..) => self::decompose_type(llvm_context, abi_context, subtype),
+            Type::Const(subtype, ..) => self::generate_type(llvm_context, abi_context, subtype),
 
             any => abort::abort_codegen(
                 abi_context,
@@ -2160,7 +2484,7 @@ pub fn decompose_type<'llvm_abi>(
             Type::FX8680 { .. } => llvm_context.x86_f80_type().into(),
             Type::FPPC128 { .. } => llvm_context.ppc_f128_type().into(),
 
-            Type::Const(subtype, ..) => self::decompose_type(llvm_context, abi_context, subtype),
+            Type::Const(subtype, ..) => self::generate_type(llvm_context, abi_context, subtype),
 
             any => abort::abort_codegen(
                 abi_context,
@@ -2174,7 +2498,7 @@ pub fn decompose_type<'llvm_abi>(
         Type::Array {
             infered_type: Some((infered_type, ..)),
             ..
-        } => self::decompose_type(llvm_context, abi_context, infered_type),
+        } => self::generate_type(llvm_context, abi_context, infered_type),
 
         t if t.is_ptr_type() => {
             if let Type::Ptr {
@@ -2192,7 +2516,7 @@ pub fn decompose_type<'llvm_abi>(
 
         t if t.is_ptr_like_type() => llvm_context.ptr_type(AddressSpace::default()).into(),
 
-        Type::Const(subtype, ..) => self::decompose_type(llvm_context, abi_context, subtype),
+        Type::Const(subtype, ..) => self::generate_type(llvm_context, abi_context, subtype),
 
         Type::Struct {
             fields, modifier, ..
@@ -2203,7 +2527,7 @@ pub fn decompose_type<'llvm_abi>(
 
             {
                 for ty in fields.iter() {
-                    field_types.push(self::decompose_type(llvm_context, abi_context, ty));
+                    field_types.push(self::generate_type(llvm_context, abi_context, ty));
                 }
             }
 
@@ -2214,7 +2538,7 @@ pub fn decompose_type<'llvm_abi>(
             base_type, size, ..
         } => {
             let array_type: BasicTypeEnum =
-                self::decompose_type(llvm_context, abi_context, base_type);
+                self::generate_type(llvm_context, abi_context, base_type);
             array_type.array_type(*size).into()
         }
 
@@ -2238,7 +2562,7 @@ pub fn constant_address_space_to_normal<'llvm_abi>(
 
 #[inline]
 pub fn address_space_to_normal<'llvm_abi>(
-    abi_context: &mut X86SystemVABIContext,
+    abi_context: &mut SystemVABIContext,
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     llvm_context: &'llvm_abi Context,
     ptr: PointerValue<'llvm_abi>,

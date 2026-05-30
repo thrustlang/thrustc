@@ -696,6 +696,9 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         });
 
                     let current_function: LLVMFunction = self.context.get_current_function(*span);
+                    let function_value: inkwell::values::FunctionValue<'_> =
+                        current_function.get_value();
+
                     let configuration: &thrustc_llvm_abi::LLVMABIConfiguration<'_> =
                         current_function.get_abi_configuration().unwrap_or_else(|| {
                             abort::abort_codegen(
@@ -707,16 +710,18 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             )
                         });
 
-                    let lowered: bool = thrustc_llvm_abi::lower_return(
+                    let lowered: bool = thrustc_llvm_abi::lower_abi_terminator(
                         llvm_context,
                         llvm_builder,
                         abi,
                         configuration,
+                        function_value,
                         return_value,
                         *span,
                     );
 
-                    if !lowered {
+                    if lowered {
+                    } else {
                         if return_value.is_none() {
                             if llvm_builder.build_return(None).is_err() {
                                 abort::abort_codegen(

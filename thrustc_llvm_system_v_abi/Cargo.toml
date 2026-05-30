@@ -1,5 +1,5 @@
 [package]
-name = "thrustc_llvm_x86_abi"
+name = "thrustc_llvm_system_v_abi"
 description.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -49,7 +49,7 @@ pub fn compile<'ctx>(
         llvm_function,
         function_arg_types,
         call_convention,
-        llvm_abi_type_config,
+        abi_configuration,
         attributes,
         is_variatic,
         span,
@@ -139,7 +139,7 @@ pub fn compile<'ctx>(
             });
 
         let configuration: &thrustc_llvm_abi::LLVMABIConfiguration =
-            llvm_abi_type_config.as_ref().unwrap_or_else(|| {
+            abi_configuration.as_ref().unwrap_or_else(|| {
                 abort::abort_codegen(
                     context,
                     "Failed to compile the function call, expected an ABI type configuration!",
@@ -149,24 +149,25 @@ pub fn compile<'ctx>(
                 )
             });
 
-        let lowered_args: Vec<BasicMetadataValueEnum<'_>> = thrustc_llvm_abi::lower_function_call(
-            llvm_context,
-            llvm_builder,
-            abi,
-            llvm_function,
-            configuration,
-            compiled_args,
-            span,
-        )
-        .unwrap_or_else(|| {
-            abort::abort_codegen(
-                context,
-                "Failed to compile to lower the call arguments to a specific ABI!",
+        let lowered_args: Vec<BasicMetadataValueEnum<'_>> =
+            thrustc_llvm_abi::lower_abi_call_prologue(
+                llvm_context,
+                llvm_builder,
+                abi,
+                llvm_function,
+                configuration,
+                compiled_args,
                 span,
-                std::path::PathBuf::from(file!()),
-                line!(),
             )
-        });
+            .unwrap_or_else(|| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile to lower the call arguments to a specific ABI!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
 
         let ret_value: BasicValueEnum =
             match llvm_builder.build_call(llvm_function, &lowered_args, "") {
@@ -177,7 +178,7 @@ pub fn compile<'ctx>(
                         call.set_call_convention(call_convention);
                     }
 
-                    thrustc_llvm_abi::lower_call_return(
+                    thrustc_llvm_abi::lower_abi_call_epilogue(
                         llvm_context,
                         llvm_builder,
                         abi,

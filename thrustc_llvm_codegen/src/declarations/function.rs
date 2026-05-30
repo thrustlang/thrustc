@@ -33,7 +33,7 @@ use thrustc_llvm_attributes::LLVMAttributeComparator;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_llvm_callconventions::LLVMCallConvention;
-use thrustc_llvm_x86_abi::x86SystemVABIFunctionParameterConfiguration;
+use thrustc_llvm_system_v_abi::SystemVABIFunctionParameterConfiguration;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
@@ -58,6 +58,9 @@ use inkwell::values::FunctionValue;
 
 pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: Function<'ctx>) {
     let llvm_module: &Module = context.get_llvm_module();
+    let llvm_context: &Context = context.get_llvm_context();
+
+    let has_abi: bool = context.has_abi();
 
     let name: &str = function.0;
     let ascii_name: &str = function.1;
@@ -100,11 +103,50 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
     ) = typegeneration::compile_as_function_type(context, return_type, parameters, ignore_args, CompilerFunctionVariant::PureFunction);
 
     let function_type: FunctionType<'_> = generated_function_type.0;
-    let function_abi_config: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
+    let function_abi_configuration: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
         generated_function_type.1;
 
     let llvm_function: FunctionValue =
         llvm_module.add_function(&canonical_name, function_type, None);
+
+    let has_abi_configuration: bool = function_abi_configuration.is_some();
+
+    if has_abi {
+        let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> = context.get_abi().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to compile as a function, expected an ABI!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+        if has_abi_configuration {
+            let configuration: &thrustc_llvm_abi::LLVMABIConfiguration<'_> = function_abi_configuration.as_ref().unwrap_or_else(|| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile the function call, expected an ABI type configuration!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+    
+            let lowered: bool = thrustc_llvm_abi::lower_parameter_conventions(llvm_context, abi, llvm_function, configuration);
+    
+            if !lowered {
+                abort::abort_codegen(
+                    context,
+                    "Failed to lower the function parameters to a complaint ABI status!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            }
+        }
+
+    }
 
     AttributeBuilder::add_function_attributes(context, &attributes, LLVMAttributeApplicant::Function(llvm_function));
 
@@ -113,7 +155,7 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
         return_type,
         parameters_types,
         call_convention,
-        function_abi_config,
+        function_abi_configuration,
         attributes,
         ignore_args,
         span,
@@ -171,30 +213,7 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
 
     if let Some(function_body) = function_body {
         {
-            if !has_abi {
-                for parameter in function_parameters
-                    .iter()
-                    .map(|node| thrustc_entities::function_parameter_from_ast(node))
-                {
-                    let name: &str = parameter.0;
-                    let ascii_name: &str = parameter.1;
-
-                    let kind: &Type = parameter.2;
-                    let position: u32 = parameter.3;
-
-                    let span: Span = parameter.4;
-
-                    if let Some(parameter_value) = function_value.get_nth_param(position) {
-                        codegen.get_mut_context().new_parameter(
-                            name,
-                            ascii_name,
-                            kind,
-                            parameter_value,
-                            span,
-                        );
-                    }
-                }
-            } else {
+            if has_abi {                
                 let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
                     codegen.get_context().get_abi().unwrap_or_else(|| {
                         abort::abort_codegen(
@@ -219,7 +238,7 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                     });
 
                 let lowered_parameters: Vec<thrustc_llvm_abi::LLVMABIFunctionLoweredParameter> =
-                    thrustc_llvm_abi::lower_function_parameters(
+                    thrustc_llvm_abi::lower_abi_function_parameters(
                         llvm_builder,
                         llvm_context,
                         abi,
@@ -245,11 +264,11 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                         let configuration: &thrustc_llvm_abi::LLVMABIConfiguration =
                             lowered_parameter.get_abi_configuration();
 
-                        if let thrustc_llvm_abi::LLVMABIConfiguration::x86SystemVFunctionParameterConfiguration(
+                        if let thrustc_llvm_abi::LLVMABIConfiguration::SystemVFunctionParameterConfiguration(
                                 configuration,
                             ) = configuration {
                             match configuration {
-                                x86SystemVABIFunctionParameterConfiguration::Normal => {
+                                SystemVABIFunctionParameterConfiguration::Normal => {
                                     codegen.get_mut_context().new_parameter(
                                         name,
                                         ascii_name,
@@ -259,7 +278,7 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                                     );
                                 }
 
-                                x86SystemVABIFunctionParameterConfiguration::FromMemory => {
+                                SystemVABIFunctionParameterConfiguration::FromMemory => {
                                     codegen.get_mut_context().new_allocated_parameter(
                                         name,
                                         ty,
@@ -282,6 +301,30 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
 
                     }
                 }
+            } else {
+                for parameter in function_parameters
+                    .iter()
+                    .map(|node| thrustc_entities::function_parameter_from_ast(node))
+                {
+                    let name: &str = parameter.0;
+                    let ascii_name: &str = parameter.1;
+
+                    let kind: &Type = parameter.2;
+                    let position: u32 = parameter.3;
+
+                    let span: Span = parameter.4;
+
+                    if let Some(parameter_value) = function_value.get_nth_param(position) {
+                        codegen.get_mut_context().new_parameter(
+                            name,
+                            ascii_name,
+                            kind,
+                            parameter_value,
+                            span,
+                        );
+                    }
+                }
+              
             }
         }
 
@@ -303,11 +346,18 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
 
         {
             codegen.codegen_block(function_body);
-
             codegen.get_mut_context().finish_function_debug_data();
 
             if function_type.is_void_type() && !function_body.has_terminator() {
-                let _ = llvm_builder.build_return(None);
+                llvm_builder.build_return(None).unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        codegen.get_mut_context(),
+                        "Failed to compile a empty function terminator!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
             }
         }
     }
