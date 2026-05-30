@@ -43,6 +43,7 @@ use crate::memory::SymbolAllocated;
 use crate::metadata::LLVMMetadata;
 use crate::statements::{conditional, forloop, infloop, whileloop};
 use crate::traits::{AstLLVMGetType, LLVMFunctionExtensions};
+use crate::types::LLVMFunction;
 use crate::{
     abort, block, builtins, cast, codegen, expressions, memory, stack, r#static, typegeneration,
 };
@@ -657,6 +658,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             } => {
                 let compiler_options: &CompilerOptions = self.get_context().get_compiler_options();
                 let llvm_backend: &LLVMBackend = compiler_options.get_llvm_backend();
+                let has_abi: bool = self.get_context().has_abi();
 
                 if llvm_backend.needs_stack_protector() {
                     function::emit_stack_protector_epilogue(self.context, *span);
@@ -665,36 +667,103 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 self.get_mut_context().mark_dbg_location(*span);
 
                 let llvm_builder: &Builder = self.context.get_llvm_builder();
+                let llvm_context: &Context = self.context.get_llvm_context();
 
-                if expression.is_none() {
-                    if llvm_builder.build_return(None).is_err() {
-                        abort::abort_codegen(
-                            self.context,
-                            "Failed to compile a function terminator!",
-                            *span,
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        );
-                    }
-                }
-
-                if let Some(expr) = expression {
+                let return_value: Option<BasicValueEnum<'_>> = if let Some(expr) = expression {
                     let cast_type: &Type = self
                         .get_mut_context()
                         .get_current_function(*span)
                         .get_return_type();
 
-                    let return_value: &BasicValueEnum<'_> =
-                        &self::compile_as_value(self.context, expr, Some(cast_type));
+                    let return_value: BasicValueEnum<'_> =
+                        self::compile_as_value(self.context, expr, Some(cast_type));
 
-                    if llvm_builder.build_return(Some(return_value)).is_err() {
-                        abort::abort_codegen(
-                            self.context,
-                            "Failed to compile a function terminator!",
-                            *span,
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        );
+                    Some(return_value)
+                } else {
+                    None
+                };
+
+                if has_abi {
+                    let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
+                        self.context.get_abi().unwrap_or_else(|| {
+                            abort::abort_codegen(
+                                self.context,
+                                "Failed to compile as a return, expected an ABI!",
+                                *span,
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                    let current_function: LLVMFunction = self.context.get_current_function(*span);
+                    let configuration: &thrustc_llvm_abi::LLVMABIConfiguration<'_> =
+                        current_function.get_abi_configuration().unwrap_or_else(|| {
+                            abort::abort_codegen(
+                                self.context,
+                                "Failed to compile as a return, expected a function with ABI configuration!",
+                                *span,
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                    let lowered: bool = thrustc_llvm_abi::lower_return(
+                        llvm_context,
+                        llvm_builder,
+                        abi,
+                        configuration,
+                        return_value,
+                        *span,
+                    );
+
+                    if !lowered {
+                        if return_value.is_none() {
+                            if llvm_builder.build_return(None).is_err() {
+                                abort::abort_codegen(
+                                    self.context,
+                                    "Failed to compile a function terminator!",
+                                    *span,
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                );
+                            }
+                        }
+
+                        if let Some(return_value) = return_value {
+                            if llvm_builder.build_return(Some(&return_value)).is_err() {
+                                abort::abort_codegen(
+                                    self.context,
+                                    "Failed to compile a function terminator!",
+                                    *span,
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                );
+                            }
+                        }
+                    }
+                } else {
+                    if return_value.is_none() {
+                        if llvm_builder.build_return(None).is_err() {
+                            abort::abort_codegen(
+                                self.context,
+                                "Failed to compile a function terminator!",
+                                *span,
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            );
+                        }
+                    }
+
+                    if let Some(return_value) = return_value {
+                        if llvm_builder.build_return(Some(&return_value)).is_err() {
+                            abort::abort_codegen(
+                                self.context,
+                                "Failed to compile a function terminator!",
+                                *span,
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            );
+                        }
                     }
                 }
             }
@@ -842,8 +911,10 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
+            let ty: &Type = cast_type.unwrap_or(kind);
+
             let float_value: BasicValueEnum =
-                expressions::floatingpoint::compile(context, kind, *value, *signed, *span).into();
+                expressions::floatingpoint::compile(context, ty, *value, *signed, *span).into();
 
             cast::try_smart_cast(context, cast_type, kind, float_value, *span)
         }
@@ -855,8 +926,10 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
+            let ty: &Type = cast_type.unwrap_or(kind);
+
             let int_value: BasicValueEnum =
-                expressions::integer::compile(context, kind, *value, *signed, *span).into();
+                expressions::integer::compile(context, ty, *value, *signed, *span).into();
 
             cast::try_smart_cast(context, cast_type, kind, int_value, *span)
         }

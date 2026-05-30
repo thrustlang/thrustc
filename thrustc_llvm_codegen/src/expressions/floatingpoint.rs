@@ -26,14 +26,14 @@ use crate::{abort, context::LLVMCodeGenContext};
 
 pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
-    kind: &Type,
+    ty: &Type,
     value: f64,
     signed: bool,
     span: Span,
 ) -> FloatValue<'ctx> {
     let llvm_context: &Context = context.get_llvm_context();
 
-    match kind {
+    match ty {
         Type::F32 { .. } if signed => llvm_context.f32_type().const_float(-value),
         Type::F32 { .. } => llvm_context.f32_type().const_float(value),
         Type::F64 { .. } if signed => llvm_context.f64_type().const_float(-value),

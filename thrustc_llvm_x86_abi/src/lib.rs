@@ -29,7 +29,8 @@ use inkwell::{
     targets::TargetData,
     types::{AnyType, BasicMetadataTypeEnum, BasicType, BasicTypeEnum, FunctionType},
     values::{
-        BasicMetadataValueEnum, BasicValueEnum, FunctionValue, InstructionValue, PointerValue,
+        BasicMetadataValueEnum, BasicValueEnum, CallSiteValue, FunctionValue, InstructionValue,
+        PointerValue,
     },
 };
 use thrustc_ast::Ast;
@@ -741,9 +742,13 @@ pub enum x86SystemVABIFunctionParameterConfiguration {
     FromMemory,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum x86SystemVABIFunctionTypeArgumentConfigurationAttributes {
     byVal,
+    InReg,
+    Sret(Type),
+
+    None,
 }
 
 #[derive(Debug, Clone)]
@@ -753,13 +758,15 @@ pub enum x86SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi> {
         ascii_name: &'llvm_abi str,
         ty: &'llvm_abi Type,
         index: usize,
+        attribute: x86SystemVABIFunctionTypeArgumentConfigurationAttributes,
     },
     ToMemory {
         name: &'llvm_abi str,
         ascii_name: &'llvm_abi str,
         ty: &'llvm_abi Type,
         index: usize,
-        attributes: x86SystemVABIFunctionTypeArgumentConfigurationAttributes,
+        attribute: x86SystemVABIFunctionTypeArgumentConfigurationAttributes,
+        is_sret: bool,
     },
     DecomposeAndExpand {
         name: &'llvm_abi str,
@@ -782,23 +789,37 @@ pub enum x86SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi> {
 #[derive(Debug, Clone)]
 pub struct x86SystemVABIFunctionTypeConfiguration<'llvm_abi> {
     parameter_types: Vec<x86SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi>>,
+    is_memory_return: bool,
     is_variatic: bool,
 }
 
 impl<'llvm_abi> x86SystemVABIFunctionTypeConfiguration<'llvm_abi> {
     #[inline]
-    pub fn new(is_variatic: bool) -> Self {
+    pub fn new(is_variatic: bool, is_memory_return: bool) -> Self {
         Self {
             parameter_types: Vec::new(),
             is_variatic,
+            is_memory_return,
         }
     }
 }
 
 impl x86SystemVABIFunctionTypeConfiguration<'_> {
     #[inline]
-    pub fn get_is_variatic(&self) -> bool {
+    pub fn is_variatic(&self) -> bool {
         self.is_variatic
+    }
+
+    #[inline]
+    pub fn is_memory_return(&self) -> bool {
+        self.is_memory_return
+    }
+}
+
+impl x86SystemVABIFunctionTypeConfiguration<'_> {
+    #[inline]
+    pub fn set_memory_return(&mut self, value: bool) {
+        self.is_memory_return = value
     }
 }
 
@@ -1178,13 +1199,54 @@ pub fn lower_function_call<'llvm_abi>(
     abi_context: &mut X86SystemVABIContext,
     function_value: FunctionValue<'llvm_abi>,
     configuration: &x86SystemVABIFunctionTypeConfiguration,
-    args: &[BasicValueEnum<'llvm_abi>],
+    mut args: Vec<BasicValueEnum<'llvm_abi>>,
+    span: Span,
 ) -> Vec<BasicMetadataValueEnum<'llvm_abi>> {
     let function_value: FunctionValue<'_> = function_value;
     let callee_args_values: Vec<BasicValueEnum> = function_value.get_params();
 
-    let ordered_configuration: Vec<&x86SystemVABIFunctionTypeArgumentConfiguration> =
+    let mut ordered_configuration: Vec<&x86SystemVABIFunctionTypeArgumentConfiguration> =
         configuration.parameter_types.iter().collect();
+
+    let mut processed_args: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len());
+
+    if configuration.is_memory_return() {
+        let buffer_type: &Type = ordered_configuration
+            .iter()
+            .find_map(|config| match config {
+                x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                    ty,
+                    is_sret: true,
+                    ..
+                } => Some(*ty),
+                _ => None,
+            })
+            .unwrap_or_else(|| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Expected a return type from memory on ABI lowering!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        let llvm_ty: BasicTypeEnum<'_> =
+            self::decompose_type(llvm_context, abi_context, buffer_type);
+
+        let ptr: PointerValue<'_> = llvm_builder.build_alloca(llvm_ty, "").unwrap_or_else(|_| {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to allocate a buffer for return value on a function call on ABI lowering!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+        ordered_configuration.remove(0);
+        processed_args.push(ptr.into());
+    }
 
     let _ = ordered_configuration.is_sorted_by_key(|config| match config {
         x86SystemVABIFunctionTypeArgumentConfiguration::Same { index, .. } => *index,
@@ -1195,102 +1257,261 @@ pub fn lower_function_call<'llvm_abi>(
 
     assert!(args.len() == ordered_configuration.len());
 
-    let mut processed_args: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len());
-
     for (arg_value, arg_config) in args.iter().zip(ordered_configuration.iter()) {
         match arg_config {
             x86SystemVABIFunctionTypeArgumentConfiguration::Ignore { .. } => {
                 processed_args.push((*arg_value).into());
             }
 
-            x86SystemVABIFunctionTypeArgumentConfiguration::Same { .. } => {
+            x86SystemVABIFunctionTypeArgumentConfiguration::Same {
+                ty,
+                attribute,
+                index,
+                ..
+            } => {
+                if matches!(
+                    attribute,
+                    x86SystemVABIFunctionTypeArgumentConfigurationAttributes::InReg
+                ) {
+                    let Some(_) = callee_args_values.get(*index) else {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to get the function parameter value from the function declaration for ABI lowering!",
+                            ty.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    };
+
+                    let inreg_id: u32 = Attribute::get_named_enum_kind_id("inreg");
+
+                    let inreg_id_attribute: Attribute =
+                        llvm_context.create_enum_attribute(inreg_id, 0);
+
+                    function_value.add_attribute(
+                        AttributeLoc::Param((*index).try_into().unwrap_or_default()),
+                        inreg_id_attribute,
+                    );
+                }
+
                 processed_args.push((*arg_value).into());
             }
 
             x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
                 ty,
                 index,
-                attributes,
+                attribute,
+                is_sret,
                 ..
             } => {
                 let mut arg_value: BasicValueEnum<'_> = *arg_value;
 
                 let is_ptr_value: bool = arg_value.is_pointer_value();
 
-                if !is_ptr_value {
-                    let stack_ptr: inkwell::values::PointerValue<'_> = llvm_builder
-                        .build_alloca(arg_value.get_type(), "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                abi_context,
-                                "Failed to compile allocate a paramater onto the stack!",
-                                ty.get_span(),
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            )
-                        });
+                if *is_sret && !is_ptr_value {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to configure a big return on System V ABI lowering!",
+                        ty.get_span(),
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                }
 
-                    let alignment: u32 = abi_context
-                        .get_target_data()
-                        .get_preferred_alignment(&arg_value.get_type());
+                if *is_sret {
+                    match attribute {
+                        x86SystemVABIFunctionTypeArgumentConfigurationAttributes::Sret(ty) => {
+                            let Some(_) = callee_args_values.get(*index) else {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to get the function parameter value from the function declaration for ABI lowering!",
+                                    ty.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                );
+                            };
 
-                    if let Some(instruction) = stack_ptr.as_instruction() {
-                        instruction.set_alignment(alignment).unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                abi_context,
-                                "Failed to set type alignment!",
-                                ty.get_span(),
-                                std::path::PathBuf::from(file!()),
-                                line!(),
+                            let llvm_ty: BasicTypeEnum<'_> =
+                                self::decompose_type(llvm_context, abi_context, ty);
+
+                            let alignment: u32 = abi_context
+                                .get_target_data()
+                                .get_preferred_alignment(&llvm_ty);
+
+                            let sret_id: u32 = Attribute::get_named_enum_kind_id("sret");
+
+                            let sret_attribute: Attribute = llvm_context
+                                .create_type_attribute(sret_id, llvm_ty.as_any_type_enum());
+
+                            function_value.add_attribute(
+                                AttributeLoc::Param((*index).try_into().unwrap_or_default()),
+                                sret_attribute,
                             );
-                        });
+
+                            function_value.set_param_alignment(
+                                (*index).try_into().unwrap_or_default(),
+                                alignment,
+                            );
+                        }
+
+                        // Fallback
+                        _ => {
+                            if !is_ptr_value {
+                                let stack_ptr: inkwell::values::PointerValue<'_> = llvm_builder
+                                    .build_alloca(arg_value.get_type(), "")
+                                    .unwrap_or_else(|_| {
+                                        abort::abort_codegen(
+                                            abi_context,
+                                            "Failed to compile allocate a paramater onto the stack!",
+                                            ty.get_span(),
+                                            std::path::PathBuf::from(file!()),
+                                            line!(),
+                                        )
+                                    });
+
+                                let alignment: u32 = abi_context
+                                    .get_target_data()
+                                    .get_preferred_alignment(&arg_value.get_type());
+
+                                if let Some(instruction) = stack_ptr.as_instruction() {
+                                    instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                                        abort::abort_codegen(
+                                            abi_context,
+                                            "Failed to set type alignment!",
+                                            ty.get_span(),
+                                            std::path::PathBuf::from(file!()),
+                                            line!(),
+                                        );
+                                    });
+                                }
+
+                                llvm_builder
+                                    .build_store(stack_ptr, arg_value)
+                                    .unwrap_or_else(|_| {
+                                        abort::abort_codegen(
+                                            abi_context,
+                                            "Failed to store a value in memory!",
+                                            ty.get_span(),
+                                            std::path::PathBuf::from(file!()),
+                                            line!(),
+                                        );
+                                    });
+
+                                if matches!(
+                                    attribute,
+                                    x86SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal
+                                ) {
+                                    let Some(_) = callee_args_values.get(*index) else {
+                                        abort::abort_codegen(
+                                            abi_context,
+                                            "Failed to get the function parameter value from the function declaration for ABI lowering!",
+                                            ty.get_span(),
+                                            std::path::PathBuf::from(file!()),
+                                            line!(),
+                                        );
+                                    };
+
+                                    let byval_id: u32 = Attribute::get_named_enum_kind_id("byval");
+
+                                    let byval_attribute: Attribute = llvm_context
+                                        .create_type_attribute(
+                                            byval_id,
+                                            arg_value.get_type().as_any_type_enum(),
+                                        );
+
+                                    function_value.add_attribute(
+                                        AttributeLoc::Param(
+                                            (*index).try_into().unwrap_or_default(),
+                                        ),
+                                        byval_attribute,
+                                    );
+
+                                    function_value.set_param_alignment(
+                                        (*index).try_into().unwrap_or_default(),
+                                        alignment,
+                                    );
+                                }
+
+                                arg_value = stack_ptr.into();
+                            }
+                        }
                     }
+                } else {
+                    if !is_ptr_value {
+                        let stack_ptr: inkwell::values::PointerValue<'_> = llvm_builder
+                            .build_alloca(arg_value.get_type(), "")
+                            .unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to compile allocate a paramater onto the stack!",
+                                    ty.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
+                            });
 
-                    llvm_builder
-                        .build_store(stack_ptr, arg_value)
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                abi_context,
-                                "Failed to store a value in memory!",
-                                ty.get_span(),
-                                std::path::PathBuf::from(file!()),
-                                line!(),
+                        let alignment: u32 = abi_context
+                            .get_target_data()
+                            .get_preferred_alignment(&arg_value.get_type());
+
+                        if let Some(instruction) = stack_ptr.as_instruction() {
+                            instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to set type alignment!",
+                                    ty.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                );
+                            });
+                        }
+
+                        llvm_builder
+                            .build_store(stack_ptr, arg_value)
+                            .unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to store a value in memory!",
+                                    ty.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                );
+                            });
+
+                        if matches!(
+                            attribute,
+                            x86SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal
+                        ) {
+                            let Some(_) = callee_args_values.get(*index) else {
+                                abort::abort_codegen(
+                                    abi_context,
+                                    "Failed to get the function parameter value from the function declaration for ABI lowering!",
+                                    ty.get_span(),
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                );
+                            };
+
+                            let byval_id: u32 = Attribute::get_named_enum_kind_id("byval");
+
+                            let byval_attribute: Attribute = llvm_context.create_type_attribute(
+                                byval_id,
+                                arg_value.get_type().as_any_type_enum(),
                             );
-                        });
 
-                    if matches!(
-                        attributes,
-                        x86SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal
-                    ) {
-                        let Some(_) = callee_args_values.get(*index) else {
-                            abort::abort_codegen(
-                                abi_context,
-                                "Failed to get the function parameter value from the function declaration!",
-                                ty.get_span(),
-                                std::path::PathBuf::from(file!()),
-                                line!(),
+                            function_value.add_attribute(
+                                AttributeLoc::Param((*index).try_into().unwrap_or_default()),
+                                byval_attribute,
                             );
-                        };
 
-                        let byval_id: u32 = Attribute::get_named_enum_kind_id("byval");
+                            function_value.set_param_alignment(
+                                (*index).try_into().unwrap_or_default(),
+                                alignment,
+                            );
+                        }
 
-                        let byval_attribute: Attribute = llvm_context.create_type_attribute(
-                            byval_id,
-                            arg_value.get_type().as_any_type_enum(),
-                        );
-
-                        function_value.add_attribute(
-                            AttributeLoc::Param((*index).try_into().unwrap_or_default()),
-                            byval_attribute,
-                        );
-
-                        function_value.set_param_alignment(
-                            (*index).try_into().unwrap_or_default(),
-                            alignment,
-                        );
+                        arg_value = stack_ptr.into();
                     }
-
-                    arg_value = stack_ptr.into();
                 }
 
                 processed_args.push((arg_value).into());
@@ -1518,6 +1739,83 @@ pub fn lower_function_call<'llvm_abi>(
     processed_args
 }
 
+pub fn lower_call_return<'llvm_abi>(
+    llvm_builder: &'llvm_abi Builder<'llvm_abi>,
+    llvm_context: &'llvm_abi Context,
+    abi_context: &mut X86SystemVABIContext,
+    callsite: CallSiteValue<'llvm_abi>,
+    lowered_args: &[BasicMetadataValueEnum<'llvm_abi>],
+    configuration: &x86SystemVABIFunctionTypeConfiguration,
+    span: Span,
+) -> BasicValueEnum<'llvm_abi> {
+    let called_function: FunctionValue<'_> = callsite.get_called_fn_value();
+    let is_void_type: bool = called_function.get_type().get_return_type().is_none();
+
+    if configuration.is_memory_return() && is_void_type {
+        todo!()
+
+        /*
+            let first_arg: &BasicMetadataValueEnum<'_> = lowered_args.first().unwrap();
+            let ptr: PointerValue<'_> = first_arg.into_pointer_value();
+            let ty: &&Type = configuration
+                .parameter_types
+                .iter()
+                .find_map(|config| match config {
+                    x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                        ty,
+                        is_sret: true,
+                        ..
+                    } => Some(ty),
+                    _ => None,
+                })
+                .unwrap();
+
+            let llvm_ptr_ty: BasicTypeEnum<'_> = self::decompose_type(llvm_context, abi_context, ty);
+
+            let value: BasicValueEnum<'_> = llvm_builder.build_load(llvm_ptr_ty, ptr, "").unwrap();
+
+            return value;
+        */
+    }
+
+    callsite.try_as_basic_value().left().unwrap_or_else(|| {
+        abort::abort_codegen(
+            abi_context,
+            "Failed to compile lower a function call!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        )
+    })
+}
+
+pub fn lower_return<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    llvm_builder: &'llvm_abi Builder<'llvm_abi>,
+    abi_context: &mut X86SystemVABIContext,
+    configuration: &x86SystemVABIFunctionTypeConfiguration,
+    return_value: Option<BasicValueEnum<'llvm_abi>>,
+    span: Span,
+) -> bool {
+    if configuration.is_memory_return() {
+        if let Some(return_value) = return_value {}
+
+        if llvm_builder.build_return(None).is_err() {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to compile a function terminator!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        }
+
+        return true;
+    }
+
+    false
+}
+
 pub fn decompose_function_type<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
     abi_context: &mut X86SystemVABIContext,
@@ -1532,12 +1830,48 @@ pub fn decompose_function_type<'llvm_abi>(
         Vec::with_capacity(parameters.len());
 
     let mut configuration: x86SystemVABIFunctionTypeConfiguration =
-        x86SystemVABIFunctionTypeConfiguration::new(is_variatic);
+        x86SystemVABIFunctionTypeConfiguration::new(is_variatic, false);
+
+    let return_ty_classes: [X86SystemVABITypeClass; 8] =
+        X86SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
+
+    let mut is_memory_return: bool = false;
+    let mut idx: usize = 0;
+
+    let abi_return_ty: x86SystemVABIType = x86SystemVABIType::class_to_general_abi_strategy(
+        abi_context,
+        &return_ty_classes,
+        return_type,
+    );
+
+    if abi_return_ty.is_to_memory() {
+        is_memory_return = true;
+        configuration.set_memory_return(true);
+    }
 
     let configuration_parameter_types: &mut Vec<x86SystemVABIFunctionTypeArgumentConfiguration> =
         configuration.get_mut_configuration_parameter_types();
 
-    for (idx, parameter) in parameters.iter().enumerate() {
+    if is_memory_return {
+        llvm_parameters_types.insert(0, llvm_context.ptr_type(AddressSpace::default()).into());
+
+        configuration_parameter_types.push(
+            x86SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                name: "",
+                ascii_name: "",
+                ty: return_type,
+                index: idx,
+                attribute: x86SystemVABIFunctionTypeArgumentConfigurationAttributes::Sret(
+                    return_type.clone(),
+                ),
+                is_sret: true,
+            },
+        );
+
+        idx = idx.saturating_add(1);
+    }
+
+    for parameter in parameters.iter() {
         match parameter {
             Ast::FunctionParameter {
                 name,
@@ -1578,6 +1912,8 @@ pub fn decompose_function_type<'llvm_abi>(
                                 ascii_name,
                                 ty,
                                 index: idx,
+                                attribute:
+                                    x86SystemVABIFunctionTypeArgumentConfigurationAttributes::InReg,
                             },
                         );
 
@@ -1591,8 +1927,9 @@ pub fn decompose_function_type<'llvm_abi>(
                                 ascii_name,
                                 ty,
                                 index: idx,
-                                attributes:
+                                attribute:
                                     x86SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal,
+                                is_sret: false,
                             },
                         );
 
@@ -1631,8 +1968,9 @@ pub fn decompose_function_type<'llvm_abi>(
                                             ascii_name,
                                             ty,
                                             index: idx,
-                                            attributes:
+                                            attribute:
                                                 x86SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal,
+                                            is_sret: false,
                                         });
 
                                     llvm_parameters_types.push(
@@ -1714,6 +2052,8 @@ pub fn decompose_function_type<'llvm_abi>(
                         }
                     }
                 }
+
+                idx += 1;
             }
 
             Ast::AssemblerFunctionParameter { .. } => (),
@@ -1732,15 +2072,6 @@ pub fn decompose_function_type<'llvm_abi>(
             configuration,
         )
     } else {
-        let return_ty_classes: [X86SystemVABITypeClass; 8] =
-            X86SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
-
-        let abi_return_ty: x86SystemVABIType = x86SystemVABIType::class_to_general_abi_strategy(
-            abi_context,
-            &return_ty_classes,
-            return_type,
-        );
-
         match abi_return_ty {
             x86SystemVABIType::Ignore => {
                 let llvm_return_ty: BasicTypeEnum<'_> =
@@ -1762,7 +2093,26 @@ pub fn decompose_function_type<'llvm_abi>(
                 )
             }
 
-            x86SystemVABIType::DecomposeAndExpand(..) | x86SystemVABIType::ToMemory(..) => {
+            x86SystemVABIType::ToMemory(..) => {
+                if is_memory_return {
+                    (
+                        llvm_context
+                            .void_type()
+                            .fn_type(&llvm_parameters_types, is_variatic),
+                        configuration,
+                    )
+                } else {
+                    let llvm_return_ty: BasicTypeEnum<'_> =
+                        self::decompose_type(llvm_context, abi_context, return_type);
+
+                    (
+                        llvm_return_ty.fn_type(&llvm_parameters_types, is_variatic),
+                        configuration,
+                    )
+                }
+            }
+
+            x86SystemVABIType::DecomposeAndExpand(..) => {
                 let llvm_return_ty: BasicTypeEnum<'_> =
                     self::decompose_type(llvm_context, abi_context, return_type);
 

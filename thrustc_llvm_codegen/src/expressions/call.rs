@@ -20,7 +20,6 @@
 use inkwell::context::Context;
 use thrustc_ast::Ast;
 use thrustc_typesystem::Type;
-use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::abort;
 use crate::cast;
@@ -80,7 +79,9 @@ pub fn compile<'ctx>(
                     call.set_call_convention(call_convention);
                 }
 
-                if !kind.is_void_type() {
+                let is_void_type: bool = llvm_function.get_type().get_return_type().is_none();
+
+                if !is_void_type {
                     call.try_as_basic_value().left().unwrap_or_else(|| {
                         abort::abort_codegen(
                             context,
@@ -154,12 +155,13 @@ pub fn compile<'ctx>(
             abi,
             llvm_function,
             configuration,
-            &compiled_args,
+            compiled_args,
+            span,
         )
         .unwrap_or_else(|| {
             abort::abort_codegen(
                 context,
-                "Failed to compile lower the function call to a specific ABI!",
+                "Failed to compile to lower the call arguments to a specific ABI!",
                 span,
                 std::path::PathBuf::from(file!()),
                 line!(),
@@ -175,23 +177,24 @@ pub fn compile<'ctx>(
                         call.set_call_convention(call_convention);
                     }
 
-                    if !kind.is_void_type() {
-                        call.try_as_basic_value().left().unwrap_or_else(|| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile function call!",
-                                span,
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            )
-                        })
-                    } else {
-                        context
-                            .get_llvm_context()
-                            .ptr_type(AddressSpace::default())
-                            .const_null()
-                            .into()
-                    }
+                    thrustc_llvm_abi::lower_call_return(
+                        llvm_context,
+                        llvm_builder,
+                        abi,
+                        configuration,
+                        call,
+                        &lowered_args,
+                        span,
+                    )
+                    .unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile lower a function call!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
                 }
                 Err(_) => abort::abort_codegen(
                     context,

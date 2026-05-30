@@ -17,6 +17,11 @@ thrustc_options = { path = "../thrustc_options" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_llvm_x86_abi = { path = "../thrustc_llvm_x86_abi" }
+thrustc_span = { path = "../thrustc_span" }
+thrustc_diagnostician = { path = "../thrustc_diagnostician" }
+thrustc_errors = { path = "../thrustc_errors" }
+thrustc_logging = { path = "../thrustc_logging" }
+thrustc_constants = { path = "../thrustc_constants" }
 
 inkwell = { workspace = true, optional = true }
 clang = { workspace = true, optional = true }

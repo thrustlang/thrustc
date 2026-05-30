@@ -45,7 +45,7 @@ pub fn abort_codegen<'ctx>(
         LoggingType::BackendBug,
     );
 
-    std::process::exit(1);
+    std::process::exit(thrustc_constants::FAILURE_CODE);
 }
 
 pub fn abort_codegen_dbg<'ctx>(
@@ -69,5 +69,5 @@ pub fn abort_codegen_dbg<'ctx>(
         LoggingType::BackendBug,
     );
 
-    std::process::exit(1);
+    std::process::exit(thrustc_constants::FAILURE_CODE);
 }

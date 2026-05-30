@@ -25,14 +25,14 @@ use crate::{abort, context::LLVMCodeGenContext};
 
 pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
-    kind: &Type,
+    ty: &Type,
     value: u64,
     signed: bool,
     span: Span,
 ) -> IntValue<'ctx> {
     let llvm_context: &Context = context.get_llvm_context();
 
-    match kind {
+    match ty {
         Type::Char(..) => llvm_context.i8_type().const_int(value, signed).const_neg(),
         Type::S8 { .. } if signed => llvm_context.i8_type().const_int(value, signed).const_neg(),
         Type::S8 { .. } => llvm_context.i8_type().const_int(value, signed),

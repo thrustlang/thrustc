@@ -56,8 +56,6 @@ use inkwell::module::Module;
 use inkwell::types::FunctionType;
 use inkwell::values::FunctionValue;
 
-
-
 pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: Function<'ctx>) {
     let llvm_module: &Module = context.get_llvm_module();
 
@@ -156,7 +154,6 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
         block::append_block(codegen.get_context(), function_value);
 
     llvm_builder.position_at_end(llvm_function_block);
-
 
     if codegen
         .get_context()

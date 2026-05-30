@@ -25,7 +25,7 @@ use inkwell::{
     context::Context,
     targets::TargetData,
     types::FunctionType,
-    values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue},
+    values::{BasicMetadataValueEnum, BasicValueEnum, CallSiteValue, FunctionValue},
 };
 use thrustc_abi::SpecificABI;
 use thrustc_ast::Ast;
@@ -36,7 +36,10 @@ use thrustc_llvm_x86_abi::{
     x86SystemVABIType,
 };
 use thrustc_options::{CompilationUnit, CompilerOptions};
+use thrustc_span::Span;
 use thrustc_typesystem::{Type, type_layout::TargetInfo};
+
+mod abort;
 
 #[derive(Debug, Clone)]
 pub enum LLVMABIType<'llvm_abi> {
@@ -193,7 +196,8 @@ pub fn lower_function_call<'llvm_abi>(
     abi: &LLVMABIRepresentation<'llvm_abi>,
     function_value: FunctionValue<'llvm_abi>,
     configuration: &LLVMABIConfiguration,
-    args: &[BasicValueEnum<'llvm_abi>],
+    args: Vec<BasicValueEnum<'llvm_abi>>,
+    span: Span,
 ) -> Option<Vec<BasicMetadataValueEnum<'llvm_abi>>> {
     match abi {
         LLVMABIRepresentation::x86SystemV {
@@ -225,6 +229,7 @@ pub fn lower_function_call<'llvm_abi>(
                     function_value,
                     configuration,
                     args,
+                    span,
                 );
 
             Some(lowered_args)
@@ -263,7 +268,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                 _ => unreachable!(),
             };
 
-            let mut lowered_parameters: Vec<(
+            let lowered_parameters: Vec<(
                 &'llvm_abi str,
                 &'llvm_abi str,
                 &'llvm_abi Type,
@@ -279,7 +284,7 @@ pub fn lower_function_parameters<'llvm_abi>(
 
             let transformed_lowered_parameters: Vec<LLVMABIFunctionLoweredParameter> =
                 lowered_parameters
-                    .iter_mut()
+                    .iter()
                     .map(|lowered_parameter| {
                         let (name, ascii_name, ty, parameter_configuration, value) =
                             lowered_parameter;
@@ -290,8 +295,8 @@ pub fn lower_function_parameters<'llvm_abi>(
                             );
 
                         LLVMABIFunctionLoweredParameter::new(
-                            std::mem::take(name),
-                            std::mem::take(ascii_name),
+                            name,
+                            ascii_name,
                             ty,
                             *value,
                             abi_parameter_configuration,
@@ -303,6 +308,108 @@ pub fn lower_function_parameters<'llvm_abi>(
         }
 
         _ => None,
+    }
+}
+
+pub fn lower_call_return<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    llvm_builder: &'llvm_abi Builder<'llvm_abi>,
+    abi: &LLVMABIRepresentation<'llvm_abi>,
+    configuration: &LLVMABIConfiguration<'llvm_abi>,
+    callsite: CallSiteValue<'llvm_abi>,
+    lowered_args: &[BasicMetadataValueEnum<'llvm_abi>],
+    span: Span,
+) -> Option<BasicValueEnum<'llvm_abi>> {
+    match abi {
+        LLVMABIRepresentation::x86SystemV {
+            file,
+            options,
+            target_data,
+            target_info,
+            target_triple,
+        } => {
+            let mut abi_context: thrustc_llvm_x86_abi::X86SystemVABIContext =
+                thrustc_llvm_x86_abi::X86SystemVABIContext::new(
+                    file,
+                    options,
+                    target_triple,
+                    (*target_info).clone(),
+                    target_data,
+                );
+
+            let configuration: &x86SystemVABIFunctionTypeConfiguration = match configuration {
+                LLVMABIConfiguration::x86SystemVFunctionTypeConfiguration(config) => config,
+                _ => unreachable!(),
+            };
+
+            if configuration.is_memory_return() {
+                Some(thrustc_llvm_x86_abi::lower_call_return(
+                    llvm_builder,
+                    llvm_context,
+                    &mut abi_context,
+                    callsite,
+                    lowered_args,
+                    configuration,
+                    span,
+                ))
+            } else {
+                Some(callsite.try_as_basic_value().left().unwrap_or_else(|| {
+                    abort::abort_system_v_abi_codegen(
+                        &mut abi_context,
+                        "Failed to compile function call!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                }))
+            }
+        }
+
+        _ => None,
+    }
+}
+
+pub fn lower_return<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    llvm_builder: &'llvm_abi Builder<'llvm_abi>,
+    abi: &LLVMABIRepresentation<'llvm_abi>,
+    configuration: &LLVMABIConfiguration<'llvm_abi>,
+    return_value: Option<BasicValueEnum<'llvm_abi>>,
+    span: Span,
+) -> bool {
+    match abi {
+        LLVMABIRepresentation::x86SystemV {
+            file,
+            options,
+            target_data,
+            target_info,
+            target_triple,
+        } => {
+            let mut abi_context: thrustc_llvm_x86_abi::X86SystemVABIContext =
+                thrustc_llvm_x86_abi::X86SystemVABIContext::new(
+                    file,
+                    options,
+                    target_triple,
+                    (*target_info).clone(),
+                    target_data,
+                );
+
+            let configuration: &x86SystemVABIFunctionTypeConfiguration = match configuration {
+                LLVMABIConfiguration::x86SystemVFunctionTypeConfiguration(config) => config,
+                _ => unreachable!(),
+            };
+
+            thrustc_llvm_x86_abi::lower_return(
+                llvm_context,
+                llvm_builder,
+                &mut abi_context,
+                configuration,
+                return_value,
+                span,
+            )
+        }
+
+        _ => false,
     }
 }
 

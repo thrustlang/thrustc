@@ -17,6 +17,7 @@ thrustc_options = { path = "../thrustc_options" }
 thrustc_logging = { path = "../thrustc_logging" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
+thrustc_constants = { path = "../thrustc_constants"  }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_span = { path = "../thrustc_span" }
