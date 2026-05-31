@@ -112,12 +112,7 @@ fn build_align_attribute<'parser>(parser: &mut ModuleParser<'parser>) -> Result<
 
     parser.consume(TokenType::RParen)?;
 
-    if let Ast::Integer {
-        value,
-        signed: false,
-        ..
-    } = expr
-    {
+    if let Ast::Integer { value, .. } = expr {
         Ok(value)
     } else {
         Err(())

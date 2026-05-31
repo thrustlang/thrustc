@@ -511,7 +511,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let cast_type: BasicTypeEnum = typegeneration::generate_type(context, target);
 
-    if value.is_int_value() && cast_type.is_int_type() {
+    if value.is_int_value() && target.is_integer_type() {
         let int_value: IntValue = value.into_int_value();
 
         if is_signed {
@@ -534,7 +534,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
         );
     }
 
-    if value.is_float_value() && cast_type.is_float_type() {
+    if value.is_float_value() && target.is_float_type() {
         let float_value: FloatValue = value.into_float_value();
 
         let (constant_value, ..) = float_value.get_constant().unwrap_or_else(|| {
@@ -553,7 +553,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
             .into();
     }
 
-    if value.is_int_value() && cast_type.is_float_type() {
+    if value.is_int_value() && target.is_float_type() {
         let int_value: IntValue<'_> = value.into_int_value();
         let float_type: FloatType<'_> = cast_type.into_float_type();
 
@@ -578,7 +578,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
         );
     }
 
-    if value.is_float_value() && cast_type.is_int_type() {
+    if value.is_float_value() && target.is_integer_type() {
         let float_value: FloatValue<'_> = value.into_float_value();
         let int_type: IntType<'_> = cast_type.into_int_type();
 
@@ -851,4 +851,32 @@ pub fn compile_float_together_cast<'ctx>(
     };
 
     (new_left_value, new_right_value)
+}
+
+pub fn select_ssa_integer_type<'a>(cast_type: Option<&'a Type>, integer_ty: &'a Type) -> &'a Type {
+    let ssa_integer_type: &Type = integer_ty;
+
+    let Some(cast_type) = cast_type else {
+        return ssa_integer_type;
+    };
+
+    if cast_type.is_bool_type() {
+        return ssa_integer_type;
+    }
+
+    cast_type
+}
+
+pub fn select_ssa_float_type<'a>(cast_type: Option<&'a Type>, float_ty: &'a Type) -> &'a Type {
+    let ssa_float_type: &Type = float_ty;
+
+    let Some(cast_type) = cast_type else {
+        return ssa_float_type;
+    };
+
+    if cast_type.is_bool_type() {
+        return ssa_float_type;
+    }
+
+    cast_type
 }

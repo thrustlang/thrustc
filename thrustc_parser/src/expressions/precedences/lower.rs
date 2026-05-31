@@ -229,7 +229,7 @@ pub fn lower_precedence<'parser>(
             let kind: Type = parsed_integer.0;
             let value: u64 = parsed_integer.1;
 
-            Ast::new_integer(kind, value, false, span)
+            Ast::new_integer(kind, value, span)
         }
 
         TokenType::Float => {
@@ -243,7 +243,7 @@ pub fn lower_precedence<'parser>(
             let kind: Type = parsed_float.0;
             let value: f64 = parsed_float.1;
 
-            Ast::new_float(kind, value, false, span)
+            Ast::new_float(kind, value, span)
         }
 
         TokenType::Identifier => {

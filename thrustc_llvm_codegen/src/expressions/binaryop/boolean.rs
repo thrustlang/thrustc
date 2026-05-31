@@ -58,7 +58,7 @@ fn compile_bool_operation<'ctx>(
         );
 
         return match operator {
-            op if op.is_logical_operator() => llvm_builder
+            operator if operator.is_logical_operator() => llvm_builder
                 .build_int_compare(
                     predicates::get_integer_predicate(
                         context, operator, lhs_signed, rhs_signed, span,
@@ -77,7 +77,7 @@ fn compile_bool_operation<'ctx>(
                     );
                 })
                 .into(),
-            op if op.is_logical_gate() => match op {
+            operator if operator.is_logical_gate() => match operator {
                 TokenType::And => llvm_builder
                     .build_and(lhs, rhs, "")
                     .unwrap_or_else(|_| {
@@ -127,7 +127,7 @@ fn compile_bool_operation<'ctx>(
         );
 
         return match operator {
-            op if op.is_logical_operator() => llvm_builder
+            operator if operator.is_logical_operator() => llvm_builder
                 .build_float_compare(
                     predicates::get_float_predicate(context, operator, span),
                     lhs,

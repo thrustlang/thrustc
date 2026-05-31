@@ -27,31 +27,22 @@ pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     ty: &Type,
     value: u64,
-    signed: bool,
     span: Span,
 ) -> IntValue<'ctx> {
     let llvm_context: &Context = context.get_llvm_context();
     let target_data: &TargetData = context.get_target_data();
 
     match ty {
-        Type::Char(..) => llvm_context.i8_type().const_int(value, signed).const_neg(),
-        Type::S8 { .. } if signed => llvm_context.i8_type().const_int(value, signed).const_neg(),
-        Type::S8 { .. } => llvm_context.i8_type().const_int(value, signed),
-        Type::S16 { .. } if signed => llvm_context.i16_type().const_int(value, signed).const_neg(),
-        Type::S16 { .. } => llvm_context.i16_type().const_int(value, signed),
-        Type::S32 { .. } if signed => llvm_context.i32_type().const_int(value, signed).const_neg(),
-        Type::S32 { .. } => llvm_context.i32_type().const_int(value, signed),
-        Type::S64 { .. } if signed => llvm_context.i64_type().const_int(value, signed).const_neg(),
-        Type::S64 { .. } => llvm_context.i64_type().const_int(value, signed),
+        Type::Char(..) => llvm_context.i8_type().const_int(value, true),
+        Type::S8 { .. } => llvm_context.i8_type().const_int(value, true),
+        Type::S16 { .. } => llvm_context.i16_type().const_int(value, true),
+        Type::S32 { .. } => llvm_context.i32_type().const_int(value, true),
+        Type::S64 { .. } => llvm_context.i64_type().const_int(value, true),
         Type::U8 { .. } => llvm_context.i8_type().const_int(value, false),
         Type::U16 { .. } => llvm_context.i16_type().const_int(value, false),
         Type::U32 { .. } => llvm_context.i32_type().const_int(value, false),
         Type::U64 { .. } => llvm_context.i64_type().const_int(value, false),
-        Type::U128 { .. } if signed => llvm_context
-            .i128_type()
-            .const_int(value, signed)
-            .const_neg(),
-        Type::U128 { .. } => llvm_context.i128_type().const_int(value, signed),
+        Type::U128 { .. } => llvm_context.i128_type().const_int(value, false),
         Type::Bool { .. } => llvm_context.bool_type().const_int(value, false),
         Type::USize { .. } => llvm_context
             .ptr_sized_int_type(target_data, None)

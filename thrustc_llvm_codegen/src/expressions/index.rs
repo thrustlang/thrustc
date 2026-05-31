@@ -55,7 +55,7 @@ pub fn compile<'ctx>(
             let base_type: Type = Type::U32 { span };
 
             let base: IntValue =
-                expressions::integer::compile(context, &base_type, 0, false, index.get_span());
+                expressions::integer::compile(context, &base_type, 0, index.get_span());
 
             let depth_type: Type = Type::U32 { span };
 
@@ -74,7 +74,7 @@ pub fn compile<'ctx>(
             let base_type: Type = Type::U32 { span };
 
             let base: IntValue =
-                expressions::integer::compile(context, &base_type, 0, false, index.get_span());
+                expressions::integer::compile(context, &base_type, 0, index.get_span());
 
             let depth_type: Type = Type::U32 { span };
 

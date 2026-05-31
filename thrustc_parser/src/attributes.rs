@@ -148,12 +148,7 @@ fn build_align_attribute<'parser>(
         "Expected ')'.".into(),
     )?;
 
-    if let Ast::Integer {
-        value,
-        signed: false,
-        ..
-    } = expr
-    {
+    if let Ast::Integer { value, .. } = expr {
         Ok(value)
     } else {
         Err(CompilationIssue::Error(

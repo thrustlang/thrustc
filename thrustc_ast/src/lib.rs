@@ -79,7 +79,6 @@ pub enum Ast<'ast> {
     Integer {
         kind: Type,
         value: u64,
-        signed: bool,
         span: Span,
         id: NodeId,
     },
@@ -87,7 +86,6 @@ pub enum Ast<'ast> {
     Float {
         kind: Type,
         value: f64,
-        signed: bool,
         span: Span,
         id: NodeId,
     },
@@ -539,22 +537,20 @@ pub enum Ast<'ast> {
 
 impl<'ast> Ast<'ast> {
     #[inline]
-    pub fn new_float(kind: Type, value: f64, signed: bool, span: Span) -> Ast<'ast> {
+    pub fn new_float(kind: Type, value: f64, span: Span) -> Ast<'ast> {
         Ast::Float {
             kind,
             value,
-            signed,
             span,
             id: NodeId::new(),
         }
     }
 
     #[inline]
-    pub fn new_integer(kind: Type, value: u64, signed: bool, span: Span) -> Ast<'ast> {
+    pub fn new_integer(kind: Type, value: u64, span: Span) -> Ast<'ast> {
         Ast::Integer {
             kind,
             value,
-            signed,
             span,
             id: NodeId::new(),
         }

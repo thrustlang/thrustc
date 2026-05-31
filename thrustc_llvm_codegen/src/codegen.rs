@@ -910,45 +910,31 @@ pub fn compile_as_value<'ctx>(
     match expr {
         // Literal Expressions
         Ast::Float {
-            kind,
+            kind: float_ty,
             value,
-            signed,
             span,
             ..
         } => {
-            let target_type: Option<&Type> = cast_type;
-
-            let mut ty: &Type = cast_type.unwrap_or(kind);
-
-            if ty.is_bool_type() {
-                ty = kind;
-            }
+            let ty: &Type = cast::select_ssa_float_type(cast_type, float_ty);
 
             let float_value: BasicValueEnum =
-                expressions::floatingpoint::compile(context, ty, *value, *signed, *span).into();
+                expressions::floatingpoint::compile(context, ty, *value, *span).into();
 
-            cast::try_smart_cast(context, target_type, kind, float_value, *span)
+            cast::try_smart_cast(context, cast_type, float_ty, float_value, *span)
         }
 
         Ast::Integer {
-            kind,
+            kind: integer_ty,
             value,
-            signed,
             span,
             ..
         } => {
-            let target_type: Option<&Type> = cast_type;
-
-            let mut ty: &Type = cast_type.unwrap_or(kind);
-
-            if ty.is_bool_type() {
-                ty = kind;
-            }
+            let ty: &Type = cast::select_ssa_integer_type(cast_type, integer_ty);
 
             let int_value: BasicValueEnum =
-                expressions::integer::compile(context, ty, *value, *signed, *span).into();
+                expressions::integer::compile(context, ty, *value, *span).into();
 
-            cast::try_smart_cast(context, target_type, kind, int_value, *span)
+            cast::try_smart_cast(context, cast_type, integer_ty, int_value, *span)
         }
 
         Ast::NullPtr { .. } => context
@@ -1145,7 +1131,6 @@ pub fn compile_as_value<'ctx>(
             ..
         } => {
             let llvm_builtin: LLVMBuiltin = builtins::into_llvm_builtin(thrust_builtin);
-
             builtins::compile(context, llvm_builtin, cast_type)
         }
 
@@ -1184,27 +1169,19 @@ pub fn compile_constant_as_value<'ctx>(
 
         // Floating-point constant handling
         Ast::Float {
-            value,
-            kind,
-            signed,
-            span,
-            ..
+            value, kind, span, ..
         } => {
             let float_value: BasicValueEnum =
-                expressions::floatingpoint::compile(context, kind, *value, *signed, *span).into();
+                expressions::floatingpoint::compile(context, kind, *value, *span).into();
 
             cast::try_smart_constant_cast(context, cast_type, kind, float_value)
         }
 
         Ast::Integer {
-            value,
-            kind,
-            signed,
-            span,
-            ..
+            value, kind, span, ..
         } => {
             let int_value: BasicValueEnum =
-                expressions::integer::compile(context, kind, *value, *signed, *span).into();
+                expressions::integer::compile(context, kind, *value, *span).into();
 
             cast::try_smart_constant_cast(context, cast_type, kind, int_value)
         }

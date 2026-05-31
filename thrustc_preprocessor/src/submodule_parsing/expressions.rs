@@ -38,7 +38,7 @@ pub fn parse_expr<'module_parser>(ctx: &mut ModuleParser) -> Result<Ast<'module_
             let integer_type: Type = parsed_integer.0;
             let integer_value: u64 = parsed_integer.1;
 
-            Ok(Ast::new_integer(integer_type, integer_value, false, span))
+            Ok(Ast::new_integer(integer_type, integer_value, span))
         }
 
         TokenType::Identifier => {
