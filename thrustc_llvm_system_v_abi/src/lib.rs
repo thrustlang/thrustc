@@ -795,6 +795,15 @@ impl<'llvm_abi> SystemVABIFunctionTypeConfiguration<'llvm_abi> {
     }
 }
 
+impl<'llvm_abi> SystemVABIFunctionTypeConfiguration<'llvm_abi> {
+    pub fn set_parameter_types_configuration(
+        &mut self,
+        parameter_types: Vec<SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi>>,
+    ) {
+        self.parameter_types = parameter_types;
+    }
+}
+
 impl SystemVABIFunctionTypeConfiguration<'_> {
     #[inline]
     pub fn is_variatic(&self) -> bool {
@@ -2052,38 +2061,49 @@ pub fn decompose_function_type<'llvm_abi>(
     let mut configuration: SystemVABIFunctionTypeConfiguration =
         SystemVABIFunctionTypeConfiguration::new(is_variatic, false);
 
-    let return_ty_classes: [SystemVABITypeClass; 8] =
-        SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
+    let mut configuration_parameter_types: Vec<SystemVABIFunctionTypeArgumentConfiguration> =
+        Vec::with_capacity(parameters.len());
 
     let mut is_memory_return: bool = false;
     let mut idx: usize = 0;
 
-    let abi_return_ty: SystemVABIType =
-        SystemVABIType::class_to_general_abi_strategy(abi_context, &return_ty_classes, return_type);
+    let mut abi_return_ty: SystemVABIType = SystemVABIType::Ignore;
 
-    if abi_return_ty.is_to_memory() {
-        is_memory_return = true;
-        configuration.set_memory_return(true);
-    }
+    if !return_type.is_void_type() {
+        let return_ty_classes: [SystemVABITypeClass; 8] =
+            SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
 
-    let configuration_parameter_types: &mut Vec<SystemVABIFunctionTypeArgumentConfiguration> =
-        configuration.get_mut_configuration_parameter_types();
+        let abi_return_ty_: SystemVABIType = SystemVABIType::class_to_general_abi_strategy(
+            abi_context,
+            &return_ty_classes,
+            return_type,
+        );
 
-    if is_memory_return {
-        llvm_parameters_types.insert(0, llvm_context.ptr_type(AddressSpace::default()).into());
+        abi_return_ty = abi_return_ty_;
 
-        configuration_parameter_types.push(SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
-            name: "",
-            ascii_name: "",
-            ty: return_type,
-            index: idx,
-            attribute: SystemVABIFunctionTypeArgumentConfigurationAttributes::Sret(
-                return_type.clone(),
-            ),
-            is_sret: true,
-        });
+        if abi_return_ty.is_to_memory() {
+            is_memory_return = true;
+            configuration.set_memory_return(true);
+        }
 
-        idx = idx.saturating_add(1);
+        if is_memory_return {
+            llvm_parameters_types.insert(0, llvm_context.ptr_type(AddressSpace::default()).into());
+
+            configuration_parameter_types.push(
+                SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
+                    name: "",
+                    ascii_name: "",
+                    ty: return_type,
+                    index: idx,
+                    attribute: SystemVABIFunctionTypeArgumentConfigurationAttributes::Sret(
+                        return_type.clone(),
+                    ),
+                    is_sret: true,
+                },
+            );
+
+            idx = idx.saturating_add(1);
+        }
     }
 
     for parameter in parameters.iter() {
@@ -2281,6 +2301,8 @@ pub fn decompose_function_type<'llvm_abi>(
     }
 
     if return_type.is_void_type() {
+        configuration.set_parameter_types_configuration(configuration_parameter_types);
+
         (
             llvm_context
                 .void_type()
@@ -2288,6 +2310,8 @@ pub fn decompose_function_type<'llvm_abi>(
             configuration,
         )
     } else {
+        configuration.set_parameter_types_configuration(configuration_parameter_types);
+
         match abi_return_ty {
             SystemVABIType::Ignore => {
                 let llvm_return_ty: BasicTypeEnum<'_> =

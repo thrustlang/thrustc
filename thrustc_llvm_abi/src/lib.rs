@@ -319,6 +319,12 @@ pub fn lower_abi_call_epilogue<'llvm_abi>(
     lowered_args: &[BasicMetadataValueEnum<'llvm_abi>],
     span: Span,
 ) -> Option<BasicValueEnum<'llvm_abi>> {
+    let is_void_type: bool = callsite
+        .get_called_fn_value()
+        .get_type()
+        .get_return_type()
+        .is_none();
+
     match abi {
         LLVMABIRepresentation::x86SystemV {
             file,
@@ -352,15 +358,19 @@ pub fn lower_abi_call_epilogue<'llvm_abi>(
                     span,
                 ))
             } else {
-                Some(callsite.try_as_basic_value().left().unwrap_or_else(|| {
-                    abort::abort_system_v_abi_codegen(
-                        &mut abi_context,
-                        "Failed to compile function call!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    )
-                }))
+                if is_void_type {
+                    None
+                } else {
+                    Some(callsite.try_as_basic_value().left().unwrap_or_else(|| {
+                        abort::abort_system_v_abi_codegen(
+                            &mut abi_context,
+                            "Failed to compile function call!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    }))
+                }
             }
         }
 

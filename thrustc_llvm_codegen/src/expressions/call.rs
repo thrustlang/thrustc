@@ -172,22 +172,37 @@ pub fn compile<'ctx>(
         let ret_value: BasicValueEnum =
             match llvm_builder.build_call(llvm_function, &lowered_args, "") {
                 Ok(call) => {
+                    let is_void_type: bool = call
+                        .get_called_fn_value()
+                        .get_type()
+                        .get_return_type()
+                        .is_none();
+
                     if let Some(call_convention) = override_call_convention {
                         call.set_call_convention(call_convention);
                     } else {
                         call.set_call_convention(call_convention);
                     }
 
-                    thrustc_llvm_abi::lower_abi_call_epilogue(
-                        llvm_context,
-                        llvm_builder,
-                        abi,
-                        configuration,
-                        call,
-                        &lowered_args,
-                        span,
-                    )
-                    .unwrap_or_else(|| {
+                    let result: Option<BasicValueEnum<'_>> =
+                        thrustc_llvm_abi::lower_abi_call_epilogue(
+                            llvm_context,
+                            llvm_builder,
+                            abi,
+                            configuration,
+                            call,
+                            &lowered_args,
+                            span,
+                        );
+
+                    if result.is_none() && is_void_type {
+                        llvm_context
+                            .ptr_type(AddressSpace::default())
+                            .const_null()
+                            .into()
+                    } else if let Some(value) = result {
+                        value
+                    } else {
                         abort::abort_codegen(
                             context,
                             "Failed to compile lower a function call!",
@@ -195,7 +210,7 @@ pub fn compile<'ctx>(
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
-                    })
+                    }
                 }
                 Err(_) => abort::abort_codegen(
                     context,

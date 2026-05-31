@@ -916,12 +916,18 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
-            let ty: &Type = cast_type.unwrap_or(kind);
+            let target_type: Option<&Type> = cast_type;
+
+            let mut ty: &Type = cast_type.unwrap_or(kind);
+
+            if ty.is_bool_type() {
+                ty = kind;
+            }
 
             let float_value: BasicValueEnum =
                 expressions::floatingpoint::compile(context, ty, *value, *signed, *span).into();
 
-            cast::try_smart_cast(context, cast_type, kind, float_value, *span)
+            cast::try_smart_cast(context, target_type, kind, float_value, *span)
         }
 
         Ast::Integer {
@@ -931,12 +937,18 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
-            let ty: &Type = cast_type.unwrap_or(kind);
+            let target_type: Option<&Type> = cast_type;
+
+            let mut ty: &Type = cast_type.unwrap_or(kind);
+
+            if ty.is_bool_type() {
+                ty = kind;
+            }
 
             let int_value: BasicValueEnum =
                 expressions::integer::compile(context, ty, *value, *signed, *span).into();
 
-            cast::try_smart_cast(context, cast_type, kind, int_value, *span)
+            cast::try_smart_cast(context, target_type, kind, int_value, *span)
         }
 
         Ast::NullPtr { .. } => context

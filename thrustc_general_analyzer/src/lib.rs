@@ -131,7 +131,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                 span,
                 ..
             } => {
-                if parameters.len() > 8 {
+                if parameters.len() > 12 {
                     self.add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0036,
                         "Too many arguments for a single function signature.".into(),

@@ -17,7 +17,7 @@
 
 */
 
-use inkwell::{context::Context, values::IntValue};
+use inkwell::{context::Context, targets::TargetData, values::IntValue};
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
 
@@ -31,6 +31,7 @@ pub fn compile<'ctx>(
     span: Span,
 ) -> IntValue<'ctx> {
     let llvm_context: &Context = context.get_llvm_context();
+    let target_data: &TargetData = context.get_target_data();
 
     match ty {
         Type::Char(..) => llvm_context.i8_type().const_int(value, signed).const_neg(),
@@ -52,6 +53,12 @@ pub fn compile<'ctx>(
             .const_neg(),
         Type::U128 { .. } => llvm_context.i128_type().const_int(value, signed),
         Type::Bool { .. } => llvm_context.bool_type().const_int(value, false),
+        Type::USize { .. } => llvm_context
+            .ptr_sized_int_type(target_data, None)
+            .const_int(value, false),
+        Type::SSize { .. } => llvm_context
+            .ptr_sized_int_type(target_data, None)
+            .const_int(value, true),
 
         what => abort::abort_codegen(
             context,
