@@ -860,11 +860,11 @@ pub fn select_ssa_integer_type<'a>(cast_type: Option<&'a Type>, integer_ty: &'a 
         return ssa_integer_type;
     };
 
-    if cast_type.is_bool_type() {
-        return ssa_integer_type;
+    if cast_type.is_integer_type() {
+        return cast_type;
     }
 
-    cast_type
+    ssa_integer_type
 }
 
 pub fn select_ssa_float_type<'a>(cast_type: Option<&'a Type>, float_ty: &'a Type) -> &'a Type {
@@ -874,9 +874,9 @@ pub fn select_ssa_float_type<'a>(cast_type: Option<&'a Type>, float_ty: &'a Type
         return ssa_float_type;
     };
 
-    if cast_type.is_bool_type() {
-        return ssa_float_type;
+    if cast_type.is_float_type() {
+        return cast_type;
     }
 
-    cast_type
+    ssa_float_type
 }

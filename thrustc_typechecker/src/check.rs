@@ -846,6 +846,36 @@ pub fn check_type_cast(
             | Type::SSize { .. },
         ) => Ok(()),
 
+        (
+            Type::S8 { .. }
+            | Type::S16 { .. }
+            | Type::S32 { .. }
+            | Type::S64 { .. }
+            | Type::U8 { .. }
+            | Type::U16 { .. }
+            | Type::U32 { .. }
+            | Type::U64 { .. }
+            | Type::U128 { .. }
+            | Type::USize { .. }
+            | Type::SSize { .. },
+            Type::Bool { .. },
+        ) => Ok(()),
+
+        (
+            Type::Bool { .. },
+            Type::S8 { .. }
+            | Type::S16 { .. }
+            | Type::S32 { .. }
+            | Type::S64 { .. }
+            | Type::U8 { .. }
+            | Type::U16 { .. }
+            | Type::U32 { .. }
+            | Type::U64 { .. }
+            | Type::U128 { .. }
+            | Type::USize { .. }
+            | Type::SSize { .. },
+        ) => Ok(()),
+
         (Type::Ptr { .. } | Type::Addr(..), Type::Ptr { .. } | Type::Addr(..)) => Ok(()),
         (Type::Ptr { .. }, Type::Array { .. }) if is_allocated => Ok(()),
         (Type::Ptr { subtype: None, .. }, Type::Fn { .. }) if is_allocated => Ok(()),

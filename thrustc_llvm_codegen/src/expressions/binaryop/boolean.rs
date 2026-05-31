@@ -216,8 +216,8 @@ pub fn compile<'ctx>(
     {
         let operator: &'ctx TokenType = binary.1;
 
-        let lhs: BasicValueEnum<'_> = codegen::compile_as_value(context, binary.0, cast_type);
-        let rhs: BasicValueEnum<'_> = codegen::compile_as_value(context, binary.2, cast_type);
+        let lhs: BasicValueEnum<'_> = codegen::compile_as_value(context, binary.0, None);
+        let rhs: BasicValueEnum<'_> = codegen::compile_as_value(context, binary.2, None);
 
         let lhs_type: &Type = binary.0.get_type_for_llvm();
         let rhs_type: &Type = binary.2.get_type_for_llvm();
