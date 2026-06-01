@@ -94,6 +94,26 @@ impl PropertyMetadata {
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, Serialize)]
+pub struct IndexMetadata {
+    is_allocated: bool,
+}
+
+impl IndexMetadata {
+    #[inline]
+    pub fn new(is_allocated: bool) -> Self {
+        Self { is_allocated }
+    }
+}
+
+impl IndexMetadata {
+    #[inline]
+    pub fn is_allocated(&self) -> bool {
+        self.is_allocated
+    }
+}
+
+#[cfg_attr(feature = "fuzz", derive(Arbitrary))]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct ReferenceMetadata {
     is_allocated: bool,
     is_mutable: bool,

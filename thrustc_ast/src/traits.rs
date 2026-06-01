@@ -22,7 +22,7 @@ use thrustc_span::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
 
-use crate::data::{EnumDataField, PropertyDataField, StructureDataFields};
+use crate::ast_logic_data::{EnumDataField, PropertyDataField, StructureDataFields};
 
 pub trait AstBuiltinsExtensions {
     fn is_avalaible_at_compile_time(&self) -> bool;
@@ -87,7 +87,7 @@ pub trait AstLiteralExtensions {
 }
 
 pub trait AstCodeBlockEntensions {
-    fn is_empty_block(&self) -> bool;
+    fn is_empty_code_block(&self) -> bool;
     fn has_terminator(&self) -> bool;
 }
 

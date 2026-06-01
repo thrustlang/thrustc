@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_ast::{Ast, builtins::AstBuiltin, traits::AstCodeLocation};
+use thrustc_ast::{Ast, ast_builtins::AstBuiltin, traits::AstCodeLocation};
 use thrustc_errors::{CompilationIssue, CompilationPosition};
 use thrustc_span::Span;
 use thrustc_token_type::traits::TokenTypeExtensions;
@@ -152,7 +152,7 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
             });
         }
 
-        Ast::Mut { source, .. } => {
+        Ast::Mutation { source, .. } => {
             linter.analyze_expr(source);
         }
 
@@ -216,13 +216,16 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
             | AstBuiltin::BitSizeOf { .. }
             | AstBuiltin::AbiAlignOf { .. } => (),
         },
+
         Ast::As { from, .. } => {
             linter.analyze_expr(from);
         }
+
         Ast::Deref { value, .. } => {
             linter.analyze_expr(value);
         }
-        Ast::DirectRef { expr, .. } => {
+
+        Ast::GetLocation { expr, .. } => {
             linter.analyze_expr(expr);
         }
 

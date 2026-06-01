@@ -28,7 +28,7 @@ use thrustc_typesystem::{
 
 use crate::{
     Ast,
-    data::{
+    ast_logic_data::{
         ConstructorData, EnumData, EnumDataField, PropertyData, PropertyDataField, StructureData,
     },
     traits::{
@@ -39,9 +39,9 @@ use crate::{
     },
 };
 
-mod builtins;
-mod constant;
-mod literal;
+mod builtins_implementations;
+mod constant_implementations;
+mod literal_values_implementations;
 
 impl AstStandardExtensions for Ast<'_> {
     #[inline]
@@ -185,7 +185,7 @@ impl AstStatementExtensions for Ast<'_> {
                 | Ast::Const { .. }
                 | Ast::Static { .. }
                 | Ast::Defer { .. }
-                | Ast::Mut { .. }
+                | Ast::Mutation { .. }
         )
     }
 }
@@ -242,7 +242,7 @@ impl AstExpressionExtensions for Ast<'_> {
 
 impl AstCodeBlockEntensions for Ast<'_> {
     #[inline]
-    fn is_empty_block(&self) -> bool {
+    fn is_empty_code_block(&self) -> bool {
         let Ast::Block { nodes, .. } = self else {
             return false;
         };
@@ -309,6 +309,7 @@ impl AstMemoryExtensions for Ast<'_> {
         match self {
             Ast::Reference { metadata, .. } => Ok(metadata.is_allocated()),
             Ast::Property { metadata, .. } => Ok(metadata.is_allocated()),
+            Ast::Index { metadata, .. } => Ok(metadata.is_allocated()),
 
             _ => Ok(self.get_value_type()?.is_ptr_like_type()),
         }
@@ -326,19 +327,19 @@ impl AstMemoryExtensions for Ast<'_> {
 
 impl AstPropertyDataExtensions for PropertyData {
     #[inline]
-    fn get_first_property(&self) -> Option<&crate::data::PropertyDataField> {
+    fn get_first_property(&self) -> Option<&crate::ast_logic_data::PropertyDataField> {
         self.first()
     }
 }
 
 impl AstPropertyDataFieldExtensions for PropertyDataField {
     #[inline]
-    fn get_base_type(&self) -> thrustc_typesystem::Type {
+    fn get_base_type(&self) -> Type {
         self.0.clone()
     }
 
     #[inline]
-    fn get_property_type(&self) -> thrustc_typesystem::Type {
+    fn get_property_type(&self) -> Type {
         self.1.0.clone()
     }
 
@@ -372,7 +373,7 @@ impl<'a> AstStructureDataExtensions<'a> for StructureData<'a> {
     }
 
     #[inline]
-    fn get_fields(&self) -> &crate::data::StructureDataFields<'_> {
+    fn get_fields(&self) -> &crate::ast_logic_data::StructureDataFields<'_> {
         &self.1
     }
 }

@@ -29,10 +29,10 @@ use inkwell::values::BasicValueEnum;
 use inkwell::values::GlobalValue;
 use inkwell::values::PointerValue;
 
-use thrustc_ast::metadata::ConstantMetadata;
-use thrustc_ast::metadata::LLVMConstantMetadata;
-use thrustc_ast::metadata::LLVMStaticMetadata;
-use thrustc_ast::metadata::StaticMetadata;
+use thrustc_ast::ast_metadata::ConstantMetadata;
+use thrustc_ast::ast_metadata::LLVMConstantMetadata;
+use thrustc_ast::ast_metadata::LLVMStaticMetadata;
+use thrustc_ast::ast_metadata::StaticMetadata;
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributeComparator;
 use thrustc_llvm_attributes::LLVMAttributes;

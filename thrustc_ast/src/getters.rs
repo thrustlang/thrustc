@@ -50,11 +50,13 @@ impl AstGetType for Ast<'_> {
 
             // Variables & mutation
             Ast::Var { kind, .. } => Ok(kind),
-            Ast::Mut { kind, .. } => Ok(kind),
+            Ast::Mutation { kind, .. } => Ok(kind),
 
             // Reference
             Ast::Reference { kind, .. } => Ok(kind),
-            Ast::DirectRef { kind, .. } => Ok(kind),
+            Ast::GetLocation { kind, .. } => Ok(kind),
+
+            // Memory operations
             Ast::Deref { kind, .. } => Ok(kind),
 
             // LLI
@@ -158,9 +160,9 @@ impl AstGetType for Ast<'_> {
 
             // Variables and references
             Ast::Var { kind, .. } => Ok(kind),
-            Ast::Mut { kind, .. } => Ok(kind),
+            Ast::Mutation { kind, .. } => Ok(kind),
             Ast::Reference { kind, .. } => Ok(kind),
-            Ast::DirectRef { kind, .. } => Ok(kind),
+            Ast::GetLocation { kind, .. } => Ok(kind),
             Ast::FunctionParameter { kind, .. } => Ok(kind),
             Ast::AssemblerFunctionParameter { kind, .. } => Ok(kind),
 
@@ -254,11 +256,11 @@ impl AstCodeLocation for Ast<'_> {
             Ast::AssemblerFunctionParameter { span, .. } => *span,
 
             // Mutation
-            Ast::Mut { span, .. } => *span,
+            Ast::Mutation { span, .. } => *span,
 
             // References variants
             Ast::Reference { span, .. } => *span,
-            Ast::DirectRef { span, .. } => *span,
+            Ast::GetLocation { span, .. } => *span,
 
             // LLI
             Ast::Address { span, .. } => *span,

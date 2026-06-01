@@ -260,7 +260,7 @@ impl<'linter> Linter<'linter> {
                 self.analyze_stmt(block);
             }
 
-            Ast::Mut { source, value, .. } => {
+            Ast::Mutation { source, value, .. } => {
                 if let Ast::Reference { name, .. } = &**source {
                     self::mark_as_used(self, name);
                     self::mark_as_mutated(self, name);

@@ -19,7 +19,7 @@
 
 use thrustc_typesystem::Type;
 
-use crate::traits::{ControlContextExtensions, PositionExtensions, TypeContextExtensions};
+use crate::traits::{PositionExtensions, TypeContextExtensions};
 
 pub mod traits;
 
@@ -62,54 +62,56 @@ impl ControlContext {
     }
 }
 
-impl ControlContextExtensions for ControlContext {
+impl ControlContext {
     #[inline]
-    fn set_position(&mut self, position: Position) {
+    pub fn set_position(&mut self, position: Position) {
         self.position = position;
     }
 
     #[inline]
-    fn reset_position(&mut self) {
+    pub fn reset_position(&mut self) {
         self.position = Position::NoRelevant;
     }
 
     #[inline]
-    fn add_sync_position(&mut self, other: SynchronizationPosition) {
+    pub fn add_sync_position(&mut self, other: SynchronizationPosition) {
         self.synchronous_position.push(other);
     }
 
     #[inline]
-    fn pop_sync_position(&mut self) {
+    pub fn pop_sync_position(&mut self) {
         self.synchronous_position.pop();
     }
 
     #[inline]
-    fn reset_sync_position(&mut self) {
+    pub fn reset_sync_position(&mut self) {
         self.synchronous_position.clear();
     }
 
     #[inline]
-    fn increase_expression_depth(&mut self) {
+    pub fn increase_expression_depth(&mut self) {
         self.expression_depth = self.expression_depth.saturating_add(1);
     }
 
     #[inline]
-    fn decrease_expression_depth(&mut self) {
+    pub fn decrease_expression_depth(&mut self) {
         self.expression_depth = self.expression_depth.saturating_sub(1);
     }
+}
 
+impl ControlContext {
     #[inline]
-    fn get_sync_position(&self) -> Option<&SynchronizationPosition> {
+    pub fn get_sync_position(&self) -> Option<&SynchronizationPosition> {
         self.synchronous_position.last()
     }
 
     #[inline]
-    fn get_expression_depth(&self) -> u32 {
+    pub fn get_expression_depth(&self) -> u32 {
         self.expression_depth
     }
 
     #[inline]
-    fn get_position(&self) -> Position {
+    pub fn get_position(&self) -> Position {
         self.position
     }
 }

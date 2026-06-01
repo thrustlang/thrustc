@@ -41,7 +41,7 @@ pub fn equal_precedence<'parser>(
 
         let expr: Ast = expressions::parse_expr(ctx)?;
 
-        expression = Ast::Mut {
+        expression = Ast::Mutation {
             source: expression.into(),
             value: expr.into(),
             kind: Type::Void(span),

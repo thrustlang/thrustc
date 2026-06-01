@@ -18,8 +18,8 @@
 */
 
 use thrustc_ast::{
-    data::{EnumData, EnumDataField, StructureData},
-    metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
+    ast_logic_data::{EnumData, EnumDataField, StructureData},
+    ast_metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 };
 use thrustc_errors::CompilationIssue;
 use thrustc_span::Span;

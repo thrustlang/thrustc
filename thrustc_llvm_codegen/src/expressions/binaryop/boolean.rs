@@ -197,7 +197,6 @@ fn compile_bool_operation<'ctx>(
 pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     binary: BinaryOperation<'ctx>,
-    cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
     let span: Span = binary.3;
 

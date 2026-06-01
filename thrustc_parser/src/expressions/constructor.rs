@@ -17,8 +17,10 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, data::ConstructorData, traits::AstStructureDataExtensions};
-use thrustc_entities::parser::{FoundSymbolId, Struct};
+use thrustc_ast::{
+    Ast, NodeId, ast_logic_data::ConstructorData, traits::AstStructureDataExtensions,
+};
+use thrustc_entities::parser_entities::{FoundSymbolId, Struct};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};

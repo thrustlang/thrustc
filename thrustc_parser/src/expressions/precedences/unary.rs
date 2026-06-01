@@ -39,7 +39,7 @@ pub fn unary_precedence<'parser>(
         let operator: TokenType = operator_tk.kind;
         let span: Span = operator_tk.get_span();
 
-        let expr: Ast = precedences::indirect::indirect_precedence(ctx)?;
+        let expr: Ast = precedences::indirect_call::indirect_precedence(ctx)?;
 
         ctx.leave_expression();
 
@@ -58,7 +58,7 @@ pub fn unary_precedence<'parser>(
         let operator: TokenType = operator_tk.kind;
         let span: Span = operator_tk.get_span();
 
-        let expr: Ast = precedences::indirect::indirect_precedence(ctx)?;
+        let expr: Ast = precedences::indirect_call::indirect_precedence(ctx)?;
         let expr_type: &Type = expr.get_value_type()?;
 
         let kind: Type = expr_type.narrowing();
@@ -80,7 +80,7 @@ pub fn unary_precedence<'parser>(
         let operator: TokenType = operator_tk.kind;
         let span: Span = operator_tk.get_span();
 
-        let expr: Ast = precedences::indirect::indirect_precedence(ctx)?;
+        let expr: Ast = precedences::indirect_call::indirect_precedence(ctx)?;
         let expr_type: Type = expr.get_value_type()?.clone();
 
         ctx.leave_expression();
@@ -135,7 +135,7 @@ pub fn unary_precedence<'parser>(
         });
     }
 
-    let instr: Ast = precedences::indirect::indirect_precedence(ctx)?;
+    let instr: Ast = precedences::indirect_call::indirect_precedence(ctx)?;
 
     ctx.leave_expression();
 

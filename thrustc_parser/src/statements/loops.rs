@@ -26,7 +26,7 @@ use thrustc_typesystem::Type;
 
 use crate::{
     ParserContext, expressions,
-    statements::{self, block, var},
+    statements::{self, code_block, variable},
 };
 
 pub fn parse_for_loop_stmt<'parser>(
@@ -41,7 +41,7 @@ pub fn parse_for_loop_stmt<'parser>(
     let span: Span = for_tk.get_span();
 
     if ctx.check(TokenType::LBrace) {
-        let body: Ast<'_> = block::parse_code_block_stmt(ctx)?;
+        let body: Ast<'_> = code_block::parse_code_block_stmt(ctx)?;
 
         Ok(Ast::Loop {
             block: body.into(),
@@ -53,7 +53,7 @@ pub fn parse_for_loop_stmt<'parser>(
         while ctx.match_token(TokenType::SemiColon)? {}
 
         let body: Ast<'_> = if ctx.check(TokenType::LBrace) {
-            block::parse_code_block_stmt(ctx)?
+            code_block::parse_code_block_stmt(ctx)?
         } else {
             statements::parse(ctx)?
         };
@@ -68,12 +68,12 @@ pub fn parse_for_loop_stmt<'parser>(
         ctx.get_mut_symbols().begin_scope();
         ctx.begin_scope();
 
-        let local: Ast = var::build_variable_stmt(ctx)?;
+        let local: Ast = variable::build_variable_stmt(ctx)?;
         let condition: Ast = expressions::parse_expression(ctx)?;
         let actions: Ast = expressions::parse_expression(ctx)?;
 
         let body: Ast = if ctx.check(TokenType::LBrace) {
-            block::parse_code_block_stmt(ctx)?
+            code_block::parse_code_block_stmt(ctx)?
         } else {
             statements::parse(ctx)?
         };
@@ -104,7 +104,7 @@ pub fn parse_loop_stmt<'parser>(
 
     let span: Span = loop_tk.get_span();
     let body: Ast = if ctx.check(TokenType::LBrace) {
-        block::parse_code_block_stmt(ctx)?
+        code_block::parse_code_block_stmt(ctx)?
     } else {
         statements::parse(ctx)?
     };
@@ -132,7 +132,7 @@ pub fn parse_while_loop_stmt<'parser>(
         ctx.get_mut_symbols().begin_scope();
         ctx.begin_scope();
 
-        let local: Ast<'_> = var::build_variable_stmt(ctx)?;
+        let local: Ast<'_> = variable::build_variable_stmt(ctx)?;
 
         ctx.consume(
             TokenType::Colon,
@@ -143,7 +143,7 @@ pub fn parse_while_loop_stmt<'parser>(
         let condition: Ast = expressions::parse_expr(ctx)?;
 
         let body: Ast = if ctx.check(TokenType::LBrace) {
-            block::parse_code_block_stmt(ctx)?
+            code_block::parse_code_block_stmt(ctx)?
         } else {
             statements::parse(ctx)?
         };
@@ -161,7 +161,7 @@ pub fn parse_while_loop_stmt<'parser>(
         })
     } else {
         let condition: Ast = expressions::parse_expr(ctx)?;
-        let block: Ast = block::parse_code_block_stmt(ctx)?;
+        let block: Ast = code_block::parse_code_block_stmt(ctx)?;
 
         Ok(Ast::While {
             variable: None,

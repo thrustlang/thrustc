@@ -17,15 +17,12 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, metadata::ConstantMetadata, traits::AstGetType};
+use thrustc_ast::{Ast, NodeId, ast_metadata::ConstantMetadata, traits::AstGetType};
 use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
 use thrustc_attributes::ThrustAttributes;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_mir::atomicord::ThrustAtomicOrdering;
-use thrustc_parser_context::{
-    Position,
-    traits::{ControlContextExtensions, TypeContextExtensions},
-};
+use thrustc_parser_context::{Position, traits::TypeContextExtensions};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
@@ -45,9 +42,9 @@ pub fn parse_constant_stmt<'parser>(
     let modificators: Modificators =
         modificators::build_statement_modificator(ctx, &[TokenType::Identifier])?;
 
-    let thread_local: bool = modificators.has_lazythread();
-    let is_volatile: bool = modificators.has_volatile();
-    let atomic_ord: Option<ThrustAtomicOrdering> = modificators.get_atomic_ordering();
+    let thread_local: bool = modificators.has_lazythread_modificator();
+    let is_volatile: bool = modificators.has_volatile_modificator();
+    let atomic_ord: Option<ThrustAtomicOrdering> = modificators.get_atomic_ordering_modificator();
 
     let const_tk: &Token = ctx.consume(
         TokenType::Identifier,

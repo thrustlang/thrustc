@@ -19,17 +19,17 @@
 
 use thrustc_ast::{
     Ast,
-    metadata::{ConstantMetadata, FunctionParameterMetadata, LocalMetadata, StaticMetadata},
+    ast_metadata::{ConstantMetadata, FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 };
 use thrustc_attributes::ThrustAttributes;
 use thrustc_span::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 
-pub mod analyzer;
-pub mod linter;
-pub mod parser;
-pub mod typechecker;
+pub mod analyzer_entities;
+pub mod linter_entities;
+pub mod parser_entities;
+pub mod typechecker_entities;
 
 pub type BinaryOperation<'entity> = (
     &'entity Ast<'entity>,

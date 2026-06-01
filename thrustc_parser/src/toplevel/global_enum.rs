@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, data::EnumData};
+use thrustc_ast::{Ast, NodeId, ast_logic_data::EnumData};
 use thrustc_attributes::ThrustAttributes;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
@@ -27,8 +27,9 @@ use thrustc_typesystem::Type;
 
 use crate::{ParserContext, attributes, expressions, typegeneration};
 
-pub fn parse_enum_stmt<'parser>(
+pub fn build_enum<'parser>(
     ctx: &mut ParserContext<'parser>,
+    parse_forward: bool,
 ) -> Result<Ast<'parser>, CompilationIssue> {
     ctx.consume(
         TokenType::Enum,
@@ -36,16 +37,16 @@ pub fn parse_enum_stmt<'parser>(
         "Expected 'enum'.".into(),
     )?;
 
-    let name: &Token = ctx.consume(
+    let name_tk: &Token = ctx.consume(
         TokenType::Identifier,
         CompilationIssueCode::E0001,
         "Expected identifier.".into(),
     )?;
 
-    let enum_name: &str = name.get_lexeme();
-    let span: Span = name.get_span();
+    let name: &str = name_tk.get_lexeme();
+    let span: Span = name_tk.get_span();
 
-    let enum_attributes: ThrustAttributes =
+    let attributes: ThrustAttributes =
         attributes::build_compiler_attributes(ctx, &[TokenType::LBrace])?;
 
     ctx.consume(
@@ -54,7 +55,7 @@ pub fn parse_enum_stmt<'parser>(
         "Expected '{'.".into(),
     )?;
 
-    let mut data: EnumData = Vec::with_capacity(u8::MAX as usize);
+    let mut data: EnumData = EnumData::with_capacity(u8::MAX as usize);
 
     loop {
         if ctx.check(TokenType::RBrace) {
@@ -84,18 +85,20 @@ pub fn parse_enum_stmt<'parser>(
             ctx.consume(
                 TokenType::SemiColon,
                 CompilationIssueCode::E0001,
-                String::from("Expected ';'."),
+                "Expected ';'.".into(),
             )?;
 
             data.push((name, field_type, expr));
-
-            continue;
         } else {
-            ctx.consume(
-                TokenType::Identifier,
+            let span: Span = ctx.advance()?.get_span();
+
+            ctx.add_error_report(CompilationIssue::Error(
                 CompilationIssueCode::E0001,
-                "Expected identifier.".into(),
-            )?;
+                "Expected identifier in enum field.".into(),
+                "You should make it match.".into(),
+                None,
+                span,
+            ));
         }
     }
 
@@ -105,19 +108,19 @@ pub fn parse_enum_stmt<'parser>(
         "Expected '}'.".into(),
     )?;
 
-    if !ctx.is_main_scope() {
+    if parse_forward {
         ctx.get_mut_symbols()
-            .new_enum(enum_name, (data.clone(), enum_attributes.clone()), span)?;
+            .new_global_enum(name, (data, attributes))?;
 
+        Ok(Ast::new_nullptr(span))
+    } else {
         Ok(Ast::Enum {
-            name: enum_name,
+            name,
             data,
-            attributes: enum_attributes,
+            attributes,
             kind: Type::Void(span),
             span,
             id: NodeId::new(),
         })
-    } else {
-        Ok(Ast::invalid_ast(span))
     }
 }

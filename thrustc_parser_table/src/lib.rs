@@ -26,7 +26,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_span::Span;
 
-use thrustc_entities::parser::{
+use thrustc_entities::parser_entities::{
     AssemblerFunction, AssemblerFunctions, ConstantSymbol, CustomTypeSymbol, EnumSymbol,
     FoundSymbolId, Function, Functions, GlobalConstants, GlobalCustomTypes, GlobalEnums,
     GlobalStatics, GlobalStructs, Intrinsic, Intrinsics, LLISymbol, LLIs, LocalConstants,

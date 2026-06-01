@@ -33,12 +33,12 @@ use thrustc_typesystem::{
 };
 
 use crate::{
-    TypeChecker, check, context::TypeCheckerControlContext, metadata::TypeCheckerNodeMetadata,
+    TypeChecker, checking, context::TypeCheckerControlContext, metadata::TypeCheckerNodeMetadata,
     operations,
 };
 
 mod builtins;
-mod call;
+mod call_expr;
 
 pub fn validate<'type_checker>(
     typechecker: &mut TypeChecker<'type_checker>,
@@ -175,7 +175,7 @@ pub fn validate<'type_checker>(
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         &base_type,
                         item_type,
                         Some(node),
@@ -238,7 +238,7 @@ pub fn validate<'type_checker>(
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         &base_type,
                         item_type,
                         Some(node),
@@ -366,7 +366,7 @@ pub fn validate<'type_checker>(
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         target_type,
                         from_type,
                         Some(expr),
@@ -409,15 +409,15 @@ pub fn validate<'type_checker>(
             name, args, span, ..
         } => {
             if let Some(metadata) = typechecker.get_table().get_function(name) {
-                return call::validate(typechecker, *metadata, args, span);
+                return call_expr::validate(typechecker, *metadata, args, span);
             }
 
             if let Some(metadata) = typechecker.get_table().get_intrinsic(name) {
-                return call::validate(typechecker, *metadata, args, span);
+                return call_expr::validate(typechecker, *metadata, args, span);
             }
 
             if let Some(metadata) = typechecker.get_table().get_asm_function(name) {
-                return call::validate(typechecker, *metadata, args, span);
+                return call_expr::validate(typechecker, *metadata, args, span);
             }
 
             typechecker.add_error_report(CompilationIssue::FrontEndBug(
@@ -506,7 +506,7 @@ pub fn validate<'type_checker>(
             let control_context: &mut TypeCheckerControlContext =
                 typechecker.get_mut_control_context();
 
-            check::check_type_cast(cast_type, from_type, metadata, span, control_context)?;
+            checking::check_type_cast(cast_type, from_type, metadata, span, control_context)?;
 
             control_context.reset_type_cast_depth();
 
@@ -694,7 +694,7 @@ pub fn validate<'type_checker>(
 
             Ok(())
         }
-        Ast::DirectRef { expr, kind, .. } => {
+        Ast::GetLocation { expr, kind, .. } => {
             let expr_type: &Type = expr.get_value_type()?;
 
             if expr_type.contains_void_type() || expr_type.is_void_type() {

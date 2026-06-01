@@ -161,7 +161,7 @@ pub enum TokenType {
     Const,
     While,
     Loop,
-    DirectRef,
+    Reference,
 
     // --- Literals ---
     True,

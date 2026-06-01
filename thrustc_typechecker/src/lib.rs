@@ -19,7 +19,7 @@
 
 use thrustc_ast::{
     Ast,
-    traits::{AstCodeLocation, AstGetType, AstLiteralExtensions, AstStandardExtensions},
+    traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
 };
 
 use thrustc_diagnostician::Diagnostician;
@@ -28,10 +28,7 @@ use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_span::Span;
 use thrustc_typesystem::{
     Type,
-    traits::{
-        DereferenceExtensions, TypeCodeLocation, TypeExtensions, TypeIsExtensions,
-        TypePointerExtensions, VoidTypeExtensions,
-    },
+    traits::{DereferenceExtensions, TypeIsExtensions, VoidTypeExtensions},
 };
 
 use crate::{
@@ -40,13 +37,13 @@ use crate::{
     table::TypeCheckerSymbolsTable,
 };
 
-mod check;
+mod checking;
 mod context;
 mod expressions;
-mod globals;
 mod metadata;
 mod operations;
 mod table;
+mod toplevel;
 
 #[derive(Debug)]
 pub struct TypeChecker<'type_checker> {
@@ -145,7 +142,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
     pub fn analyze_decl(&mut self, node: &'type_checker Ast) -> Result<(), CompilationIssue> {
         match node {
             Ast::Intrinsic { .. } | Ast::AssemblerFunction { .. } | Ast::Function { .. } => {
-                globals::functions::validate(self, node)
+                toplevel::functions::validate(self, node)
             }
             Ast::CustomType { .. } | Ast::GlobalAssembler { .. } | Ast::Struct { .. } => Ok(()),
             Ast::Enum { data, .. } => {
@@ -160,7 +157,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                             let control_context: &mut TypeCheckerControlContext =
                                 self.get_mut_control_context();
 
-                            check::check_type_together(
+                            checking::check_type_together(
                                 target_type,
                                 from_type,
                                 Some(expr),
@@ -199,7 +196,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         static_type,
                         value_type,
                         Some(value),
@@ -232,7 +229,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         const_type,
                         value_type,
                         Some(value),
@@ -277,7 +274,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                             control_context.reset_checking_depth();
 
-                            if let Err(error) = check::check_type_together(
+                            if let Err(error) = checking::check_type_together(
                                 target_type,
                                 from_type,
                                 Some(expr),
@@ -316,7 +313,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         static_type,
                         value_type,
                         Some(value),
@@ -349,7 +346,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         const_type,
                         value_type,
                         Some(value),
@@ -394,55 +391,22 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                 let value_type: &Type = value.get_value_type()?;
 
-                let is_value_literal_ptr: bool = value.is_literal_ptr_value();
+                {
+                    let control_context: &mut TypeCheckerControlContext =
+                        self.get_mut_control_context();
 
-                let is_ptr_type: bool = value_type.is_ptr_like_type() && value.is_reference()
-                    || value_type.is_ptr_like_type()
-                        && (!value.is_literal_value() || is_value_literal_ptr);
+                    control_context.reset_checking_depth();
 
-                if is_ptr_type {
-                    {
-                        let ptr_type: Type = Type::Ptr {
-                            subtype: Some(value_type.clone().into()),
-                            address_space: value_type.get_address_space(),
-                            span: value_type.get_span(),
-                        };
-
-                        let control_context: &mut TypeCheckerControlContext =
-                            self.get_mut_control_context();
-
-                        control_context.reset_checking_depth();
-
-                        if let Err(error) = check::check_type_together(
-                            local_type,
-                            &ptr_type,
-                            Some(value),
-                            None,
-                            type_metadata,
-                            node.get_span(),
-                            control_context,
-                        ) {
-                            self.add_error_report(error);
-                        }
-                    }
-                } else {
-                    {
-                        let control_context: &mut TypeCheckerControlContext =
-                            self.get_mut_control_context();
-
-                        control_context.reset_checking_depth();
-
-                        if let Err(error) = check::check_type_together(
-                            local_type,
-                            value_type,
-                            Some(value),
-                            None,
-                            type_metadata,
-                            node.get_span(),
-                            control_context,
-                        ) {
-                            self.add_error_report(error);
-                        }
+                    if let Err(error) = checking::check_type_together(
+                        local_type,
+                        value_type,
+                        Some(value),
+                        None,
+                        type_metadata,
+                        node.get_span(),
+                        control_context,
+                    ) {
+                        self.add_error_report(error);
                     }
                 }
 
@@ -493,7 +457,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         &Type::Bool { span },
                         condition.get_value_type()?,
                         Some(condition),
@@ -540,7 +504,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         span: condition.get_span(),
                     };
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         &target_type,
                         condition.get_value_type()?,
                         Some(condition),
@@ -585,7 +549,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     let target_type: Type = Type::Bool { span };
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         &target_type,
                         condition.get_value_type()?,
                         Some(condition),
@@ -623,7 +587,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     let target_type: Type = Type::Bool { span };
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         &target_type,
                         condition.get_value_type()?,
                         Some(condition),
@@ -677,7 +641,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = check::check_type_together(
+                    if let Err(error) = checking::check_type_together(
                         return_type,
                         expr.get_value_type()?,
                         Some(expr),
@@ -694,7 +658,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                 Ok(())
             }
-            Ast::Mut { source, value, .. } => {
+            Ast::Mutation { source, value, .. } => {
                 let metadata: TypeCheckerNodeMetadata =
                     TypeCheckerNodeMetadata::new(value.is_totaly_literal_value());
 
@@ -711,7 +675,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                         control_context.reset_checking_depth();
 
-                        if let Err(error) = check::check_type_together(
+                        if let Err(error) = checking::check_type_together(
                             &lhs_pure_type,
                             &rhs_pure_type,
                             Some(value),

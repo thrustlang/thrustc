@@ -22,7 +22,7 @@ use thrustc_ast::{
     traits::{AstCodeLocation, AstStandardExtensions},
 };
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
-use thrustc_entities::parser::AssemblerFunctionParametersTypes;
+use thrustc_entities::parser_entities::AssemblerFunctionParametersTypes;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};

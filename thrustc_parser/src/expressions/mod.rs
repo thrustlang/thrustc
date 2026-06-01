@@ -22,8 +22,8 @@ pub mod asm;
 pub mod call;
 pub mod constructor;
 pub mod deref;
-pub mod enumv;
-pub mod farray;
+pub mod enum_value;
+pub mod fixed_array;
 pub mod index;
 pub mod precedences;
 pub mod property;
@@ -31,7 +31,7 @@ pub mod reference;
 
 use thrustc_ast::Ast;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_parser_context::{SynchronizationPosition, traits::ControlContextExtensions};
+use thrustc_parser_context::SynchronizationPosition;
 use thrustc_token_type::TokenType;
 
 use crate::ParserContext;

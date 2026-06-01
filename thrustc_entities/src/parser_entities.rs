@@ -18,8 +18,8 @@
 */
 
 use thrustc_ast::{
-    data::EnumData,
-    metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
+    ast_logic_data::EnumData,
+    ast_metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 };
 use thrustc_attributes::ThrustAttributes;
 use thrustc_span::Span;

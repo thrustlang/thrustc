@@ -19,11 +19,11 @@
 
 use thrustc_ast::{
     Ast, NodeId,
-    metadata::{
+    ast_metadata::{
         FunctionParameterMetadata, LocalMetadata, ReferenceMetadata, ReferenceType, StaticMetadata,
     },
 };
-use thrustc_entities::parser::{
+use thrustc_entities::parser_entities::{
     ConstantSymbol, FoundSymbolId, Function, LLISymbol, LocalSymbol, ParameterSymbol, StaticSymbol,
 };
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};

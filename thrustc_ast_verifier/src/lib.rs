@@ -21,7 +21,7 @@
 
 use thrustc_ast::{
     Ast,
-    builtins::AstBuiltin,
+    ast_builtins::AstBuiltin,
     traits::{
         AstCodeLocation, AstExpressionExtensions, AstStandardExtensions, AstStatementExtensions,
     },
@@ -131,7 +131,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                     _ => {
                         self.add_error(CompilationIssue::Error(
                             thrustc_errors::CompilationIssueCode::E0001,
-                            "Expected a top entity, not a statement, and never an expression"
+                            "Expected a top entity, not a statement, and never an expression."
                                 .into(),
                             "You should remove it.".into(),
                             None,
@@ -259,7 +259,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
             | Ast::BreakAll { .. }
             | Ast::Struct { .. } => {}
 
-            Ast::Mut { source, value, .. } => {
+            Ast::Mutation { source, value, .. } => {
                 self.expected_expression(source);
                 self.analyze_expression(source);
 
@@ -373,7 +373,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 self.analyze_expression(node);
             }
 
-            Ast::DirectRef { expr: node, .. } => {
+            Ast::GetLocation { expr: node, .. } => {
                 self.expected_expression(node);
                 self.analyze_expression(node);
             }

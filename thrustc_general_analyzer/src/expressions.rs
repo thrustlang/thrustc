@@ -19,7 +19,7 @@
 
 use thrustc_ast::{
     Ast,
-    builtins::AstBuiltin,
+    ast_builtins::AstBuiltin,
     traits::{AstCodeLocation, AstGetType, AstMemoryExtensions, AstStandardExtensions},
 };
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
@@ -134,7 +134,7 @@ pub fn validate<'analyzer>(
             Ok(())
         }
 
-        Ast::DirectRef { expr, span, .. } => {
+        Ast::GetLocation { expr, span, .. } => {
             let expr_type: &Type = expr.get_value_type()?;
 
             if expr.is_reference() && !expr.is_memory_assigned_value()? {

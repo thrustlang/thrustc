@@ -19,7 +19,7 @@
 
 use thrustc_ast::{
     Ast,
-    data::StructureData,
+    ast_logic_data::StructureData,
     traits::{AstGetType, AstStandardExtensions, AstStructFieldsDataExtensions},
 };
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
@@ -39,7 +39,7 @@ use thrustc_typesystem::{
     },
 };
 
-use thrustc_entities::parser::{
+use thrustc_entities::parser_entities::{
     ConstantSymbol, CustomTypeSymbol, FoundSymbolId, LocalSymbol, ParameterSymbol, StaticSymbol,
     Struct,
 };

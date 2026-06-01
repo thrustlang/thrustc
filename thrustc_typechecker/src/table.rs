@@ -19,7 +19,7 @@
 
 use ahash::AHashMap as HashMap;
 
-use thrustc_entities::typechecker::*;
+use thrustc_entities::typechecker_entities::*;
 
 #[derive(Debug)]
 pub struct TypeCheckerSymbolsTable<'symbol> {

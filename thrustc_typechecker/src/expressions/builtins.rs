@@ -19,7 +19,7 @@
 
 use thrustc_ast::{
     Ast,
-    builtins::AstBuiltin,
+    ast_builtins::AstBuiltin,
     traits::{AstCodeLocation, AstGetType},
 };
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};

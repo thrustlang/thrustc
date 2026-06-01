@@ -265,7 +265,7 @@ impl std::fmt::Display for TokenType {
             TokenType::GlobalAsm => write!(f, "global_asm"),
 
             // Direct Reference
-            TokenType::DirectRef => write!(f, "ref"),
+            TokenType::Reference => write!(f, "ref"),
 
             // Types
             TokenType::Address => write!(f, "address"),

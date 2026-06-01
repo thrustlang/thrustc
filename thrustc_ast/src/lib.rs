@@ -28,22 +28,22 @@ use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 
 use crate::{
-    builtins::AstBuiltin,
-    data::{ConstructorData, EnumData, PropertyData, StructureData},
-    metadata::{
+    ast_builtins::AstBuiltin,
+    ast_logic_data::{ConstructorData, EnumData, PropertyData, StructureData},
+    ast_metadata::{
         CastingMetadata, ConstantMetadata, DereferenceMetadata, FunctionParameterMetadata,
-        LocalMetadata, PropertyMetadata, ReferenceMetadata, StaticMetadata,
+        IndexMetadata, LocalMetadata, PropertyMetadata, ReferenceMetadata, StaticMetadata,
     },
 };
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
 
-pub mod builtins;
-pub mod data;
+pub mod ast_builtins;
+pub mod ast_logic_data;
+pub mod ast_metadata;
 mod getters;
 mod impls;
-pub mod metadata;
 pub mod traits;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
@@ -122,6 +122,7 @@ pub enum Ast<'ast> {
     Index {
         source: std::boxed::Box<Ast<'ast>>,
         index: std::boxed::Box<Ast<'ast>>,
+        metadata: IndexMetadata,
         kind: Type,
         span: Span,
     },
@@ -383,7 +384,7 @@ pub enum Ast<'ast> {
     },
 
     // Mutation
-    Mut {
+    Mutation {
         source: std::boxed::Box<Ast<'ast>>,
         value: std::boxed::Box<Ast<'ast>>,
         kind: Type,
@@ -433,7 +434,7 @@ pub enum Ast<'ast> {
     },
 
     // Expressions
-    DirectRef {
+    GetLocation {
         expr: std::boxed::Box<Ast<'ast>>,
         kind: Type,
         span: Span,
@@ -605,6 +606,15 @@ impl<'ast> Ast<'ast> {
                 address_space: None,
                 span,
             },
+        }
+    }
+
+    #[inline]
+    pub fn new_unreacheable(kind: Type, span: Span) -> Ast<'ast> {
+        Ast::Unreachable {
+            span,
+            kind,
+            id: NodeId::new(),
         }
     }
 

@@ -21,7 +21,7 @@
 
 use thrustc_ast::{Ast, NodeId, traits::AstGetType};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_parser_context::traits::{ControlContextExtensions, PositionExtensions};
+use thrustc_parser_context::traits::PositionExtensions;
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{TokenType, traits::TokenTypeBuiltinExtensions};
@@ -29,7 +29,7 @@ use thrustc_typesystem::{Type, traits::TypeExtensions};
 
 use crate::{
     ParserContext, builtins,
-    expressions::{self, array, asm, call, constructor, deref, enumv, farray, reference},
+    expressions::{self, array, asm, call, constructor, deref, enum_value, fixed_array, reference},
     reinterpret,
 };
 
@@ -38,14 +38,12 @@ pub fn lower_precedence<'parser>(
 ) -> Result<Ast<'parser>, CompilationIssue> {
     ctx.enter_expression()?;
 
-    let primary: Ast = match &ctx.peek().kind {
+    let primary_expr: Ast = match &ctx.peek().kind {
         TokenType::New => constructor::build_constructor(ctx)?,
 
-        TokenType::Fixed => farray::build_fixed_array(ctx)?,
+        TokenType::Fixed => fixed_array::build_fixed_array(ctx)?,
         TokenType::LBracket => array::build_array(ctx)?,
         TokenType::Deref => deref::build_dereference(ctx)?,
-
-        tk_type if tk_type.is_builtin() => builtins::build_builtin(ctx, *tk_type)?,
 
         TokenType::Asm => asm::build_asm_code_block(ctx)?,
 
@@ -253,7 +251,7 @@ pub fn lower_precedence<'parser>(
             let span: Span = tk.get_span();
 
             if ctx.match_token(TokenType::Arrow)? {
-                enumv::build_enum_value(ctx, name, span)?
+                enum_value::build_enum_value(ctx, name, span)?
             } else if ctx.match_token(TokenType::LParen)? {
                 call::build_call(ctx, name, span)?
             } else if ctx.match_token(TokenType::ColonColon)? {
@@ -263,13 +261,13 @@ pub fn lower_precedence<'parser>(
             }
         }
 
-        TokenType::DirectRef => {
+        TokenType::Reference => {
             let span: Span = ctx.advance()?.get_span();
 
             let expr: Ast = expressions::parse_expr(ctx)?;
             let expr_type: &Type = expr.get_value_type()?;
 
-            Ast::DirectRef {
+            Ast::GetLocation {
                 expr: expr.clone().into(),
                 kind: expr_type.get_type_ref(),
                 span,
@@ -279,21 +277,23 @@ pub fn lower_precedence<'parser>(
 
         TokenType::True => {
             let span: Span = ctx.advance()?.get_span();
+
             Ast::new_boolean(Type::Bool { span }, 1, span)
         }
+
         TokenType::False => {
             let span: Span = ctx.advance()?.get_span();
+
             Ast::new_boolean(Type::Bool { span }, 0, span)
         }
+
         TokenType::Unreachable => {
             let span: Span = ctx.advance()?.get_span();
 
-            Ast::Unreachable {
-                span,
-                kind: Type::Void(span),
-                id: NodeId::new(),
-            }
+            Ast::new_unreacheable(Type::Void(span), span)
         }
+
+        tk_type if tk_type.is_builtin() => builtins::build_builtin(ctx, *tk_type)?,
 
         _ => {
             let previous: &Token = ctx.advance()?;
@@ -316,5 +316,5 @@ pub fn lower_precedence<'parser>(
 
     ctx.leave_expression();
 
-    Ok(primary)
+    Ok(primary_expr)
 }

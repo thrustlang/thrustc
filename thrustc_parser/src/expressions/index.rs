@@ -17,7 +17,11 @@
 
 */
 
-use thrustc_ast::{Ast, traits::AstGetType};
+use thrustc_ast::{
+    Ast,
+    ast_metadata::IndexMetadata,
+    traits::{AstCodeLocation, AstGetType},
+};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token_type::TokenType;
@@ -29,6 +33,38 @@ use thrustc_typesystem::{
 use crate::{ParserContext, expressions};
 
 pub fn build_index<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    source_expr: Ast<'parser>,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let index_type: &Type = source_expr.get_value_type()?;
+    let index_expr: Ast = expressions::parse_expr(ctx)?;
+
+    let span: Span = index_expr.get_span();
+
+    ctx.consume(
+        TokenType::RBracket,
+        CompilationIssueCode::E0001,
+        "Expected ']'.".into(),
+    )?;
+
+    let index_type: Type = Type::Ptr {
+        subtype: Some(index_type.calculate_index_type(1).clone().into()),
+        address_space: index_type.get_address_space(),
+        span,
+    };
+
+    let metadata: IndexMetadata = IndexMetadata::new(true);
+
+    Ok(Ast::Index {
+        source: source_expr.into(),
+        index: index_expr.into(),
+        metadata,
+        kind: index_type,
+        span,
+    })
+}
+
+/*pub fn build_index_deref<'parser>(
     ctx: &mut ParserContext<'parser>,
     source: Ast<'parser>,
     span: Span,
@@ -54,4 +90,4 @@ pub fn build_index<'parser>(
         kind: index_type,
         span,
     })
-}
+}*/

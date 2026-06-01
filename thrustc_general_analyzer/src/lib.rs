@@ -373,7 +373,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
             | Ast::ContinueAll { .. }
             | Ast::Break { .. }
             | Ast::BreakAll { .. } => Ok(()),
-            Ast::Mut { source, value, .. } => {
+            Ast::Mutation { source, value, .. } => {
                 let source_type: &Type = source.get_value_type()?;
 
                 if source.is_reference() && !source.is_memory_assigned_value()? {

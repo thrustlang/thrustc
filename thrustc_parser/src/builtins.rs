@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, builtins::AstBuiltin};
+use thrustc_ast::{Ast, NodeId, ast_builtins::AstBuiltin};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};

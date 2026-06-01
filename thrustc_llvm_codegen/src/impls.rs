@@ -54,9 +54,9 @@ impl AstLLVMGetType for Ast<'_> {
 
             // Variables and references
             Ast::Var { kind, .. } => kind,
-            Ast::Mut { kind, .. } => kind,
+            Ast::Mutation { kind, .. } => kind,
             Ast::Reference { kind, .. } => kind,
-            Ast::DirectRef { kind, .. } => kind,
+            Ast::GetLocation { kind, .. } => kind,
             Ast::FunctionParameter { kind, .. } => kind,
             Ast::AssemblerFunctionParameter { kind, .. } => kind,
 

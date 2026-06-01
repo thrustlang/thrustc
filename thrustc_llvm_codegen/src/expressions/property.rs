@@ -21,7 +21,7 @@ use inkwell::types::BasicTypeEnum;
 use inkwell::values::PointerValue;
 use inkwell::{builder::Builder, values::BasicValueEnum};
 use thrustc_ast::Ast;
-use thrustc_ast::data::PropertyData;
+use thrustc_ast::ast_logic_data::PropertyData;
 use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_ast::traits::{
     AstCodeLocation, AstPropertyDataExtensions, AstPropertyDataFieldExtensions,

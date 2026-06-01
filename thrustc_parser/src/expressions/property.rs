@@ -19,18 +19,18 @@
 
 use thrustc_ast::{
     Ast, NodeId,
-    data::{PropertyData, StructDataField, StructureData},
-    metadata::PropertyMetadata,
+    ast_logic_data::{PropertyData, StructDataField, StructureData},
+    ast_metadata::PropertyMetadata,
     traits::{AstGetType, AstMemoryExtensions, AstStructureDataExtensions},
 };
-use thrustc_entities::parser::{FoundSymbolId, Struct};
+use thrustc_entities::parser_entities::{FoundSymbolId, Struct};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
-    traits::{TypeCodeLocation, TypeExtensions},
+    traits::{TypeCodeLocation, TypeExtensions, TypePointerExtensions},
 };
 
 use thrustc_parser_table::traits::{FoundSymbolEitherExtensions, StructSymbolExtensions};
@@ -42,7 +42,6 @@ pub fn build_property<'parser>(
     source: Ast<'parser>,
 ) -> Result<Ast<'parser>, CompilationIssue> {
     let base_type: &Type = source.get_value_type()?;
-    let metadata: PropertyMetadata = PropertyMetadata::new(source.is_memory_assigned_value()?);
 
     let mut property_names: Vec<&str> = Vec::with_capacity(u8::MAX as usize);
 
@@ -69,12 +68,14 @@ pub fn build_property<'parser>(
     }
 
     let properties_result: Result<(Type, PropertyData), CompilationIssue> =
-        self::decompose_structure_property(ctx, 0, &source, property_names, base_type, span);
+        self::decompose_struct_property(ctx, 0, &source, property_names, base_type, span);
 
     match properties_result {
         Ok(properties) => {
             let kind: Type = properties.0;
             let data: PropertyData = properties.1;
+
+            let metadata: PropertyMetadata = PropertyMetadata::new(kind.is_ptr_like_type());
 
             Ok(Ast::Property {
                 source: source.into(),
@@ -87,13 +88,12 @@ pub fn build_property<'parser>(
         }
         Err(error) => {
             ctx.add_error_report(error);
-
             Ok(Ast::invalid_ast(span))
         }
     }
 }
 
-fn decompose_structure_property<'parser>(
+fn decompose_struct_property<'parser>(
     ctx: &mut ParserContext<'parser>,
     mut position: usize,
     source: &Ast,
@@ -171,13 +171,13 @@ fn decompose_structure_property<'parser>(
             current_type.clone(),
             (
                 adjusted_inner_type.clone(),
-                u32::try_from(index).unwrap_or(u32::MAX - 1),
+                u32::try_from(index).unwrap_or(u32::MAX),
             ),
         ));
 
         position = position.saturating_add(1);
 
-        let (field_inner_type, mut nested_indices) = self::decompose_structure_property(
+        let (field_inner_type, mut nested_indices) = self::decompose_struct_property(
             ctx,
             position,
             source,

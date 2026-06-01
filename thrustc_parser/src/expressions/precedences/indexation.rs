@@ -17,36 +17,38 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_span::Span;
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_ast::Ast;
+use thrustc_errors::CompilationIssue;
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::Type;
 
-use crate::{ParserContext, expressions, statements::code_block};
+use crate::{
+    ParserContext,
+    expressions::{self, precedences},
+};
 
-pub fn parse_post_executation_stmt<'parser>(
+#[inline]
+pub fn index_precedence<'parser>(
     ctx: &mut ParserContext<'parser>,
 ) -> Result<Ast<'parser>, CompilationIssue> {
-    let defer_tk: &Token = ctx.consume(
-        TokenType::Defer,
-        CompilationIssueCode::E0001,
-        "Expected 'defer'.".into(),
-    )?;
+    ctx.enter_expression()?;
 
-    let span: Span = defer_tk.get_span();
+    let mut expr: Ast = precedences::property::property_precedence(ctx)?;
 
-    let node: Ast<'_> = if ctx.check(TokenType::LBrace) {
-        code_block::parse_code_block_stmt(ctx)?
-    } else {
-        expressions::parse_expression(ctx)?
-    };
+    if ctx.check(TokenType::Arrow) && ctx.check_to(TokenType::LBracket, 1) {
+        while ctx.match_token(TokenType::LBracket)? {
+            todo!();
 
-    Ok(Ast::Defer {
-        node: node.into(),
-        kind: Type::Void(span),
-        span,
-        id: NodeId::new(),
-    })
+            /* let span: Span = ctx.previous().span;
+
+            expr = expressions::index::build_index_deref(ctx, expr, span)?; */
+        }
+    }
+
+    while ctx.match_token(TokenType::LBracket)? {
+        expr = expressions::index::build_index(ctx, expr)?;
+    }
+
+    ctx.leave_expression();
+
+    Ok(expr)
 }

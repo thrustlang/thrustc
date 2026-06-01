@@ -264,9 +264,7 @@ pub fn compile_type_cast<'ctx>(
                 });
 
             return casted_value.into();
-        }
-
-        if value.is_float_value() && cast.is_float_type() {
+        } else if value.is_float_value() && cast.is_float_type() {
             let float_value: FloatValue<'_> = value.into_float_value();
             let cast_type: FloatType<'_> = cast.into_float_type();
 
@@ -286,9 +284,7 @@ pub fn compile_type_cast<'ctx>(
                 });
 
             return casted_value.into();
-        }
-
-        if value.is_int_value() && cast.is_float_type() {
+        } else if value.is_int_value() && cast.is_float_type() {
             let is_signed_int: bool = from_type.is_signed_integer_type();
             let int_value: IntValue<'_> = value.into_int_value();
             let cast_type: FloatType<'_> = cast.into_float_type();
@@ -312,9 +308,7 @@ pub fn compile_type_cast<'ctx>(
             });
 
             return casted_value.into();
-        }
-
-        if self::is_same_bit_size(context, &from_type, &target_type) {
+        } else if self::is_same_bit_size(context, &from_type, &target_type) {
             let casted_value: BasicValueEnum<'_> = llvm_builder
                 .build_bit_cast(value, cast, "")
                 .unwrap_or_else(|_| {
@@ -331,6 +325,17 @@ pub fn compile_type_cast<'ctx>(
                 });
 
             return casted_value;
+        } else {
+            abort::abort_codegen(
+                context,
+                &format!(
+                    "Failed to cast '{}' type to '{}' type.",
+                    from_type, target_type
+                ),
+                expr.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
         }
     }
 
@@ -358,7 +363,18 @@ pub fn compile_type_cast<'ctx>(
                 });
 
             return casted.into();
-        };
+        } else {
+            abort::abort_codegen(
+                context,
+                &format!(
+                    "Failed to cast '{}' type to '{}' type.",
+                    from_type, target_type
+                ),
+                expr.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        }
     }
 
     if from_type.is_integer_type() && target_type.is_ptr_like_type() {
@@ -384,10 +400,26 @@ pub fn compile_type_cast<'ctx>(
                     );
                 })
                 .into();
+        } else {
+            abort::abort_codegen(
+                context,
+                &format!(
+                    "Failed to cast '{}' type to '{}' type.",
+                    from_type, target_type
+                ),
+                expr.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
         }
     }
 
-    if target_type.is_ptr_like_type() {
+    if from_type.is_numeric_type()
+        || from_type.is_float_type()
+        || from_type.is_struct_type()
+        || from_type.is_ptr_like_type()
+        || from_type.is_fixed_array_type() && target_type.is_ptr_like_type()
+    {
         let value: BasicValueEnum = codegen::compile_as_ptr_value(context, expr, None);
 
         if value.is_pointer_value() {
@@ -410,7 +442,18 @@ pub fn compile_type_cast<'ctx>(
                     );
                 })
                 .into();
-        };
+        } else {
+            abort::abort_codegen(
+                context,
+                &format!(
+                    "Failed to cast '{}' type to '{}' type.",
+                    from_type, target_type
+                ),
+                expr.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        }
     }
 
     abort::abort_codegen(
@@ -458,7 +501,18 @@ pub fn compile_constant_type_cast<'ctx>(
             let casted_value: IntValue<'_> = ptr_value.const_to_int(int_type);
 
             return casted_value.into();
-        };
+        } else {
+            abort::abort_codegen(
+                context,
+                &format!(
+                    "Failed to cast '{}' type to '{}' type.",
+                    from_type, target_type
+                ),
+                expr.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        }
     }
 
     if from_type.is_integer_type() && target_type.is_ptr_like_type() {
@@ -473,16 +527,43 @@ pub fn compile_constant_type_cast<'ctx>(
             let casted_value: PointerValue<'_> = int_value.const_to_pointer(ptr_type);
 
             return casted_value.into();
+        } else {
+            abort::abort_codegen(
+                context,
+                &format!(
+                    "Failed to cast '{}' type to '{}' type.",
+                    from_type, target_type
+                ),
+                expr.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
         }
     }
 
-    if target_type.is_ptr_like_type() {
+    if from_type.is_numeric_type()
+        || from_type.is_float_type()
+        || from_type.is_struct_type()
+        || from_type.is_ptr_like_type()
+        || from_type.is_fixed_array_type() && target_type.is_ptr_like_type()
+    {
         let value: BasicValueEnum =
             codegen::compile_constant_as_ptr_value(context, expr, cast_type);
 
         if value.is_pointer_value() {
             return value;
-        };
+        } else {
+            abort::abort_codegen(
+                context,
+                &format!(
+                    "Failed to cast '{}' type to '{}' type.",
+                    from_type, target_type
+                ),
+                expr.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        }
     }
 
     abort::abort_codegen(

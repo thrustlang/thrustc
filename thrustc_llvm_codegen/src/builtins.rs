@@ -26,7 +26,7 @@ use thrustc_ast::traits::AstCodeLocation;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
 
-use thrustc_ast::{Ast, builtins::AstBuiltin};
+use thrustc_ast::{Ast, ast_builtins::AstBuiltin};
 
 use crate::{
     abort, cast, codegen, context::LLVMCodeGenContext, traits::AstLLVMGetType, typegeneration,

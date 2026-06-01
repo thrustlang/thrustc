@@ -17,7 +17,9 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, data::StructureData, traits::AstStructFieldsDataExtensions};
+use thrustc_ast::NodeId;
+use thrustc_ast::traits::{AstStructFieldsDataExtensions, AstStructureDataExtensions};
+use thrustc_ast::{Ast, ast_logic_data::StructureData};
 use thrustc_attributes::ThrustAttributes;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
@@ -25,13 +27,10 @@ use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
 
-use thrustc_ast::traits::AstStructureDataExtensions;
-
 use crate::{ParserContext, attributes, modificators, typegeneration};
 
-pub fn build_structure<'parser>(
+pub fn parse_structure_stmt<'parser>(
     ctx: &mut ParserContext<'parser>,
-    parse_forward: bool,
 ) -> Result<Ast<'parser>, CompilationIssue> {
     ctx.consume(
         TokenType::Struct,
@@ -47,6 +46,7 @@ pub fn build_structure<'parser>(
 
     let attributes: ThrustAttributes =
         attributes::build_compiler_attributes(ctx, &[TokenType::LBrace])?;
+
     let modificator: StructureTypeModificator =
         modificators::build_structure_modificator(&attributes);
 
@@ -124,21 +124,24 @@ pub fn build_structure<'parser>(
         "Expected '}'.".into(),
     )?;
 
-    if parse_forward {
-        ctx.get_mut_symbols()
-            .new_global_struct(name, (name, data.1, attributes, modificator, span))?;
+    let kind: Type = data.get_type();
 
-        Ok(Ast::new_nullptr(span))
-    } else {
-        let structure_type: Type = data.get_type();
+    if !ctx.is_main_scope() {
+        ctx.get_mut_symbols().new_struct(
+            name,
+            (name, data.1.clone(), attributes.clone(), modificator, span),
+            span,
+        )?;
 
         Ok(Ast::Struct {
             name,
             data,
-            kind: structure_type,
+            kind,
             attributes,
             span,
             id: NodeId::new(),
         })
+    } else {
+        Ok(Ast::invalid_ast(span))
     }
 }

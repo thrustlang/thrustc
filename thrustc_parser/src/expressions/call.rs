@@ -21,7 +21,7 @@ use thrustc_ast::{
     Ast, NodeId,
     traits::{AstCodeLocation, AstGetType},
 };
-use thrustc_entities::parser::{FoundSymbolId, Function, Intrinsic};
+use thrustc_entities::parser_entities::{FoundSymbolId, Function, Intrinsic};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token_type::TokenType;
@@ -87,7 +87,7 @@ pub fn build_call<'parser>(
             } else if object.is_function_asm() {
                 let id: &str = object.expected_asm_function(span)?;
                 let asm_function: Result<
-                    thrustc_entities::parser::AssemblerFunction,
+                    thrustc_entities::parser_entities::AssemblerFunction,
                     CompilationIssue,
                 > = ctx.get_symbols().get_asm_function_by_id(span, id);
 

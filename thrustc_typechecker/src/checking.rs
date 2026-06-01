@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_ast::{Ast, metadata::CastingMetadata};
+use thrustc_ast::{Ast, ast_metadata::CastingMetadata};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 

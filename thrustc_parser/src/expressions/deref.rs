@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, metadata::DereferenceMetadata, traits::AstGetType};
+use thrustc_ast::{Ast, NodeId, ast_metadata::DereferenceMetadata, traits::AstGetType};
 use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_mir::atomicord::ThrustAtomicOrdering;
@@ -37,8 +37,8 @@ pub fn build_dereference<'parser>(
     let modificators: Modificators =
         modificators::build_statement_modificator(ctx, &[TokenType::Identifier])?;
 
-    let is_volatile: bool = modificators.has_volatile();
-    let atomic_ord: Option<ThrustAtomicOrdering> = modificators.get_atomic_ordering();
+    let is_volatile: bool = modificators.has_volatile_modificator();
+    let atomic_ord: Option<ThrustAtomicOrdering> = modificators.get_atomic_ordering_modificator();
 
     let mut deref_count: u64 = 1;
 

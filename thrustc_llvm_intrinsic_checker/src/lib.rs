@@ -40,7 +40,7 @@ impl<'llvm> LLVMIntrinsicChecker<'llvm> {
     ) -> Self {
         Self {
             ast,
-            errors: Vec::with_capacity(100),
+            errors: Vec::with_capacity(u8::MAX as usize),
             diagnostician: Diagnostician::new(file, options),
         }
     }
@@ -56,13 +56,18 @@ impl<'llvm> LLVMIntrinsicChecker<'llvm> {
                     ..
                 } = node
                 {
-                    let ffi_name: &str = external_name.trim();
-                    let intrinsic: Option<Intrinsic> = Intrinsic::find(ffi_name);
-                    let is_bad_overloaded: bool = intrinsic
-                        .is_some_and(|intrinsic| intrinsic.is_overloaded())
-                        && ffi_name.split(".").count() <= 2;
+                    let original_ffi_name: &str = external_name.trim();
 
-                    if is_bad_overloaded {
+                    let ffi_name_lowered: String = external_name.to_ascii_lowercase();
+                    let ffi_name_trimmed: &str = ffi_name_lowered.trim();
+
+                    let intrinsic: Option<Intrinsic> = Intrinsic::find(ffi_name_trimmed);
+
+                    let is_bad_intrinsic_compiler_overloadead: bool = intrinsic
+                        .is_some_and(|intrinsic: Intrinsic| intrinsic.is_overloaded())
+                        && ffi_name_trimmed.split(".").count() <= 2;
+
+                    if is_bad_intrinsic_compiler_overloadead {
                         self.add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0034,
                             "Invalid syntax in overloaded intrinsic.".into(),
@@ -75,7 +80,7 @@ impl<'llvm> LLVMIntrinsicChecker<'llvm> {
                     if intrinsic.is_none() {
                         self.add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0025,
-                            format!("Unknown compiler intrinsic '{}'.", ffi_name),
+                            format!("Unknown compiler intrinsic '{}'.", original_ffi_name),
                             "Compiler intrinsic doesn't exist on the compiler.".into(),
                             None,
                             *span,

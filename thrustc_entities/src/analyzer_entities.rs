@@ -17,32 +17,20 @@
 
 */
 
+use ahash::AHashMap as HashMap;
 
-use thrustc_ast::Ast;
-use thrustc_errors::CompilationIssue;
 use thrustc_span::Span;
-use thrustc_token_type::TokenType;
+use thrustc_typesystem::Type;
 
-use crate::{
-    ParserContext,
-    expressions::{self, precedences},
-};
+pub type AnalyzerLocal<'symbol> = &'symbol Type;
+pub type AnalyzerLocals<'symbol> = Vec<HashMap<&'symbol str, AnalyzerLocal<'symbol>>>;
 
-#[inline]
-pub fn index_precedence<'parser>(
-    ctx: &mut ParserContext<'parser>,
-) -> Result<Ast<'parser>, CompilationIssue> {
-    ctx.enter_expression()?;
+pub type AnalyzerLLI<'symbol> = (&'symbol Type, Span);
+pub type AnalyzerLLIs<'symbol> = Vec<HashMap<&'symbol str, AnalyzerLLI<'symbol>>>;
 
-    let mut expr: Ast = precedences::property::property_precedence(ctx)?;
+pub type AnalyzerAssemblerFunction<'symbol> = (&'symbol [Type], bool);
+pub type AnalyzerAssemblerFunctions<'symbol> =
+    HashMap<&'symbol str, AnalyzerAssemblerFunction<'symbol>>;
 
-    while ctx.match_token(TokenType::LBracket)? {
-        let span: Span = ctx.previous().span;
-
-        expr = expressions::index::build_index(ctx, expr, span)?;
-    }
-
-    ctx.leave_expression();
-
-    Ok(expr)
-}
+pub type AnalyzerFunction<'symbol> = (&'symbol [Type], bool);
+pub type AnalyzerFunctions<'symbol> = HashMap<&'symbol str, AnalyzerFunction<'symbol>>;

@@ -26,7 +26,7 @@ use inkwell::module::{Linkage, Module};
 use inkwell::types::{ArrayType, BasicTypeEnum, StructType};
 use inkwell::values::{GlobalValue, PointerValue, StructValue};
 use inkwell::{builder::Builder, values::BasicValueEnum};
-use thrustc_ast::metadata::{ConstantMetadata, LocalMetadata, StaticMetadata};
+use thrustc_ast::ast_metadata::{ConstantMetadata, LocalMetadata, StaticMetadata};
 use thrustc_attributes::ThrustAttributes;
 use thrustc_backends::llvm::LLVMBackend;
 use thrustc_entities::{GlobalConstant, GlobalStatic, LocalConstant, LocalStatic, LocalVariable};
@@ -816,7 +816,6 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     expressions::binaryop::boolean::compile(
                         self.context,
                         (left, operator, right, *span),
-                        None,
                     );
                 } else {
                     abort::abort_codegen(
@@ -829,7 +828,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 }
             }
 
-            Ast::Mut {
+            Ast::Mutation {
                 source,
                 value,
                 span,
@@ -1007,11 +1006,9 @@ pub fn compile_as_value<'ctx>(
                 (left, operator, right, *span),
                 cast_type,
             ),
-            t if t.is_bool_type() => expressions::binaryop::boolean::compile(
-                context,
-                (left, operator, right, *span),
-                cast_type,
-            ),
+            t if t.is_bool_type() => {
+                expressions::binaryop::boolean::compile(context, (left, operator, right, *span))
+            }
 
             _ => {
                 abort::abort_codegen(
@@ -1032,7 +1029,7 @@ pub fn compile_as_value<'ctx>(
         } => expressions::unaryop::compile(context, (operator, kind, node), cast_type),
 
         // Direct Reference
-        Ast::DirectRef { expr, .. } => self::compile_as_ptr_value(context, expr, cast_type),
+        Ast::GetLocation { expr, .. } => self::compile_as_ptr_value(context, expr, cast_type),
 
         // Symbol/Property Access
         // Compiles a reference to a variable or symbol
@@ -1290,7 +1287,7 @@ pub fn compile_constant_as_value<'ctx>(
         } => unaryop::compile_const(context, (operator, kind, node), cast_type),
 
         // Direct Reference
-        Ast::DirectRef { expr, .. } => codegen::compile_as_ptr_value(context, expr, None),
+        Ast::GetLocation { expr, .. } => codegen::compile_as_ptr_value(context, expr, None),
 
         // Builtins
         Ast::Builtin { builtin, .. } => {
@@ -1314,6 +1311,7 @@ pub fn compile_constant_as_value<'ctx>(
     }
 }
 
+#[inline]
 pub fn compile_constant_as_ptr_value<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     expr: &'ctx Ast,
@@ -1325,6 +1323,7 @@ pub fn compile_constant_as_ptr_value<'ctx>(
     }
 }
 
+#[inline]
 pub fn compile_as_ptr_value<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     expr: &'ctx Ast,
@@ -1375,7 +1374,7 @@ pub fn compile_constructors<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>) {
         }
     }
 
-    let size: u32 = u32::try_from(llvm_ctors.len()).unwrap_or(u32::MAX - 1);
+    let size: u32 = u32::try_from(llvm_ctors.len()).unwrap_or(u32::MAX);
 
     let llvm_ctors_type: ArrayType = ctor_type.array_type(size);
     let global: GlobalValue = llvm_module.add_global(llvm_ctors_type, None, "llvm.global_ctors");
@@ -1423,7 +1422,7 @@ pub fn compile_destructors<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>) {
         }
     }
 
-    let size: u32 = u32::try_from(llvm_dtors.len()).unwrap_or(u32::MAX - 1);
+    let size: u32 = u32::try_from(llvm_dtors.len()).unwrap_or(u32::MAX);
 
     let llvm_dtors_type: ArrayType = dtor_type.array_type(size);
     let global: GlobalValue = llvm_module.add_global(llvm_dtors_type, None, "llvm.global_dtors");

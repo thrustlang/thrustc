@@ -19,41 +19,43 @@
 
 use thrustc_ast::Ast;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_parser_context::{SynchronizationPosition, traits::ControlContextExtensions};
+use thrustc_parser_context::SynchronizationPosition;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 
 use crate::ParserContext;
 
-pub mod asmfn;
-pub mod embedded;
-pub mod function;
-pub mod glasm;
-pub mod glconstant;
-pub mod glcstype;
-pub mod glenum;
-pub mod glstatic;
-pub mod glstructure;
+pub mod compiler_intrinsic;
+pub mod embedded_value;
+pub mod global_assembler;
+pub mod global_assembler_function;
+pub mod global_constant;
+pub mod global_enum;
+pub mod global_function;
+pub mod global_static;
+pub mod global_struct;
+pub mod global_type;
 pub mod import;
 pub mod importc;
-pub mod intrinsic;
 
 pub fn parse<'parser>(ctx: &mut ParserContext<'parser>) -> Result<Ast<'parser>, CompilationIssue> {
     ctx.get_mut_control_context()
         .add_sync_position(SynchronizationPosition::Declaration);
 
     let declaration: Result<Ast<'parser>, CompilationIssue> = match ctx.peek().get_type() {
-        TokenType::Type => Ok(glcstype::build_custom_type(ctx, false)?),
-        TokenType::Struct => Ok(glstructure::build_structure(ctx, false)?),
-        TokenType::Const => Ok(glconstant::build_global_const(ctx, false)?),
-        TokenType::Static => Ok(glstatic::build_global_static(ctx, false)?),
-        TokenType::Enum => Ok(glenum::build_enum(ctx, false)?),
-        TokenType::Fn => Ok(function::build_function(ctx, false)?),
-        TokenType::AsmFn => Ok(asmfn::build_assembler_function(ctx, false)?),
-        TokenType::Intrinsic => Ok(intrinsic::build_compiler_intrinsic(ctx, false)?),
-        TokenType::GlobalAsm => Ok(glasm::build_global_assembler(ctx)?),
+        TokenType::Type => Ok(global_type::build_custom_type(ctx, false)?),
+        TokenType::Struct => Ok(global_struct::build_structure(ctx, false)?),
+        TokenType::Const => Ok(global_constant::build_global_const(ctx, false)?),
+        TokenType::Static => Ok(global_static::build_global_static(ctx, false)?),
+        TokenType::Enum => Ok(global_enum::build_enum(ctx, false)?),
+        TokenType::Fn => Ok(global_function::build_function(ctx, false)?),
+        TokenType::AsmFn => Ok(global_assembler_function::build_assembler_function(
+            ctx, false,
+        )?),
+        TokenType::Intrinsic => Ok(compiler_intrinsic::build_compiler_intrinsic(ctx, false)?),
+        TokenType::GlobalAsm => Ok(global_assembler::build_global_assembler(ctx)?),
         TokenType::Import => Ok(import::build_import(ctx)?),
-        TokenType::Embedded => Ok(embedded::build_embedded(ctx)?),
+        TokenType::Embedded => Ok(embedded_value::build_embedded(ctx)?),
 
         _ => {
             let any: &Token = ctx.advance()?;
@@ -79,28 +81,28 @@ pub fn parse_forward(ctx: &mut ParserContext) {
     while !ctx.is_eof() {
         match ctx.peek().get_type() {
             TokenType::Type if !at_block => {
-                let _ = glcstype::build_custom_type(ctx, true);
+                let _ = global_type::build_custom_type(ctx, true);
             }
             TokenType::Struct if !at_block => {
-                let _ = glstructure::build_structure(ctx, true);
+                let _ = global_struct::build_structure(ctx, true);
             }
             TokenType::Static if !at_block => {
-                let _ = glstatic::build_global_static(ctx, true);
+                let _ = global_static::build_global_static(ctx, true);
             }
             TokenType::Const if !at_block => {
-                let _ = glconstant::build_global_const(ctx, true);
+                let _ = global_constant::build_global_const(ctx, true);
             }
             TokenType::Enum if !at_block => {
-                let _ = glenum::build_enum(ctx, true);
+                let _ = global_enum::build_enum(ctx, true);
             }
             TokenType::Intrinsic if !at_block => {
-                let _ = intrinsic::build_compiler_intrinsic(ctx, true);
+                let _ = compiler_intrinsic::build_compiler_intrinsic(ctx, true);
             }
             TokenType::Fn if !at_block => {
-                let _ = function::build_function(ctx, true);
+                let _ = global_function::build_function(ctx, true);
             }
             TokenType::AsmFn if !at_block => {
-                let _ = asmfn::build_assembler_function(ctx, true);
+                let _ = global_assembler_function::build_assembler_function(ctx, true);
             }
             TokenType::LBrace => {
                 at_block = true;

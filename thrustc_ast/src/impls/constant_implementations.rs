@@ -35,7 +35,7 @@ impl AstConstantExtensions for Ast<'_> {
 
             Ast::Builtin { builtin, .. } => builtin.is_avalaible_at_compile_time(),
             Ast::EnumValue { value, .. } => value.is_constant_value(),
-            Ast::DirectRef { expr, .. } => expr.is_constant_value(),
+            Ast::GetLocation { expr, .. } => expr.is_constant_value(),
             Ast::Group { node, .. } => node.is_constant_value(),
             Ast::BinaryOp { left, right, .. } => {
                 left.is_constant_value() && right.is_constant_value()

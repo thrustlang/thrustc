@@ -29,20 +29,19 @@ use inkwell::values::BasicValue;
 use inkwell::values::BasicValueEnum;
 use inkwell::values::IntValue;
 use inkwell::values::PointerValue;
-use thrustc_ast::metadata::LLVMConstantMetadata;
-use thrustc_ast::metadata::LLVMDereferenceMetadata;
-use thrustc_ast::metadata::LLVMLocalMetadata;
-use thrustc_ast::metadata::LLVMStaticMetadata;
+use thrustc_ast::ast_metadata::LLVMConstantMetadata;
+use thrustc_ast::ast_metadata::LLVMDereferenceMetadata;
+use thrustc_ast::ast_metadata::LLVMLocalMetadata;
+use thrustc_ast::ast_metadata::LLVMStaticMetadata;
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeExtensions;
-use thrustc_typesystem::traits::TypePointerExtensions;
 
 use crate::abort;
-use crate::atomic;
-use crate::atomic::LLVMAtomicModificators;
+use crate::atomic_operations;
+use crate::atomic_operations::LLVMAtomicModificators;
 use crate::context::LLVMCodeGenContext;
 use crate::typegeneration;
 
@@ -186,10 +185,6 @@ impl<'ctx> SymbolAllocated<'ctx> {
     pub fn load(&self, context: &mut LLVMCodeGenContext<'_, 'ctx>) -> BasicValueEnum<'ctx> {
         let llvm_builder: &Builder = context.get_llvm_builder();
 
-        if self.get_type(context).is_ptr_like_type() {
-            return self.get_ptr().into();
-        }
-
         let inner_type: &Type = self.get_type(context);
         let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, inner_type);
 
@@ -215,7 +210,12 @@ impl<'ctx> SymbolAllocated<'ctx> {
                         atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
                     };
 
-                    atomic::set_atomic_behavior(context, instruction, atomic_config, span);
+                    atomic_operations::set_atomic_behavior(
+                        context,
+                        instruction,
+                        atomic_config,
+                        span,
+                    );
 
                     if attributes.has_explicit_memory_alignment() {
                         if let Some(explicit_alignment) = attributes.get_explicit_memory_alignment()
@@ -267,7 +267,12 @@ impl<'ctx> SymbolAllocated<'ctx> {
                         atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
                     };
 
-                    atomic::set_atomic_behavior(context, instruction, atomic_config, span);
+                    atomic_operations::set_atomic_behavior(
+                        context,
+                        instruction,
+                        atomic_config,
+                        span,
+                    );
 
                     instruction.set_alignment(alignment).unwrap_or_else(|_| {
                         abort::abort_codegen(
@@ -292,7 +297,12 @@ impl<'ctx> SymbolAllocated<'ctx> {
                         atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
                     };
 
-                    atomic::set_atomic_behavior(context, instruction, atomic_config, span);
+                    atomic_operations::set_atomic_behavior(
+                        context,
+                        instruction,
+                        atomic_config,
+                        span,
+                    );
 
                     instruction.set_alignment(alignment).unwrap_or_else(|_| {
                         abort::abort_codegen(
@@ -585,7 +595,7 @@ pub fn dereference<'ctx>(
                 atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
             };
 
-            atomic::set_atomic_behavior(context, instruction, atomic_config, span);
+            atomic_operations::set_atomic_behavior(context, instruction, atomic_config, span);
 
             instruction.set_alignment(alignment).unwrap_or_else(|_| {
                 abort::abort_codegen(

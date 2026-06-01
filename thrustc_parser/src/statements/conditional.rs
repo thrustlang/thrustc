@@ -26,7 +26,7 @@ use thrustc_typesystem::Type;
 
 use crate::{
     ParserContext, expressions,
-    statements::{self, block},
+    statements::{self, code_block},
 };
 
 pub fn build_conditional<'parser>(
@@ -43,7 +43,7 @@ pub fn build_conditional<'parser>(
     let condition: Ast = expressions::parse_expr(ctx)?;
 
     let body: Ast = if ctx.check(TokenType::LBrace) {
-        block::parse_code_block_stmt(ctx)?
+        code_block::parse_code_block_stmt(ctx)?
     } else {
         statements::parse(ctx)?
     };
@@ -78,12 +78,12 @@ pub fn build_conditional<'parser>(
         let condition: Ast = expressions::parse_expr(ctx)?;
 
         let body: Ast = if ctx.check(TokenType::LBrace) {
-            block::parse_code_block_stmt(ctx)?
+            code_block::parse_code_block_stmt(ctx)?
         } else {
             statements::parse(ctx)?
         };
 
-        if !body.is_empty_block() {
+        if !body.is_empty_code_block() {
             elseif.push(Ast::Elif {
                 condition: condition.into(),
                 block: body.into(),
@@ -98,12 +98,12 @@ pub fn build_conditional<'parser>(
         let span: Span = ctx.previous().get_span();
 
         let else_body: Ast = if ctx.check(TokenType::LBrace) {
-            block::parse_code_block_stmt(ctx)?
+            code_block::parse_code_block_stmt(ctx)?
         } else {
             statements::parse(ctx)?
         };
 
-        if !else_body.is_empty_block() {
+        if !else_body.is_empty_code_block() {
             let else_node: Ast = Ast::Else {
                 block: else_body.into(),
                 kind: Type::Void(span),

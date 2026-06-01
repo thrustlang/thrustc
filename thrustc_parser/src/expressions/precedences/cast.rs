@@ -19,7 +19,7 @@
 
 use thrustc_ast::{
     Ast, NodeId,
-    metadata::CastingMetadata,
+    ast_metadata::CastingMetadata,
     traits::{AstConstantExtensions, AstMemoryExtensions},
 };
 use thrustc_errors::CompilationIssue;
@@ -35,7 +35,7 @@ pub fn cast_precedence<'parser>(
 ) -> Result<Ast<'parser>, CompilationIssue> {
     ctx.enter_expression()?;
 
-    let mut expression: Ast = precedences::index::index_precedence(ctx)?;
+    let mut expression: Ast = precedences::indexation::index_precedence(ctx)?;
 
     if ctx.match_token(TokenType::As)? {
         let span: Span = ctx.previous().get_span();

@@ -22,13 +22,13 @@ use thrustc_ast::{
     traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
 };
 use thrustc_attributes::traits::ThrustAttributesExtensions;
-use thrustc_entities::typechecker::TypeCheckerFunction;
+use thrustc_entities::typechecker_entities::TypeCheckerFunction;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_typesystem::{Type, traits::VoidTypeExtensions};
 
 use crate::{
-    TypeChecker, check, context::TypeCheckerControlContext, metadata::TypeCheckerNodeMetadata,
+    TypeChecker, checking, context::TypeCheckerControlContext, metadata::TypeCheckerNodeMetadata,
 };
 
 pub fn validate<'type_checker>(
@@ -105,7 +105,7 @@ pub fn validate<'type_checker>(
 
                 control_context.reset_checking_depth();
 
-                if let Err(error) = check::check_type_together(
+                if let Err(error) = checking::check_type_together(
                     target_type,
                     from_type,
                     Some(expr),

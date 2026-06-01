@@ -19,11 +19,11 @@
 
 use thrustc_ast::Ast;
 use thrustc_diagnostician::Diagnostician;
-use thrustc_entities::parser::{AssemblerFunctions, Functions};
+use thrustc_entities::parser_entities::{AssemblerFunctions, Functions};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_logging::LoggingType;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_parser_context::{ControlContext, TypeContext, traits::ControlContextExtensions};
+use thrustc_parser_context::{ControlContext, TypeContext};
 use thrustc_parser_table::SymbolTable;
 use thrustc_preprocessor::module::Module;
 use thrustc_span::Span;
@@ -33,12 +33,12 @@ use thrustc_token_type::TokenType;
 
 mod attributes;
 mod builtins;
-mod declarations;
 mod expressions;
 mod modificators;
 mod reinterpret;
 mod statements;
 mod synchronize;
+mod toplevel;
 mod typegeneration;
 
 #[derive(Debug)]
@@ -88,10 +88,10 @@ impl<'parser> Parser<'parser> {
     ) -> (ParserContext<'parser>, bool) {
         let mut ctx: ParserContext = ParserContext::new(self.tokens, modules, self.file, options);
 
-        declarations::parse_forward(&mut ctx);
+        toplevel::parse_forward(&mut ctx);
 
         while !ctx.is_eof() {
-            let top_node: Result<Ast<'_>, CompilationIssue> = declarations::parse(&mut ctx);
+            let top_node: Result<Ast<'_>, CompilationIssue> = toplevel::parse(&mut ctx);
 
             if let Ok(ast) = top_node {
                 ctx.add_ast_node(ast);

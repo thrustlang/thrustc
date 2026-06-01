@@ -17,16 +17,16 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, metadata::FunctionParameterMetadata};
+use thrustc_ast::{Ast, NodeId, ast_metadata::FunctionParameterMetadata};
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
-use thrustc_entities::parser::FunctionParametersTypes;
+use thrustc_entities::parser_entities::FunctionParametersTypes;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{TokenType, traits::TokenTypeAttributesExtensions};
 use thrustc_typesystem::{Type, traits::TypePointerExtensions};
 
-use crate::{ParserContext, attributes, statements::block, typegeneration};
+use crate::{ParserContext, attributes, statements::code_block, typegeneration};
 
 pub fn build_function<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -172,7 +172,7 @@ pub fn build_function<'parser>(
 
         ctx.get_mut_symbols().new_parameters(&parameters)?;
 
-        let function_body: Ast = block::parse_code_block_stmt(ctx)?;
+        let function_body: Ast = code_block::parse_code_block_stmt(ctx)?;
 
         ctx.get_mut_symbols().finish_parameters();
 
