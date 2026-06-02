@@ -43,7 +43,7 @@ $ cd thrustc
 
 Another way:
 
-If you don't want to start the project from scratch, you can check if there are available versions in Github releases.
+If you don't want to build the project from scratch, you can check if there are available versions in Github releases.
 
 [Thrust Compiler - Github Releases](https://github.com/thrustlang/thrustc/releases)
 
