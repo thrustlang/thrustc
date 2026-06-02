@@ -41,6 +41,12 @@ $ git clone --depth=1 https://github.com/thrustlang/thrustc
 $ cd thrustc
 ```
 
+Another way:
+
+If you don't want to start the project from scratch, you can check if there are available versions in Github releases.
+
+[Thrust Compiler - Github Releases](https://github.com/thrustlang/thrustc/releases)
+
 ### Build Cargo dependencies 
 
 Among other obligatory dependencies we need also other libraries.
