@@ -25,14 +25,22 @@ use thrustc_typesystem::{
     traits::{InfererTypeExtensions, TypePointerExtensions},
 };
 
-use crate::{codegen, context::LLVMCodeGenContext, expressions, memory, traits::AstLLVMGetType};
+use crate::{
+    codegen,
+    context::{CodeGenLocation, LLVMCodeGenContext},
+    expressions, memory,
+    traits::AstLLVMGetType,
+};
 
 pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     source: &'ctx Ast<'ctx>,
     index: &'ctx Ast<'ctx>,
 ) -> BasicValueEnum<'ctx> {
+    context.add_codegen_location(CodeGenLocation::RValue);
     let source_value: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, source, None);
+    context.pop_current_codegen_location();
+
     let ptr_value: PointerValue<'_> = source_value.into_pointer_value();
 
     let mut ptr_type: &Type = source.get_type_for_llvm();
@@ -54,8 +62,12 @@ pub fn compile<'ctx>(
         let indexes: Vec<IntValue> = if is_ptr_aggv_type {
             let base_type: Type = Type::U32 { span };
 
-            let base: IntValue =
-                expressions::integer::compile(context, &base_type, 0, index.get_span());
+            let base: IntValue = expressions::literal_integer_expr::compile(
+                context,
+                &base_type,
+                0,
+                index.get_span(),
+            );
 
             let depth_type: Type = Type::U32 { span };
 
@@ -73,8 +85,12 @@ pub fn compile<'ctx>(
         } else {
             let base_type: Type = Type::U32 { span };
 
-            let base: IntValue =
-                expressions::integer::compile(context, &base_type, 0, index.get_span());
+            let base: IntValue = expressions::literal_integer_expr::compile(
+                context,
+                &base_type,
+                0,
+                index.get_span(),
+            );
 
             let depth_type: Type = Type::U32 { span };
 

@@ -38,11 +38,11 @@ impl TypeStructExtensions for Type {
     }
 
     #[inline]
-    fn get_struct_fields(&self) -> &[Type] {
+    fn get_struct_fields(&self) -> Option<&[Type]> {
         if let Type::Struct { fields, .. } = self {
-            return fields;
+            return Some(fields);
         }
 
-        &[]
+        None
     }
 }

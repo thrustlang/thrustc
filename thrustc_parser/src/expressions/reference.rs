@@ -81,7 +81,12 @@ pub fn build_reference<'parser>(
                                 span,
                             ),
                             span,
-                            metadata: ReferenceMetadata::new(true, false, ReferenceType::default()),
+                            metadata: ReferenceMetadata::new(
+                                true,
+                                false,
+                                ReferenceType::default(),
+                                false,
+                            ),
                             id: NodeId::new(),
                         });
                     }
@@ -108,6 +113,7 @@ pub fn build_reference<'parser>(
                         let metadata: StaticMetadata = object.get_metadata();
 
                         let is_mutable: bool = metadata.is_mutable();
+                        let is_unitialized: bool = metadata.is_unitialized();
 
                         return Ok(Ast::Reference {
                             name,
@@ -117,6 +123,7 @@ pub fn build_reference<'parser>(
                                 true,
                                 is_mutable,
                                 ReferenceType::Static,
+                                is_unitialized,
                             ),
                             id: NodeId::new(),
                         });
@@ -146,7 +153,12 @@ pub fn build_reference<'parser>(
                             name,
                             kind: constant_type,
                             span,
-                            metadata: ReferenceMetadata::new(true, false, ReferenceType::Constant),
+                            metadata: ReferenceMetadata::new(
+                                true,
+                                false,
+                                ReferenceType::Constant,
+                                false,
+                            ),
                             id: NodeId::new(),
                         });
                     }
@@ -179,7 +191,8 @@ pub fn build_reference<'parser>(
                             metadata: ReferenceMetadata::new(
                                 is_allocated,
                                 is_mutable,
-                                ReferenceType::default(),
+                                ReferenceType::Parameter,
+                                false,
                             ),
                             id: NodeId::new(),
                         });
@@ -208,7 +221,12 @@ pub fn build_reference<'parser>(
                     name,
                     kind: lli_type,
                     span,
-                    metadata: ReferenceMetadata::new(is_allocated, false, ReferenceType::default()),
+                    metadata: ReferenceMetadata::new(
+                        is_allocated,
+                        false,
+                        ReferenceType::default(),
+                        false,
+                    ),
                     id: NodeId::new(),
                 });
             }
@@ -227,6 +245,7 @@ pub fn build_reference<'parser>(
                         let local_type: Type = object.get_type();
 
                         let is_mutable: bool = metadata.is_mutable();
+                        let is_unitialized: bool = metadata.is_unitialized();
 
                         let reference: Ast = Ast::Reference {
                             name,
@@ -235,7 +254,8 @@ pub fn build_reference<'parser>(
                             metadata: ReferenceMetadata::new(
                                 true,
                                 is_mutable,
-                                ReferenceType::default(),
+                                ReferenceType::Local,
+                                is_unitialized,
                             ),
                             id: NodeId::new(),
                         };

@@ -1,0 +1,324 @@
+/*
+ * CUDA Driver API - CudaCall
+ *
+ * Loads a PTX module and runs two GPU kernels (vecAdd and vectorSum)
+ * using the CUDA Driver API, printing results and verification to stdout.
+ *
+ * Usage: ./cudacall [path/to/kernel.ptx]
+ *
+ * Kernels expected in the PTX:
+ *   - vecAdd(a, b, c, n):       c[i] = a[i] + b[i]  (element-wise)
+ *   - vectorSum(input, out, n): block-level reduction into partial sums
+ */
+ 
+// ─── C stdlib ────────────────────────────────────────────────────────
+
+fn printf(fmt: const array[char]) s32 @public @arbitraryArgs @extern("printf") @convention("C");
+fn fprintf(stream: ptr, fmt: const array[char]) s32 @public @arbitraryArgs @extern("fprintf") @convention("C");
+fn perror(msg: const array[char]) void @public @extern("perror") @convention("C");
+fn exit(code: s32) void @public @extern("exit") @convention("C");
+fn malloc(size: usize) ptr @public @extern("malloc") @convention("C");
+fn free(ptr_: ptr) void @public @extern("free") @convention("C");
+fn fopen(path: const array[char], mode: const array[char]) ptr @public @extern("fopen") @convention("C");
+fn fclose(f: ptr) s32 @public @extern("fclose") @convention("C");
+fn fseek(f: ptr, offset: s64, whence: s32) s32 @public @extern("fseek") @convention("C");
+fn ftell(f: ptr) s64 @public @extern("ftell") @convention("C");
+fn rewind(f: ptr) void @public @extern("rewind") @convention("C");
+fn fread(buf: ptr, size: usize, count: usize, f: ptr) usize @public @extern("fread") @convention("C");
+
+// ─── CUDA Driver API ─────────────────────────────────────────────────────────
+
+fn cuInit(flags: u32) s32 @public @extern("cuInit") @convention("C");
+fn cuDeviceGet(device: ptr[s32], ordinal: s32) s32 @public @extern("cuDeviceGet") @convention("C");
+fn cuDeviceGetName(name: ptr, len_: s32, dev: s32) s32 @public @extern("cuDeviceGetName") @convention("C");
+fn cuGetErrorString(result: s32, str_: ptr[ptr]) s32 @public @extern("cuGetErrorString") @convention("C");
+fn cuCtxCreate(ctx: ptr[ptr], idk: ptr, flags: u32, dev: s32) s32 @public @extern("cuCtxCreate_v4") @convention("C");
+fn cuCtxSynchronize() s32 @public @extern("cuCtxSynchronize") @convention("C");
+fn cuCtxDestroy(ctx: ptr) s32 @public @extern("cuCtxDestroy") @convention("C");
+fn cuModuleLoadData(module_: ptr[ptr], image: ptr) s32 @public @extern("cuModuleLoadData") @convention("C");
+fn cuModuleUnload(module_: ptr) s32 @public @extern("cuModuleUnload") @convention("C");
+fn cuModuleGetFunction(func_: ptr[ptr], module_: ptr, name_: const array[char]) s32 @public @extern("cuModuleGetFunction") @convention("C");
+fn cuMemAlloc(dptr: ptr[u64], size: usize) s32 @public @extern("cuMemAlloc_v2") @convention("C");
+fn cuMemFree(dptr: u64) s32 @public @extern("cuMemFree_v2") @convention("C");
+fn cuMemcpyHtoD(dst: u64, src: ptr, size: usize) s32 @public @extern("cuMemcpyHtoD_v2") @convention("C");
+fn cuMemcpyDtoH(dst: ptr, src: u64, size: usize) s32 @public @extern("cuMemcpyDtoH_v2") @convention("C");
+fn cuMemsetD32(dst: u64, value: u32, count: usize) s32 @public @extern("cuMemsetD32_v2") @convention("C");
+fn cuLaunchKernel(
+    f: ptr,
+    gridX: u32, gridY: u32, gridZ: u32,
+    blockX: u32, blockY: u32, blockZ: u32,
+    sharedMem: u32,
+    stream: ptr,
+    kernelParams: ptr,
+    extra: ptr
+) s32 @public @extern("cuLaunchKernel") @convention("C");
+
+const CUDA_SUCCESS: s32 = 0;
+const SEEK_END: s32     = 2;
+const N: s32            = 1024;
+const THREADS: s32      = 256;
+
+fn check(r: s32, msg: const array[char]) void @public {
+    if r != CUDA_SUCCESS {
+        var s: ptr;
+        cuGetErrorString(r, ref s);
+        fprintf(nullptr, "CUDA error [%s]: %s\n", msg, s);
+        exit(1);
+    }
+}
+
+fn read_ptx(path: const array[char]) ptr @public {
+    var f: ptr = fopen(path, "rb");
+
+    if f == nullptr {
+        perror(path);
+        exit(1);
+    }
+
+    fseek(f, 0, SEEK_END);
+    var sz: s64 = ftell(f);
+    rewind(f);
+
+    var buf: ptr[u8] = malloc((sz + 1) as usize);
+    fread(buf as ptr, 1, sz as usize, f);
+
+    buf[sz as usize] = 0;
+
+    fclose(f);
+
+    return buf;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+
+    var ptx_path: const array[char] = "CudaCall.thrust.ptx";
+
+    if argc > 1 {
+        ptx_path = (deref (argv[1] as ptr[ptr[char]])) as const array[char];
+    }
+
+    var r: s32;
+
+    r = cuInit(0);
+    check(r, "cuInit");
+
+    var dev: s32;
+    r = cuDeviceGet(ref dev, 0);
+    check(r, "cuDeviceGet");
+
+    var gpu_name: array[char; 128];
+    cuDeviceGetName((ref gpu_name[0]) as ptr, 128, dev);
+
+    printf("\n===========================================\n");
+    printf("  GPU: %s\n", (ref gpu_name[0]) as ptr);
+    printf("===========================================\n\n");
+
+    var ctx: ptr;
+    r = cuCtxCreate(ref ctx, nullptr, 0, dev);
+    check(r, "cuCtxCreate");
+
+    var ptx_src: ptr = read_ptx(ptx_path);
+
+    var mod_: ptr;
+    r = cuModuleLoadData(ref mod_, ptx_src);
+
+    check(r, "cuModuleLoadData");
+    free(ptx_src);
+
+    var fn_vecAdd: ptr;
+    r = cuModuleGetFunction(ref fn_vecAdd, mod_, "vecAdd");
+    check(r, "cuModuleGetFunction vecAdd");
+
+    var fn_vector_sum: ptr;
+    r = cuModuleGetFunction(ref fn_vector_sum, mod_, "vectorSum");
+    check(r, "cuModuleGetFunction vectorSum");
+
+
+    // ── vecAdd ───────────────────────────────────────────────────────────────
+
+    printf("[ vecAdd ]  c[i] = a[i] + b[i]\n");
+    printf("-------------------------------------------\n");
+
+    var bytes: usize = (N * 4) as usize;
+
+    var h_a: ptr = malloc(bytes);
+    var h_b: ptr = malloc(bytes);
+    var h_c: ptr = malloc(bytes);
+
+    var fa: ptr[f32] = h_a;
+    var fb: ptr[f32] = h_b;
+
+    for var i: s32 = 0; i < N; i++; {
+        fa[i] = i as f32;
+        fb[i] = (N - i) as f32;
+    }
+
+    var d_a: u64 = 0;
+    var d_b: u64 = 0;
+    var d_c: u64 = 0;
+
+    r = cuMemAlloc(ref d_a, bytes); check(r, "cuMemAlloc d_a");
+    r = cuMemAlloc(ref d_b, bytes); check(r, "cuMemAlloc d_b");
+    r = cuMemAlloc(ref d_c, bytes); check(r, "cuMemAlloc d_c");
+
+    r = cuMemcpyHtoD(d_a, h_a, bytes); check(r, "HtoD a");
+    r = cuMemcpyHtoD(d_b, h_b, bytes); check(r, "HtoD b");
+
+    var n_s32: s32 = N;
+    
+    var args_vecAdd: array[ptr; 4] = fixed[
+        (ref d_a)   as ptr,
+        (ref d_b)   as ptr,
+        (ref d_c)   as ptr,
+        (ref n_s32) as ptr
+    ];
+
+    r = cuLaunchKernel(fn_vecAdd, 4, 1, 1, 256, 1, 1, 0, nullptr,
+        (ref args_vecAdd[0]) as ptr, nullptr);
+
+    check(r, "launch vecAdd");
+    
+    r = cuCtxSynchronize(); check(r, "sync vecAdd");
+    r = cuMemcpyDtoH(h_c, d_c, bytes); check(r, "DtoH c");
+
+    var fc: ptr[f32] = h_c;
+
+    printf("  %6s  %8s  %8s  %8s\n", "idx", "a[i]", "b[i]", "c[i]");
+    printf("  %6s  %8s  %8s  %8s\n", "------", "--------", "--------", "--------");
+
+    var sample: array[s32; 9] = fixed[0, 1, 2, 100, 511, 512, 1021, 1022, 1023];
+
+    for var si: s32 = 0; si < 9; si++; {
+        var idx: s32 = deref (sample[si]);
+
+        printf("  %6d  %8.1f  %8.1f  %8.1f\n",
+            idx,
+            (deref fa[idx]) as f64,
+            (deref fb[idx]) as f64,
+            (deref fc[idx]) as f64
+        );
+    }
+
+    // ── Verificación vecAdd ──────────────────────────────────────────────────
+
+    var ok: s32 = 1;
+
+    for var i: s32 = 0; i < N; i++; {
+        var expected: f32 = (deref fa[i]) + (deref fb[i]);
+
+        if (deref fc[i]) != expected {
+            ok = 0;
+            printf("  FAIL at %d\n", i);
+            break;
+        }
+    }
+
+    var result_str: const array[char] = "FAIL ✗";
+
+    if ok == 1 {
+        result_str = "OK ✓";
+    }
+
+    printf(" Result: %s  (%d verified elements)\n\n", deref ((ref result_str) as ptr), N);
+
+    // ── vectorSum ────────────────────────────────────────────────────────────
+
+    printf("[ vectorSum ]  block reduction\n");
+    printf("-------------------------------------------\n");
+
+    var blocks: s32 = (N + THREADS - 1) / THREADS;
+
+    var fa2: ptr[f32] = h_a;
+    
+    for var i: s32 = 0; i < N; i++; {
+        fa2[i] = (i + 1) as f32;
+    }
+
+    r = cuMemcpyHtoD(d_a, h_a, bytes); check(r, "HtoD input");
+
+    var d_out: u64 = 0;
+    var out_bytes: usize = (blocks * 4) as usize;
+    r = cuMemAlloc(ref d_out, out_bytes);       check(r, "cuMemAlloc d_out");
+    r = cuMemsetD32(d_out, 0, blocks as usize); check(r, "cuMemsetD32");
+
+    var n_u32: u32 = N as u32;
+
+    var args_vsum: array[ptr; 3] = fixed[
+        (ref d_a)   as ptr,
+        (ref d_out) as ptr,
+        (ref n_u32) as ptr
+    ];
+
+    r = cuLaunchKernel(fn_vector_sum,
+        blocks as u32, 1, 1,
+        THREADS as u32, 1, 1,
+        0, nullptr,
+        (ref args_vsum[0]) as ptr, nullptr);
+
+    check(r, "launch vectorSum");
+    r = cuCtxSynchronize(); check(r, "sync vectorSum");
+
+    var h_out: array[f32; 4] = fixed[0.0, 0.0, 0.0, 0.0];
+    r = cuMemcpyDtoH((ref h_out[0]) as ptr, d_out, out_bytes);
+    check(r, "DtoH out");
+
+    var expected_total: f32 = (N * (N + 1) / 2) as f32;
+    var total: f32 = 0.0;
+
+    printf("  %8s  %12s  %12s\n", "block", "parcial GPU", "parcial CPU");
+    printf("  %8s  %12s  %12s\n", "--------", "------------", "------------");
+
+    for var b: s32 = 0; b < blocks; b++; {
+        var cpu_partial: f32 = 0.0;
+        var start: s32 = b * THREADS;
+        var end_: s32  = (b + 1) * THREADS;
+
+        for var i: s32 = start; i < end_ && i < N; i++; {
+            cpu_partial = cpu_partial + (deref fa2[i]);
+        }
+
+        var block_gpu: f32 = deref h_out[b];
+
+        var match_str: const array[char] = "FAIL ✗";
+        if block_gpu == cpu_partial {
+            match_str = "OK ✓";
+        }
+
+        printf("  %8d  %12.1f  %12.1f  %s\n",
+            b,
+            block_gpu as f64,
+            cpu_partial as f64,
+            match_str
+        );
+
+        total = total + block_gpu;
+    }
+
+    var total_ok_str: const array[char] = "FAIL ✗";
+
+    if total == expected_total {
+        total_ok_str = "OK ✓";
+    }
+
+    printf("  Total GPU: %.1f  |  Expected: %.1f  |  %s\n\n",
+        total as f64,
+        expected_total as f64,
+        total_ok_str
+    );
+
+    printf("===========================================\n\n");
+
+    cuMemFree(d_out);
+    cuMemFree(d_a);
+    cuMemFree(d_b);
+    cuMemFree(d_c);
+
+    free(h_a);
+    free(h_b);
+    free(h_c);
+
+    cuModuleUnload(mod_);
+    cuCtxDestroy(ctx);
+
+    return 0;
+}

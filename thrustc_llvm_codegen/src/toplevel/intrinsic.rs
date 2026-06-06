@@ -30,7 +30,7 @@ use thrustc_typesystem::Type;
 use crate::attributebuilder::AttributeBuilder;
 use crate::attributebuilder::LLVMAttributeApplicant;
 use crate::context::LLVMCodeGenContext;
-use crate::declarations::function::CompilerFunctionVariant;
+use crate::toplevel::function::CompilerFunctionVariant;
 use crate::typegeneration;
 use crate::types::LLVMFunction;
 

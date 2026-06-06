@@ -38,9 +38,10 @@ use thrustc_typesystem::traits::TypePointerExtensions;
 use std::path::PathBuf;
 
 use crate::abort;
+use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::debug_context::LLVMDebugContext;
-use crate::declarations::function::CompilerFunctionVariant;
+use crate::toplevel::function::CompilerFunctionVariant;
 
 #[inline]
 pub fn compile_as_function_type<'ctx>(
@@ -165,6 +166,7 @@ pub fn generate_type<'ctx>(
     kind: &Type,
 ) -> BasicTypeEnum<'ctx> {
     let llvm_context: &Context = context.get_llvm_context();
+    let codegen_location: CodeGenLocation = context.get_codegen_location();
 
     match kind {
         t if t.is_integer_type() || t.is_char_type() || t.is_bool_type() => match kind {
@@ -210,7 +212,7 @@ pub fn generate_type<'ctx>(
         Type::Array {
             infered_type: Some((infered_type, ..)),
             ..
-        } => self::generate_type(context, infered_type),
+        } if !matches!(codegen_location, CodeGenLocation::CallArgExpr) => self::generate_type(context, infered_type),
 
         t if t.is_ptr_type() => {
             if let Type::Ptr { address_space: Some(address_space), .. } = t {
@@ -257,7 +259,7 @@ pub fn generate_type<'ctx>(
 }
 
 #[inline]
-pub fn generate_load_type<'ctx>(
+pub fn generate_dereference_type<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     kind: &Type,
 ) -> BasicTypeEnum<'ctx> {
@@ -275,7 +277,7 @@ pub fn generate_load_type<'ctx>(
                 .into(),
 
             Type::Bool { .. } => llvm_context.bool_type().into(),
-            Type::Const(subtype, ..) => self::generate_load_type(context, subtype),
+            Type::Const(subtype, ..) => self::generate_dereference_type(context, subtype),
 
             any => abort::abort_codegen(
                 context,
@@ -293,7 +295,7 @@ pub fn generate_load_type<'ctx>(
             Type::FX8680 { .. } => llvm_context.x86_f80_type().into(),
             Type::FPPC128 { .. } => llvm_context.ppc_f128_type().into(),
 
-            Type::Const(subtype, ..) => self::generate_load_type(context, subtype),
+            Type::Const(subtype, ..) => self::generate_dereference_type(context, subtype),
 
             any => abort::abort_codegen(
                 context,
@@ -315,7 +317,7 @@ pub fn generate_load_type<'ctx>(
 
         t if t.is_ptr_like_type() => llvm_context.ptr_type(AddressSpace::default()).into(),
 
-        Type::Const(subtype, ..) => self::generate_load_type(context, subtype),
+        Type::Const(subtype, ..) => self::generate_dereference_type(context, subtype),
 
         Type::Struct {
             fields, modifier, ..
@@ -326,7 +328,7 @@ pub fn generate_load_type<'ctx>(
 
             {
                 for ty in fields.iter() {
-                    field_types.push(self::generate_load_type(context, ty));
+                    field_types.push(self::generate_dereference_type(context, ty));
                 }
             }
 
@@ -334,7 +336,7 @@ pub fn generate_load_type<'ctx>(
         }
 
         Type::FixedArray { base_type, size, .. } => {
-            let array_type: BasicTypeEnum = self::generate_load_type(context, base_type);
+            let array_type: BasicTypeEnum = self::generate_dereference_type(context, base_type);
             array_type.array_type(*size).into()
         }
 

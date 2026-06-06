@@ -26,7 +26,7 @@ use inkwell::module::{Linkage, Module};
 use inkwell::types::{ArrayType, BasicTypeEnum, StructType};
 use inkwell::values::{GlobalValue, PointerValue, StructValue};
 use inkwell::{builder::Builder, values::BasicValueEnum};
-use thrustc_ast::ast_metadata::{ConstantMetadata, LocalMetadata, StaticMetadata};
+use thrustc_ast::ast_metadata::{ConstantMetadata, LocalMetadata, ReferenceType, StaticMetadata};
 use thrustc_attributes::ThrustAttributes;
 use thrustc_backends::llvm::LLVMBackend;
 use thrustc_entities::{GlobalConstant, GlobalStatic, LocalConstant, LocalStatic, LocalVariable};
@@ -36,12 +36,12 @@ use thrustc_span::Span;
 
 use crate::anchor::PointerAnchor;
 use crate::builtins::LLVMBuiltin;
-use crate::context::LLVMCodeGenContext;
-use crate::declarations::{asmfunction, function, intrinsic};
-use crate::expressions::unaryop;
+use crate::context::{CodeGenLocation, LLVMCodeGenContext};
+use crate::expressions::unary_expr;
 use crate::memory::SymbolAllocated;
 use crate::metadata::LLVMMetadata;
 use crate::statements::{conditional, forloop, infloop, whileloop};
+use crate::toplevel::{asmfunction, function, intrinsic};
 use crate::traits::{AstLLVMGetType, LLVMFunctionExtensions};
 use crate::types::LLVMFunction;
 use crate::{
@@ -53,7 +53,8 @@ use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeLocation;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::{
-    DereferenceExtensions, TypeIsExtensions, TypePointerExtensions, TypeStructExtensions,
+    ConstantTypeExtensions, DereferenceExtensions, TypeIsExtensions, TypePointerExtensions,
+    TypeStructExtensions,
 };
 
 #[derive(Debug)]
@@ -72,8 +73,8 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
     fn compile(&mut self) {
         self.init_top_entities();
 
-        self::compile_constructors(self.get_mut_context());
-        self::compile_destructors(self.get_mut_context());
+        self::compile_entry_point_constructors(self.get_mut_context());
+        self::compile_entry_point_desctructors(self.get_mut_context());
 
         {
             for node in self.ast.iter() {
@@ -418,7 +419,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     .get_mut_expressions_optimizations()
                     .denegate_all_expression_optimizations();
 
-                if metadata.is_undefined() {
+                if metadata.is_unitialized() {
                     let var: LocalVariable = thrustc_entities::local_variable_from_ast(node);
 
                     let name: &str = var.0;
@@ -497,7 +498,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let symbol: SymbolAllocated = self.context.get_table().get_symbol(name);
 
                     self.context
-                        .set_pointer_anchor(PointerAnchor::new(symbol.get_ptr(), false));
+                        .set_pointer_anchor(PointerAnchor::new(symbol.get_ptr_value(), false));
 
                     let value: BasicValueEnum =
                         codegen::compile_as_value(self.get_mut_context(), expr, Some(kind));
@@ -790,7 +791,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 node,
                 ..
             } => {
-                expressions::unaryop::compile(self.context, (operator, kind, node), None);
+                expressions::unary_expr::compile(self.context, (operator, kind, node), None);
             }
 
             Ast::BinaryOp {
@@ -802,19 +803,19 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 ..
             } => {
                 if kind.is_integer_type() {
-                    expressions::binaryop::integer::compile(
+                    expressions::binaryop::integer_operation::compile(
                         self.context,
                         (left, operator, right, *span),
                         None,
                     );
                 } else if kind.is_float_type() {
-                    expressions::binaryop::float::compile(
+                    expressions::binaryop::floatingpoint_operation::compile(
                         self.context,
                         (left, operator, right, *span),
                         None,
                     );
                 } else if kind.is_bool_type() {
-                    expressions::binaryop::boolean::compile(
+                    expressions::binaryop::boolean_operation::compile(
                         self.context,
                         (left, operator, right, *span),
                     );
@@ -842,7 +843,10 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 let source_type: &Type = source.get_type_for_llvm();
                 let cast_type: Type = source_type.dereference_until_value();
 
+                self.context.add_codegen_location(CodeGenLocation::LValue);
                 let ptr: BasicValueEnum = self::compile_as_ptr_value(self.context, source, None);
+                self.context.pop_current_codegen_location();
+
                 let value: BasicValueEnum =
                     codegen::compile_as_value(self.context, value, Some(&cast_type));
 
@@ -918,7 +922,7 @@ pub fn compile_as_value<'ctx>(
             let ty: &Type = cast::select_ssa_float_type(cast_type, float_ty);
 
             let float_value: BasicValueEnum =
-                expressions::floatingpoint::compile(context, ty, *value, *span).into();
+                expressions::literal_floatingpoint_expr::compile(context, ty, *value, *span).into();
 
             cast::try_smart_cast(context, cast_type, float_ty, float_value, *span)
         }
@@ -932,7 +936,7 @@ pub fn compile_as_value<'ctx>(
             let ty: &Type = cast::select_ssa_integer_type(cast_type, integer_ty);
 
             let int_value: BasicValueEnum =
-                expressions::integer::compile(context, ty, *value, *span).into();
+                expressions::literal_integer_expr::compile(context, ty, *value, *span).into();
 
             cast::try_smart_cast(context, cast_type, integer_ty, int_value, *span)
         }
@@ -944,10 +948,11 @@ pub fn compile_as_value<'ctx>(
             .into(),
 
         Ast::CString { bytes, span, .. } => {
-            expressions::string::compile(context, bytes, true, *span).into()
+            expressions::literal_string_expr::compile(context, bytes, true, *span).into()
         }
+
         Ast::CNString { bytes, span, .. } => {
-            expressions::string::compile(context, bytes, false, *span).into()
+            expressions::literal_string_expr::compile(context, bytes, false, *span).into()
         }
 
         Ast::Char { byte, .. } => context
@@ -965,8 +970,17 @@ pub fn compile_as_value<'ctx>(
         // Function
         // Compiles a function call
         Ast::Call {
-            name, args, kind, ..
-        } => expressions::call::compile(context, name, args, kind, cast_type),
+            name,
+            args,
+            kind,
+            span,
+            ..
+        } => {
+            let value: BasicValueEnum<'_> =
+                expressions::call_expr::compile(context, name, args, kind, cast_type);
+
+            cast::try_smart_cast(context, cast_type, kind, value, *span)
+        }
 
         // Function
         // Compiles a indirect function call
@@ -976,7 +990,7 @@ pub fn compile_as_value<'ctx>(
             args,
             span,
             ..
-        } => expressions::indirectcall::compile(
+        } => expressions::indirectcall_expr::compile(
             context,
             function,
             args,
@@ -997,19 +1011,20 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => match binaryop_type {
-            t if t.is_float_type() => expressions::binaryop::float::compile(
+            t if t.is_float_type() => expressions::binaryop::floatingpoint_operation::compile(
                 context,
                 (left, operator, right, *span),
                 cast_type,
             ),
-            t if t.is_integer_type() => expressions::binaryop::integer::compile(
+            t if t.is_integer_type() => expressions::binaryop::integer_operation::compile(
                 context,
                 (left, operator, right, *span),
                 cast_type,
             ),
-            t if t.is_bool_type() => {
-                expressions::binaryop::boolean::compile(context, (left, operator, right, *span))
-            }
+            t if t.is_bool_type() => expressions::binaryop::boolean_operation::compile(
+                context,
+                (left, operator, right, *span),
+            ),
 
             _ => {
                 abort::abort_codegen(
@@ -1027,21 +1042,42 @@ pub fn compile_as_value<'ctx>(
             kind,
             node,
             ..
-        } => expressions::unaryop::compile(context, (operator, kind, node), cast_type),
+        } => expressions::unary_expr::compile(context, (operator, kind, node), cast_type),
 
         // Direct Reference
-        Ast::GetLocation { expr, .. } => self::compile_as_ptr_value(context, expr, cast_type),
+        Ast::GetLocation { expr, .. } => {
+            context.add_codegen_location(CodeGenLocation::LValue);
+
+            let value: BasicValueEnum<'_> = self::compile_as_ptr_value(context, expr, cast_type);
+
+            context.pop_current_codegen_location();
+
+            value
+        }
 
         // Symbol/Property Access
         // Compiles a reference to a variable or symbol
-        Ast::Reference { name, .. } => context.get_table().get_symbol(name).load(context),
+        Ast::Reference {
+            name,
+            kind: ty,
+            span,
+            ..
+        } => {
+            let value: BasicValueEnum<'_> = context.get_table().get_symbol(name).load(context);
+
+            cast::try_smart_cast(context, cast_type, ty, value, *span)
+        }
 
         // Compiles property access (e.g., struct field or array)
-        Ast::Property { source, data, .. } => expressions::property::compile(context, source, data),
+        Ast::Property { source, data, .. } => {
+            expressions::struct_property_expr::compile(context, source, data)
+        }
 
         // Memory Access Operations
         // Compiles an indexing operation (e.g., array access)
-        Ast::Index { source, index, .. } => expressions::index::compile(context, source, index),
+        Ast::Index { source, index, .. } => {
+            expressions::index_expr::compile(context, source, index)
+        }
 
         // Compiles a dereference operation (e.g., *pointer)
         Ast::Deref {
@@ -1080,17 +1116,17 @@ pub fn compile_as_value<'ctx>(
         // Compiles a fixed-size array
         Ast::FixedArray {
             items, kind, span, ..
-        } => expressions::farray::compile(context, items, kind, *span, cast_type),
+        } => expressions::fixed_array::compile(context, items, kind, *span, cast_type),
 
         // Compiles a dynamic array
         Ast::Array {
             items, kind, span, ..
-        } => expressions::array::compile(context, items, kind, *span, cast_type),
+        } => expressions::array_expr::compile(context, items, kind, *span, cast_type),
 
         // Compiles a struct constructor
         Ast::Constructor {
             data, kind, span, ..
-        } => expressions::structure::compile(context, data, kind, *span),
+        } => expressions::struct_expr::compile(context, data, kind, *span),
 
         // Compiles a type cast_type operation
         Ast::As {
@@ -1107,7 +1143,7 @@ pub fn compile_as_value<'ctx>(
             attributes,
             span,
             ..
-        } => expressions::inlineasm::compile(
+        } => expressions::inlineasm_expr::compile(
             context,
             assembler,
             constraints,
@@ -1170,7 +1206,8 @@ pub fn compile_constant_as_value<'ctx>(
             value, kind, span, ..
         } => {
             let float_value: BasicValueEnum =
-                expressions::floatingpoint::compile(context, kind, *value, *span).into();
+                expressions::literal_floatingpoint_expr::compile(context, kind, *value, *span)
+                    .into();
 
             cast::try_smart_constant_cast(context, cast_type, kind, float_value)
         }
@@ -1179,7 +1216,7 @@ pub fn compile_constant_as_value<'ctx>(
             value, kind, span, ..
         } => {
             let int_value: BasicValueEnum =
-                expressions::integer::compile(context, kind, *value, *span).into();
+                expressions::literal_integer_expr::compile(context, kind, *value, *span).into();
 
             cast::try_smart_constant_cast(context, cast_type, kind, int_value)
         }
@@ -1193,27 +1230,37 @@ pub fn compile_constant_as_value<'ctx>(
 
         // Fixed-size array
         Ast::FixedArray { items, span, .. } => {
-            expressions::farray::compile_const(context, items, cast_type, *span)
+            expressions::fixed_array::compile_const(context, items, cast_type, *span)
         }
 
         // Dynamic-size array
         Ast::Array { items, span, .. } => {
-            expressions::array::compile_const(context, items, cast_type, *span)
+            expressions::array_expr::compile_const(context, items, cast_type, *span)
         }
 
         Ast::CString { bytes, span, .. } => {
-            expressions::string::compile(context, bytes, true, *span).into()
+            expressions::literal_string_expr::compile(context, bytes, true, *span).into()
         }
         Ast::CNString { bytes, span, .. } => {
-            expressions::string::compile(context, bytes, false, *span).into()
+            expressions::literal_string_expr::compile(context, bytes, false, *span).into()
         }
 
         // Struct constructor handling
-        Ast::Constructor { data, kind, .. } => {
+        Ast::Constructor {
+            data, kind, span, ..
+        } => {
             let llvm_context: &Context = context.get_llvm_context();
 
             let fields_expr: Vec<&Ast> = data.iter().map(|raw_arg| &raw_arg.1).collect();
-            let fields_types: &[Type] = kind.get_struct_fields();
+            let fields_types: &[Type] = kind.get_struct_fields().unwrap_or_else(|| {
+                abort::abort_codegen(
+                    context,
+                    "Failed get structure type fields!",
+                    *span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
 
             let field_values: Vec<BasicValueEnum> = fields_expr
                 .iter()
@@ -1232,7 +1279,10 @@ pub fn compile_constant_as_value<'ctx>(
         } => cast::compile_constant_type_cast(context, expr, cast),
 
         // Variable reference resolution
-        Ast::Reference { name, .. } => context.get_table().get_symbol(name).get_value(context),
+        Ast::Reference { name, .. } => context
+            .get_table()
+            .get_symbol(name)
+            .get_symbol_value(context),
 
         // Grouped expression compilation
         Ast::Group { node, .. } => codegen::compile_constant_as_value(context, node, cast_type),
@@ -1247,7 +1297,7 @@ pub fn compile_constant_as_value<'ctx>(
             ..
         } => {
             if binaryop_type.is_integer_type() {
-                return expressions::binaryop::integer::compile_constant(
+                return expressions::binaryop::integer_operation::compile_constant(
                     context,
                     (left, operator, right, *span),
                     cast_type,
@@ -1255,7 +1305,7 @@ pub fn compile_constant_as_value<'ctx>(
             }
 
             if binaryop_type.is_bool_type() {
-                return expressions::binaryop::boolean::compile_constant(
+                return expressions::binaryop::boolean_operation::compile_constant(
                     context,
                     (left, operator, right, *span),
                     cast_type,
@@ -1263,7 +1313,7 @@ pub fn compile_constant_as_value<'ctx>(
             }
 
             if binaryop_type.is_float_type() {
-                return expressions::binaryop::float::compile_constant(
+                return expressions::binaryop::floatingpoint_operation::compile_constant(
                     context,
                     (left, operator, right, *span),
                     cast_type,
@@ -1285,7 +1335,7 @@ pub fn compile_constant_as_value<'ctx>(
             node,
             kind,
             ..
-        } => unaryop::compile_const(context, (operator, kind, node), cast_type),
+        } => unary_expr::compile_const(context, (operator, kind, node), cast_type),
 
         // Direct Reference
         Ast::GetLocation { expr, .. } => codegen::compile_as_ptr_value(context, expr, None),
@@ -1319,7 +1369,7 @@ pub fn compile_constant_as_ptr_value<'ctx>(
     cast_type: &Type,
 ) -> BasicValueEnum<'ctx> {
     match expr {
-        Ast::Reference { name, .. } => context.get_table().get_symbol(name).get_ptr().into(),
+        Ast::Reference { name, .. } => context.get_table().get_symbol(name).get_ptr_value().into(),
         _ => codegen::compile_constant_as_value(context, expr, cast_type),
     }
 }
@@ -1331,12 +1381,49 @@ pub fn compile_as_ptr_value<'ctx>(
     cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
     match expr {
-        Ast::Reference { name, .. } => context.get_table().get_symbol(name).get_ptr().into(),
+        Ast::Reference {
+            name,
+            kind: ty,
+            span,
+            metadata,
+            ..
+        } => {
+            let codegen_location: CodeGenLocation = context.get_codegen_location();
+            let reference_ty: thrustc_ast::ast_metadata::ReferenceType = metadata.get_type();
+
+            let base_ptr: PointerValue<'_> = context.get_table().get_symbol(name).get_ptr_value();
+            let ptr_type: &Type = &ty.remove_all_constant_type();
+            let nested_ptr_count: usize = ty.get_nested_ptr_type_count(0);
+
+            if ptr_type.is_ptr_like_type() {
+                if matches!(codegen_location, CodeGenLocation::LValue) {
+                    return base_ptr.into();
+                }
+
+                if matches!(reference_ty, ReferenceType::Parameter) {
+                    return base_ptr.into();
+                }
+
+                if nested_ptr_count <= 1 {
+                    memory::load_ptr(context, base_ptr, *span)
+                } else {
+                    memory::auto_deference_a_nested_pointer(
+                        context,
+                        base_ptr,
+                        ptr_type,
+                        nested_ptr_count,
+                        *span,
+                    )
+                }
+            } else {
+                base_ptr.into()
+            }
+        }
         _ => codegen::compile_as_value(context, expr, cast_type),
     }
 }
 
-pub fn compile_constructors<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>) {
+pub fn compile_entry_point_constructors<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>) {
     if context.get_llvm_ctors().is_empty() {
         return;
     }
@@ -1384,7 +1471,7 @@ pub fn compile_constructors<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>) {
     global.set_initializer(&ctor_type.const_array(&llvm_ctors));
 }
 
-pub fn compile_destructors<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>) {
+pub fn compile_entry_point_desctructors<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>) {
     if context.get_llvm_dtors().is_empty() {
         return;
     }

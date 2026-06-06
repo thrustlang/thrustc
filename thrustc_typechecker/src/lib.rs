@@ -28,10 +28,7 @@ use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_span::Span;
 use thrustc_typesystem::{
     Type,
-    traits::{
-        DereferenceExtensions, TypeExtensions, TypeIsExtensions, TypePointerExtensions,
-        VoidTypeExtensions,
-    },
+    traits::{DereferenceExtensions, TypeIsExtensions, VoidTypeExtensions},
 };
 
 use crate::{
@@ -661,30 +658,21 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                 Ok(())
             }
-            Ast::Mutation { source, value, .. } => {
+            Ast::Mutation {
+                source,
+                value,
+                span,
+                ..
+            } => {
                 let metadata: TypeCheckerNodeMetadata =
                     TypeCheckerNodeMetadata::new(value.is_totaly_literal_value());
 
                 let source_type: &Type = source.get_value_type()?;
                 let value_type: &Type = value.get_value_type()?;
 
-                let source_span: Span = source.get_span();
-
                 {
-                    let mut source_type: Type = source_type.dereference_until_value();
+                    let source_type: Type = source_type.dereference_until_value();
                     let value_type: Type = value_type.dereference_until_value();
-
-                    // The compiler allow to mutate a type expression if the left type (target) doens't have a value type (if it is segment fault, it its the programmer fault, )
-                    if (!source_type.is_value()) && value_type.is_value() {
-                        source_type = value_type.clone();
-                    }
-
-                    /*
-                        // this is no allowed by the general analyzer. We shouldn't check it here.
-                        if source_type.is_value() && (!value_type.is_value()) {
-                            source_type = value_type.clone();
-                        }
-                    */
 
                     {
                         let control_context: &mut TypeCheckerControlContext =
@@ -698,7 +686,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                             Some(value),
                             None,
                             metadata,
-                            source_span,
+                            *span,
                             control_context,
                         ) {
                             self.add_error_report(error);

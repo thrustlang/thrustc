@@ -56,7 +56,15 @@ fn compile_with_anchor<'ctx>(
     let ptr_type: BasicTypeEnum<'_> = typegeneration::generate_type(context, struct_type);
     let ptr_value: PointerValue<'_> = anchor.get_pointer();
 
-    let fields_types: &[Type] = struct_type.get_struct_fields();
+    let fields_types: &[Type] = struct_type.get_struct_fields().unwrap_or_else(|| {
+        abort::abort_codegen(
+            context,
+            "Failed get structure type fields!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        )
+    });
 
     let fields: Vec<_> = data
         .iter()
@@ -108,9 +116,17 @@ fn compile_without_anchor<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let ptr_type: BasicTypeEnum<'_> = typegeneration::generate_type(context, struct_type);
     let ptr_value: PointerValue<'_> =
-        memory::alloc_anon(context, LLVMAllocationSite::Stack, struct_type, span);
+        memory::allocate_on(context, LLVMAllocationSite::Stack, struct_type, span);
 
-    let fields_types: &[Type] = struct_type.get_struct_fields();
+    let fields_types: &[Type] = struct_type.get_struct_fields().unwrap_or_else(|| {
+        abort::abort_codegen(
+            context,
+            "Failed get structure type fields!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        )
+    });
 
     let fields: Vec<_> = data
         .iter()

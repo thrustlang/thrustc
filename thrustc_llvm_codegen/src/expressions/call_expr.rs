@@ -20,10 +20,12 @@
 use inkwell::context::Context;
 use thrustc_ast::Ast;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::traits::TypePointerExtensions;
 
 use crate::abort;
 use crate::cast;
 use crate::codegen;
+use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::types::LLVMFunction;
 
@@ -57,7 +59,7 @@ pub fn compile<'ctx>(
         function.0, function.2, function.3, function.4, function.5, function.6, function.7,
     );
 
-    let override_call_convention: Option<u32> = attributes
+    let other_call_convention: Option<u32> = attributes
         .iter()
         .find_map(|attribute| thrustc_llvm_attributes::interpret_as_callconvention(attribute));
 
@@ -67,46 +69,72 @@ pub fn compile<'ctx>(
             .enumerate()
             .map(|(i, expr)| {
                 let cast: Option<&Type> = function_arg_types.get(i);
-                codegen::compile_as_value(context, expr, cast).into()
+
+                context.add_codegen_location(CodeGenLocation::CallArgExpr);
+
+                if let Some(cast_type) = cast {
+                    if cast_type.is_ptr_like_type() {
+                        let value: BasicValueEnum<'_> =
+                            codegen::compile_as_ptr_value(context, expr, cast);
+
+                        context.pop_current_codegen_location();
+
+                        value.into()
+                    } else {
+                        let value: BasicValueEnum<'_> =
+                            codegen::compile_as_value(context, expr, cast);
+
+                        context.pop_current_codegen_location();
+
+                        value.into()
+                    }
+                } else {
+                    let value: BasicValueEnum<'_> = codegen::compile_as_value(context, expr, cast);
+
+                    context.pop_current_codegen_location();
+
+                    value.into()
+                }
             })
             .collect();
 
-        let ret_value = match llvm_builder.build_call(llvm_function, &compiled_args, "") {
-            Ok(call) => {
-                if let Some(call_convention) = override_call_convention {
-                    call.set_call_convention(call_convention);
-                } else {
-                    call.set_call_convention(call_convention);
-                }
+        let ret_value: BasicValueEnum<'_> =
+            match llvm_builder.build_call(llvm_function, &compiled_args, "") {
+                Ok(callsite) => {
+                    if let Some(call_convention) = other_call_convention {
+                        callsite.set_call_convention(call_convention);
+                    } else {
+                        callsite.set_call_convention(call_convention);
+                    }
 
-                let is_void_type: bool = llvm_function.get_type().get_return_type().is_none();
+                    let is_void_type: bool = llvm_function.get_type().get_return_type().is_none();
 
-                if !is_void_type {
-                    call.try_as_basic_value().left().unwrap_or_else(|| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to compile function call!",
-                            span,
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        )
-                    })
-                } else {
-                    context
-                        .get_llvm_context()
-                        .ptr_type(AddressSpace::default())
-                        .const_null()
-                        .into()
+                    if !is_void_type {
+                        callsite.try_as_basic_value().left().unwrap_or_else(|| {
+                            abort::abort_codegen(
+                                context,
+                                "Failed to compile function call!",
+                                span,
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        })
+                    } else {
+                        context
+                            .get_llvm_context()
+                            .ptr_type(AddressSpace::default())
+                            .const_null()
+                            .into()
+                    }
                 }
-            }
-            Err(_) => abort::abort_codegen(
-                context,
-                "Failed to compile the function call!",
-                span,
-                std::path::PathBuf::from(file!()),
-                line!(),
-            ),
-        };
+                Err(_) => abort::abort_codegen(
+                    context,
+                    "Failed to compile the function call!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                ),
+            };
 
         cast::try_smart_cast(context, cast, kind, ret_value, span)
     };
@@ -123,7 +151,32 @@ pub fn compile<'ctx>(
             .enumerate()
             .map(|(i, expr)| {
                 let cast: Option<&Type> = function_arg_types.get(i);
-                codegen::compile_as_value(context, expr, cast)
+
+                context.add_codegen_location(CodeGenLocation::CallArgExpr);
+
+                if let Some(cast_type) = cast {
+                    if cast_type.is_ptr_like_type() {
+                        let value: BasicValueEnum<'_> =
+                            codegen::compile_as_ptr_value(context, expr, cast);
+
+                        context.pop_current_codegen_location();
+
+                        value
+                    } else {
+                        let value: BasicValueEnum<'_> =
+                            codegen::compile_as_value(context, expr, cast);
+
+                        context.pop_current_codegen_location();
+
+                        value
+                    }
+                } else {
+                    let value: BasicValueEnum<'_> = codegen::compile_as_value(context, expr, cast);
+
+                    context.pop_current_codegen_location();
+
+                    value
+                }
             })
             .collect();
 
@@ -171,17 +224,17 @@ pub fn compile<'ctx>(
 
         let ret_value: BasicValueEnum =
             match llvm_builder.build_call(llvm_function, &lowered_args, "") {
-                Ok(call) => {
-                    let is_void_type: bool = call
+                Ok(callsite) => {
+                    let is_void_type: bool = callsite
                         .get_called_fn_value()
                         .get_type()
                         .get_return_type()
                         .is_none();
 
-                    if let Some(call_convention) = override_call_convention {
-                        call.set_call_convention(call_convention);
+                    if let Some(call_convention) = other_call_convention {
+                        callsite.set_call_convention(call_convention);
                     } else {
-                        call.set_call_convention(call_convention);
+                        callsite.set_call_convention(call_convention);
                     }
 
                     let result: Option<BasicValueEnum<'_>> =
@@ -190,7 +243,7 @@ pub fn compile<'ctx>(
                             llvm_builder,
                             abi,
                             configuration,
-                            call,
+                            callsite,
                             &lowered_args,
                             span,
                         );

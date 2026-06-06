@@ -19,17 +19,19 @@
 
 use crate::{
     Type,
-    traits::{DereferenceExtensions, TypeExtensions},
+    traits::{ConstantTypeExtensions, DereferenceExtensions, TypeExtensions},
 };
 
 impl DereferenceExtensions for Type {
     #[inline]
     fn dereference(&self) -> Type {
+        let non_constant: Type = self.remove_all_constant_type();
+
         if let Type::Ptr {
             subtype: Some(any), ..
-        } = self
+        } = non_constant
         {
-            return (**any).clone();
+            return (*any).clone();
         }
 
         self.clone()
@@ -37,14 +39,16 @@ impl DereferenceExtensions for Type {
 
     #[inline]
     fn dereference_until_value(&self) -> Type {
+        let non_constant: Type = self.remove_all_constant_type();
+
         if let Type::Ptr {
             subtype: Some(any), ..
-        } = self
+        } = non_constant
         {
             return any.dereference_until_value();
         }
 
-        if self.is_value() {
+        if non_constant.is_value() {
             return self.clone();
         }
 

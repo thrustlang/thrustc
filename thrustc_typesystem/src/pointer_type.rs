@@ -19,10 +19,28 @@
 
 use crate::{
     Type,
-    traits::{TypeIsExtensions, TypePointerExtensions},
+    traits::{ConstantTypeExtensions, TypeIsExtensions, TypePointerExtensions},
 };
 
 impl TypePointerExtensions for Type {
+    #[inline]
+    fn get_nested_ptr_type_count(&self, mut base: usize) -> usize {
+        let non_constant_ty: Type = self.remove_all_constant_type();
+
+        if let Type::Ptr {
+            subtype: Some(inner),
+            ..
+        } = non_constant_ty
+        {
+            if inner.is_ptr_like_type() {
+                base += 1;
+                return inner.get_nested_ptr_type_count(base);
+            }
+        }
+
+        base
+    }
+
     #[inline]
     fn is_ptr_like_type(&self) -> bool {
         if let Type::Const(subtype, ..) = self {
@@ -52,7 +70,7 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_ptr_aggregate_value_like_type(&self) -> bool {
-        self.is_ptr_fixed_array_type()
+        self.is_ptr_fixed_array_type() || self.is_ptr_struct_type()
     }
 
     #[inline]
@@ -70,15 +88,17 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_typed_ptr_type(&self) -> bool {
+        let non_constant_type: Type = self.remove_all_constant_type();
+
         if let Type::Ptr {
             subtype: Some(inner),
             ..
-        } = self
+        } = non_constant_type
         {
             return inner.is_typed_ptr_type();
         }
 
-        if let Type::Ptr { subtype: None, .. } = self {
+        if let Type::Ptr { subtype: None, .. } = non_constant_type {
             return false;
         }
 
@@ -87,10 +107,12 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_ptr_struct_type(&self) -> bool {
+        let non_constant_type: Type = self.remove_all_constant_type();
+
         if let Type::Ptr {
             subtype: Some(inner),
             ..
-        } = self
+        } = non_constant_type
         {
             return inner.is_struct_type();
         }
@@ -100,10 +122,12 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_ptr_fixed_array_type(&self) -> bool {
+        let non_constant_type: Type = self.remove_all_constant_type();
+
         if let Type::Ptr {
             subtype: Some(inner),
             ..
-        } = self
+        } = non_constant_type
         {
             return inner.is_fixed_array_type();
         }
@@ -113,10 +137,12 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_ptr_numeric_type(&self) -> bool {
+        let non_constant_type: Type = self.remove_all_constant_type();
+
         if let Type::Ptr {
             subtype: Some(inner),
             ..
-        } = self
+        } = non_constant_type
         {
             return inner.is_numeric_type();
         }
@@ -126,10 +152,12 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_ptr_array_type(&self) -> bool {
+        let non_constant_type: Type = self.remove_all_constant_type();
+
         if let Type::Ptr {
             subtype: Some(inner),
             ..
-        } = self
+        } = non_constant_type
         {
             return inner.is_array_type();
         }

@@ -17,7 +17,6 @@
 
 */
 
-
-pub mod boolean;
-pub mod float;
-pub mod integer;
+pub mod boolean_operation;
+pub mod floatingpoint_operation;
+pub mod integer_operation;

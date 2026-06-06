@@ -23,6 +23,7 @@ use std::hash::Hasher;
 use thrustc_span::Span;
 
 use crate::traits::ConstantTypeExtensions;
+use crate::traits::TypePointerExtensions;
 use crate::{
     Type,
     traits::{TypeCodeLocation, TypeExtensions, TypeIsExtensions},
@@ -245,6 +246,7 @@ impl TypeExtensions for Type {
         self.is_numeric_type() || self.is_fixed_array_type() || self.is_struct_type()
     }
 
+    #[inline]
     fn get_type_with_depth(&self, base_depth: u64) -> &Type {
         if base_depth == 0 {
             return self;
@@ -297,10 +299,14 @@ impl TypeExtensions for Type {
 
     #[inline]
     fn get_type_ref(&self) -> Type {
-        Type::Ptr {
-            subtype: Some(self.clone().into()),
-            address_space: self.get_address_space(),
-            span: self.get_span(),
+        if self.is_ptr_like_type() {
+            self.clone()
+        } else {
+            Type::Ptr {
+                subtype: Some(self.clone().into()),
+                address_space: self.get_address_space(),
+                span: self.get_span(),
+            }
         }
     }
 }

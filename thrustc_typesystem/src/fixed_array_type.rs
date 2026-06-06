@@ -17,31 +17,36 @@
 
 */
 
-use crate::{Type, traits::TypeFixedArrayEntensions};
+use crate::{
+    Type,
+    traits::{ConstantTypeExtensions, TypeFixedArrayEntensions},
+};
 
 impl TypeFixedArrayEntensions for Type {
-    #[inline(always)]
+    #[inline]
     fn get_fixed_array_base_type(&self) -> Type {
-        if let Type::FixedArray { base_type, .. } = self {
-            return *(*base_type).clone();
+        let non_constant_type: Type = self.remove_all_constant_type();
+
+        if let Type::FixedArray { base_type, .. } = non_constant_type {
+            return (*base_type).clone();
         }
 
         if let Type::Ptr {
             subtype: Some(inner),
             ..
-        } = self
+        } = non_constant_type
         {
             return inner.get_fixed_array_base_type();
         }
 
-        if let Type::Const(inner, ..) = self {
+        if let Type::Const(inner, ..) = non_constant_type {
             return inner.get_fixed_array_base_type();
         }
 
         self.clone()
     }
 
-    #[inline(always)]
+    #[inline]
     fn get_fixed_array_type_herarchy(&self) -> u8 {
         match self {
             Type::Bool { .. } => 1,

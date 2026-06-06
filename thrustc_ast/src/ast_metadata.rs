@@ -118,11 +118,14 @@ pub struct ReferenceMetadata {
     is_allocated: bool,
     is_mutable: bool,
     reference_type: ReferenceType,
+    is_unitialized: bool,
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, Default, Serialize)]
 pub enum ReferenceType {
+    Parameter,
+    Local,
     Constant,
     Static,
 
@@ -132,12 +135,25 @@ pub enum ReferenceType {
 
 impl ReferenceMetadata {
     #[inline]
-    pub fn new(is_allocated: bool, is_mutable: bool, reference_type: ReferenceType) -> Self {
+    pub fn new(
+        is_allocated: bool,
+        is_mutable: bool,
+        reference_type: ReferenceType,
+        is_unitialized: bool,
+    ) -> Self {
         Self {
             is_allocated,
             is_mutable,
             reference_type,
+            is_unitialized,
         }
+    }
+}
+
+impl ReferenceMetadata {
+    #[inline]
+    pub fn get_type(&self) -> ReferenceType {
+        self.reference_type
     }
 }
 
@@ -150,6 +166,11 @@ impl ReferenceMetadata {
     #[inline]
     pub fn is_mutable(&self) -> bool {
         self.is_mutable
+    }
+
+    #[inline]
+    pub fn is_unitialized(&self) -> bool {
+        self.is_unitialized
     }
 }
 
@@ -248,7 +269,7 @@ impl DereferenceMetadata {
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct LocalMetadata {
-    is_undefined: bool,
+    is_unitialized: bool,
     is_mutable: bool,
 
     llvm_metadata: LLVMLocalMetadata,
@@ -264,13 +285,13 @@ pub struct LLVMLocalMetadata {
 impl LocalMetadata {
     #[inline]
     pub fn new(
-        is_undefined: bool,
+        is_unitialized: bool,
         is_mutable: bool,
         volatile: bool,
         atomic_ord: Option<ThrustAtomicOrdering>,
     ) -> Self {
         Self {
-            is_undefined,
+            is_unitialized,
             is_mutable,
 
             llvm_metadata: LLVMLocalMetadata {
@@ -283,8 +304,8 @@ impl LocalMetadata {
 
 impl LocalMetadata {
     #[inline]
-    pub fn is_undefined(&self) -> bool {
-        self.is_undefined
+    pub fn is_unitialized(&self) -> bool {
+        self.is_unitialized
     }
 
     #[inline]

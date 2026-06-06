@@ -20,7 +20,7 @@
 use crate::{Type, traits::CastTypeExtensions};
 
 impl CastTypeExtensions for Type {
-    #[inline(always)]
+    #[inline]
     fn narrowing(&self) -> Type {
         match self {
             Type::U8 { span } => Type::S8 { span: *span },

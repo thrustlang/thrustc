@@ -287,7 +287,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                 value, metadata, ..
             } => {
                 if let Some(value) = value {
-                    if !metadata.is_undefined() {
+                    if !metadata.is_unitialized() {
                         self.analyze_expr(value)?;
                     }
                 }

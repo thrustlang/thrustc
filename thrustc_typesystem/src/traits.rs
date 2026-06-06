@@ -92,10 +92,12 @@ pub trait TypePointerExtensions {
     fn is_ptr_fixed_array_type(&self) -> bool;
     fn is_ptr_array_type(&self) -> bool;
     fn is_ptr_numeric_type(&self) -> bool;
+
+    fn get_nested_ptr_type_count(&self, base: usize) -> usize;
 }
 
 pub trait TypeStructExtensions {
-    fn get_struct_fields(&self) -> &[Type];
+    fn get_struct_fields(&self) -> Option<&[Type]>;
     fn create_struct_type(
         name: String,
         fields: &[Type],

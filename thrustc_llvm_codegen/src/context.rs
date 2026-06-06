@@ -70,6 +70,8 @@ pub struct LLVMCodeGenContext<'a, 'ctx> {
     ctors: LLVMCtors<'ctx>,
     dtors: LLVMDtors<'ctx>,
 
+    codegen_location: Vec<CodeGenLocation>,
+
     ptr_anchor: Option<PointerAnchor<'ctx>>,
 
     current_function: Option<LLVMFunction<'ctx>>,
@@ -126,6 +128,8 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
             ctors: LLVMCtors::new(),
             dtors: LLVMDtors::new(),
 
+            codegen_location: Vec::new(),
+
             ptr_anchor: None,
 
             current_function: None,
@@ -147,7 +151,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
             abort::abort_codegen(
                 self,
                 "Failed to get the scope!",
-                symbol.get_span(),
+                symbol.get_symbol_span(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -168,7 +172,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
             abort::abort_codegen(
                 self,
                 "Failed to get the scope!",
-                symbol.get_span(),
+                symbol.get_symbol_span(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             )
@@ -190,7 +194,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
             abort::abort_codegen(
                 self,
                 "Failed to get the scope!",
-                symbol.get_span(),
+                symbol.get_symbol_span(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             )
@@ -313,6 +317,18 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     }
 }
 
+impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
+    #[inline]
+    pub fn add_codegen_location(&mut self, location: CodeGenLocation) {
+        self.codegen_location.push(location);
+    }
+
+    #[inline]
+    pub fn pop_current_codegen_location(&mut self) {
+        self.codegen_location.pop();
+    }
+}
+
 impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
     #[inline]
     pub fn get_llvm_module(&self) -> &'a Module<'ctx> {
@@ -390,6 +406,14 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
     }
 
     #[inline]
+    pub fn get_codegen_location(&self) -> CodeGenLocation {
+        *(self
+            .codegen_location
+            .last()
+            .unwrap_or(&CodeGenLocation::None))
+    }
+
+    #[inline]
     pub fn get_abi(&self) -> Option<&'ctx LLVMABIRepresentation<'ctx>> {
         self.target_abi
     }
@@ -449,6 +473,7 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
 }
 
 impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
+    #[inline]
     pub fn start_function_debug_data(&mut self, dbg_proto: &LLVMDBGFunction<'ctx>) {
         let mut dbg_opt: Option<LLVMDebugContext<'_, '_>> = self.dbg_context.take();
 
@@ -459,12 +484,14 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
         self.dbg_context = dbg_opt;
     }
 
+    #[inline]
     pub fn finish_function_debug_data(&mut self) {
         if let Some(dbg_context) = self.get_mut_debug_context() {
             dbg_context.finish_subprogram();
         }
     }
 
+    #[inline]
     pub fn add_dbg_block_data(&mut self, span: Span) {
         let mut dbg_opt: Option<LLVMDebugContext<'_, '_>> = self.dbg_context.take();
 
@@ -475,6 +502,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
         self.dbg_context = dbg_opt;
     }
 
+    #[inline]
     pub fn mark_dbg_location(&mut self, span: Span) {
         let mut dbg_opt: Option<LLVMDebugContext<'_, '_>> = self.dbg_context.take();
 
@@ -496,4 +524,14 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     pub fn get_mut_expressions_optimizations(&mut self) -> &mut LLVMExpressionOptimization {
         &mut self.expression_optimizations
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum CodeGenLocation {
+    LValue,
+    RValue,
+
+    CallArgExpr,
+
+    None,
 }

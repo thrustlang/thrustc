@@ -18,13 +18,15 @@
 */
 
 use crate::Type;
-use crate::traits::FunctionReferenceExtensions;
+use crate::traits::{ConstantTypeExtensions, FunctionReferenceExtensions};
 
 impl FunctionReferenceExtensions for Type {
-    #[inline(always)]
+    #[inline]
     fn get_function_reference_return_type(&self) -> Type {
-        if let Type::Fn(_, kind, ..) = self {
-            return (**kind).clone();
+        let non_constant_type: Type = self.remove_all_constant_type();
+
+        if let Type::Fn(_, kind, ..) = non_constant_type {
+            return (*kind).clone();
         }
 
         self.clone()

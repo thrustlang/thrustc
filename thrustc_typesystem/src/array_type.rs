@@ -17,7 +17,10 @@
 
 */
 
-use crate::{Type, traits::TypeArrayEntensions};
+use crate::{
+    Type,
+    traits::{ConstantTypeExtensions, TypeArrayEntensions},
+};
 
 impl TypeArrayEntensions for Type {
     #[inline]
@@ -34,22 +37,24 @@ impl TypeArrayEntensions for Type {
 
     #[inline]
     fn get_array_base_type(&self) -> Type {
+        let non_constant_type: Type = self.remove_all_constant_type();
+
         if let Type::Array {
             base_type: inner, ..
-        } = self
+        } = non_constant_type
         {
-            return *(*inner).clone();
+            return (*inner).clone();
         }
 
         if let Type::Ptr {
             subtype: Some(inner),
             ..
-        } = self
+        } = non_constant_type
         {
             return inner.get_array_base_type();
         }
 
-        if let Type::Const(inner, ..) = self {
+        if let Type::Const(inner, ..) = non_constant_type {
             return inner.get_array_base_type();
         }
 

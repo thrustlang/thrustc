@@ -27,6 +27,7 @@ use inkwell::targets::TargetData;
 use inkwell::types::BasicTypeEnum;
 use inkwell::values::BasicValue;
 use inkwell::values::BasicValueEnum;
+use inkwell::values::InstructionValue;
 use inkwell::values::IntValue;
 use inkwell::values::PointerValue;
 use thrustc_ast::ast_metadata::LLVMConstantMetadata;
@@ -38,6 +39,7 @@ use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::traits::ConstantTypeExtensions;
 use thrustc_typesystem::traits::TypeExtensions;
 
 use crate::abort;
@@ -186,10 +188,12 @@ impl<'ctx> SymbolAllocated<'ctx> {
     pub fn load(&self, context: &mut LLVMCodeGenContext<'_, 'ctx>) -> BasicValueEnum<'ctx> {
         let llvm_builder: &Builder = context.get_llvm_builder();
 
-        let inner_type: &Type = self.get_type(context);
-        let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, inner_type);
+        let inner_type: &Type = self.get_symbol_type(context);
+        let inner_type: Type = inner_type.remove_all_constant_type();
 
-        let span: Span = self.get_span();
+        let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, &inner_type);
+
+        let span: Span = self.get_symbol_span();
 
         let alignment: u32 = context
             .get_target_data()
@@ -204,120 +208,140 @@ impl<'ctx> SymbolAllocated<'ctx> {
             ..
         } = self
         {
-            if let Ok(loaded_value) = llvm_builder.build_load(llvm_type, *ptr, "") {
-                if let Some(instruction) = loaded_value.as_instruction_value() {
-                    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                        atomic_volatile: metadata.volatile,
-                        atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
-                    };
-
-                    atomic_operations::set_atomic_behavior(
+            let loaded_value = llvm_builder
+                .build_load(llvm_type, *ptr, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
                         context,
-                        instruction,
-                        atomic_config,
+                        "Failed to build load instruction",
                         span,
+                        PathBuf::from(file!()),
+                        line!(),
                     );
+                });
 
-                    if attributes.has_explicit_memory_alignment() {
-                        if let Some(explicit_alignment) = attributes.get_explicit_memory_alignment()
-                        {
-                            instruction
-                                .set_alignment(explicit_alignment.try_into().unwrap_or(alignment))
-                                .unwrap_or_else(|_| {
-                                    abort::abort_codegen(
-                                        context,
-                                        "Failed to set type alignment!",
-                                        span,
-                                        PathBuf::from(file!()),
-                                        line!(),
-                                    );
-                                });
-                        } else {
-                            instruction.set_alignment(alignment).unwrap_or_else(|_| {
-                                abort::abort_codegen(
-                                    context,
-                                    "Failed to set memory type alignment!",
-                                    span,
-                                    PathBuf::from(file!()),
-                                    line!(),
-                                );
-                            });
-                        }
-                    } else {
-                        instruction.set_alignment(alignment).unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to set type alignment!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            );
-                        });
-                    }
-                }
+            let instruction: InstructionValue<'_> =
+                loaded_value.as_instruction_value().unwrap_or_else(|| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to transform a loaded value into an instruction value!",
+                        span,
+                        PathBuf::from(file!()),
+                        line!(),
+                    );
+                });
 
-                return loaded_value;
-            }
+            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
+                atomic_volatile: metadata.volatile,
+                atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
+            };
+
+            atomic_operations::set_atomic_behavior(context, instruction, atomic_config, span);
+
+            let alignment: u32 = attributes
+                .get_explicit_memory_alignment()
+                .and_then(|a| a.try_into().ok())
+                .unwrap_or(alignment);
+
+            instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to set alignment on load instruction",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            });
+
+            return loaded_value;
         }
 
         if let Self::Constant { ptr, metadata, .. } = self {
-            if let Ok(loaded_value) = llvm_builder.build_load(llvm_type, *ptr, "") {
-                if let Some(instruction) = loaded_value.as_instruction_value() {
-                    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                        atomic_volatile: metadata.volatile,
-                        atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
-                    };
-
-                    atomic_operations::set_atomic_behavior(
+            let loaded_value = llvm_builder
+                .build_load(llvm_type, *ptr, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
                         context,
-                        instruction,
-                        atomic_config,
+                        "Failed to build load instruction",
                         span,
+                        PathBuf::from(file!()),
+                        line!(),
                     );
+                });
 
-                    instruction.set_alignment(alignment).unwrap_or_else(|_| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to set type alignment!",
-                            span,
-                            PathBuf::from(file!()),
-                            line!(),
-                        );
-                    });
-                }
+            let instruction: InstructionValue<'_> =
+                loaded_value.as_instruction_value().unwrap_or_else(|| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to transform a loaded value into an instruction value!",
+                        span,
+                        PathBuf::from(file!()),
+                        line!(),
+                    );
+                });
 
-                return loaded_value;
-            }
+            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
+                atomic_volatile: metadata.volatile,
+                atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
+            };
+
+            atomic_operations::set_atomic_behavior(context, instruction, atomic_config, span);
+
+            instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to set alignment on load instruction",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            });
+
+            return loaded_value;
         }
 
         if let Self::Static { ptr, metadata, .. } = self {
-            if let Ok(loaded_value) = llvm_builder.build_load(llvm_type, *ptr, "") {
-                if let Some(instruction) = loaded_value.as_instruction_value() {
-                    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                        atomic_volatile: metadata.volatile,
-                        atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
-                    };
-
-                    atomic_operations::set_atomic_behavior(
+            let loaded_value = llvm_builder
+                .build_load(llvm_type, *ptr, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
                         context,
-                        instruction,
-                        atomic_config,
+                        "Failed to build load instruction",
                         span,
+                        PathBuf::from(file!()),
+                        line!(),
                     );
+                });
 
-                    instruction.set_alignment(alignment).unwrap_or_else(|_| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to set type alignment!",
-                            span,
-                            PathBuf::from(file!()),
-                            line!(),
-                        );
-                    });
-                }
+            let instruction: InstructionValue<'_> =
+                loaded_value.as_instruction_value().unwrap_or_else(|| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to transform a loaded value into an instruction value!",
+                        span,
+                        PathBuf::from(file!()),
+                        line!(),
+                    );
+                });
 
-                return loaded_value;
-            }
+            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
+                atomic_volatile: metadata.volatile,
+                atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
+            };
+
+            atomic_operations::set_atomic_behavior(context, instruction, atomic_config, span);
+
+            instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to set type alignment!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            });
+
+            return loaded_value;
         }
 
         if let Self::LowLevelInstruction { value, .. } = self {
@@ -325,21 +349,40 @@ impl<'ctx> SymbolAllocated<'ctx> {
         }
 
         if let Self::AllocatedParameter { ptr, span, .. } = self {
-            if let Ok(loaded_value) = llvm_builder.build_load(llvm_type, *ptr, "") {
-                if let Some(instruction) = loaded_value.as_instruction_value() {
-                    instruction.set_alignment(alignment).unwrap_or_else(|_| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to set type alignment!",
-                            *span,
-                            PathBuf::from(file!()),
-                            line!(),
-                        );
-                    });
-                }
+            let loaded_value: BasicValueEnum<'_> = llvm_builder
+                .build_load(llvm_type, *ptr, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to build load instruction",
+                        *span,
+                        PathBuf::from(file!()),
+                        line!(),
+                    );
+                });
 
-                return loaded_value;
-            }
+            let instruction: InstructionValue<'_> =
+                loaded_value.as_instruction_value().unwrap_or_else(|| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to transform a loaded value into an instruction value!",
+                        *span,
+                        PathBuf::from(file!()),
+                        line!(),
+                    );
+                });
+
+            instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to set type alignment!",
+                    *span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            });
+
+            return loaded_value;
         }
 
         if let Self::Parameter { value, .. } = self {
@@ -349,7 +392,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
         abort::abort_codegen(
             context,
             "Failed to load a value from memory!",
-            self.get_span(),
+            self.get_symbol_span(),
             PathBuf::from(file!()),
             line!(),
         );
@@ -363,10 +406,10 @@ impl<'ctx> SymbolAllocated<'ctx> {
         let llvm_builder: &Builder = context.get_llvm_builder();
         let target_data: &TargetData = context.get_target_data();
 
-        let span: Span = self.get_span();
+        let span: Span = self.get_symbol_span();
         let alignment: u32 = target_data.get_preferred_alignment(&new_value.get_type());
 
-        context.mark_dbg_location(self.get_span());
+        context.mark_dbg_location(self.get_symbol_span());
 
         if let Self::Local { ptr, .. } = self {
             if let Ok(store) = llvm_builder.build_store(*ptr, new_value) {
@@ -419,7 +462,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
         abort::abort_codegen(
             context,
             "Failed to store a value in memory!",
-            self.get_span(),
+            self.get_symbol_span(),
             PathBuf::from(file!()),
             line!(),
         );
@@ -428,7 +471,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
 
 impl<'ctx> SymbolAllocated<'ctx> {
     #[inline]
-    pub fn get_span(&self) -> Span {
+    pub fn get_symbol_span(&self) -> Span {
         match self {
             Self::Local { span, .. } => *span,
             Self::Constant { span, .. } => *span,
@@ -441,7 +484,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
     }
 
     #[inline]
-    pub fn get_type(&self, context: &mut LLVMCodeGenContext<'_, '_>) -> &'ctx Type {
+    pub fn get_symbol_type(&self, context: &mut LLVMCodeGenContext<'_, '_>) -> &'ctx Type {
         match self {
             Self::Local { kind, .. } => kind,
             Self::Constant { kind, .. } => kind,
@@ -454,7 +497,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 abort::abort_codegen(
                     context,
                     "Failed to get a type from an allocated symbol!",
-                    self.get_span(),
+                    self.get_symbol_span(),
                     PathBuf::from(file!()),
                     line!(),
                 );
@@ -463,7 +506,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
     }
 
     #[inline]
-    pub fn get_ptr(&self) -> PointerValue<'ctx> {
+    pub fn get_ptr_value(&self) -> PointerValue<'ctx> {
         match self {
             Self::Function { ptr, .. } => *ptr,
             Self::Local { ptr, .. } => *ptr,
@@ -476,7 +519,10 @@ impl<'ctx> SymbolAllocated<'ctx> {
     }
 
     #[inline]
-    pub fn get_value(&self, context: &mut LLVMCodeGenContext<'_, '_>) -> BasicValueEnum<'ctx> {
+    pub fn get_symbol_value(
+        &self,
+        context: &mut LLVMCodeGenContext<'_, '_>,
+    ) -> BasicValueEnum<'ctx> {
         match self {
             Self::Local { ptr, .. } => (*ptr).into(),
             Self::Function { ptr, .. } => (*ptr).into(),
@@ -486,7 +532,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 abort::abort_codegen(
                     context,
                     "Failed to get a value from static reference!",
-                    self.get_span(),
+                    self.get_symbol_span(),
                     PathBuf::from(file!()),
                     line!(),
                 );
@@ -508,27 +554,28 @@ pub fn store_anon<'ctx>(
 
     let alignment: u32 = target_data.get_preferred_alignment(&new_value.get_type());
 
-    if let Ok(store) = llvm_builder.build_store(ptr, new_value) {
-        store.set_alignment(alignment).unwrap_or_else(|_| {
-            abort::abort_codegen(
-                context,
-                "Failed to set type alignment!",
-                span,
-                PathBuf::from(file!()),
-                line!(),
-            );
-        });
+    let store: InstructionValue<'_> =
+        llvm_builder
+            .build_store(ptr, new_value)
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to store a value in memory!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                )
+            });
 
-        return;
-    }
-
-    abort::abort_codegen(
-        context,
-        "Failed to store a value in memory!",
-        span,
-        PathBuf::from(file!()),
-        line!(),
-    );
+    store.set_alignment(alignment).unwrap_or_else(|_| {
+        abort::abort_codegen(
+            context,
+            "Failed to set type alignment!",
+            span,
+            PathBuf::from(file!()),
+            line!(),
+        );
+    });
 }
 
 pub fn load_anon<'ctx>(
@@ -545,31 +592,94 @@ pub fn load_anon<'ctx>(
         .get_target_data()
         .get_preferred_alignment(&llvm_type);
 
-    if let Ok(loaded_value) = llvm_builder.build_load(llvm_type, ptr, "") {
-        context.mark_dbg_location(span);
+    let loaded_value: BasicValueEnum<'_> = llvm_builder
+        .build_load(llvm_type, ptr, "")
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                context,
+                "Failed to load a value from memory!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
 
-        if let Some(instruction) = loaded_value.as_instruction_value() {
-            instruction.set_alignment(alignment).unwrap_or_else(|_| {
-                abort::abort_codegen(
-                    context,
-                    "Failed to set type alignment!",
-                    span,
-                    PathBuf::from(file!()),
-                    line!(),
-                );
-            });
-        }
+    context.mark_dbg_location(span);
 
-        loaded_value
-    } else {
+    let instruction: InstructionValue<'_> =
+        loaded_value.as_instruction_value().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to get instruction value!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+    instruction.set_alignment(alignment).unwrap_or_else(|_| {
         abort::abort_codegen(
             context,
-            "Failed to load a value from memory!",
+            "Failed to set type alignment!",
             span,
             PathBuf::from(file!()),
             line!(),
         );
-    }
+    });
+
+    loaded_value
+}
+
+pub fn load_ptr<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    ptr: PointerValue<'ctx>,
+    span: Span,
+) -> BasicValueEnum<'ctx> {
+    let llvm_builder: &Builder = context.get_llvm_builder();
+    let llvm_context: &Context = context.get_llvm_context();
+
+    let llvm_type: BasicTypeEnum = llvm_context.ptr_type(AddressSpace::default()).into();
+
+    let alignment: u32 = context
+        .get_target_data()
+        .get_preferred_alignment(&llvm_type);
+
+    let loaded_value: BasicValueEnum<'_> = llvm_builder
+        .build_load(llvm_type, ptr, "")
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                context,
+                "Failed to load a value from memory!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+    context.mark_dbg_location(span);
+
+    let instruction: InstructionValue<'_> =
+        loaded_value.as_instruction_value().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to get instruction value!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+    instruction.set_alignment(alignment).unwrap_or_else(|_| {
+        abort::abort_codegen(
+            context,
+            "Failed to set type alignment!",
+            span,
+            PathBuf::from(file!()),
+            line!(),
+        );
+    });
+
+    loaded_value
 }
 
 pub fn dereference<'ctx>(
@@ -581,47 +691,58 @@ pub fn dereference<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder = context.get_llvm_builder();
 
-    let llvm_type: BasicTypeEnum = typegeneration::generate_load_type(context, ptr_type);
+    let llvm_type: BasicTypeEnum = typegeneration::generate_dereference_type(context, ptr_type);
 
     let alignment: u32 = context
         .get_target_data()
         .get_preferred_alignment(&llvm_type);
 
-    if let Ok(loaded_value) = llvm_builder.build_load(llvm_type, ptr, "") {
-        context.mark_dbg_location(span);
+    let loaded_value: BasicValueEnum<'_> = llvm_builder
+        .build_load(llvm_type, ptr, "")
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                context,
+                "Failed to deference a pointer!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
 
-        if let Some(instruction) = loaded_value.as_instruction_value() {
-            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                atomic_volatile: metadata.volatile,
-                atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
-            };
+    context.mark_dbg_location(span);
 
-            atomic_operations::set_atomic_behavior(context, instruction, atomic_config, span);
+    let instruction: InstructionValue<'_> =
+        loaded_value.as_instruction_value().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to get instruction value!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
 
-            instruction.set_alignment(alignment).unwrap_or_else(|_| {
-                abort::abort_codegen(
-                    context,
-                    "Failed to set type alignment!",
-                    span,
-                    PathBuf::from(file!()),
-                    line!(),
-                );
-            });
-        }
+    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
+        atomic_volatile: metadata.volatile,
+        atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
+    };
 
-        return loaded_value;
-    }
+    atomic_operations::set_atomic_behavior(context, instruction, atomic_config, span);
 
-    abort::abort_codegen(
-        context,
-        "Failed to deference a pointer!",
-        span,
-        PathBuf::from(file!()),
-        line!(),
-    );
+    instruction.set_alignment(alignment).unwrap_or_else(|_| {
+        abort::abort_codegen(
+            context,
+            "Failed to set type alignment!",
+            span,
+            PathBuf::from(file!()),
+            line!(),
+        );
+    });
+
+    loaded_value
 }
 
-pub fn alloc_anon<'ctx>(
+pub fn allocate_on<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     site: LLVMAllocationSite,
     kind: &Type,
@@ -638,49 +759,61 @@ pub fn alloc_anon<'ctx>(
 
     match site {
         LLVMAllocationSite::Stack => {
-            if let Ok(ptr) = llvm_builder.build_alloca(llvm_type, "") {
-                context.mark_dbg_location(span);
-
-                if let Some(instruction) = ptr.as_instruction() {
-                    instruction.set_alignment(alignment).unwrap_or_else(|_| {
+            let ptr: PointerValue<'_> =
+                llvm_builder
+                    .build_alloca(llvm_type, "")
+                    .unwrap_or_else(|_| {
                         abort::abort_codegen(
                             context,
-                            "Failed to set type alignment!",
+                            "Failed to allocate in the stack!",
                             span,
                             PathBuf::from(file!()),
                             line!(),
-                        );
+                        )
                     });
-                }
 
-                return ptr;
-            }
+            context.mark_dbg_location(span);
 
-            abort::abort_codegen(
-                context,
-                "Failed to allocate in the stack!",
-                span,
-                PathBuf::from(file!()),
-                line!(),
-            );
+            let instruction: InstructionValue<'_> = ptr.as_instruction().unwrap_or_else(|| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to get instruction value!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+            instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to set type alignment!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            });
+
+            ptr
         }
-
         LLVMAllocationSite::Heap => {
-            if let Ok(ptr) = llvm_builder.build_malloc(llvm_type, "") {
-                context.mark_dbg_location(span);
+            let ptr: PointerValue<'_> =
+                llvm_builder
+                    .build_malloc(llvm_type, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to allocate in the heap!",
+                            span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
 
-                return ptr;
-            }
+            context.mark_dbg_location(span);
 
-            abort::abort_codegen(
-                context,
-                "Failed to allocate in the heap!",
-                span,
-                PathBuf::from(file!()),
-                line!(),
-            );
+            ptr
         }
-
         LLVMAllocationSite::Static => llvm_module
             .add_global(llvm_type, Some(AddressSpace::default()), "")
             .as_pointer_value(),
@@ -694,26 +827,28 @@ pub fn gep_struct_anon<'ctx>(
     index: u32,
     span: Span,
 ) -> PointerValue<'ctx> {
-    let llvm_builder: &Builder = context.get_llvm_builder();
+    let llvm_builder: &Builder<'_> = context.get_llvm_builder();
 
     let ptr_type: BasicTypeEnum<'_> =
         typegeneration::generate_pointer_arithmetic_type(context, ptr_type);
 
     ptr_value = self::address_space_to_normal(context, ptr_value, span);
 
-    if let Ok(new_ptr_value) = llvm_builder.build_struct_gep(ptr_type, ptr_value, index, "") {
-        context.mark_dbg_location(span);
+    let new_ptr_value = llvm_builder
+        .build_struct_gep(ptr_type, ptr_value, index, "")
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                context,
+                "Failed to get the field pointer!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            );
+        });
 
-        new_ptr_value
-    } else {
-        abort::abort_codegen(
-            context,
-            "Failed to get the field pointer!",
-            span,
-            PathBuf::from(file!()),
-            line!(),
-        );
-    }
+    context.mark_dbg_location(span);
+
+    new_ptr_value
 }
 
 pub fn gep_anon<'ctx>(
@@ -723,28 +858,120 @@ pub fn gep_anon<'ctx>(
     indexes: &[IntValue<'ctx>],
     span: Span,
 ) -> PointerValue<'ctx> {
-    let llvm_builder: &Builder = context.get_llvm_builder();
+    let llvm_builder: &Builder<'_> = context.get_llvm_builder();
 
     let ptr_type: BasicTypeEnum<'_> =
         typegeneration::generate_pointer_arithmetic_type(context, ptr_type);
 
     ptr_value = self::address_space_to_normal(context, ptr_value, span);
 
-    if let Ok(new_ptr_value) =
-        unsafe { llvm_builder.build_in_bounds_gep(ptr_type, ptr_value, indexes, "") }
-    {
-        context.mark_dbg_location(span);
+    let new_ptr_value: PointerValue<'_> = unsafe {
+        llvm_builder
+            .build_in_bounds_gep(ptr_type, ptr_value, indexes, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to get the field pointer!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+    };
 
-        new_ptr_value
-    } else {
+    context.mark_dbg_location(span);
+
+    new_ptr_value
+}
+
+pub fn auto_deference_a_nested_pointer<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    ptr_value: PointerValue<'ctx>,
+    ptr_type: &Type,
+    nested_ptr_count: usize,
+    span: Span,
+) -> BasicValueEnum<'ctx> {
+    let llvm_builder: &Builder = context.get_llvm_builder();
+    let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, ptr_type);
+
+    let alignment: u32 = context
+        .get_target_data()
+        .get_preferred_alignment(&llvm_type);
+
+    let first_load: BasicValueEnum = llvm_builder
+        .build_load(llvm_type, ptr_value, "")
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                context,
+                "Failed to load a value from memory!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            );
+        });
+
+    let instruction: InstructionValue<'_> =
+        first_load.as_instruction_value().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to transform a loaded value into an instruction value!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            );
+        });
+
+    instruction.set_alignment(alignment).unwrap_or_else(|_| {
         abort::abort_codegen(
             context,
-            "Failed to get the field pointer!",
+            "Failed to set alignment on load instruction!",
             span,
             PathBuf::from(file!()),
             line!(),
         );
+    });
+
+    let mut last_load: BasicValueEnum = first_load;
+
+    for _ in (0..nested_ptr_count).skip(1) {
+        let load: BasicValueEnum = llvm_builder
+            .build_load(llvm_type, last_load.into_pointer_value(), "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to load a value from memory!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            });
+
+        let instruction: InstructionValue<'_> = load.as_instruction_value().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to transform a loaded value into an instruction value!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            );
+        });
+
+        instruction.set_alignment(alignment).unwrap_or_else(|_| {
+            abort::abort_codegen(
+                context,
+                "Failed to set alignment on load instruction!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            );
+        });
+
+        last_load = load;
     }
+
+    context.mark_dbg_location(span);
+
+    last_load
 }
 
 #[inline]

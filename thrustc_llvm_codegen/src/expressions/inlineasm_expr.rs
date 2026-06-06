@@ -32,7 +32,7 @@ use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::abort;
 use crate::context::LLVMCodeGenContext;
-use crate::declarations::function::CompilerFunctionVariant;
+use crate::toplevel::function::CompilerFunctionVariant;
 use crate::{codegen, typegeneration};
 
 pub fn compile<'ctx>(
