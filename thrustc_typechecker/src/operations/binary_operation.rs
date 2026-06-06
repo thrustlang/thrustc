@@ -24,7 +24,7 @@ use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, traits::TypeIsExtensions};
 
 #[inline]
-pub fn validate_binary(
+pub fn validate_binary_node(
     operator: &TokenType,
     left: &Type,
     right: &Type,

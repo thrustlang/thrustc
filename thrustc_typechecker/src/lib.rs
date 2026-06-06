@@ -28,7 +28,10 @@ use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_span::Span;
 use thrustc_typesystem::{
     Type,
-    traits::{DereferenceExtensions, TypeIsExtensions, VoidTypeExtensions},
+    traits::{
+        DereferenceExtensions, TypeExtensions, TypeIsExtensions, TypePointerExtensions,
+        VoidTypeExtensions,
+    },
 };
 
 use crate::{
@@ -142,7 +145,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
     pub fn analyze_decl(&mut self, node: &'type_checker Ast) -> Result<(), CompilationIssue> {
         match node {
             Ast::Intrinsic { .. } | Ast::AssemblerFunction { .. } | Ast::Function { .. } => {
-                toplevel::functions::validate(self, node)
+                toplevel::functions::validate_node(self, node)
             }
             Ast::CustomType { .. } | Ast::GlobalAssembler { .. } | Ast::Struct { .. } => Ok(()),
             Ast::Enum { data, .. } => {
@@ -665,9 +668,23 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 let source_type: &Type = source.get_value_type()?;
                 let value_type: &Type = value.get_value_type()?;
 
+                let source_span: Span = source.get_span();
+
                 {
-                    let lhs_pure_type: Type = source_type.dereference_until_value();
-                    let rhs_pure_type: Type = value_type.dereference_until_value();
+                    let mut source_type: Type = source_type.dereference_until_value();
+                    let value_type: Type = value_type.dereference_until_value();
+
+                    // The compiler allow to mutate a type expression if the left type (target) doens't have a value type (if it is segment fault, it its the programmer fault, )
+                    if (!source_type.is_value()) && value_type.is_value() {
+                        source_type = value_type.clone();
+                    }
+
+                    /*
+                        // this is no allowed by the general analyzer. We shouldn't check it here.
+                        if source_type.is_value() && (!value_type.is_value()) {
+                            source_type = value_type.clone();
+                        }
+                    */
 
                     {
                         let control_context: &mut TypeCheckerControlContext =
@@ -676,12 +693,12 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         control_context.reset_checking_depth();
 
                         if let Err(error) = checking::check_type_together(
-                            &lhs_pure_type,
-                            &rhs_pure_type,
+                            &source_type,
+                            &value_type,
                             Some(value),
                             None,
                             metadata,
-                            source.get_span(),
+                            source_span,
                             control_context,
                         ) {
                             self.add_error_report(error);
@@ -698,12 +715,14 @@ impl<'type_checker> TypeChecker<'type_checker> {
         }
     }
 
+    #[inline]
     fn analyze_expr(&mut self, node: &'type_checker Ast) -> Result<(), CompilationIssue> {
-        expressions::validate(self, node)
+        expressions::validate_node(self, node)
     }
 }
 
 impl<'type_checker> TypeChecker<'type_checker> {
+    #[inline]
     fn post_expression_evaluation(&mut self) {
         self.control_context.reset_checking_depth();
     }

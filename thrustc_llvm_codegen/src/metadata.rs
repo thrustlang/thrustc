@@ -21,6 +21,7 @@ use inkwell::attributes::Attribute;
 use inkwell::attributes::AttributeLoc;
 use inkwell::targets::CodeModel;
 use inkwell::targets::RelocMode;
+use thrustc_backends::llvm::target::LLVMTarget;
 use thrustc_logging::{self, LoggingType};
 
 use inkwell::debug_info;
@@ -136,13 +137,6 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
             .const_int(1, false)
             .into();
 
-        let lvl_warn: BasicMetadataValueEnum = self
-            .get_codegen_context()
-            .get_llvm_context()
-            .i32_type()
-            .const_int(2, false)
-            .into();
-
         {
             if llvm_backend.get_debug_config().is_debug_mode() {
                 let dwarf_version: u64 = llvm_backend.get_debug_config().get_dwarf_version();
@@ -178,7 +172,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                     .get_codegen_context()
                     .get_llvm_context()
                     .metadata_node(&[
-                        lvl_warn,
+                        lvl_error,
                         self.get_codegen_context()
                             .get_llvm_context()
                             .metadata_string("Debug Info Version")
@@ -407,7 +401,13 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
         }
 
         {
-            if let Some(nvidia_cuda_version) = llvm_backend.get_target().get_cuda_version() {
+            let target: &LLVMTarget = llvm_backend.get_target();
+            let is_nvptx: bool = target.get_normalized_target_triple().is_nvptx_arch();
+            let default_nvvmir_version: (u64, u64) = (1, 11);
+
+            //  https://docs.nvidia.com/cuda/nvvm-ir-spec/index.html
+
+            let generate_nvvmir_version = |nvidia_cuda_version: (u64, u64)| {
                 let major: u64 = nvidia_cuda_version.0;
                 let minor: u64 = nvidia_cuda_version.1;
 
@@ -436,6 +436,16 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                             "'Nvidia Cuda Version' metadata failed to set up.",
                         );
                     });
+            };
+
+            if is_nvptx {
+                generate_nvvmir_version(default_nvvmir_version)
+            } else {
+                if let Some(specific_nvidia_cuda_version) =
+                    llvm_backend.get_target().get_cuda_version()
+                {
+                    generate_nvvmir_version(specific_nvidia_cuda_version);
+                }
             }
         }
 

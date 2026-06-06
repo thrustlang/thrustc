@@ -27,7 +27,7 @@ use thrustc_typesystem::Type;
 use std::path::PathBuf;
 
 use crate::context::LLVMCodeGenContext;
-use crate::{abort, heap, typegeneration};
+use crate::{abort, heap_memory, typegeneration};
 
 pub fn allocate_variable<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
@@ -42,7 +42,7 @@ pub fn allocate_variable<'ctx>(
     context.mark_dbg_location(span);
 
     if attributes.has_heap_attr() {
-        heap::try_allocate_at_heap(context, &llvm_name, llvm_type, attributes, span)
+        heap_memory::try_allocate_at_heap(context, &llvm_name, llvm_type, attributes, span)
     } else {
         self::try_allocate_at_stack(context, &llvm_name, llvm_type, attributes, span)
     }

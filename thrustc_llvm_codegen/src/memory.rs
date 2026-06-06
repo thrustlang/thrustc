@@ -33,6 +33,7 @@ use thrustc_ast::ast_metadata::LLVMConstantMetadata;
 use thrustc_ast::ast_metadata::LLVMDereferenceMetadata;
 use thrustc_ast::ast_metadata::LLVMLocalMetadata;
 use thrustc_ast::ast_metadata::LLVMStaticMetadata;
+
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_span::Span;

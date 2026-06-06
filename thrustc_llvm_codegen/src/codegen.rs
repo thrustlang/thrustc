@@ -45,7 +45,8 @@ use crate::statements::{conditional, forloop, infloop, whileloop};
 use crate::traits::{AstLLVMGetType, LLVMFunctionExtensions};
 use crate::types::LLVMFunction;
 use crate::{
-    abort, block, builtins, cast, codegen, expressions, memory, stack, r#static, typegeneration,
+    abort, block, builtins, cast, codegen, expressions, memory, stack_memory, static_memory,
+    typegeneration,
 };
 
 use thrustc_ast::Ast;
@@ -138,7 +139,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             llvm_value,
                         );
 
-                        let ptr: PointerValue = r#static::allocate_global_constant(
+                        let ptr: PointerValue = static_memory::allocate_global_constant(
                             self.get_mut_context(),
                             ascii_name,
                             kind,
@@ -198,7 +199,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                                 llvm_value,
                             );
 
-                            let ptr: PointerValue = r#static::allocate_global_static(
+                            let ptr: PointerValue = static_memory::allocate_global_static(
                                 self.get_mut_context(),
                                 ascii_name,
                                 kind,
@@ -221,7 +222,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             let llvm_type: inkwell::types::BasicTypeEnum =
                                 typegeneration::generate_type(self.get_mut_context(), kind);
 
-                            let ptr: PointerValue = r#static::allocate_global_static(
+                            let ptr: PointerValue = static_memory::allocate_global_static(
                                 self.get_mut_context(),
                                 ascii_name,
                                 kind,
@@ -435,7 +436,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let symbol_attributes: memory::SymbolAttributes =
                         memory::into_symbol_attributes(&llvm_attributes);
 
-                    let ptr: PointerValue = stack::allocate_variable(
+                    let ptr: PointerValue = stack_memory::allocate_variable(
                         self.get_mut_context(),
                         ascii_name,
                         kind,
@@ -471,7 +472,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let symbol_attributes: memory::SymbolAttributes =
                         memory::into_symbol_attributes(&llvm_attributes);
 
-                    let ptr: PointerValue = stack::allocate_variable(
+                    let ptr: PointerValue = stack_memory::allocate_variable(
                         self.get_mut_context(),
                         ascii_name,
                         kind,
@@ -544,7 +545,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     llvm_value,
                 );
 
-                let ptr: PointerValue = r#static::allocate_local_constant(
+                let ptr: PointerValue = static_memory::allocate_local_constant(
                     self.get_mut_context(),
                     ascii_name,
                     kind,
@@ -602,7 +603,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         llvm_value,
                     );
 
-                    let ptr: PointerValue = r#static::allocate_local_static(
+                    let ptr: PointerValue = static_memory::allocate_local_static(
                         self.get_mut_context(),
                         ascii_name,
                         kind,
@@ -625,7 +626,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let llvm_type: BasicTypeEnum =
                         typegeneration::generate_type(self.get_mut_context(), kind);
 
-                    let ptr: PointerValue = r#static::allocate_local_static(
+                    let ptr: PointerValue = static_memory::allocate_local_static(
                         self.get_mut_context(),
                         ascii_name,
                         kind,

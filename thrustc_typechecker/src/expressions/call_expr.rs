@@ -31,7 +31,7 @@ use crate::{
     TypeChecker, checking, context::TypeCheckerControlContext, metadata::TypeCheckerNodeMetadata,
 };
 
-pub fn validate<'type_checker>(
+pub fn validate_node<'type_checker>(
     typechecker: &mut TypeChecker<'type_checker>,
     metadata: TypeCheckerFunction<'type_checker>,
     args: &'type_checker [Ast],

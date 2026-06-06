@@ -31,7 +31,7 @@ use thrustc_typesystem::{
 
 use crate::TypeChecker;
 
-pub fn validate<'type_checker>(
+pub fn validate_node<'type_checker>(
     typechecker: &mut TypeChecker<'type_checker>,
     node: &'type_checker Ast,
 ) -> Result<(), CompilationIssue> {

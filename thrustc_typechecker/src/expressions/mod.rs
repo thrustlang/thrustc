@@ -40,7 +40,7 @@ use crate::{
 mod builtins;
 mod call_expr;
 
-pub fn validate<'type_checker>(
+pub fn validate_node<'type_checker>(
     typechecker: &mut TypeChecker<'type_checker>,
     node: &'type_checker Ast,
 ) -> Result<(), CompilationIssue> {
@@ -56,7 +56,9 @@ pub fn validate<'type_checker>(
             let left_type: &Type = left.get_value_type()?;
             let right_type: &Type = right.get_value_type()?;
 
-            operations::binary::validate_binary(operator, left_type, right_type, *span)?;
+            operations::binary_operation::validate_binary_node(
+                operator, left_type, right_type, *span,
+            )?;
 
             typechecker.analyze_expr(left)?;
             typechecker.analyze_expr(right)?;
@@ -95,7 +97,11 @@ pub fn validate<'type_checker>(
             span,
             ..
         } => {
-            operations::unary::validate_unary(operator, node.get_value_type()?, *span)?;
+            operations::unary_operation::validate_unary_node(
+                operator,
+                node.get_value_type()?,
+                *span,
+            )?;
 
             typechecker.analyze_expr(node)?;
 
@@ -409,15 +415,15 @@ pub fn validate<'type_checker>(
             name, args, span, ..
         } => {
             if let Some(metadata) = typechecker.get_table().get_function(name) {
-                return call_expr::validate(typechecker, *metadata, args, span);
+                return call_expr::validate_node(typechecker, *metadata, args, span);
             }
 
             if let Some(metadata) = typechecker.get_table().get_intrinsic(name) {
-                return call_expr::validate(typechecker, *metadata, args, span);
+                return call_expr::validate_node(typechecker, *metadata, args, span);
             }
 
             if let Some(metadata) = typechecker.get_table().get_asm_function(name) {
-                return call_expr::validate(typechecker, *metadata, args, span);
+                return call_expr::validate_node(typechecker, *metadata, args, span);
             }
 
             typechecker.add_error_report(CompilationIssue::FrontEndBug(
@@ -535,7 +541,7 @@ pub fn validate<'type_checker>(
             Ok(())
         }
 
-        Ast::Builtin { builtin, .. } => builtins::validate(typechecker, builtin),
+        Ast::Builtin { builtin, .. } => builtins::validate_node(typechecker, builtin),
 
         Ast::AsmValue { args, kind, .. } => {
             for node in args.iter() {
