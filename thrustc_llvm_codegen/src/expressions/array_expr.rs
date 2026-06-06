@@ -22,9 +22,9 @@ use thrustc_span::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::{TypeArrayEntensions, TypeExtensions};
 
-use crate::anchor::PointerAnchor;
 use crate::context::LLVMCodeGenContext;
 use crate::memory::{self, LLVMAllocationSite};
+use crate::pointer_anchor::PointerAnchor;
 use crate::traits::AstLLVMGetType;
 use crate::{abort, cast, codegen, typegeneration};
 
@@ -162,7 +162,7 @@ fn compile_array_without_anchor<'ctx>(
         memory::allocate_on(context, LLVMAllocationSite::Stack, &fixed_array_type, span);
 
     if items.is_empty() {
-        memory::store_anon(context, array_ptr, llvm_type.const_zero(), span);
+        memory::store(context, array_ptr, llvm_type.const_zero(), span);
         return array_ptr.into();
     }
 
@@ -192,7 +192,7 @@ fn compile_array_without_anchor<'ctx>(
             span,
         );
 
-        memory::store_anon(context, ptr, *value, span);
+        memory::store(context, ptr, *value, span);
     }
 
     array_ptr.into()
@@ -235,7 +235,7 @@ fn compile_array_with_anchor<'ctx>(
     context.set_pointer_anchor(PointerAnchor::new(anchor, true));
 
     if items.is_empty() {
-        memory::store_anon(context, anchor, llvm_type.const_zero(), span);
+        memory::store(context, anchor, llvm_type.const_zero(), span);
         return anchor.into();
     }
 
@@ -268,7 +268,7 @@ fn compile_array_with_anchor<'ctx>(
                 span,
             );
 
-            memory::store_anon(context, ptr, *value, span);
+            memory::store(context, ptr, *value, span);
 
             ptr
         })

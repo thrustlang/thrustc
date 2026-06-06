@@ -202,6 +202,9 @@ pub fn compile<'ctx>(
                 )
             });
 
+        let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
+            context.get_codegen_location().to_abi_representation();
+
         let lowered_args: Vec<BasicMetadataValueEnum<'_>> =
             thrustc_llvm_abi::lower_abi_call_prologue(
                 llvm_context,
@@ -210,6 +213,7 @@ pub fn compile<'ctx>(
                 llvm_function,
                 configuration,
                 compiled_args,
+                codegen_location,
                 span,
             )
             .unwrap_or_else(|| {
@@ -237,6 +241,9 @@ pub fn compile<'ctx>(
                         callsite.set_call_convention(call_convention);
                     }
 
+                    let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
+                        context.get_codegen_location().to_abi_representation();
+
                     let result: Option<BasicValueEnum<'_>> =
                         thrustc_llvm_abi::lower_abi_call_epilogue(
                             llvm_context,
@@ -245,6 +252,7 @@ pub fn compile<'ctx>(
                             configuration,
                             callsite,
                             &lowered_args,
+                            codegen_location,
                             span,
                         );
 

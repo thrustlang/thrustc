@@ -17,6 +17,7 @@
 
 */
 
+use inkwell::targets::TargetData;
 use inkwell::types::BasicTypeEnum;
 use inkwell::values::PointerValue;
 use thrustc_attributes::traits::ThrustAttributesExtensions;
@@ -56,42 +57,49 @@ fn try_allocate_at_stack<'ctx>(
     attributes: &ThrustAttributes,
     span: Span,
 ) -> PointerValue<'ctx> {
-    let target_data: &inkwell::targets::TargetData = context.get_target_data();
+    let llvm_builder: &inkwell::builder::Builder<'_> = context.get_llvm_builder();
 
-    if let Ok(ptr) = context
-        .get_llvm_builder()
+    let ptr: PointerValue<'_> = llvm_builder
         .build_alloca(llvm_type, llvm_name)
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                context,
+                "Failed to allocate at stack!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+    let instruction: inkwell::values::InstructionValue<'_> =
+        ptr.as_instruction().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to get instruction from pointer!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+    if let Some(ThrustAttribute::Align(value, ..)) =
+        attributes.get_attr(thrustc_attributes::ThrustAttributeComparator::Align)
     {
-        if let Some(align_attr) =
-            attributes.get_attr(thrustc_attributes::ThrustAttributeComparator::Align)
-        {
-            if let Some(instruction) = ptr.as_instruction() {
-                if let ThrustAttribute::Align(value, ..) = align_attr {
-                    let preferred_aligment: u32 = target_data.get_preferred_alignment(&llvm_type);
+        let target_data: &TargetData = context.get_target_data();
+        let preferred_alignment: u32 = target_data.get_preferred_alignment(&llvm_type);
 
-                    instruction
-                        .set_alignment(value.try_into().unwrap_or(preferred_aligment))
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to set type alignment!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            );
-                        });
-                }
-            }
-        }
-
-        return ptr;
+        instruction
+            .set_alignment(value.try_into().unwrap_or(preferred_alignment))
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to set type alignment!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                )
+            });
     }
 
-    abort::abort_codegen(
-        context,
-        "Failed to allocate at stack!",
-        span,
-        PathBuf::from(file!()),
-        line!(),
-    );
+    ptr
 }

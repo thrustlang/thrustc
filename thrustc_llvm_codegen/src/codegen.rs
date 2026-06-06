@@ -34,19 +34,19 @@ use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_options::CompilerOptions;
 use thrustc_span::Span;
 
-use crate::anchor::PointerAnchor;
-use crate::builtins::LLVMBuiltin;
+use crate::compiler_builtins::LLVMBuiltin;
 use crate::context::{CodeGenLocation, LLVMCodeGenContext};
 use crate::expressions::unary_expr;
 use crate::memory::SymbolAllocated;
 use crate::metadata::LLVMMetadata;
+use crate::pointer_anchor::PointerAnchor;
 use crate::statements::{conditional, forloop, infloop, whileloop};
 use crate::toplevel::{asmfunction, function, intrinsic};
 use crate::traits::{AstLLVMGetType, LLVMFunctionExtensions};
 use crate::types::LLVMFunction;
 use crate::{
-    abort, block, builtins, cast, codegen, expressions, memory, stack_memory, static_memory,
-    typegeneration,
+    abort, block, cast, codegen, compiler_builtins, expressions, memory, stack_memory,
+    static_memory, typegeneration,
 };
 
 use thrustc_ast::Ast;
@@ -300,11 +300,11 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 block::move_terminator_to_end(self.get_mut_context(), *span);
             }
 
-            node => self.stmt(node),
+            node => self.codegen_statement(node),
         }
     }
 
-    fn stmt(&mut self, node: &'ctx Ast) {
+    fn codegen_statement(&mut self, node: &'ctx Ast) {
         self.codegen_post_executation(node);
     }
 
@@ -712,6 +712,9 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             )
                         });
 
+                    let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
+                        self.context.get_codegen_location().to_abi_representation();
+
                     let lowered: bool = thrustc_llvm_abi::lower_abi_terminator(
                         llvm_context,
                         llvm_builder,
@@ -719,6 +722,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         configuration,
                         function_value,
                         return_value,
+                        codegen_location,
                         *span,
                     );
 
@@ -850,7 +854,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 let value: BasicValueEnum =
                     codegen::compile_as_value(self.context, value, Some(&cast_type));
 
-                memory::store_anon(self.context, ptr.into_pointer_value(), value, *span);
+                memory::store(self.context, ptr.into_pointer_value(), value, *span);
             }
 
             Ast::Write { .. } => {
@@ -873,8 +877,9 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 builtin: thrust_builtin,
                 ..
             } => {
-                let llvm_builtin: LLVMBuiltin = builtins::into_llvm_builtin(thrust_builtin);
-                builtins::compile(self.context, llvm_builtin, None);
+                let llvm_builtin: LLVMBuiltin =
+                    compiler_builtins::into_llvm_builtin(thrust_builtin);
+                compiler_builtins::compile(self.context, llvm_builtin, None);
             }
 
             Ast::Unreachable { .. } => {
@@ -1164,8 +1169,8 @@ pub fn compile_as_value<'ctx>(
             builtin: thrust_builtin,
             ..
         } => {
-            let llvm_builtin: LLVMBuiltin = builtins::into_llvm_builtin(thrust_builtin);
-            builtins::compile(context, llvm_builtin, cast_type)
+            let llvm_builtin: LLVMBuiltin = compiler_builtins::into_llvm_builtin(thrust_builtin);
+            compiler_builtins::compile(context, llvm_builtin, cast_type)
         }
 
         // Fallback, Unknown expressions or statements
@@ -1342,8 +1347,8 @@ pub fn compile_constant_as_value<'ctx>(
 
         // Builtins
         Ast::Builtin { builtin, .. } => {
-            let llvm_builtin: LLVMBuiltin<'_> = builtins::into_llvm_builtin(builtin);
-            builtins::compile(context, llvm_builtin, Some(cast_type))
+            let llvm_builtin: LLVMBuiltin<'_> = compiler_builtins::into_llvm_builtin(builtin);
+            compiler_builtins::compile(context, llvm_builtin, Some(cast_type))
         }
 
         // Enum Value Access
@@ -1405,7 +1410,7 @@ pub fn compile_as_ptr_value<'ctx>(
                 }
 
                 if nested_ptr_count <= 1 {
-                    memory::load_ptr(context, base_ptr, *span)
+                    memory::load_pointer(context, base_ptr, *span)
                 } else {
                     memory::auto_deference_a_nested_pointer(
                         context,

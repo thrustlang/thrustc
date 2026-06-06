@@ -643,7 +643,7 @@ fn main() {
         None => {
             logging::log(
                 LoggingType::Panic,
-                "LLVM libraries could not be found in '.thrustlang/backends/llvm/build/'.",
+                "LLVM libraries could not be found on '.thrustlang/backends/llvm/build/'. You should execute the 'compiler-dependency-builder' (https://github.com/thrustlang/compiler-dependency-builder) before compile the compiler.",
             );
 
             std::process::exit(1);

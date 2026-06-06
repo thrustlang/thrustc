@@ -59,7 +59,7 @@ pub fn compile<'ctx>(
     let cstr_type: ArrayType = llvm_context.i8_type().array_type(fixed_cstr_size);
 
     let cstr_name: String = format!(
-        "cstr{}",
+        "cstring{}",
         utils::generate_string(context, utils::SHORT_RANGE_OBFUSCATION)
     );
 

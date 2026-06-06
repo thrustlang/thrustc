@@ -543,7 +543,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
     }
 }
 
-pub fn store_anon<'ctx>(
+pub fn store<'ctx>(
     context: &mut LLVMCodeGenContext<'_, '_>,
     ptr: PointerValue<'ctx>,
     new_value: BasicValueEnum<'ctx>,
@@ -578,7 +578,7 @@ pub fn store_anon<'ctx>(
     });
 }
 
-pub fn load_anon<'ctx>(
+pub fn load<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     ptr: PointerValue<'ctx>,
     ptr_type: &Type,
@@ -630,7 +630,7 @@ pub fn load_anon<'ctx>(
     loaded_value
 }
 
-pub fn load_ptr<'ctx>(
+pub fn load_pointer<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     ptr: PointerValue<'ctx>,
     span: Span,

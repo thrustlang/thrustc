@@ -88,11 +88,18 @@ fn get_clang_libraries<P: AsRef<Path>>(directory: P) -> Vec<String> {
 pub fn link() {
     let cep: common::CommandErrorPrinter = common::CommandErrorPrinter::default();
 
-    let directory: PathBuf = utils::get_libclang_build_path().join("lib");
+    let thrustlang_libclang_directory: PathBuf = utils::get_libclang_build_path().join("lib");
 
-    println!("cargo:rustc-link-search=native={}", directory.display());
+    if !thrustlang_libclang_directory.exists() {
+        panic!("LibClang libraries could not be found on '.thrustlang/backends/llvm/build/lib'. You should execute the 'compiler-dependency-builder' (https://github.com/thrustlang/compiler-dependency-builder) before compile the compiler.")
+    }
 
-    for library in get_clang_libraries(directory) {
+    println!(
+        "cargo:rustc-link-search=native={}",
+        thrustlang_libclang_directory.display()
+    );
+
+    for library in get_clang_libraries(thrustlang_libclang_directory) {
         println!("cargo:rustc-link-lib=static={}", library);
     }
 

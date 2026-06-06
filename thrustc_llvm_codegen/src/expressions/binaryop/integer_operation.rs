@@ -120,7 +120,7 @@ fn compile_int_operation<'ctx>(
                         }
                     }
 
-                    memory::store_anon(context, ptr, new_value, span);
+                    memory::store(context, ptr, new_value, span);
 
                     new_value
                 } else {
@@ -215,7 +215,7 @@ fn compile_int_operation<'ctx>(
                         }
                     }
 
-                    memory::store_anon(context, ptr, new_value, span);
+                    memory::store(context, ptr, new_value, span);
 
                     new_value
                 } else {

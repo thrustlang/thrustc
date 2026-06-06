@@ -76,7 +76,6 @@ pub fn get_functions_by_ordered_calls<'ctx>(
     let mut ordered: Vec<FunctionValue> = Vec::with_capacity(functions.len());
     let mut visited: HashSet<CString> = HashSet::with_capacity(functions.len());
 
-    // Solo permitimos funciones que realmente están en este módulo
     let allowed: HashSet<CString> = functions.iter().map(|f| f.get_name().to_owned()).collect();
 
     for function in &functions {

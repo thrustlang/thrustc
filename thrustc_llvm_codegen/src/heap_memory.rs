@@ -39,42 +39,48 @@ pub fn try_allocate_at_heap<'ctx>(
 ) -> PointerValue<'ctx> {
     context.mark_dbg_location(span);
 
-    let target_data: &TargetData = context.get_target_data();
-
-    if let Ok(ptr) = context
+    let ptr: PointerValue<'_> = context
         .get_llvm_builder()
         .build_malloc(llvm_type, llvm_name)
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                context,
+                "Failed to allocate at heap!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+    let instruction: inkwell::values::InstructionValue<'_> =
+        ptr.as_instruction().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to get malloc instruction!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+    if let Some(ThrustAttribute::Align(value, ..)) =
+        attributes.get_attr(thrustc_attributes::ThrustAttributeComparator::Align)
     {
-        if let Some(align_attr) =
-            attributes.get_attr(thrustc_attributes::ThrustAttributeComparator::Align)
-        {
-            if let Some(instruction) = ptr.as_instruction() {
-                if let ThrustAttribute::Align(value, ..) = align_attr {
-                    let preferred_aligment: u32 = target_data.get_preferred_alignment(&llvm_type);
+        let target_data: &TargetData = context.get_target_data();
+        let preferred_alignment: u32 = target_data.get_preferred_alignment(&llvm_type);
 
-                    instruction
-                        .set_alignment(value.try_into().unwrap_or(preferred_aligment))
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to set type alignment!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            );
-                        });
-                }
-            }
-        }
-
-        return ptr;
+        instruction
+            .set_alignment(value.try_into().unwrap_or(preferred_alignment))
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to set type alignment!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                )
+            });
     }
 
-    abort::abort_codegen(
-        context,
-        "Failed to allocate at heap!",
-        span,
-        PathBuf::from(file!()),
-        line!(),
-    );
+    ptr
 }

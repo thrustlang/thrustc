@@ -27,9 +27,9 @@ use thrustc_span::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeFixedArrayEntensions;
 
-use crate::anchor::PointerAnchor;
 use crate::context::LLVMCodeGenContext;
 use crate::memory::LLVMAllocationSite;
+use crate::pointer_anchor::PointerAnchor;
 use crate::traits::AstLLVMGetType;
 use crate::{abort, cast, codegen, memory, typegeneration};
 
@@ -145,7 +145,7 @@ fn compile_fixed_array_with_anchor<'ctx>(
     let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, array_type);
 
     if items.is_empty() {
-        memory::store_anon(context, anchor, llvm_type.const_zero(), span);
+        memory::store(context, anchor, llvm_type.const_zero(), span);
 
         return context
             .get_llvm_context()
@@ -180,7 +180,7 @@ fn compile_fixed_array_with_anchor<'ctx>(
             span,
         );
 
-        memory::store_anon(context, ptr, *value, span);
+        memory::store(context, ptr, *value, span);
     }
 
     context
@@ -237,8 +237,8 @@ fn compile_fixed_array_without_anchor<'ctx>(
             span,
         );
 
-        memory::store_anon(context, ptr, *value, span);
+        memory::store(context, ptr, *value, span);
     }
 
-    memory::load_anon(context, array_ptr, array_type, span)
+    memory::load(context, array_ptr, array_type, span)
 }

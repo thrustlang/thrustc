@@ -25,9 +25,9 @@ use thrustc_span::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeStructExtensions;
 
-use crate::anchor::PointerAnchor;
 use crate::context::LLVMCodeGenContext;
 use crate::memory::LLVMAllocationSite;
+use crate::pointer_anchor::PointerAnchor;
 use crate::{abort, codegen, memory, typegeneration};
 
 pub fn compile<'ctx>(
@@ -98,7 +98,7 @@ fn compile_with_anchor<'ctx>(
                 )
             });
 
-        memory::store_anon(context, field_ptr_value, *value, span);
+        memory::store(context, field_ptr_value, *value, span);
     }
 
     context
@@ -160,8 +160,8 @@ fn compile_without_anchor<'ctx>(
                 )
             });
 
-        memory::store_anon(context, field_ptr_value, *value, span);
+        memory::store(context, field_ptr_value, *value, span);
     }
 
-    memory::load_anon(context, ptr_value, struct_type, span)
+    memory::load(context, ptr_value, struct_type, span)
 }

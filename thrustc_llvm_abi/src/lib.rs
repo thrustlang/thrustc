@@ -19,6 +19,7 @@
 
 #![allow(non_camel_case_types)]
 #![allow(clippy::large_enum_variant)]
+#![allow(clippy::too_many_arguments)]
 
 use inkwell::{
     builder::Builder,
@@ -32,6 +33,7 @@ use thrustc_ast::Ast;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
 use thrustc_llvm_system_v_abi::{
     SystemVABIFunctionParameterConfiguration, SystemVABIFunctionTypeConfiguration, SystemVABIType,
+    SystemVCodeGenLocation,
 };
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
@@ -53,6 +55,28 @@ pub enum LLVMABIConfiguration<'llvm_abi> {
     SystemVFunctionParameterConfiguration(SystemVABIFunctionParameterConfiguration),
 
     None,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum LLVMABICodeGenLocation {
+    LValue,
+    RValue,
+
+    CallArgExpr,
+
+    None,
+}
+
+impl LLVMABICodeGenLocation {
+    #[inline]
+    pub fn to_system_v(&self) -> SystemVCodeGenLocation {
+        match self {
+            LLVMABICodeGenLocation::CallArgExpr => SystemVCodeGenLocation::CallArgExpr,
+            LLVMABICodeGenLocation::LValue => SystemVCodeGenLocation::LValue,
+            LLVMABICodeGenLocation::RValue => SystemVCodeGenLocation::RValue,
+            LLVMABICodeGenLocation::None => SystemVCodeGenLocation::None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -110,6 +134,7 @@ fn get_abi_automatic<'llvm_abi>(
 pub fn get_type<'llvm_abi>(
     abi: &'llvm_abi LLVMABIRepresentation<'llvm_abi>,
     ty: &'llvm_abi Type,
+    codegen_location: LLVMABICodeGenLocation,
 ) -> Option<LLVMABIType<'llvm_abi>> {
     match abi {
         LLVMABIRepresentation::x86SystemV {
@@ -126,6 +151,7 @@ pub fn get_type<'llvm_abi>(
                     target_triple,
                     (*target_info).clone(),
                     target_data,
+                    codegen_location.to_system_v(),
                 );
 
             let ty_classes: [thrustc_llvm_system_v_abi::SystemVABITypeClass; 8] =
@@ -150,6 +176,7 @@ pub fn create_abi_function_type<'llvm_abi>(
     kind: &'llvm_abi Type,
     parameters: &'llvm_abi [Ast<'llvm_abi>],
     is_var_args: bool,
+    codegen_location: LLVMABICodeGenLocation,
 ) -> Option<(FunctionType<'llvm_abi>, LLVMABIConfiguration<'llvm_abi>)> {
     match abi {
         LLVMABIRepresentation::x86SystemV {
@@ -166,6 +193,7 @@ pub fn create_abi_function_type<'llvm_abi>(
                     target_triple,
                     (*target_info).clone(),
                     target_data,
+                    codegen_location.to_system_v(),
                 );
 
             let function_type: (
@@ -196,6 +224,7 @@ pub fn lower_abi_call_prologue<'llvm_abi>(
     function_value: FunctionValue<'llvm_abi>,
     configuration: &LLVMABIConfiguration,
     args: Vec<BasicValueEnum<'llvm_abi>>,
+    codegen_location: LLVMABICodeGenLocation,
     span: Span,
 ) -> Option<Vec<BasicMetadataValueEnum<'llvm_abi>>> {
     match abi {
@@ -213,6 +242,7 @@ pub fn lower_abi_call_prologue<'llvm_abi>(
                     target_triple,
                     (*target_info).clone(),
                     target_data,
+                    codegen_location.to_system_v(),
                 );
 
             let configuration: &SystemVABIFunctionTypeConfiguration = match configuration {
@@ -221,7 +251,7 @@ pub fn lower_abi_call_prologue<'llvm_abi>(
             };
 
             let lowered_args: Vec<BasicMetadataValueEnum<'llvm_abi>> =
-                thrustc_llvm_system_v_abi::lower_call_prologue(
+                thrustc_llvm_system_v_abi::lower_system_v_call_prologue(
                     llvm_builder,
                     llvm_context,
                     &mut abi_context,
@@ -244,6 +274,7 @@ pub fn lower_abi_function_parameters<'llvm_abi>(
     abi: &LLVMABIRepresentation<'llvm_abi>,
     function_value: FunctionValue<'llvm_abi>,
     configuration: &LLVMABIConfiguration<'llvm_abi>,
+    codegen_location: LLVMABICodeGenLocation,
 ) -> Option<Vec<LLVMABIFunctionLoweredParameter<'llvm_abi>>> {
     match abi {
         LLVMABIRepresentation::x86SystemV {
@@ -260,6 +291,7 @@ pub fn lower_abi_function_parameters<'llvm_abi>(
                     target_triple,
                     (*target_info).clone(),
                     target_data,
+                    codegen_location.to_system_v(),
                 );
 
             let configuration: &SystemVABIFunctionTypeConfiguration = match configuration {
@@ -317,6 +349,7 @@ pub fn lower_abi_call_epilogue<'llvm_abi>(
     configuration: &LLVMABIConfiguration<'llvm_abi>,
     callsite: CallSiteValue<'llvm_abi>,
     lowered_args: &[BasicMetadataValueEnum<'llvm_abi>],
+    codegen_location: LLVMABICodeGenLocation,
     span: Span,
 ) -> Option<BasicValueEnum<'llvm_abi>> {
     let is_void_type: bool = callsite
@@ -340,6 +373,7 @@ pub fn lower_abi_call_epilogue<'llvm_abi>(
                     target_triple,
                     (*target_info).clone(),
                     target_data,
+                    codegen_location.to_system_v(),
                 );
 
             let configuration: &SystemVABIFunctionTypeConfiguration = match configuration {
@@ -348,15 +382,18 @@ pub fn lower_abi_call_epilogue<'llvm_abi>(
             };
 
             if configuration.is_memory_return() {
-                Some(thrustc_llvm_system_v_abi::lower_call_epilogue(
-                    llvm_builder,
-                    llvm_context,
-                    &mut abi_context,
-                    callsite,
-                    lowered_args,
-                    configuration,
-                    span,
-                ))
+                let lowered_value: BasicValueEnum<'_> =
+                    thrustc_llvm_system_v_abi::lower_system_v_call_epilogue(
+                        llvm_builder,
+                        llvm_context,
+                        &mut abi_context,
+                        callsite,
+                        lowered_args,
+                        configuration,
+                        span,
+                    );
+
+                Some(lowered_value)
             } else {
                 if is_void_type {
                     None
@@ -385,6 +422,7 @@ pub fn lower_abi_terminator<'llvm_abi>(
     configuration: &LLVMABIConfiguration<'llvm_abi>,
     function_value: FunctionValue<'llvm_abi>,
     return_value: Option<BasicValueEnum<'llvm_abi>>,
+    codegen_location: LLVMABICodeGenLocation,
     span: Span,
 ) -> bool {
     match abi {
@@ -402,6 +440,7 @@ pub fn lower_abi_terminator<'llvm_abi>(
                     target_triple,
                     (*target_info).clone(),
                     target_data,
+                    codegen_location.to_system_v(),
                 );
 
             let configuration: &SystemVABIFunctionTypeConfiguration = match configuration {
@@ -429,6 +468,7 @@ pub fn lower_parameter_conventions<'llvm_abi>(
     abi: &LLVMABIRepresentation<'llvm_abi>,
     function_value: FunctionValue<'llvm_abi>,
     configuration: &LLVMABIConfiguration,
+    codegen_location: LLVMABICodeGenLocation,
 ) -> bool {
     match abi {
         LLVMABIRepresentation::x86SystemV {
@@ -445,6 +485,7 @@ pub fn lower_parameter_conventions<'llvm_abi>(
                     target_triple,
                     (*target_info).clone(),
                     target_data,
+                    codegen_location.to_system_v(),
                 );
 
             let configuration: &SystemVABIFunctionTypeConfiguration = match configuration {

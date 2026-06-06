@@ -74,7 +74,7 @@ pub fn compile_float_operation<'ctx>(
                         })
                         .into();
 
-                    memory::store_anon(context, ptr, new_value, span);
+                    memory::store(context, ptr, new_value, span);
 
                     new_value
                 } else {
@@ -134,7 +134,7 @@ pub fn compile_float_operation<'ctx>(
                         })
                         .into();
 
-                    memory::store_anon(context, ptr, new_value, span);
+                    memory::store(context, ptr, new_value, span);
 
                     new_value
                 } else {

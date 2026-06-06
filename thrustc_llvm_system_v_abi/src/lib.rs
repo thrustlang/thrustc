@@ -54,6 +54,17 @@ pub struct SystemVABIContext<'system_v_abi> {
     diagnostician: Diagnostician,
     target_info: TargetInfo,
     target_data: &'system_v_abi TargetData,
+    codegen_location: SystemVCodeGenLocation,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum SystemVCodeGenLocation {
+    LValue,
+    RValue,
+
+    CallArgExpr,
+
+    None,
 }
 
 impl<'system_v_abi> SystemVABIContext<'system_v_abi> {
@@ -63,12 +74,14 @@ impl<'system_v_abi> SystemVABIContext<'system_v_abi> {
         target_triple: &'system_v_abi LLVMTargetTriple,
         target_info: TargetInfo,
         target_data: &'system_v_abi TargetData,
+        codegen_location: SystemVCodeGenLocation,
     ) -> Self {
         Self {
             target_triple,
             diagnostician: Diagnostician::new(file, options),
             target_info,
             target_data,
+            codegen_location,
         }
     }
 }
@@ -89,6 +102,11 @@ impl SystemVABIContext<'_> {
     #[inline]
     pub fn get_target_data(&self) -> &TargetData {
         self.target_data
+    }
+
+    #[inline]
+    pub fn get_codegen_location(&self) -> SystemVCodeGenLocation {
+        self.codegen_location
     }
 }
 
@@ -1193,7 +1211,7 @@ pub fn lower_function_parameters<'llvm_abi>(
     processed_parameters
 }
 
-pub fn lower_call_prologue<'llvm_abi>(
+pub fn lower_system_v_call_prologue<'llvm_abi>(
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     llvm_context: &'llvm_abi Context,
     abi_context: &mut SystemVABIContext,
@@ -1706,7 +1724,7 @@ pub fn lower_call_prologue<'llvm_abi>(
     processed_args
 }
 
-pub fn lower_call_epilogue<'llvm_abi>(
+pub fn lower_system_v_call_epilogue<'llvm_abi>(
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     llvm_context: &'llvm_abi Context,
     abi_context: &mut SystemVABIContext,
@@ -1760,6 +1778,12 @@ pub fn lower_call_epilogue<'llvm_abi>(
                     line!(),
                 )
             });
+
+        let codegen_location: SystemVCodeGenLocation = abi_context.get_codegen_location();
+
+        if matches!(codegen_location, SystemVCodeGenLocation::LValue) {
+            return ptr.into();
+        }
 
         let type_layout: either::Either<
             thrustc_typesystem::type_layout::TypeLayout,

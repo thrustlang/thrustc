@@ -132,8 +132,11 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
                     line!(),
                 )
             });
-    
-            let lowered: bool = thrustc_llvm_abi::lower_parameter_conventions(llvm_context, abi, llvm_function, configuration);
+
+            let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation  =context.get_codegen_location().to_abi_representation();
+
+
+            let lowered: bool = thrustc_llvm_abi::lower_parameter_conventions(llvm_context, abi, llvm_function, configuration, codegen_location);
     
             if !lowered {
                 abort::abort_codegen(
@@ -162,7 +165,7 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
     );
 
     context.set_current_function(prototype.clone());
-    context.new_function(name, prototype);
+    context.add_function(name, prototype);
 }
 
 pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Function<'ctx>) {
@@ -237,6 +240,8 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                         )
                     });
 
+                let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation  = codegen.get_context().get_codegen_location().to_abi_representation();
+
                 let lowered_parameters: Vec<thrustc_llvm_abi::LLVMABIFunctionLoweredParameter> =
                     thrustc_llvm_abi::lower_abi_function_parameters(
                         llvm_builder,
@@ -244,6 +249,7 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                         abi,
                         function_value,
                         configuration,
+                        codegen_location
                     )
                     .unwrap_or_else(|| {
                         abort::abort_codegen(
@@ -269,7 +275,7 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                             ) = configuration {
                             match configuration {
                                 SystemVABIFunctionParameterConfiguration::Normal => {
-                                    codegen.get_mut_context().new_parameter(
+                                    codegen.get_mut_context().add_parameter(
                                         name,
                                         ascii_name,
                                         ty,
@@ -279,7 +285,7 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                                 }
 
                                 SystemVABIFunctionParameterConfiguration::FromMemory => {
-                                    codegen.get_mut_context().new_allocated_parameter(
+                                    codegen.get_mut_context().add_allocated_parameter(
                                         name,
                                         ty,
                                         value.into_pointer_value(),
@@ -315,7 +321,7 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                     let span: Span = parameter.4;
 
                     if let Some(parameter_value) = function_value.get_nth_param(position) {
-                        codegen.get_mut_context().new_parameter(
+                        codegen.get_mut_context().add_parameter(
                             name,
                             ascii_name,
                             kind,

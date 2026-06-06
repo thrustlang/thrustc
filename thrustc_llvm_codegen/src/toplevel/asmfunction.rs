@@ -201,5 +201,5 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
         span,
     );
 
-    context.new_function(name, prototype);
+    context.add_function(name, prototype);
 }

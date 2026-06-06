@@ -30,6 +30,7 @@ use inkwell::values::BasicValueEnum;
 use inkwell::values::PointerValue;
 
 use thrustc_diagnostician::Diagnostician;
+use thrustc_llvm_abi::LLVMABICodeGenLocation;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::CompilationUnit;
@@ -39,12 +40,12 @@ use thrustc_typesystem::Type;
 use thrustc_typesystem::type_layout::TargetInfo;
 
 use crate::abort;
-use crate::anchor::PointerAnchor;
 use crate::branch_context::LLVMLoopContext;
 use crate::debug_context::LLVMDebugContext;
 use crate::memory::SymbolAllocated;
 use crate::memory::SymbolToAllocate;
 use crate::optimizer::LLVMExpressionOptimization;
+use crate::pointer_anchor::PointerAnchor;
 use crate::table::LLVMSymbolsTable;
 use crate::types::LLVMCtors;
 use crate::types::LLVMDBGFunction;
@@ -203,7 +204,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
 }
 
 impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
-    pub fn new_allocated_parameter(
+    pub fn add_allocated_parameter(
         &mut self,
         name: &'ctx str,
         kind: &'ctx Type,
@@ -218,7 +219,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     }
 
     #[inline]
-    pub fn new_parameter(
+    pub fn add_parameter(
         &mut self,
         name: &'ctx str,
         ascii_name: &'ctx str,
@@ -235,7 +236,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     }
 
     #[inline]
-    pub fn new_function(&mut self, name: &'ctx str, function: LLVMFunction<'ctx>) {
+    pub fn add_function(&mut self, name: &'ctx str, function: LLVMFunction<'ctx>) {
         self.table.add_function(name, function);
     }
 }
@@ -289,13 +290,15 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     pub fn unset_function_stackguard_protector_pointer(&mut self) {
         self.function_stack_protector_ptr = None;
     }
+}
 
+impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     #[inline]
     pub fn add_ctor(&mut self, ctor: PointerValue<'ctx>) {
         let last: Option<&(PointerValue, u32)> = self.ctors.iter().last();
 
-        let order: u32 = if let Some(last_ctor) = last {
-            last_ctor.1 + 1
+        let order: u32 = if let Some((_, counter)) = last {
+            counter + 1
         } else {
             1
         };
@@ -307,8 +310,8 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     pub fn add_dtor(&mut self, dtor: PointerValue<'ctx>) {
         let last: Option<&(PointerValue, u32)> = self.ctors.iter().last();
 
-        let order: u32 = if let Some(last_dtor) = last {
-            last_dtor.1 + 1
+        let order: u32 = if let Some((_, counter)) = last {
+            counter + 1
         } else {
             1
         };
@@ -534,4 +537,16 @@ pub enum CodeGenLocation {
     CallArgExpr,
 
     None,
+}
+
+impl CodeGenLocation {
+    #[inline]
+    pub fn to_abi_representation(&self) -> LLVMABICodeGenLocation {
+        match self {
+            CodeGenLocation::CallArgExpr => LLVMABICodeGenLocation::CallArgExpr,
+            CodeGenLocation::LValue => LLVMABICodeGenLocation::LValue,
+            CodeGenLocation::RValue => LLVMABICodeGenLocation::RValue,
+            CodeGenLocation::None => LLVMABICodeGenLocation::None,
+        }
+    }
 }
