@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["binary","unary"]};
+window.SIDEBAR_ITEMS = {"mod":["binary_operation","unary_operation"]};

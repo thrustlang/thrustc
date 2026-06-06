@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["ControlContextExtensions","PositionExtensions","TypeContextExtensions"]};
+window.SIDEBAR_ITEMS = {"trait":["PositionExtensions","TypeContextExtensions"]};

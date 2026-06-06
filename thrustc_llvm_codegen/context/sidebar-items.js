@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["LLVMCodeGenContext"]};
+window.SIDEBAR_ITEMS = {"enum":["CodeGenLocation"],"struct":["LLVMCodeGenContext"]};

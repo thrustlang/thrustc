@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["parse"],"mod":["block","conditional","controlflow","defer","lconstant","lctype","lenum","loops","lstatic","lstructure","terminator","var"]};
+window.SIDEBAR_ITEMS = {"fn":["parse"],"mod":["code_block","conditional","defer","local_constant","local_enum","local_static","local_struct","local_type","loop_control","loops","terminator","variable"]};

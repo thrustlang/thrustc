@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["compile_down","compile_top","emit_stack_protector_epilogue","emit_stack_protector_prologue"]};

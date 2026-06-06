@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build_property","decompose_structure_property"]};
+window.SIDEBAR_ITEMS = {"fn":["build_property","decompose_struct_property"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["FunctionABI"]};
+window.SIDEBAR_ITEMS = {"enum":["LLVMABICodeGenLocation","LLVMABIConfiguration","LLVMABIType"],"fn":["create_abi_function_type","get_abi","get_abi_automatic","get_type","lower_abi_call_epilogue","lower_abi_call_prologue","lower_abi_function_parameters","lower_abi_terminator","lower_parameter_conventions"],"mod":["abort"],"struct":["LLVMABIFunctionLoweredParameter"]};

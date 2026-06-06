@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["boolean","float","integer"]};
+window.SIDEBAR_ITEMS = {"mod":["boolean_operation","floatingpoint_operation","integer_operation"]};

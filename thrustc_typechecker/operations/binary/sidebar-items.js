@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["validate_band_expression","validate_binary","validate_binary_arithmetic_expression","validate_binary_comparasion_expression","validate_binary_equality_expression","validate_binary_gate_expression","validate_binary_shift_expression","validate_bor_expression","validate_xor_expression"]};

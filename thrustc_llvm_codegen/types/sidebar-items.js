@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"type":["LLVMCtors","LLVMDBGFunction","LLVMDtors","LLVMFunction","LLVMFunctions","LLVMFunctionsParameters","LLVMGlobalConstants","LLVMGlobalStatics","LLVMInstructions","LLVMLocalConstants","LLVMLocalStatics","LLVMStackProtectorPointer"]};
+window.SIDEBAR_ITEMS = {"type":["LLVMAllocatedParameters","LLVMCtors","LLVMDBGFunction","LLVMDtors","LLVMFunction","LLVMFunctions","LLVMFunctionsParameters","LLVMGlobalConstants","LLVMGlobalStatics","LLVMInstructions","LLVMLocalConstants","LLVMLocalStatics","LLVMStackProtectorPointer"]};

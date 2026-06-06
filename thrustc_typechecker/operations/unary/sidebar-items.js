@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["validate_bang_unary","validate_general_unary","validate_not_unary","validate_unary"]};
