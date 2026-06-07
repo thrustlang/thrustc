@@ -50,5 +50,8 @@ if [ -n "$help_output" ]; then
     } >> "${release_dir}/README.md"
 fi
 
+git add "${release_dir}/README.md"
+git commit -m "Bumping '${tag_name}'"
+
 echo "Changelog generated at ${release_dir}/README.md"
 echo "Done."

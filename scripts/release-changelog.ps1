@@ -44,5 +44,8 @@ if (-not [string]::IsNullOrWhiteSpace($help_output)) {
     Add-Content "$release_dir/README.md" '```'
 }
 
+git add "$release_dir/README.md"
+git commit -m "Bumping '$tag_name'"
+
 Write-Host "Changelog generated at $release_dir/README.md"
 Write-Host "Done."

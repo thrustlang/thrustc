@@ -1,0 +1,36 @@
+<img src= "https://github.com/thrustlang/.github/blob/main/assets/logos/thrustlang-logo-name.png" alt= "logo" style= "width: 80%; height: 80%;"></img>
+
+# The Thrust Compiler 
+
+This is an example of the type of compiler diagnostics you can find in thrustc:
+
+These can be displayed in color using `--enable-ansi-color`, which is off by default.
+
+For example:
+
+### Errors
+
+#### Type Mismatch
+
+<img src= "https://github.com/thrustlang/thrustc/blob/master/assets/examples/diagnostics/TypeMismatchDiagnostic.png"></img>
+
+#### Value Without Address
+
+<img src= "https://github.com/thrustlang/thrustc/blob/master/assets/examples/diagnostics/ValueWithoutAddressDiagnostic.png"></img>
+
+### Warnings
+
+#### Unknown Call Convention
+
+<img src= "https://github.com/thrustlang/thrustc/blob/master/assets/examples/diagnostics/UnknownCallConventionWarningDiagnostic.png"></img>
+
+#### Attribute Conflict
+
+<img src= "https://github.com/thrustlang/thrustc/blob/master/assets/examples/diagnostics/AttributeConflictWarningDiagnostic.png"></img>
+
+These are some examples of diagnostics that you can find in Thrust and that will be useful when using the language.
+
+In the future, you'll be able to understand it better using `thrustc --explain W0004` or `thrustc --explain E0007`, which will explain in detail why this issue exists in the code.
+
+However, at the time of writing, it is not fully implemented for production.
+

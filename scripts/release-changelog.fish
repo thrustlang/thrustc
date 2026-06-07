@@ -42,5 +42,8 @@ if test -n "$help_output"
     echo '```' >> "$release_dir/README.md"
 end
 
+git add "$release_dir/README.md"
+git commit -m "Bumping '$tag_name'"
+
 echo "Changelog generated at $release_dir/README.md"
 echo "Done."
