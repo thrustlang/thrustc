@@ -126,7 +126,7 @@ If you want to know a high-level command line view, you should check out: [Thrus
 
 ## Compiler Structure
 
-If you want to know a little about the compiler's structure, you should check out: [Thrust Programming Language - Compiler Structure](https://github.com/thrustlang/blob/master/PROJECT_STRUCTURE.md)
+If you want to know a little about the compiler's structure, you should check out: [Thrust Programming Language - Compiler Structure](https://github.com/thrustlang/thrustc/blob/master/PROJECT_STRUCTURE.md)
 
 ## Rust Code Documentation
 
@@ -134,7 +134,7 @@ If you want to know regarding Rust code's structure that resides in the compiler
 
 ## Cargo Alias
 
-If you require to know the command line shorcuts available in the project across rust-cargo, you should check out: [Thrust Programming Language - Cargo Alias](https://github.com/thrustlang/blob/master/CARGO_ALIAS.md)
+If you require to know the command line shorcuts available in the project across rust-cargo, you should check out: [Thrust Programming Language - Cargo Alias](https://github.com/thrustlang/thrustc/blob/master/CARGO_ALIAS.md)
 
 ## Q&A
 
