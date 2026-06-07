@@ -11,6 +11,21 @@ The **Thrust Compiler** is a compiler that transfers the source code of Thrust f
 
 ## Getting Started
 
+## Compiled
+
+If you don't want to build the project from scratch, you can check if there are available versions in Github releases.
+
+[Thrust Compiler - Github Releases](https://github.com/thrustlang/thrustc/releases)
+
+Supported operating systems:
+
+- Windows x64 (MSVC) 
+- MacOS (arm)
+- MacOS (intel)
+- Linux x64 (GNU)
+
+## From Scratch
+
 ### Build dependencies 
 
 Among the dependencies required by the compiler is LLVM infrastructure.
@@ -40,12 +55,6 @@ You must first clone the repository and access it locally.
 $ git clone --depth=1 https://github.com/thrustlang/thrustc 
 $ cd thrustc
 ```
-
-Another way:
-
-If you don't want to build the project from scratch, you can check if there are available versions in Github releases.
-
-[Thrust Compiler - Github Releases](https://github.com/thrustlang/thrustc/releases)
 
 ### Build Cargo dependencies 
 
