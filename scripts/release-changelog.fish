@@ -45,5 +45,16 @@ end
 git add "$release_dir/README.md"
 git commit -m "Bumping '$tag_name'"
 
+git tag $tag_name
+or begin
+    echo "Error: Failed to create tag '$tag_name'."
+    exit 1
+end
+git push origin HEAD $tag_name
+or begin
+    echo "Error: Failed to push to remote."
+    exit 1
+end
+
 echo "Changelog generated at $release_dir/README.md"
 echo "Done."

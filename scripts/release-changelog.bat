@@ -52,5 +52,16 @@ if not "!help_output!"=="" (
 git add "%release_dir%\README.md"
 git commit -m "Bumping '%tag_name%'"
 
+git tag "%tag_name%"
+if errorlevel 1 (
+    echo Error: Failed to create tag '%tag_name%'.
+    exit /b 1
+)
+git push origin HEAD "%tag_name%"
+if errorlevel 1 (
+    echo Error: Failed to push to remote.
+    exit /b 1
+)
+
 echo Changelog generated at %release_dir%\README.md
 echo Done.

@@ -19,11 +19,6 @@
 
 use inkwell::basic_block::BasicBlock;
 use inkwell::context::Context;
-use inkwell::llvm_sys::core::{
-    LLVMGetValueName2, LLVMInsertIntoBuilderWithName, LLVMInstructionRemoveFromParent,
-    LLVMPositionBuilderBefore,
-};
-use inkwell::llvm_sys::prelude::{LLVMBuilderRef, LLVMValueRef};
 use inkwell::values::FunctionValue;
 
 use thrustc_span::Span;

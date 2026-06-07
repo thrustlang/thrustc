@@ -47,5 +47,16 @@ if (-not [string]::IsNullOrWhiteSpace($help_output)) {
 git add "$release_dir/README.md"
 git commit -m "Bumping '$tag_name'"
 
+git tag $tag_name
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Error: Failed to create tag '$tag_name'."
+    exit 1
+}
+git push origin HEAD $tag_name
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Error: Failed to push to remote."
+    exit 1
+}
+
 Write-Host "Changelog generated at $release_dir/README.md"
 Write-Host "Done."

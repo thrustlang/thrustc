@@ -53,5 +53,8 @@ fi
 git add "${release_dir}/README.md"
 git commit -m "Bumping '${tag_name}'"
 
+git tag "${tag_name}"
+git push origin HEAD "${tag_name}"
+
 echo "Changelog generated at ${release_dir}/README.md"
 echo "Done."
