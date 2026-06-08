@@ -242,7 +242,7 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
 
                 let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation  = codegen.get_context().get_codegen_location().to_abi_representation();
 
-                let lowered_parameters: Vec<thrustc_llvm_abi::LLVMABIFunctionLoweredParameter> =
+                let lowered_abi_parameters: Option<Vec<thrustc_llvm_abi::LLVMABIFunctionLoweredParameter>> =
                     thrustc_llvm_abi::lower_abi_function_parameters(
                         llvm_builder,
                         llvm_context,
@@ -250,61 +250,75 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                         function_value,
                         configuration,
                         codegen_location
-                    )
-                    .unwrap_or_else(|| {
-                        abort::abort_codegen(
-                            codegen.get_mut_context(),
-                            "Failed to lower the function parameters to the current ABI!",
-                            span,
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        )
-                    });
+                    );
 
-                {
-                    for lowered_parameter in lowered_parameters {
-                        let name: &str = lowered_parameter.get_name();
-                        let ascii_name: &str = lowered_parameter.get_ascii_name();
-                        let ty: &Type = lowered_parameter.get_type();
-                        let value: BasicValueEnum = lowered_parameter.get_value();
-                        let configuration: &thrustc_llvm_abi::LLVMABIConfiguration =
-                            lowered_parameter.get_abi_configuration();
-
-                        if let thrustc_llvm_abi::LLVMABIConfiguration::SystemVFunctionParameterConfiguration(
-                                configuration,
-                            ) = configuration {
-                            match configuration {
-                                SystemVABIFunctionParameterConfiguration::Normal => {
-                                    codegen.get_mut_context().add_parameter(
-                                        name,
-                                        ascii_name,
-                                        ty,
-                                        value,
-                                        span,
-                                    );
+                if let Some(lowered_parameters)= lowered_abi_parameters {
+                    {
+                        for lowered_parameter in lowered_parameters {
+                            let name: &str = lowered_parameter.get_name();
+                            let ascii_name: &str = lowered_parameter.get_ascii_name();
+                            let ty: &Type = lowered_parameter.get_type();
+                            let value: BasicValueEnum = lowered_parameter.get_value();
+                            let configuration: &thrustc_llvm_abi::LLVMABIConfiguration =
+                                lowered_parameter.get_abi_configuration();
+    
+                            if let thrustc_llvm_abi::LLVMABIConfiguration::SystemVFunctionParameterConfiguration(
+                                    configuration,
+                                ) = configuration {
+                                match configuration {
+                                    SystemVABIFunctionParameterConfiguration::Normal => {
+                                        codegen.get_mut_context().add_parameter(
+                                            name,
+                                            ascii_name,
+                                            ty,
+                                            value,
+                                            span,
+                                        );
+                                    }
+    
+                                    SystemVABIFunctionParameterConfiguration::FromMemory => {
+                                        codegen.get_mut_context().add_allocated_parameter(
+                                            name,
+                                            ty,
+                                            value.into_pointer_value(),
+                                            span,
+                                        );
+                                      
+                                    }
+                                    
                                 }
-
-                                SystemVABIFunctionParameterConfiguration::FromMemory => {
-                                    codegen.get_mut_context().add_allocated_parameter(
-                                        name,
-                                        ty,
-                                        value.into_pointer_value(),
-                                        span,
-                                    );
-                                  
-                                }
-                                
+                            } else {
+                                abort::abort_codegen(
+                                    codegen.get_mut_context(),
+                                    "Unsupported ABI configuration for function parameters!",
+                                    span,
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
                             }
-                        } else {
-                            abort::abort_codegen(
-                                codegen.get_mut_context(),
-                                "Unsupported ABI configuration for function parameters!",
-                                span,
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            )
+    
                         }
+                    }
+                } else {
+                    for parameter in function_parameters.iter().map(|node| thrustc_entities::function_parameter_from_ast(node))
+                    {
+                        let name: &str = parameter.0;
+                        let ascii_name: &str = parameter.1;
 
+                        let kind: &Type = parameter.2;
+                        let position: u32 = parameter.3;
+
+                        let span: Span = parameter.4;
+
+                        if let Some(parameter_value) = function_value.get_nth_param(position) {
+                            codegen.get_mut_context().add_parameter(
+                                name,
+                                ascii_name,
+                                kind,
+                                parameter_value,
+                                span,
+                            );
+                        }
                     }
                 }
             } else {

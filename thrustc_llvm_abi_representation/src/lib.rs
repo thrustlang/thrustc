@@ -27,7 +27,15 @@ use thrustc_typesystem::type_layout::TargetInfo;
 
 #[derive(Debug)]
 pub enum LLVMABIRepresentation<'llvm_abi> {
-    x86SystemV {
+    SystemVABI {
+        file: &'llvm_abi CompilationUnit,
+        options: &'llvm_abi CompilerOptions,
+        target_triple: &'llvm_abi LLVMTargetTriple,
+        target_info: &'llvm_abi TargetInfo,
+        target_data: &'llvm_abi TargetData,
+    },
+
+    CudaABI {
         file: &'llvm_abi CompilationUnit,
         options: &'llvm_abi CompilerOptions,
         target_triple: &'llvm_abi LLVMTargetTriple,

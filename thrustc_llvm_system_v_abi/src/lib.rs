@@ -1330,12 +1330,28 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 .create_type_attribute(sret_id, llvm_ty.as_any_type_enum());
 
                             function_value.add_attribute(
-                                AttributeLoc::Param((*index).try_into().unwrap_or_default()),
+                                AttributeLoc::Param((*index).try_into().unwrap_or_else(|_| {
+                                    abort::abort_codegen(
+                                        abi_context,
+                                        "Failed to parse parameter index on System-V ABI lowering!",
+                                        ty.get_span(),
+                                        std::path::PathBuf::from(file!()),
+                                        line!(),
+                                    )
+                                })),
                                 sret_attribute,
                             );
 
                             function_value.set_param_alignment(
-                                (*index).try_into().unwrap_or_default(),
+                                (*index).try_into().unwrap_or_else(|_| {
+                                    abort::abort_codegen(
+                                        abi_context,
+                                        "Failed to set parameter memory alignment on System-V ABI lowering!",
+                                        ty.get_span(),
+                                        std::path::PathBuf::from(file!()),
+                                        line!(),
+                                    )
+                                }),
                                 alignment,
                             );
                         }
@@ -1406,13 +1422,29 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
 
                                     function_value.add_attribute(
                                         AttributeLoc::Param(
-                                            (*index).try_into().unwrap_or_default(),
+                                            (*index).try_into().unwrap_or_else(|_| {
+                                                abort::abort_codegen(
+                                                    abi_context,
+                                                    "Failed to parse parameter index on System-V ABI lowering!",
+                                                    ty.get_span(),
+                                                    std::path::PathBuf::from(file!()),
+                                                    line!(),
+                                                )
+                                            }),
                                         ),
                                         byval_attribute,
                                     );
 
                                     function_value.set_param_alignment(
-                                        (*index).try_into().unwrap_or_default(),
+                                        (*index).try_into().unwrap_or_else(|_| {
+                                            abort::abort_codegen(
+                                                abi_context,
+                                                "Failed to set parameter memory alignment on System-V ABI lowering!",
+                                                ty.get_span(),
+                                                std::path::PathBuf::from(file!()),
+                                                line!(),
+                                            )
+                                        }),
                                         alignment,
                                     );
                                 }
@@ -1485,12 +1517,28 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 .create_type_attribute(byval_id, llvm_ty.as_any_type_enum());
 
                             function_value.add_attribute(
-                                AttributeLoc::Param((*index).try_into().unwrap_or_default()),
+                                AttributeLoc::Param((*index).try_into().unwrap_or_else(|_| {
+                                    abort::abort_codegen(
+                                        abi_context,
+                                        "Failed to parse parameter index on System-V ABI lowering!",
+                                        ty.get_span(),
+                                        std::path::PathBuf::from(file!()),
+                                        line!(),
+                                    )
+                                })),
                                 byval_attribute,
                             );
 
                             function_value.set_param_alignment(
-                                (*index).try_into().unwrap_or_default(),
+                                (*index).try_into().unwrap_or_else(|_| {
+                                    abort::abort_codegen(
+                                        abi_context,
+                                        "Failed to set parameter memory alignment on System-V ABI lowering!",
+                                        ty.get_span(),
+                                        std::path::PathBuf::from(file!()),
+                                        line!(),
+                                    )
+                                }),
                                 alignment,
                             );
                         }
@@ -2069,7 +2117,7 @@ pub fn lower_terminator<'llvm_abi>(
     false
 }
 
-pub fn decompose_function_type<'llvm_abi>(
+pub fn generate_function_type<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
     abi_context: &mut SystemVABIContext,
     return_type: &'llvm_abi Type,
@@ -2454,12 +2502,28 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                         llvm_context.create_type_attribute(sret_id, llvm_ty.as_any_type_enum());
 
                     function_value.add_attribute(
-                        AttributeLoc::Param((*index).try_into().unwrap_or_default()),
+                        AttributeLoc::Param((*index).try_into().unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to parse parameter index on System-V ABI lowering!",
+                                ty.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        })),
                         sret_attribute,
                     );
 
                     function_value
-                        .set_param_alignment((*index).try_into().unwrap_or_default(), alignment);
+                        .set_param_alignment((*index).try_into().unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to set parameter memory alignment on System-V ABI lowering!",
+                                ty.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        }), alignment);
                 }
 
                 if let SystemVABIFunctionTypeArgumentConfigurationAttributes::byVal(ty) = attribute
@@ -2483,12 +2547,28 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                         llvm_context.create_type_attribute(byval_id, llvm_ty.as_any_type_enum());
 
                     function_value.add_attribute(
-                        AttributeLoc::Param((*index).try_into().unwrap_or_default()),
+                        AttributeLoc::Param((*index).try_into().unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to parse parameter index on System-V ABI lowering!",
+                                ty.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        })),
                         byval_attribute,
                     );
 
                     function_value
-                        .set_param_alignment((*index).try_into().unwrap_or_default(), alignment);
+                        .set_param_alignment((*index).try_into().unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to set parameter memory alignment on System-V ABI lowering!",
+                                ty.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        }), alignment);
                 }
             }
 

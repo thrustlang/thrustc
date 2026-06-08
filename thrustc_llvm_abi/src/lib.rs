@@ -31,6 +31,7 @@ use inkwell::{
 use thrustc_abi::SpecificABI;
 use thrustc_ast::Ast;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
+use thrustc_llvm_nvidia_cuda_abi::{CudaABIFunctionTypeConfiguration, CudaCodeGenLocation};
 use thrustc_llvm_system_v_abi::{
     SystemVABIFunctionParameterConfiguration, SystemVABIFunctionTypeConfiguration, SystemVABIType,
     SystemVCodeGenLocation,
@@ -44,7 +45,7 @@ mod abort;
 
 #[derive(Debug, Clone)]
 pub enum LLVMABIType<'llvm_abi> {
-    x86SystemV(SystemVABIType<'llvm_abi>),
+    SystemV(SystemVABIType<'llvm_abi>),
 
     None,
 }
@@ -52,6 +53,7 @@ pub enum LLVMABIType<'llvm_abi> {
 #[derive(Debug, Clone)]
 pub enum LLVMABIConfiguration<'llvm_abi> {
     SystemVFunctionTypeConfiguration(SystemVABIFunctionTypeConfiguration<'llvm_abi>),
+    CudaFunctionTypeConfiguration(CudaABIFunctionTypeConfiguration<'llvm_abi>),
     SystemVFunctionParameterConfiguration(SystemVABIFunctionParameterConfiguration),
 
     None,
@@ -77,6 +79,16 @@ impl LLVMABICodeGenLocation {
             LLVMABICodeGenLocation::None => SystemVCodeGenLocation::None,
         }
     }
+
+    #[inline]
+    pub fn to_nvidia_cuda(&self) -> CudaCodeGenLocation {
+        match self {
+            LLVMABICodeGenLocation::CallArgExpr => CudaCodeGenLocation::CallArgExpr,
+            LLVMABICodeGenLocation::LValue => CudaCodeGenLocation::LValue,
+            LLVMABICodeGenLocation::RValue => CudaCodeGenLocation::RValue,
+            LLVMABICodeGenLocation::None => CudaCodeGenLocation::None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -97,7 +109,15 @@ pub fn get_abi<'llvm_abi>(
     target_data: &'llvm_abi TargetData,
 ) -> Option<LLVMABIRepresentation<'llvm_abi>> {
     match specific {
-        SpecificABI::SystemV => Some(LLVMABIRepresentation::x86SystemV {
+        SpecificABI::SystemV => Some(LLVMABIRepresentation::SystemVABI {
+            file,
+            options,
+            target_triple,
+            target_info,
+            target_data,
+        }),
+
+        SpecificABI::NvidiaCuda => Some(LLVMABIRepresentation::CudaABI {
             file,
             options,
             target_triple,
@@ -119,7 +139,17 @@ fn get_abi_automatic<'llvm_abi>(
     target_data: &'llvm_abi TargetData,
 ) -> Option<LLVMABIRepresentation<'llvm_abi>> {
     if target_triple.has_sysv_abi() {
-        return Some(LLVMABIRepresentation::x86SystemV {
+        return Some(LLVMABIRepresentation::SystemVABI {
+            file,
+            options,
+            target_triple,
+            target_info,
+            target_data,
+        });
+    }
+
+    if target_triple.is_nvptx_arch() {
+        return Some(LLVMABIRepresentation::CudaABI {
             file,
             options,
             target_triple,
@@ -137,7 +167,7 @@ pub fn get_type<'llvm_abi>(
     codegen_location: LLVMABICodeGenLocation,
 ) -> Option<LLVMABIType<'llvm_abi>> {
     match abi {
-        LLVMABIRepresentation::x86SystemV {
+        LLVMABIRepresentation::SystemVABI {
             file,
             options,
             target_triple,
@@ -163,7 +193,7 @@ pub fn get_type<'llvm_abi>(
             let abi_ty: SystemVABIType =
                 SystemVABIType::class_to_general_abi_strategy(&mut abi_context, &ty_classes, ty);
 
-            Some(LLVMABIType::x86SystemV(abi_ty))
+            Some(LLVMABIType::SystemV(abi_ty))
         }
 
         _ => None,
@@ -179,7 +209,7 @@ pub fn create_abi_function_type<'llvm_abi>(
     codegen_location: LLVMABICodeGenLocation,
 ) -> Option<(FunctionType<'llvm_abi>, LLVMABIConfiguration<'llvm_abi>)> {
     match abi {
-        LLVMABIRepresentation::x86SystemV {
+        LLVMABIRepresentation::SystemVABI {
             file,
             options,
             target_triple,
@@ -199,7 +229,7 @@ pub fn create_abi_function_type<'llvm_abi>(
             let function_type: (
                 FunctionType<'_>,
                 thrustc_llvm_system_v_abi::SystemVABIFunctionTypeConfiguration,
-            ) = thrustc_llvm_system_v_abi::decompose_function_type(
+            ) = thrustc_llvm_system_v_abi::generate_function_type(
                 llvm_context,
                 &mut abi_context,
                 kind,
@@ -210,6 +240,40 @@ pub fn create_abi_function_type<'llvm_abi>(
             Some((
                 function_type.0,
                 LLVMABIConfiguration::SystemVFunctionTypeConfiguration(function_type.1),
+            ))
+        }
+
+        LLVMABIRepresentation::CudaABI {
+            file,
+            options,
+            target_triple,
+            target_info,
+            target_data,
+        } => {
+            let mut abi_context: thrustc_llvm_nvidia_cuda_abi::CudaABIContext<'_> =
+                thrustc_llvm_nvidia_cuda_abi::CudaABIContext::new(
+                    file,
+                    options,
+                    target_triple,
+                    (*target_info).clone(),
+                    target_data,
+                    codegen_location.to_nvidia_cuda(),
+                );
+
+            let function_type: (
+                FunctionType<'_>,
+                thrustc_llvm_nvidia_cuda_abi::CudaABIFunctionTypeConfiguration<'_>,
+            ) = thrustc_llvm_nvidia_cuda_abi::generate_function_type(
+                llvm_context,
+                &mut abi_context,
+                kind,
+                parameters,
+                is_var_args,
+            );
+
+            Some((
+                function_type.0,
+                LLVMABIConfiguration::CudaFunctionTypeConfiguration(function_type.1),
             ))
         }
 
@@ -228,7 +292,7 @@ pub fn lower_abi_call_prologue<'llvm_abi>(
     span: Span,
 ) -> Option<Vec<BasicMetadataValueEnum<'llvm_abi>>> {
     match abi {
-        LLVMABIRepresentation::x86SystemV {
+        LLVMABIRepresentation::SystemVABI {
             file,
             options,
             target_triple,
@@ -264,6 +328,13 @@ pub fn lower_abi_call_prologue<'llvm_abi>(
             Some(lowered_args)
         }
 
+        LLVMABIRepresentation::CudaABI { .. } => {
+            let lowered_args: Vec<BasicMetadataValueEnum<'llvm_abi>> =
+                args.iter().map(|arg| (*arg).into()).collect();
+
+            Some(lowered_args)
+        }
+
         _ => None,
     }
 }
@@ -277,7 +348,7 @@ pub fn lower_abi_function_parameters<'llvm_abi>(
     codegen_location: LLVMABICodeGenLocation,
 ) -> Option<Vec<LLVMABIFunctionLoweredParameter<'llvm_abi>>> {
     match abi {
-        LLVMABIRepresentation::x86SystemV {
+        LLVMABIRepresentation::SystemVABI {
             file,
             options,
             target_triple,
@@ -359,7 +430,7 @@ pub fn lower_abi_call_epilogue<'llvm_abi>(
         .is_none();
 
     match abi {
-        LLVMABIRepresentation::x86SystemV {
+        LLVMABIRepresentation::SystemVABI {
             file,
             options,
             target_data,
@@ -411,6 +482,34 @@ pub fn lower_abi_call_epilogue<'llvm_abi>(
             }
         }
 
+        LLVMABIRepresentation::CudaABI {
+            file,
+            options,
+            target_triple,
+            target_info,
+            target_data,
+        } => {
+            let mut abi_context: thrustc_llvm_nvidia_cuda_abi::CudaABIContext<'_> =
+                thrustc_llvm_nvidia_cuda_abi::CudaABIContext::new(
+                    file,
+                    options,
+                    target_triple,
+                    (*target_info).clone(),
+                    target_data,
+                    codegen_location.to_nvidia_cuda(),
+                );
+
+            Some(callsite.try_as_basic_value().left().unwrap_or_else(|| {
+                abort::abort_cuda_abi_codegen(
+                    &mut abi_context,
+                    "Failed to compile function call!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            }))
+        }
+
         _ => None,
     }
 }
@@ -426,7 +525,7 @@ pub fn lower_abi_terminator<'llvm_abi>(
     span: Span,
 ) -> bool {
     match abi {
-        LLVMABIRepresentation::x86SystemV {
+        LLVMABIRepresentation::SystemVABI {
             file,
             options,
             target_data,
@@ -459,6 +558,8 @@ pub fn lower_abi_terminator<'llvm_abi>(
             )
         }
 
+        LLVMABIRepresentation::CudaABI { .. } => false,
+
         _ => false,
     }
 }
@@ -471,7 +572,7 @@ pub fn lower_parameter_conventions<'llvm_abi>(
     codegen_location: LLVMABICodeGenLocation,
 ) -> bool {
     match abi {
-        LLVMABIRepresentation::x86SystemV {
+        LLVMABIRepresentation::SystemVABI {
             file,
             options,
             target_data,
@@ -494,6 +595,38 @@ pub fn lower_parameter_conventions<'llvm_abi>(
             };
 
             thrustc_llvm_system_v_abi::lower_function_parameter_conventions(
+                llvm_context,
+                &mut abi_context,
+                function_value,
+                configuration,
+            );
+
+            true
+        }
+
+        LLVMABIRepresentation::CudaABI {
+            file,
+            options,
+            target_triple,
+            target_info,
+            target_data,
+        } => {
+            let mut abi_context: thrustc_llvm_nvidia_cuda_abi::CudaABIContext<'_> =
+                thrustc_llvm_nvidia_cuda_abi::CudaABIContext::new(
+                    file,
+                    options,
+                    target_triple,
+                    (*target_info).clone(),
+                    target_data,
+                    codegen_location.to_nvidia_cuda(),
+                );
+
+            let configuration: &CudaABIFunctionTypeConfiguration = match configuration {
+                LLVMABIConfiguration::CudaFunctionTypeConfiguration(config) => config,
+                _ => unreachable!(),
+            };
+
+            thrustc_llvm_nvidia_cuda_abi::lower_function_parameter_conventions(
                 llvm_context,
                 &mut abi_context,
                 function_value,

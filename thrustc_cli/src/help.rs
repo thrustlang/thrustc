@@ -345,7 +345,7 @@ pub fn show_help() -> ! {
             "{} {} {} {}\n",
             "•".bold(),
             "-abi".custom_color((141, 141, 142)).bold(),
-            "[system-v]",
+            "[system-v|cuda]",
             "Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.",
         ),
     );

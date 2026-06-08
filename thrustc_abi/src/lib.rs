@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Copy)]
 pub enum SpecificABI {
     SystemV,
+    NvidiaCuda,
 
     None,
 }

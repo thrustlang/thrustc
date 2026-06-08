@@ -266,7 +266,7 @@ pub fn compile<'ctx>(
                     } else {
                         abort::abort_codegen(
                             context,
-                            "Failed to compile lower a function call!",
+                            "Failed to lower a function call!",
                             span,
                             std::path::PathBuf::from(file!()),
                             line!(),

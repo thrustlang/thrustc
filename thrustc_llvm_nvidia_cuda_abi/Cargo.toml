@@ -1,5 +1,5 @@
 [package]
-name = "thrustc_llvm_abi"
+name = "thrustc_llvm_nvidia_cuda_abi"
 description.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,19 +10,17 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-thrustc_abi = { path = "../thrustc_abi" }
+either = "1.15.0"
+
 thrustc_ast = { path = "../thrustc_ast" }
-thrustc_llvm_abi_representation = { path = "../thrustc_llvm_abi_representation" }
 thrustc_options = { path = "../thrustc_options" }
+thrustc_logging = { path = "../thrustc_logging" }
+thrustc_errors = { path = "../thrustc_errors" }
+thrustc_diagnostician = { path = "../thrustc_diagnostician" }
+thrustc_constants = { path = "../thrustc_constants"  }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
-thrustc_llvm_system_v_abi = { path = "../thrustc_llvm_system_v_abi" }
-thrustc_llvm_nvidia_cuda_abi = { path = "../thrustc_llvm_nvidia_cuda_abi" }
 thrustc_span = { path = "../thrustc_span" }
-thrustc_diagnostician = { path = "../thrustc_diagnostician" }
-thrustc_errors = { path = "../thrustc_errors" }
-thrustc_logging = { path = "../thrustc_logging" }
-thrustc_constants = { path = "../thrustc_constants" }
 
 inkwell = { workspace = true, optional = true }
 clang = { workspace = true, optional = true }

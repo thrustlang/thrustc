@@ -1132,6 +1132,7 @@ impl CommandLine {
     fn parse_specific_abi(&self, abi: &str) -> thrustc_abi::SpecificABI {
         match abi.to_lowercase().as_str() {
             "system-v" => thrustc_abi::SpecificABI::SystemV,
+            "cuda" => thrustc_abi::SpecificABI::NvidiaCuda,
 
             any => {
                 self.report_error(&format!("Unknown specific ABI: '{}'.", any));
