@@ -1,0 +1,47 @@
+{
+  "name": "thrustlang-highlighting",
+  "displayName": "Thrust Programming Language",
+  "description": "Syntax highlighting, theme, and file icons for the Thrust programming language",
+  "version": "0.1.0",
+  "publisher": "Stevens Benavides",
+  "repository": "https://github.com/thrustlang/thrustc",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Themes"
+  ],
+  "icon": "icons/thrust-file.png",
+  "contributes": {
+    "languages": [
+      {
+        "id": "thrust",
+        "aliases": ["Thrust", "thrust"],
+        "extensions": [".thrust"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "thrust",
+        "scopeName": "source.thrust",
+        "path": "./syntaxes/thrust.tmLanguage.json"
+      }
+    ],
+    "themes": [
+      {
+        "label": "One Dark Pro (Thrust)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/one-dark-pro.json"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "thrust-icons",
+        "label": "Thrust File Icons",
+        "path": "./icons/thrust-icon-theme.json"
+      }
+    ]
+  }
+}

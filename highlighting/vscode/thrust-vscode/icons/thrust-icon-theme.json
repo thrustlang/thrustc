@@ -1,0 +1,14 @@
+{
+  "iconDefinitions": {
+    "_thrust_file": {
+      "iconPath": "./thrust-file.png"
+    }
+  },
+  "fileExtensions": {
+    "thrust": "_thrust_file"
+  },
+  "fileNames": {},
+  "languageIds": {
+    "thrust": "_thrust_file"
+  }
+}
