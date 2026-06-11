@@ -108,6 +108,13 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
 impl ThrustCompiler<'_> {
     pub fn compile(&mut self) -> CompileTime {
+        if self.unready.is_empty() {
+            thrustc_logging::print_critical_error(
+                thrustc_logging::LoggingType::Error,
+                "No input files",
+            );
+        }
+
         if self.get_compilation_options().llvm() {
             Target::initialize_all(&InitializationConfig::default());
 

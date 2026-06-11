@@ -626,6 +626,62 @@ impl CommandLine {
                 self.advance();
             }
 
+            "-L" => {
+                self.advance();
+                self.validate_llvm_required(arg);
+
+                let library_path_dir: PathBuf = PathBuf::from(self.peek());
+
+                self.get_mut_options()
+                    .get_mut_llvm_backend()
+                    .get_mut_linker_config()
+                    .add_library_path(library_path_dir);
+
+                self.advance();
+            }
+
+            "-l" => {
+                self.advance();
+                self.validate_llvm_required(arg);
+
+                let link_library: String = self.peek().into();
+
+                self.get_mut_options()
+                    .get_mut_llvm_backend()
+                    .get_mut_linker_config()
+                    .add_link_library(link_library);
+
+                self.advance();
+            }
+
+            "-no-executable" => {
+                self.advance();
+                self.validate_llvm_required(arg);
+
+                self.get_mut_options()
+                    .get_mut_llvm_backend()
+                    .get_mut_linker_config()
+                    .set_build_executable(false);
+            }
+
+            "-o" | "-output" => {
+                self.advance();
+                self.validate_llvm_required(arg);
+
+                let output: String = self.peek().into();
+
+                self.get_mut_options()
+                    .get_mut_llvm_backend()
+                    .get_mut_linker_config()
+                    .set_output(output);
+
+                self.advance();
+            }
+
+            "-debug-linker-command" => {
+                self.advance();
+            }
+
             "--disable-abi" => {
                 self.advance();
                 self.get_mut_options().set_disable_abi_detection(true);

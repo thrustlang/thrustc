@@ -1262,13 +1262,12 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
 
 impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
     pub fn run(&self) {
-
         let target_triple_formatted: String = self.module.get_triple().as_str().to_string_lossy().to_string();
         let target_triple: LLVMTargetTriple = LLVMTargetTriple::new(target_triple_formatted);
 
-        if !target_triple.is_xcoff_object_format() && !target_triple.is_object_format_mach_o() {
+        if target_triple.is_linux_based() {
             
-            let same_name: Vec<(GlobalValue, FunctionValue)> = self
+            let same_name_values: Vec<(GlobalValue, FunctionValue)> = self
                 .module
                 .get_globals()
                 .filter_map(|global| {
@@ -1308,63 +1307,59 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
                 .collect();
     
             {
-                let mut merge_strategy: ComdatSelectionKind =
-                    match self.config.get_symbol_linkage_strategy() {
+
+                let standard_comdat_generation = ||   {
+                    let mut merge_strategy: ComdatSelectionKind = match self.config.get_symbol_linkage_strategy() {
                         SymbolLinkageMergeStrategy::Any => ComdatSelectionKind::Any,
                         SymbolLinkageMergeStrategy::Exact => ComdatSelectionKind::ExactMatch,
                         SymbolLinkageMergeStrategy::Large => ComdatSelectionKind::Largest,
                         SymbolLinkageMergeStrategy::SameSize => ComdatSelectionKind::SameSize,
                         SymbolLinkageMergeStrategy::NoDuplicates => ComdatSelectionKind::NoDuplicates,
                     };
-    
-                if target_triple.get_arch().contains("wasm") && merge_strategy != ComdatSelectionKind::Any {
-                    thrustc_logging::print_warning(
-                        thrustc_logging::LoggingType::Warning,
-                        "WebAssembly target only support the any mode for the symbol linkage strategy!",
-                    );
-    
-                    merge_strategy = ComdatSelectionKind::Any;
-                }
+        
+                    if target_triple.is_object_format_elf() && merge_strategy != ComdatSelectionKind::Any && merge_strategy != ComdatSelectionKind::NoDuplicates {
+                        thrustc_logging::print_warning(
+                            thrustc_logging::LoggingType::Warning,
+                            "ELF-based target only support the any and noduplicates modes for the symbol linkage strategy!",
+                        );
+                        
+                        merge_strategy = ComdatSelectionKind::Any;
+                    }
+        
+                    for (gl, func) in same_name_values.iter().rev() {
+                        let cleaned: Cow<'_, str> = utils::clean_llvm_name(gl.get_name());
+        
+                        let c_string_str: CString =
+                            CString::new(cleaned.as_ref()).unwrap_or_else(|error| {
+                                thrustc_logging::print_warning(
+                                    thrustc_logging::LoggingType::Warning,
+                                    &format!(
+                                        "Failed to prepare the object-matching linkage configurator for the upcoming binding phase due '{}'.",
+                                        error
+                                    ),
+                                );
+        
+                                CString::default()
+                            });
+        
+                        let c_str: &CStr = c_string_str.as_c_str();
+        
+                        let comdat: Comdat = unsafe {
+                            Comdat::new(LLVMGetOrInsertComdat(
+                                self.module.as_mut_ptr(),
+                                c_str.as_ptr(),
+                            ))
+                        };
+        
+                        comdat.set_selection_kind(merge_strategy);
+        
+                        gl.set_comdat(comdat);
+                        func.as_global_value().set_comdat(comdat);
+                    }
+                 };
 
-                if target_triple.is_object_format_elf() && merge_strategy != ComdatSelectionKind::Any && merge_strategy != ComdatSelectionKind::NoDuplicates {
-                    thrustc_logging::print_warning(
-                        thrustc_logging::LoggingType::Warning,
-                        "ELF-based target only support the any and noduplicates modes for the symbol linkage strategy!",
-                    );
-                    
-                    merge_strategy = ComdatSelectionKind::Any;
-                }
-    
-                for (gl, func) in same_name.iter().rev() {
-                    let cleaned: Cow<'_, str> = utils::clean_llvm_name(gl.get_name());
-    
-                    let c_string_str: CString =
-                        CString::new(cleaned.as_ref()).unwrap_or_else(|error| {
-                            thrustc_logging::print_warning(
-                                thrustc_logging::LoggingType::Warning,
-                                &format!(
-                                    "Failed to prepare the object-matching linkage configurator for the upcoming binding phase due '{}'.",
-                                    error
-                                ),
-                            );
-    
-                            CString::default()
-                        });
-    
-                    let c_str: &CStr = c_string_str.as_c_str();
-    
-                    let comdat: Comdat = unsafe {
-                        Comdat::new(LLVMGetOrInsertComdat(
-                            self.module.as_mut_ptr(),
-                            c_str.as_ptr(),
-                        ))
-                    };
-    
-                    comdat.set_selection_kind(merge_strategy);
-    
-                    gl.set_comdat(comdat);
-                    func.as_global_value().set_comdat(comdat);
-                }
+                standard_comdat_generation() 
+
             }
         }
 

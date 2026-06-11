@@ -17,6 +17,8 @@
 
 */
 
+use inkwell::targets::{TargetMachine, TargetTriple};
+
 mod impls;
 pub mod traits;
 
@@ -36,11 +38,52 @@ impl LLVMTargetTriple {
         let arch: String = triple_dissasembled
             .first()
             .unwrap_or(&"unknown")
-            .to_string();
+            .to_lowercase();
 
-        let vendor: String = triple_dissasembled.get(1).unwrap_or(&"unknown").to_string();
-        let os: String = triple_dissasembled.get(2).unwrap_or(&"unknown").to_string();
-        let abi: String = triple_dissasembled.get(3).unwrap_or(&"unknown").to_string();
+        let vendor: String = triple_dissasembled
+            .get(1)
+            .unwrap_or(&"unknown")
+            .to_lowercase();
+        let os: String = triple_dissasembled
+            .get(2)
+            .unwrap_or(&"unknown")
+            .to_lowercase();
+        let abi: String = triple_dissasembled
+            .get(3)
+            .unwrap_or(&"unknown")
+            .to_lowercase();
+
+        Self {
+            arch,
+            vendor,
+            os,
+            abi,
+        }
+    }
+
+    pub fn generate_default_from_llvm() -> Self {
+        let llvm_triple: TargetTriple = TargetMachine::get_default_triple();
+        let llvm_triple_transformed: String = llvm_triple.as_str().to_string_lossy().to_string();
+
+        let triple_dissasembled: Vec<&str> = llvm_triple_transformed.split('-').collect();
+
+        let arch: String = triple_dissasembled
+            .first()
+            .unwrap_or(&"unknown")
+            .to_lowercase();
+
+        let vendor: String = triple_dissasembled
+            .get(1)
+            .unwrap_or(&"unknown")
+            .to_lowercase();
+        let os: String = triple_dissasembled
+            .get(2)
+            .unwrap_or(&"unknown")
+            .to_lowercase();
+        let abi: String = triple_dissasembled
+            .get(3)
+            .unwrap_or(&"unknown")
+            .to_lowercase();
 
         Self {
             arch,
@@ -443,5 +486,129 @@ impl LLVMTargetTriple {
             || self.os.contains("tvos")
             || self.os.contains("watchos")
             || self.os.contains("xros")
+    }
+}
+
+impl LLVMTargetTriple {
+    #[inline]
+    pub fn is_linux_based(&self) -> bool {
+        let linux_os: bool = self.os.eq_ignore_ascii_case("linux")
+            || self.os.starts_with("linux")
+            || self.os.contains("linux");
+
+        let linux_abi: bool = matches!(
+            self.abi.as_str(),
+            "gnu"
+                | "gnueabi"
+                | "gnueabihf"
+                | "gnuabi64"
+                | "musl"
+                | "musleabi"
+                | "musleabihf"
+                | "muslabi64"
+                | "android"
+                | "androideabi"
+                | "ohos"
+        );
+
+        let linux_arch: bool = matches!(
+            self.arch.as_str(),
+            "x86_64"
+                | "amd64"
+                | "x86"
+                | "i386"
+                | "i486"
+                | "i586"
+                | "i686"
+                | "aarch64"
+                | "arm64"
+                | "aarch64_be"
+                | "arm"
+                | "armeb"
+                | "thumb"
+                | "thumbeb"
+                | "riscv32"
+                | "riscv64"
+                | "riscv64be"
+                | "mips"
+                | "mipsel"
+                | "mips64"
+                | "mips64el"
+                | "ppc"
+                | "ppc64"
+                | "ppc64le"
+                | "powerpc"
+                | "powerpc64"
+                | "powerpc64le"
+                | "s390x"
+                | "systemz"
+                | "loongarch64"
+                | "loongarch32"
+                | "m68k"
+                | "sparc"
+                | "sparcel"
+                | "sparcv9"
+        );
+
+        linux_arch && (linux_os || linux_abi)
+    }
+
+    #[inline]
+    pub fn is_apple_based(&self) -> bool {
+        let apple_arch: bool = matches!(
+            self.arch.as_str(),
+            "aarch64" | "arm64" | "aarch64_32" | "x86_64" | "amd64"
+        );
+
+        let apple_os: bool = matches!(
+            self.os.as_str(),
+            "darwin"
+                | "macosx"
+                | "macos"
+                | "ios"
+                | "tvos"
+                | "watchos"
+                | "xros"
+                | "bridgeos"
+                | "driverkit"
+        ) || self.os.contains("darwin")
+            || self.os.contains("macos")
+            || self.os.contains("ios")
+            || self.os.contains("tvos")
+            || self.os.contains("watchos")
+            || self.os.contains("xros");
+
+        let apple_vendor: bool = self.vendor.eq_ignore_ascii_case("apple");
+
+        apple_vendor || (apple_arch && apple_os)
+    }
+
+    #[inline]
+    pub fn is_windows_based(&self) -> bool {
+        let windows_arch: bool = matches!(
+            self.arch.as_str(),
+            "x86_64"
+                | "amd64"
+                | "x86"
+                | "i386"
+                | "i486"
+                | "i586"
+                | "i686"
+                | "aarch64"
+                | "arm64"
+                | "thumbv7a"
+        );
+
+        let windows_os: bool = matches!(self.os.as_str(), "win32" | "windows" | "win64")
+            || self.os.contains("windows")
+            || self.os.contains("windows")
+            || self.os.contains("win32");
+
+        let windows_abi: bool =
+            matches!(self.abi.as_str(), "msvc" | "gnu" | "gnullvm" | "uwp") && windows_os;
+
+        let windows_env: bool = self.vendor.eq_ignore_ascii_case("pc") && windows_os;
+
+        windows_arch && (windows_os || windows_abi || windows_env)
     }
 }

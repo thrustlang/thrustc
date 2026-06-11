@@ -21,12 +21,13 @@ pub mod cpu;
 pub mod debug;
 pub mod info;
 pub mod jit;
+pub mod linker;
 pub mod passes;
 pub mod target;
 
-use crate::{
-    llvm::cpu::LLVMTargetCPU, llvm::debug::DebugConfiguration, llvm::jit::JITConfiguration,
-    llvm::passes::LLVMModificatorPasses, llvm::target::LLVMTarget,
+use crate::llvm::{
+    cpu::LLVMTargetCPU, debug::DebugConfiguration, jit::JITConfiguration,
+    linker::LinkerConfiguration, passes::LLVMModificatorPasses, target::LLVMTarget,
 };
 
 use super::{ThrustCodeModel, ThrustOptimization, ThrustRelocMode};
@@ -42,6 +43,10 @@ pub struct LLVMBackend {
     optimization: ThrustOptimization,
     reloc_mode: RelocMode,
     code_model: CodeModel,
+
+    needs_jit: bool,
+    jit_config: JITConfiguration,
+    linker_config: LinkerConfiguration,
 
     symbol_linkage_extrategy: SymbolLinkageMergeStrategy,
     denormal_fp_behavior: (DenormalFloatingPointBehavior, DenormalFloatingPointBehavior),
@@ -65,9 +70,6 @@ pub struct LLVMBackend {
 
     disable_all_sanitizers: bool,
     disable_safe_math: bool,
-
-    needs_jit: bool,
-    jit_config: JITConfiguration,
 }
 
 impl LLVMBackend {
@@ -105,8 +107,12 @@ impl LLVMBackend {
                 target_cpu_features: TargetMachine::get_host_cpu_features().to_string(),
             },
             optimization: ThrustOptimization::None,
-            reloc_mode: RelocMode::Default,
+            reloc_mode: RelocMode::PIC,
             code_model: CodeModel::Default,
+
+            needs_jit: false,
+            jit_config: JITConfiguration::new(),
+            linker_config: LinkerConfiguration::new(),
 
             symbol_linkage_extrategy: SymbolLinkageMergeStrategy::Any,
             denormal_fp_behavior: (
@@ -133,9 +139,6 @@ impl LLVMBackend {
 
             disable_all_sanitizers: false,
             disable_safe_math: false,
-
-            needs_jit: false,
-            jit_config: JITConfiguration::new(),
         }
     }
 }
@@ -194,6 +197,11 @@ impl LLVMBackend {
     #[inline]
     pub fn get_symbol_linkage_strategy(&self) -> &SymbolLinkageMergeStrategy {
         &self.symbol_linkage_extrategy
+    }
+
+    #[inline]
+    pub fn get_linker_config(&self) -> &LinkerConfiguration {
+        &self.linker_config
     }
 
     #[inline]
@@ -273,6 +281,11 @@ impl LLVMBackend {
     #[inline]
     pub fn get_mut_jit_config(&mut self) -> &mut JITConfiguration {
         &mut self.jit_config
+    }
+
+    #[inline]
+    pub fn get_mut_linker_config(&mut self) -> &mut LinkerConfiguration {
+        &mut self.linker_config
     }
 
     #[inline]

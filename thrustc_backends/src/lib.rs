@@ -68,9 +68,10 @@ impl ThrustOptimization {
 
 #[derive(Default, Debug, Copy, Clone)]
 pub enum ThrustRelocMode {
-    #[default]
     Default,
     Static,
+
+    #[default]
     PIC,
     DynamicNoPic,
 }

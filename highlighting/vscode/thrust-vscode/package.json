@@ -1,7 +1,7 @@
 {
   "name": "thrustlang-highlighting",
   "displayName": "Thrust Programming Language",
-  "description": "Syntax highlighting, theme, and file icons for the Thrust programming language",
+  "description": "Syntax highlighting, theme, and file icons for the Thrust Programming Language",
   "version": "0.1.0",
   "publisher": "Stevens Benavides",
   "repository": "https://github.com/thrustlang/thrustc",
