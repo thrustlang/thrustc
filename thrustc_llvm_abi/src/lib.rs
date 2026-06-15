@@ -200,7 +200,7 @@ pub fn get_type<'llvm_abi>(
     }
 }
 
-pub fn create_abi_function_type<'llvm_abi>(
+pub fn create_function_type<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
     abi: &'llvm_abi LLVMABIRepresentation<'llvm_abi>,
     kind: &'llvm_abi Type,
@@ -281,7 +281,7 @@ pub fn create_abi_function_type<'llvm_abi>(
     }
 }
 
-pub fn lower_abi_call_prologue<'llvm_abi>(
+pub fn lower_call_prologue<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     abi: &LLVMABIRepresentation<'llvm_abi>,
@@ -339,7 +339,7 @@ pub fn lower_abi_call_prologue<'llvm_abi>(
     }
 }
 
-pub fn lower_abi_function_parameters<'llvm_abi>(
+pub fn lower_function_parameters<'llvm_abi>(
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     llvm_context: &'llvm_abi Context,
     abi: &LLVMABIRepresentation<'llvm_abi>,
@@ -413,7 +413,7 @@ pub fn lower_abi_function_parameters<'llvm_abi>(
     }
 }
 
-pub fn lower_abi_call_epilogue<'llvm_abi>(
+pub fn lower_call_epilogue<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     abi: &LLVMABIRepresentation<'llvm_abi>,
@@ -514,7 +514,7 @@ pub fn lower_abi_call_epilogue<'llvm_abi>(
     }
 }
 
-pub fn lower_abi_terminator<'llvm_abi>(
+pub fn lower_terminator<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     abi: &LLVMABIRepresentation<'llvm_abi>,
@@ -547,7 +547,7 @@ pub fn lower_abi_terminator<'llvm_abi>(
                 _ => unreachable!(),
             };
 
-            thrustc_llvm_system_v_abi::lower_terminator(
+            thrustc_llvm_system_v_abi::lower_function_terminator(
                 llvm_context,
                 llvm_builder,
                 &mut abi_context,
@@ -559,6 +559,52 @@ pub fn lower_abi_terminator<'llvm_abi>(
         }
 
         LLVMABIRepresentation::CudaABI { .. } => false,
+
+        _ => false,
+    }
+}
+
+pub fn lower_terminator_conventions<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    abi: &LLVMABIRepresentation<'llvm_abi>,
+    configuration: &LLVMABIConfiguration<'llvm_abi>,
+    function_value: FunctionValue<'llvm_abi>,
+    codegen_location: LLVMABICodeGenLocation,
+) -> bool {
+    match abi {
+        LLVMABIRepresentation::SystemVABI { .. } => true,
+
+        LLVMABIRepresentation::CudaABI {
+            file,
+            options,
+            target_data,
+            target_info,
+            target_triple,
+        } => {
+            let mut abi_context: thrustc_llvm_nvidia_cuda_abi::CudaABIContext<'_> =
+                thrustc_llvm_nvidia_cuda_abi::CudaABIContext::new(
+                    file,
+                    options,
+                    target_triple,
+                    (*target_info).clone(),
+                    target_data,
+                    codegen_location.to_nvidia_cuda(),
+                );
+
+            let configuration: &CudaABIFunctionTypeConfiguration = match configuration {
+                LLVMABIConfiguration::CudaFunctionTypeConfiguration(config) => config,
+                _ => unreachable!(),
+            };
+
+            thrustc_llvm_nvidia_cuda_abi::lower_terminator_conventions(
+                llvm_context,
+                &mut abi_context,
+                function_value,
+                configuration,
+            );
+
+            true
+        }
 
         _ => false,
     }

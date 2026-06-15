@@ -715,7 +715,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
                         self.context.get_codegen_location().to_abi_representation();
 
-                    let lowered: bool = thrustc_llvm_abi::lower_abi_terminator(
+                    let lowered: bool = thrustc_llvm_abi::lower_terminator(
                         llvm_context,
                         llvm_builder,
                         abi,

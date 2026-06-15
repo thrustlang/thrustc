@@ -1897,7 +1897,7 @@ pub fn lower_system_v_call_epilogue<'llvm_abi>(
     }
 }
 
-pub fn lower_terminator<'llvm_abi>(
+pub fn lower_function_terminator<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     abi_context: &mut SystemVABIContext,

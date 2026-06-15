@@ -1026,7 +1026,14 @@ impl CommandLine {
 
             "--enable-ansi-color" => {
                 self.advance();
+                self.validate_llvm_required(arg);
+
                 self.get_mut_options().set_enable_ansi_colors();
+
+                self.get_mut_options()
+                    .get_mut_llvm_backend()
+                    .get_mut_linker_config()
+                    .set_use_ansi_colors();
             }
 
             "--print-targets" => {

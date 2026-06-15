@@ -133,12 +133,11 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
                 )
             });
 
-            let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation  =context.get_codegen_location().to_abi_representation();
+            let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation = context.get_codegen_location().to_abi_representation();
 
-
-            let lowered: bool = thrustc_llvm_abi::lower_parameter_conventions(llvm_context, abi, llvm_function, configuration, codegen_location);
+            let lowered_parameters_conventions: bool = thrustc_llvm_abi::lower_parameter_conventions(llvm_context, abi, llvm_function, configuration, codegen_location);
     
-            if !lowered {
+            if !lowered_parameters_conventions {
                 abort::abort_codegen(
                     context,
                     "Failed to lower the function parameters to a complaint ABI status!",
@@ -147,6 +146,19 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
                     line!(),
                 )
             }
+
+            let lowered_return_type_conventions: bool = thrustc_llvm_abi::lower_terminator_conventions(llvm_context, abi, configuration, llvm_function,  codegen_location);
+
+            if !lowered_return_type_conventions {
+                abort::abort_codegen(
+                    context,
+                    "Failed to lower the function return type to a complaint ABI status!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            }
+
         }
 
     }
@@ -243,7 +255,7 @@ pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                 let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation  = codegen.get_context().get_codegen_location().to_abi_representation();
 
                 let lowered_abi_parameters: Option<Vec<thrustc_llvm_abi::LLVMABIFunctionLoweredParameter>> =
-                    thrustc_llvm_abi::lower_abi_function_parameters(
+                    thrustc_llvm_abi::lower_function_parameters(
                         llvm_builder,
                         llvm_context,
                         abi,

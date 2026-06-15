@@ -112,9 +112,9 @@ pub fn compile_as_function_type<'ctx>(
             )
         });
 
-        let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation  =context.get_codegen_location().to_abi_representation();
+        let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation = context.get_codegen_location().to_abi_representation();
 
-        let function_type: (FunctionType<'_>, LLVMABIConfiguration<'_>) = thrustc_llvm_abi::create_abi_function_type(
+        let function_type: (FunctionType<'_>, LLVMABIConfiguration<'_>) = thrustc_llvm_abi::create_function_type(
             llvm_context,
             abi,
             kind,

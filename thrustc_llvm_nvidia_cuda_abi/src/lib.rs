@@ -100,7 +100,7 @@ impl CudaABIContext<'_> {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum CudaABIFunctionTypeArgumentConfigurationAttribute {
+pub enum CudaABITypeConfigurationAttribute {
     ZeroExt,
     SignExt,
 
@@ -111,8 +111,31 @@ pub enum CudaABIFunctionTypeArgumentConfigurationAttribute {
 pub struct CudaABIFunctionTypeArgumentConfiguration<'llvm_abi> {
     name: &'llvm_abi str,
     ty: &'llvm_abi Type,
-    attribute: CudaABIFunctionTypeArgumentConfigurationAttribute,
+    attribute: CudaABITypeConfigurationAttribute,
     index: usize,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct CudaABIFunctionTypeReturnConfiguration<'llvm_abi> {
+    ty: &'llvm_abi Type,
+    attribute: CudaABITypeConfigurationAttribute,
+}
+
+impl<'llvm_abi> CudaABIFunctionTypeReturnConfiguration<'llvm_abi> {
+    #[inline]
+    pub fn new(ty: &'llvm_abi Type) -> Self {
+        Self {
+            ty,
+            attribute: CudaABITypeConfigurationAttribute::None,
+        }
+    }
+}
+
+impl<'llvm_abi> CudaABIFunctionTypeReturnConfiguration<'llvm_abi> {
+    #[inline]
+    pub fn set_type_attribute(&mut self, attribute: CudaABITypeConfigurationAttribute) {
+        self.attribute = attribute;
+    }
 }
 
 impl CudaABIFunctionTypeArgumentConfiguration<'_> {
@@ -124,25 +147,30 @@ impl CudaABIFunctionTypeArgumentConfiguration<'_> {
 
 #[derive(Debug, Clone)]
 pub struct CudaABIFunctionTypeConfiguration<'llvm_abi> {
-    parameter_types: Vec<CudaABIFunctionTypeArgumentConfiguration<'llvm_abi>>,
+    parameter_types_config: Vec<CudaABIFunctionTypeArgumentConfiguration<'llvm_abi>>,
+    return_type_config: CudaABIFunctionTypeReturnConfiguration<'llvm_abi>,
     is_variatic: bool,
 }
 
 impl<'llvm_abi> CudaABIFunctionTypeConfiguration<'llvm_abi> {
-    pub fn new(is_variatic: bool) -> Self {
+    pub fn new(
+        return_type_config: CudaABIFunctionTypeReturnConfiguration<'llvm_abi>,
+        is_variatic: bool,
+    ) -> Self {
         Self {
-            parameter_types: Vec::new(),
+            parameter_types_config: Vec::new(),
+            return_type_config,
             is_variatic,
         }
     }
 }
 
 impl<'llvm_abi> CudaABIFunctionTypeConfiguration<'llvm_abi> {
-    pub fn set_parameter_types_configuration(
+    pub fn set_parameter_types_configuration_configuration(
         &mut self,
-        parameter_types: Vec<CudaABIFunctionTypeArgumentConfiguration<'llvm_abi>>,
+        configuration: Vec<CudaABIFunctionTypeArgumentConfiguration<'llvm_abi>>,
     ) {
-        self.parameter_types = parameter_types;
+        self.parameter_types_config = configuration;
     }
 }
 
@@ -159,8 +187,48 @@ pub fn generate_function_type<'llvm_abi>(
     let mut llvm_parameters_types: Vec<BasicMetadataTypeEnum<'llvm_abi>> =
         Vec::with_capacity(parameters.len());
 
+    let mut return_type_config: CudaABIFunctionTypeReturnConfiguration<'_> =
+        CudaABIFunctionTypeReturnConfiguration::new(return_type);
+
+    {
+        let is_integer_signed_type: bool = return_type.is_signed_integer_type();
+        let is_integer_unsigned_type: bool = return_type.is_unsigned_integer_type();
+
+        let type_layout: either::Either<
+            thrustc_typesystem::type_layout::TypeLayout,
+            thrustc_typesystem::type_layout::StructTypeLayout,
+        > = abi_context
+            .get_mut_target_info()
+            .get_type_layout(return_type);
+
+        let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
+            either::Either::Left(ty) => ty.into_layout(),
+            either::Either::Right(ty) => ty.into_layout(),
+        };
+
+        let ty_width: u32 = layout.width;
+
+        let attribute: CudaABITypeConfigurationAttribute = {
+            if ty_width <= 32 {
+                if is_integer_signed_type {
+                    CudaABITypeConfigurationAttribute::SignExt
+                } else if is_integer_unsigned_type {
+                    CudaABITypeConfigurationAttribute::ZeroExt
+                } else {
+                    CudaABITypeConfigurationAttribute::None
+                }
+            } else {
+                CudaABITypeConfigurationAttribute::None
+            }
+        };
+
+        if !matches!(attribute, CudaABITypeConfigurationAttribute::None) {
+            return_type_config.set_type_attribute(attribute);
+        }
+    }
+
     let mut configuration: CudaABIFunctionTypeConfiguration =
-        CudaABIFunctionTypeConfiguration::new(is_variatic);
+        CudaABIFunctionTypeConfiguration::new(return_type_config, is_variatic);
 
     let mut configuration_parameter_types: Vec<CudaABIFunctionTypeArgumentConfiguration> =
         Vec::with_capacity(parameters.len());
@@ -170,8 +238,8 @@ pub fn generate_function_type<'llvm_abi>(
             Ast::FunctionParameter { name, kind: ty, .. } => {
                 let llvm_ty: BasicTypeEnum<'_> = self::generate_type(llvm_context, abi_context, ty);
 
-                let is_signed_integer_value: bool = ty.is_signed_integer_type();
-                let is_unsigned_integer_value: bool = ty.is_unsigned_integer_type();
+                let is_integer_signed_type: bool = ty.is_signed_integer_type();
+                let is_integer_unsigned_type: bool = ty.is_unsigned_integer_type();
 
                 let type_layout: either::Either<
                     thrustc_typesystem::type_layout::TypeLayout,
@@ -185,17 +253,17 @@ pub fn generate_function_type<'llvm_abi>(
 
                 let ty_width: u32 = layout.width;
 
-                let attribute: CudaABIFunctionTypeArgumentConfigurationAttribute = {
+                let attribute: CudaABITypeConfigurationAttribute = {
                     if ty_width <= 32 {
-                        if is_signed_integer_value {
-                            CudaABIFunctionTypeArgumentConfigurationAttribute::SignExt
-                        } else if is_unsigned_integer_value {
-                            CudaABIFunctionTypeArgumentConfigurationAttribute::ZeroExt
+                        if is_integer_signed_type {
+                            CudaABITypeConfigurationAttribute::SignExt
+                        } else if is_integer_unsigned_type {
+                            CudaABITypeConfigurationAttribute::ZeroExt
                         } else {
-                            CudaABIFunctionTypeArgumentConfigurationAttribute::None
+                            CudaABITypeConfigurationAttribute::None
                         }
                     } else {
-                        CudaABIFunctionTypeArgumentConfigurationAttribute::None
+                        CudaABITypeConfigurationAttribute::None
                     }
                 };
 
@@ -217,7 +285,8 @@ pub fn generate_function_type<'llvm_abi>(
     }
 
     if return_type.is_void_type() {
-        configuration.set_parameter_types_configuration(configuration_parameter_types);
+        configuration
+            .set_parameter_types_configuration_configuration(configuration_parameter_types);
 
         (
             llvm_context
@@ -226,7 +295,8 @@ pub fn generate_function_type<'llvm_abi>(
             configuration,
         )
     } else {
-        configuration.set_parameter_types_configuration(configuration_parameter_types);
+        configuration
+            .set_parameter_types_configuration_configuration(configuration_parameter_types);
 
         let llvm_return_ty: BasicTypeEnum<'_> =
             self::generate_type(llvm_context, abi_context, return_type);
@@ -235,6 +305,40 @@ pub fn generate_function_type<'llvm_abi>(
             llvm_return_ty.fn_type(&llvm_parameters_types, is_variatic),
             configuration,
         )
+    }
+}
+
+pub fn lower_terminator_conventions<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    _: &mut CudaABIContext,
+    function_value: FunctionValue<'llvm_abi>,
+    configuration: &CudaABIFunctionTypeConfiguration,
+) {
+    let is_void: bool = function_value.get_type().get_return_type().is_none();
+
+    if !is_void {
+        let return_type_configuration: CudaABIFunctionTypeReturnConfiguration<'_> =
+            configuration.return_type_config;
+
+        if matches!(
+            return_type_configuration.attribute,
+            CudaABITypeConfigurationAttribute::SignExt
+        ) {
+            let signext_id: u32 = Attribute::get_named_enum_kind_id("signext");
+            let signext_attribute: Attribute = llvm_context.create_enum_attribute(signext_id, 0);
+
+            function_value.add_attribute(AttributeLoc::Return, signext_attribute);
+        }
+
+        if matches!(
+            return_type_configuration.attribute,
+            CudaABITypeConfigurationAttribute::ZeroExt
+        ) {
+            let zeroext_id: u32 = Attribute::get_named_enum_kind_id("zeroext");
+            let zeroext_attribute: Attribute = llvm_context.create_enum_attribute(zeroext_id, 0);
+
+            function_value.add_attribute(AttributeLoc::Return, zeroext_attribute);
+        }
     }
 }
 
@@ -247,19 +351,50 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
     let function_parameters: Vec<BasicValueEnum<'_>> = function_value.get_params();
 
     let ordered_configurations: Vec<&CudaABIFunctionTypeArgumentConfiguration> =
-        configuration.parameter_types.iter().collect();
+        configuration.parameter_types_config.iter().collect();
 
     let _ = ordered_configurations.is_sorted_by_key(|config| config.get_index());
 
     for parameter_configuration in ordered_configurations.iter() {
-        let parameter_attribute: CudaABIFunctionTypeArgumentConfigurationAttribute =
+        let parameter_attribute: CudaABITypeConfigurationAttribute =
             parameter_configuration.attribute;
         let parameter_ty: &Type = parameter_configuration.ty;
         let parameter_index: usize = parameter_configuration.get_index();
 
         if matches!(
             parameter_attribute,
-            CudaABIFunctionTypeArgumentConfigurationAttribute::ZeroExt
+            CudaABITypeConfigurationAttribute::SignExt
+        ) {
+            let Some(_) = function_parameters.get(parameter_index) else {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to get the function parameter value from the function declaration for ABI lowering!",
+                    parameter_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            };
+
+            let signext_id: u32 = Attribute::get_named_enum_kind_id("signext");
+            let signext_attribute: Attribute = llvm_context.create_enum_attribute(signext_id, 0);
+
+            function_value.add_attribute(
+                AttributeLoc::Param((parameter_index).try_into().unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to parse parameter index on Cuda ABI lowering!",
+                        parameter_ty.get_span(),
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                })),
+                signext_attribute,
+            );
+        }
+
+        if matches!(
+            parameter_attribute,
+            CudaABITypeConfigurationAttribute::ZeroExt
         ) {
             let Some(_) = function_parameters.get(parameter_index) else {
                 abort::abort_codegen(
@@ -285,37 +420,6 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                     )
                 })),
                 zeroext_attribute,
-            );
-        }
-
-        if matches!(
-            parameter_attribute,
-            CudaABIFunctionTypeArgumentConfigurationAttribute::SignExt
-        ) {
-            let Some(_) = function_parameters.get(parameter_index) else {
-                abort::abort_codegen(
-                    abi_context,
-                    "Failed to get the function parameter value from the function declaration for ABI lowering!",
-                    parameter_ty.get_span(),
-                    std::path::PathBuf::from(file!()),
-                    line!(),
-                );
-            };
-
-            let zeroext_id: u32 = Attribute::get_named_enum_kind_id("signext");
-            let signext_attribute: Attribute = llvm_context.create_enum_attribute(zeroext_id, 0);
-
-            function_value.add_attribute(
-                AttributeLoc::Param((parameter_index).try_into().unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        abi_context,
-                        "Failed to parse parameter index on Cuda ABI lowering!",
-                        parameter_ty.get_span(),
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    )
-                })),
-                signext_attribute,
             );
         }
     }

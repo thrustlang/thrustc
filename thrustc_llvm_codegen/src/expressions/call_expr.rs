@@ -205,26 +205,25 @@ pub fn compile<'ctx>(
         let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
             context.get_codegen_location().to_abi_representation();
 
-        let lowered_args: Vec<BasicMetadataValueEnum<'_>> =
-            thrustc_llvm_abi::lower_abi_call_prologue(
-                llvm_context,
-                llvm_builder,
-                abi,
-                llvm_function,
-                configuration,
-                compiled_args,
-                codegen_location,
+        let lowered_args: Vec<BasicMetadataValueEnum<'_>> = thrustc_llvm_abi::lower_call_prologue(
+            llvm_context,
+            llvm_builder,
+            abi,
+            llvm_function,
+            configuration,
+            compiled_args,
+            codegen_location,
+            span,
+        )
+        .unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to compile to lower the call arguments to a specific ABI!",
                 span,
+                std::path::PathBuf::from(file!()),
+                line!(),
             )
-            .unwrap_or_else(|| {
-                abort::abort_codegen(
-                    context,
-                    "Failed to compile to lower the call arguments to a specific ABI!",
-                    span,
-                    std::path::PathBuf::from(file!()),
-                    line!(),
-                )
-            });
+        });
 
         let ret_value: BasicValueEnum =
             match llvm_builder.build_call(llvm_function, &lowered_args, "") {
@@ -244,17 +243,16 @@ pub fn compile<'ctx>(
                     let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
                         context.get_codegen_location().to_abi_representation();
 
-                    let result: Option<BasicValueEnum<'_>> =
-                        thrustc_llvm_abi::lower_abi_call_epilogue(
-                            llvm_context,
-                            llvm_builder,
-                            abi,
-                            configuration,
-                            callsite,
-                            &lowered_args,
-                            codegen_location,
-                            span,
-                        );
+                    let result: Option<BasicValueEnum<'_>> = thrustc_llvm_abi::lower_call_epilogue(
+                        llvm_context,
+                        llvm_builder,
+                        abi,
+                        configuration,
+                        callsite,
+                        &lowered_args,
+                        codegen_location,
+                        span,
+                    );
 
                     if result.is_none() && is_void_type {
                         llvm_context

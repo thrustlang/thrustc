@@ -40,7 +40,45 @@ pub enum LinuxCRuntimeVariant {
     MUSL,
 }
 
+// https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/lld/ELF/Driver.cpp#L163
+
+#[derive(Debug, Clone, Copy)]
+pub enum LinuxEmulationVariant {
+    Aarch64elf,
+    Aarch64linux,
+    Aarch64elfb,
+    Aarch64linuxb,
+    Armelf,
+    ArmelfLinuxEabi,
+    Armelfb,
+    ArmelfbLinuxEabi,
+    Elf32X86_64,
+    Elf32btsmip,
+    Elf32btsmipn32,
+    Elf32ltsmip,
+    Elf32ltsmipn32,
+    Elf32lriscv,
+    Elf32ppc,
+    Elf32ppclinux,
+    Elf32lppc,
+    Elf32lppclinux,
+    Elf32loongarch,
+    Elf64btsmip,
+    Elf64ltsmip,
+    Elf64lriscv,
+    Elf64ppc,
+    Elf64lppc,
+    ElfX86_64,
+    ElfI386,
+    ElfIamcu,
+    Elf64Sparc,
+    Msp430elf,
+    Elf64Amdgpu,
+    Elf64loongarch,
+}
+
 impl LinuxCRuntimeVariant {
+    #[inline]
     pub fn get_dir_system_representation(&self) -> &str {
         match self {
             LinuxCRuntimeVariant::GLIBC => "",
@@ -48,6 +86,7 @@ impl LinuxCRuntimeVariant {
         }
     }
 
+    #[inline]
     pub fn get_contrary_system_representations(&self) -> Vec<&str> {
         match self {
             LinuxCRuntimeVariant::GLIBC => {
@@ -116,26 +155,48 @@ impl LLVMLinkerWrapper<'_> {
             // must edit via -link-musl
             let cruntime_variant: LinuxCRuntimeVariant = LinuxCRuntimeVariant::GLIBC;
 
-            builder.add_flag_without_value("--eh-frame-hdr".into());
-
-            if linker_config.link_dynamic() {
-                builder.add_flag_without_value("--pie".into());
-
-                let dynamic_linker: PathBuf = self::find_dynamic_linker(&library_paths)
-                    .unwrap_or_else(|| {
-                        thrustc_logging::print_critical_error(
-                            thrustc_logging::LoggingType::Error,
-                            "Unable to find dynamic linux linker for the Linker invocation on Linux!",
-                        )
-                    });
-
-                builder.add_eq_flag(
-                    "--dynamic-linker".into(),
-                    format!("{}", dynamic_linker.display()),
-                );
+            if linker_config.use_ansi_colors() {
+                builder.add_eq_flag("--color-diagnostics".into(), "always".into());
+            } else {
+                builder.add_eq_flag("--color-diagnostics".into(), "never".into());
             }
 
-            if linker_config.link_static() {}
+            if linker_config.build_executable() {
+                builder.add_flag_without_value("--eh-frame-hdr".into());
+                builder.add_flag_without_value("--build-id".into());
+                builder.add_eq_flag("--hash-style".into(), "both".into());
+            }
+
+            if linker_config.build_dynamic_library() {
+                builder.add_flag_without_value("--shared".into());
+            }
+
+            if linker_config.build_relocatable_object() {
+                builder.add_flag_without_value("--relocatable".into());
+            }
+
+            if linker_config.build_executable() {
+                if linker_config.link_dynamic() {
+                    builder.add_flag_without_value("--pie".into());
+
+                    let dynamic_linker: PathBuf = self::find_dynamic_linker(&library_paths)
+                        .unwrap_or_else(|| {
+                            thrustc_logging::print_critical_error(
+                                thrustc_logging::LoggingType::Error,
+                                "Unable to find dynamic linux linker for the linker invocation on Linux!",
+                            )
+                        });
+
+                    builder.add_eq_flag(
+                        "--dynamic-linker".into(),
+                        format!("{}", dynamic_linker.display()),
+                    );
+                }
+
+                if linker_config.link_static() {
+                    builder.add_flag_without_value("-static".into());
+                }
+            }
 
             /*
                 ld.lld \
@@ -182,51 +243,55 @@ impl LLVMLinkerWrapper<'_> {
                 }
             }
 
-            let is_64_bit: bool = self.target_triple.is_64_bit();
+            if linker_config.build_executable() {
+                let is_64_bit: bool = self.target_triple.is_64_bit();
 
-            let libgcc_dir: PathBuf = self::find_libgcc_linux(&library_paths, is_64_bit)
-                .unwrap_or_else(|| {
-                    thrustc_logging::print_critical_error(
-                        thrustc_logging::LoggingType::Error,
-                        "Unable to find libgcc for the Linker on Linux!",
-                    )
-                });
+                let libgcc_dir: PathBuf = self::find_libgcc_linux(&library_paths, is_64_bit)
+                    .unwrap_or_else(|| {
+                        thrustc_logging::print_critical_error(
+                            thrustc_logging::LoggingType::Error,
+                            "Unable to find libgcc for the Linker on Linux!",
+                        )
+                    });
 
-            builder.add_side_by_side_flag("-L".into(), format!("{}", libgcc_dir.display()));
+                builder.add_side_by_side_flag("-L".into(), format!("{}", libgcc_dir.display()));
+            }
 
             for library_path in std::mem::take(&mut library_paths) {
                 builder.add_side_by_side_flag("-L".into(), library_path);
             }
 
-            if linker_config.link_dynamic() {
-                builder.add_flag_without_value("-Bdynamic".into());
+            if linker_config.build_executable() {
+                if linker_config.link_dynamic() {
+                    builder.add_flag_without_value("-Bdynamic".into());
+                }
+
+                if linker_config.link_static() {
+                    builder.add_flag_without_value("-Bstatic".into());
+                }
+
+                builder.add_side_by_side_flag("-l".into(), "c".into());
+
+                if linker_config.link_dynamic() {
+                    builder.add_flag_without_value("-Bdynamic".into());
+                }
+
+                if linker_config.link_static() {
+                    builder.add_flag_without_value("-Bstatic".into());
+                }
+
+                builder.add_side_by_side_flag("-l".into(), "gcc".into());
+
+                if linker_config.link_dynamic() {
+                    builder.add_flag_without_value("-Bdynamic".into());
+                }
+
+                if linker_config.link_static() {
+                    builder.add_flag_without_value("-Bstatic".into());
+                }
+
+                builder.add_side_by_side_flag("-l".into(), "gcc_eh".into());
             }
-
-            if linker_config.link_static() {
-                builder.add_flag_without_value("-Bstatic".into());
-            }
-
-            builder.add_side_by_side_flag("-l".into(), "c".into());
-
-            if linker_config.link_dynamic() {
-                builder.add_flag_without_value("-Bdynamic".into());
-            }
-
-            if linker_config.link_static() {
-                builder.add_flag_without_value("-Bstatic".into());
-            }
-
-            builder.add_side_by_side_flag("-l".into(), "gcc".into());
-
-            if linker_config.link_dynamic() {
-                builder.add_flag_without_value("-Bdynamic".into());
-            }
-
-            if linker_config.link_static() {
-                builder.add_flag_without_value("-Bstatic".into());
-            }
-
-            builder.add_side_by_side_flag("-l".into(), "gcc_eh".into());
 
             for library_path in std::mem::take(&mut link_libraries) {
                 if linker_config.link_dynamic() {
