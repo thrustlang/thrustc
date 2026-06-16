@@ -32,7 +32,7 @@ pub fn get_file_source_code(file_path: &std::path::Path) -> String {
             thrustc_logging::print_warning(
                 LoggingType::Warning,
                 &format!(
-                    "'{}' exceeds 100000 lines. You should split it into as a minimal two diferent files.",
+                    "'{}' exceeds 100_000 lines. You should split it into as a minimal two diferent files.",
                     file_path.display()
                 ),
             );

@@ -49,8 +49,7 @@ pub fn compile<'ctx>(
     let ordered_indexes: Vec<IntValue> = {
         let span: Span = index.get_span();
 
-        let has_inferer_inner_type: bool =
-            ptr_type.has_inferer_inner_type() && ptr_type.is_inferer_inner_type_valid();
+        let has_inferer_inner_type: bool = ptr_type.has_inferer_inner_type();
 
         if has_inferer_inner_type {
             ptr_type = &infered_inner_type;

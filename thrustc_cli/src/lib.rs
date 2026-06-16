@@ -664,7 +664,7 @@ impl CommandLine {
                     .set_build_executable(false);
             }
 
-            "-o" | "-output" => {
+            "-output" => {
                 self.advance();
                 self.validate_llvm_required(arg);
 

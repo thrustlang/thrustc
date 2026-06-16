@@ -43,12 +43,10 @@ impl TypePointerExtensions for Type {
 
     #[inline]
     fn is_ptr_like_type(&self) -> bool {
-        if let Type::Const(subtype, ..) = self {
-            return subtype.is_ptr_like_type();
-        }
+        let non_constant_ty: Type = self.remove_all_constant_type();
 
         matches!(
-            self,
+            non_constant_ty,
             Type::Ptr { .. } | Type::Addr(..) | Type::Array { .. } | Type::Fn(..)
         )
     }
@@ -84,25 +82,6 @@ impl TypePointerExtensions for Type {
             || self.is_ptr_fixed_array_type()
             || self.is_ptr_numeric_type()
             || self.is_ptr_array_type()
-    }
-
-    #[inline]
-    fn is_typed_ptr_type(&self) -> bool {
-        let non_constant_type: Type = self.remove_all_constant_type();
-
-        if let Type::Ptr {
-            subtype: Some(inner),
-            ..
-        } = non_constant_type
-        {
-            return inner.is_typed_ptr_type();
-        }
-
-        if let Type::Ptr { subtype: None, .. } = non_constant_type {
-            return false;
-        }
-
-        true
     }
 
     #[inline]

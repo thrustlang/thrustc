@@ -1400,11 +1400,14 @@ pub fn compile_as_ptr_value<'ctx>(
             let ptr_type: &Type = &ty.remove_all_constant_type();
             let nested_ptr_count: usize = ty.get_nested_ptr_type_count(0);
 
-            if ptr_type.is_ptr_like_type() {
-                if matches!(codegen_location, CodeGenLocation::LValue) {
-                    return base_ptr.into();
-                }
+            let is_ptr_like_type: bool =
+                ptr_type.is_ptr_like_type() && !ptr_type.is_array_type_with_inference();
 
+            if matches!(codegen_location, CodeGenLocation::LValue) {
+                return base_ptr.into();
+            }
+
+            if is_ptr_like_type {
                 if matches!(reference_ty, ReferenceType::Parameter) {
                     return base_ptr.into();
                 }

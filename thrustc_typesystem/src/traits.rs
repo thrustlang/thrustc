@@ -41,6 +41,7 @@ pub trait TypeIsExtensions {
     fn is_lesseq_unsigned32bit_integer(&self) -> bool;
     fn is_integer_type(&self) -> bool;
     fn is_unresolved_type(&self) -> bool;
+    fn is_array_type_with_inference(&self) -> bool;
 
     fn get_type_herarchy(&self) -> u8;
 }
@@ -85,7 +86,6 @@ pub trait TypePointerExtensions {
     fn is_ptr_aggregate_like_type(&self) -> bool;
     fn is_ptr_indexable_like_type(&self) -> bool;
     fn is_ptr_value_like_type(&self) -> bool;
-    fn is_typed_ptr_type(&self) -> bool;
     fn is_flat_ptr_type(&self) -> bool;
 
     fn is_ptr_struct_type(&self) -> bool;

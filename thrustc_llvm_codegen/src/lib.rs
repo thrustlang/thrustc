@@ -25,7 +25,7 @@ use crate::{codegen::LLVMCodegen, context::LLVMCodeGenContext, metadata::LLVMMet
 
 mod abort;
 mod atomic_operations;
-mod attributebuilder;
+mod attribute_builder;
 mod block;
 mod branch_context;
 mod cast;

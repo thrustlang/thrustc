@@ -39,8 +39,8 @@ use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::abort;
-use crate::attributebuilder::AttributeBuilder;
-use crate::attributebuilder::LLVMAttributeApplicant;
+use crate::attribute_builder::AttributeBuilder;
+use crate::attribute_builder::LLVMAttributeApplicant;
 use crate::block;
 use crate::codegen::LLVMCodegen;
 use crate::context::LLVMCodeGenContext;

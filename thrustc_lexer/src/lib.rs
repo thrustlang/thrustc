@@ -314,10 +314,34 @@ impl Lexer {
     #[inline]
     pub fn span(&self) -> (u32, (u32, u32)) {
         (
-            u32::try_from(self.line).unwrap_or(u32::MAX),
+            u32::try_from(self.line).unwrap_or_else(|_| {
+                thrustc_logging::print_critical_error(
+                    LoggingType::Error,
+                    &format!(
+                        "Unable to parse code location on lexing phase, exceeds {} limit.",
+                        u32::MAX
+                    ),
+                )
+            }),
             (
-                u32::try_from(self.span.0).unwrap_or(u32::MAX),
-                u32::try_from(self.span.1).unwrap_or(u32::MAX),
+                u32::try_from(self.span.0).unwrap_or_else(|_| {
+                    thrustc_logging::print_critical_error(
+                        LoggingType::Error,
+                        &format!(
+                            "Unable to parse code location on lexing phase, exceeds {} limit.",
+                            u32::MAX
+                        ),
+                    )
+                }),
+                u32::try_from(self.span.1).unwrap_or_else(|_| {
+                    thrustc_logging::print_critical_error(
+                        LoggingType::Error,
+                        &format!(
+                            "Unable to parse code location on lexing phase, exceeds {} limit.",
+                            u32::MAX
+                        ),
+                    )
+                }),
             ),
         )
     }

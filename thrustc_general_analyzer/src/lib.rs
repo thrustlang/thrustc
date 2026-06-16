@@ -131,11 +131,17 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                 span,
                 ..
             } => {
-                if parameters.len() > 12 {
+                let values_at_registers: usize = parameters
+                    .iter()
+                    .filter_map(|parameter| parameter.get_any_type().ok())
+                    .filter(|ty| ty.is_value())
+                    .count();
+
+                if values_at_registers > 12 {
                     self.add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0036,
                         "Too many arguments for a single function signature.".into(),
-                        "You should pass them through pointers".into(),
+                        "You should pass them through pointers.".into(),
                         None,
                         *span,
                     ));
@@ -405,7 +411,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                                 self.add_error(CompilationIssue::Error(
                                     CompilationIssueCode::E0038,
                                     "Missing mutability.'".into(),
-                                    "You should mark it as mutable using 'mut keyword".into(),
+                                    "You should mark it as mutable using 'mut' keyword".into(),
                                     None,
                                     source.get_span(),
                                 ));
@@ -451,7 +457,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
     }
 
     fn analyze_expr(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
-        expressions::validate(self, node)
+        expressions::validate_node(self, node)
     }
 }
 
@@ -472,7 +478,9 @@ impl GeneralAnalyzer<'_> {
     fn get_context(&self) -> &AnalyzerContext {
         &self.context
     }
+}
 
+impl GeneralAnalyzer<'_> {
     #[inline]
     fn get_mut_context(&mut self) -> &mut AnalyzerContext {
         &mut self.context

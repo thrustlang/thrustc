@@ -31,7 +31,7 @@ use thrustc_typesystem::{
 
 use crate::GeneralAnalyzer;
 
-pub fn validate<'analyzer>(
+pub fn validate_node<'analyzer>(
     analyzer: &mut GeneralAnalyzer<'analyzer>,
     node: &'analyzer Ast,
 ) -> Result<(), CompilationIssue> {

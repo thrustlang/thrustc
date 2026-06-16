@@ -54,16 +54,23 @@ pub fn build_variable_stmt<'parser>(
     let ascii_name: &str = local_tk.get_ascii_lexeme();
     let span: Span = local_tk.get_span();
 
+    let attributes: ThrustAttributes =
+        attributes::build_compiler_attributes(ctx, &[TokenType::Colon])?;
+
     ctx.consume(
         TokenType::Colon,
         CompilationIssueCode::E0001,
         "Expected ':'.".into(),
     )?;
 
-    let mut local_type: Type = typegeneration::build_type(ctx, false)?;
+    let mut assume_local_value_type: bool = false;
 
-    let attributes: ThrustAttributes =
-        attributes::build_compiler_attributes(ctx, &[TokenType::SemiColon, TokenType::Eq])?;
+    let mut local_type: Type = if ctx.check(TokenType::Eq) {
+        assume_local_value_type = true;
+        Type::Void(span)
+    } else {
+        typegeneration::build_type(ctx, false)?
+    };
 
     if ctx.match_token(TokenType::SemiColon)? {
         let metadata: LocalMetadata = LocalMetadata::new(true, true, is_volatile, atomic_ord);
@@ -89,6 +96,9 @@ pub fn build_variable_stmt<'parser>(
             Ok(Ast::invalid_ast(span))
         }
     } else {
+        let attributes: ThrustAttributes =
+            attributes::build_compiler_attributes(ctx, &[TokenType::SemiColon, TokenType::Eq])?;
+
         let metadata: LocalMetadata = LocalMetadata::new(false, true, is_volatile, atomic_ord);
 
         ctx.consume(
@@ -97,15 +107,25 @@ pub fn build_variable_stmt<'parser>(
             String::from("Expected '='."),
         )?;
 
-        ctx.get_mut_type_context()
-            .add_infered_type(local_type.clone());
+        if !assume_local_value_type {
+            ctx.get_mut_type_context()
+                .add_infered_type(local_type.clone());
+        }
+
         ctx.get_mut_control_context()
             .set_position(Position::Variable);
 
         let value: Ast = expressions::parse_expression(ctx)?;
         let value_type: &Type = value.get_value_type()?;
 
-        ctx.get_mut_type_context().pop_infered_type();
+        if assume_local_value_type {
+            local_type = value_type.clone();
+        }
+
+        if !assume_local_value_type {
+            ctx.get_mut_type_context().pop_infered_type();
+        }
+
         ctx.get_mut_control_context().reset_position();
 
         local_type.inferer_inner_type_from_type(value_type);

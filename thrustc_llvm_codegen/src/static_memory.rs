@@ -39,68 +39,11 @@ use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_typesystem::Type;
 
-use crate::attributebuilder::AttributeBuilder;
-use crate::attributebuilder::LLVMAttributeApplicant;
+use crate::attribute_builder::AttributeBuilder;
+use crate::attribute_builder::LLVMAttributeApplicant;
 use crate::context::LLVMCodeGenContext;
 use crate::memory;
 use crate::utils;
-
-fn generate_name(
-    context: &LLVMCodeGenContext,
-    base_name: &str,
-    prefix: &str,
-    attributes: Option<&LLVMAttributes>,
-) -> String {
-    if let Some(attrs) = attributes {
-        if let Some(LLVMAttribute::Extern(extern_name, ..)) =
-            attrs.get_attr(LLVMAttributeComparator::Extern)
-        {
-            return extern_name.to_string();
-        }
-        if attrs.has_public_attribute() {
-            return base_name.to_string();
-        }
-    }
-
-    format!(
-        "{}.{}{}",
-        prefix,
-        utils::generate_string(context, utils::SHORT_RANGE_OBFUSCATION),
-        base_name
-    )
-}
-
-fn set_global_common<'ctx>(
-    global: &GlobalValue<'ctx>,
-    constant: bool,
-    unnamed_addr: bool,
-    thread_local: bool,
-    thread_mode: Option<ThreadLocalMode>,
-    initializer: Option<&BasicValueEnum<'ctx>>,
-    alignment: Option<u32>,
-    linkage: Option<Linkage>,
-) {
-    if let Some(align) = alignment {
-        global.set_alignment(align);
-    }
-    if let Some(link) = linkage {
-        global.set_linkage(link);
-    }
-    if constant {
-        global.set_constant(true);
-    }
-    if unnamed_addr {
-        global.set_unnamed_addr(true);
-    }
-    if thread_local {
-        global.set_thread_local(true);
-    }
-    if let Some(init) = initializer {
-        global.set_initializer(init);
-    }
-
-    global.set_thread_local_mode(thread_mode);
-}
 
 pub fn allocate_local_constant<'ctx>(
     context: &LLVMCodeGenContext<'_, 'ctx>,
@@ -115,7 +58,7 @@ pub fn allocate_local_constant<'ctx>(
     let target_data: &TargetData = context.get_target_data();
     let llvm_metadata: LLVMConstantMetadata = metadata.get_llvm_metadata();
 
-    let name: String = self::generate_name(context, name, "local.const", None);
+    let name: String = self::generate_llvm_name(context, name, "local.const", None);
 
     let address_space: Option<AddressSpace> = memory::get_address_space(ty);
 
@@ -123,7 +66,7 @@ pub fn allocate_local_constant<'ctx>(
 
     AttributeBuilder::add_global_attributes(&attributes, LLVMAttributeApplicant::Global(global));
 
-    self::set_global_common(
+    self::set_global_common_attributes(
         &global,
         true,
         true,
@@ -151,7 +94,8 @@ pub fn allocate_global_constant<'ctx>(
     let target_data: &TargetData = context.get_target_data();
     let llvm_metadata: LLVMConstantMetadata = metadata.get_llvm_metadata();
 
-    let name: String = self::generate_name(context, name, "global.constant", Some(&attributes));
+    let name: String =
+        self::generate_llvm_name(context, name, "global.constant", Some(&attributes));
 
     let address_space: Option<AddressSpace> = memory::get_address_space(ty);
 
@@ -166,7 +110,7 @@ pub fn allocate_global_constant<'ctx>(
 
     AttributeBuilder::add_global_attributes(&attributes, LLVMAttributeApplicant::Global(global));
 
-    self::set_global_common(
+    self::set_global_common_attributes(
         &global,
         true,
         true,
@@ -194,7 +138,7 @@ pub fn allocate_local_static<'ctx>(
 
     let llvm_metadata: LLVMStaticMetadata = metadata.get_llvm_metadata();
 
-    let name: String = self::generate_name(context, name, "local.static", None);
+    let name: String = self::generate_llvm_name(context, name, "local.static", None);
 
     let address_space: Option<AddressSpace> = memory::get_address_space(ty);
 
@@ -206,7 +150,7 @@ pub fn allocate_local_static<'ctx>(
         global.set_initializer(&llvm_type.const_zero());
     }
 
-    self::set_global_common(
+    self::set_global_common_attributes(
         &global,
         llvm_metadata.constant,
         llvm_metadata.unnamed_addr,
@@ -236,7 +180,7 @@ pub fn allocate_global_static<'ctx>(
     let target_data: &TargetData = context.get_target_data();
     let llvm_metadata: LLVMStaticMetadata = metadata.get_llvm_metadata();
 
-    let name: String = self::generate_name(context, name, "global.static", Some(&attributes));
+    let name: String = self::generate_llvm_name(context, name, "global.static", Some(&attributes));
 
     let address_space: Option<AddressSpace> = memory::get_address_space(ty);
 
@@ -257,7 +201,7 @@ pub fn allocate_global_static<'ctx>(
 
     AttributeBuilder::add_global_attributes(&attributes, LLVMAttributeApplicant::Global(global));
 
-    self::set_global_common(
+    self::set_global_common_attributes(
         &global,
         llvm_metadata.constant,
         llvm_metadata.unnamed_addr,
@@ -271,4 +215,61 @@ pub fn allocate_global_static<'ctx>(
     );
 
     global.as_pointer_value()
+}
+
+fn generate_llvm_name(
+    context: &LLVMCodeGenContext,
+    base_name: &str,
+    prefix: &str,
+    attributes: Option<&LLVMAttributes>,
+) -> String {
+    if let Some(attrs) = attributes {
+        if let Some(LLVMAttribute::Extern(extern_name, ..)) =
+            attrs.get_attr(LLVMAttributeComparator::Extern)
+        {
+            return extern_name.to_string();
+        }
+        if attrs.has_public_attribute() {
+            return base_name.to_string();
+        }
+    }
+
+    format!(
+        "{}.{}{}",
+        prefix,
+        utils::generate_string(context, utils::SHORT_RANGE_OBFUSCATION),
+        base_name
+    )
+}
+
+fn set_global_common_attributes<'ctx>(
+    global: &GlobalValue<'ctx>,
+    constant: bool,
+    unnamed_addr: bool,
+    thread_local: bool,
+    thread_mode: Option<ThreadLocalMode>,
+    initializer: Option<&BasicValueEnum<'ctx>>,
+    alignment: Option<u32>,
+    linkage: Option<Linkage>,
+) {
+    if let Some(align) = alignment {
+        global.set_alignment(align);
+    }
+    if let Some(link) = linkage {
+        global.set_linkage(link);
+    }
+    if constant {
+        global.set_constant(true);
+    }
+    if unnamed_addr {
+        global.set_unnamed_addr(true);
+    }
+    if thread_local {
+        global.set_thread_local(true);
+    }
+    if let Some(init) = initializer {
+        global.set_initializer(init);
+    }
+
+    global.set_thread_local_mode(thread_mode);
 }

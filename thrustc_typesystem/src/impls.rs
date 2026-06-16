@@ -73,6 +73,17 @@ impl TypeIsExtensions for Type {
     }
 
     #[inline(always)]
+    fn is_array_type_with_inference(&self) -> bool {
+        matches!(
+            self,
+            Type::Array {
+                infered_type: Some(..),
+                ..
+            }
+        )
+    }
+
+    #[inline(always)]
     fn is_float_type(&self) -> bool {
         matches!(
             self,
