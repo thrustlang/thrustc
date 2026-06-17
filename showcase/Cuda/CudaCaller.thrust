@@ -58,11 +58,13 @@ const SEEK_END: s32     = 2;
 const N: s32            = 1024;
 const THREADS: s32      = 256;
 
+static mut stderr: ptr @public @extern("stderr");
+
 fn check(r: s32, msg: const array[char]) void @public {
     if r != CUDA_SUCCESS {
         var s: ptr;
         cuGetErrorString(r, ref s);
-        fprintf(nullptr, "CUDA error [%s]: %s\n", msg, s);
+        fprintf(stderr, "CUDA error [%s]: %s\n", msg, s);
         exit(1);
     }
 }

@@ -31,7 +31,7 @@ use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 use thrustc_typesystem::traits::TypePointerExtensions;
 
-use crate::context::LLVMCodeGenContext;
+use crate::context::{CodeGenLocation, LLVMCodeGenContext};
 use crate::traits::AstLLVMGetType;
 use crate::{abort, codegen, memory, typegeneration};
 
@@ -125,7 +125,9 @@ fn compile_gep_property<'ctx>(
 
     let span: Span = source.get_span();
 
+    context.add_codegen_location(CodeGenLocation::LValue);
     let source_value: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, source, None);
+    context.pop_current_codegen_location();
 
     let ptr_value: PointerValue = source_value.into_pointer_value();
     let ptr_type: &Type = source.get_type_for_llvm();

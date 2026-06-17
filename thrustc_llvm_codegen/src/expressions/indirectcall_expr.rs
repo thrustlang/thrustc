@@ -27,7 +27,7 @@ use inkwell::builder::Builder;
 use inkwell::types::FunctionType;
 use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum, PointerValue};
 
-use crate::context::LLVMCodeGenContext;
+use crate::context::{CodeGenLocation, LLVMCodeGenContext};
 use crate::{abort, cast, codegen, typegeneration};
 
 pub fn compile<'ctx>(
@@ -39,8 +39,14 @@ pub fn compile<'ctx>(
     cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder<'_> = context.get_llvm_builder();
+
+    context.add_codegen_location(CodeGenLocation::RValue);
+
     let source_value: BasicValueEnum<'_> =
         codegen::compile_as_ptr_value(context, pointer, cast_type);
+
+    context.pop_current_codegen_location();
+
     let function_ptr_value: PointerValue<'_> = source_value.into_pointer_value();
 
     if let Type::Fn(parameter_types, kind, modificator, ..) = function_type {

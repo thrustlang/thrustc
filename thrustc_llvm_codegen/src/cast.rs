@@ -37,6 +37,7 @@ use thrustc_typesystem::traits::TypePointerExtensions;
 
 use crate::abort;
 use crate::codegen;
+use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::traits::AstLLVMGetType;
 use crate::typegeneration;
@@ -340,7 +341,11 @@ pub fn compile_type_cast<'ctx>(
     }
 
     if from_type.is_ptr_like_type() && target_type.is_integer_type() {
+        let code_location: CodeGenLocation = context.get_codegen_location();
+
+        context.add_codegen_location(code_location);
         let from_value: BasicValueEnum = codegen::compile_as_ptr_value(context, expr, None);
+        context.pop_current_codegen_location();
 
         if from_value.is_pointer_value() {
             let cast_type: BasicTypeEnum = typegeneration::generate_type(context, &target_type);
@@ -420,7 +425,11 @@ pub fn compile_type_cast<'ctx>(
         || from_type.is_ptr_like_type()
         || from_type.is_fixed_array_type() && target_type.is_ptr_like_type()
     {
+        let code_location: CodeGenLocation = context.get_codegen_location();
+
+        context.add_codegen_location(code_location);
         let value: BasicValueEnum = codegen::compile_as_ptr_value(context, expr, None);
+        context.pop_current_codegen_location();
 
         if value.is_pointer_value() {
             let cast_type: BasicTypeEnum<'_> = typegeneration::generate_type(context, &target_type);

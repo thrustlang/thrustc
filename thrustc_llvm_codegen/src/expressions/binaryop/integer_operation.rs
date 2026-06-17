@@ -23,6 +23,7 @@
 use crate::abort;
 use crate::cast;
 use crate::codegen;
+use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::memory;
 use crate::predicates;
@@ -61,8 +62,12 @@ fn compile_int_operation<'ctx>(
     match operator {
         TokenType::PlusEq => {
             if lhs.is_memory_assigned_reference() {
+                context.add_codegen_location(CodeGenLocation::LValue);
+
                 let reference: BasicValueEnum<'_> =
                     codegen::compile_as_ptr_value(context, lhs, cast_type);
+
+                context.pop_current_codegen_location();
 
                 if reference.is_pointer_value() {
                     let ptr: PointerValue<'_> = reference.into_pointer_value();
@@ -156,8 +161,12 @@ fn compile_int_operation<'ctx>(
 
         TokenType::MinusEq => {
             if lhs.is_memory_assigned_reference() {
+                context.add_codegen_location(CodeGenLocation::LValue);
+
                 let reference: BasicValueEnum<'_> =
                     codegen::compile_as_ptr_value(context, lhs, cast_type);
+
+                context.pop_current_codegen_location();
 
                 if reference.is_pointer_value() {
                     let ptr: PointerValue<'_> = reference.into_pointer_value();

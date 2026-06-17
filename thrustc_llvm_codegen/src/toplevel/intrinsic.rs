@@ -51,10 +51,10 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, intrinsic: Intr
 
     let ignore_args: bool = attributes.has_ignore_attribute();
 
-    let convention: u32 = if let Some(LLVMAttribute::Convention(convention, ..)) =
+    let call_convention: u32 = if let Some(LLVMAttribute::Convention(call_convention, ..)) =
         attributes.get_attr(LLVMAttributeComparator::Convention)
     {
-        convention as u32
+        call_convention as u32
     } else {
         LLVMCallConvention::Standard as u32
     };
@@ -76,17 +76,18 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, intrinsic: Intr
 
     let llvm_function: FunctionValue = llvm_module.add_function(external_name, function_type, None);
 
-    AttributeBuilder::add_function_attributes(
-        context,
-        &attributes,
-        LLVMAttributeApplicant::Function(llvm_function),
-    );
+    let applicant: LLVMAttributeApplicant<'_> = LLVMAttributeApplicant::Function {
+        value: llvm_function,
+        span,
+    };
+
+    AttributeBuilder::add_function_attributes(context, &attributes, applicant);
 
     let prototype: LLVMFunction = (
         llvm_function,
         return_type,
         parameters_types,
-        convention,
+        call_convention,
         function_abi_config,
         attributes,
         false,

@@ -70,10 +70,10 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
     let can_throw: bool = attributes.has_asmthrow_attribute();
     let is_public: bool = attributes.has_public_attribute();
 
-    let call_convention: u32 = if let Some(LLVMAttribute::Convention(convention, ..)) =
+    let call_convention: u32 = if let Some(LLVMAttribute::Convention(call_convention, ..)) =
         attributes.get_attr(LLVMAttributeComparator::Convention)
     {
-        convention as u32
+        call_convention as u32
     } else {
         LLVMCallConvention::Standard as u32
     };
@@ -126,11 +126,12 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
     let asm_function: FunctionValue =
         llvm_module.add_function(&llvm_function_name, function_type, None);
 
-    AttributeBuilder::add_function_attributes(
-        context,
-        &attributes,
-        LLVMAttributeApplicant::AsmFunction(asm_function),
-    );
+    let applicant: LLVMAttributeApplicant<'_> = LLVMAttributeApplicant::AsmFunction {
+        value: asm_function,
+        span,
+    };
+
+    AttributeBuilder::add_function_attributes(context, &attributes, applicant);
 
     let last_block: BasicBlock = context.get_last_builder_block(span);
     let function_block: BasicBlock = block::append_block(context, asm_function);

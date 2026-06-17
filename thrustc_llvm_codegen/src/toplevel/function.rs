@@ -75,10 +75,10 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
     let ignore_args: bool = attributes.has_ignore_attribute();
     let is_public: bool = attributes.has_public_attribute();
 
-    let call_convention: u32 = if let Some(LLVMAttribute::Convention(convention, ..)) =
+    let call_convention: u32 = if let Some(LLVMAttribute::Convention(call_convention, ..)) =
         attributes.get_attr(LLVMAttributeComparator::Convention)
     {
-        convention as u32
+        call_convention as u32
     } else {
         LLVMCallConvention::Standard as u32
     };
@@ -163,7 +163,12 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
 
     }
 
-    AttributeBuilder::add_function_attributes(context, &attributes, LLVMAttributeApplicant::Function(llvm_function));
+    let applicant: LLVMAttributeApplicant<'_>= LLVMAttributeApplicant::Function {
+        value: llvm_function,
+        span
+    };
+
+    AttributeBuilder::add_function_attributes(context, &attributes, applicant);
 
     let prototype: LLVMFunction = (
         llvm_function,
@@ -180,7 +185,7 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
     context.add_function(name, prototype);
 }
 
-pub fn compile_down<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Function<'ctx>) {
+pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Function<'ctx>) {
     let llvm_context: &Context = codegen.get_context().get_llvm_context();
     let llvm_builder: &Builder = codegen.get_context().get_llvm_builder();
 

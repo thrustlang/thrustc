@@ -59,6 +59,6 @@ pub type LLVMInstructions<'ctx> = Vec<HashMap<&'ctx str, SymbolAllocated<'ctx>>>
 pub type LLVMAllocatedParameters<'ctx> = HashMap<&'ctx str, SymbolAllocated<'ctx>>;
 pub type LLVMFunctionsParameters<'ctx> = HashMap<&'ctx str, SymbolAllocated<'ctx>>;
 
-pub type LLVMCtors<'ctx> = HashSet<(PointerValue<'ctx>, u32)>;
-pub type LLVMDtors<'ctx> = HashSet<(PointerValue<'ctx>, u32)>;
+pub type LLVMCtors<'ctx> = HashSet<(PointerValue<'ctx>, Span, u32)>;
+pub type LLVMDtors<'ctx> = HashSet<(PointerValue<'ctx>, Span, u32)>;
 pub type LLVMStackProtectorPointer<'ctx> = PointerValue<'ctx>;

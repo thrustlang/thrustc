@@ -70,6 +70,7 @@ pub fn compile<'ctx>(
             .map(|(i, expr)| {
                 let cast: Option<&Type> = function_arg_types.get(i);
 
+                // include CallArgExpr on compile_as_ptr_value early returns.
                 context.add_codegen_location(CodeGenLocation::CallArgExpr);
 
                 if let Some(cast_type) = cast {
@@ -152,6 +153,7 @@ pub fn compile<'ctx>(
             .map(|(i, expr)| {
                 let cast: Option<&Type> = function_arg_types.get(i);
 
+                // include CallArgExpr on compile_as_ptr_value early returns.
                 context.add_codegen_location(CodeGenLocation::CallArgExpr);
 
                 if let Some(cast_type) = cast {

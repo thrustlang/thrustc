@@ -260,7 +260,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
     fn codegen_declaration(&mut self, node: &'ctx Ast) {
         match node {
             Ast::Function { body, .. } if body.is_some() => {
-                function::compile_down(self, thrustc_entities::function_from_ast(node));
+                function::compile_body(self, thrustc_entities::function_from_ast(node));
             }
             Ast::GlobalAssembler { asm, .. } => {
                 self.context.get_llvm_module().set_inline_assembly(asm);
@@ -1095,7 +1095,9 @@ pub fn compile_as_value<'ctx>(
             let value_type: &Type = value.get_type_for_llvm();
 
             if value_type.is_ptr_like_type() {
+                context.add_codegen_location(CodeGenLocation::LValue);
                 let value: BasicValueEnum = self::compile_as_ptr_value(context, value, Some(kind));
+                context.pop_current_codegen_location();
 
                 let deref_value: BasicValueEnum = if value.is_pointer_value() {
                     memory::dereference(
@@ -1407,11 +1409,16 @@ pub fn compile_as_ptr_value<'ctx>(
                 return base_ptr.into();
             }
 
-            if is_ptr_like_type {
-                if matches!(reference_ty, ReferenceType::Parameter) {
-                    return base_ptr.into();
-                }
+            if matches!(reference_ty, ReferenceType::Parameter) {
+                return base_ptr.into();
+            }
 
+            // On the next update:
+            if matches!(
+                codegen_location,
+                CodeGenLocation::RValue | CodeGenLocation::CallArgExpr
+            ) && is_ptr_like_type
+            {
                 if nested_ptr_count <= 1 {
                     memory::load_pointer(context, base_ptr, *span)
                 } else {
@@ -1426,6 +1433,22 @@ pub fn compile_as_ptr_value<'ctx>(
             } else {
                 base_ptr.into()
             }
+
+            /*if is_ptr_like_type {
+                if nested_ptr_count <= 1 {
+                    memory::load_pointer(context, base_ptr, *span)
+                } else {
+                    memory::auto_deference_a_nested_pointer(
+                        context,
+                        base_ptr,
+                        ptr_type,
+                        nested_ptr_count,
+                        *span,
+                    )
+                }
+            } else {
+                base_ptr.into()
+            }*/
         }
         _ => codegen::compile_as_value(context, expr, cast_type),
     }
@@ -1450,8 +1473,9 @@ pub fn compile_entry_point_constructors<'ctx>(context: &mut LLVMCodeGenContext<'
 
     let mut llvm_ctors: Vec<StructValue> = Vec::with_capacity(context.get_llvm_ctors().len());
     let mut last_counter: u32 = 0;
+    let mut last_code_location: Span = Span::nothing();
 
-    for (ctor, counter) in context.get_llvm_ctors().iter() {
+    for (ctor, span, counter) in context.get_llvm_ctors().iter() {
         if *counter > last_counter {
             let ctor_value: StructValue = ctor_type.const_named_struct(&[
                 llvm_context
@@ -1465,12 +1489,21 @@ pub fn compile_entry_point_constructors<'ctx>(context: &mut LLVMCodeGenContext<'
                     .into(),
             ]);
 
+            last_code_location = *span;
             llvm_ctors.push(ctor_value);
             last_counter = *counter;
         }
     }
 
-    let size: u32 = u32::try_from(llvm_ctors.len()).unwrap_or(u32::MAX);
+    let size: u32 = u32::try_from(llvm_ctors.len()).unwrap_or_else(|_| {
+        abort::abort_codegen(
+            context,
+            "Failed to determinate main constructors!",
+            last_code_location,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        )
+    });
 
     let llvm_ctors_type: ArrayType = ctor_type.array_type(size);
     let global: GlobalValue = llvm_module.add_global(llvm_ctors_type, None, "llvm.global_ctors");
@@ -1498,8 +1531,9 @@ pub fn compile_entry_point_desctructors<'ctx>(context: &mut LLVMCodeGenContext<'
 
     let mut llvm_dtors: Vec<StructValue> = Vec::with_capacity(context.get_llvm_dtors().len());
     let mut last_counter: u32 = 0;
+    let mut last_code_location: Span = Span::nothing();
 
-    for (ctor, counter) in context.get_llvm_dtors().iter() {
+    for (ctor, span, counter) in context.get_llvm_dtors().iter() {
         if *counter > last_counter {
             let dtor_value: StructValue = dtor_type.const_named_struct(&[
                 llvm_context
@@ -1513,12 +1547,21 @@ pub fn compile_entry_point_desctructors<'ctx>(context: &mut LLVMCodeGenContext<'
                     .into(),
             ]);
 
+            last_code_location = *span;
             llvm_dtors.push(dtor_value);
             last_counter = *counter;
         }
     }
 
-    let size: u32 = u32::try_from(llvm_dtors.len()).unwrap_or(u32::MAX);
+    let size: u32 = u32::try_from(llvm_dtors.len()).unwrap_or_else(|_| {
+        abort::abort_codegen(
+            context,
+            "Failed to determinate main destructors!",
+            last_code_location,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        )
+    });
 
     let llvm_dtors_type: ArrayType = dtor_type.array_type(size);
     let global: GlobalValue = llvm_module.add_global(llvm_dtors_type, None, "llvm.global_dtors");

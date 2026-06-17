@@ -29,14 +29,24 @@ use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_llvm_callconventions::LLVMCallConvention;
+use thrustc_span::Span;
 
 use crate::context::LLVMCodeGenContext;
 
 #[derive(Debug)]
 pub enum LLVMAttributeApplicant<'ctx> {
-    Function(FunctionValue<'ctx>),
-    AsmFunction(FunctionValue<'ctx>),
-    CompilerIntrinsic(FunctionValue<'ctx>),
+    Function {
+        value: FunctionValue<'ctx>,
+        span: Span,
+    },
+    AsmFunction {
+        value: FunctionValue<'ctx>,
+        span: Span,
+    },
+    CompilerIntrinsic {
+        value: FunctionValue<'ctx>,
+        span: Span,
+    },
     Global(GlobalValue<'ctx>),
 }
 
@@ -49,7 +59,11 @@ impl<'ctx> AttributeBuilder {
         attributes: &LLVMAttributes<'ctx>,
         applicant: LLVMAttributeApplicant<'ctx>,
     ) {
-        if let LLVMAttributeApplicant::Function(function) = applicant {
+        if let LLVMAttributeApplicant::Function {
+            value: function,
+            span,
+        } = applicant
+        {
             let llvm_context: &Context = context.get_llvm_context();
 
             let is_public: bool = attributes.has_public_attribute();
@@ -194,19 +208,25 @@ impl<'ctx> AttributeBuilder {
                 },
 
                 LLVMAttribute::Constructor => {
-                    context.add_ctor(function.as_global_value().as_pointer_value());
+                    context.add_ctor(function.as_global_value().as_pointer_value(), span);
                 }
 
                 LLVMAttribute::Destructor => {
-                    context.add_dtor(function.as_global_value().as_pointer_value());
+                    context.add_dtor(function.as_global_value().as_pointer_value(), span);
                 }
 
                 _ => (),
             })
         }
 
-        if let LLVMAttributeApplicant::AsmFunction(function)
-        | LLVMAttributeApplicant::CompilerIntrinsic(function) = applicant
+        if let LLVMAttributeApplicant::AsmFunction {
+            value: function,
+            span,
+        }
+        | LLVMAttributeApplicant::CompilerIntrinsic {
+            value: function,
+            span,
+        } = applicant
         {
             let llvm_context: &Context = context.get_llvm_context();
 
@@ -345,11 +365,11 @@ impl<'ctx> AttributeBuilder {
                 },
 
                 LLVMAttribute::Constructor => {
-                    context.add_ctor(function.as_global_value().as_pointer_value());
+                    context.add_ctor(function.as_global_value().as_pointer_value(), span);
                 }
 
                 LLVMAttribute::Destructor => {
-                    context.add_dtor(function.as_global_value().as_pointer_value());
+                    context.add_dtor(function.as_global_value().as_pointer_value(), span);
                 }
 
                 _ => (),

@@ -294,29 +294,29 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
 
 impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     #[inline]
-    pub fn add_ctor(&mut self, ctor: PointerValue<'ctx>) {
-        let last: Option<&(PointerValue, u32)> = self.ctors.iter().last();
+    pub fn add_ctor(&mut self, ctor: PointerValue<'ctx>, span: Span) {
+        let last: Option<&(PointerValue, Span, u32)> = self.ctors.iter().last();
 
-        let order: u32 = if let Some((_, counter)) = last {
+        let order: u32 = if let Some((_, _, counter)) = last {
             counter + 1
         } else {
             1
         };
 
-        self.ctors.insert((ctor, order));
+        self.ctors.insert((ctor, span, order));
     }
 
     #[inline]
-    pub fn add_dtor(&mut self, dtor: PointerValue<'ctx>) {
-        let last: Option<&(PointerValue, u32)> = self.ctors.iter().last();
+    pub fn add_dtor(&mut self, dtor: PointerValue<'ctx>, span: Span) {
+        let last: Option<&(PointerValue, Span, u32)> = self.ctors.iter().last();
 
-        let order: u32 = if let Some((_, counter)) = last {
+        let order: u32 = if let Some((_, _, counter)) = last {
             counter + 1
         } else {
             1
         };
 
-        self.dtors.insert((dtor, order));
+        self.dtors.insert((dtor, span, order));
     }
 }
 
