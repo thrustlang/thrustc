@@ -499,6 +499,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             ThrustAttributeComparator::Constructor,
             ThrustAttributeComparator::Destructor,
             ThrustAttributeComparator::Cuda,
+            ThrustAttributeComparator::Promote,
         ];
 
         const VALID_INTRINSIC_ATTRIBUTES: &[ThrustAttributeComparator] = &[

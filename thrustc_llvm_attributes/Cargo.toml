@@ -13,6 +13,7 @@ inkwell = { workspace = true, optional = true }
 clang = { workspace = true, optional = true }
 
 thrustc_attributes = { path = "../thrustc_attributes" }
+thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_span = { path = "../thrustc_span" }
 thrustc_llvm_callconventions = { path = "../thrustc_llvm_callconventions" }
 

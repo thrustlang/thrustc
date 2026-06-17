@@ -29,11 +29,11 @@ use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::abort;
-use crate::cast;
 use crate::codegen;
 use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::memory::SymbolAllocated;
+use crate::type_cast;
 
 use crate::traits::AstLLVMGetType;
 use crate::typegeneration;
@@ -221,7 +221,7 @@ fn compile_increment_decrement_ref<'ctx>(
             };
 
             let result: BasicValueEnum =
-                cast::try_smart_cast(context, cast_type, kind, result, span);
+                type_cast::try_smart_cast(context, cast_type, kind, result, span);
 
             symbol.store(context, result);
 
@@ -269,7 +269,7 @@ fn compile_increment_decrement_ref<'ctx>(
             };
 
             let new_value: BasicValueEnum =
-                cast::try_smart_cast(context, cast_type, kind, result, span);
+                type_cast::try_smart_cast(context, cast_type, kind, result, span);
 
             symbol.store(context, new_value);
 
@@ -392,7 +392,7 @@ fn compile_increment_decrement<'ctx>(
                 ),
             };
 
-            cast::try_smart_cast(context, cast_type, kind, result, span)
+            type_cast::try_smart_cast(context, cast_type, kind, result, span)
         }
         _ => {
             let old_value: FloatValue = value.into_float_value();
@@ -434,7 +434,7 @@ fn compile_increment_decrement<'ctx>(
                 ),
             };
 
-            cast::try_smart_cast(context, cast_type, kind, result, span)
+            type_cast::try_smart_cast(context, cast_type, kind, result, span)
         }
     }
 }
@@ -474,7 +474,7 @@ fn compile_logical_negation<'ctx>(
                 )
             });
 
-            cast::try_smart_cast(context, cast_type, kind, new_value.into(), span)
+            type_cast::try_smart_cast(context, cast_type, kind, new_value.into(), span)
         }
 
         kind if kind.is_ptr_type() => {
@@ -492,7 +492,7 @@ fn compile_logical_negation<'ctx>(
                     )
                 });
 
-            cast::try_smart_cast(context, cast_type, kind, new_value.into(), span)
+            type_cast::try_smart_cast(context, cast_type, kind, new_value.into(), span)
         }
 
         _ => abort::abort_codegen(
@@ -531,7 +531,7 @@ fn compile_arithmetic_negation<'ctx>(
                 )
             });
 
-            cast::try_smart_cast(context, cast_type, kind, result.into(), span)
+            type_cast::try_smart_cast(context, cast_type, kind, result.into(), span)
         }
 
         _ => {
@@ -548,7 +548,7 @@ fn compile_arithmetic_negation<'ctx>(
                     )
                 });
 
-            cast::try_smart_cast(context, cast_type, kind, result.into(), span)
+            type_cast::try_smart_cast(context, cast_type, kind, result.into(), span)
         }
     }
 }
@@ -579,7 +579,7 @@ fn compile_bitwise_not<'ctx>(
                 )
             });
 
-            cast::try_smart_cast(context, cast_type, kind, result.into(), span)
+            type_cast::try_smart_cast(context, cast_type, kind, result.into(), span)
         }
 
         _ => {
@@ -595,7 +595,7 @@ fn compile_bitwise_not<'ctx>(
                 )
             });
 
-            cast::try_smart_cast(context, cast_type, kind, result.into(), span)
+            type_cast::try_smart_cast(context, cast_type, kind, result.into(), span)
         }
     }
 }

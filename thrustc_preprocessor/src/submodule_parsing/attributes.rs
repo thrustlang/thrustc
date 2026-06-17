@@ -17,14 +17,22 @@
 
 */
 
+use ahash::{HashMap, HashMapExt};
 use thrustc_ast::Ast;
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes, linkage::ThrustLinkage};
 use thrustc_span::Span;
 
 use thrustc_token::{Token, traits::TokenExtensions};
-use thrustc_token_type::{TokenType, traits::TokenTypeAttributesExtensions};
+use thrustc_token_type::{
+    TokenType,
+    traits::{TokenTypeAttributesExtensions, TokenTypeExtensions},
+};
+use thrustc_typesystem::Type;
 
-use crate::{parser::ModuleParser, submodule_parsing::expressions};
+use crate::{
+    parser::ModuleParser,
+    submodule_parsing::{expressions, typegeneration},
+};
 
 pub fn build_attributes<'parser>(
     parser: &mut ModuleParser<'parser>,
@@ -80,6 +88,15 @@ pub fn build_attributes<'parser>(
                 ))
             }
 
+            TokenType::Promote => {
+                parser.consume(TokenType::Promote)?;
+
+                attributes.push(ThrustAttribute::Promote(
+                    self::build_promotion_type_attribute(parser)?,
+                    span,
+                ))
+            }
+
             TokenType::Align => {
                 parser.consume(TokenType::Align)?;
 
@@ -117,6 +134,42 @@ fn build_align_attribute<'parser>(parser: &mut ModuleParser<'parser>) -> Result<
     } else {
         Err(())
     }
+}
+
+fn build_promotion_type_attribute<'parser>(
+    parser: &mut ModuleParser<'parser>,
+) -> Result<HashMap<Type, Type>, ()> {
+    parser.consume(TokenType::LParen)?;
+
+    let mut promote_types: HashMap<Type, Type> = HashMap::new();
+
+    while !parser.check(TokenType::RParen) {
+        if !parser.peek().kind.is_type() {
+            return Err(());
+        }
+
+        let type_to_promote: Type = typegeneration::build_type(parser)?;
+
+        parser.consume(TokenType::Arrow)?;
+
+        if !parser.peek().kind.is_type() {
+            return Err(());
+        }
+
+        let type_promoted: Type = typegeneration::build_type(parser)?;
+
+        promote_types.insert(type_to_promote, type_promoted);
+
+        if !parser.check(TokenType::RParen) {
+            parser.consume(TokenType::Comma)?;
+
+            continue;
+        }
+    }
+
+    parser.consume(TokenType::RParen)?;
+
+    Ok(promote_types)
 }
 
 fn build_linkage_attribute<'parser>(

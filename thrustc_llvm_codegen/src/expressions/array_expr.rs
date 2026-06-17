@@ -26,7 +26,7 @@ use crate::context::LLVMCodeGenContext;
 use crate::memory::{self, LLVMAllocationSite};
 use crate::pointer_anchor::PointerAnchor;
 use crate::traits::AstLLVMGetType;
-use crate::{abort, cast, codegen, typegeneration};
+use crate::{abort, codegen, type_cast, typegeneration};
 
 use inkwell::AddressSpace;
 use inkwell::context::Context;
@@ -65,7 +65,7 @@ pub fn compile_const<'ctx>(
             let value: BasicValueEnum =
                 codegen::compile_constant_as_value(context, item, &base_type);
 
-            cast::try_smart_constant_cast(context, &base_type, value_type, value)
+            type_cast::try_smart_constant_cast(context, &base_type, value_type, value)
         })
         .collect();
 

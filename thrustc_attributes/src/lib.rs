@@ -17,9 +17,11 @@
 
 */
 
+use ahash::HashMap;
 use serde::Serialize;
 use thrustc_span::Span;
 use thrustc_token_type::TokenType;
+use thrustc_typesystem::Type;
 
 use crate::{
     linkage::ThrustLinkage,
@@ -78,6 +80,9 @@ pub enum ThrustAttribute {
 
     // Nvidia Cuda
     Cuda(Span),
+
+    // Va Args type auto promotion,
+    Promote(HashMap<Type, Type>, Span),
 }
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
@@ -101,6 +106,7 @@ pub enum ThrustAttributeComparator {
     Align,
     Pure,
     Thunk,
+    Promote,
 
     Packed,
 
@@ -253,6 +259,7 @@ impl ThrustAttribute {
             ThrustAttribute::Constructor(span) => *span,
             ThrustAttribute::Destructor(span) => *span,
             ThrustAttribute::Cuda(span) => *span,
+            ThrustAttribute::Promote(_, span) => *span,
         }
     }
 }
@@ -433,6 +440,7 @@ impl ThrustAttributeComparatorExtensions for ThrustAttribute {
             ThrustAttribute::Thunk(..) => ThrustAttributeComparator::Thunk,
             ThrustAttribute::Constructor(..) => ThrustAttributeComparator::Constructor,
             ThrustAttribute::Destructor(..) => ThrustAttributeComparator::Destructor,
+            ThrustAttribute::Promote(..) => ThrustAttributeComparator::Promote,
             ThrustAttribute::Cuda(..) => ThrustAttributeComparator::Cuda,
         }
     }

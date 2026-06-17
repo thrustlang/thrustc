@@ -164,7 +164,7 @@ impl Diagnostician {
                 thrustc_logging::write(OutputIn::Stderr, &generated_diagnostic);
             }
 
-            CompilationIssue::FrontEndBug(title, message, span, position, path, line) => {
+            CompilationIssue::FrontendBug(title, message, span, position, path, line) => {
                 let diagnostic: Diagnostic = diagnostic::build(
                     &self.code,
                     *span,
@@ -181,7 +181,7 @@ impl Diagnostician {
                 );
             }
 
-            CompilationIssue::BackenEndBug(title, message, span, position, path, line) => {
+            CompilationIssue::BackendBug(title, message, span, position, path, line) => {
                 let diagnostic: Diagnostic = diagnostic::build(
                     &self.code,
                     *span,

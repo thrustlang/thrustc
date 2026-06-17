@@ -29,7 +29,7 @@ use thrustc_typesystem::Type;
 use thrustc_ast::{Ast, ast_builtins::AstBuiltin};
 
 use crate::{
-    abort, cast, codegen, context::LLVMCodeGenContext, traits::AstLLVMGetType, typegeneration,
+    abort, codegen, context::LLVMCodeGenContext, traits::AstLLVMGetType, type_cast, typegeneration,
 };
 
 #[derive(Debug, Clone)]
@@ -310,7 +310,7 @@ pub fn compile<'ctx>(
 
             let align_of_type: Type = Type::U32 { span };
 
-            cast::try_smart_cast(context, cast_type, &align_of_type, align_of_value, span)
+            type_cast::try_smart_cast(context, cast_type, &align_of_type, align_of_value, span)
         }
         LLVMBuiltin::SizeOf { of, span } => {
             let type_layout_result: either::Either<
@@ -331,7 +331,7 @@ pub fn compile<'ctx>(
 
             let size_of_type: Type = Type::USize { span };
 
-            cast::try_smart_cast(context, cast_type, &size_of_type, size_of_value, span)
+            type_cast::try_smart_cast(context, cast_type, &size_of_type, size_of_value, span)
         }
         LLVMBuiltin::AbiSizeOf { of, span } => {
             let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, of);
@@ -344,7 +344,7 @@ pub fn compile<'ctx>(
 
             let size_type: Type = Type::U64 { span };
 
-            cast::try_smart_cast(context, cast_type, &size_type, size, span)
+            type_cast::try_smart_cast(context, cast_type, &size_type, size, span)
         }
         LLVMBuiltin::BitSizeOf { of, span } => {
             let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, of);
@@ -359,7 +359,7 @@ pub fn compile<'ctx>(
 
             let size_type: Type = Type::U64 { span };
 
-            cast::try_smart_cast(context, cast_type, &size_type, size, span)
+            type_cast::try_smart_cast(context, cast_type, &size_type, size, span)
         }
         LLVMBuiltin::AbiAlignOf { of, span } => {
             let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, of);
@@ -373,7 +373,7 @@ pub fn compile<'ctx>(
 
             let abi_align_type: Type = Type::U32 { span };
 
-            cast::try_smart_cast(context, cast_type, &abi_align_type, align, span)
+            type_cast::try_smart_cast(context, cast_type, &abi_align_type, align, span)
         }
     }
 }

@@ -1000,6 +1000,8 @@ pub fn address_space_to_normal<'ctx>(
     let llvm_builder: &Builder<'_> = context.get_llvm_builder();
     let llvm_context: &Context = context.get_llvm_context();
 
+    context.mark_dbg_location(span);
+
     llvm_builder
         .build_address_space_cast(ptr, llvm_context.ptr_type(AddressSpace::default()), "")
         .unwrap_or_else(|_| {

@@ -103,7 +103,7 @@ impl LLVMAttributesExtensions for LLVMAttributes<'_> {
     #[inline]
     fn get_attr(&self, cmp: LLVMAttributeComparator) -> Option<LLVMAttribute<'_>> {
         if let Some(attr_found) = self.iter().find(|attr| attr.as_llvm_attribute_cmp() == cmp) {
-            return Some(*attr_found);
+            return Some(attr_found.clone());
         }
 
         None
@@ -142,6 +142,7 @@ impl LLVMAttributeComparatorExtensions for LLVMAttribute<'_> {
             LLVMAttribute::Constructor => LLVMAttributeComparator::Constructor,
             LLVMAttribute::Destructor => LLVMAttributeComparator::Destructor,
             LLVMAttribute::Cuda => LLVMAttributeComparator::Cuda,
+            LLVMAttribute::Promote(..) => LLVMAttributeComparator::Promote,
         }
     }
 }
@@ -202,6 +203,14 @@ impl std::fmt::Display for LLVMAttribute<'_> {
             LLVMAttribute::Constructor => write!(f, "@constructor"),
             LLVMAttribute::Destructor => write!(f, "@destructor"),
             LLVMAttribute::Cuda => write!(f, "@cuda"),
+            LLVMAttribute::Promote(promote) => {
+                let type_displayed: Vec<String> = promote
+                    .iter()
+                    .map(|(from, target)| format!("{} -> {}", from, target))
+                    .collect();
+
+                write!(f, "@promote({})", type_displayed.join(", "))
+            }
         }
     }
 }

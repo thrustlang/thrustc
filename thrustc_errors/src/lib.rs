@@ -27,7 +27,7 @@ pub enum CompilationIssue {
     Error(CompilationIssueCode, String, String, Option<String>, Span),
     Warning(CompilationIssueCode, String, Span),
 
-    FrontEndBug(
+    FrontendBug(
         String,
         String,
         Span,
@@ -36,7 +36,7 @@ pub enum CompilationIssue {
         u32,
     ),
 
-    BackenEndBug(
+    BackendBug(
         String,
         String,
         Span,
@@ -51,7 +51,7 @@ impl CompilationIssue {
     pub fn is_bug(&self) -> bool {
         matches!(
             self,
-            CompilationIssue::FrontEndBug(..) | CompilationIssue::BackenEndBug(..)
+            CompilationIssue::FrontendBug(..) | CompilationIssue::BackendBug(..)
         )
     }
 }

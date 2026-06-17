@@ -28,7 +28,7 @@ use inkwell::types::FunctionType;
 use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum, PointerValue};
 
 use crate::context::{CodeGenLocation, LLVMCodeGenContext};
-use crate::{abort, cast, codegen, typegeneration};
+use crate::{abort, codegen, type_cast, typegeneration};
 
 pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
@@ -103,7 +103,7 @@ pub fn compile<'ctx>(
             ),
         };
 
-        cast::try_smart_cast(context, cast_type, kind, function_value, span)
+        type_cast::try_smart_cast(context, cast_type, kind, function_value, span)
     } else {
         abort::abort_codegen(
             context,

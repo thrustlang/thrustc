@@ -53,6 +53,14 @@ impl std::fmt::Display for ThrustAttribute {
             ThrustAttribute::Constructor(..) => write!(f, "@constructor"),
             ThrustAttribute::Destructor(..) => write!(f, "@destructor"),
             ThrustAttribute::Cuda(..) => write!(f, "@cuda"),
+            ThrustAttribute::Promote(promote, ..) => {
+                let type_displayed: Vec<String> = promote
+                    .iter()
+                    .map(|(from, target)| format!("{} -> {}", from, target))
+                    .collect();
+
+                write!(f, "@promote({})", type_displayed.join(", "))
+            }
         }
     }
 }

@@ -198,7 +198,7 @@ pub fn validate_node<'type_checker>(
         _ => {
             let span: Span = node.get_span();
 
-            typechecker.add_bug(CompilationIssue::FrontEndBug(
+            typechecker.add_bug(CompilationIssue::FrontendBug(
                 "Expression not caught".into(),
                 "Expression could not be caught for processing.".into(),
                 span,

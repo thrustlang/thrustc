@@ -18,12 +18,12 @@
 */
 
 use crate::abort;
-use crate::cast;
 use crate::codegen;
 use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::memory;
 use crate::predicates;
+use crate::type_cast;
 
 use inkwell::values::PointerValue;
 use thrustc_ast::Ast;
@@ -218,7 +218,7 @@ pub fn compile_float_value_operation<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder = context.get_llvm_builder();
 
-    let (lhs, rhs) = cast::compile_float_together_cast(context, lhs, rhs, span);
+    let (lhs, rhs) = type_cast::compile_float_together_cast(context, lhs, rhs, span);
 
     match operator {
         TokenType::Plus => llvm_builder
@@ -361,7 +361,7 @@ fn compile_constant_float_value_operation<'ctx>(
     operator: &TokenType,
     span: Span,
 ) -> BasicValueEnum<'ctx> {
-    let (lhs, rhs) = cast::compile_constant_float_together_cast(lhs, rhs);
+    let (lhs, rhs) = type_cast::compile_constant_float_together_cast(lhs, rhs);
 
     match operator {
         TokenType::Plus | TokenType::PlusEq => {

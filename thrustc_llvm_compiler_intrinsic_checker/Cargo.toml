@@ -1,5 +1,5 @@
 [package]
-name = "thrustc_llvm_intrinsic_checker"
+name = "thrustc_llvm_compiler_intrinsic_checker"
 description.workspace = true
 edition.workspace = true
 license.workspace = true

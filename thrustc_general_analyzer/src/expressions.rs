@@ -220,7 +220,7 @@ pub fn validate_node<'analyzer>(
         _ => {
             let span: Span = node.get_span();
 
-            analyzer.add_bug(CompilationIssue::FrontEndBug(
+            analyzer.add_bug(CompilationIssue::FrontendBug(
                 "Expression not caught".into(),
                 "Expression could not be caught for processing.".into(),
                 span,

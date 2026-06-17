@@ -45,8 +45,8 @@ use crate::toplevel::{asmfunction, function, intrinsic};
 use crate::traits::{AstLLVMGetType, LLVMFunctionExtensions};
 use crate::types::LLVMFunction;
 use crate::{
-    abort, block, cast, codegen, compiler_builtins, expressions, memory, stack_memory,
-    static_memory, typegeneration,
+    abort, block, codegen, compiler_builtins, expressions, memory, stack_memory, static_memory,
+    type_cast, typegeneration,
 };
 
 use thrustc_ast::Ast;
@@ -133,7 +133,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         let llvm_value: BasicValueEnum =
                             codegen::compile_constant_as_value(self.get_mut_context(), value, kind);
 
-                        let value: BasicValueEnum = cast::try_smart_constant_cast(
+                        let value: BasicValueEnum = type_cast::try_smart_constant_cast(
                             self.get_mut_context(),
                             kind,
                             value_type,
@@ -193,7 +193,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                                 kind,
                             );
 
-                            let value: BasicValueEnum = cast::try_smart_constant_cast(
+                            let value: BasicValueEnum = type_cast::try_smart_constant_cast(
                                 self.get_mut_context(),
                                 kind,
                                 value_type,
@@ -539,7 +539,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 let llvm_value: BasicValueEnum =
                     codegen::compile_constant_as_value(self.get_mut_context(), value, kind);
 
-                let value: BasicValueEnum = cast::try_smart_constant_cast(
+                let value: BasicValueEnum = type_cast::try_smart_constant_cast(
                     self.get_mut_context(),
                     kind,
                     value_type,
@@ -597,7 +597,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let llvm_value: BasicValueEnum =
                         codegen::compile_constant_as_value(self.get_mut_context(), value, kind);
 
-                    let value: BasicValueEnum = cast::try_smart_constant_cast(
+                    let value: BasicValueEnum = type_cast::try_smart_constant_cast(
                         self.get_mut_context(),
                         kind,
                         value_type,
@@ -924,12 +924,12 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
-            let ty: &Type = cast::select_ssa_float_type(cast_type, float_ty);
+            let ty: &Type = type_cast::select_ssa_float_type(cast_type, float_ty);
 
             let float_value: BasicValueEnum =
                 expressions::literal_floatingpoint_expr::compile(context, ty, *value, *span).into();
 
-            cast::try_smart_cast(context, cast_type, float_ty, float_value, *span)
+            type_cast::try_smart_cast(context, cast_type, float_ty, float_value, *span)
         }
 
         Ast::Integer {
@@ -938,12 +938,12 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
-            let ty: &Type = cast::select_ssa_integer_type(cast_type, integer_ty);
+            let ty: &Type = type_cast::select_ssa_integer_type(cast_type, integer_ty);
 
             let int_value: BasicValueEnum =
                 expressions::literal_integer_expr::compile(context, ty, *value, *span).into();
 
-            cast::try_smart_cast(context, cast_type, integer_ty, int_value, *span)
+            type_cast::try_smart_cast(context, cast_type, integer_ty, int_value, *span)
         }
 
         Ast::NullPtr { .. } => context
@@ -984,7 +984,7 @@ pub fn compile_as_value<'ctx>(
             let value: BasicValueEnum<'_> =
                 expressions::call_expr::compile(context, name, args, kind, cast_type);
 
-            cast::try_smart_cast(context, cast_type, kind, value, *span)
+            type_cast::try_smart_cast(context, cast_type, kind, value, *span)
         }
 
         // Function
@@ -1070,7 +1070,7 @@ pub fn compile_as_value<'ctx>(
         } => {
             let value: BasicValueEnum<'_> = context.get_table().get_symbol(name).load(context);
 
-            cast::try_smart_cast(context, cast_type, ty, value, *span)
+            type_cast::try_smart_cast(context, cast_type, ty, value, *span)
         }
 
         // Compiles property access (e.g., struct field or array)
@@ -1111,11 +1111,11 @@ pub fn compile_as_value<'ctx>(
                     value
                 };
 
-                cast::try_smart_cast(context, cast_type, kind, deref_value, *span)
+                type_cast::try_smart_cast(context, cast_type, kind, deref_value, *span)
             } else {
                 let value: BasicValueEnum = self::compile_as_value(context, value, Some(kind));
 
-                cast::try_smart_cast(context, cast_type, kind, value, *span)
+                type_cast::try_smart_cast(context, cast_type, kind, value, *span)
             }
         }
 
@@ -1138,7 +1138,7 @@ pub fn compile_as_value<'ctx>(
         // Compiles a type cast_type operation
         Ast::As {
             from: expr, cast, ..
-        } => cast::compile_type_cast(context, expr, cast),
+        } => type_cast::compile_type_cast(context, expr, cast),
 
         // Low-Level Operations
         // Compiles inline assembly code
@@ -1216,7 +1216,7 @@ pub fn compile_constant_as_value<'ctx>(
                 expressions::literal_floatingpoint_expr::compile(context, kind, *value, *span)
                     .into();
 
-            cast::try_smart_constant_cast(context, cast_type, kind, float_value)
+            type_cast::try_smart_constant_cast(context, cast_type, kind, float_value)
         }
 
         Ast::Integer {
@@ -1225,7 +1225,7 @@ pub fn compile_constant_as_value<'ctx>(
             let int_value: BasicValueEnum =
                 expressions::literal_integer_expr::compile(context, kind, *value, *span).into();
 
-            cast::try_smart_constant_cast(context, cast_type, kind, int_value)
+            type_cast::try_smart_constant_cast(context, cast_type, kind, int_value)
         }
 
         // Boolean true/false cases
@@ -1283,7 +1283,7 @@ pub fn compile_constant_as_value<'ctx>(
         // Type cast_typeing operations
         Ast::As {
             from: expr, cast, ..
-        } => cast::compile_constant_type_cast(context, expr, cast),
+        } => type_cast::compile_constant_type_cast(context, expr, cast),
 
         // Variable reference resolution
         Ast::Reference { name, .. } => context

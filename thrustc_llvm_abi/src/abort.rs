@@ -15,7 +15,7 @@ pub fn abort_system_v_abi_codegen(
     let diagnostician: &mut Diagnostician = context.get_mut_diagnostician();
 
     diagnostician.dispatch_diagnostic(
-        &CompilationIssue::BackenEndBug(
+        &CompilationIssue::BackendBug(
             "Failed to Compile".into(),
             message.into(),
             span,
@@ -39,7 +39,7 @@ pub fn abort_cuda_abi_codegen(
     let diagnostician: &mut Diagnostician = context.get_mut_diagnostician();
 
     diagnostician.dispatch_diagnostic(
-        &CompilationIssue::BackenEndBug(
+        &CompilationIssue::BackendBug(
             "Failed to Compile".into(),
             message.into(),
             span,

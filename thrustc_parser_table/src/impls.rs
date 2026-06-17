@@ -46,7 +46,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok(struct_id);
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected struct reference"),
             String::from("Expected struct but found something else."),
             span,
@@ -61,7 +61,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok(name);
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected function reference"),
             String::from("Expected function but found something else."),
             span,
@@ -76,7 +76,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok(name);
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected enum reference"),
             String::from("Expected enum but found something else."),
             span,
@@ -91,7 +91,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok(static_id);
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected static reference"),
             String::from("Expected static but found something else."),
             span,
@@ -106,7 +106,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok(const_id);
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected constant reference"),
             String::from("Expected constant but found something else."),
             span,
@@ -121,7 +121,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok(type_id);
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected custom type reference"),
             String::from("Expected custom type but found something else."),
             span,
@@ -136,7 +136,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok(name);
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected parameter reference"),
             String::from("Expected parameter but found something else."),
             span,
@@ -151,7 +151,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok(name);
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected assembler function reference"),
             String::from("Expected assembler function but found something else."),
             span,
@@ -166,7 +166,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok((name, scope_idx));
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected low level instruction reference"),
             String::from("Expected LLI but found something else."),
             span,
@@ -181,7 +181,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok((name, scope_idx));
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected local reference"),
             String::from("Expected local but found something else."),
             span,
@@ -196,7 +196,7 @@ impl<'parser> FoundSymbolEitherExtensions<'parser> for FoundSymbolId<'parser> {
             return Ok(name);
         }
 
-        Err(CompilationIssue::FrontEndBug(
+        Err(CompilationIssue::FrontendBug(
             String::from("Expected intrinsic reference"),
             String::from("Expected intrinsic but found something else."),
             span,

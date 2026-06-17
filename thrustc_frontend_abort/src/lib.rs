@@ -17,7 +17,6 @@
 
 */
 
-
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationPosition};
 use thrustc_logging::LoggingType;
@@ -32,7 +31,7 @@ pub fn abort_compilation(
     line: u32,
 ) -> ! {
     diagnostician.dispatch_diagnostic(
-        &CompilationIssue::FrontEndBug(
+        &CompilationIssue::FrontendBug(
             "Failed to Compile".into(),
             message.into(),
             span,
@@ -40,7 +39,7 @@ pub fn abort_compilation(
             file,
             line,
         ),
-        LoggingType::FronteEndBug,
+        LoggingType::FrontendBug,
     );
 
     std::process::exit(1);

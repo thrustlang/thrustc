@@ -18,11 +18,11 @@
 */
 
 use crate::abort;
-use crate::cast;
 use crate::codegen;
 use crate::context::LLVMCodeGenContext;
 use crate::predicates;
 use crate::traits::AstLLVMGetType;
+use crate::type_cast;
 
 use thrustc_entities::BinaryOperation;
 use thrustc_span::Span;
@@ -49,7 +49,7 @@ fn compile_bool_operation<'ctx>(
     let (lhs_signed, rhs_signed) = signatures;
 
     if lhs.is_int_value() && rhs.is_int_value() {
-        let (lhs, rhs) = cast::compile_int_together_cast(
+        let (lhs, rhs) = type_cast::compile_int_together_cast(
             context,
             lhs.into_int_value(),
             rhs.into_int_value(),
@@ -119,7 +119,7 @@ fn compile_bool_operation<'ctx>(
             ),
         };
     } else if lhs.is_float_value() && rhs.is_float_value() {
-        let (lhs, rhs) = cast::compile_float_together_cast(
+        let (lhs, rhs) = type_cast::compile_float_together_cast(
             context,
             lhs.into_float_value(),
             rhs.into_float_value(),
@@ -256,7 +256,7 @@ fn compile_constant_boolean_operation<'ctx>(
     let (lhs_signed, rhs_signed) = signatures;
 
     if lhs.is_int_value() && rhs.is_int_value() {
-        let (lhs, rhs) = cast::compile_constant_int_together_cast(
+        let (lhs, rhs) = type_cast::compile_constant_int_together_cast(
             lhs.into_int_value(),
             rhs.into_int_value(),
             signatures,
@@ -342,7 +342,7 @@ fn compile_constant_boolean_operation<'ctx>(
             ),
         };
     } else if lhs.is_float_value() && rhs.is_float_value() {
-        let (lhs, rhs) = cast::compile_constant_float_together_cast(
+        let (lhs, rhs) = type_cast::compile_constant_float_together_cast(
             lhs.into_float_value(),
             rhs.into_float_value(),
         );

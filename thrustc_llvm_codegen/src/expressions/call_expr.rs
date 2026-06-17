@@ -23,10 +23,10 @@ use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypePointerExtensions;
 
 use crate::abort;
-use crate::cast;
 use crate::codegen;
 use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
+use crate::type_cast;
 use crate::types::LLVMFunction;
 
 use inkwell::AddressSpace;
@@ -70,7 +70,6 @@ pub fn compile<'ctx>(
             .map(|(i, expr)| {
                 let cast: Option<&Type> = function_arg_types.get(i);
 
-                // include CallArgExpr on compile_as_ptr_value early returns.
                 context.add_codegen_location(CodeGenLocation::CallArgExpr);
 
                 if let Some(cast_type) = cast {
@@ -137,7 +136,7 @@ pub fn compile<'ctx>(
                 ),
             };
 
-        cast::try_smart_cast(context, cast, kind, ret_value, span)
+        type_cast::try_smart_cast(context, cast, kind, ret_value, span)
     };
 
     if !has_abi {
@@ -153,7 +152,6 @@ pub fn compile<'ctx>(
             .map(|(i, expr)| {
                 let cast: Option<&Type> = function_arg_types.get(i);
 
-                // include CallArgExpr on compile_as_ptr_value early returns.
                 context.add_codegen_location(CodeGenLocation::CallArgExpr);
 
                 if let Some(cast_type) = cast {
@@ -282,6 +280,6 @@ pub fn compile<'ctx>(
                 ),
             };
 
-        cast::try_smart_cast(context, cast, kind, ret_value, span)
+        type_cast::try_smart_cast(context, cast, kind, ret_value, span)
     }
 }

@@ -22,13 +22,14 @@ use inkwell::module::Linkage;
 
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
 use thrustc_llvm_callconventions::LLVMCallConvention;
+use thrustc_typesystem::Type;
 
 pub mod impls;
 pub mod traits;
 
 pub type LLVMAttributes<'ctx> = Vec<LLVMAttribute<'ctx>>;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum LLVMAttribute<'ctx> {
     // Function Attributes
     Extern(&'ctx str),
@@ -50,6 +51,7 @@ pub enum LLVMAttribute<'ctx> {
     Align(u64),
     Pure,
     Thunk,
+    Promote(&'ctx HashMap<Type, Type>),
 
     // LLVM Structure Modificator
     Packed,
@@ -184,6 +186,7 @@ pub enum LLVMAttributeComparator {
     Linkage,
     Pure,
     Thunk,
+    Promote,
 
     Packed,
 
@@ -234,6 +237,7 @@ pub fn into_llvm_attribute(attribute: &ThrustAttribute) -> LLVMAttribute<'_> {
         ThrustAttribute::Thunk(..) => LLVMAttribute::Thunk,
         ThrustAttribute::Constructor(..) => LLVMAttribute::Constructor,
         ThrustAttribute::Destructor(..) => LLVMAttribute::Destructor,
+        ThrustAttribute::Promote(promote, ..) => LLVMAttribute::Promote(promote),
         ThrustAttribute::Cuda(..) => LLVMAttribute::Cuda,
     }
 }

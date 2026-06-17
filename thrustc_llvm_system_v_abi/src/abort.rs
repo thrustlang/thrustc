@@ -34,7 +34,7 @@ pub fn abort_codegen(
     let diagnostician: &mut Diagnostician = context.get_mut_diagnostician();
 
     diagnostician.dispatch_diagnostic(
-        &CompilationIssue::BackenEndBug(
+        &CompilationIssue::BackendBug(
             "Failed to Compile".into(),
             message.into(),
             span,

@@ -209,6 +209,7 @@ impl TokenTypeAttributesExtensions for TokenType {
                 | TokenType::Convention
                 | TokenType::Pure
                 | TokenType::Thunk
+                | TokenType::Promote
                 | TokenType::Cuda
         )
     }
@@ -343,6 +344,7 @@ impl std::fmt::Display for TokenType {
             TokenType::Cuda => write!(f, "@cuda"),
             TokenType::Destructor => write!(f, "@destructor"),
             TokenType::Constructor => write!(f, "@constructor"),
+            TokenType::Promote => write!(f, "@promote"),
 
             // Operators, Punctuation, and Special Constructs
             TokenType::Or => write!(f, "||"),

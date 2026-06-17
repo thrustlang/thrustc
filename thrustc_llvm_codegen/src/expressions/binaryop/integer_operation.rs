@@ -21,13 +21,13 @@
 #![allow(clippy::incompatible_msrv)]
 
 use crate::abort;
-use crate::cast;
 use crate::codegen;
 use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::memory;
 use crate::predicates;
 use crate::traits::AstLLVMGetType;
+use crate::type_cast;
 use crate::typegeneration;
 
 use thrustc_ast::Ast;
@@ -346,7 +346,7 @@ fn compile_int_value_operation<'ctx>(
 
         let signatures: (bool, bool) = (signatures.0, signatures.1);
 
-        let (lhs, rhs) = cast::compile_int_together_cast(context, lhs, rhs, signatures, span);
+        let (lhs, rhs) = type_cast::compile_int_together_cast(context, lhs, rhs, signatures, span);
 
         let options: &CompilerOptions = context.get_compiler_options();
         let llvm_backend: &LLVMBackend = options.get_llvm_backend();
@@ -787,7 +787,7 @@ fn compile_constant_int_value_operation<'ctx>(
         let lhs: IntValue = lhs.into_int_value();
         let rhs: IntValue = rhs.into_int_value();
 
-        let (lhs, rhs) = cast::compile_constant_int_together_cast(lhs, rhs, signatures);
+        let (lhs, rhs) = type_cast::compile_constant_int_together_cast(lhs, rhs, signatures);
 
         return match operator {
             TokenType::Plus | TokenType::PlusEq => lhs.const_nsw_add(rhs).into(),

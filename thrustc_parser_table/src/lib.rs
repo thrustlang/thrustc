@@ -692,7 +692,7 @@ impl<'parser> SymbolTable<'parser> {
                 return Ok(lli);
             }
         } else {
-            return Err(CompilationIssue::FrontEndBug(
+            return Err(CompilationIssue::FrontendBug(
                 String::from("Scope not caught"),
                 String::from("The scope could not be obtained."),
                 span,
@@ -786,7 +786,7 @@ impl<'parser> SymbolTable<'parser> {
                 return Ok(lenum);
             }
         } else {
-            return Err(CompilationIssue::FrontEndBug(
+            return Err(CompilationIssue::FrontendBug(
                 String::from("Last scope not caught"),
                 String::from("The last scope could not be obtained."),
                 span,
@@ -823,7 +823,7 @@ impl<'parser> SymbolTable<'parser> {
                 return Ok(ctype);
             }
         } else {
-            return Err(CompilationIssue::FrontEndBug(
+            return Err(CompilationIssue::FrontendBug(
                 String::from("Last scope not caught"),
                 String::from("The last scope could not be obtained."),
                 span,
@@ -854,7 +854,7 @@ impl<'parser> SymbolTable<'parser> {
                 return Ok(local);
             }
         } else {
-            return Err(CompilationIssue::FrontEndBug(
+            return Err(CompilationIssue::FrontendBug(
                 String::from("Scope not caught"),
                 String::from("The scope could not be obtained."),
                 span,
@@ -891,7 +891,7 @@ impl<'parser> SymbolTable<'parser> {
                 return Ok(static_var);
             }
         } else {
-            return Err(CompilationIssue::FrontEndBug(
+            return Err(CompilationIssue::FrontendBug(
                 String::from("Last scope not caught"),
                 String::from("The last scope could not be obtained."),
                 span,
@@ -928,7 +928,7 @@ impl<'parser> SymbolTable<'parser> {
                 return Ok(local_const);
             }
         } else {
-            return Err(CompilationIssue::FrontEndBug(
+            return Err(CompilationIssue::FrontendBug(
                 String::from("Last scope not caught"),
                 String::from("The last scope could not be obtained."),
                 span,
@@ -984,7 +984,7 @@ impl<'parser> SymbolTable<'parser> {
                 return Ok(local_struct);
             }
         } else {
-            return Err(CompilationIssue::FrontEndBug(
+            return Err(CompilationIssue::FrontendBug(
                 String::from("Last scope not caught"),
                 String::from("The last scope could not be obtained."),
                 span,

@@ -34,7 +34,7 @@ pub fn abort_codegen<'ctx>(
     let diagnostician: &mut Diagnostician = context.get_mut_diagnostician();
 
     diagnostician.dispatch_diagnostic(
-        &CompilationIssue::BackenEndBug(
+        &CompilationIssue::BackendBug(
             "Failed to Compile".into(),
             message.into(),
             span,
@@ -58,7 +58,7 @@ pub fn abort_codegen_dbg<'ctx>(
     let diagnostician: &mut Diagnostician = context.get_mut_diagnostician();
 
     diagnostician.dispatch_diagnostic(
-        &CompilationIssue::BackenEndBug(
+        &CompilationIssue::BackendBug(
             "Failed to Compile".into(),
             message.into(),
             span,

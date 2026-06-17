@@ -100,6 +100,7 @@ pub enum TokenType {
     Thunk,
     Constructor,
     Destructor,
+    Promote,
 
     // --- Special ---
     Unreachable,

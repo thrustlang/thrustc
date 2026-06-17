@@ -56,7 +56,7 @@ use thrustc_llvm_codegen::jit::LLVMJITCompiler;
 use thrustc_llvm_codegen::optimizer::LLVMOptimizationConfig;
 use thrustc_llvm_codegen::optimizer::LLVMOptimizerFlags;
 use thrustc_llvm_codegen::optimizer::LLVMOptimizerPasses;
-use thrustc_llvm_intrinsic_checker::LLVMIntrinsicChecker;
+use thrustc_llvm_compiler_intrinsic_checker::LLVMIntrinsicChecker;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::CompilationPhase;
 use thrustc_options::CompilationUnit;

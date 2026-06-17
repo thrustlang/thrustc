@@ -426,7 +426,7 @@ pub fn validate_node<'type_checker>(
                 return call_expr::validate_node(typechecker, *metadata, args, span);
             }
 
-            typechecker.add_error_report(CompilationIssue::FrontEndBug(
+            typechecker.add_error_report(CompilationIssue::FrontendBug(
                 "Function not found".into(),
                 "Function could not be found for processing.".into(),
                 *span,
@@ -729,7 +729,7 @@ pub fn validate_node<'type_checker>(
         _ => {
             let span: Span = node.get_span();
 
-            typechecker.add_bug(CompilationIssue::FrontEndBug(
+            typechecker.add_bug(CompilationIssue::FrontendBug(
                 "Expression not caught".into(),
                 "Expression could not be caught for processing.".into(),
                 span,

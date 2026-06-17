@@ -17,15 +17,20 @@
 
 */
 
+use ahash::{HashMap, HashMapExt};
 use thrustc_ast::{Ast, traits::AstCodeLocation};
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes, linkage::ThrustLinkage};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 
 use thrustc_token::{Token, traits::TokenExtensions};
-use thrustc_token_type::{TokenType, traits::TokenTypeAttributesExtensions};
+use thrustc_token_type::{
+    TokenType,
+    traits::{TokenTypeAttributesExtensions, TokenTypeExtensions},
+};
+use thrustc_typesystem::Type;
 
-use crate::{ParserContext, expressions};
+use crate::{ParserContext, expressions, typegeneration};
 
 pub fn build_compiler_attributes<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -115,6 +120,19 @@ pub fn build_compiler_attributes<'parser>(
                 ))
             }
 
+            TokenType::Promote => {
+                ctx.consume(
+                    TokenType::Promote,
+                    CompilationIssueCode::E0001,
+                    "Expected '@promote' prologue for an attribute.".into(),
+                )?;
+
+                attributes.push(ThrustAttribute::Promote(
+                    self::build_promotion_type_attribute(ctx)?,
+                    span,
+                ))
+            }
+
             tk_type if tk_type.is_attribute() => {
                 if let Some(compiler_attribute) = thrustc_attributes::as_attribute(tk_type, span) {
                     attributes.push(compiler_attribute);
@@ -159,6 +177,70 @@ fn build_align_attribute<'parser>(
             expr.get_span(),
         ))
     }
+}
+
+fn build_promotion_type_attribute<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<HashMap<Type, Type>, CompilationIssue> {
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    let mut promote_types: HashMap<Type, Type> = HashMap::new();
+
+    while !ctx.check(TokenType::RParen) {
+        if !ctx.peek().kind.is_type() {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Expected a type to promote!".into(),
+                "You should indicate the type to be promoted.".into(),
+                None,
+                ctx.peek().get_span(),
+            ));
+        }
+
+        let type_to_promote: Type = typegeneration::build_type(ctx, false)?;
+
+        ctx.consume(
+            TokenType::Arrow,
+            CompilationIssueCode::E0001,
+            "Expected '->'.".into(),
+        )?;
+
+        if !ctx.peek().kind.is_type() {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Expected a promotion type representation!".into(),
+                "You should indicate the type promoted representation.".into(),
+                None,
+                ctx.peek().get_span(),
+            ));
+        }
+
+        let type_promoted: Type = typegeneration::build_type(ctx, false)?;
+
+        promote_types.insert(type_to_promote, type_promoted);
+
+        if !ctx.check(TokenType::RParen) {
+            ctx.consume(
+                TokenType::Comma,
+                CompilationIssueCode::E0001,
+                "Expected ','.".into(),
+            )?;
+
+            continue;
+        }
+    }
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    Ok(promote_types)
 }
 
 fn build_linkage_attribute<'parser>(
