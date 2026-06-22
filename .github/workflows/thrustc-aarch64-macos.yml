@@ -90,10 +90,19 @@ jobs:
           cargo install sccache
         working-directory: thrustc
 
-      - name: Building Thrust Compiler
+      - name: Building Thrust Compiler (Release)
         run: |
           export LIBRARY_PATH="$(brew --prefix zstd)/lib:${LIBRARY_PATH:-}"
           cargo build --release
+        working-directory: thrustc
+
+      - name: Building Thrust Compiler (Release - Stripped)
+        run: |
+          export LIBRARY_PATH="$(brew --prefix zstd)/lib:${LIBRARY_PATH:-}"
+          cargo build --profile release-stripped
+
+          mv target/release-stripped/thrustc target/release-stripped/thrustc-stripped
+          
         working-directory: thrustc
 
       - name: Extracting File Type and Dynamic Dependencies
@@ -161,4 +170,5 @@ jobs:
 
           files: |
             thrustc/target/release/thrustc
+            thrustc/target/release-stripped/thrustc-stripped
           draft: false

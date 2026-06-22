@@ -792,6 +792,18 @@ pub fn show_help() -> ! {
         &format!(
             "{} {} {}\n",
             "•".bold(),
+            "--dump-compiler-version"
+                .custom_color((141, 141, 142))
+                .bold(),
+            "It writes the compiler version into flat .txt file, named as 'COMPILER_VERSION.txt'."
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
             "--no-obfuscate-archive-names"
                 .custom_color((141, 141, 142))
                 .bold(),
@@ -853,7 +865,7 @@ pub fn show_help() -> ! {
         ),
     );
 
-    std::process::exit(1);
+    std::process::exit(thrustc_constants::FAILURE_CODE);
 }
 
 pub fn show_optimization_help() -> ! {
@@ -930,7 +942,7 @@ pub fn show_optimization_help() -> ! {
         ),
     );
 
-    std::process::exit(1);
+    std::process::exit(thrustc_constants::FAILURE_CODE);
 }
 
 pub fn show_emission_help() -> ! {

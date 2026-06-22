@@ -48,7 +48,7 @@ Compiler flags:
 • -jit-libc [path/to/libc.so] Specify the C runtime to link for code execution via the JIT compiler.
 • -jit-link [path/to/raylib.so] Specify, add, and link an external dynamic library for code execution via the JIT compiler.
 • -jit-entry [main] Specify the entry point name for the JIT compiler.
-• -abi [system-v] Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.
+• -abi [system-v|cuda] Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.
 • -dbg Enable generation of debug information (DWARF).
 • -dbg-for-inlining Enable debug information specifically optimized for inlined functions.
 • -dbg-for-profiling Emit extra debug info to support source-level profiling tools.
@@ -96,6 +96,7 @@ Other compiler flags:
 • --clean-llvm-ir Clean the compiler folder containing the emitted LLVM IR.
 • --clean-llvm-bitcode Clean the compiler folder containing emitted LLVM bitcode.
 • --clean-objects Clean the compiler folder containing emitted object files.
+• --dump-compiler-version It writes the compiler version into flat .txt file, named as 'COMPILER_VERSION.txt'.
 • --no-obfuscate-archive-names Stop generating name obfuscation for each file; this does not apply to the final build.
 • --no-obfuscate-ir Stop generating name obfuscation in the emitted IR code.
 • --print-targets Show the current target supported.

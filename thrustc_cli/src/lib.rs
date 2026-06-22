@@ -19,6 +19,8 @@
 
 #![allow(clippy::upper_case_acronyms)]
 
+use std::io::BufWriter;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -685,6 +687,42 @@ impl CommandLine {
             "--disable-abi" => {
                 self.advance();
                 self.get_mut_options().set_disable_abi_detection(true);
+            }
+
+            "--dump-compiler-version" => {
+                self.advance();
+
+                let version_file: std::fs::File = std::fs::File::options()
+                    .create(true)
+                    .truncate(true)
+                    .write(true)
+                    .open("COMPILER_VERSION.txt")
+                    .unwrap_or_else(|_| {
+                        thrustc_logging::print_critical_error(
+                            LoggingType::Error,
+                            "Fail to dump the compiler version into a flat .txt file!",
+                        )
+                    });
+
+                let mut buff_writer: BufWriter<std::fs::File> = BufWriter::new(version_file);
+
+                buff_writer
+                    .write_all(thrustc_constants::COMPILER_VERSION.as_bytes())
+                    .unwrap_or_else(|_| {
+                        thrustc_logging::print_critical_error(
+                            LoggingType::Error,
+                            "Fail to write the compiler version into a flat .txt file!",
+                        )
+                    });
+
+                buff_writer.flush().unwrap_or_else(|_| {
+                    thrustc_logging::print_critical_error(
+                        LoggingType::Error,
+                        "Fail to write the compiler version into a flat .txt file!",
+                    )
+                });
+
+                std::process::exit(thrustc_constants::SUCCESFUL_CODE);
             }
 
             "--link-check" => {

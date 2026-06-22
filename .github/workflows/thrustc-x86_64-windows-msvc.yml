@@ -92,9 +92,16 @@ jobs:
           cargo install sccache
         working-directory: thrustc
 
-      - name: Building Thrust Compiler
+      - name: Building Thrust Compiler (Release)
         run: |
           cargo build --release
+        working-directory: thrustc
+
+      - name: Building Thrust Compiler (Release - Stripped)
+        shell: pwsh
+        run: |
+          cargo build --profile release-stripped
+          Move-Item -Path "target/release-stripped/thrustc.exe" -Destination "target/release-stripped/thrustc-stripped.exe" -Force
         working-directory: thrustc
 
       - name: Releasing Thrust Compiler
@@ -136,4 +143,5 @@ jobs:
 
           files: |
             thrustc/target/release/thrustc.exe
+            thrustc/target/release-stripped/thrustc-stripped.exe
           draft: false
