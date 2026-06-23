@@ -92,6 +92,13 @@ impl LLVMTargetTriple {
             abi,
         }
     }
+
+    #[inline]
+    pub fn is_valid_llvm_target_triple_format(raw: &str) -> bool {
+        let dash_count: usize = raw.chars().filter(|&c| c == '-').count();
+
+        matches!(dash_count, 3 | 4)
+    }
 }
 
 impl LLVMTargetTriple {

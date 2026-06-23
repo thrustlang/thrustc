@@ -28,6 +28,7 @@ use colored::Colorize;
 use thrustc_backends::ThrustCodeModel;
 use thrustc_backends::ThrustOptimization;
 use thrustc_core::CompileTime;
+use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_logging::LoggingType;
 use thrustc_logging::OutputIn;
 use thrustc_options::CompilationPhase;
@@ -382,6 +383,13 @@ impl CommandLine {
                 self.validate_llvm_required(arg);
 
                 let target_triple: String = self.peek().to_string();
+
+                if !LLVMTargetTriple::is_valid_llvm_target_triple_format(&target_triple) {
+                    thrustc_logging::print_critical_error(
+                        LoggingType::Error,
+                        "Unknown target triple format.",
+                    );
+                }
 
                 self.get_mut_options()
                     .get_mut_llvm_backend()
