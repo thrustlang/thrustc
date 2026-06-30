@@ -23,6 +23,8 @@ use std::path::PathBuf;
 
 use thrustc_backends::llvm::LLVMBackend;
 use thrustc_backends::llvm::linker::LinkerConfiguration;
+use thrustc_backends::llvm::linker::LinkerLinuxConfiguration;
+use thrustc_backends::llvm::linker::LinuxLTOOptimization;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::CompilerOptions;
 
@@ -38,43 +40,6 @@ pub struct LLVMLinkerWrapper<'lld> {
 pub enum LinuxCRuntimeVariant {
     GLIBC,
     MUSL,
-}
-
-// https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/lld/ELF/Driver.cpp#L163
-
-#[derive(Debug, Clone, Copy)]
-pub enum LinuxEmulationVariant {
-    Aarch64elf,
-    Aarch64linux,
-    Aarch64elfb,
-    Aarch64linuxb,
-    Armelf,
-    ArmelfLinuxEabi,
-    Armelfb,
-    ArmelfbLinuxEabi,
-    Elf32X86_64,
-    Elf32btsmip,
-    Elf32btsmipn32,
-    Elf32ltsmip,
-    Elf32ltsmipn32,
-    Elf32lriscv,
-    Elf32ppc,
-    Elf32ppclinux,
-    Elf32lppc,
-    Elf32lppclinux,
-    Elf32loongarch,
-    Elf64btsmip,
-    Elf64ltsmip,
-    Elf64lriscv,
-    Elf64ppc,
-    Elf64lppc,
-    ElfX86_64,
-    ElfI386,
-    ElfIamcu,
-    Elf64Sparc,
-    Msp430elf,
-    Elf64Amdgpu,
-    Elf64loongarch,
 }
 
 impl LinuxCRuntimeVariant {
@@ -152,6 +117,9 @@ impl LLVMLinkerWrapper<'_> {
         // https://man.archlinux.org/man/extra/lld/ld.lld.1
 
         if is_linux {
+            let linker_linux_configuration: LinkerLinuxConfiguration =
+                linker_config.get_linux_configuration();
+
             // must edit via -link-musl
             let cruntime_variant: LinuxCRuntimeVariant = LinuxCRuntimeVariant::GLIBC;
 
@@ -165,6 +133,22 @@ impl LLVMLinkerWrapper<'_> {
                 builder.add_flag_without_value("--eh-frame-hdr".into());
                 builder.add_flag_without_value("--build-id".into());
                 builder.add_eq_flag("--hash-style".into(), "both".into());
+            }
+
+            if linker_config.build_executable() {
+                builder.add_eq_flag(
+                    "-m".into(),
+                    linker_linux_configuration.get_emulation().into(),
+                );
+
+                builder.add_eq_flag("-m".into(), linker_config.entry().into());
+
+                if linker_linux_configuration.get_lto_optimization() != LinuxLTOOptimization::OO {
+                    builder.add_side_by_side_flag(
+                        "--lto-O".into(),
+                        linker_linux_configuration.get_lto_optimization().into(),
+                    );
+                }
             }
 
             if linker_config.build_dynamic_library() {
