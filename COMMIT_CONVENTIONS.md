@@ -17,10 +17,11 @@ Following the syntax:
 Valid locations:
 
 - `llvm_backend` Any location that usually involucrates the LLVM backend.
+- `llvm_linker_driver` Any location that usually involucrates the compiler LLVM Linker Driver invocation.
 - `gcc_backend` Any location that usually involucrates the GNU Compiler Collection (GCC) backend.
 - `frontend` Any locations that usually involucrates the Abstract Syntax Tree (AST), Lexer, Parser, TypeChecker and we could continue...
 - `project-visual` Any location that usually involucrates the visual representation or human guide for the compiler available on Github (Example: README.md).
-- `project` Any location that usually involucrates Cargo, Rust Compiler and Github repository changes or the conception of a new part of the compiler (Cargo Workspaces).
+- `project` Any location that usually involucrates Cargo, Rust Compiler and Github repository changes, Github actions or the conception of a new part of the compiler (Cargo Workspaces).
 
 Example:
 
@@ -35,6 +36,7 @@ Following the syntax:
 Valid locations:
 
 - `llvm_backend` Any location that usually involucrates the LLVM backend.
+- `llvm_linker_driver` Any location that usually involucrates the compiler LLVM Linker Driver invocation.
 - `gcc_backend` Any location that usually involucrates the GNU Compiler Collection (GCC) backend.
 - `frontend` Any locations that usually involucrates the Abstract Syntax Tree (AST), Lexer, Parser, TypeChecker and we could continue...
 
