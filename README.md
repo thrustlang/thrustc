@@ -20,8 +20,8 @@ If you don't want to build the project from scratch, you can check if there are 
 Supported operating systems:
 
 - Windows x64 (MSVC) 
-- MacOS (arm)
-- MacOS (intel)
+- MacOS x64 (arm)
+- MacOS x64 (intel)
 - Linux x64 (GNU)
 
 ## From Scratch
