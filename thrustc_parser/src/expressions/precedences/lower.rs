@@ -25,7 +25,11 @@ use thrustc_parser_context::traits::PositionExtensions;
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{TokenType, traits::TokenTypeBuiltinExtensions};
-use thrustc_typesystem::{Type, traits::TypeExtensions};
+use thrustc_typesystem::{
+    Type,
+    metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
+    traits::TypeExtensions,
+};
 
 use crate::{
     ParserContext, builtins,
@@ -84,7 +88,7 @@ pub fn lower_precedence<'parser>(
                 Type::Array {
                     base_type: Type::Char(span).into(),
                     infered_type: None,
-                    address_space: None,
+                    metadata: ArrayTypeMetadata::new(None, None),
                     span,
                 }
                 .into(),
@@ -146,19 +150,30 @@ pub fn lower_precedence<'parser>(
                 }
             }
 
+            let fixed_array_type: Type = Type::FixedArray {
+                base_type: Type::Char(span).into(),
+                size: processed
+                    .len()
+                    .saturating_add(1)
+                    .try_into()
+                    .unwrap_or(u32::MAX),
+                metadata: FixedArrayTypeMetadata::new(None),
+                span,
+            };
+
             {
                 if at_variable_position {
                     cstring_type = Type::Array {
                         base_type: Type::Char(span).into(),
                         infered_type: None,
-                        address_space: None,
+                        metadata: ArrayTypeMetadata::new(Some(fixed_array_type.into()), None),
                         span,
                     };
                 } else if at_static_position {
                     cstring_type = Type::Array {
                         base_type: Type::Char(span).into(),
                         infered_type: None,
-                        address_space: None,
+                        metadata: ArrayTypeMetadata::new(Some(fixed_array_type.into()), None),
                         span,
                     };
                 } else if at_constant_position {
@@ -166,7 +181,7 @@ pub fn lower_precedence<'parser>(
                         Type::Array {
                             base_type: Type::Char(span).into(),
                             infered_type: None,
-                            address_space: None,
+                            metadata: ArrayTypeMetadata::new(Some(fixed_array_type.into()), None),
                             span,
                         }
                         .into(),
@@ -177,7 +192,7 @@ pub fn lower_precedence<'parser>(
                         Type::Array {
                             base_type: Type::Char(span).into(),
                             infered_type: None,
-                            address_space: None,
+                            metadata: ArrayTypeMetadata::new(Some(fixed_array_type.into()), None),
                             span,
                         }
                         .into(),

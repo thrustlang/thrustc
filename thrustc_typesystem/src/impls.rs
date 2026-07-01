@@ -229,12 +229,12 @@ impl TypeExtensions for Type {
             return address_space;
         }
 
-        if let Type::Array { address_space, .. } = non_constant_ty {
-            return address_space;
+        if let Type::Array { metadata, .. } = non_constant_ty {
+            return metadata.get_address_space();
         }
 
-        if let Type::FixedArray { address_space, .. } = non_constant_ty {
-            return address_space;
+        if let Type::FixedArray { metadata, .. } = non_constant_ty {
+            return metadata.get_address_space();
         }
 
         None

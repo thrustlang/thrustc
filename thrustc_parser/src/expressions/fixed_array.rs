@@ -25,6 +25,7 @@ use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
+    metadata::FixedArrayTypeMetadata,
     traits::{TypeFixedArrayEntensions, TypeIsExtensions},
 };
 
@@ -78,24 +79,27 @@ pub fn build_fixed_array<'parser>(
         "Expected ']'.".into(),
     )?;
 
-    if let Some(item) = items.iter().try_fold(None::<&Ast>, |acc, item| {
-        let item_type: &Type = item.get_value_type()?;
+    if let Some(item) = items
+        .iter()
+        .try_fold(None::<&Ast>, |acc: Option<&Ast<'_>>, item| {
+            let item_type: &Type = item.get_value_type()?;
 
-        Ok(match acc {
-            None => Some(item),
-            Some(current) => {
-                let current_type: &Type = current.get_value_type()?;
+            Ok(match acc {
+                None => Some(item),
+                Some(current) => {
+                    let current_type: &Type = current.get_value_type()?;
 
-                if item_type.get_fixed_array_type_herarchy()
-                    > current_type.get_fixed_array_type_herarchy()
-                {
-                    Some(item)
-                } else {
-                    Some(current)
+                    if item_type.get_fixed_array_type_herarchy()
+                        > current_type.get_fixed_array_type_herarchy()
+                    {
+                        Some(item)
+                    } else {
+                        Some(current)
+                    }
                 }
-            }
-        })
-    })? {
+            })
+        })?
+    {
         let size: Result<u32, std::num::TryFromIntError> = u32::try_from(items.len());
 
         if size.is_err() {
@@ -111,7 +115,7 @@ pub fn build_fixed_array<'parser>(
         array_type = Type::FixedArray {
             base_type: item.get_value_type()?.clone().into(),
             size: size.unwrap_or_default(),
-            address_space: None,
+            metadata: FixedArrayTypeMetadata::new(None),
             span,
         };
     }

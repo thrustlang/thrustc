@@ -32,6 +32,7 @@ use thrustc_ast::Ast;
 use thrustc_llvm_abi::LLVMABIConfiguration;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeCodeLocation;
+use thrustc_typesystem::traits::TypeExtensions;
 use thrustc_typesystem::traits::TypeIsExtensions;
 use thrustc_typesystem::traits::TypePointerExtensions;
 
@@ -225,7 +226,15 @@ pub fn generate_type<'ctx>(
             }
         }
 
-        t if t.is_ptr_like_type() => llvm_context.ptr_type(AddressSpace::default()).into(),
+        t if t.is_ptr_like_type() => {
+            let address_space: Option<u16> = t.get_address_space();
+
+            if let Some(address_space) = address_space {
+                llvm_context.ptr_type(AddressSpace::from(address_space)).into()
+            } else {
+                llvm_context.ptr_type(AddressSpace::default()).into()
+            }
+        },
 
         Type::Const(subtype, ..) => self::generate_type(context, subtype),
 

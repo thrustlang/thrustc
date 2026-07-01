@@ -21,29 +21,38 @@ use thrustc_span::Span;
 
 use crate::{
     Type,
-    traits::{InfererTypeExtensions, TypeCodeLocation, TypeExtensions, TypeIsExtensions},
+    metadata::FixedArrayTypeMetadata,
+    traits::{
+        ConstantTypeExtensions, InfererTypeExtensions, TypeCodeLocation, TypeExtensions,
+        TypeIsExtensions,
+    },
 };
 
 impl InfererTypeExtensions for Type {
-    fn inferer_inner_type_from_type(&mut self, other: &Type) {
+    fn inferer_inner_type_from_type(&self, other: &Type) -> Option<Type> {
         let span: Span = self.get_span();
 
-        match (self, other) {
+        let mut left: Type = self.remove_all_constant_type();
+        let mut right: Type = other.remove_all_constant_type();
+
+        match (&mut left, &mut right) {
             (
                 Type::Array {
                     base_type,
                     infered_type: lhs_infered_type,
+                    metadata: target_metadata,
                     ..
                 },
                 Type::Array {
                     infered_type: Some(rhs_infered_type),
+                    metadata: from_metadata,
                     ..
                 },
             ) => {
                 let (Type::FixedArray { size, .. }, mut refcounter) =
                     (&*rhs_infered_type.0, rhs_infered_type.1)
                 else {
-                    return;
+                    return Some(left);
                 };
 
                 refcounter = refcounter.saturating_add(1);
@@ -52,65 +61,38 @@ impl InfererTypeExtensions for Type {
                     Type::FixedArray {
                         base_type: (*base_type).clone(),
                         size: *size,
-                        address_space: base_type.get_address_space(),
+                        metadata: FixedArrayTypeMetadata::new(base_type.get_address_space()),
                         span,
                     }
                     .into(),
                     refcounter,
                 ));
-            }
 
-            (Type::Const(base_type, ..), Type::Const(other_type, ..)) => {
-                base_type.inferer_inner_type_from_type(other_type);
-            }
+                *target_metadata = from_metadata.clone();
 
-            (base_type, .., Type::Const(other_type, ..)) => {
-                base_type.inferer_inner_type_from_type(other_type);
-            }
-
-            (Type::Const(base_type, ..), other_type, ..) => {
-                base_type.inferer_inner_type_from_type(other_type);
+                Some(left)
             }
 
             (
-                Type::Ptr {
-                    subtype: Some(base_type),
+                Type::Array {
+                    metadata: target_metadata,
                     ..
                 },
-                Type::Ptr {
-                    subtype: Some(other_type),
-                    ..
-                },
-            ) => {
-                base_type.inferer_inner_type_from_type(other_type);
-            }
-
-            (
-                base_type,
-                Type::Ptr {
-                    subtype: Some(other_type),
+                Type::Array {
+                    metadata: from_metadata,
                     ..
                 },
             ) => {
-                base_type.inferer_inner_type_from_type(other_type);
+                *target_metadata = from_metadata.clone();
+                Some(left)
             }
 
-            (
-                Type::Ptr {
-                    subtype: Some(base_type),
-                    ..
-                },
-                other_type,
-            ) => {
-                base_type.inferer_inner_type_from_type(other_type);
-            }
-
-            _ => (),
+            _ => None,
         }
     }
 
     #[inline(always)]
-    fn has_inferer_inner_type(&self) -> bool {
+    fn has_infered_inner_type(&self) -> bool {
         matches!(
             self,
             Type::Array {
@@ -122,16 +104,14 @@ impl InfererTypeExtensions for Type {
 
     #[inline(always)]
     fn is_inferer_inner_type_valid(&self) -> bool {
+        let ty: Type = self.remove_all_constant_type();
+
         if let Type::Array {
             infered_type: Some((infered_type, 0 | 1)),
             ..
-        } = self
+        } = ty
         {
             return infered_type.is_fixed_array_type();
-        }
-
-        if let Type::Const(subtype, ..) = self {
-            return subtype.is_inferer_inner_type_valid();
         }
 
         false
@@ -139,16 +119,14 @@ impl InfererTypeExtensions for Type {
 
     #[inline(always)]
     fn is_inferer_inner_type_is_not_array_decay(&self) -> bool {
+        let ty: Type = self.remove_all_constant_type();
+
         if let Type::Array {
             infered_type: Some((_, 0..=1)),
             ..
-        } = self
+        } = ty
         {
             return true;
-        }
-
-        if let Type::Const(subtype, ..) = self {
-            return subtype.is_inferer_inner_type_is_not_array_decay();
         }
 
         false
@@ -156,13 +134,13 @@ impl InfererTypeExtensions for Type {
 
     #[inline(always)]
     fn get_inferer_inner_type(&self) -> Type {
-        match self {
+        let ty: Type = self.remove_all_constant_type();
+
+        match ty {
             Type::Array {
                 infered_type: Some((infered_type, 0 | 1)),
                 ..
-            } => (**infered_type).clone(),
-
-            Type::Const(subtype, ..) => subtype.get_inferer_inner_type(),
+            } => (*infered_type).clone(),
 
             _ => self.clone(),
         }

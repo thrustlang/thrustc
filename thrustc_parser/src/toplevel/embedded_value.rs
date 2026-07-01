@@ -22,7 +22,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::Type;
+use thrustc_typesystem::{Type, metadata::ArrayTypeMetadata};
 
 use crate::ParserContext;
 
@@ -56,16 +56,18 @@ pub fn build_embedded<'parser>(
         "Expected ';'.".into(),
     )?;
 
+    let array_ty: Type = Type::Array {
+        base_type: Type::U8 { span }.into(),
+        infered_type: None,
+        metadata: ArrayTypeMetadata::new(None, None),
+        span,
+    };
+
     Ok(Ast::Embedded {
         name: lexeme,
         path: lexeme.into(),
         literal: lexeme,
-        kind: Type::Array {
-            base_type: Type::U8 { span }.into(),
-            infered_type: None,
-            address_space: None,
-            span,
-        },
+        kind: array_ty,
         span,
         id: NodeId::new(),
     })

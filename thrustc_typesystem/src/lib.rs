@@ -22,6 +22,7 @@ mod constant_type;
 mod fixed_array_type;
 mod function_reference_type;
 mod impls;
+pub mod metadata;
 mod pointer_dereference;
 mod pointer_type;
 mod structure_type;
@@ -38,6 +39,8 @@ mod void_type;
 use serde::Serialize;
 use thrustc_span::Span;
 
+use crate::metadata::ArrayTypeMetadata;
+use crate::metadata::FixedArrayTypeMetadata;
 use crate::type_modificators::FunctionReferenceTypeModificator;
 use crate::type_modificators::StructureTypeModificator;
 
@@ -130,7 +133,7 @@ pub enum Type {
     FixedArray {
         base_type: std::boxed::Box<Type>,
         size: u32,
-        address_space: Option<u16>,
+        metadata: FixedArrayTypeMetadata,
         span: Span,
     },
 
@@ -138,7 +141,7 @@ pub enum Type {
     Array {
         base_type: std::boxed::Box<Type>,
         infered_type: Option<(std::boxed::Box<Type>, usize)>,
-        address_space: Option<u16>,
+        metadata: ArrayTypeMetadata,
         span: Span,
     },
 

@@ -120,8 +120,8 @@ pub trait DereferenceExtensions {
 }
 
 pub trait InfererTypeExtensions {
-    fn inferer_inner_type_from_type(&mut self, other: &Type);
-    fn has_inferer_inner_type(&self) -> bool;
+    fn inferer_inner_type_from_type(&self, other: &Type) -> Option<Type>;
+    fn has_infered_inner_type(&self) -> bool;
     fn is_inferer_inner_type_valid(&self) -> bool;
     fn is_inferer_inner_type_is_not_array_decay(&self) -> bool;
     fn get_inferer_inner_type(&self) -> Type;

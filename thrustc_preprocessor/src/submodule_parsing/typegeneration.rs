@@ -30,6 +30,7 @@ use thrustc_token_type::TokenType;
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::{
     Type,
+    metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
     traits::TypeIsExtensions,
     type_modificators::{
         FunctionReferenceTypeModificator, GCCFunctionReferenceTypeModificator,
@@ -280,7 +281,7 @@ fn parse_array_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> 
         return Ok(Type::FixedArray {
             base_type: array_type.into(),
             size: array_size.unwrap_or_default(),
-            address_space,
+            metadata: FixedArrayTypeMetadata::new(address_space),
             span,
         });
     }
@@ -338,12 +339,14 @@ fn parse_array_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> 
 
     ctx.consume(TokenType::RBracket)?;
 
-    Ok(Type::Array {
+    let array_ty: Type = Type::Array {
         base_type: array_type.into(),
         infered_type: None,
-        address_space,
+        metadata: ArrayTypeMetadata::new(None, address_space),
         span,
-    })
+    };
+
+    Ok(array_ty)
 }
 
 fn parse_pointer_type(

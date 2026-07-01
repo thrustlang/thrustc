@@ -678,15 +678,13 @@ impl TargetInfo {
 
             Type::Array {
                 base_type: element_type,
-                infered_type,
+                metadata,
                 ..
             } => {
-                let size: u32 = if let Some((subtype, _)) = infered_type {
-                    if let Type::FixedArray { size, .. } = &**subtype {
-                        *size
-                    } else {
-                        0
-                    }
+                let size: u32 = if let Some(Type::FixedArray { size, .. }) =
+                    metadata.get_infered_size_of_type()
+                {
+                    *size
                 } else {
                     0
                 };

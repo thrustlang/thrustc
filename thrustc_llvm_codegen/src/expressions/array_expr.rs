@@ -20,6 +20,7 @@
 use thrustc_ast::Ast;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::metadata::FixedArrayTypeMetadata;
 use thrustc_typesystem::traits::{TypeArrayEntensions, TypeExtensions};
 
 use crate::context::LLVMCodeGenContext;
@@ -152,7 +153,7 @@ fn compile_array_without_anchor<'ctx>(
     let fixed_array_type: Type = Type::FixedArray {
         base_type: base_type.clone().into(),
         size: array_size,
-        address_space: array_type.get_address_space(),
+        metadata: FixedArrayTypeMetadata::new(array_type.get_address_space()),
         span,
     };
 
@@ -226,7 +227,7 @@ fn compile_array_with_anchor<'ctx>(
     let fixed_array_type: Type = Type::FixedArray {
         base_type: base_type.clone().into(),
         size: array_size,
-        address_space: array_type.get_address_space(),
+        metadata: FixedArrayTypeMetadata::new(array_type.get_address_space()),
         span,
     };
 

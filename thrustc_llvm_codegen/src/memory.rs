@@ -975,7 +975,7 @@ pub fn auto_deference_a_nested_pointer<'ctx>(
 }
 
 #[inline]
-pub fn get_address_space(ty: &Type) -> Option<AddressSpace> {
+pub fn get_llvm_address_space(ty: &Type) -> Option<AddressSpace> {
     if let Some(address_space) = ty.get_address_space() {
         return Some(AddressSpace::from(address_space));
     }

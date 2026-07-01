@@ -122,7 +122,9 @@ pub fn build_global_static<'parser>(
         ctx.get_mut_type_context().pop_infered_type();
         ctx.get_mut_control_context().reset_position();
 
-        static_type.inferer_inner_type_from_type(value_type);
+        if let Some(infered_inner_type) = static_type.inferer_inner_type_from_type(value_type) {
+            static_type = infered_inner_type;
+        }
 
         let metadata: StaticMetadata = StaticMetadata::new(
             true,

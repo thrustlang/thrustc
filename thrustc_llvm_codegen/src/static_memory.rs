@@ -60,7 +60,7 @@ pub fn allocate_local_constant<'ctx>(
 
     let name: String = self::generate_llvm_name(context, name, "local.const", None);
 
-    let address_space: Option<AddressSpace> = memory::get_address_space(ty);
+    let address_space: Option<AddressSpace> = memory::get_llvm_address_space(ty);
 
     let global: GlobalValue = llvm_module.add_global(llvm_type, address_space, &name);
 
@@ -97,7 +97,7 @@ pub fn allocate_global_constant<'ctx>(
     let name: String =
         self::generate_llvm_name(context, name, "global.constant", Some(&attributes));
 
-    let address_space: Option<AddressSpace> = memory::get_address_space(ty);
+    let address_space: Option<AddressSpace> = memory::get_llvm_address_space(ty);
 
     let global: GlobalValue = llvm_module.add_global(llvm_type, address_space, &name);
 
@@ -140,7 +140,7 @@ pub fn allocate_local_static<'ctx>(
 
     let name: String = self::generate_llvm_name(context, name, "local.static", None);
 
-    let address_space: Option<AddressSpace> = memory::get_address_space(ty);
+    let address_space: Option<AddressSpace> = memory::get_llvm_address_space(ty);
 
     let global: GlobalValue = llvm_module.add_global(llvm_type, address_space, &name);
 
@@ -182,7 +182,7 @@ pub fn allocate_global_static<'ctx>(
 
     let name: String = self::generate_llvm_name(context, name, "global.static", Some(&attributes));
 
-    let address_space: Option<AddressSpace> = memory::get_address_space(ty);
+    let address_space: Option<AddressSpace> = memory::get_llvm_address_space(ty);
 
     let global: GlobalValue = llvm_module.add_global(llvm_type, address_space, &name);
 

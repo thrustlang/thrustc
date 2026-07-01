@@ -128,7 +128,9 @@ pub fn build_variable_stmt<'parser>(
 
         ctx.get_mut_control_context().reset_position();
 
-        local_type.inferer_inner_type_from_type(value_type);
+        if let Some(infered_inner_type) = local_type.inferer_inner_type_from_type(value_type) {
+            local_type = infered_inner_type;
+        }
 
         if !ctx.is_main_scope() {
             ctx.get_mut_symbols()

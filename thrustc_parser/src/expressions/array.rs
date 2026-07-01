@@ -25,6 +25,7 @@ use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
+    metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
     traits::{TypeArrayEntensions, TypeIsExtensions},
 };
 
@@ -105,14 +106,14 @@ pub fn build_array<'parser>(
         let fixed_type: Type = Type::FixedArray {
             base_type: base_type.clone().into(),
             size: size.unwrap_or_default(),
-            address_space: None,
+            metadata: FixedArrayTypeMetadata::new(None),
             span,
         };
 
         array_type = Type::Array {
             base_type: base_type.into(),
-            infered_type: Some((fixed_type.into(), 0)),
-            address_space: None,
+            infered_type: Some((fixed_type.clone().into(), 0)),
+            metadata: ArrayTypeMetadata::new(Some(fixed_type.into()), None),
             span,
         };
     }
@@ -128,14 +129,14 @@ pub fn build_array<'parser>(
                 let fixed_type: Type = Type::FixedArray {
                     base_type: base_type.clone().into(),
                     size: 0,
-                    address_space: None,
+                    metadata: FixedArrayTypeMetadata::new(None),
                     span,
                 };
 
                 array_type = Type::Array {
                     base_type: base_type.into(),
-                    infered_type: Some((fixed_type.into(), 0)),
-                    address_space: None,
+                    infered_type: Some((fixed_type.clone().into(), 0)),
+                    metadata: ArrayTypeMetadata::new(Some(fixed_type.into()), None),
                     span,
                 }
             }

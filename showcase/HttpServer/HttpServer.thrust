@@ -70,8 +70,8 @@ fn main() s32 @public {
         var buffer: array[u8; 1024];
         read(new_socket, (ref buffer) as ptr, 1024);
 
-        var response: ptr[array[char]] = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n<html><head><title>Thrust Http Server</title></head><body><h2>¡Hello from Thrust!</h2></body></html>";
-        var response_length: usize = sizeOf(deref response) / sizeOf(deref (deref response)[0]);
+        var response: array[char] = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n<html><head><title>Thrust Http Server</title></head><body><h2>¡Hello from Thrust!</h2></body></html>";
+        var response_length: usize = sizeOf(response) / sizeOf(deref response[0]);
 
         writef(new_socket, (deref response) as ptr, response_length as u32);
         close(new_socket);
