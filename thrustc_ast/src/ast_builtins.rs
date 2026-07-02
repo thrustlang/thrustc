@@ -52,23 +52,23 @@ pub enum AstBuiltin<'mir> {
         span: Span,
     },
     BitSizeOf {
-        of: Type,
+        ty: Type,
         span: Span,
     },
     AbiSizeOf {
-        of: Type,
+        ty: Type,
         span: Span,
     },
     AbiAlignOf {
-        of: Type,
+        ty: Type,
         span: Span,
     },
     AlignOf {
-        of: Type,
+        ty: Type,
         span: Span,
     },
     SizeOf {
-        of: Type,
+        ty: Type,
         span: Span,
     },
 }

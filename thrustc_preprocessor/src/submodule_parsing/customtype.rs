@@ -48,7 +48,7 @@ pub fn parse_type<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> Res
         name,
         signature: Signature::CustomType {
             kind: r#type,
-            invalid_kind: Type::Void(span),
+            invalid_kind: Type::Void { span },
             attributes,
             span,
         },

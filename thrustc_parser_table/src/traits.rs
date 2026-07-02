@@ -23,7 +23,7 @@ use thrustc_ast::{
 };
 use thrustc_errors::CompilationIssue;
 use thrustc_span::Span;
-use thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
+use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 pub trait FoundSymbolExtensions {
     fn is_custom_type(&self) -> bool;
@@ -53,10 +53,11 @@ pub trait FoundSymbolEitherExtensions<'parser> {
 }
 
 pub trait StructSymbolExtensions<'parser> {
-    fn contains_field(&self, name: &str) -> bool;
-    fn get_field_type(&self, name: &str) -> Option<Type>;
     fn get_data(&self) -> StructureData<'parser>;
-    fn get_modificator(&self) -> StructureTypeModificator;
+    fn get_metadata(&self) -> StructTypeMetadata;
+    fn get_field_type(&self, name: &str) -> Option<Type>;
+
+    fn contains_field(&self, name: &str) -> bool;
 }
 
 pub trait EnumExtensions<'parser> {
@@ -104,5 +105,5 @@ pub trait IntrinsicExtensions {
 }
 
 pub trait ConstructorExtensions {
-    fn get_type(&self, name: &str, modificator: StructureTypeModificator, span: Span) -> Type;
+    fn get_type(&self, name: &str, metadata: StructTypeMetadata, span: Span) -> Type;
 }

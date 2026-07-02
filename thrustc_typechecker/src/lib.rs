@@ -749,7 +749,7 @@ impl TypeChecker<'_> {
                         ..
                     } => {
                         self.get_mut_table()
-                            .new_intrinsic(name, (return_type, types, attributes));
+                            .new_compiler_intrinsic(name, (return_type, types, attributes));
                     }
 
                     _ => (),

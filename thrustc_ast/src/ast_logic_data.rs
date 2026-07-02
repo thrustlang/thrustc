@@ -18,14 +18,14 @@
 */
 
 use thrustc_span::Span;
-use thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
+use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 use crate::Ast;
 
 pub type StructureData<'ctx> = (
     &'ctx str,
     Vec<(&'ctx str, Type, u32, Span)>,
-    StructureTypeModificator,
+    StructTypeMetadata,
     Span,
 );
 

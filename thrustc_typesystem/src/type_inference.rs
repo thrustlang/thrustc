@@ -21,11 +21,11 @@ use thrustc_span::Span;
 
 use crate::{
     Type,
-    metadata::FixedArrayTypeMetadata,
     traits::{
         ConstantTypeExtensions, InfererTypeExtensions, TypeCodeLocation, TypeExtensions,
         TypeIsExtensions,
     },
+    type_metadata::FixedArrayTypeMetadata,
 };
 
 impl InfererTypeExtensions for Type {

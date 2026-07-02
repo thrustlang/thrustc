@@ -113,7 +113,7 @@ pub fn parse_enum_stmt<'parser>(
             name: enum_name,
             data,
             attributes: enum_attributes,
-            kind: Type::Void(span),
+            kind: Type::Void { span },
             span,
             id: NodeId::new(),
         })

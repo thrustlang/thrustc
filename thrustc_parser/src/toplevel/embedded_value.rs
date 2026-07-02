@@ -22,7 +22,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, metadata::ArrayTypeMetadata};
+use thrustc_typesystem::{Type, type_metadata::ArrayTypeMetadata};
 
 use crate::ParserContext;
 

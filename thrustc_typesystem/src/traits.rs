@@ -21,7 +21,7 @@ use thrustc_span::Span;
 use thrustc_token_type::TokenType;
 
 use crate::Type;
-use crate::type_modificators::StructureTypeModificator;
+use crate::type_metadata::StructTypeMetadata;
 
 pub trait TypeIsExtensions {
     fn is_char_type(&self) -> bool;
@@ -32,7 +32,6 @@ pub trait TypeIsExtensions {
     fn is_array_type(&self) -> bool;
     fn is_float_type(&self) -> bool;
     fn is_ptr_type(&self) -> bool;
-    fn is_address_type(&self) -> bool;
     fn is_const_type(&self) -> bool;
     fn is_function_reference_type(&self) -> bool;
     fn is_numeric_type(&self) -> bool;
@@ -101,13 +100,13 @@ pub trait TypeStructExtensions {
     fn create_struct_type(
         name: String,
         fields: &[Type],
-        modificator: StructureTypeModificator,
+        metadata: StructTypeMetadata,
         span: Span,
     ) -> Type;
 }
 
 pub trait CastTypeExtensions {
-    fn narrowing(&self) -> Type;
+    fn narrowing_cast(&self) -> Type;
 }
 
 pub trait TypeCodeLocation {

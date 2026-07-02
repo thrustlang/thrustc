@@ -23,7 +23,7 @@ use thrustc_ast::{
 };
 use thrustc_attributes::ThrustAttributes;
 use thrustc_span::Span;
-use thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
+use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 use ahash::AHashMap as HashMap;
 
@@ -31,7 +31,7 @@ pub type Struct<'parser> = (
     &'parser str,
     Vec<(&'parser str, Type, u32, Span)>,
     ThrustAttributes,
-    StructureTypeModificator,
+    StructTypeMetadata,
     Span,
 );
 

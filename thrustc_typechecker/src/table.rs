@@ -69,7 +69,11 @@ impl<'symbol> TypeCheckerSymbolsTable<'symbol> {
     }
 
     #[inline]
-    pub fn new_intrinsic(&mut self, name: &'symbol str, intrinsic: TypeCheckerIntrinsic<'symbol>) {
+    pub fn new_compiler_intrinsic(
+        &mut self,
+        name: &'symbol str,
+        intrinsic: TypeCheckerIntrinsic<'symbol>,
+    ) {
         self.intrinsics.insert(name, intrinsic);
     }
 }
@@ -96,17 +100,17 @@ impl<'symbol> TypeCheckerSymbolsTable<'symbol> {
 
 impl<'symbol> TypeCheckerSymbolsTable<'symbol> {
     #[inline]
-    pub fn constains_function(&self, name: &'symbol str) -> bool {
+    pub fn contains_function(&self, name: &'symbol str) -> bool {
         self.functions.contains_key(name)
     }
 
     #[inline]
-    pub fn constains_asm_function(&self, name: &'symbol str) -> bool {
+    pub fn contains_asm_function(&self, name: &'symbol str) -> bool {
         self.asm_functions.contains_key(name)
     }
 
     #[inline]
-    pub fn constains_intrinsic(&self, name: &'symbol str) -> bool {
+    pub fn contains_compiler_intrinsic(&self, name: &'symbol str) -> bool {
         self.intrinsics.contains_key(name)
     }
 }

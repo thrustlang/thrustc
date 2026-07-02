@@ -25,8 +25,8 @@ use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
-    metadata::FixedArrayTypeMetadata,
     traits::{TypeFixedArrayEntensions, TypeIsExtensions},
+    type_metadata::FixedArrayTypeMetadata,
 };
 
 use crate::{ParserContext, expressions};
@@ -49,7 +49,7 @@ pub fn build_fixed_array<'parser>(
     let span: Span = array_start_tk.get_span();
 
     let infered_type: Option<Type> = ctx.get_type_context().get_infered_type();
-    let mut array_type: Type = Type::Void(span);
+    let mut array_type: Type = Type::Void { span };
 
     let mut items: Vec<Ast> = Vec::with_capacity(u8::MAX as usize);
 

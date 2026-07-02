@@ -60,7 +60,7 @@ pub fn parse_code_block_stmt<'parser>(
         nodes,
         post,
         span,
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         id: NodeId::new(),
     })
 }
@@ -99,7 +99,7 @@ pub fn parse_code_block_without_start_stmt<'parser>(
         nodes,
         post,
         span,
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         id: NodeId::new(),
     })
 }

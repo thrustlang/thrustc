@@ -290,7 +290,7 @@ pub fn build_alignof<'parser>(
         "Expected '('.".into(),
     )?;
 
-    let of: Type = typegeneration::build_type(ctx, true)?;
+    let ty: Type = typegeneration::build_type(ctx, true)?;
 
     ctx.consume(
         TokenType::RParen,
@@ -299,7 +299,7 @@ pub fn build_alignof<'parser>(
     )?;
 
     Ok(Ast::Builtin {
-        builtin: AstBuiltin::AlignOf { of, span },
+        builtin: AstBuiltin::AlignOf { ty, span },
         kind: Type::U32 { span },
         span,
         id: NodeId::new(),
@@ -323,7 +323,7 @@ pub fn build_sizeof<'parser>(
         "Expected '('.".into(),
     )?;
 
-    let of: Type = typegeneration::build_type(ctx, true)?;
+    let ty: Type = typegeneration::build_type(ctx, true)?;
 
     ctx.consume(
         TokenType::RParen,
@@ -332,7 +332,7 @@ pub fn build_sizeof<'parser>(
     )?;
 
     Ok(Ast::Builtin {
-        builtin: AstBuiltin::SizeOf { of, span },
+        builtin: AstBuiltin::SizeOf { ty, span },
         kind: Type::USize { span },
         span,
         id: NodeId::new(),
@@ -356,7 +356,7 @@ pub fn build_bit_size_of<'parser>(
         "Expected '('.".into(),
     )?;
 
-    let of: Type = typegeneration::build_type(ctx, true)?;
+    let ty: Type = typegeneration::build_type(ctx, true)?;
 
     ctx.consume(
         TokenType::RParen,
@@ -365,7 +365,7 @@ pub fn build_bit_size_of<'parser>(
     )?;
 
     Ok(Ast::Builtin {
-        builtin: AstBuiltin::BitSizeOf { of, span },
+        builtin: AstBuiltin::BitSizeOf { ty, span },
         kind: Type::U64 { span },
         span,
         id: NodeId::new(),
@@ -389,7 +389,7 @@ pub fn build_abi_size_of<'parser>(
         "Expected '('.".into(),
     )?;
 
-    let of: Type = typegeneration::build_type(ctx, true)?;
+    let ty: Type = typegeneration::build_type(ctx, true)?;
 
     ctx.consume(
         TokenType::RParen,
@@ -398,7 +398,7 @@ pub fn build_abi_size_of<'parser>(
     )?;
 
     Ok(Ast::Builtin {
-        builtin: AstBuiltin::AbiSizeOf { of, span },
+        builtin: AstBuiltin::AbiSizeOf { ty, span },
         kind: Type::U64 { span },
         span,
         id: NodeId::new(),
@@ -422,7 +422,7 @@ pub fn build_abi_align_of<'parser>(
         "Expected '('.".into(),
     )?;
 
-    let of: Type = typegeneration::build_type(ctx, true)?;
+    let ty: Type = typegeneration::build_type(ctx, true)?;
 
     ctx.consume(
         TokenType::RParen,
@@ -431,7 +431,7 @@ pub fn build_abi_align_of<'parser>(
     )?;
 
     Ok(Ast::Builtin {
-        builtin: AstBuiltin::AbiAlignOf { of, span },
+        builtin: AstBuiltin::AbiAlignOf { ty, span },
         kind: Type::U32 { span },
         span,
         id: NodeId::new(),

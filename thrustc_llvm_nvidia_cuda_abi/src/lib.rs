@@ -33,8 +33,9 @@ use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::{
     Type,
-    traits::{TypeCodeLocation, TypeIsExtensions, TypePointerExtensions},
+    traits::{TypeCodeLocation, TypeExtensions, TypeIsExtensions, TypePointerExtensions},
     type_layout::TargetInfo,
+    type_modificators::StructureTypeModificator,
 };
 
 #[derive(Debug)]
@@ -432,7 +433,7 @@ pub fn generate_type<'llvm_abi>(
 ) -> BasicTypeEnum<'llvm_abi> {
     match ty {
         t if t.is_integer_type() || t.is_char_type() || t.is_bool_type() => match t {
-            Type::S8 { .. } | Type::U8 { .. } | Type::Char(..) => llvm_context.i8_type().into(),
+            Type::S8 { .. } | Type::U8 { .. } | Type::Char { .. } => llvm_context.i8_type().into(),
             Type::S16 { .. } | Type::U16 { .. } => llvm_context.i16_type().into(),
             Type::S32 { .. } | Type::U32 { .. } => llvm_context.i32_type().into(),
             Type::S64 { .. } | Type::U64 { .. } => llvm_context.i64_type().into(),
@@ -490,16 +491,27 @@ pub fn generate_type<'llvm_abi>(
             }
         }
 
-        t if t.is_ptr_like_type() => llvm_context.ptr_type(AddressSpace::default()).into(),
+        t if t.is_ptr_like_type() => {
+            let address_space: Option<u16> = t.get_address_space();
+
+            if let Some(address_space) = address_space {
+                llvm_context
+                    .ptr_type(AddressSpace::from(address_space))
+                    .into()
+            } else {
+                llvm_context.ptr_type(AddressSpace::default()).into()
+            }
+        }
 
         Type::Const(subtype, ..) => self::generate_type(llvm_context, abi_context, subtype),
 
         Type::Struct {
-            fields, modifier, ..
+            fields, metadata, ..
         } => {
             let mut field_types: Vec<BasicTypeEnum> = Vec::with_capacity(u8::MAX as usize);
 
-            let packed: bool = modifier.llvm().is_packed();
+            let modifications: &StructureTypeModificator = metadata.get_struct_type_modificator();
+            let packed: bool = modifications.llvm().is_packed();
 
             {
                 for ty in fields.iter() {

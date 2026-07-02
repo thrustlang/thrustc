@@ -20,8 +20,8 @@
 use thrustc_ast::Ast;
 use thrustc_span::Span;
 use thrustc_typesystem::Type;
-use thrustc_typesystem::metadata::FixedArrayTypeMetadata;
 use thrustc_typesystem::traits::{TypeArrayEntensions, TypeExtensions};
+use thrustc_typesystem::type_metadata::FixedArrayTypeMetadata;
 
 use crate::context::LLVMCodeGenContext;
 use crate::memory::{self, LLVMAllocationSite};

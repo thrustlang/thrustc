@@ -45,7 +45,7 @@ pub fn parse_continue_stmt<'parser>(
 
     Ok(Ast::Continue {
         span,
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         id: NodeId::new(),
     })
 }
@@ -69,7 +69,7 @@ pub fn parse_break_stmt<'parser>(
 
     Ok(Ast::Break {
         span,
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         id: NodeId::new(),
     })
 }
@@ -93,7 +93,7 @@ pub fn parse_continueall_stmt<'parser>(
 
     Ok(Ast::ContinueAll {
         span,
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         id: NodeId::new(),
     })
 }
@@ -117,7 +117,7 @@ pub fn parse_breakall_stmt<'parser>(
 
     Ok(Ast::BreakAll {
         span,
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         id: NodeId::new(),
     })
 }

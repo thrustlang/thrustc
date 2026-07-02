@@ -71,11 +71,10 @@ impl IndexExtensions for Type {
             | Type::FX8680 { .. }
             | Type::FPPC128 { .. }
             | Type::Bool { .. }
-            | Type::Char(..)
-            | Type::Addr(..)
-            | Type::Void(..)
+            | Type::Char { .. }
+            | Type::Void { .. }
             | Type::Ptr { subtype: None, .. }
-            | Type::Fn(..)
+            | Type::Fn { .. }
             | Type::Unresolved { .. } => self,
         }
     }

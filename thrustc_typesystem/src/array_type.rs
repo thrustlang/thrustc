@@ -65,7 +65,7 @@ impl TypeArrayEntensions for Type {
     fn get_array_type_herarchy(&self) -> u8 {
         match self {
             Type::Bool { .. } => 1,
-            Type::Char(..) => 2,
+            Type::Char { .. } => 2,
 
             Type::U8 { .. } => 3,
             Type::U16 { .. } => 4,
@@ -88,21 +88,20 @@ impl TypeArrayEntensions for Type {
 
             Type::Const(subtype, ..) => subtype.get_array_type_herarchy(),
 
-            Type::Addr(..) => 20,
             Type::Ptr {
                 subtype: Some(subtype),
                 ..
             } => subtype.get_array_type_herarchy(),
-            Type::Ptr { subtype: None, .. } => 21,
+            Type::Ptr { subtype: None, .. } => 20,
 
-            Type::Fn(..) => 22,
+            Type::Fn { .. } => 21,
 
-            Type::Array { .. } => 23,
-            Type::FixedArray { .. } => 24,
-            Type::Struct { .. } => 25,
+            Type::Array { .. } => 22,
+            Type::FixedArray { .. } => 23,
+            Type::Struct { .. } => 24,
 
-            Type::Void(..) => 26,
-            Type::Unresolved { .. } => 27,
+            Type::Void { .. } => 25,
+            Type::Unresolved { .. } => 26,
         }
     }
 }

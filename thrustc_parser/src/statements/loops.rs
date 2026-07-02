@@ -45,7 +45,7 @@ pub fn parse_for_loop_stmt<'parser>(
 
         Ok(Ast::Loop {
             block: body.into(),
-            kind: Type::Void(span),
+            kind: Type::Void { span },
             span,
             id: NodeId::new(),
         })
@@ -60,7 +60,7 @@ pub fn parse_for_loop_stmt<'parser>(
 
         Ok(Ast::Loop {
             block: body.into(),
-            kind: Type::Void(span),
+            kind: Type::Void { span },
             span,
             id: NodeId::new(),
         })
@@ -86,7 +86,7 @@ pub fn parse_for_loop_stmt<'parser>(
             condition: condition.into(),
             actions: actions.into(),
             block: body.into(),
-            kind: Type::Void(span),
+            kind: Type::Void { span },
             span,
             id: NodeId::new(),
         })
@@ -103,6 +103,7 @@ pub fn parse_loop_stmt<'parser>(
     )?;
 
     let span: Span = loop_tk.get_span();
+
     let body: Ast = if ctx.check(TokenType::LBrace) {
         code_block::parse_code_block_stmt(ctx)?
     } else {
@@ -111,7 +112,7 @@ pub fn parse_loop_stmt<'parser>(
 
     Ok(Ast::Loop {
         block: body.into(),
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         span,
         id: NodeId::new(),
     })
@@ -155,7 +156,7 @@ pub fn parse_while_loop_stmt<'parser>(
             variable: Some(local.into()),
             condition: condition.into(),
             block: body.into(),
-            kind: Type::Void(span),
+            kind: Type::Void { span },
             span,
             id: NodeId::new(),
         })
@@ -167,7 +168,7 @@ pub fn parse_while_loop_stmt<'parser>(
             variable: None,
             condition: condition.into(),
             block: block.into(),
-            kind: Type::Void(span),
+            kind: Type::Void { span },
             span,
             id: NodeId::new(),
         })

@@ -386,7 +386,7 @@ impl<'parser> SymbolTable<'parser> {
         Ok(())
     }
 
-    pub fn new_intrinsic(
+    pub fn new_compiler_intrinsic(
         &mut self,
         id: &'parser str,
         intrinsic: Intrinsic<'parser>,

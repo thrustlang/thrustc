@@ -27,13 +27,15 @@ use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{TokenType, traits::TokenTypeBuiltinExtensions};
 use thrustc_typesystem::{
     Type,
-    metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
     traits::TypeExtensions,
+    type_metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
 };
 
 use crate::{
     ParserContext, builtins,
-    expressions::{self, array, asm, call, constructor, deref, enum_value, fixed_array, reference},
+    expressions::{
+        self, array, asm, call, deref, enum_value, fixed_array, reference, struct_constructor,
+    },
     reinterpret,
 };
 
@@ -43,7 +45,7 @@ pub fn lower_precedence<'parser>(
     ctx.enter_expression()?;
 
     let primary_expr: Ast = match &ctx.peek().kind {
-        TokenType::New => constructor::build_constructor(ctx)?,
+        TokenType::New => struct_constructor::build_constructor(ctx)?,
 
         TokenType::Fixed => fixed_array::build_fixed_array(ctx)?,
         TokenType::LBracket => array::build_array(ctx)?,
@@ -86,7 +88,7 @@ pub fn lower_precedence<'parser>(
 
             let mut cstring_type: Type = Type::Const(
                 Type::Array {
-                    base_type: Type::Char(span).into(),
+                    base_type: Type::Char { span }.into(),
                     infered_type: None,
                     metadata: ArrayTypeMetadata::new(None, None),
                     span,
@@ -151,7 +153,7 @@ pub fn lower_precedence<'parser>(
             }
 
             let fixed_array_type: Type = Type::FixedArray {
-                base_type: Type::Char(span).into(),
+                base_type: Type::Char { span }.into(),
                 size: processed
                     .len()
                     .saturating_add(1)
@@ -164,14 +166,14 @@ pub fn lower_precedence<'parser>(
             {
                 if at_variable_position {
                     cstring_type = Type::Array {
-                        base_type: Type::Char(span).into(),
+                        base_type: Type::Char { span }.into(),
                         infered_type: None,
                         metadata: ArrayTypeMetadata::new(Some(fixed_array_type.into()), None),
                         span,
                     };
                 } else if at_static_position {
                     cstring_type = Type::Array {
-                        base_type: Type::Char(span).into(),
+                        base_type: Type::Char { span }.into(),
                         infered_type: None,
                         metadata: ArrayTypeMetadata::new(Some(fixed_array_type.into()), None),
                         span,
@@ -179,7 +181,7 @@ pub fn lower_precedence<'parser>(
                 } else if at_constant_position {
                     cstring_type = Type::Const(
                         Type::Array {
-                            base_type: Type::Char(span).into(),
+                            base_type: Type::Char { span }.into(),
                             infered_type: None,
                             metadata: ArrayTypeMetadata::new(Some(fixed_array_type.into()), None),
                             span,
@@ -190,7 +192,7 @@ pub fn lower_precedence<'parser>(
                 } else if at_expression_position {
                     cstring_type = Type::Const(
                         Type::Array {
-                            base_type: Type::Char(span).into(),
+                            base_type: Type::Char { span }.into(),
                             infered_type: None,
                             metadata: ArrayTypeMetadata::new(Some(fixed_array_type.into()), None),
                             span,
@@ -212,7 +214,7 @@ pub fn lower_precedence<'parser>(
             let tk: &Token = ctx.advance()?;
             let span: Span = tk.get_span();
 
-            Ast::new_char(Type::Char(span), tk.get_lexeme_first_byte(), span)
+            Ast::new_char(Type::Char { span }, tk.get_lexeme_first_byte(), span)
         }
 
         TokenType::NullPtr => Ast::new_nullptr(ctx.advance()?.span),
@@ -291,7 +293,7 @@ pub fn lower_precedence<'parser>(
         TokenType::Unreachable => {
             let span: Span = ctx.advance()?.get_span();
 
-            Ast::new_unreacheable(Type::Void(span), span)
+            Ast::new_unreacheable(Type::Void { span }, span)
         }
 
         tk_type if tk_type.is_builtin() => builtins::build_builtin(ctx, *tk_type)?,

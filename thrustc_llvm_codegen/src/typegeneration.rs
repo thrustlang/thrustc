@@ -35,6 +35,7 @@ use thrustc_typesystem::traits::TypeCodeLocation;
 use thrustc_typesystem::traits::TypeExtensions;
 use thrustc_typesystem::traits::TypeIsExtensions;
 use thrustc_typesystem::traits::TypePointerExtensions;
+use thrustc_typesystem::type_modificators::StructureTypeModificator;
 
 use std::path::PathBuf;
 
@@ -174,7 +175,7 @@ pub fn generate_type<'ctx>(
 
     match kind {
         t if t.is_integer_type() || t.is_char_type() || t.is_bool_type() => match kind {
-            Type::S8 { .. } | Type::U8 { .. } | Type::Char(..) => llvm_context.i8_type().into(),
+            Type::S8 { .. } | Type::U8 { .. }  => llvm_context.i8_type().into(),
             Type::S16 { .. } | Type::U16 { .. } => llvm_context.i16_type().into(),
             Type::S32 { .. } | Type::U32 { .. } => llvm_context.i32_type().into(),
             Type::S64 { .. } | Type::U64 { .. } => llvm_context.i64_type().into(),
@@ -239,11 +240,12 @@ pub fn generate_type<'ctx>(
         Type::Const(subtype, ..) => self::generate_type(context, subtype),
 
         Type::Struct {
-            fields, modifier, ..
+            fields, metadata, ..
         } => {
             let mut field_types: Vec<BasicTypeEnum> = Vec::with_capacity(u8::MAX as usize);
 
-            let packed: bool = modifier.llvm().is_packed();
+            let modifications: &StructureTypeModificator = metadata.get_struct_type_modificator();
+            let packed: bool = modifications.llvm().is_packed();
 
             {
                 for ty in fields.iter() {
@@ -279,7 +281,7 @@ pub fn generate_dereference_type<'ctx>(
 
     match kind {
         t if t.is_integer_type() || t.is_char_type() || t.is_bool_type() => match kind {
-            Type::S8 { .. } | Type::U8 { .. } | Type::Char(..) => llvm_context.i8_type().into(),
+            Type::S8 { .. } | Type::U8 { .. }  => llvm_context.i8_type().into(),
             Type::S16 { .. } | Type::U16 { .. } => llvm_context.i16_type().into(),
             Type::S32 { .. } | Type::U32 { .. } => llvm_context.i32_type().into(),
             Type::S64 { .. } | Type::U64 { .. } => llvm_context.i64_type().into(),
@@ -332,11 +334,12 @@ pub fn generate_dereference_type<'ctx>(
         Type::Const(subtype, ..) => self::generate_dereference_type(context, subtype),
 
         Type::Struct {
-            fields, modifier, ..
+            fields, metadata, ..
         } => {
             let mut field_types: Vec<BasicTypeEnum> = Vec::with_capacity(u8::MAX as usize);
 
-            let packed: bool = modifier.llvm().is_packed();
+            let modifications: &StructureTypeModificator = metadata.get_struct_type_modificator();
+            let packed: bool = modifications.llvm().is_packed();
 
             {
                 for ty in fields.iter() {

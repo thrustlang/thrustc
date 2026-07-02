@@ -17,18 +17,18 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, ast_metadata::StaticMetadata, traits::AstGetType};
-use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
-use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
+use thrustc_ast::{ast_metadata::StaticMetadata, traits::AstGetType, Ast, NodeId};
+use thrustc_ast_modificators::{traits::ModificatorsExtensions, Modificators};
+use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributes};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_mir::{atomicord::ThrustAtomicOrdering, threadmode::ThrustThreadMode};
-use thrustc_parser_context::{Position, traits::TypeContextExtensions};
+use thrustc_parser_context::{traits::TypeContextExtensions, Position};
 use thrustc_span::Span;
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, traits::InfererTypeExtensions};
+use thrustc_typesystem::{traits::InfererTypeExtensions, Type};
 
-use crate::{ParserContext, attributes, expressions, modificators, typegeneration};
+use crate::{attributes, expressions, modificators, typegeneration, ParserContext};
 
 pub fn build_global_static<'parser>(
     ctx: &mut ParserContext<'parser>,

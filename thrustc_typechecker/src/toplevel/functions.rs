@@ -44,11 +44,9 @@ pub fn validate_node<'type_checker>(
             attributes,
             ..
         } => {
-            if !typechecker.get_table().constains_asm_function(name) {
-                typechecker
-                    .get_mut_table()
-                    .new_asm_function(name, (return_type, parameters_types, attributes));
-            }
+            typechecker
+                .get_mut_table()
+                .new_asm_function(name, (return_type, parameters_types, attributes));
 
             if return_type.contains_void_type() {
                 typechecker.add_error_report(CompilationIssue::Error(
@@ -89,11 +87,9 @@ pub fn validate_node<'type_checker>(
             attributes,
             ..
         } => {
-            if !typechecker.get_table().constains_intrinsic(name) {
-                typechecker
-                    .get_mut_table()
-                    .new_intrinsic(name, (return_type, parameters_types, attributes));
-            }
+            typechecker
+                .get_mut_table()
+                .new_compiler_intrinsic(name, (return_type, parameters_types, attributes));
 
             if return_type.contains_void_type() {
                 typechecker.add_error_report(CompilationIssue::Error(
@@ -140,11 +136,9 @@ pub fn validate_node<'type_checker>(
                 .get_mut_type_context()
                 .set_current_function_type((return_type, *span));
 
-            if !typechecker.get_table().constains_function(name) {
-                typechecker
-                    .get_mut_table()
-                    .new_function(name, (return_type, parameter_types, attributes));
-            }
+            typechecker
+                .get_mut_table()
+                .new_function(name, (return_type, parameter_types, attributes));
 
             {
                 for node in parameters.iter() {

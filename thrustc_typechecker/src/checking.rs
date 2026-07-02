@@ -58,81 +58,87 @@ pub fn check_type_together(
 
     if let Some(Ast::BinaryOp {
         operator,
-        kind: nodeession_type,
+        kind: provided,
         ..
     }) = node
     {
-        return self::check_type_together(
+        self::check_type_together(
             target,
-            nodeession_type,
+            provided,
             None,
             Some(operator),
             metadata,
             span,
             control_context,
-        );
+        )?;
+
+        return Ok(());
     }
 
     if let Some(Ast::UnaryOp {
         operator,
-        kind: nodeession_type,
+        kind: provided,
         ..
     }) = node
     {
-        return self::check_type_together(
+        self::check_type_together(
             target,
-            nodeession_type,
+            provided,
             None,
             Some(operator),
             metadata,
             span,
             control_context,
-        );
+        )?;
+
+        return Ok(());
     }
 
     if let Some(Ast::Group {
         node,
-        kind: nodeession_type,
+        kind: provided,
         ..
     }) = node
     {
-        return self::check_type_together(
+        self::check_type_together(
             target,
-            nodeession_type,
+            provided,
             Some(node),
             None,
             metadata,
             span,
             control_context,
-        );
+        )?;
+
+        return Ok(());
     }
 
     match (target, provided, operator) {
-        (Type::Char(..), Type::Char(..), None) => Ok(()),
+        (Type::Char { .. }, Type::Char { .. }, None) => Ok(()),
 
         (
             Type::Struct {
-                fields: target,
-                modifier: mod1,
+                fields: fields_1,
+                metadata: metadata_1,
                 ..
             },
             Type::Struct {
-                fields: provided,
-                modifier: mod2,
+                fields: fields_2,
+                metadata: metadata_2,
                 ..
             },
             None,
         ) => {
-            if target.len() != provided.len() {
+            if fields_1.len() != fields_2.len() {
                 return Err(error);
             }
 
-            if mod1 != mod2 {
+            if metadata_1 != metadata_2 {
                 return Err(CompilationIssue::Error(
                     CompilationIssueCode::E0021,
                     format!(
                         "Expected structure type with '{}' attributes but found '{}'.",
-                        mod1, mod2
+                        metadata_1, metadata_2
                     ),
                     "You should compare them and see which specific one doesn't follow the expected."
                         .into(),
@@ -142,7 +148,7 @@ pub fn check_type_together(
             }
 
             {
-                for (target, provided) in target.iter().zip(provided) {
+                for (target, provided) in fields_1.iter().zip(fields_2) {
                     self::check_type_together(
                         target,
                         provided,
@@ -158,23 +164,35 @@ pub fn check_type_together(
             Ok(())
         }
 
-        (Type::Addr(..), Type::Addr(..), None) => Ok(()),
-
-        (Type::Fn(target, ret1, mod1, ..), Type::Fn(provided, ret2, mod2, ..), None) => {
-            if target.len() != provided.len() {
+        (
+            Type::Fn {
+                return_type: return_type_1,
+                parameter_types: parameters_types_1,
+                modificator: modificator_1,
+                ..
+            },
+            Type::Fn {
+                return_type: return_type_2,
+                parameter_types: parameters_types_2,
+                modificator: modificator_2,
+                ..
+            },
+            None,
+        ) => {
+            if parameters_types_1.len() != parameters_types_2.len() {
                 return Err(error);
             }
 
-            if ret1 != ret2 {
+            if return_type_1 != return_type_2 {
                 return Err(error);
             }
 
-            if mod1 != mod2 {
+            if modificator_1 != modificator_2 {
                 return Err(CompilationIssue::Error(
                     CompilationIssueCode::E0021,
                     format!(
                         "Expected function reference type with '{}' attributes but found '{}'.",
-                        mod1, mod2
+                        modificator_1, modificator_2
                     ),
                     "You should compare them and see which specific one doesn't follow the expected.".into(),
                     None,
@@ -183,7 +201,7 @@ pub fn check_type_together(
             }
 
             {
-                for (target, provided) in target.iter().zip(provided) {
+                for (target, provided) in parameters_types_1.iter().zip(parameters_types_2) {
                     self::check_type_together(
                         target,
                         provided,
@@ -766,7 +784,7 @@ pub fn check_type_together(
             | None,
         ) if metadata.is_literal_value() => Ok(()),
 
-        (Type::Void(..), Type::Void(..), None) => Ok(()),
+        (Type::Void { .. }, Type::Void { .. }, None) => Ok(()),
 
         _ => Err(error),
     }
@@ -807,7 +825,7 @@ pub fn check_type_cast(
             | Type::U128 { .. }
             | Type::USize { .. }
             | Type::SSize { .. }
-            | Type::Char(..)
+            | Type::Char { .. }
             | Type::F32 { .. }
             | Type::F64 { .. }
             | Type::F128 { .. },
@@ -822,7 +840,7 @@ pub fn check_type_cast(
             | Type::U128 { .. }
             | Type::USize { .. }
             | Type::SSize { .. }
-            | Type::Char(..)
+            | Type::Char { .. }
             | Type::F32 { .. }
             | Type::F64 { .. }
             | Type::F128 { .. },
@@ -832,7 +850,7 @@ pub fn check_type_cast(
         (Type::FPPC128 { .. }, Type::FPPC128 { .. }) => Ok(()),
 
         (
-            Type::Ptr { .. } | Type::Addr(..),
+            Type::Ptr { .. },
             Type::S8 { .. }
             | Type::S16 { .. }
             | Type::S32 { .. }
@@ -876,7 +894,7 @@ pub fn check_type_cast(
             | Type::SSize { .. },
         ) => Ok(()),
 
-        (Type::Ptr { .. } | Type::Addr(..), Type::Ptr { .. } | Type::Addr(..)) => Ok(()),
+        (Type::Ptr { .. }, Type::Ptr { .. }) => Ok(()),
         (Type::Ptr { .. }, Type::Array { .. }) if is_allocated => Ok(()),
         (Type::Ptr { subtype: None, .. }, Type::Fn { .. }) if is_allocated => Ok(()),
 
@@ -892,7 +910,7 @@ pub fn check_type_cast(
             | Type::U128 { .. }
             | Type::USize { .. }
             | Type::SSize { .. }
-            | Type::Char(..)
+            | Type::Char { .. }
             | Type::F32 { .. }
             | Type::F64 { .. }
             | Type::F128 { .. }
@@ -902,8 +920,8 @@ pub fn check_type_cast(
             | Type::Struct { .. }
             | Type::Array { .. }
             | Type::FixedArray { .. }
-            | Type::Fn(..),
-            Type::Ptr { .. } | Type::Addr(..),
+            | Type::Fn { .. },
+            Type::Ptr { .. },
         ) if is_allocated => Ok(()),
 
         (

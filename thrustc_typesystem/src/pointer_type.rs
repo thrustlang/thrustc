@@ -33,7 +33,7 @@ impl TypePointerExtensions for Type {
         } = non_constant_ty
         {
             if inner.is_ptr_like_type() {
-                base += 1;
+                base = base.saturating_add(1);
                 return inner.get_nested_ptr_type_count(base);
             }
         }
@@ -47,13 +47,13 @@ impl TypePointerExtensions for Type {
 
         matches!(
             non_constant_ty,
-            Type::Ptr { .. } | Type::Addr(..) | Type::Array { .. } | Type::Fn(..)
+            Type::Ptr { .. } | Type::Array { .. } | Type::Fn { .. }
         )
     }
 
     #[inline]
     fn is_flat_ptr_type(&self) -> bool {
-        matches!(self, Type::Ptr { .. } | Type::Fn(..))
+        matches!(self, Type::Ptr { .. } | Type::Fn { .. })
     }
 
     #[inline]

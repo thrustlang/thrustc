@@ -40,7 +40,7 @@ pub fn parse_return_stmt<'parser>(
     if ctx.match_token(TokenType::SemiColon)? {
         return Ok(Ast::Return {
             expression: None,
-            kind: Type::Void(span),
+            kind: Type::Void { span },
             span,
             id: NodeId::new(),
         });

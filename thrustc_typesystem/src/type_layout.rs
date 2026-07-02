@@ -5,6 +5,8 @@ use thrustc_llvm_target_triple::LLVMTargetTriple;
 use ahash::AHashMap as HashMap;
 use either::Either;
 
+use crate::{type_metadata::StructTypeMetadata, type_modificators::StructureTypeModificator};
+
 use super::Type;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -494,7 +496,7 @@ impl TargetInfo {
                 either::Either::Left(type_info)
             }
 
-            Type::S8 { .. } | Type::U8 { .. } | Type::Char(..) => {
+            Type::S8 { .. } | Type::U8 { .. } | Type::Char { .. } => {
                 type_info.width = self.i8_width();
                 type_info.align = self.i8_align();
                 type_info.alignof = type_info.align / self.i8_width;
@@ -626,7 +628,7 @@ impl TargetInfo {
                 either::Either::Left(type_info)
             }
 
-            Type::Void(..) | Type::Unresolved { .. } => {
+            Type::Void { .. } | Type::Unresolved { .. } => {
                 type_info.width = 1;
                 type_info.align = 8;
                 type_info.alignof = type_info.align / self.i8_width;
@@ -638,7 +640,7 @@ impl TargetInfo {
                 either::Either::Left(type_info)
             }
 
-            Type::Ptr { .. } | Type::Fn(..) | Type::Addr(..) => {
+            Type::Ptr { .. } | Type::Fn { .. } => {
                 type_info.width = self.ptr_width();
                 type_info.align = self.ptr_align();
                 type_info.alignof = type_info.align / self.i8_width;
@@ -723,9 +725,13 @@ impl TargetInfo {
             }
 
             Type::Struct {
-                fields, modifier, ..
+                fields, metadata, ..
             } => {
-                let packed: bool = modifier.llvm().is_packed();
+                let struct_metadata: &StructTypeMetadata = metadata;
+                let modifications: &StructureTypeModificator =
+                    struct_metadata.get_struct_type_modificator();
+
+                let packed: bool = modifications.llvm().is_packed();
 
                 let mut current_offset_bits: u32 = 0;
                 let mut max_align_bits: u32 = if packed { 1 } else { 8 };

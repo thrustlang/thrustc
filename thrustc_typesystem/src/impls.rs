@@ -24,6 +24,8 @@ use thrustc_span::Span;
 
 use crate::traits::ConstantTypeExtensions;
 use crate::traits::TypePointerExtensions;
+use crate::type_metadata::StructTypeMetadata;
+use crate::type_modificators::StructureTypeModificator;
 use crate::{
     Type,
     traits::{TypeCodeLocation, TypeExtensions, TypeIsExtensions},
@@ -32,24 +34,22 @@ use crate::{
 impl TypeIsExtensions for Type {
     #[inline(always)]
     fn is_char_type(&self) -> bool {
-        matches!(self, Type::Char(..))
+        matches!(self, Type::Char { .. })
     }
 
     #[inline(always)]
     fn is_void_type(&self) -> bool {
-        if let Type::Const(subtype, ..) = self {
-            return subtype.is_void_type();
-        }
+        let non_constant_ty: Type = self.remove_all_constant_type();
 
         if let Type::Ptr {
             subtype: Some(subtype),
             ..
-        } = self
+        } = non_constant_ty
         {
             return subtype.is_void_type();
         }
 
-        matches!(self, Type::Void(..))
+        matches!(self, Type::Void { .. })
     }
 
     #[inline(always)]
@@ -101,18 +101,13 @@ impl TypeIsExtensions for Type {
     }
 
     #[inline(always)]
-    fn is_address_type(&self) -> bool {
-        matches!(self, Type::Addr(..))
-    }
-
-    #[inline(always)]
     fn is_const_type(&self) -> bool {
         matches!(self, Type::Const(..))
     }
 
     #[inline(always)]
     fn is_function_reference_type(&self) -> bool {
-        matches!(self, Type::Fn(..))
+        matches!(self, Type::Fn { .. })
     }
 
     #[inline(always)]
@@ -165,7 +160,7 @@ impl TypeIsExtensions for Type {
                 | Type::U64 { .. }
                 | Type::U128 { .. }
                 | Type::USize { .. }
-                | Type::Char(..)
+                | Type::Char { .. }
         )
     }
 
@@ -178,7 +173,7 @@ impl TypeIsExtensions for Type {
     fn get_type_herarchy(&self) -> u8 {
         match self {
             Type::Bool { .. } => 1,
-            Type::Char(..) => 2,
+            Type::Char { .. } => 2,
 
             Type::U8 { .. } => 3,
             Type::U16 { .. } => 4,
@@ -201,21 +196,20 @@ impl TypeIsExtensions for Type {
 
             Type::Const(subtype, ..) => subtype.get_type_herarchy(),
 
-            Type::Addr(..) => 20,
             Type::Ptr {
                 subtype: Some(subtype),
                 ..
             } => subtype.get_type_herarchy(),
-            Type::Ptr { subtype: None, .. } => 21,
+            Type::Ptr { subtype: None, .. } => 20,
 
-            Type::Fn(..) => 22,
+            Type::Fn { .. } => 21,
 
-            Type::Array { .. } => 23,
-            Type::FixedArray { .. } => 24,
-            Type::Struct { .. } => 25,
+            Type::Array { .. } => 22,
+            Type::FixedArray { .. } => 23,
+            Type::Struct { .. } => 24,
 
-            Type::Void(..) => 26,
-            Type::Unresolved { .. } => 27,
+            Type::Void { .. } => 25,
+            Type::Unresolved { .. } => 26,
         }
     }
 }
@@ -299,11 +293,10 @@ impl TypeExtensions for Type {
             | Type::FX8680 { .. }
             | Type::FPPC128 { .. }
             | Type::Bool { .. }
-            | Type::Char(..)
-            | Type::Addr(..)
-            | Type::Void(..)
+            | Type::Char { .. }
+            | Type::Void { .. }
             | Type::Ptr { subtype: None, .. }
-            | Type::Fn(..)
+            | Type::Fn { .. }
             | Type::Unresolved { .. } => self,
         }
     }
@@ -344,21 +337,20 @@ impl Hash for Type {
             | Type::FX8680 { .. }
             | Type::FPPC128 { .. }
             | Type::Bool { .. }
-            | Type::Char(_)
-            | Type::Addr(_)
-            | Type::Void(_) => {}
+            | Type::Char { .. }
+            | Type::Void { .. } => {}
 
             Type::Const(inner, _) => inner.hash(state),
             Type::Ptr { subtype: inner, .. } => inner.hash(state),
             Type::Struct {
                 name,
                 fields,
-                modifier,
+                metadata,
                 ..
             } => {
                 name.hash(state);
                 fields.hash(state);
-                modifier.hash(state);
+                metadata.hash(state);
             }
             Type::FixedArray {
                 base_type, size, ..
@@ -374,10 +366,15 @@ impl Hash for Type {
                 base_type.hash(state);
                 infered_type.hash(state);
             }
-            Type::Fn(params, ret, modifier, _) => {
-                params.hash(state);
-                ret.hash(state);
-                modifier.hash(state);
+            Type::Fn {
+                parameter_types,
+                return_type,
+                modificator,
+                ..
+            } => {
+                parameter_types.hash(state);
+                return_type.hash(state);
+                modificator.hash(state);
             }
             Type::Unresolved { hint, .. } => {
                 hint.hash(state);
@@ -389,31 +386,50 @@ impl Hash for Type {
 impl PartialEq for Type {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Type::Fn(lhs, retlhs, mod1, ..), Type::Fn(rhs, retrhs, mod2, ..)) => {
-                lhs.len() == rhs.len()
-                    && lhs.iter().zip(lhs.iter()).all(|(f1, f2)| f1 == f2)
-                    && retlhs == retrhs
-                    && mod1 == mod2
+            (
+                Type::Fn {
+                    return_type: return_type_1,
+                    parameter_types: parameters_types_1,
+                    modificator: modificator_1,
+                    ..
+                },
+                Type::Fn {
+                    return_type: return_type_2,
+                    parameter_types: parameters_types_2,
+                    modificator: modificator_2,
+                    ..
+                },
+            ) => {
+                parameters_types_1.len() == parameters_types_2.len()
+                    && parameters_types_1
+                        .iter()
+                        .zip(parameters_types_2.iter())
+                        .all(|(f1, f2)| f1 == f2)
+                    && return_type_1 == return_type_2
+                    && modificator_1 == modificator_2
             }
 
             (
                 Type::Struct {
                     name: a,
-                    fields: fields1,
-                    modifier: mod1,
+                    fields: fields_1,
+                    metadata: metadata_1,
                     ..
                 },
                 Type::Struct {
                     name: b,
-                    fields: fields2,
-                    modifier: mod2,
+                    fields: fields_2,
+                    metadata: metadata_2,
                     ..
                 },
             ) => {
-                fields1.len() == fields2.len()
+                fields_1.len() == fields_2.len()
                     && a == b
-                    && fields1.iter().zip(fields2.iter()).all(|(f1, f2)| f1 == f2)
-                    && mod1 == mod2
+                    && fields_1
+                        .iter()
+                        .zip(fields_2.iter())
+                        .all(|(f1, f2)| f1 == f2)
+                    && metadata_1 == metadata_2
             }
 
             (
@@ -439,7 +455,7 @@ impl PartialEq for Type {
             ) => target == from,
             (Type::Const(target, ..), Type::Const(from, ..)) => target == from,
 
-            (Type::Char(..), Type::Char(..)) => true,
+            (Type::Char { .. }, Type::Char { .. }) => true,
             (Type::S8 { .. }, Type::S8 { .. }) => true,
             (Type::S16 { .. }, Type::S16 { .. }) => true,
             (Type::S32 { .. }, Type::S32 { .. }) => true,
@@ -466,9 +482,8 @@ impl PartialEq for Type {
                 },
             ) => lhs == rhs,
             (Type::Ptr { .. }, Type::Ptr { .. }) => true,
-            (Type::Void(..), Type::Void(..)) => true,
+            (Type::Void { .. }, Type::Void { .. }) => true,
             (Type::Bool { .. }, Type::Bool { .. }) => true,
-            (Type::Addr(..), Type::Addr(..)) => true,
 
             _ => false,
         }
@@ -495,9 +510,14 @@ impl std::fmt::Display for Type {
             Type::FX8680 { .. } => write!(f, "fx86_80"),
             Type::FPPC128 { .. } => write!(f, "fppc_128"),
             Type::Bool { .. } => write!(f, "bool"),
-            Type::Char(..) => write!(f, "char"),
+            Type::Char { .. } => write!(f, "char"),
             Type::Unresolved { hint, .. } => write!(f, "unresolved[{}]", hint),
-            Type::Fn(params, kind, modificator, ..) => {
+            Type::Fn {
+                parameter_types,
+                return_type,
+                modificator,
+                ..
+            } => {
                 let has_llvm_ignore: &str = if modificator.llvm().has_ignore() {
                     "<ignore>"
                 } else {
@@ -508,12 +528,12 @@ impl std::fmt::Display for Type {
                     f,
                     "Fn{}[{}] -> {}",
                     has_llvm_ignore,
-                    params
+                    parameter_types
                         .iter()
                         .map(|param| param.to_string())
                         .collect::<Vec<_>>()
                         .join(", "),
-                    kind
+                    return_type
                 )
             }
             Type::Const(inner_type, ..) => write!(f, "const {}", inner_type),
@@ -528,10 +548,15 @@ impl std::fmt::Display for Type {
             Type::Struct {
                 name,
                 fields,
-                modifier,
+                metadata,
                 ..
             } => {
-                let has_llvm_packed_attribute: &str = if modifier.llvm().is_packed() {
+                let struct_metadata: &StructTypeMetadata = metadata;
+
+                let modifications: &StructureTypeModificator =
+                    struct_metadata.get_struct_type_modificator();
+
+                let has_llvm_packed_attribute: &str = if modifications.llvm().is_packed() {
                     "<packed>"
                 } else {
                     ""
@@ -558,16 +583,15 @@ impl std::fmt::Display for Type {
 
                 write!(f, "ptr")
             }
-            Type::Addr(..) => {
-                write!(f, "memory address")
-            }
-            Type::Void(..) => write!(f, "void"),
+            Type::Void { .. } => write!(f, "void"),
         }
     }
 }
 
 impl std::default::Default for Type {
     fn default() -> Self {
-        Type::Void(Span::nothing())
+        Type::Void {
+            span: Span::nothing(),
+        }
     }
 }

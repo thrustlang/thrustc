@@ -57,23 +57,23 @@ pub enum LLVMBuiltin<'ctx> {
         span: Span,
     },
     AbiSizeOf {
-        of: &'ctx Type,
+        ty: &'ctx Type,
         span: Span,
     },
     BitSizeOf {
-        of: &'ctx Type,
+        ty: &'ctx Type,
         span: Span,
     },
     AbiAlignOf {
-        of: &'ctx Type,
+        ty: &'ctx Type,
         span: Span,
     },
     AlignOf {
-        of: &'ctx Type,
+        ty: &'ctx Type,
         span: Span,
     },
     SizeOf {
-        of: &'ctx Type,
+        ty: &'ctx Type,
         span: Span,
     },
 }
@@ -114,11 +114,11 @@ pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ct
             size,
             span: *span,
         },
-        AstBuiltin::AlignOf { of, span } => LLVMBuiltin::AlignOf { of, span: *span },
-        AstBuiltin::SizeOf { of, span } => LLVMBuiltin::SizeOf { of, span: *span },
-        AstBuiltin::BitSizeOf { of, span } => LLVMBuiltin::BitSizeOf { of, span: *span },
-        AstBuiltin::AbiSizeOf { of, span } => LLVMBuiltin::AbiSizeOf { of, span: *span },
-        AstBuiltin::AbiAlignOf { of, span } => LLVMBuiltin::AbiAlignOf { of, span: *span },
+        AstBuiltin::AlignOf { ty, span } => LLVMBuiltin::AlignOf { ty, span: *span },
+        AstBuiltin::SizeOf { ty, span } => LLVMBuiltin::SizeOf { ty, span: *span },
+        AstBuiltin::BitSizeOf { ty, span } => LLVMBuiltin::BitSizeOf { ty, span: *span },
+        AstBuiltin::AbiSizeOf { ty, span } => LLVMBuiltin::AbiSizeOf { ty, span: *span },
+        AstBuiltin::AbiAlignOf { ty, span } => LLVMBuiltin::AbiAlignOf { ty, span: *span },
     }
 }
 
@@ -291,11 +291,11 @@ pub fn compile<'ctx>(
                 )
             })
             .into(),
-        LLVMBuiltin::AlignOf { of, span } => {
+        LLVMBuiltin::AlignOf { ty, span } => {
             let type_layout_result: either::Either<
                 thrustc_typesystem::type_layout::TypeLayout,
                 thrustc_typesystem::type_layout::StructTypeLayout,
-            > = context.get_mut_target_info().get_type_layout(of);
+            > = context.get_mut_target_info().get_type_layout(ty);
 
             let align_of: u32 = match type_layout_result {
                 either::Either::Left(t) => t.into_layout().alignof,
@@ -312,11 +312,11 @@ pub fn compile<'ctx>(
 
             type_cast::try_smart_cast(context, cast_type, &align_of_type, align_of_value, span)
         }
-        LLVMBuiltin::SizeOf { of, span } => {
+        LLVMBuiltin::SizeOf { ty, span } => {
             let type_layout_result: either::Either<
                 thrustc_typesystem::type_layout::TypeLayout,
                 thrustc_typesystem::type_layout::StructTypeLayout,
-            > = context.get_mut_target_info().get_type_layout(of);
+            > = context.get_mut_target_info().get_type_layout(ty);
 
             let size_of: u32 = match type_layout_result {
                 either::Either::Left(t) => t.into_layout().sizeof,
@@ -333,8 +333,8 @@ pub fn compile<'ctx>(
 
             type_cast::try_smart_cast(context, cast_type, &size_of_type, size_of_value, span)
         }
-        LLVMBuiltin::AbiSizeOf { of, span } => {
-            let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, of);
+        LLVMBuiltin::AbiSizeOf { ty, span } => {
+            let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, ty);
             let abi_size: u64 = context.get_target_data().get_abi_size(&llvm_type);
             let size: BasicValueEnum = context
                 .get_llvm_context()
@@ -346,8 +346,8 @@ pub fn compile<'ctx>(
 
             type_cast::try_smart_cast(context, cast_type, &size_type, size, span)
         }
-        LLVMBuiltin::BitSizeOf { of, span } => {
-            let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, of);
+        LLVMBuiltin::BitSizeOf { ty, span } => {
+            let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, ty);
             let bit_size_bits: u64 = context.get_target_data().get_bit_size(&llvm_type);
             let bit_size_bytes: u64 = bit_size_bits.saturating_div(8);
 
@@ -361,8 +361,8 @@ pub fn compile<'ctx>(
 
             type_cast::try_smart_cast(context, cast_type, &size_type, size, span)
         }
-        LLVMBuiltin::AbiAlignOf { of, span } => {
-            let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, of);
+        LLVMBuiltin::AbiAlignOf { ty, span } => {
+            let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, ty);
             let abi_align: u32 = context.get_target_data().get_abi_alignment(&llvm_type);
 
             let align: BasicValueEnum = context

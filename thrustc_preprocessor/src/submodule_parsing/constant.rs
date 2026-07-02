@@ -52,7 +52,7 @@ pub fn parse_constant<'module_parser>(
         name,
         signature: Signature::Constant {
             kind: r#type,
-            invalid_kind: Type::Void(span),
+            invalid_kind: Type::Void { span },
             span,
             attributes,
         },

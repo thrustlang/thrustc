@@ -21,11 +21,14 @@ use thrustc_ast::{
     Ast, NodeId, ast_logic_data::StructureData, traits::AstStructFieldsDataExtensions,
 };
 use thrustc_attributes::ThrustAttributes;
+use thrustc_entities::parser_entities::Struct;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
+use thrustc_typesystem::{
+    Type, type_metadata::StructTypeMetadata, type_modificators::StructureTypeModificator,
+};
 
 use thrustc_ast::traits::AstStructureDataExtensions;
 
@@ -61,7 +64,9 @@ pub fn build_structure<'parser>(
     let name: &str = name_tk.get_lexeme();
     let span: Span = name_tk.get_span();
 
-    let mut data: StructureData = StructureData::new(name, modificator, span);
+    let metadata: StructTypeMetadata = StructTypeMetadata::new(modificator);
+
+    let mut data: StructureData = StructureData::new(name, metadata, span);
     let mut field_position: u32 = 0;
 
     loop {
@@ -127,20 +132,23 @@ pub fn build_structure<'parser>(
     )?;
 
     if parse_forward {
-        ctx.get_mut_symbols()
-            .new_global_struct(name, (name, data.1, attributes, modificator, span))?;
+        let struct_: Struct = (name, data.1, attributes, metadata, span);
+
+        ctx.get_mut_symbols().new_global_struct(name, struct_)?;
 
         Ok(Ast::new_nullptr(span))
     } else {
-        let structure_type: Type = data.get_type();
+        let structure_type: Type = data.get_struct_type();
 
-        Ok(Ast::Struct {
+        let struct_: Ast<'_> = Ast::Struct {
             name,
             data,
             kind: structure_type,
             attributes,
             span,
             id: NodeId::new(),
-        })
+        };
+
+        Ok(struct_)
     }
 }

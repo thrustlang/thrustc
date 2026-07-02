@@ -142,7 +142,7 @@ fn decompose_struct_property<'parser>(
         let data: StructureData = structure.get_data();
 
         let field: Option<StructDataField> = data
-            .get_fields()
+            .get_struct_fields()
             .iter()
             .enumerate()
             .find(|(_, (other_property_name, ..))| *other_property_name == current_property_name);

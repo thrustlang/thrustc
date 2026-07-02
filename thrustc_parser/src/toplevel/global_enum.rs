@@ -118,7 +118,7 @@ pub fn build_enum<'parser>(
             name,
             data,
             attributes,
-            kind: Type::Void(span),
+            kind: Type::Void { span },
             span,
             id: NodeId::new(),
         })

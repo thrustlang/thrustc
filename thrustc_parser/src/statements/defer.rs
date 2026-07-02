@@ -45,7 +45,7 @@ pub fn parse_post_executation_stmt<'parser>(
 
     Ok(Ast::Defer {
         node: node.into(),
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         span,
         id: NodeId::new(),
     })

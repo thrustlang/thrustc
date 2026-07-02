@@ -44,7 +44,7 @@ pub fn equal_precedence<'parser>(
         expression = Ast::Mutation {
             source: expression.into(),
             value: expr.into(),
-            kind: Type::Void(span),
+            kind: Type::Void { span },
             span,
             id: NodeId::new(),
         };

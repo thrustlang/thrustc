@@ -22,9 +22,10 @@ use thrustc_span::Span;
 use crate::{Type, traits::TypeCodeLocation};
 
 impl TypeCodeLocation for Type {
+    #[inline]
     fn get_span(&self) -> Span {
         match self {
-            Type::Char(span)
+            Type::Char { span }
             | Type::S8 { span }
             | Type::S16 { span }
             | Type::S32 { span }
@@ -42,14 +43,13 @@ impl TypeCodeLocation for Type {
             | Type::FX8680 { span }
             | Type::FPPC128 { span }
             | Type::Bool { span }
-            | Type::Void(span)
-            | Type::Addr(span)
+            | Type::Void { span }
             | Type::Array { span, .. }
             | Type::FixedArray { span, .. }
             | Type::Const(_, span)
             | Type::Ptr { span, .. }
             | Type::Struct { span, .. }
-            | Type::Fn(_, _, _, span) => *span,
+            | Type::Fn { span, .. } => *span,
             Type::Unresolved { span, .. } => *span,
         }
     }

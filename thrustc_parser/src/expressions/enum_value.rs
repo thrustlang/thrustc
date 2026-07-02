@@ -56,7 +56,7 @@ pub fn build_enum_value<'parser>(
                     let data: EnumData = enum_.get_fields();
                     let field_name: &str = field_tk.get_lexeme();
 
-                    match data.get_field(field_name) {
+                    match data.get_enum_field(field_name) {
                         Some(field) => {
                             let field_type: Type = field.1;
                             let field_value: Ast = field.2;
@@ -75,8 +75,7 @@ pub fn build_enum_value<'parser>(
                             ctx.add_error_report(CompilationIssue::Error(
                                 CompilationIssueCode::E0028,
                                 "Unknown field.".into(),
-                                "You should make sure that it existion in the enum definition."
-                                    .into(),
+                                "You should make sure that it exist in the enum definition.".into(),
                                 None,
                                 field_span,
                             ));

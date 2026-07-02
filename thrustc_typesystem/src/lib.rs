@@ -22,7 +22,6 @@ mod constant_type;
 mod fixed_array_type;
 mod function_reference_type;
 mod impls;
-pub mod metadata;
 mod pointer_dereference;
 mod pointer_type;
 mod structure_type;
@@ -32,6 +31,7 @@ mod type_indexation;
 mod type_inference;
 pub mod type_layout;
 mod type_location;
+pub mod type_metadata;
 pub mod type_modificators;
 mod type_precedence;
 mod void_type;
@@ -39,10 +39,10 @@ mod void_type;
 use serde::Serialize;
 use thrustc_span::Span;
 
-use crate::metadata::ArrayTypeMetadata;
-use crate::metadata::FixedArrayTypeMetadata;
+use crate::type_metadata::ArrayTypeMetadata;
+use crate::type_metadata::FixedArrayTypeMetadata;
+use crate::type_metadata::StructTypeMetadata;
 use crate::type_modificators::FunctionReferenceTypeModificator;
-use crate::type_modificators::StructureTypeModificator;
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
@@ -109,7 +109,9 @@ pub enum Type {
     },
 
     // Char Type
-    Char(Span),
+    Char {
+        span: Span,
+    },
 
     // Constant Type
     Const(std::boxed::Box<Type>, Span),
@@ -125,11 +127,11 @@ pub enum Type {
     Struct {
         name: String,
         fields: std::vec::Vec<Type>,
-        modifier: StructureTypeModificator,
+        metadata: StructTypeMetadata,
         span: Span,
     },
 
-    // Fixed FixedArray
+    // Fixed Array
     FixedArray {
         base_type: std::boxed::Box<Type>,
         size: u32,
@@ -145,19 +147,18 @@ pub enum Type {
         span: Span,
     },
 
-    // Memory Address
-    Addr(Span),
-
     // Function Referece
-    Fn(
-        std::vec::Vec<Type>,
-        std::boxed::Box<Type>,
-        FunctionReferenceTypeModificator,
-        Span,
-    ),
+    Fn {
+        return_type: std::boxed::Box<Type>,
+        parameter_types: std::vec::Vec<Type>,
+        modificator: FunctionReferenceTypeModificator,
+        span: Span,
+    },
 
     // Void Type
-    Void(Span),
+    Void {
+        span: Span,
+    },
 
     // Unresolved Type
     Unresolved {

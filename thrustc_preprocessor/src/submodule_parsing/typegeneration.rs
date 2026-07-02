@@ -30,8 +30,8 @@ use thrustc_token_type::TokenType;
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::{
     Type,
-    metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
     traits::TypeIsExtensions,
+    type_metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
     type_modificators::{
         FunctionReferenceTypeModificator, GCCFunctionReferenceTypeModificator,
         LLVMFunctionReferenceTypeModificator,
@@ -54,6 +54,7 @@ pub fn build_type(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
                 _ if tk_kind.is_array() => self::parse_array_type(ctx, span),
                 _ if tk_kind.is_const() => self::parse_constant_type(ctx, span),
                 _ if tk_kind.is_fn_ref() => self::parse_anonymous_function_type(ctx, span),
+
                 _ => match tk_kind {
                     ty if ty.is_ptr() && ctx.check(TokenType::LBracket) => {
                         let ptr_type: Type = Type::Ptr {
@@ -64,8 +65,8 @@ pub fn build_type(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
 
                         self::parse_pointer_type(ctx, ptr_type, span)
                     }
-                    TokenType::Char => Ok(Type::Char(span)),
 
+                    TokenType::Char => Ok(Type::Char { span }),
                     TokenType::S8 => Ok(Type::S8 { span }),
                     TokenType::S16 => Ok(Type::S16 { span }),
                     TokenType::S32 => Ok(Type::S32 { span }),
@@ -93,8 +94,7 @@ pub fn build_type(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
                         address_space: None,
                         span,
                     }),
-                    TokenType::Addr => Ok(Type::Addr(span)),
-                    TokenType::Void => Ok(Type::Void(span)),
+                    TokenType::Void => Ok(Type::Void { span }),
 
                     _ => Err(()),
                 },
@@ -161,15 +161,17 @@ fn parse_anonymous_function_type(ctx: &mut ModuleParser<'_>, span: Span) -> Resu
 
     let return_type: Type = self::build_type(ctx)?;
 
-    Ok(Type::Fn(
+    let function_ty: Type = Type::Fn {
+        return_type: return_type.into(),
         parameter_types,
-        return_type.into(),
-        FunctionReferenceTypeModificator::new(
+        modificator: FunctionReferenceTypeModificator::new(
             LLVMFunctionReferenceTypeModificator::new(has_ignore),
             GCCFunctionReferenceTypeModificator::default(),
         ),
         span,
-    ))
+    };
+
+    Ok(function_ty)
 }
 
 fn parse_constant_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> {

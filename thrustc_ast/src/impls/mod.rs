@@ -23,7 +23,7 @@ use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
     traits::{TypePointerExtensions, TypeStructExtensions},
-    type_modificators::StructureTypeModificator,
+    type_metadata::StructTypeMetadata,
 };
 
 use crate::{
@@ -39,9 +39,9 @@ use crate::{
     },
 };
 
-mod builtins_implementations;
-mod constant_implementations;
-mod literal_values_implementations;
+mod compiler_builtins;
+mod constant;
+mod literal_values;
 
 impl AstStandardExtensions for Ast<'_> {
     #[inline]
@@ -351,52 +351,46 @@ impl AstPropertyDataFieldExtensions for PropertyDataField {
 
 impl AstConstructorDataExtensions for ConstructorData<'_> {
     #[inline]
-    fn get_type(&self, name: &str, modificator: StructureTypeModificator, span: Span) -> Type {
+    fn get_struct_type(&self, name: &str, metadata: StructTypeMetadata, span: Span) -> Type {
         let types: Vec<Type> = self.iter().map(|field| field.2.clone()).collect();
-        Type::create_struct_type(name.to_string(), types.as_slice(), modificator, span)
+        Type::create_struct_type(name.to_string(), types.as_slice(), metadata, span)
     }
 }
 
 impl<'a> AstStructureDataExtensions<'a> for StructureData<'a> {
     #[inline]
-    fn new(
-        name: &'a str,
-        modificator: thrustc_typesystem::type_modificators::StructureTypeModificator,
-        span: thrustc_span::Span,
-    ) -> Self {
-        (
-            name,
-            Vec::with_capacity(u8::MAX as usize),
-            modificator,
-            span,
-        )
+    fn new(name: &'a str, metadata: StructTypeMetadata, span: thrustc_span::Span) -> Self {
+        (name, Vec::with_capacity(u8::MAX as usize), metadata, span)
     }
 
     #[inline]
-    fn get_fields(&self) -> &crate::ast_logic_data::StructureDataFields<'_> {
+    fn get_struct_fields(&self) -> &crate::ast_logic_data::StructureDataFields<'_> {
         &self.1
     }
 }
 
 impl AstStructFieldsDataExtensions for StructureData<'_> {
     #[inline]
-    fn get_type(&self) -> Type {
+    fn get_struct_type(&self) -> Type {
         let types: Vec<Type> = self.1.iter().map(|field| field.1.clone()).collect();
 
         let name: String = self.0.to_string();
         let span: Span = self.3;
 
-        Type::create_struct_type(name, types.as_slice(), self.get_modificator(), span)
+        let metadata: StructTypeMetadata = self.get_struct_metadata();
+
+        Type::create_struct_type(name, types.as_slice(), metadata, span)
     }
 
     #[inline]
-    fn get_modificator(&self) -> StructureTypeModificator {
+    fn get_struct_metadata(&self) -> StructTypeMetadata {
         self.2
     }
 }
 
 impl<'a> AstEnumFieldsDataExtensions<'a> for EnumData<'a> {
-    fn get_field(&self, name: &str) -> Option<EnumDataField<'a>> {
+    #[inline]
+    fn get_enum_field(&self, name: &str) -> Option<EnumDataField<'a>> {
         self.iter().find(|enum_field| enum_field.0 == name).cloned()
     }
 }

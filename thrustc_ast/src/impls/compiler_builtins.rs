@@ -17,18 +17,11 @@
 
 */
 
-use crate::Type;
-use crate::traits::{ConstantTypeExtensions, FunctionReferenceExtensions};
+use crate::{ast_builtins::AstBuiltin, traits::AstBuiltinsExtensions};
 
-impl FunctionReferenceExtensions for Type {
+impl AstBuiltinsExtensions for AstBuiltin<'_> {
     #[inline]
-    fn get_function_reference_return_type(&self) -> Type {
-        let non_constant_type: Type = self.remove_all_constant_type();
-
-        if let Type::Fn { return_type, .. } = non_constant_type {
-            return (*return_type).clone();
-        }
-
-        self.clone()
+    fn is_avalaible_at_compile_time(&self) -> bool {
+        matches!(self, AstBuiltin::AlignOf { .. } | AstBuiltin::SizeOf { .. })
     }
 }

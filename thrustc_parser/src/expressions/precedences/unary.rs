@@ -61,7 +61,7 @@ pub fn unary_precedence<'parser>(
         let expr: Ast = precedences::indirect_call::indirect_precedence(ctx)?;
         let expr_type: &Type = expr.get_value_type()?;
 
-        let kind: Type = expr_type.narrowing();
+        let kind: Type = expr_type.narrowing_cast();
 
         ctx.leave_expression();
 

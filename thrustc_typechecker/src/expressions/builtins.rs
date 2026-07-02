@@ -105,7 +105,7 @@ pub fn validate_memmove<'type_checker>(
         ));
     }
 
-    if !source_type.is_ptr_type() && !source_type.is_address_type() {
+    if !source_type.is_ptr_type() {
         typechecker.add_error_report(CompilationIssue::Error(
             CompilationIssueCode::E0019,
             format!("Expected pointer type, got '{}' type.", source_type),
@@ -115,7 +115,7 @@ pub fn validate_memmove<'type_checker>(
         ));
     }
 
-    if !destination_type.is_ptr_type() && !destination_type.is_address_type() {
+    if !destination_type.is_ptr_type() {
         typechecker.add_error_report(CompilationIssue::Error(
             CompilationIssueCode::E0019,
             format!("Expected pointer type, got '{}' type.", destination_type),
@@ -187,7 +187,7 @@ pub fn validate_memcpy<'type_checker>(
         ));
     }
 
-    if !source_type.is_ptr_type() && !source_type.is_address_type() {
+    if !source_type.is_ptr_type() {
         typechecker.add_error_report(CompilationIssue::Error(
             CompilationIssueCode::E0019,
             format!("Expected pointer type, got '{}' type.", source_type),
@@ -197,7 +197,7 @@ pub fn validate_memcpy<'type_checker>(
         ));
     }
 
-    if !destination_type.is_ptr_type() && !destination_type.is_address_type() {
+    if !destination_type.is_ptr_type() {
         typechecker.add_error_report(CompilationIssue::Error(
             CompilationIssueCode::E0019,
             format!("Expected pointer type, got '{}' type.", destination_type),
@@ -269,7 +269,7 @@ pub fn validate_memset<'type_checker>(
         ));
     }
 
-    if !destination_type.is_ptr_type() && !destination_type.is_address_type() {
+    if !destination_type.is_ptr_type() {
         typechecker.add_error_report(CompilationIssue::Error(
             CompilationIssueCode::E0019,
             format!("Expected pointer type, got '{}' type.", size_type),

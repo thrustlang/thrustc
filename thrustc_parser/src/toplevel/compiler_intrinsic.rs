@@ -139,7 +139,7 @@ pub fn build_compiler_intrinsic<'parser>(
         let intrinsic_parameters_types_repr: IntrinsicParametersTypes =
             IntrinsicParametersTypes(parameters_types);
 
-        ctx.get_mut_symbols().new_intrinsic(
+        ctx.get_mut_symbols().new_compiler_intrinsic(
             name,
             (return_type, intrinsic_parameters_types_repr, has_ignore),
         )?;

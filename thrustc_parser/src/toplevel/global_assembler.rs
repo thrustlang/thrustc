@@ -80,7 +80,7 @@ pub fn build_global_assembler<'parser>(
     Ok(Ast::GlobalAssembler {
         asm,
         span,
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         id: NodeId::new(),
     })
 }

@@ -995,7 +995,7 @@ pub fn compile_as_value<'ctx>(
             args,
             span,
             ..
-        } => expressions::indirectcall_expr::compile(
+        } => expressions::indirect_call_expr::compile(
             context,
             function,
             args,

@@ -17,7 +17,7 @@
 
 */
 
-use crate::Type;
+use crate::{Type, type_modificators::StructureTypeModificator};
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
@@ -70,5 +70,30 @@ impl FixedArrayTypeMetadata {
     #[inline]
     pub fn get_address_space(&self) -> Option<u16> {
         self.address_space
+    }
+}
+
+#[cfg_attr(feature = "fuzz", derive(Arbitrary))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash, Default)]
+pub struct StructTypeMetadata {
+    type_modificator: StructureTypeModificator,
+}
+
+impl StructTypeMetadata {
+    pub fn new(type_modificator: StructureTypeModificator) -> Self {
+        Self { type_modificator }
+    }
+}
+
+impl StructTypeMetadata {
+    #[inline]
+    pub fn get_struct_type_modificator(&self) -> &StructureTypeModificator {
+        &self.type_modificator
+    }
+}
+
+impl std::fmt::Display for StructTypeMetadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.type_modificator)
     }
 }

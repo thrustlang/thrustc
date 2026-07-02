@@ -67,7 +67,7 @@ pub fn build_variable_stmt<'parser>(
 
     let mut local_type: Type = if ctx.check(TokenType::Eq) {
         assume_local_value_type = true;
-        Type::Void(span)
+        Type::Void { span }
     } else {
         typegeneration::build_type(ctx, false)?
     };

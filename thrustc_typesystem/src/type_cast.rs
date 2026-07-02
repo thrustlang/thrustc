@@ -21,7 +21,7 @@ use crate::{Type, traits::CastTypeExtensions};
 
 impl CastTypeExtensions for Type {
     #[inline]
-    fn narrowing(&self) -> Type {
+    fn narrowing_cast(&self) -> Type {
         match self {
             Type::U8 { span } => Type::S8 { span: *span },
             Type::U16 { span } => Type::S16 { span: *span },

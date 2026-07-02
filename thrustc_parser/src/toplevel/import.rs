@@ -51,7 +51,7 @@ pub fn build_import<'parser>(
 
     Ok(Ast::Import {
         span,
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         id: NodeId::new(),
     })
 }

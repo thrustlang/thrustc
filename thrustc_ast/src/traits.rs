@@ -20,7 +20,7 @@
 use thrustc_errors::CompilationIssue;
 use thrustc_span::Span;
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
+use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 use crate::ast_logic_data::{EnumDataField, PropertyDataField, StructureDataFields};
 
@@ -101,8 +101,8 @@ pub trait AstConstantExtensions {
 }
 
 pub trait AstStructureDataExtensions<'ast> {
-    fn new(name: &'ast str, modificator: StructureTypeModificator, span: Span) -> Self;
-    fn get_fields(&self) -> &StructureDataFields<'_>;
+    fn new(name: &'ast str, metadata: StructTypeMetadata, span: Span) -> Self;
+    fn get_struct_fields(&self) -> &StructureDataFields<'_>;
 }
 
 pub trait AstPropertyDataExtensions {
@@ -116,14 +116,14 @@ pub trait AstPropertyDataFieldExtensions {
 }
 
 pub trait AstEnumFieldsDataExtensions<'a> {
-    fn get_field(&self, name: &'a str) -> Option<EnumDataField<'a>>;
+    fn get_enum_field(&self, name: &'a str) -> Option<EnumDataField<'a>>;
 }
 
 pub trait AstStructFieldsDataExtensions {
-    fn get_type(&self) -> Type;
-    fn get_modificator(&self) -> StructureTypeModificator;
+    fn get_struct_type(&self) -> Type;
+    fn get_struct_metadata(&self) -> StructTypeMetadata;
 }
 
 pub trait AstConstructorDataExtensions {
-    fn get_type(&self, name: &str, modificator: StructureTypeModificator, span: Span) -> Type;
+    fn get_struct_type(&self, name: &str, metadata: StructTypeMetadata, span: Span) -> Type;
 }

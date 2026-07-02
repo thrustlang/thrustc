@@ -22,7 +22,7 @@ pub mod binaryop;
 pub mod call_expr;
 pub mod fixed_array;
 pub mod index_expr;
-pub mod indirectcall_expr;
+pub mod indirect_call_expr;
 pub mod inlineasm_expr;
 pub mod literal_floatingpoint_expr;
 pub mod literal_integer_expr;

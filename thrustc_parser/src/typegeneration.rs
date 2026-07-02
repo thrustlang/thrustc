@@ -32,8 +32,8 @@ use thrustc_token_type::TokenType;
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::{
     Type,
-    metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
     traits::TypeIsExtensions,
+    type_metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
     type_modificators::{
         FunctionReferenceTypeModificator, GCCFunctionReferenceTypeModificator,
         LLVMFunctionReferenceTypeModificator,
@@ -63,6 +63,7 @@ pub fn build_type(ctx: &mut ParserContext<'_>, parse_expr: bool) -> Result<Type,
                 _ if tk_kind.is_array() => self::parse_array_type(ctx, span),
                 _ if tk_kind.is_const() => self::parse_constant_type(ctx, span),
                 _ if tk_kind.is_fn_ref() => self::parse_anonymous_function_type(ctx, span),
+
                 _ => match tk_kind {
                     ty if ty.is_ptr() && ctx.check(TokenType::LBracket) => {
                         let ptr_type: Type = Type::Ptr {
@@ -73,8 +74,8 @@ pub fn build_type(ctx: &mut ParserContext<'_>, parse_expr: bool) -> Result<Type,
 
                         self::parse_pointer_type(ctx, ptr_type, span)
                     }
-                    TokenType::Char => Ok(Type::Char(span)),
 
+                    TokenType::Char => Ok(Type::Char { span }),
                     TokenType::S8 => Ok(Type::S8 { span }),
                     TokenType::S16 => Ok(Type::S16 { span }),
                     TokenType::S32 => Ok(Type::S32 { span }),
@@ -154,8 +155,8 @@ pub fn build_type(ctx: &mut ParserContext<'_>, parse_expr: bool) -> Result<Type,
                         address_space: None,
                         span,
                     }),
-                    TokenType::Addr => Ok(Type::Addr(span)),
-                    TokenType::Void => Ok(Type::Void(span)),
+
+                    TokenType::Void => Ok(Type::Void { span }),
 
                     any => Err(CompilationIssue::Error(
                         CompilationIssueCode::E0001,
@@ -194,8 +195,9 @@ pub fn build_type(ctx: &mut ParserContext<'_>, parse_expr: bool) -> Result<Type,
                     };
 
                     let data: StructureData = object.get_data();
+                    let ty: Type = data.get_struct_type();
 
-                    Ok(data.get_type())
+                    Ok(ty)
                 }
                 Ok(object) if object.is_custom_type() => {
                     let (id, scope_idx) = object.expected_custom_type(span)?;
@@ -365,15 +367,17 @@ fn parse_anonymous_function_type(
 
     let return_type: Type = self::build_type(ctx, false)?;
 
-    Ok(Type::Fn(
+    let function_ty: Type = Type::Fn {
+        return_type: return_type.into(),
         parameter_types,
-        return_type.into(),
-        FunctionReferenceTypeModificator::new(
+        modificator: FunctionReferenceTypeModificator::new(
             LLVMFunctionReferenceTypeModificator::new(has_ignore),
             GCCFunctionReferenceTypeModificator::default(),
         ),
         span,
-    ))
+    };
+
+    Ok(function_ty)
 }
 
 fn parse_constant_type(ctx: &mut ParserContext<'_>, span: Span) -> Result<Type, CompilationIssue> {

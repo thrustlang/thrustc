@@ -33,7 +33,7 @@ pub fn compile<'ctx>(
     let target_data: &TargetData = context.get_target_data();
 
     match ty {
-        Type::Char(..) => llvm_context.i8_type().const_int(value, true),
+        Type::Char { .. } => llvm_context.i8_type().const_int(value, true),
         Type::S8 { .. } => llvm_context.i8_type().const_int(value, true),
         Type::S16 { .. } => llvm_context.i16_type().const_int(value, true),
         Type::S32 { .. } => llvm_context.i32_type().const_int(value, true),

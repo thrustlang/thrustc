@@ -25,7 +25,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
+use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 use thrustc_parser_table::traits::{
     ConstructorExtensions, FoundSymbolEitherExtensions, StructSymbolExtensions,
@@ -71,13 +71,13 @@ pub fn build_constructor<'parser>(
 
             match reference {
                 Ok(object) => {
-                    let modificator: StructureTypeModificator = object.get_modificator();
+                    let metadata: StructTypeMetadata = object.get_metadata();
 
                     let mut data: ConstructorData =
                         ConstructorData::with_capacity(u8::MAX as usize);
-                    let mut count: usize = 0;
+                    let mut counter: usize = 0;
 
-                    let required: usize = object.get_data().get_fields().len();
+                    let required: usize = object.get_data().get_struct_fields().len();
 
                     loop {
                         if ctx.check(TokenType::RBrace) {
@@ -108,12 +108,12 @@ pub fn build_constructor<'parser>(
                                 continue;
                             }
 
-                            if count >= required {
+                            if counter >= required {
                                 ctx.add_error_report(CompilationIssue::Error(
                                     CompilationIssueCode::E0026,
                                     format!(
                                         "Expected '{}' fields, not '{}' fields.",
-                                        required, count
+                                        required, counter
                                     ),
                                     "You should reorder it and fill it out.".into(),
                                     None,
@@ -126,10 +126,10 @@ pub fn build_constructor<'parser>(
                             let expression: Ast = expressions::parse_expr(ctx)?;
 
                             if let Some(target_type) = object.get_field_type(field_name) {
-                                data.push((field_name, expression, target_type, count as u32));
+                                data.push((field_name, expression, target_type, counter as u32));
                             }
 
-                            count += 1;
+                            counter += 1;
 
                             if ctx.check(TokenType::RBrace) {
                                 break;
@@ -184,15 +184,17 @@ pub fn build_constructor<'parser>(
                         "Expected '}'.".into(),
                     )?;
 
-                    let constructor_type: Type = data.get_type(name, modificator, span);
+                    let constructor_type: Type = data.get_type(name, metadata, span);
 
-                    Ok(Ast::Constructor {
+                    let struct_constructor_ast: Ast<'_> = Ast::Constructor {
                         name,
                         data,
                         kind: constructor_type,
                         span,
                         id: NodeId::new(),
-                    })
+                    };
+
+                    Ok(struct_constructor_ast)
                 }
                 Err(error) => {
                     ctx.add_error_report(error);

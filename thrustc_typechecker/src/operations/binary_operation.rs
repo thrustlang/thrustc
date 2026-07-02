@@ -353,7 +353,7 @@ fn validate_binary_equality_expression(
             Type::F32 { .. } | Type::F64 { .. } | Type::F128 { .. },
         ) => Ok(()),
         (Type::Bool { .. }, Type::Bool { .. }) => Ok(()),
-        (Type::Char(..), Type::Char(..)) => Ok(()),
+        (Type::Char { .. }, Type::Char { .. }) => Ok(()),
         (Type::FX8680 { .. }, Type::FX8680 { .. }) => Ok(()),
         (Type::FPPC128 { .. }, Type::FPPC128 { .. }) => Ok(()),
 

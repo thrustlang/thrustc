@@ -21,10 +21,12 @@ use thrustc_ast::NodeId;
 use thrustc_ast::traits::{AstStructFieldsDataExtensions, AstStructureDataExtensions};
 use thrustc_ast::{Ast, ast_logic_data::StructureData};
 use thrustc_attributes::ThrustAttributes;
+use thrustc_entities::parser_entities::Struct;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
+use thrustc_typesystem::type_metadata::StructTypeMetadata;
 use thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
 
 use crate::{ParserContext, attributes, modificators, typegeneration};
@@ -59,7 +61,9 @@ pub fn parse_structure_stmt<'parser>(
     let name: &str = name_tk.get_lexeme();
     let span: Span = name_tk.get_span();
 
-    let mut data: StructureData = StructureData::new(name, modificator, span);
+    let metadata: StructTypeMetadata = StructTypeMetadata::new(modificator);
+
+    let mut data: StructureData = StructureData::new(name, metadata, span);
     let mut field_position: u32 = 0;
 
     loop {
@@ -124,23 +128,23 @@ pub fn parse_structure_stmt<'parser>(
         "Expected '}'.".into(),
     )?;
 
-    let kind: Type = data.get_type();
+    let ty: Type = data.get_struct_type();
 
     if !ctx.is_main_scope() {
-        ctx.get_mut_symbols().new_struct(
-            name,
-            (name, data.1.clone(), attributes.clone(), modificator, span),
-            span,
-        )?;
+        let struct_: Struct = (name, data.1.clone(), attributes.clone(), metadata, span);
 
-        Ok(Ast::Struct {
+        ctx.get_mut_symbols().new_struct(name, struct_, span)?;
+
+        let struct_ast: Ast<'_> = Ast::Struct {
             name,
             data,
-            kind,
+            kind: ty,
             attributes,
             span,
             id: NodeId::new(),
-        })
+        };
+
+        Ok(struct_ast)
     } else {
         Ok(Ast::invalid_ast(span))
     }

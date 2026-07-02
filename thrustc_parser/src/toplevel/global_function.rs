@@ -127,7 +127,7 @@ pub fn build_function<'parser>(
             ctx.previous().get_span()
         };
 
-        Type::Void(span)
+        Type::Void { span }
     } else {
         typegeneration::build_type(ctx, false)?
     };

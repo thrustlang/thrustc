@@ -50,7 +50,7 @@ impl TypeFixedArrayEntensions for Type {
     fn get_fixed_array_type_herarchy(&self) -> u8 {
         match self {
             Type::Bool { .. } => 1,
-            Type::Char(..) => 2,
+            Type::Char { .. } => 2,
 
             Type::U8 { .. } => 3,
             Type::U16 { .. } => 4,
@@ -73,20 +73,19 @@ impl TypeFixedArrayEntensions for Type {
 
             Type::Const(subtype, ..) => subtype.get_fixed_array_type_herarchy(),
 
-            Type::Addr(..) => 20,
             Type::Ptr {
                 subtype: Some(subtype),
                 ..
             } => subtype.get_fixed_array_type_herarchy(),
-            Type::Ptr { subtype: None, .. } => 21,
+            Type::Ptr { subtype: None, .. } => 20,
 
-            Type::Array { .. } => 22,
-            Type::FixedArray { .. } => 23,
-            Type::Struct { .. } => 24,
+            Type::Array { .. } => 21,
+            Type::FixedArray { .. } => 22,
+            Type::Struct { .. } => 23,
 
-            Type::Fn(..) => 25,
-            Type::Void(..) => 26,
-            Type::Unresolved { .. } => 27,
+            Type::Fn { .. } => 24,
+            Type::Void { .. } => 25,
+            Type::Unresolved { .. } => 26,
         }
     }
 }

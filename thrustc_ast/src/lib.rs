@@ -621,7 +621,7 @@ impl<'ast> Ast<'ast> {
     #[inline]
     pub fn invalid_ast(span: Span) -> Ast<'ast> {
         Ast::Invalid {
-            kind: Type::Void(span),
+            kind: Type::Void { span },
             span,
             id: NodeId::new(),
         }

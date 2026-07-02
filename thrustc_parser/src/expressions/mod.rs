@@ -20,7 +20,6 @@
 pub mod array;
 pub mod asm;
 pub mod call;
-pub mod constructor;
 pub mod deref;
 pub mod enum_value;
 pub mod fixed_array;
@@ -28,6 +27,7 @@ pub mod index;
 pub mod precedences;
 pub mod property;
 pub mod reference;
+pub mod struct_constructor;
 
 use thrustc_ast::Ast;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};

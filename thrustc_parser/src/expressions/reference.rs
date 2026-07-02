@@ -65,21 +65,27 @@ pub fn build_reference<'parser>(
 
                 match reference {
                     Ok(object) => {
-                        let function_type: Type = object.get_type();
-                        let function_parameter_types: Vec<Type> = object.1.0;
-                        let has_ignore_attr: bool = object.2;
+                        let return_type: Type = object.get_type();
+                        let parameter_types: Vec<Type> = object.1.0;
+
+                        let has_ignore: bool = object.2;
+
+                        let modificator: FunctionReferenceTypeModificator =
+                            FunctionReferenceTypeModificator::new(
+                                LLVMFunctionReferenceTypeModificator::new(has_ignore),
+                                GCCFunctionReferenceTypeModificator::default(),
+                            );
+
+                        let function_ty: Type = Type::Fn {
+                            return_type: return_type.into(),
+                            parameter_types,
+                            modificator,
+                            span,
+                        };
 
                         return Ok(Ast::Reference {
                             name,
-                            kind: Type::Fn(
-                                function_parameter_types,
-                                function_type.into(),
-                                FunctionReferenceTypeModificator::new(
-                                    LLVMFunctionReferenceTypeModificator::new(has_ignore_attr),
-                                    GCCFunctionReferenceTypeModificator::new(),
-                                ),
-                                span,
-                            ),
+                            kind: function_ty,
                             span,
                             metadata: ReferenceMetadata::new(
                                 true,
@@ -215,7 +221,7 @@ pub fn build_reference<'parser>(
                     ctx.get_symbols().get_lli_by_id(lli_id, scope_idx, span)?;
                 let lli_type: Type = parameter.get_type();
 
-                let is_allocated: bool = lli_type.is_ptr_type() || lli_type.is_address_type();
+                let is_allocated: bool = lli_type.is_ptr_type();
 
                 return Ok(Ast::Reference {
                     name,

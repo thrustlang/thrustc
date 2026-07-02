@@ -87,7 +87,7 @@ pub fn build_conditional<'parser>(
             elseif.push(Ast::Elif {
                 condition: condition.into(),
                 block: body.into(),
-                kind: Type::Void(span),
+                kind: Type::Void { span },
                 span,
                 id: NodeId::new(),
             });
@@ -106,7 +106,7 @@ pub fn build_conditional<'parser>(
         if !else_body.is_empty_code_block() {
             let else_node: Ast = Ast::Else {
                 block: else_body.into(),
-                kind: Type::Void(span),
+                kind: Type::Void { span },
                 span,
                 id: NodeId::new(),
             };
@@ -116,7 +116,7 @@ pub fn build_conditional<'parser>(
                 then_branch: body.into(),
                 else_if_branch: elseif,
                 else_branch: Some(else_node.into()),
-                kind: Type::Void(span),
+                kind: Type::Void { span },
                 span,
                 id: NodeId::new(),
             });
@@ -128,7 +128,7 @@ pub fn build_conditional<'parser>(
         then_branch: body.into(),
         else_if_branch: elseif,
         else_branch: None,
-        kind: Type::Void(span),
+        kind: Type::Void { span },
         span,
         id: NodeId::new(),
     };

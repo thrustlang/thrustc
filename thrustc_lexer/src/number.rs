@@ -24,34 +24,6 @@ use thrustc_token_type::TokenType;
 
 use crate::Lexer;
 
-#[inline]
-pub fn check_float_format(lexer: &Lexer, lexeme: &str) -> Result<(), CompilationIssue> {
-    let span: Span = Span::new(lexer.span());
-    let dot_count: usize = lexeme.bytes().filter(|&b| b == b'.').count();
-
-    if dot_count > 1 {
-        return Err(CompilationIssue::Error(
-            CompilationIssueCode::E0001,
-            "Floating-point number only expects a one decimal marker.".into(),
-            "You should delete the extra dot.".into(),
-            None,
-            span,
-        ));
-    }
-
-    if lexeme.parse::<f32>().is_ok() || lexeme.parse::<f64>().is_ok() {
-        return Ok(());
-    }
-
-    Err(CompilationIssue::Error(
-        CompilationIssueCode::E0001,
-        "Literal is too large to be represented in a standard float-point type.".into(),
-        "You can shorten it.".into(),
-        None,
-        span,
-    ))
-}
-
 const I8_MIN: isize = -128;
 const I8_MAX: isize = 127;
 const I16_MIN: isize = -32768;
@@ -249,8 +221,6 @@ pub fn lex(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
     let lexeme: String = lexer.lexeme();
 
     if lexeme.contains(".") {
-        self::check_float_format(lexer, &lexeme)?;
-
         lexer.tokens.push(Token {
             lexeme,
             ascii: String::default(),

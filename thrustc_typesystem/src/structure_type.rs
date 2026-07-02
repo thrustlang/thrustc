@@ -19,20 +19,20 @@
 
 use thrustc_span::Span;
 
-use crate::{Type, traits::TypeStructExtensions, type_modificators::StructureTypeModificator};
+use crate::{Type, traits::TypeStructExtensions, type_metadata::StructTypeMetadata};
 
 impl TypeStructExtensions for Type {
     #[inline]
     fn create_struct_type(
         name: String,
         fields: &[Type],
-        modifier: StructureTypeModificator,
+        metadata: StructTypeMetadata,
         span: Span,
     ) -> Type {
         Type::Struct {
             name,
             fields: fields.to_vec(),
-            modifier,
+            metadata,
             span,
         }
     }
