@@ -473,6 +473,11 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
     pub fn get_mut_debug_context(&mut self) -> Option<&mut LLVMDebugContext<'a, 'ctx>> {
         self.dbg_context.as_mut()
     }
+
+    #[inline]
+    pub fn get_mut_pointer_anchor(&mut self) -> Option<&mut PointerAnchor<'ctx>> {
+        self.ptr_anchor.as_mut()
+    }
 }
 
 impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {

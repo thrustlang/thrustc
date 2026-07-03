@@ -17,8 +17,9 @@
 
 */
 
+use inkwell::values::{BasicValueEnum, PointerValue};
 
-use inkwell::values::PointerValue;
+use crate::{context::LLVMCodeGenContext, memory::SymbolAllocated};
 
 #[derive(Debug, Clone, Copy)]
 pub struct PointerAnchor<'ctx> {
@@ -30,6 +31,25 @@ impl<'ctx> PointerAnchor<'ctx> {
     #[inline]
     pub fn new(pointer: PointerValue<'ctx>, triggered: bool) -> PointerAnchor<'ctx> {
         Self { pointer, triggered }
+    }
+}
+
+impl<'ctx> PointerAnchor<'ctx> {
+    pub fn trigger_with(
+        &mut self,
+        context: &mut LLVMCodeGenContext<'_, 'ctx>,
+        symbol: SymbolAllocated<'ctx>,
+        value: BasicValueEnum<'ctx>,
+    ) {
+        if !self.is_triggered() {
+            symbol.store(context, value);
+            self.triggered = true;
+        }
+    }
+
+    #[inline]
+    pub fn trigger(&mut self) {
+        self.triggered = true
     }
 }
 

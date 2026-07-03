@@ -116,7 +116,7 @@ fn compile_without_anchor<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let ptr_type: BasicTypeEnum<'_> = typegeneration::generate_type(context, struct_type);
     let ptr_value: PointerValue<'_> =
-        memory::allocate_on(context, LLVMAllocationSite::Stack, struct_type, span);
+        memory::allocate_in(context, LLVMAllocationSite::Stack, struct_type, span);
 
     let fields_types: &[Type] = struct_type.get_struct_fields().unwrap_or_else(|| {
         abort::abort_codegen(

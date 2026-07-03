@@ -742,7 +742,7 @@ pub fn dereference<'ctx>(
     loaded_value
 }
 
-pub fn allocate_on<'ctx>(
+pub fn allocate_in<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     site: LLVMAllocationSite,
     kind: &Type,

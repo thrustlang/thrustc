@@ -17,18 +17,18 @@
 
 */
 
-use thrustc_ast::{ast_metadata::StaticMetadata, traits::AstGetType, Ast, NodeId};
-use thrustc_ast_modificators::{traits::ModificatorsExtensions, Modificators};
-use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributes};
+use thrustc_ast::{Ast, NodeId, ast_metadata::StaticMetadata, traits::AstGetType};
+use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
+use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_mir::{atomicord::ThrustAtomicOrdering, threadmode::ThrustThreadMode};
-use thrustc_parser_context::{traits::TypeContextExtensions, Position};
+use thrustc_parser_context::{Position, traits::TypeContextExtensions};
 use thrustc_span::Span;
-use thrustc_token::{traits::TokenExtensions, Token};
+use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{traits::InfererTypeExtensions, Type};
+use thrustc_typesystem::{Type, traits::InfererTypeExtensions};
 
-use crate::{attributes, expressions, modificators, typegeneration, ParserContext};
+use crate::{ParserContext, attributes, expressions, modificators, typegeneration};
 
 pub fn build_global_static<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -122,7 +122,7 @@ pub fn build_global_static<'parser>(
         ctx.get_mut_type_context().pop_infered_type();
         ctx.get_mut_control_context().reset_position();
 
-        if let Some(infered_inner_type) = static_type.inferer_inner_type_from_type(value_type) {
+        if let Some(infered_inner_type) = static_type.pass_inner_type_from_type(value_type) {
             static_type = infered_inner_type;
         }
 

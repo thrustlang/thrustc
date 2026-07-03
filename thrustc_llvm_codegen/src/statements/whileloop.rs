@@ -130,7 +130,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
         codegen
             .get_mut_context()
             .get_mut_loop_context()
-            .pop_superior_branchers();
+            .pop_superior_branch();
     }
 
     codegen.get_mut_context().get_mut_loop_context().pop();

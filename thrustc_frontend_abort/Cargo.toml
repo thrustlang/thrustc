@@ -7,6 +7,7 @@ version.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+thrustc_constants = { path = "../thrustc_constants" } 
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_span = { path = "../thrustc_span" }

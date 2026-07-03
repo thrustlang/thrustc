@@ -87,7 +87,7 @@ pub fn build_global_const<'parser>(
     ctx.get_mut_type_context().pop_infered_type();
     ctx.get_mut_control_context().reset_position();
 
-    if let Some(infered_inner_type) = constant_type.inferer_inner_type_from_type(value_type) {
+    if let Some(infered_inner_type) = constant_type.pass_inner_type_from_type(value_type) {
         constant_type = infered_inner_type;
     }
 

@@ -17,7 +17,6 @@
 
 */
 
-
 use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeLocation;
 use thrustc_span::Span;
@@ -111,7 +110,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
         codegen
             .get_mut_context()
             .get_mut_loop_context()
-            .pop_superior_branchers();
+            .pop_superior_branch();
     }
 
     llvm_builder.position_at_end(exit);

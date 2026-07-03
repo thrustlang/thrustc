@@ -54,10 +54,6 @@ impl TypeArrayEntensions for Type {
             return inner.get_array_base_type();
         }
 
-        if let Type::Const(inner, ..) = non_constant_type {
-            return inner.get_array_base_type();
-        }
-
         self.clone()
     }
 

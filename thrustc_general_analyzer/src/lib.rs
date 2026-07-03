@@ -116,7 +116,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                     self.add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0036,
                         "Too many arguments for a single function signature.".into(),
-                        "You should pass them through pointers".into(),
+                        "You should pass them through pointers.".into(),
                         None,
                         *span,
                     ));
@@ -153,7 +153,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
 
                 Ok(())
             }
-            Ast::Struct { .. } => Ok(()),
+
             Ast::GlobalAssembler { span, .. } => {
                 if self.get_context().has_global_assembler() {
                     self.add_error(CompilationIssue::Error(
@@ -169,7 +169,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
 
                 Ok(())
             }
-            Ast::CustomType { .. } => Ok(()),
+
             Ast::Enum { data, .. } => {
                 {
                     for (_, _, expr) in data.iter() {
@@ -179,7 +179,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                             self.add_error(CompilationIssue::Error(
                                 CompilationIssueCode::E0006,
                                 "Expected constant expression.".into(),
-                                "You should pass a constant expression".into(),
+                                "You should pass a constant expression.".into(),
                                 None,
                                 span,
                             ));
@@ -199,7 +199,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                         self.add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0006,
                             "Expected constant expression.".into(),
-                            "You should pass a constant expression".into(),
+                            "You should pass a constant expression.".into(),
                             None,
                             span,
                         ));
@@ -217,7 +217,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                     self.add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0006,
                         "Expected constant expression.".into(),
-                        "You should pass a constant expression".into(),
+                        "You should pass a constant expression.".into(),
                         None,
                         span,
                     ));
@@ -243,7 +243,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                             self.add_error(CompilationIssue::Error(
                                 CompilationIssueCode::E0006,
                                 "Expected constant expression.".into(),
-                                "You should pass a constant expression".into(),
+                                "You should pass a constant expression.".into(),
                                 None,
                                 span,
                             ));
@@ -261,7 +261,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                         self.add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0006,
                             "Expected constant expression.".into(),
-                            "You should pass a constant expression".into(),
+                            "You should pass a constant expression.".into(),
                             None,
                             value.get_span(),
                         ));
@@ -279,7 +279,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                     self.add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0006,
                         "Expected constant expression.".into(),
-                        "You should pass a constant expression".into(),
+                        "You should pass a constant expression.".into(),
                         None,
                         span,
                     ));

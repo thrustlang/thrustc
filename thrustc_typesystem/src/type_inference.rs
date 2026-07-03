@@ -21,15 +21,12 @@ use thrustc_span::Span;
 
 use crate::{
     Type,
-    traits::{
-        ConstantTypeExtensions, InfererTypeExtensions, TypeCodeLocation, TypeExtensions,
-        TypeIsExtensions,
-    },
+    traits::{ConstantTypeExtensions, InfererTypeExtensions, TypeCodeLocation, TypeExtensions},
     type_metadata::FixedArrayTypeMetadata,
 };
 
 impl InfererTypeExtensions for Type {
-    fn inferer_inner_type_from_type(&self, other: &Type) -> Option<Type> {
+    fn pass_inner_type_from_type(&self, other: &Type) -> Option<Type> {
         let span: Span = self.get_span();
 
         let mut left: Type = self.remove_all_constant_type();
@@ -39,35 +36,35 @@ impl InfererTypeExtensions for Type {
             (
                 Type::Array {
                     base_type,
-                    infered_type: lhs_infered_type,
+                    infered_type: left_infered_type,
                     metadata: target_metadata,
                     ..
                 },
                 Type::Array {
-                    infered_type: Some(rhs_infered_type),
+                    infered_type: Some(right_infered_type),
                     metadata: from_metadata,
                     ..
                 },
             ) => {
                 let (Type::FixedArray { size, .. }, mut refcounter) =
-                    (&*rhs_infered_type.0, rhs_infered_type.1)
+                    (&*right_infered_type.0, right_infered_type.1)
                 else {
                     return Some(left);
                 };
 
+                let metadata: FixedArrayTypeMetadata =
+                    FixedArrayTypeMetadata::new(base_type.get_address_space());
+
                 refcounter = refcounter.saturating_add(1);
 
-                *lhs_infered_type = Some((
-                    Type::FixedArray {
-                        base_type: (*base_type).clone(),
-                        size: *size,
-                        metadata: FixedArrayTypeMetadata::new(base_type.get_address_space()),
-                        span,
-                    }
-                    .into(),
-                    refcounter,
-                ));
+                let fixed_array_ty: Type = Type::FixedArray {
+                    base_type: (*base_type).clone(),
+                    size: *size,
+                    metadata,
+                    span,
+                };
 
+                *left_infered_type = Some((fixed_array_ty.into(), refcounter));
                 *target_metadata = from_metadata.clone();
 
                 Some(left)
@@ -100,36 +97,6 @@ impl InfererTypeExtensions for Type {
                 ..
             }
         )
-    }
-
-    #[inline(always)]
-    fn is_inferer_inner_type_valid(&self) -> bool {
-        let ty: Type = self.remove_all_constant_type();
-
-        if let Type::Array {
-            infered_type: Some((infered_type, 0 | 1)),
-            ..
-        } = ty
-        {
-            return infered_type.is_fixed_array_type();
-        }
-
-        false
-    }
-
-    #[inline(always)]
-    fn is_inferer_inner_type_is_not_array_decay(&self) -> bool {
-        let ty: Type = self.remove_all_constant_type();
-
-        if let Type::Array {
-            infered_type: Some((_, 0..=1)),
-            ..
-        } = ty
-        {
-            return true;
-        }
-
-        false
     }
 
     #[inline(always)]

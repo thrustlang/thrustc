@@ -150,53 +150,56 @@ fn compile_array_without_anchor<'ctx>(
         )
     });
 
+    let metadata: FixedArrayTypeMetadata =
+        FixedArrayTypeMetadata::new(array_type.get_address_space());
+
     let fixed_array_type: Type = Type::FixedArray {
         base_type: base_type.clone().into(),
         size: array_size,
-        metadata: FixedArrayTypeMetadata::new(array_type.get_address_space()),
+        metadata,
         span,
     };
 
     let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, &fixed_array_type);
 
     let array_ptr: PointerValue =
-        memory::allocate_on(context, LLVMAllocationSite::Stack, &fixed_array_type, span);
+        memory::allocate_in(context, LLVMAllocationSite::Stack, &fixed_array_type, span);
 
     if items.is_empty() {
         memory::store(context, array_ptr, llvm_type.const_zero(), span);
-        return array_ptr.into();
-    }
+        array_ptr.into()
+    } else {
+        let items: Vec<BasicValueEnum> = items
+            .iter()
+            .map(|item| codegen::compile_as_value(context, item, Some(&base_type)))
+            .collect();
 
-    let items: Vec<BasicValueEnum> = items
-        .iter()
-        .map(|item| codegen::compile_as_value(context, item, Some(&base_type)))
-        .collect();
+        for (n, value) in items.iter().enumerate() {
+            let idx: u64 = u64::try_from(n).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to parse the build index!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
 
-    for (n, value) in items.iter().enumerate() {
-        let idx: u64 = u64::try_from(n).unwrap_or_else(|_| {
-            abort::abort_codegen(
+            let index: IntValue = llvm_context.i32_type().const_int(idx, false);
+
+            let ptr: PointerValue = memory::gep_anon(
                 context,
-                "Failed to parse the build index!",
+                array_ptr,
+                &fixed_array_type,
+                &[llvm_context.i32_type().const_zero(), index],
                 span,
-                std::path::PathBuf::from(file!()),
-                line!(),
-            )
-        });
+            );
 
-        let index: IntValue = llvm_context.i32_type().const_int(idx, false);
+            memory::store(context, ptr, *value, span);
+        }
 
-        let ptr: PointerValue = memory::gep_anon(
-            context,
-            array_ptr,
-            &fixed_array_type,
-            &[llvm_context.i32_type().const_zero(), index],
-            span,
-        );
-
-        memory::store(context, ptr, *value, span);
+        array_ptr.into()
     }
-
-    array_ptr.into()
 }
 
 fn compile_array_with_anchor<'ctx>(
@@ -209,7 +212,7 @@ fn compile_array_with_anchor<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let llvm_context: &Context = context.get_llvm_context();
 
-    let anchor: PointerValue = anchor.get_pointer();
+    let anchor_ptr: PointerValue = anchor.get_pointer();
 
     let array_size: u32 = u32::try_from(items.len()).unwrap_or_else(|_| {
         abort::abort_codegen(
@@ -224,63 +227,68 @@ fn compile_array_with_anchor<'ctx>(
     let array_type: &Type = cast_type.unwrap_or(array_type);
     let base_type: Type = array_type.get_array_base_type();
 
+    let metadata: FixedArrayTypeMetadata =
+        FixedArrayTypeMetadata::new(array_type.get_address_space());
+
     let fixed_array_type: Type = Type::FixedArray {
         base_type: base_type.clone().into(),
         size: array_size,
-        metadata: FixedArrayTypeMetadata::new(array_type.get_address_space()),
+        metadata,
         span,
     };
 
     let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, &fixed_array_type);
 
-    context.set_pointer_anchor(PointerAnchor::new(anchor, true));
-
-    if items.is_empty() {
-        memory::store(context, anchor, llvm_type.const_zero(), span);
-        return anchor.into();
+    if let Some(anchor) = context.get_mut_pointer_anchor() {
+        anchor.trigger();
     }
 
-    let items: Vec<BasicValueEnum> = items
-        .iter()
-        .map(|item| codegen::compile_as_value(context, item, Some(&base_type)))
-        .collect();
+    if items.is_empty() {
+        memory::store(context, anchor_ptr, llvm_type.const_zero(), span);
+        anchor_ptr.into()
+    } else {
+        let items: Vec<BasicValueEnum> = items
+            .iter()
+            .map(|item| codegen::compile_as_value(context, item, Some(&base_type)))
+            .collect();
 
-    let ptr_value: Option<PointerValue> = items
-        .iter()
-        .enumerate()
-        .map(|(n, value)| {
-            let idx: u64 = u64::try_from(n).unwrap_or_else(|_| {
-                abort::abort_codegen(
+        let ptr_value: Option<PointerValue> = items
+            .iter()
+            .enumerate()
+            .map(|(n, value)| {
+                let idx: u64 = u64::try_from(n).unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile the array!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+
+                let index: IntValue = llvm_context.i32_type().const_int(idx, false);
+
+                let ptr: PointerValue = memory::gep_anon(
                     context,
-                    "Failed to compile the array!",
+                    anchor_ptr,
+                    &fixed_array_type,
+                    &[llvm_context.i32_type().const_zero(), index],
                     span,
-                    std::path::PathBuf::from(file!()),
-                    line!(),
-                )
-            });
+                );
 
-            let index: IntValue = llvm_context.i32_type().const_int(idx, false);
+                memory::store(context, ptr, *value, span);
 
-            let ptr: PointerValue = memory::gep_anon(
-                context,
-                anchor,
-                &fixed_array_type,
-                &[llvm_context.i32_type().const_zero(), index],
-                span,
-            );
+                ptr
+            })
+            .last();
 
-            memory::store(context, ptr, *value, span);
-
-            ptr
-        })
-        .last();
-
-    ptr_value
-        .unwrap_or(
-            context
-                .get_llvm_context()
-                .ptr_type(AddressSpace::default())
-                .const_null(),
-        )
-        .into()
+        ptr_value
+            .unwrap_or(
+                context
+                    .get_llvm_context()
+                    .ptr_type(AddressSpace::default())
+                    .const_null(),
+            )
+            .into()
+    }
 }

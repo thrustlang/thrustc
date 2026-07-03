@@ -17,7 +17,6 @@
 
 */
 
-
 use inkwell::basic_block::BasicBlock;
 
 #[derive(Debug)]
@@ -115,7 +114,7 @@ impl LLVMLoopContext<'_> {
     }
 
     #[inline]
-    pub fn pop_superior_branchers(&mut self) {
+    pub fn pop_superior_branch(&mut self) {
         self.continueall_branch = None;
         self.breakerall_branch = None;
     }

@@ -119,31 +119,31 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
                         let name: &str = constant.0;
                         let ascii_name: &str = constant.1;
-                        let kind: &Type = constant.2;
+                        let ty: &Type = constant.2;
                         let value: &Ast = constant.3;
+                        let value_ty: &Type = value.get_type_for_llvm();
                         let attributes: LLVMAttributes =
                             thrustc_llvm_attributes::into_llvm_attributes(constant.4);
                         let metadata: ConstantMetadata = constant.5;
                         let span: Span = constant.6;
 
                         let llvm_type: BasicTypeEnum =
-                            typegeneration::generate_type(self.get_mut_context(), kind);
-                        let value_type: &Type = value.get_type_for_llvm();
+                            typegeneration::generate_type(self.get_mut_context(), ty);
 
-                        let llvm_value: BasicValueEnum =
-                            codegen::compile_constant_as_value(self.get_mut_context(), value, kind);
+                        let value: BasicValueEnum =
+                            codegen::compile_constant_as_value(self.get_mut_context(), value, ty);
 
                         let value: BasicValueEnum = type_cast::try_smart_constant_cast(
                             self.get_mut_context(),
-                            kind,
-                            value_type,
-                            llvm_value,
+                            ty,
+                            value_ty,
+                            value,
                         );
 
                         let ptr: PointerValue = static_memory::allocate_global_constant(
                             self.get_mut_context(),
                             ascii_name,
-                            kind,
+                            ty,
                             llvm_type,
                             value,
                             attributes,
@@ -152,7 +152,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
                         let symbol: SymbolAllocated = SymbolAllocated::new_constant(
                             ptr.into(),
-                            kind,
+                            ty,
                             value,
                             metadata.get_llvm_metadata(),
                             span,
@@ -174,7 +174,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         let name: &str = static_.0;
                         let ascii_name: &str = static_.1;
 
-                        let kind: &Type = static_.2;
+                        let ty: &Type = static_.2;
                         let value: Option<&Ast> = static_.3;
 
                         let attributes: LLVMAttributes =
@@ -185,17 +185,17 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         if let Some(value) = value {
                             let value_type: &Type = value.get_type_for_llvm();
                             let llvm_type: inkwell::types::BasicTypeEnum =
-                                typegeneration::generate_type(self.get_mut_context(), kind);
+                                typegeneration::generate_type(self.get_mut_context(), ty);
 
                             let llvm_value: BasicValueEnum = codegen::compile_constant_as_value(
                                 self.get_mut_context(),
                                 value,
-                                kind,
+                                ty,
                             );
 
                             let value: BasicValueEnum = type_cast::try_smart_constant_cast(
                                 self.get_mut_context(),
-                                kind,
+                                ty,
                                 value_type,
                                 llvm_value,
                             );
@@ -203,7 +203,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             let ptr: PointerValue = static_memory::allocate_global_static(
                                 self.get_mut_context(),
                                 ascii_name,
-                                kind,
+                                ty,
                                 llvm_type,
                                 Some(value),
                                 attributes,
@@ -212,7 +212,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
                             let symbol: SymbolAllocated = SymbolAllocated::new_static(
                                 ptr.into(),
-                                kind,
+                                ty,
                                 Some(value),
                                 metadata.get_llvm_metadata(),
                                 span,
@@ -221,12 +221,12 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             self.context.add_global_static(name, symbol);
                         } else {
                             let llvm_type: inkwell::types::BasicTypeEnum =
-                                typegeneration::generate_type(self.get_mut_context(), kind);
+                                typegeneration::generate_type(self.get_mut_context(), ty);
 
                             let ptr: PointerValue = static_memory::allocate_global_static(
                                 self.get_mut_context(),
                                 ascii_name,
-                                kind,
+                                ty,
                                 llvm_type,
                                 None,
                                 attributes,
@@ -235,7 +235,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
                             let symbol: SymbolAllocated = SymbolAllocated::new_static(
                                 ptr.into(),
-                                kind,
+                                ty,
                                 None,
                                 metadata.get_llvm_metadata(),
                                 span,
@@ -503,12 +503,9 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let value: BasicValueEnum =
                         codegen::compile_as_value(self.get_mut_context(), expr, Some(kind));
 
-                    match self.context.get_pointer_anchor() {
-                        Some(anchor) if !anchor.is_triggered() => {
-                            symbol.store(self.get_mut_context(), value);
-                        }
-
-                        _ => {}
+                    if let Some(anchor) = self.context.get_mut_pointer_anchor() {
+                        anchor.trigger();
+                        symbol.store(self.context, value);
                     }
 
                     self.context.clear_pointer_anchor();
@@ -1237,7 +1234,7 @@ pub fn compile_constant_as_value<'ctx>(
 
         // Fixed-size array
         Ast::FixedArray { items, span, .. } => {
-            expressions::fixed_array::compile_const(context, items, cast_type, *span)
+            expressions::fixed_array::compile_constant(context, items, cast_type, *span)
         }
 
         // Dynamic-size array

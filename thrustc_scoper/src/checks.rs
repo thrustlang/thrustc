@@ -143,7 +143,7 @@ pub fn check_for_multiple_terminators(scoper: &mut Scoper, node: &Ast) {
     }
 }
 
-pub fn check_for_unreachable_code_instructions(scoper: &mut Scoper, node: &Ast) {
+pub fn check_for_unreachable_code_instructions<'ast>(scoper: &mut Scoper, node: &'ast Ast) {
     let Ast::Block { nodes, .. } = node else {
         return;
     };
@@ -179,77 +179,82 @@ pub fn check_for_unreachable_code_instructions(scoper: &mut Scoper, node: &Ast) 
         }
     }
 
-    let Some((unreacheable_condition_idx, _)) =
-        nodes.iter().enumerate().find_map(|(idx, stmt)| match stmt {
-            Ast::If {
-                then_branch,
-                else_if_branch,
-                else_branch,
-                ..
-            } => {
-                let mut is_if_unreacheable: bool = false;
-                let mut is_else_if_unreacheable: bool = false;
-                let mut is_else_unreacheable: bool = false;
+    let find_unreacheable_condition = |idx: usize, stmt: &'ast Ast<'ast>| match stmt {
+        Ast::If {
+            then_branch,
+            else_if_branch,
+            else_branch,
+            ..
+        } => {
+            let mut is_if_unreacheable: bool = false;
+            let mut is_else_if_unreacheable: bool = false;
+            let mut is_else_unreacheable: bool = false;
 
-                {
-                    if let Ast::Block { nodes, .. } = then_branch.as_ref() {
-                        is_if_unreacheable = nodes.iter().any(|stmt| {
-                            stmt.is_terminator_keyword()
-                                || stmt.is_unreacheable_keyword()
-                                || stmt.is_break_keyword()
-                                || stmt.is_breakall_keyword()
-                                || stmt.is_continue_keyword()
-                                || stmt.is_continueall_keyword()
-                        });
-                    }
-                }
-
-                {
-                    for node in else_if_branch.iter() {
-                        if let Ast::Elif { block, .. } = node {
-                            if let Ast::Block { nodes, .. } = &**block {
-                                is_else_if_unreacheable = nodes.iter().any(|stmt| {
-                                    stmt.is_terminator_keyword()
-                                        || stmt.is_unreacheable_keyword()
-                                        || stmt.is_break_keyword()
-                                        || stmt.is_breakall_keyword()
-                                        || stmt.is_continue_keyword()
-                                        || stmt.is_continueall_keyword()
-                                });
-                            }
-                        }
-                    }
-                }
-
-                {
-                    if let Some(otherwise) = else_branch {
-                        if let Ast::Else { block, .. } = &**otherwise {
-                            if let Ast::Block { nodes, .. } = block.as_ref() {
-                                is_else_unreacheable = nodes.iter().any(|stmt| {
-                                    stmt.is_terminator_keyword()
-                                        || stmt.is_unreacheable_keyword()
-                                        || stmt.is_break_keyword()
-                                        || stmt.is_breakall_keyword()
-                                        || stmt.is_continue_keyword()
-                                        || stmt.is_continueall_keyword()
-                                });
-                            }
-                        }
-                    }
-                }
-
-                let is_unreacheable_if_else: bool =
-                    is_if_unreacheable && is_else_unreacheable && else_if_branch.is_empty();
-
-                let is_full_unreacheable: bool =
-                    is_if_unreacheable && is_else_if_unreacheable && is_else_unreacheable;
-
-                if is_unreacheable_if_else || is_full_unreacheable {
-                    Some((idx, stmt))
-                } else {
-                    None
+            {
+                if let Ast::Block { nodes, .. } = then_branch.as_ref() {
+                    is_if_unreacheable = nodes.iter().any(|stmt| {
+                        stmt.is_terminator_keyword()
+                            || stmt.is_unreacheable_keyword()
+                            || stmt.is_break_keyword()
+                            || stmt.is_breakall_keyword()
+                            || stmt.is_continue_keyword()
+                            || stmt.is_continueall_keyword()
+                    });
                 }
             }
+
+            {
+                for node in else_if_branch.iter() {
+                    if let Ast::Elif { block, .. } = node {
+                        if let Ast::Block { nodes, .. } = &**block {
+                            is_else_if_unreacheable = nodes.iter().any(|stmt| {
+                                stmt.is_terminator_keyword()
+                                    || stmt.is_unreacheable_keyword()
+                                    || stmt.is_break_keyword()
+                                    || stmt.is_breakall_keyword()
+                                    || stmt.is_continue_keyword()
+                                    || stmt.is_continueall_keyword()
+                            });
+                        }
+                    }
+                }
+            }
+
+            {
+                if let Some(otherwise) = else_branch {
+                    if let Ast::Else { block, .. } = &**otherwise {
+                        if let Ast::Block { nodes, .. } = block.as_ref() {
+                            is_else_unreacheable = nodes.iter().any(|stmt| {
+                                stmt.is_terminator_keyword()
+                                    || stmt.is_unreacheable_keyword()
+                                    || stmt.is_break_keyword()
+                                    || stmt.is_breakall_keyword()
+                                    || stmt.is_continue_keyword()
+                                    || stmt.is_continueall_keyword()
+                            });
+                        }
+                    }
+                }
+            }
+
+            let is_unreacheable_if_else: bool =
+                is_if_unreacheable && is_else_unreacheable && else_if_branch.is_empty();
+
+            let is_full_unreacheable: bool =
+                is_if_unreacheable && is_else_if_unreacheable && is_else_unreacheable;
+
+            if is_unreacheable_if_else || is_full_unreacheable {
+                Some((idx, stmt))
+            } else {
+                None
+            }
+        }
+        _ => None,
+    };
+
+    let Some((unreacheable_condition_idx, _)) =
+        nodes.iter().enumerate().find_map(|(idx, stmt)| match stmt {
+            Ast::If { .. } => find_unreacheable_condition(idx, stmt),
             _ => None,
         })
     else {
