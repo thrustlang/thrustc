@@ -35,7 +35,7 @@ use thrustc_typesystem::{
 
 use thrustc_parser_table::traits::{FoundSymbolEitherExtensions, StructSymbolExtensions};
 
-use crate::ParserContext;
+use crate::{ParserContext, abort};
 
 pub fn build_property<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -121,7 +121,7 @@ fn decompose_struct_property<'parser>(
     };
 
     let current_property_name: &str = property_names.get(position).unwrap_or_else(|| {
-        thrustc_frontend_abort::abort_compilation(
+        abort::abort_compilation(
             ctx.get_mut_diagnostician(),
             CompilationPosition::Parser,
             "Cannot be parsed correctly!",

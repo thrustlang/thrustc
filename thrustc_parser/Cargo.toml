@@ -20,7 +20,6 @@ thrustc_preprocessor = { path = "../thrustc_preprocessor" }
 thrustc_entities = { path = "../thrustc_entities" }
 thrustc_ast_modificators = { path = "../thrustc_ast_modificators" }
 thrustc_mir = { path = "../thrustc_mir" }
-thrustc_frontend_abort = { path = "../thrustc_frontend_abort" }
 thrustc_attributes = { path = "../thrustc_attributes" }
 thrustc_ast = { path = "../thrustc_ast" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }

@@ -31,6 +31,7 @@ use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 
+mod abort;
 mod attributes;
 mod builtins;
 mod expressions;
@@ -188,7 +189,7 @@ impl<'parser> ParserContext<'parser> {
         self.tokens.get(self.position).unwrap_or_else(|| {
             let span: Span = self.previous().get_span();
 
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 self.get_mut_diagnostician(),
                 CompilationPosition::Parser,
                 "Unable to get a lexical token!",
@@ -210,7 +211,7 @@ impl<'parser> ParserContext<'parser> {
         if is_overflow {
             let span: Span = self.peek().get_span();
 
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 &mut self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to parse previous token position!",
@@ -223,7 +224,7 @@ impl<'parser> ParserContext<'parser> {
         self.tokens.get(idx).unwrap_or_else(|| {
             let span: Span = self.peek().get_span();
 
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 &mut self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to get a lexical token!",

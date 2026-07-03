@@ -17,6 +17,7 @@
 
 */
 
+mod abort;
 mod impls;
 pub mod traits;
 
@@ -185,7 +186,7 @@ impl<'parser> SymbolTable<'parser> {
 
             Ok(())
         } else {
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 &mut self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to get the last scope!",
@@ -217,7 +218,7 @@ impl<'parser> SymbolTable<'parser> {
 
             Ok(())
         } else {
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 &mut self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to get the last scope!",
@@ -249,7 +250,7 @@ impl<'parser> SymbolTable<'parser> {
 
             Ok(())
         } else {
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 &mut self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to get the last scope!",
@@ -281,7 +282,7 @@ impl<'parser> SymbolTable<'parser> {
 
             Ok(())
         } else {
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 &mut self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to get the last scope!",
@@ -313,7 +314,7 @@ impl<'parser> SymbolTable<'parser> {
 
             Ok(())
         } else {
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 &mut self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to get the last scope!",
@@ -355,7 +356,7 @@ impl<'parser> SymbolTable<'parser> {
 
             Ok(())
         } else {
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 &mut self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to get the last scope!",

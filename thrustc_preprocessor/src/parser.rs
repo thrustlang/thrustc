@@ -26,7 +26,7 @@ use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 
-use crate::{module::Module, signatures::Symbol, submodule_parsing};
+use crate::{abort, module::Module, signatures::Symbol, submodule_parsing};
 
 use ahash::AHashSet as HashSet;
 
@@ -145,7 +145,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
     #[must_use]
     pub fn peek(&mut self) -> &Token {
         self.tokens.get(self.current).unwrap_or_else(|| {
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 &mut self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to get current a lexical token!",
@@ -166,7 +166,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
         if is_overflow {
             let span: Span = self.peek().get_span();
 
-            thrustc_frontend_abort::abort_compilation(
+            abort::abort_compilation(
                 &mut self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to parse previous token position!",
@@ -178,7 +178,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
             let span: Span = self.peek().get_span();
 
             self.tokens.get(idx).unwrap_or_else(|| {
-                thrustc_frontend_abort::abort_compilation(
+                abort::abort_compilation(
                     &mut self.diagnostician,
                     CompilationPosition::Parser,
                     "Unable to get a lexical token!",

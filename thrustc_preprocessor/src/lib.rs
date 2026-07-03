@@ -27,6 +27,7 @@ use crate::{context::PreprocessorContext, module::Module};
 
 use ahash::AHashSet as HashSet;
 
+mod abort;
 mod context;
 mod highmodule_parsing;
 pub mod module;

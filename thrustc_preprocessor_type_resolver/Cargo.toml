@@ -13,7 +13,6 @@ repository.workspace = true
 thrustc_logging = { path = "../thrustc_logging"  }
 thrustc_reader = { path = "../thrustc_reader" }
 thrustc_constants = { path = "../thrustc_constants" }
-thrustc_frontend_abort = { path = "../thrustc_frontend_abort" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }

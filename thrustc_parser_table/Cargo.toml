@@ -23,4 +23,4 @@ thrustc_token_type = { path = "../thrustc_token_type" }
 thrustc_constants = { path = "../thrustc_constants" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_options = { path = "../thrustc_options" }
-thrustc_frontend_abort = { path = "../thrustc_frontend_abort" }
+thrustc_logging = { path = "../thrustc_logging" }
