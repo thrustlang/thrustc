@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["array_expr","binaryop","call_expr","fixed_array","index_expr","indirectcall_expr","inlineasm_expr","literal_floatingpoint_expr","literal_integer_expr","literal_string_expr","struct_expr","struct_property_expr","unary_expr"]};
+window.SIDEBAR_ITEMS = {"mod":["array_expr","binaryop","call_expr","fixed_array","index_expr","indirect_call_expr","inlineasm_expr","literal_floatingpoint_expr","literal_integer_expr","literal_string_expr","struct_expr","struct_property_expr","unary_expr"]};

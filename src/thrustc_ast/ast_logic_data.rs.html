@@ -18,14 +18,14 @@
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_span::Span;
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
+<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 <a href=#22 id=22 data-nosnippet>22</a>
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><span class="kw">crate</span>::Ast;
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">pub type </span>StructureData&lt;<span class="lifetime">'ctx</span>&gt; = (
 <a href=#26 id=26 data-nosnippet>26</a>    <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str,
 <a href=#27 id=27 data-nosnippet>27</a>    Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str, Type, u32, Span)&gt;,
-<a href=#28 id=28 data-nosnippet>28</a>    StructureTypeModificator,
+<a href=#28 id=28 data-nosnippet>28</a>    StructTypeMetadata,
 <a href=#29 id=29 data-nosnippet>29</a>    Span,
 <a href=#30 id=30 data-nosnippet>30</a>);
 <a href=#31 id=31 data-nosnippet>31</a>

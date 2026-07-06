@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(structure) = linter.symbols.get_struct_info(name) {
 <a href=#73 id=73 data-nosnippet>73</a>                structure.<span class="number">2 </span>= <span class="bool-val">true</span>;
 <a href=#74 id=74 data-nosnippet>74</a>            } <span class="kw">else </span>{
-<a href=#75 id=75 data-nosnippet>75</a>                linter.add_bug(CompilationIssue::FrontEndBug(
+<a href=#75 id=75 data-nosnippet>75</a>                linter.add_bug(CompilationIssue::FrontendBug(
 <a href=#76 id=76 data-nosnippet>76</a>                    String::from(<span class="string">"Structure not caught"</span>),
 <a href=#77 id=77 data-nosnippet>77</a>                    <span class="macro">format!</span>(<span class="string">"Could not get named struct with name '{}'."</span>, name),
 <a href=#78 id=78 data-nosnippet>78</a>                    <span class="kw-2">*</span>span,
@@ -132,7 +132,7 @@
 <a href=#132 id=132 data-nosnippet>132</a>                <span class="kw">return</span>;
 <a href=#133 id=133 data-nosnippet>133</a>            }
 <a href=#134 id=134 data-nosnippet>134</a>
-<a href=#135 id=135 data-nosnippet>135</a>            linter.add_bug(CompilationIssue::FrontEndBug(
+<a href=#135 id=135 data-nosnippet>135</a>            linter.add_bug(CompilationIssue::FrontendBug(
 <a href=#136 id=136 data-nosnippet>136</a>                String::from(<span class="string">"Call not caught"</span>),
 <a href=#137 id=137 data-nosnippet>137</a>                <span class="macro">format!</span>(<span class="string">"Could not get named function '{}'."</span>, name),
 <a href=#138 id=138 data-nosnippet>138</a>                <span class="kw-2">*</span>span,
@@ -178,7 +178,7 @@
 <a href=#178 id=178 data-nosnippet>178</a>                <span class="kw">return</span>;
 <a href=#179 id=179 data-nosnippet>179</a>            }
 <a href=#180 id=180 data-nosnippet>180</a>
-<a href=#181 id=181 data-nosnippet>181</a>            linter.add_bug(CompilationIssue::FrontEndBug(
+<a href=#181 id=181 data-nosnippet>181</a>            linter.add_bug(CompilationIssue::FrontendBug(
 <a href=#182 id=182 data-nosnippet>182</a>                String::from(<span class="string">"Enum value not caught"</span>),
 <a href=#183 id=183 data-nosnippet>183</a>                <span class="macro">format!</span>(<span class="string">"Could not get correct name of the enum field '{}'."</span>, name),
 <a href=#184 id=184 data-nosnippet>184</a>                <span class="kw-2">*</span>span,
@@ -240,7 +240,7 @@
 <a href=#240 id=240 data-nosnippet>240</a>        <span class="kw">_ </span>=&gt; {
 <a href=#241 id=241 data-nosnippet>241</a>            <span class="kw">let </span>span: Span = expr.get_span();
 <a href=#242 id=242 data-nosnippet>242</a>
-<a href=#243 id=243 data-nosnippet>243</a>            linter.add_bug(CompilationIssue::FrontEndBug(
+<a href=#243 id=243 data-nosnippet>243</a>            linter.add_bug(CompilationIssue::FrontendBug(
 <a href=#244 id=244 data-nosnippet>244</a>                <span class="string">"Expression not caught"</span>.into(),
 <a href=#245 id=245 data-nosnippet>245</a>                <span class="string">"Expression could not be caught for processing."</span>.into(),
 <a href=#246 id=246 data-nosnippet>246</a>                span,

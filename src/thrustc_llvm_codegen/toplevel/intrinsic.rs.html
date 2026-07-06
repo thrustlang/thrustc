@@ -27,8 +27,8 @@
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_span::Span;
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>thrustc_typesystem::Type;
 <a href=#29 id=29 data-nosnippet>29</a>
-<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span><span class="kw">crate</span>::attributebuilder::AttributeBuilder;
-<a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span><span class="kw">crate</span>::attributebuilder::LLVMAttributeApplicant;
+<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span><span class="kw">crate</span>::attribute_builder::AttributeBuilder;
+<a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span><span class="kw">crate</span>::attribute_builder::LLVMAttributeApplicant;
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span><span class="kw">crate</span>::context::LLVMCodeGenContext;
 <a href=#33 id=33 data-nosnippet>33</a><span class="kw">use </span><span class="kw">crate</span>::toplevel::function::CompilerFunctionVariant;
 <a href=#34 id=34 data-nosnippet>34</a><span class="kw">use </span><span class="kw">crate</span>::typegeneration;
@@ -51,10 +51,10 @@
 <a href=#51 id=51 data-nosnippet>51</a>
 <a href=#52 id=52 data-nosnippet>52</a>    <span class="kw">let </span>ignore_args: bool = attributes.has_ignore_attribute();
 <a href=#53 id=53 data-nosnippet>53</a>
-<a href=#54 id=54 data-nosnippet>54</a>    <span class="kw">let </span>convention: u32 = <span class="kw">if let </span><span class="prelude-val">Some</span>(LLVMAttribute::Convention(convention, ..)) =
+<a href=#54 id=54 data-nosnippet>54</a>    <span class="kw">let </span>call_convention: u32 = <span class="kw">if let </span><span class="prelude-val">Some</span>(LLVMAttribute::Convention(call_convention, ..)) =
 <a href=#55 id=55 data-nosnippet>55</a>        attributes.get_attr(LLVMAttributeComparator::Convention)
 <a href=#56 id=56 data-nosnippet>56</a>    {
-<a href=#57 id=57 data-nosnippet>57</a>        convention <span class="kw">as </span>u32
+<a href=#57 id=57 data-nosnippet>57</a>        call_convention <span class="kw">as </span>u32
 <a href=#58 id=58 data-nosnippet>58</a>    } <span class="kw">else </span>{
 <a href=#59 id=59 data-nosnippet>59</a>        LLVMCallConvention::Standard <span class="kw">as </span>u32
 <a href=#60 id=60 data-nosnippet>60</a>    };
@@ -76,23 +76,24 @@
 <a href=#76 id=76 data-nosnippet>76</a>
 <a href=#77 id=77 data-nosnippet>77</a>    <span class="kw">let </span>llvm_function: FunctionValue = llvm_module.add_function(external_name, function_type, <span class="prelude-val">None</span>);
 <a href=#78 id=78 data-nosnippet>78</a>
-<a href=#79 id=79 data-nosnippet>79</a>    AttributeBuilder::add_function_attributes(
-<a href=#80 id=80 data-nosnippet>80</a>        context,
-<a href=#81 id=81 data-nosnippet>81</a>        <span class="kw-2">&amp;</span>attributes,
-<a href=#82 id=82 data-nosnippet>82</a>        LLVMAttributeApplicant::Function(llvm_function),
-<a href=#83 id=83 data-nosnippet>83</a>    );
-<a href=#84 id=84 data-nosnippet>84</a>
-<a href=#85 id=85 data-nosnippet>85</a>    <span class="kw">let </span>prototype: LLVMFunction = (
-<a href=#86 id=86 data-nosnippet>86</a>        llvm_function,
-<a href=#87 id=87 data-nosnippet>87</a>        return_type,
-<a href=#88 id=88 data-nosnippet>88</a>        parameters_types,
-<a href=#89 id=89 data-nosnippet>89</a>        convention,
-<a href=#90 id=90 data-nosnippet>90</a>        function_abi_config,
-<a href=#91 id=91 data-nosnippet>91</a>        attributes,
-<a href=#92 id=92 data-nosnippet>92</a>        <span class="bool-val">false</span>,
-<a href=#93 id=93 data-nosnippet>93</a>        span,
-<a href=#94 id=94 data-nosnippet>94</a>    );
-<a href=#95 id=95 data-nosnippet>95</a>
-<a href=#96 id=96 data-nosnippet>96</a>    context.add_function(name, prototype);
-<a href=#97 id=97 data-nosnippet>97</a>}
+<a href=#79 id=79 data-nosnippet>79</a>    <span class="kw">let </span>applicant: LLVMAttributeApplicant&lt;<span class="lifetime">'_</span>&gt; = LLVMAttributeApplicant::Function {
+<a href=#80 id=80 data-nosnippet>80</a>        value: llvm_function,
+<a href=#81 id=81 data-nosnippet>81</a>        span,
+<a href=#82 id=82 data-nosnippet>82</a>    };
+<a href=#83 id=83 data-nosnippet>83</a>
+<a href=#84 id=84 data-nosnippet>84</a>    AttributeBuilder::add_function_attributes(context, <span class="kw-2">&amp;</span>attributes, applicant);
+<a href=#85 id=85 data-nosnippet>85</a>
+<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">let </span>prototype: LLVMFunction = (
+<a href=#87 id=87 data-nosnippet>87</a>        llvm_function,
+<a href=#88 id=88 data-nosnippet>88</a>        return_type,
+<a href=#89 id=89 data-nosnippet>89</a>        parameters_types,
+<a href=#90 id=90 data-nosnippet>90</a>        call_convention,
+<a href=#91 id=91 data-nosnippet>91</a>        function_abi_config,
+<a href=#92 id=92 data-nosnippet>92</a>        attributes,
+<a href=#93 id=93 data-nosnippet>93</a>        <span class="bool-val">false</span>,
+<a href=#94 id=94 data-nosnippet>94</a>        span,
+<a href=#95 id=95 data-nosnippet>95</a>    );
+<a href=#96 id=96 data-nosnippet>96</a>
+<a href=#97 id=97 data-nosnippet>97</a>    context.add_function(name, prototype);
+<a href=#98 id=98 data-nosnippet>98</a>}
 </code></pre></div></section></main></body></html>

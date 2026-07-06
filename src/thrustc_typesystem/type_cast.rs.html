@@ -21,7 +21,7 @@
 <a href=#21 id=21 data-nosnippet>21</a>
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">impl </span>CastTypeExtensions <span class="kw">for </span>Type {
 <a href=#23 id=23 data-nosnippet>23</a>    <span class="attr">#[inline]
-<a href=#24 id=24 data-nosnippet>24</a>    </span><span class="kw">fn </span>narrowing(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Type {
+<a href=#24 id=24 data-nosnippet>24</a>    </span><span class="kw">fn </span>narrowing_cast(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Type {
 <a href=#25 id=25 data-nosnippet>25</a>        <span class="kw">match </span><span class="self">self </span>{
 <a href=#26 id=26 data-nosnippet>26</a>            Type::U8 { span } =&gt; Type::S8 { span: <span class="kw-2">*</span>span },
 <a href=#27 id=27 data-nosnippet>27</a>            Type::U16 { span } =&gt; Type::S16 { span: <span class="kw-2">*</span>span },

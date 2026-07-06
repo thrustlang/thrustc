@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["DenormalFloatingPointBehavior","DenormalFloatingPointBehavior32BitFloatingPoint","Sanitizer","SymbolLinkageMergeStrategy"],"mod":["cpu","debug","info","jit","passes","target"],"struct":["LLVMBackend","SanitizerConfiguration"]};
+window.SIDEBAR_ITEMS = {"enum":["DenormalFloatingPointBehavior","DenormalFloatingPointBehavior32BitFloatingPoint","Sanitizer","SymbolLinkageMergeStrategy"],"mod":["cpu","debug","info","jit","linker","passes","target"],"struct":["LLVMBackend","SanitizerConfiguration"]};

@@ -23,10 +23,10 @@
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_typesystem::traits::TypePointerExtensions;
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span><span class="kw">crate</span>::abort;
-<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span><span class="kw">crate</span>::cast;
-<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span><span class="kw">crate</span>::codegen;
-<a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span><span class="kw">crate</span>::context::CodeGenLocation;
-<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span><span class="kw">crate</span>::context::LLVMCodeGenContext;
+<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span><span class="kw">crate</span>::codegen;
+<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span><span class="kw">crate</span>::context::CodeGenLocation;
+<a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span><span class="kw">crate</span>::context::LLVMCodeGenContext;
+<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span><span class="kw">crate</span>::type_cast;
 <a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span><span class="kw">crate</span>::types::LLVMFunction;
 <a href=#31 id=31 data-nosnippet>31</a>
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span>inkwell::AddressSpace;
@@ -136,7 +136,7 @@
 <a href=#136 id=136 data-nosnippet>136</a>                ),
 <a href=#137 id=137 data-nosnippet>137</a>            };
 <a href=#138 id=138 data-nosnippet>138</a>
-<a href=#139 id=139 data-nosnippet>139</a>        cast::try_smart_cast(context, cast, kind, ret_value, span)
+<a href=#139 id=139 data-nosnippet>139</a>        type_cast::try_smart_cast(context, cast, kind, ret_value, span)
 <a href=#140 id=140 data-nosnippet>140</a>    };
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a>    <span class="kw">if </span>!has_abi {
@@ -205,84 +205,82 @@
 <a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">let </span>codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
 <a href=#206 id=206 data-nosnippet>206</a>            context.get_codegen_location().to_abi_representation();
 <a href=#207 id=207 data-nosnippet>207</a>
-<a href=#208 id=208 data-nosnippet>208</a>        <span class="kw">let </span>lowered_args: Vec&lt;BasicMetadataValueEnum&lt;<span class="lifetime">'_</span>&gt;&gt; =
-<a href=#209 id=209 data-nosnippet>209</a>            thrustc_llvm_abi::lower_abi_call_prologue(
-<a href=#210 id=210 data-nosnippet>210</a>                llvm_context,
-<a href=#211 id=211 data-nosnippet>211</a>                llvm_builder,
-<a href=#212 id=212 data-nosnippet>212</a>                abi,
-<a href=#213 id=213 data-nosnippet>213</a>                llvm_function,
-<a href=#214 id=214 data-nosnippet>214</a>                configuration,
-<a href=#215 id=215 data-nosnippet>215</a>                compiled_args,
-<a href=#216 id=216 data-nosnippet>216</a>                codegen_location,
-<a href=#217 id=217 data-nosnippet>217</a>                span,
-<a href=#218 id=218 data-nosnippet>218</a>            )
-<a href=#219 id=219 data-nosnippet>219</a>            .unwrap_or_else(|| {
-<a href=#220 id=220 data-nosnippet>220</a>                abort::abort_codegen(
-<a href=#221 id=221 data-nosnippet>221</a>                    context,
-<a href=#222 id=222 data-nosnippet>222</a>                    <span class="string">"Failed to compile to lower the call arguments to a specific ABI!"</span>,
-<a href=#223 id=223 data-nosnippet>223</a>                    span,
-<a href=#224 id=224 data-nosnippet>224</a>                    std::path::PathBuf::from(<span class="macro">file!</span>()),
-<a href=#225 id=225 data-nosnippet>225</a>                    <span class="macro">line!</span>(),
-<a href=#226 id=226 data-nosnippet>226</a>                )
-<a href=#227 id=227 data-nosnippet>227</a>            });
-<a href=#228 id=228 data-nosnippet>228</a>
-<a href=#229 id=229 data-nosnippet>229</a>        <span class="kw">let </span>ret_value: BasicValueEnum =
-<a href=#230 id=230 data-nosnippet>230</a>            <span class="kw">match </span>llvm_builder.build_call(llvm_function, <span class="kw-2">&amp;</span>lowered_args, <span class="string">""</span>) {
-<a href=#231 id=231 data-nosnippet>231</a>                <span class="prelude-val">Ok</span>(callsite) =&gt; {
-<a href=#232 id=232 data-nosnippet>232</a>                    <span class="kw">let </span>is_void_type: bool = callsite
-<a href=#233 id=233 data-nosnippet>233</a>                        .get_called_fn_value()
-<a href=#234 id=234 data-nosnippet>234</a>                        .get_type()
-<a href=#235 id=235 data-nosnippet>235</a>                        .get_return_type()
-<a href=#236 id=236 data-nosnippet>236</a>                        .is_none();
-<a href=#237 id=237 data-nosnippet>237</a>
-<a href=#238 id=238 data-nosnippet>238</a>                    <span class="kw">if let </span><span class="prelude-val">Some</span>(call_convention) = other_call_convention {
-<a href=#239 id=239 data-nosnippet>239</a>                        callsite.set_call_convention(call_convention);
-<a href=#240 id=240 data-nosnippet>240</a>                    } <span class="kw">else </span>{
-<a href=#241 id=241 data-nosnippet>241</a>                        callsite.set_call_convention(call_convention);
-<a href=#242 id=242 data-nosnippet>242</a>                    }
-<a href=#243 id=243 data-nosnippet>243</a>
-<a href=#244 id=244 data-nosnippet>244</a>                    <span class="kw">let </span>codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
-<a href=#245 id=245 data-nosnippet>245</a>                        context.get_codegen_location().to_abi_representation();
-<a href=#246 id=246 data-nosnippet>246</a>
-<a href=#247 id=247 data-nosnippet>247</a>                    <span class="kw">let </span>result: <span class="prelude-ty">Option</span>&lt;BasicValueEnum&lt;<span class="lifetime">'_</span>&gt;&gt; =
-<a href=#248 id=248 data-nosnippet>248</a>                        thrustc_llvm_abi::lower_abi_call_epilogue(
-<a href=#249 id=249 data-nosnippet>249</a>                            llvm_context,
-<a href=#250 id=250 data-nosnippet>250</a>                            llvm_builder,
-<a href=#251 id=251 data-nosnippet>251</a>                            abi,
-<a href=#252 id=252 data-nosnippet>252</a>                            configuration,
-<a href=#253 id=253 data-nosnippet>253</a>                            callsite,
-<a href=#254 id=254 data-nosnippet>254</a>                            <span class="kw-2">&amp;</span>lowered_args,
-<a href=#255 id=255 data-nosnippet>255</a>                            codegen_location,
-<a href=#256 id=256 data-nosnippet>256</a>                            span,
-<a href=#257 id=257 data-nosnippet>257</a>                        );
-<a href=#258 id=258 data-nosnippet>258</a>
-<a href=#259 id=259 data-nosnippet>259</a>                    <span class="kw">if </span>result.is_none() &amp;&amp; is_void_type {
-<a href=#260 id=260 data-nosnippet>260</a>                        llvm_context
-<a href=#261 id=261 data-nosnippet>261</a>                            .ptr_type(AddressSpace::default())
-<a href=#262 id=262 data-nosnippet>262</a>                            .const_null()
-<a href=#263 id=263 data-nosnippet>263</a>                            .into()
-<a href=#264 id=264 data-nosnippet>264</a>                    } <span class="kw">else if let </span><span class="prelude-val">Some</span>(value) = result {
-<a href=#265 id=265 data-nosnippet>265</a>                        value
-<a href=#266 id=266 data-nosnippet>266</a>                    } <span class="kw">else </span>{
-<a href=#267 id=267 data-nosnippet>267</a>                        abort::abort_codegen(
-<a href=#268 id=268 data-nosnippet>268</a>                            context,
-<a href=#269 id=269 data-nosnippet>269</a>                            <span class="string">"Failed to compile lower a function call!"</span>,
-<a href=#270 id=270 data-nosnippet>270</a>                            span,
-<a href=#271 id=271 data-nosnippet>271</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
-<a href=#272 id=272 data-nosnippet>272</a>                            <span class="macro">line!</span>(),
-<a href=#273 id=273 data-nosnippet>273</a>                        )
-<a href=#274 id=274 data-nosnippet>274</a>                    }
-<a href=#275 id=275 data-nosnippet>275</a>                }
-<a href=#276 id=276 data-nosnippet>276</a>                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; abort::abort_codegen(
-<a href=#277 id=277 data-nosnippet>277</a>                    context,
-<a href=#278 id=278 data-nosnippet>278</a>                    <span class="string">"Failed to compile the function call!"</span>,
-<a href=#279 id=279 data-nosnippet>279</a>                    span,
-<a href=#280 id=280 data-nosnippet>280</a>                    std::path::PathBuf::from(<span class="macro">file!</span>()),
-<a href=#281 id=281 data-nosnippet>281</a>                    <span class="macro">line!</span>(),
-<a href=#282 id=282 data-nosnippet>282</a>                ),
-<a href=#283 id=283 data-nosnippet>283</a>            };
-<a href=#284 id=284 data-nosnippet>284</a>
-<a href=#285 id=285 data-nosnippet>285</a>        cast::try_smart_cast(context, cast, kind, ret_value, span)
-<a href=#286 id=286 data-nosnippet>286</a>    }
-<a href=#287 id=287 data-nosnippet>287</a>}
+<a href=#208 id=208 data-nosnippet>208</a>        <span class="kw">let </span>lowered_args: Vec&lt;BasicMetadataValueEnum&lt;<span class="lifetime">'_</span>&gt;&gt; = thrustc_llvm_abi::lower_call_prologue(
+<a href=#209 id=209 data-nosnippet>209</a>            llvm_context,
+<a href=#210 id=210 data-nosnippet>210</a>            llvm_builder,
+<a href=#211 id=211 data-nosnippet>211</a>            abi,
+<a href=#212 id=212 data-nosnippet>212</a>            llvm_function,
+<a href=#213 id=213 data-nosnippet>213</a>            configuration,
+<a href=#214 id=214 data-nosnippet>214</a>            compiled_args,
+<a href=#215 id=215 data-nosnippet>215</a>            codegen_location,
+<a href=#216 id=216 data-nosnippet>216</a>            span,
+<a href=#217 id=217 data-nosnippet>217</a>        )
+<a href=#218 id=218 data-nosnippet>218</a>        .unwrap_or_else(|| {
+<a href=#219 id=219 data-nosnippet>219</a>            abort::abort_codegen(
+<a href=#220 id=220 data-nosnippet>220</a>                context,
+<a href=#221 id=221 data-nosnippet>221</a>                <span class="string">"Failed to compile to lower the call arguments to a specific ABI!"</span>,
+<a href=#222 id=222 data-nosnippet>222</a>                span,
+<a href=#223 id=223 data-nosnippet>223</a>                std::path::PathBuf::from(<span class="macro">file!</span>()),
+<a href=#224 id=224 data-nosnippet>224</a>                <span class="macro">line!</span>(),
+<a href=#225 id=225 data-nosnippet>225</a>            )
+<a href=#226 id=226 data-nosnippet>226</a>        });
+<a href=#227 id=227 data-nosnippet>227</a>
+<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let </span>ret_value: BasicValueEnum =
+<a href=#229 id=229 data-nosnippet>229</a>            <span class="kw">match </span>llvm_builder.build_call(llvm_function, <span class="kw-2">&amp;</span>lowered_args, <span class="string">""</span>) {
+<a href=#230 id=230 data-nosnippet>230</a>                <span class="prelude-val">Ok</span>(callsite) =&gt; {
+<a href=#231 id=231 data-nosnippet>231</a>                    <span class="kw">let </span>is_void_type: bool = callsite
+<a href=#232 id=232 data-nosnippet>232</a>                        .get_called_fn_value()
+<a href=#233 id=233 data-nosnippet>233</a>                        .get_type()
+<a href=#234 id=234 data-nosnippet>234</a>                        .get_return_type()
+<a href=#235 id=235 data-nosnippet>235</a>                        .is_none();
+<a href=#236 id=236 data-nosnippet>236</a>
+<a href=#237 id=237 data-nosnippet>237</a>                    <span class="kw">if let </span><span class="prelude-val">Some</span>(call_convention) = other_call_convention {
+<a href=#238 id=238 data-nosnippet>238</a>                        callsite.set_call_convention(call_convention);
+<a href=#239 id=239 data-nosnippet>239</a>                    } <span class="kw">else </span>{
+<a href=#240 id=240 data-nosnippet>240</a>                        callsite.set_call_convention(call_convention);
+<a href=#241 id=241 data-nosnippet>241</a>                    }
+<a href=#242 id=242 data-nosnippet>242</a>
+<a href=#243 id=243 data-nosnippet>243</a>                    <span class="kw">let </span>codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
+<a href=#244 id=244 data-nosnippet>244</a>                        context.get_codegen_location().to_abi_representation();
+<a href=#245 id=245 data-nosnippet>245</a>
+<a href=#246 id=246 data-nosnippet>246</a>                    <span class="kw">let </span>result: <span class="prelude-ty">Option</span>&lt;BasicValueEnum&lt;<span class="lifetime">'_</span>&gt;&gt; = thrustc_llvm_abi::lower_call_epilogue(
+<a href=#247 id=247 data-nosnippet>247</a>                        llvm_context,
+<a href=#248 id=248 data-nosnippet>248</a>                        llvm_builder,
+<a href=#249 id=249 data-nosnippet>249</a>                        abi,
+<a href=#250 id=250 data-nosnippet>250</a>                        configuration,
+<a href=#251 id=251 data-nosnippet>251</a>                        callsite,
+<a href=#252 id=252 data-nosnippet>252</a>                        <span class="kw-2">&amp;</span>lowered_args,
+<a href=#253 id=253 data-nosnippet>253</a>                        codegen_location,
+<a href=#254 id=254 data-nosnippet>254</a>                        span,
+<a href=#255 id=255 data-nosnippet>255</a>                    );
+<a href=#256 id=256 data-nosnippet>256</a>
+<a href=#257 id=257 data-nosnippet>257</a>                    <span class="kw">if </span>result.is_none() &amp;&amp; is_void_type {
+<a href=#258 id=258 data-nosnippet>258</a>                        llvm_context
+<a href=#259 id=259 data-nosnippet>259</a>                            .ptr_type(AddressSpace::default())
+<a href=#260 id=260 data-nosnippet>260</a>                            .const_null()
+<a href=#261 id=261 data-nosnippet>261</a>                            .into()
+<a href=#262 id=262 data-nosnippet>262</a>                    } <span class="kw">else if let </span><span class="prelude-val">Some</span>(value) = result {
+<a href=#263 id=263 data-nosnippet>263</a>                        value
+<a href=#264 id=264 data-nosnippet>264</a>                    } <span class="kw">else </span>{
+<a href=#265 id=265 data-nosnippet>265</a>                        abort::abort_codegen(
+<a href=#266 id=266 data-nosnippet>266</a>                            context,
+<a href=#267 id=267 data-nosnippet>267</a>                            <span class="string">"Failed to lower a function call!"</span>,
+<a href=#268 id=268 data-nosnippet>268</a>                            span,
+<a href=#269 id=269 data-nosnippet>269</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
+<a href=#270 id=270 data-nosnippet>270</a>                            <span class="macro">line!</span>(),
+<a href=#271 id=271 data-nosnippet>271</a>                        )
+<a href=#272 id=272 data-nosnippet>272</a>                    }
+<a href=#273 id=273 data-nosnippet>273</a>                }
+<a href=#274 id=274 data-nosnippet>274</a>                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; abort::abort_codegen(
+<a href=#275 id=275 data-nosnippet>275</a>                    context,
+<a href=#276 id=276 data-nosnippet>276</a>                    <span class="string">"Failed to compile the function call!"</span>,
+<a href=#277 id=277 data-nosnippet>277</a>                    span,
+<a href=#278 id=278 data-nosnippet>278</a>                    std::path::PathBuf::from(<span class="macro">file!</span>()),
+<a href=#279 id=279 data-nosnippet>279</a>                    <span class="macro">line!</span>(),
+<a href=#280 id=280 data-nosnippet>280</a>                ),
+<a href=#281 id=281 data-nosnippet>281</a>            };
+<a href=#282 id=282 data-nosnippet>282</a>
+<a href=#283 id=283 data-nosnippet>283</a>        type_cast::try_smart_cast(context, cast, kind, ret_value, span)
+<a href=#284 id=284 data-nosnippet>284</a>    }
+<a href=#285 id=285 data-nosnippet>285</a>}
 </code></pre></div></section></main></body></html>

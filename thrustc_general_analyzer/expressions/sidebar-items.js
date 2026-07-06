@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["validate"]};
+window.SIDEBAR_ITEMS = {"fn":["validate_node"]};

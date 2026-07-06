@@ -742,7 +742,7 @@
 <a href=#742 id=742 data-nosnippet>742</a>    loaded_value
 <a href=#743 id=743 data-nosnippet>743</a>}
 <a href=#744 id=744 data-nosnippet>744</a>
-<a href=#745 id=745 data-nosnippet>745</a><span class="kw">pub fn </span>allocate_on&lt;<span class="lifetime">'ctx</span>&gt;(
+<a href=#745 id=745 data-nosnippet>745</a><span class="kw">pub fn </span>allocate_in&lt;<span class="lifetime">'ctx</span>&gt;(
 <a href=#746 id=746 data-nosnippet>746</a>    context: <span class="kw-2">&amp;mut </span>LLVMCodeGenContext&lt;<span class="lifetime">'_</span>, <span class="lifetime">'ctx</span>&gt;,
 <a href=#747 id=747 data-nosnippet>747</a>    site: LLVMAllocationSite,
 <a href=#748 id=748 data-nosnippet>748</a>    kind: <span class="kw-2">&amp;</span>Type,
@@ -975,7 +975,7 @@
 <a href=#975 id=975 data-nosnippet>975</a>}
 <a href=#976 id=976 data-nosnippet>976</a>
 <a href=#977 id=977 data-nosnippet>977</a><span class="attr">#[inline]
-<a href=#978 id=978 data-nosnippet>978</a></span><span class="kw">pub fn </span>get_address_space(ty: <span class="kw-2">&amp;</span>Type) -&gt; <span class="prelude-ty">Option</span>&lt;AddressSpace&gt; {
+<a href=#978 id=978 data-nosnippet>978</a></span><span class="kw">pub fn </span>get_llvm_address_space(ty: <span class="kw-2">&amp;</span>Type) -&gt; <span class="prelude-ty">Option</span>&lt;AddressSpace&gt; {
 <a href=#979 id=979 data-nosnippet>979</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(address_space) = ty.get_address_space() {
 <a href=#980 id=980 data-nosnippet>980</a>        <span class="kw">return </span><span class="prelude-val">Some</span>(AddressSpace::from(address_space));
 <a href=#981 id=981 data-nosnippet>981</a>    }
@@ -1000,63 +1000,65 @@
 <a href=#1000 id=1000 data-nosnippet>1000</a>    <span class="kw">let </span>llvm_builder: <span class="kw-2">&amp;</span>Builder&lt;<span class="lifetime">'_</span>&gt; = context.get_llvm_builder();
 <a href=#1001 id=1001 data-nosnippet>1001</a>    <span class="kw">let </span>llvm_context: <span class="kw-2">&amp;</span>Context = context.get_llvm_context();
 <a href=#1002 id=1002 data-nosnippet>1002</a>
-<a href=#1003 id=1003 data-nosnippet>1003</a>    llvm_builder
-<a href=#1004 id=1004 data-nosnippet>1004</a>        .build_address_space_cast(ptr, llvm_context.ptr_type(AddressSpace::default()), <span class="string">""</span>)
-<a href=#1005 id=1005 data-nosnippet>1005</a>        .unwrap_or_else(|<span class="kw">_</span>| {
-<a href=#1006 id=1006 data-nosnippet>1006</a>            abort::abort_codegen(
-<a href=#1007 id=1007 data-nosnippet>1007</a>                context,
-<a href=#1008 id=1008 data-nosnippet>1008</a>                <span class="string">"Failed to compile a address space cast!"</span>,
-<a href=#1009 id=1009 data-nosnippet>1009</a>                span,
-<a href=#1010 id=1010 data-nosnippet>1010</a>                PathBuf::from(<span class="macro">file!</span>()),
-<a href=#1011 id=1011 data-nosnippet>1011</a>                <span class="macro">line!</span>(),
-<a href=#1012 id=1012 data-nosnippet>1012</a>            );
-<a href=#1013 id=1013 data-nosnippet>1013</a>        })
-<a href=#1014 id=1014 data-nosnippet>1014</a>}
-<a href=#1015 id=1015 data-nosnippet>1015</a>
-<a href=#1016 id=1016 data-nosnippet>1016</a><span class="attr">#[derive(Debug, Clone, Copy)]
-<a href=#1017 id=1017 data-nosnippet>1017</a></span><span class="kw">pub struct </span>SymbolAttributes {
-<a href=#1018 id=1018 data-nosnippet>1018</a>    align: <span class="prelude-ty">Option</span>&lt;u64&gt;,
-<a href=#1019 id=1019 data-nosnippet>1019</a>}
-<a href=#1020 id=1020 data-nosnippet>1020</a>
-<a href=#1021 id=1021 data-nosnippet>1021</a><span class="kw">impl </span>SymbolAttributes {
-<a href=#1022 id=1022 data-nosnippet>1022</a>    <span class="attr">#[inline]
-<a href=#1023 id=1023 data-nosnippet>1023</a>    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
-<a href=#1024 id=1024 data-nosnippet>1024</a>        <span class="self">Self </span>{ align: <span class="prelude-val">None </span>}
-<a href=#1025 id=1025 data-nosnippet>1025</a>    }
-<a href=#1026 id=1026 data-nosnippet>1026</a>}
-<a href=#1027 id=1027 data-nosnippet>1027</a>
-<a href=#1028 id=1028 data-nosnippet>1028</a><span class="kw">impl </span>SymbolAttributes {
-<a href=#1029 id=1029 data-nosnippet>1029</a>    <span class="attr">#[inline]
-<a href=#1030 id=1030 data-nosnippet>1030</a>    </span><span class="kw">pub fn </span>set_explicit_memory_alignment(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: u64) {
-<a href=#1031 id=1031 data-nosnippet>1031</a>        <span class="self">self</span>.align = <span class="prelude-val">Some</span>(value)
-<a href=#1032 id=1032 data-nosnippet>1032</a>    }
-<a href=#1033 id=1033 data-nosnippet>1033</a>}
-<a href=#1034 id=1034 data-nosnippet>1034</a>
-<a href=#1035 id=1035 data-nosnippet>1035</a><span class="kw">impl </span>SymbolAttributes {
-<a href=#1036 id=1036 data-nosnippet>1036</a>    <span class="attr">#[inline]
-<a href=#1037 id=1037 data-nosnippet>1037</a>    </span><span class="kw">pub fn </span>get_explicit_memory_alignment(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;u64&gt; {
-<a href=#1038 id=1038 data-nosnippet>1038</a>        <span class="self">self</span>.align
-<a href=#1039 id=1039 data-nosnippet>1039</a>    }
-<a href=#1040 id=1040 data-nosnippet>1040</a>}
-<a href=#1041 id=1041 data-nosnippet>1041</a>
-<a href=#1042 id=1042 data-nosnippet>1042</a><span class="kw">impl </span>SymbolAttributes {
-<a href=#1043 id=1043 data-nosnippet>1043</a>    <span class="attr">#[inline]
-<a href=#1044 id=1044 data-nosnippet>1044</a>    </span><span class="kw">pub fn </span>has_explicit_memory_alignment(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#1045 id=1045 data-nosnippet>1045</a>        <span class="self">self</span>.align.is_some()
-<a href=#1046 id=1046 data-nosnippet>1046</a>    }
-<a href=#1047 id=1047 data-nosnippet>1047</a>}
-<a href=#1048 id=1048 data-nosnippet>1048</a>
-<a href=#1049 id=1049 data-nosnippet>1049</a><span class="kw">pub fn </span>into_symbol_attributes(llvm_attributes: <span class="kw-2">&amp;</span>LLVMAttributes) -&gt; SymbolAttributes {
-<a href=#1050 id=1050 data-nosnippet>1050</a>    <span class="kw">let </span><span class="kw-2">mut </span>attributes: SymbolAttributes = SymbolAttributes::new();
-<a href=#1051 id=1051 data-nosnippet>1051</a>
-<a href=#1052 id=1052 data-nosnippet>1052</a>    {
-<a href=#1053 id=1053 data-nosnippet>1053</a>        <span class="kw">for </span>attribute <span class="kw">in </span>llvm_attributes.iter() {
-<a href=#1054 id=1054 data-nosnippet>1054</a>            <span class="kw">if let </span>LLVMAttribute::Align(value, ..) = <span class="kw-2">*</span>attribute {
-<a href=#1055 id=1055 data-nosnippet>1055</a>                attributes.set_explicit_memory_alignment(value);
-<a href=#1056 id=1056 data-nosnippet>1056</a>            }
-<a href=#1057 id=1057 data-nosnippet>1057</a>        }
-<a href=#1058 id=1058 data-nosnippet>1058</a>    }
-<a href=#1059 id=1059 data-nosnippet>1059</a>
-<a href=#1060 id=1060 data-nosnippet>1060</a>    attributes
-<a href=#1061 id=1061 data-nosnippet>1061</a>}
+<a href=#1003 id=1003 data-nosnippet>1003</a>    context.mark_dbg_location(span);
+<a href=#1004 id=1004 data-nosnippet>1004</a>
+<a href=#1005 id=1005 data-nosnippet>1005</a>    llvm_builder
+<a href=#1006 id=1006 data-nosnippet>1006</a>        .build_address_space_cast(ptr, llvm_context.ptr_type(AddressSpace::default()), <span class="string">""</span>)
+<a href=#1007 id=1007 data-nosnippet>1007</a>        .unwrap_or_else(|<span class="kw">_</span>| {
+<a href=#1008 id=1008 data-nosnippet>1008</a>            abort::abort_codegen(
+<a href=#1009 id=1009 data-nosnippet>1009</a>                context,
+<a href=#1010 id=1010 data-nosnippet>1010</a>                <span class="string">"Failed to compile a address space cast!"</span>,
+<a href=#1011 id=1011 data-nosnippet>1011</a>                span,
+<a href=#1012 id=1012 data-nosnippet>1012</a>                PathBuf::from(<span class="macro">file!</span>()),
+<a href=#1013 id=1013 data-nosnippet>1013</a>                <span class="macro">line!</span>(),
+<a href=#1014 id=1014 data-nosnippet>1014</a>            );
+<a href=#1015 id=1015 data-nosnippet>1015</a>        })
+<a href=#1016 id=1016 data-nosnippet>1016</a>}
+<a href=#1017 id=1017 data-nosnippet>1017</a>
+<a href=#1018 id=1018 data-nosnippet>1018</a><span class="attr">#[derive(Debug, Clone, Copy)]
+<a href=#1019 id=1019 data-nosnippet>1019</a></span><span class="kw">pub struct </span>SymbolAttributes {
+<a href=#1020 id=1020 data-nosnippet>1020</a>    align: <span class="prelude-ty">Option</span>&lt;u64&gt;,
+<a href=#1021 id=1021 data-nosnippet>1021</a>}
+<a href=#1022 id=1022 data-nosnippet>1022</a>
+<a href=#1023 id=1023 data-nosnippet>1023</a><span class="kw">impl </span>SymbolAttributes {
+<a href=#1024 id=1024 data-nosnippet>1024</a>    <span class="attr">#[inline]
+<a href=#1025 id=1025 data-nosnippet>1025</a>    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+<a href=#1026 id=1026 data-nosnippet>1026</a>        <span class="self">Self </span>{ align: <span class="prelude-val">None </span>}
+<a href=#1027 id=1027 data-nosnippet>1027</a>    }
+<a href=#1028 id=1028 data-nosnippet>1028</a>}
+<a href=#1029 id=1029 data-nosnippet>1029</a>
+<a href=#1030 id=1030 data-nosnippet>1030</a><span class="kw">impl </span>SymbolAttributes {
+<a href=#1031 id=1031 data-nosnippet>1031</a>    <span class="attr">#[inline]
+<a href=#1032 id=1032 data-nosnippet>1032</a>    </span><span class="kw">pub fn </span>set_explicit_memory_alignment(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: u64) {
+<a href=#1033 id=1033 data-nosnippet>1033</a>        <span class="self">self</span>.align = <span class="prelude-val">Some</span>(value)
+<a href=#1034 id=1034 data-nosnippet>1034</a>    }
+<a href=#1035 id=1035 data-nosnippet>1035</a>}
+<a href=#1036 id=1036 data-nosnippet>1036</a>
+<a href=#1037 id=1037 data-nosnippet>1037</a><span class="kw">impl </span>SymbolAttributes {
+<a href=#1038 id=1038 data-nosnippet>1038</a>    <span class="attr">#[inline]
+<a href=#1039 id=1039 data-nosnippet>1039</a>    </span><span class="kw">pub fn </span>get_explicit_memory_alignment(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;u64&gt; {
+<a href=#1040 id=1040 data-nosnippet>1040</a>        <span class="self">self</span>.align
+<a href=#1041 id=1041 data-nosnippet>1041</a>    }
+<a href=#1042 id=1042 data-nosnippet>1042</a>}
+<a href=#1043 id=1043 data-nosnippet>1043</a>
+<a href=#1044 id=1044 data-nosnippet>1044</a><span class="kw">impl </span>SymbolAttributes {
+<a href=#1045 id=1045 data-nosnippet>1045</a>    <span class="attr">#[inline]
+<a href=#1046 id=1046 data-nosnippet>1046</a>    </span><span class="kw">pub fn </span>has_explicit_memory_alignment(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#1047 id=1047 data-nosnippet>1047</a>        <span class="self">self</span>.align.is_some()
+<a href=#1048 id=1048 data-nosnippet>1048</a>    }
+<a href=#1049 id=1049 data-nosnippet>1049</a>}
+<a href=#1050 id=1050 data-nosnippet>1050</a>
+<a href=#1051 id=1051 data-nosnippet>1051</a><span class="kw">pub fn </span>into_symbol_attributes(llvm_attributes: <span class="kw-2">&amp;</span>LLVMAttributes) -&gt; SymbolAttributes {
+<a href=#1052 id=1052 data-nosnippet>1052</a>    <span class="kw">let </span><span class="kw-2">mut </span>attributes: SymbolAttributes = SymbolAttributes::new();
+<a href=#1053 id=1053 data-nosnippet>1053</a>
+<a href=#1054 id=1054 data-nosnippet>1054</a>    {
+<a href=#1055 id=1055 data-nosnippet>1055</a>        <span class="kw">for </span>attribute <span class="kw">in </span>llvm_attributes.iter() {
+<a href=#1056 id=1056 data-nosnippet>1056</a>            <span class="kw">if let </span>LLVMAttribute::Align(value, ..) = <span class="kw-2">*</span>attribute {
+<a href=#1057 id=1057 data-nosnippet>1057</a>                attributes.set_explicit_memory_alignment(value);
+<a href=#1058 id=1058 data-nosnippet>1058</a>            }
+<a href=#1059 id=1059 data-nosnippet>1059</a>        }
+<a href=#1060 id=1060 data-nosnippet>1060</a>    }
+<a href=#1061 id=1061 data-nosnippet>1061</a>
+<a href=#1062 id=1062 data-nosnippet>1062</a>    attributes
+<a href=#1063 id=1063 data-nosnippet>1063</a>}
 </code></pre></div></section></main></body></html>

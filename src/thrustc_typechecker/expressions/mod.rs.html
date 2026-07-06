@@ -426,7 +426,7 @@
 <a href=#426 id=426 data-nosnippet>426</a>                <span class="kw">return </span>call_expr::validate_node(typechecker, <span class="kw-2">*</span>metadata, args, span);
 <a href=#427 id=427 data-nosnippet>427</a>            }
 <a href=#428 id=428 data-nosnippet>428</a>
-<a href=#429 id=429 data-nosnippet>429</a>            typechecker.add_error_report(CompilationIssue::FrontEndBug(
+<a href=#429 id=429 data-nosnippet>429</a>            typechecker.add_error_report(CompilationIssue::FrontendBug(
 <a href=#430 id=430 data-nosnippet>430</a>                <span class="string">"Function not found"</span>.into(),
 <a href=#431 id=431 data-nosnippet>431</a>                <span class="string">"Function could not be found for processing."</span>.into(),
 <a href=#432 id=432 data-nosnippet>432</a>                <span class="kw-2">*</span>span,
@@ -729,7 +729,7 @@
 <a href=#729 id=729 data-nosnippet>729</a>        <span class="kw">_ </span>=&gt; {
 <a href=#730 id=730 data-nosnippet>730</a>            <span class="kw">let </span>span: Span = node.get_span();
 <a href=#731 id=731 data-nosnippet>731</a>
-<a href=#732 id=732 data-nosnippet>732</a>            typechecker.add_bug(CompilationIssue::FrontEndBug(
+<a href=#732 id=732 data-nosnippet>732</a>            typechecker.add_bug(CompilationIssue::FrontendBug(
 <a href=#733 id=733 data-nosnippet>733</a>                <span class="string">"Expression not caught"</span>.into(),
 <a href=#734 id=734 data-nosnippet>734</a>                <span class="string">"Expression could not be caught for processing."</span>.into(),
 <a href=#735 id=735 data-nosnippet>735</a>                span,

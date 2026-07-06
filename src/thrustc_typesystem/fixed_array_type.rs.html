@@ -50,7 +50,7 @@
 <a href=#50 id=50 data-nosnippet>50</a>    </span><span class="kw">fn </span>get_fixed_array_type_herarchy(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u8 {
 <a href=#51 id=51 data-nosnippet>51</a>        <span class="kw">match </span><span class="self">self </span>{
 <a href=#52 id=52 data-nosnippet>52</a>            Type::Bool { .. } =&gt; <span class="number">1</span>,
-<a href=#53 id=53 data-nosnippet>53</a>            Type::Char(..) =&gt; <span class="number">2</span>,
+<a href=#53 id=53 data-nosnippet>53</a>            Type::Char { .. } =&gt; <span class="number">2</span>,
 <a href=#54 id=54 data-nosnippet>54</a>
 <a href=#55 id=55 data-nosnippet>55</a>            Type::U8 { .. } =&gt; <span class="number">3</span>,
 <a href=#56 id=56 data-nosnippet>56</a>            Type::U16 { .. } =&gt; <span class="number">4</span>,
@@ -73,21 +73,20 @@
 <a href=#73 id=73 data-nosnippet>73</a>
 <a href=#74 id=74 data-nosnippet>74</a>            Type::Const(subtype, ..) =&gt; subtype.get_fixed_array_type_herarchy(),
 <a href=#75 id=75 data-nosnippet>75</a>
-<a href=#76 id=76 data-nosnippet>76</a>            Type::Addr(..) =&gt; <span class="number">20</span>,
-<a href=#77 id=77 data-nosnippet>77</a>            Type::Ptr {
-<a href=#78 id=78 data-nosnippet>78</a>                subtype: <span class="prelude-val">Some</span>(subtype),
-<a href=#79 id=79 data-nosnippet>79</a>                ..
-<a href=#80 id=80 data-nosnippet>80</a>            } =&gt; subtype.get_fixed_array_type_herarchy(),
-<a href=#81 id=81 data-nosnippet>81</a>            Type::Ptr { subtype: <span class="prelude-val">None</span>, .. } =&gt; <span class="number">21</span>,
-<a href=#82 id=82 data-nosnippet>82</a>
-<a href=#83 id=83 data-nosnippet>83</a>            Type::Array { .. } =&gt; <span class="number">22</span>,
-<a href=#84 id=84 data-nosnippet>84</a>            Type::FixedArray { .. } =&gt; <span class="number">23</span>,
-<a href=#85 id=85 data-nosnippet>85</a>            Type::Struct { .. } =&gt; <span class="number">24</span>,
-<a href=#86 id=86 data-nosnippet>86</a>
-<a href=#87 id=87 data-nosnippet>87</a>            Type::Fn(..) =&gt; <span class="number">25</span>,
-<a href=#88 id=88 data-nosnippet>88</a>            Type::Void(..) =&gt; <span class="number">26</span>,
-<a href=#89 id=89 data-nosnippet>89</a>            Type::Unresolved { .. } =&gt; <span class="number">27</span>,
-<a href=#90 id=90 data-nosnippet>90</a>        }
-<a href=#91 id=91 data-nosnippet>91</a>    }
-<a href=#92 id=92 data-nosnippet>92</a>}
+<a href=#76 id=76 data-nosnippet>76</a>            Type::Ptr {
+<a href=#77 id=77 data-nosnippet>77</a>                subtype: <span class="prelude-val">Some</span>(subtype),
+<a href=#78 id=78 data-nosnippet>78</a>                ..
+<a href=#79 id=79 data-nosnippet>79</a>            } =&gt; subtype.get_fixed_array_type_herarchy(),
+<a href=#80 id=80 data-nosnippet>80</a>            Type::Ptr { subtype: <span class="prelude-val">None</span>, .. } =&gt; <span class="number">20</span>,
+<a href=#81 id=81 data-nosnippet>81</a>
+<a href=#82 id=82 data-nosnippet>82</a>            Type::Array { .. } =&gt; <span class="number">21</span>,
+<a href=#83 id=83 data-nosnippet>83</a>            Type::FixedArray { .. } =&gt; <span class="number">22</span>,
+<a href=#84 id=84 data-nosnippet>84</a>            Type::Struct { .. } =&gt; <span class="number">23</span>,
+<a href=#85 id=85 data-nosnippet>85</a>
+<a href=#86 id=86 data-nosnippet>86</a>            Type::Fn { .. } =&gt; <span class="number">24</span>,
+<a href=#87 id=87 data-nosnippet>87</a>            Type::Void { .. } =&gt; <span class="number">25</span>,
+<a href=#88 id=88 data-nosnippet>88</a>            Type::Unresolved { .. } =&gt; <span class="number">26</span>,
+<a href=#89 id=89 data-nosnippet>89</a>        }
+<a href=#90 id=90 data-nosnippet>90</a>    }
+<a href=#91 id=91 data-nosnippet>91</a>}
 </code></pre></div></section></main></body></html>

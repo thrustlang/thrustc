@@ -35,7 +35,7 @@
 <a href=#35 id=35 data-nosnippet>35</a>
 <a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>thrustc_parser_table::traits::{FoundSymbolEitherExtensions, StructSymbolExtensions};
 <a href=#37 id=37 data-nosnippet>37</a>
-<a href=#38 id=38 data-nosnippet>38</a><span class="kw">use </span><span class="kw">crate</span>::ParserContext;
+<a href=#38 id=38 data-nosnippet>38</a><span class="kw">use </span>crate::{ParserContext, abort};
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a><span class="kw">pub fn </span>build_property&lt;<span class="lifetime">'parser</span>&gt;(
 <a href=#41 id=41 data-nosnippet>41</a>    ctx: <span class="kw-2">&amp;mut </span>ParserContext&lt;<span class="lifetime">'parser</span>&gt;,
@@ -121,7 +121,7 @@
 <a href=#121 id=121 data-nosnippet>121</a>    };
 <a href=#122 id=122 data-nosnippet>122</a>
 <a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">let </span>current_property_name: <span class="kw-2">&amp;</span>str = property_names.get(position).unwrap_or_else(|| {
-<a href=#124 id=124 data-nosnippet>124</a>        thrustc_frontend_abort::abort_compilation(
+<a href=#124 id=124 data-nosnippet>124</a>        abort::abort_compilation(
 <a href=#125 id=125 data-nosnippet>125</a>            ctx.get_mut_diagnostician(),
 <a href=#126 id=126 data-nosnippet>126</a>            CompilationPosition::Parser,
 <a href=#127 id=127 data-nosnippet>127</a>            <span class="string">"Cannot be parsed correctly!"</span>,
@@ -142,7 +142,7 @@
 <a href=#142 id=142 data-nosnippet>142</a>        <span class="kw">let </span>data: StructureData = structure.get_data();
 <a href=#143 id=143 data-nosnippet>143</a>
 <a href=#144 id=144 data-nosnippet>144</a>        <span class="kw">let </span>field: <span class="prelude-ty">Option</span>&lt;StructDataField&gt; = data
-<a href=#145 id=145 data-nosnippet>145</a>            .get_fields()
+<a href=#145 id=145 data-nosnippet>145</a>            .get_struct_fields()
 <a href=#146 id=146 data-nosnippet>146</a>            .iter()
 <a href=#147 id=147 data-nosnippet>147</a>            .enumerate()
 <a href=#148 id=148 data-nosnippet>148</a>            .find(|(<span class="kw">_</span>, (other_property_name, ..))| <span class="kw-2">*</span>other_property_name == current_property_name);

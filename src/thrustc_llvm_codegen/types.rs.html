@@ -59,7 +59,7 @@
 <a href=#59 id=59 data-nosnippet>59</a><span class="kw">pub type </span>LLVMAllocatedParameters&lt;<span class="lifetime">'ctx</span>&gt; = HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str, SymbolAllocated&lt;<span class="lifetime">'ctx</span>&gt;&gt;;
 <a href=#60 id=60 data-nosnippet>60</a><span class="kw">pub type </span>LLVMFunctionsParameters&lt;<span class="lifetime">'ctx</span>&gt; = HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str, SymbolAllocated&lt;<span class="lifetime">'ctx</span>&gt;&gt;;
 <a href=#61 id=61 data-nosnippet>61</a>
-<a href=#62 id=62 data-nosnippet>62</a><span class="kw">pub type </span>LLVMCtors&lt;<span class="lifetime">'ctx</span>&gt; = HashSet&lt;(PointerValue&lt;<span class="lifetime">'ctx</span>&gt;, u32)&gt;;
-<a href=#63 id=63 data-nosnippet>63</a><span class="kw">pub type </span>LLVMDtors&lt;<span class="lifetime">'ctx</span>&gt; = HashSet&lt;(PointerValue&lt;<span class="lifetime">'ctx</span>&gt;, u32)&gt;;
+<a href=#62 id=62 data-nosnippet>62</a><span class="kw">pub type </span>LLVMCtors&lt;<span class="lifetime">'ctx</span>&gt; = HashSet&lt;(PointerValue&lt;<span class="lifetime">'ctx</span>&gt;, Span, u32)&gt;;
+<a href=#63 id=63 data-nosnippet>63</a><span class="kw">pub type </span>LLVMDtors&lt;<span class="lifetime">'ctx</span>&gt; = HashSet&lt;(PointerValue&lt;<span class="lifetime">'ctx</span>&gt;, Span, u32)&gt;;
 <a href=#64 id=64 data-nosnippet>64</a><span class="kw">pub type </span>LLVMStackProtectorPointer&lt;<span class="lifetime">'ctx</span>&gt; = PointerValue&lt;<span class="lifetime">'ctx</span>&gt;;
 </code></pre></div></section></main></body></html>

@@ -20,7 +20,7 @@
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_errors::CompilationIssue;
 <a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_span::Span;
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_token_type::TokenType;
-<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_typesystem::{Type, type_modificators::StructureTypeModificator};
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span><span class="kw">crate</span>::ast_logic_data::{EnumDataField, PropertyDataField, StructureDataFields};
 <a href=#26 id=26 data-nosnippet>26</a>
@@ -101,8 +101,8 @@
 <a href=#101 id=101 data-nosnippet>101</a>}
 <a href=#102 id=102 data-nosnippet>102</a>
 <a href=#103 id=103 data-nosnippet>103</a><span class="kw">pub trait </span>AstStructureDataExtensions&lt;<span class="lifetime">'ast</span>&gt; {
-<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">fn </span>new(name: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>str, modificator: StructureTypeModificator, span: Span) -&gt; <span class="self">Self</span>;
-<a href=#105 id=105 data-nosnippet>105</a>    <span class="kw">fn </span>get_fields(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>StructureDataFields&lt;<span class="lifetime">'_</span>&gt;;
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">fn </span>new(name: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>str, metadata: StructTypeMetadata, span: Span) -&gt; <span class="self">Self</span>;
+<a href=#105 id=105 data-nosnippet>105</a>    <span class="kw">fn </span>get_struct_fields(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>StructureDataFields&lt;<span class="lifetime">'_</span>&gt;;
 <a href=#106 id=106 data-nosnippet>106</a>}
 <a href=#107 id=107 data-nosnippet>107</a>
 <a href=#108 id=108 data-nosnippet>108</a><span class="kw">pub trait </span>AstPropertyDataExtensions {
@@ -116,15 +116,15 @@
 <a href=#116 id=116 data-nosnippet>116</a>}
 <a href=#117 id=117 data-nosnippet>117</a>
 <a href=#118 id=118 data-nosnippet>118</a><span class="kw">pub trait </span>AstEnumFieldsDataExtensions&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#119 id=119 data-nosnippet>119</a>    <span class="kw">fn </span>get_field(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str) -&gt; <span class="prelude-ty">Option</span>&lt;EnumDataField&lt;<span class="lifetime">'a</span>&gt;&gt;;
+<a href=#119 id=119 data-nosnippet>119</a>    <span class="kw">fn </span>get_enum_field(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str) -&gt; <span class="prelude-ty">Option</span>&lt;EnumDataField&lt;<span class="lifetime">'a</span>&gt;&gt;;
 <a href=#120 id=120 data-nosnippet>120</a>}
 <a href=#121 id=121 data-nosnippet>121</a>
 <a href=#122 id=122 data-nosnippet>122</a><span class="kw">pub trait </span>AstStructFieldsDataExtensions {
-<a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">fn </span>get_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Type;
-<a href=#124 id=124 data-nosnippet>124</a>    <span class="kw">fn </span>get_modificator(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; StructureTypeModificator;
+<a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">fn </span>get_struct_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Type;
+<a href=#124 id=124 data-nosnippet>124</a>    <span class="kw">fn </span>get_struct_metadata(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; StructTypeMetadata;
 <a href=#125 id=125 data-nosnippet>125</a>}
 <a href=#126 id=126 data-nosnippet>126</a>
 <a href=#127 id=127 data-nosnippet>127</a><span class="kw">pub trait </span>AstConstructorDataExtensions {
-<a href=#128 id=128 data-nosnippet>128</a>    <span class="kw">fn </span>get_type(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, modificator: StructureTypeModificator, span: Span) -&gt; Type;
+<a href=#128 id=128 data-nosnippet>128</a>    <span class="kw">fn </span>get_struct_type(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, metadata: StructTypeMetadata, span: Span) -&gt; Type;
 <a href=#129 id=129 data-nosnippet>129</a>}
 </code></pre></div></section></main></body></html>

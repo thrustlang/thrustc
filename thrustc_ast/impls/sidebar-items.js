@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["builtins_implementations","constant_implementations","literal_values_implementations"]};
+window.SIDEBAR_ITEMS = {"mod":["compiler_builtins","constant","literal_values"]};

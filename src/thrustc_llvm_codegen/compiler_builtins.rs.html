@@ -29,7 +29,7 @@
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>thrustc_ast::{Ast, ast_builtins::AstBuiltin};
 <a href=#30 id=30 data-nosnippet>30</a>
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span>crate::{
-<a href=#32 id=32 data-nosnippet>32</a>    abort, cast, codegen, context::LLVMCodeGenContext, traits::AstLLVMGetType, typegeneration,
+<a href=#32 id=32 data-nosnippet>32</a>    abort, codegen, context::LLVMCodeGenContext, traits::AstLLVMGetType, type_cast, typegeneration,
 <a href=#33 id=33 data-nosnippet>33</a>};
 <a href=#34 id=34 data-nosnippet>34</a>
 <a href=#35 id=35 data-nosnippet>35</a><span class="attr">#[derive(Debug, Clone)]
@@ -57,23 +57,23 @@
 <a href=#57 id=57 data-nosnippet>57</a>        span: Span,
 <a href=#58 id=58 data-nosnippet>58</a>    },
 <a href=#59 id=59 data-nosnippet>59</a>    AbiSizeOf {
-<a href=#60 id=60 data-nosnippet>60</a>        of: <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>Type,
+<a href=#60 id=60 data-nosnippet>60</a>        ty: <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>Type,
 <a href=#61 id=61 data-nosnippet>61</a>        span: Span,
 <a href=#62 id=62 data-nosnippet>62</a>    },
 <a href=#63 id=63 data-nosnippet>63</a>    BitSizeOf {
-<a href=#64 id=64 data-nosnippet>64</a>        of: <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>Type,
+<a href=#64 id=64 data-nosnippet>64</a>        ty: <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>Type,
 <a href=#65 id=65 data-nosnippet>65</a>        span: Span,
 <a href=#66 id=66 data-nosnippet>66</a>    },
 <a href=#67 id=67 data-nosnippet>67</a>    AbiAlignOf {
-<a href=#68 id=68 data-nosnippet>68</a>        of: <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>Type,
+<a href=#68 id=68 data-nosnippet>68</a>        ty: <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>Type,
 <a href=#69 id=69 data-nosnippet>69</a>        span: Span,
 <a href=#70 id=70 data-nosnippet>70</a>    },
 <a href=#71 id=71 data-nosnippet>71</a>    AlignOf {
-<a href=#72 id=72 data-nosnippet>72</a>        of: <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>Type,
+<a href=#72 id=72 data-nosnippet>72</a>        ty: <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>Type,
 <a href=#73 id=73 data-nosnippet>73</a>        span: Span,
 <a href=#74 id=74 data-nosnippet>74</a>    },
 <a href=#75 id=75 data-nosnippet>75</a>    SizeOf {
-<a href=#76 id=76 data-nosnippet>76</a>        of: <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>Type,
+<a href=#76 id=76 data-nosnippet>76</a>        ty: <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>Type,
 <a href=#77 id=77 data-nosnippet>77</a>        span: Span,
 <a href=#78 id=78 data-nosnippet>78</a>    },
 <a href=#79 id=79 data-nosnippet>79</a>}
@@ -114,11 +114,11 @@
 <a href=#114 id=114 data-nosnippet>114</a>            size,
 <a href=#115 id=115 data-nosnippet>115</a>            span: <span class="kw-2">*</span>span,
 <a href=#116 id=116 data-nosnippet>116</a>        },
-<a href=#117 id=117 data-nosnippet>117</a>        AstBuiltin::AlignOf { of, span } =&gt; LLVMBuiltin::AlignOf { of, span: <span class="kw-2">*</span>span },
-<a href=#118 id=118 data-nosnippet>118</a>        AstBuiltin::SizeOf { of, span } =&gt; LLVMBuiltin::SizeOf { of, span: <span class="kw-2">*</span>span },
-<a href=#119 id=119 data-nosnippet>119</a>        AstBuiltin::BitSizeOf { of, span } =&gt; LLVMBuiltin::BitSizeOf { of, span: <span class="kw-2">*</span>span },
-<a href=#120 id=120 data-nosnippet>120</a>        AstBuiltin::AbiSizeOf { of, span } =&gt; LLVMBuiltin::AbiSizeOf { of, span: <span class="kw-2">*</span>span },
-<a href=#121 id=121 data-nosnippet>121</a>        AstBuiltin::AbiAlignOf { of, span } =&gt; LLVMBuiltin::AbiAlignOf { of, span: <span class="kw-2">*</span>span },
+<a href=#117 id=117 data-nosnippet>117</a>        AstBuiltin::AlignOf { ty, span } =&gt; LLVMBuiltin::AlignOf { ty, span: <span class="kw-2">*</span>span },
+<a href=#118 id=118 data-nosnippet>118</a>        AstBuiltin::SizeOf { ty, span } =&gt; LLVMBuiltin::SizeOf { ty, span: <span class="kw-2">*</span>span },
+<a href=#119 id=119 data-nosnippet>119</a>        AstBuiltin::BitSizeOf { ty, span } =&gt; LLVMBuiltin::BitSizeOf { ty, span: <span class="kw-2">*</span>span },
+<a href=#120 id=120 data-nosnippet>120</a>        AstBuiltin::AbiSizeOf { ty, span } =&gt; LLVMBuiltin::AbiSizeOf { ty, span: <span class="kw-2">*</span>span },
+<a href=#121 id=121 data-nosnippet>121</a>        AstBuiltin::AbiAlignOf { ty, span } =&gt; LLVMBuiltin::AbiAlignOf { ty, span: <span class="kw-2">*</span>span },
 <a href=#122 id=122 data-nosnippet>122</a>    }
 <a href=#123 id=123 data-nosnippet>123</a>}
 <a href=#124 id=124 data-nosnippet>124</a>
@@ -291,11 +291,11 @@
 <a href=#291 id=291 data-nosnippet>291</a>                )
 <a href=#292 id=292 data-nosnippet>292</a>            })
 <a href=#293 id=293 data-nosnippet>293</a>            .into(),
-<a href=#294 id=294 data-nosnippet>294</a>        LLVMBuiltin::AlignOf { of, span } =&gt; {
+<a href=#294 id=294 data-nosnippet>294</a>        LLVMBuiltin::AlignOf { ty, span } =&gt; {
 <a href=#295 id=295 data-nosnippet>295</a>            <span class="kw">let </span>type_layout_result: either::Either&lt;
 <a href=#296 id=296 data-nosnippet>296</a>                thrustc_typesystem::type_layout::TypeLayout,
 <a href=#297 id=297 data-nosnippet>297</a>                thrustc_typesystem::type_layout::StructTypeLayout,
-<a href=#298 id=298 data-nosnippet>298</a>            &gt; = context.get_mut_target_info().get_type_layout(of);
+<a href=#298 id=298 data-nosnippet>298</a>            &gt; = context.get_mut_target_info().get_type_layout(ty);
 <a href=#299 id=299 data-nosnippet>299</a>
 <a href=#300 id=300 data-nosnippet>300</a>            <span class="kw">let </span>align_of: u32 = <span class="kw">match </span>type_layout_result {
 <a href=#301 id=301 data-nosnippet>301</a>                either::Either::Left(t) =&gt; t.into_layout().alignof,
@@ -310,13 +310,13 @@
 <a href=#310 id=310 data-nosnippet>310</a>
 <a href=#311 id=311 data-nosnippet>311</a>            <span class="kw">let </span>align_of_type: Type = Type::U32 { span };
 <a href=#312 id=312 data-nosnippet>312</a>
-<a href=#313 id=313 data-nosnippet>313</a>            cast::try_smart_cast(context, cast_type, <span class="kw-2">&amp;</span>align_of_type, align_of_value, span)
+<a href=#313 id=313 data-nosnippet>313</a>            type_cast::try_smart_cast(context, cast_type, <span class="kw-2">&amp;</span>align_of_type, align_of_value, span)
 <a href=#314 id=314 data-nosnippet>314</a>        }
-<a href=#315 id=315 data-nosnippet>315</a>        LLVMBuiltin::SizeOf { of, span } =&gt; {
+<a href=#315 id=315 data-nosnippet>315</a>        LLVMBuiltin::SizeOf { ty, span } =&gt; {
 <a href=#316 id=316 data-nosnippet>316</a>            <span class="kw">let </span>type_layout_result: either::Either&lt;
 <a href=#317 id=317 data-nosnippet>317</a>                thrustc_typesystem::type_layout::TypeLayout,
 <a href=#318 id=318 data-nosnippet>318</a>                thrustc_typesystem::type_layout::StructTypeLayout,
-<a href=#319 id=319 data-nosnippet>319</a>            &gt; = context.get_mut_target_info().get_type_layout(of);
+<a href=#319 id=319 data-nosnippet>319</a>            &gt; = context.get_mut_target_info().get_type_layout(ty);
 <a href=#320 id=320 data-nosnippet>320</a>
 <a href=#321 id=321 data-nosnippet>321</a>            <span class="kw">let </span>size_of: u32 = <span class="kw">match </span>type_layout_result {
 <a href=#322 id=322 data-nosnippet>322</a>                either::Either::Left(t) =&gt; t.into_layout().sizeof,
@@ -331,10 +331,10 @@
 <a href=#331 id=331 data-nosnippet>331</a>
 <a href=#332 id=332 data-nosnippet>332</a>            <span class="kw">let </span>size_of_type: Type = Type::USize { span };
 <a href=#333 id=333 data-nosnippet>333</a>
-<a href=#334 id=334 data-nosnippet>334</a>            cast::try_smart_cast(context, cast_type, <span class="kw-2">&amp;</span>size_of_type, size_of_value, span)
+<a href=#334 id=334 data-nosnippet>334</a>            type_cast::try_smart_cast(context, cast_type, <span class="kw-2">&amp;</span>size_of_type, size_of_value, span)
 <a href=#335 id=335 data-nosnippet>335</a>        }
-<a href=#336 id=336 data-nosnippet>336</a>        LLVMBuiltin::AbiSizeOf { of, span } =&gt; {
-<a href=#337 id=337 data-nosnippet>337</a>            <span class="kw">let </span>llvm_type: BasicTypeEnum = typegeneration::generate_type(context, of);
+<a href=#336 id=336 data-nosnippet>336</a>        LLVMBuiltin::AbiSizeOf { ty, span } =&gt; {
+<a href=#337 id=337 data-nosnippet>337</a>            <span class="kw">let </span>llvm_type: BasicTypeEnum = typegeneration::generate_type(context, ty);
 <a href=#338 id=338 data-nosnippet>338</a>            <span class="kw">let </span>abi_size: u64 = context.get_target_data().get_abi_size(<span class="kw-2">&amp;</span>llvm_type);
 <a href=#339 id=339 data-nosnippet>339</a>            <span class="kw">let </span>size: BasicValueEnum = context
 <a href=#340 id=340 data-nosnippet>340</a>                .get_llvm_context()
@@ -344,10 +344,10 @@
 <a href=#344 id=344 data-nosnippet>344</a>
 <a href=#345 id=345 data-nosnippet>345</a>            <span class="kw">let </span>size_type: Type = Type::U64 { span };
 <a href=#346 id=346 data-nosnippet>346</a>
-<a href=#347 id=347 data-nosnippet>347</a>            cast::try_smart_cast(context, cast_type, <span class="kw-2">&amp;</span>size_type, size, span)
+<a href=#347 id=347 data-nosnippet>347</a>            type_cast::try_smart_cast(context, cast_type, <span class="kw-2">&amp;</span>size_type, size, span)
 <a href=#348 id=348 data-nosnippet>348</a>        }
-<a href=#349 id=349 data-nosnippet>349</a>        LLVMBuiltin::BitSizeOf { of, span } =&gt; {
-<a href=#350 id=350 data-nosnippet>350</a>            <span class="kw">let </span>llvm_type: BasicTypeEnum = typegeneration::generate_type(context, of);
+<a href=#349 id=349 data-nosnippet>349</a>        LLVMBuiltin::BitSizeOf { ty, span } =&gt; {
+<a href=#350 id=350 data-nosnippet>350</a>            <span class="kw">let </span>llvm_type: BasicTypeEnum = typegeneration::generate_type(context, ty);
 <a href=#351 id=351 data-nosnippet>351</a>            <span class="kw">let </span>bit_size_bits: u64 = context.get_target_data().get_bit_size(<span class="kw-2">&amp;</span>llvm_type);
 <a href=#352 id=352 data-nosnippet>352</a>            <span class="kw">let </span>bit_size_bytes: u64 = bit_size_bits.saturating_div(<span class="number">8</span>);
 <a href=#353 id=353 data-nosnippet>353</a>
@@ -359,10 +359,10 @@
 <a href=#359 id=359 data-nosnippet>359</a>
 <a href=#360 id=360 data-nosnippet>360</a>            <span class="kw">let </span>size_type: Type = Type::U64 { span };
 <a href=#361 id=361 data-nosnippet>361</a>
-<a href=#362 id=362 data-nosnippet>362</a>            cast::try_smart_cast(context, cast_type, <span class="kw-2">&amp;</span>size_type, size, span)
+<a href=#362 id=362 data-nosnippet>362</a>            type_cast::try_smart_cast(context, cast_type, <span class="kw-2">&amp;</span>size_type, size, span)
 <a href=#363 id=363 data-nosnippet>363</a>        }
-<a href=#364 id=364 data-nosnippet>364</a>        LLVMBuiltin::AbiAlignOf { of, span } =&gt; {
-<a href=#365 id=365 data-nosnippet>365</a>            <span class="kw">let </span>llvm_type: BasicTypeEnum = typegeneration::generate_type(context, of);
+<a href=#364 id=364 data-nosnippet>364</a>        LLVMBuiltin::AbiAlignOf { ty, span } =&gt; {
+<a href=#365 id=365 data-nosnippet>365</a>            <span class="kw">let </span>llvm_type: BasicTypeEnum = typegeneration::generate_type(context, ty);
 <a href=#366 id=366 data-nosnippet>366</a>            <span class="kw">let </span>abi_align: u32 = context.get_target_data().get_abi_alignment(<span class="kw-2">&amp;</span>llvm_type);
 <a href=#367 id=367 data-nosnippet>367</a>
 <a href=#368 id=368 data-nosnippet>368</a>            <span class="kw">let </span>align: BasicValueEnum = context
@@ -373,7 +373,7 @@
 <a href=#373 id=373 data-nosnippet>373</a>
 <a href=#374 id=374 data-nosnippet>374</a>            <span class="kw">let </span>abi_align_type: Type = Type::U32 { span };
 <a href=#375 id=375 data-nosnippet>375</a>
-<a href=#376 id=376 data-nosnippet>376</a>            cast::try_smart_cast(context, cast_type, <span class="kw-2">&amp;</span>abi_align_type, align, span)
+<a href=#376 id=376 data-nosnippet>376</a>            type_cast::try_smart_cast(context, cast_type, <span class="kw-2">&amp;</span>abi_align_type, align, span)
 <a href=#377 id=377 data-nosnippet>377</a>        }
 <a href=#378 id=378 data-nosnippet>378</a>    }
 <a href=#379 id=379 data-nosnippet>379</a>}

@@ -53,7 +53,15 @@
 <a href=#53 id=53 data-nosnippet>53</a>            ThrustAttribute::Constructor(..) =&gt; <span class="macro">write!</span>(f, <span class="string">"@constructor"</span>),
 <a href=#54 id=54 data-nosnippet>54</a>            ThrustAttribute::Destructor(..) =&gt; <span class="macro">write!</span>(f, <span class="string">"@destructor"</span>),
 <a href=#55 id=55 data-nosnippet>55</a>            ThrustAttribute::Cuda(..) =&gt; <span class="macro">write!</span>(f, <span class="string">"@cuda"</span>),
-<a href=#56 id=56 data-nosnippet>56</a>        }
-<a href=#57 id=57 data-nosnippet>57</a>    }
-<a href=#58 id=58 data-nosnippet>58</a>}
+<a href=#56 id=56 data-nosnippet>56</a>            ThrustAttribute::Promote(promote, ..) =&gt; {
+<a href=#57 id=57 data-nosnippet>57</a>                <span class="kw">let </span>type_displayed: Vec&lt;String&gt; = promote
+<a href=#58 id=58 data-nosnippet>58</a>                    .iter()
+<a href=#59 id=59 data-nosnippet>59</a>                    .map(|(from, target)| <span class="macro">format!</span>(<span class="string">"{} -&gt; {}"</span>, from, target))
+<a href=#60 id=60 data-nosnippet>60</a>                    .collect();
+<a href=#61 id=61 data-nosnippet>61</a>
+<a href=#62 id=62 data-nosnippet>62</a>                <span class="macro">write!</span>(f, <span class="string">"@promote({})"</span>, type_displayed.join(<span class="string">", "</span>))
+<a href=#63 id=63 data-nosnippet>63</a>            }
+<a href=#64 id=64 data-nosnippet>64</a>        }
+<a href=#65 id=65 data-nosnippet>65</a>    }
+<a href=#66 id=66 data-nosnippet>66</a>}
 </code></pre></div></section></main></body></html>

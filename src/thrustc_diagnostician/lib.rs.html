@@ -164,7 +164,7 @@
 <a href=#164 id=164 data-nosnippet>164</a>                thrustc_logging::write(OutputIn::Stderr, <span class="kw-2">&amp;</span>generated_diagnostic);
 <a href=#165 id=165 data-nosnippet>165</a>            }
 <a href=#166 id=166 data-nosnippet>166</a>
-<a href=#167 id=167 data-nosnippet>167</a>            CompilationIssue::FrontEndBug(title, message, span, position, path, line) =&gt; {
+<a href=#167 id=167 data-nosnippet>167</a>            CompilationIssue::FrontendBug(title, message, span, position, path, line) =&gt; {
 <a href=#168 id=168 data-nosnippet>168</a>                <span class="kw">let </span>diagnostic: Diagnostic = diagnostic::build(
 <a href=#169 id=169 data-nosnippet>169</a>                    <span class="kw-2">&amp;</span><span class="self">self</span>.code,
 <a href=#170 id=170 data-nosnippet>170</a>                    <span class="kw-2">*</span>span,
@@ -181,7 +181,7 @@
 <a href=#181 id=181 data-nosnippet>181</a>                );
 <a href=#182 id=182 data-nosnippet>182</a>            }
 <a href=#183 id=183 data-nosnippet>183</a>
-<a href=#184 id=184 data-nosnippet>184</a>            CompilationIssue::BackenEndBug(title, message, span, position, path, line) =&gt; {
+<a href=#184 id=184 data-nosnippet>184</a>            CompilationIssue::BackendBug(title, message, span, position, path, line) =&gt; {
 <a href=#185 id=185 data-nosnippet>185</a>                <span class="kw">let </span>diagnostic: Diagnostic = diagnostic::build(
 <a href=#186 id=186 data-nosnippet>186</a>                    <span class="kw-2">&amp;</span><span class="self">self</span>.code,
 <a href=#187 id=187 data-nosnippet>187</a>                    <span class="kw-2">*</span>span,
