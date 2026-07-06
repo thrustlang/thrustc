@@ -84,6 +84,8 @@ jobs:
       - name: Building Thrust Compiler (Release - Stripped)
         run: |
           cargo build --profile release-stripped
+
+          mv target/release-stripped/thrustc target/release-stripped/thrustc-stripped
         working-directory: thrustc
 
       - name: Extracting File Type and Dynamic Dependencies
