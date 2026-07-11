@@ -44,7 +44,11 @@ members = [
     "thrustc_heap_allocator", 
     "thrustc_ast_external", 
     "thrustc_cli",
-    "thrustc_utils", "thrustc_llvm_abi_representation", "thrustc_abi", "thrustc_llvm_nvidia_cuda_abi", "thrustc_llvm_linker_driver", 
+    "thrustc_llvm_abi_representation", 
+    "thrustc_abi", 
+    "thrustc_llvm_nvidia_cuda_abi", 
+    "thrustc_llvm_linker_driver", 
+    "thrustc_utils", 
 ]
 
 exclude = [
@@ -58,7 +62,7 @@ name = "thrustc"
 description = "The compiler for Thrust Programming Language."
 edition = "2024"
 license = "GPL-3.0"
-version = "0.1.4"
+version = "0.1.5"
 rust-version = "1.85.0"
 
 authors = [

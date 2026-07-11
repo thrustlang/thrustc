@@ -114,6 +114,21 @@ pub fn check_type_together(
     }
 
     match (target, provided, operator) {
+        (Type::Const(ty_1, ..), Type::Const(ty_2, ..), None) => {
+            self::check_type_together(ty_1, ty_2, None, None, metadata, span, control_context)?;
+            Ok(())
+        }
+
+        (ty_1, Type::Const(ty_2, ..), None) => {
+            self::check_type_together(ty_1, ty_2, None, None, metadata, span, control_context)?;
+            Ok(())
+        }
+
+        (Type::Const(ty_1, ..), ty_2, .., None) => {
+            self::check_type_together(ty_1, ty_2, None, None, metadata, span, control_context)?;
+            Ok(())
+        }
+
         (Type::Char { .. }, Type::Char { .. }, None) => Ok(()),
 
         (
@@ -216,26 +231,6 @@ pub fn check_type_together(
 
             Ok(())
         }
-
-        (Type::Const(target, ..), Type::Const(provided, ..), None) => self::check_type_together(
-            target,
-            provided,
-            None,
-            None,
-            metadata,
-            span,
-            control_context,
-        ),
-
-        (Type::Const(target, ..), provided, None) => self::check_type_together(
-            target,
-            provided,
-            None,
-            None,
-            metadata,
-            span,
-            control_context,
-        ),
 
         (
             Type::FixedArray {

@@ -175,7 +175,7 @@ pub fn generate_type<'ctx>(
 
     match kind {
         t if t.is_integer_type() || t.is_char_type() || t.is_bool_type() => match kind {
-            Type::S8 { .. } | Type::U8 { .. }  => llvm_context.i8_type().into(),
+            Type::S8 { .. } | Type::U8 { .. } | Type::Char { .. }  => llvm_context.i8_type().into(),
             Type::S16 { .. } | Type::U16 { .. } => llvm_context.i16_type().into(),
             Type::S32 { .. } | Type::U32 { .. } => llvm_context.i32_type().into(),
             Type::S64 { .. } | Type::U64 { .. } => llvm_context.i64_type().into(),
@@ -281,7 +281,7 @@ pub fn generate_dereference_type<'ctx>(
 
     match kind {
         t if t.is_integer_type() || t.is_char_type() || t.is_bool_type() => match kind {
-            Type::S8 { .. } | Type::U8 { .. }  => llvm_context.i8_type().into(),
+            Type::S8 { .. } | Type::U8 { .. } | Type::Char { .. } => llvm_context.i8_type().into(),
             Type::S16 { .. } | Type::U16 { .. } => llvm_context.i16_type().into(),
             Type::S32 { .. } | Type::U32 { .. } => llvm_context.i32_type().into(),
             Type::S64 { .. } | Type::U64 { .. } => llvm_context.i64_type().into(),

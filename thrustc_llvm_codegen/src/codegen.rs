@@ -414,7 +414,9 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
     pub fn codegen_variables(&mut self, node: &'ctx Ast) {
         match node {
-            Ast::Var { metadata, .. } => {
+            Ast::Var {
+                metadata, value, ..
+            } => {
                 self.context
                     .get_mut_expressions_optimizations()
                     .denegate_all_expression_optimizations();
@@ -503,9 +505,15 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let value: BasicValueEnum =
                         codegen::compile_as_value(self.get_mut_context(), expr, Some(kind));
 
-                    if let Some(anchor) = self.context.get_mut_pointer_anchor() {
-                        anchor.trigger();
-                        symbol.store(self.context, value);
+                    if self
+                        .context
+                        .get_pointer_anchor()
+                        .is_some_and(|anchor| !anchor.is_triggered())
+                    {
+                        if let Some(anchor) = self.context.get_mut_pointer_anchor() {
+                            anchor.trigger();
+                            symbol.store(self.context, value);
+                        }
                     }
 
                     self.context.clear_pointer_anchor();
