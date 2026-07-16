@@ -17,8 +17,6 @@
 
 */
 
-use std::fs;
-use std::path::Path;
 use std::path::PathBuf;
 
 use thrustc_backends::llvm::LLVMBackend;
@@ -27,6 +25,8 @@ use thrustc_backends::llvm::linker::LinkerLinuxConfiguration;
 use thrustc_backends::llvm::linker::LinuxLTOOptimization;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::CompilerOptions;
+
+mod linux_finders;
 
 #[derive(Debug)]
 pub struct LLVMLinkerWrapper<'lld> {
@@ -163,7 +163,7 @@ impl LLVMLinkerWrapper<'_> {
                 if linker_config.link_dynamic() {
                     builder.add_flag_without_value("--pie".into());
 
-                    let dynamic_linker: PathBuf = self::find_dynamic_linker(&library_paths)
+                    let dynamic_linker: PathBuf = linux_finders::find_dynamic_linker(&library_paths)
                         .unwrap_or_else(|| {
                             thrustc_logging::print_critical_error(
                                 thrustc_logging::LoggingType::Error,
@@ -198,7 +198,7 @@ impl LLVMLinkerWrapper<'_> {
 
             if linker_config.build_executable() {
                 let executable_cruntime_libraries: (PathBuf, PathBuf, PathBuf) =
-                    self::find_c_runtime_objects_linux(&library_paths, cruntime_variant)
+                    linux_finders::find_c_runtime_objects_linux(&library_paths, cruntime_variant)
                         .unwrap_or_else(|| {
                             thrustc_logging::print_critical_error(
                                 thrustc_logging::LoggingType::Error,
@@ -230,13 +230,15 @@ impl LLVMLinkerWrapper<'_> {
             if linker_config.build_executable() {
                 let is_64_bit: bool = self.target_triple.is_64_bit();
 
-                let libgcc_dir: PathBuf = self::find_libgcc_linux(&library_paths, is_64_bit)
-                    .unwrap_or_else(|| {
-                        thrustc_logging::print_critical_error(
-                            thrustc_logging::LoggingType::Error,
-                            "Unable to find libgcc for the Linker on Linux!",
-                        )
-                    });
+                let libgcc_dir: PathBuf =
+                    linux_finders::find_libgcc_linux(&library_paths, is_64_bit).unwrap_or_else(
+                        || {
+                            thrustc_logging::print_critical_error(
+                                thrustc_logging::LoggingType::Error,
+                                "Unable to find libgcc for the Linker on Linux!",
+                            )
+                        },
+                    );
 
                 builder.add_side_by_side_flag("-L".into(), format!("{}", libgcc_dir.display()));
             }
@@ -420,164 +422,6 @@ impl FlagsBuilder {
             &format!("Linker command: {:?}", self.flags),
         );
     }
-}
-
-pub fn find_c_runtime_objects_linux(
-    library_paths: &[String],
-    runtime_variant: LinuxCRuntimeVariant,
-) -> Option<(PathBuf, PathBuf, PathBuf)> {
-    let mut crt1: Option<PathBuf> = None;
-    let mut crti: Option<PathBuf> = None;
-    let mut crtn: Option<PathBuf> = None;
-
-    for base in library_paths {
-        self::search_dir(
-            Path::new(base),
-            &mut crt1,
-            &mut crti,
-            &mut crtn,
-            runtime_variant,
-        );
-
-        if crt1.is_some() && crti.is_some() && crtn.is_some() {
-            break;
-        }
-    }
-
-    match (crt1, crti, crtn) {
-        (Some(crt1), Some(crti), Some(crtn)) => Some((crt1, crti, crtn)),
-        _ => None,
-    }
-}
-
-fn search_dir(
-    dir: &Path,
-    crt1: &mut Option<PathBuf>,
-    crti: &mut Option<PathBuf>,
-    crtn: &mut Option<PathBuf>,
-    runtime_variant: LinuxCRuntimeVariant,
-) {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return;
-    };
-
-    for entry in entries.flatten() {
-        let path: PathBuf = entry.path();
-        let path_str: String = path.display().to_string();
-
-        if runtime_variant
-            .get_contrary_system_representations()
-            .iter()
-            .any(|contrario| path_str.contains(contrario))
-        {
-            continue;
-        }
-
-        if path.is_dir() {
-            search_dir(&path, crt1, crti, crtn, runtime_variant);
-        } else if path.is_file() {
-            match path.file_name().and_then(|n| n.to_str()) {
-                Some("crt1.o") if crt1.is_none() => *crt1 = Some(path),
-                Some("crti.o") if crti.is_none() => *crti = Some(path),
-                Some("crtn.o") if crtn.is_none() => *crtn = Some(path),
-
-                _ => {}
-            }
-        }
-
-        if crt1.is_some() && crti.is_some() && crtn.is_some() {
-            return;
-        }
-    }
-}
-
-pub fn find_libgcc_linux(library_paths: &[String], is_64_bit: bool) -> Option<PathBuf> {
-    for base in library_paths {
-        if let Some(path) = search_libgcc(Path::new(base), is_64_bit) {
-            return Some(path);
-        }
-    }
-    None
-}
-
-fn search_libgcc(dir: &Path, is_64_bit: bool) -> Option<PathBuf> {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return None;
-    };
-
-    for entry in entries.flatten() {
-        let path: PathBuf = entry.path();
-        let name: &str = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-
-        if is_64_bit && name == "32" {
-            continue;
-        }
-
-        let Ok(meta) = fs::metadata(&path) else {
-            continue;
-        };
-
-        if meta.is_dir() {
-            if !is_64_bit && name == "32" {
-                return search_libgcc(&path, is_64_bit);
-            }
-
-            if let Some(found) = search_libgcc(&path, is_64_bit) {
-                return Some(found);
-            }
-        } else if meta.is_file() {
-            let name: &str = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-            if name == "libgcc.a" || name == "libgcc.so" || name.starts_with("libgcc.so.") {
-                return path.parent().map(|p| p.to_path_buf());
-            }
-        }
-    }
-    None
-}
-
-pub fn find_dynamic_linker(library_paths: &[String]) -> Option<PathBuf> {
-    for base in library_paths {
-        if let Some(found) = search_dynamic_linker(Path::new(base)) {
-            return Some(found);
-        }
-    }
-
-    None
-}
-
-fn search_dynamic_linker(dir: &Path) -> Option<PathBuf> {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return None;
-    };
-
-    for entry in entries.flatten() {
-        let path = entry.path();
-
-        if path.is_dir() {
-            if let Some(found) = search_dynamic_linker(&path) {
-                return Some(found);
-            }
-        } else if path.is_file() || path.is_symlink() {
-            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-
-            if is_dynamic_linker(name) {
-                return Some(path);
-            }
-        }
-    }
-
-    None
-}
-
-fn is_dynamic_linker(name: &str) -> bool {
-    matches!(
-        name,
-        "ld-linux-x86-64.so.2"
-            | "ld-linux.so.2"
-            | "ld-linux-aarch64.so.1"
-            | "ld-linux-armhf.so.3"
-            | "ld-linux-arm.so.3"
-    )
 }
 
 #[inline]

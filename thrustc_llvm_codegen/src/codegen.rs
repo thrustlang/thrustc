@@ -414,9 +414,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
     pub fn codegen_variables(&mut self, node: &'ctx Ast) {
         match node {
-            Ast::Var {
-                metadata, value, ..
-            } => {
+            Ast::Var { metadata, .. } => {
                 self.context
                     .get_mut_expressions_optimizations()
                     .denegate_all_expression_optimizations();

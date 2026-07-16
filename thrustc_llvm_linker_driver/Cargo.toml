@@ -10,6 +10,8 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+walkdir = "2.5.0"
+
 thrustc_backends = { path = "../thrustc_backends" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
