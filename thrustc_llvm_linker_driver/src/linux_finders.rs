@@ -357,10 +357,11 @@ fn search_dynamic_linker_walk(root: &Path) -> Option<PathBuf> {
 
         let name: &str = entry.file_name().to_str().unwrap_or("");
 
-        if is_dynamic_linker(name) {
+        if self::is_dynamic_linker(name) {
             return Some(entry.into_path());
         }
     }
+
     None
 }
 
