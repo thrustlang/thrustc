@@ -2,6 +2,8 @@
 
 # Thrust Compiler - Compiler - Binary Variants
 
+<img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
+
 In the releases section of the Thrust Programming Language Github repository, you'll find two different versions of the Thrust Compiler:
 
 - `thrustc`: This is the standard executable compiled with symbols and in debug mode for bug hunting in production, but it has a larger file size.

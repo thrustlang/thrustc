@@ -2,7 +2,9 @@
 
 # The Thrust Compiler 
 
-These are the available cargo alias in the whole project:
+<img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
+
+These are the available cargo alias in the whole project, to perform either compiler fuzzing or generation of Rust's code documentation.
 
 ## Compiler Fuzzing
 
@@ -41,7 +43,9 @@ It fuzz the AST validation pipeline, including semantic analysis with supposed u
 cargo fuzz-pipeline-unstable
 ```
 
-## Rust Code Documentations
+-------------------------------------------------
+
+## Rust Code Documentation
 
 It compiles and generate the standard rust code documentation along thrustc's codebase.
 ```console

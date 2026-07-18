@@ -2,6 +2,8 @@
 
 # The Thrust Compiler 
 
+<img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
+
 There is a simple guide of standard conventions to follow in order to delivery a good Github commit for the Thrust Compiler (**thrustc**).
 
 ### Title

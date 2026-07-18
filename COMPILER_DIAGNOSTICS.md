@@ -2,6 +2,8 @@
 
 # The Thrust Compiler 
 
+<img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
+
 This is an example of the type of compiler diagnostics you can find in thrustc:
 
 These can be displayed in color using `--enable-ansi-color`, which is off by default.
