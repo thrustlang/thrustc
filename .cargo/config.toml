@@ -10,11 +10,12 @@ rustflags = [
 ]
 
 [alias]
-# Compiler Fuzzing
-fuzz-llvm = "fuzz run llvm-codegen -- -dict=fuzz/thrust.dict"
-fuzz-pipeline = "fuzz run pipeline -- -dict=fuzz/thrust.dict"
+fuzz-llvm-unstable = "fuzz run llvm-codegen -- -dict=fuzz/thrust-unstable.dict"
+fuzz-pipeline-unstable = "fuzz run pipeline -- -dict=fuzz/thrust-unstable.dict"
 
-# Rust code documentation
+fuzz-llvm-stable = "fuzz run llvm-codegen -- -dict=fuzz/thrust-stable.dict"
+fuzz-pipeline-stable = "fuzz run pipeline -- -dict=fuzz/thrust-stable.dict"
+
 docs = "doc --workspace --no-deps --document-private-items --exclude clang --exclude inkwell --exclude inkwell_internals --exclude llvm-sys --exclude clang-sys"
 docs-open = "doc --workspace --no-deps --document-private-items --open --exclude clang --exclude inkwell --exclude inkwell_internals --exclude llvm-sys --exclude clang-sys"
 

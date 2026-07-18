@@ -2,21 +2,46 @@
 
 # The Thrust Compiler 
 
-These are the available cargo alias in the project:
+These are the available cargo alias in the whole project:
 
-### Compiler Fuzzing
+## Compiler Fuzzing
 
-It fuzz the LLVM backend, using an inteligent fuzz approach. 
+It means the fuzzer only will perform tests including "stable" features on the compiler.
+
+## Stable Compiler Fuzzing
+
+### LLVM
+
+It fuzz the LLVM backend with supposed stable features.
 ```console
-cargo fuzz-llvm
+cargo fuzz-llvm-stable
 ```
 
-It fuzz the AST validation pipeline, including semantic analysis.
+### Pipeline
+
+It fuzz the AST validation pipeline, including semantic analysis with supposed stable features.
 ```console
-cargo fuzz-pipeline
+cargo fuzz-pipeline-stable
+```
+## Unstable Compiler Fuzzing
+
+It means the fuzzer only will perform tests including "unstable" features on the compiler.
+
+### LLVM
+
+It fuzz the LLVM backend with supposed unstable features.
+```console
+cargo fuzz-llvm-unstable
 ```
 
-### Rust Code Documentations
+### Pipeline
+
+It fuzz the AST validation pipeline, including semantic analysis with supposed unstable features.
+```console
+cargo fuzz-pipeline-unstable
+```
+
+## Rust Code Documentations
 
 It compiles and generate the standard rust code documentation along thrustc's codebase.
 ```console

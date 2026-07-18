@@ -1,0 +1,24 @@
+"var" "fn" "if" "elif" "else" "for" "while" "loop"
+"true" "false" "or" "and" "const" "struct" "return"
+"break" "continue" "breakall" "continueall" "defer" "pass"
+"nullptr" "as" "deref" "type"
+"enum" "alloc" "address" "addr" "load" "write" "fixed"
+"ref" "mut" "static" "unreachable" "intrinsic" "embedded"
+"import" "importC" "new"
+
+"s8" "s16" "s32" "s64" "ssize" "u8" "u16" "u32" "u64" "u128" "usize"
+"f32" "f64" "f128" "f80" "fppc_128" "bool" "char" "ptr" "array" "void" "Fn"
+
+"halloc" "sizeOf" "memset" "memmove" "memcpy" "alignOf" "abiSizeOf"
+"bitSizeOf" "abiAlignOf"
+
+"volatile" "lazyThread" "atomicNone" "atomicFree" "atomicRelax"
+"atomicGrab" "atomicDrop" "atomicSync" "atomicStrict"
+"threadInit" "threadDyn" "threadExec" "threadLDyn"
+
+"@asmAlignStack" "@asmSyntax" "@asmThrowErrors" "@asmSideEffects"
+"@align" "@optFuzzing" "@noUnwind" "@packed" "@heap" "@public"
+"@linkage" "@extern" "@arbitraryArgs" "@hot" "@minSize"
+"@alwaysInline" "@noInline" "@inline" "@safeStack" "@weakStack"
+"@strongStack" "@preciseFloatingPoint" "@convention" "@pure"
+"@thunk" "@constructor" "@destructor"

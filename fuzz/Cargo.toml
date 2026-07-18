@@ -43,6 +43,7 @@ path = "fuzz_targets/pipeline.rs"
 test = false
 doc = false
 bench = false
+
 [[bin]]
 name = "llvm-codegen"
 path = "fuzz_targets/llvm_codegen.rs"
