@@ -9,5 +9,6 @@ Recurring resources for properly developing the LLVM codegen backend of the comp
 - [AMDGPU Usage](https://llvm.org/docs/AMDGPUUsage.html) — Official LLVM documentation on the AMDGPU backend (AMD architectures).
 - [NVVM IR Specification](https://docs.nvidia.com/cuda/nvvm-ir-spec/index.html) — NVIDIA IR specification for generating CUDA code on NVIDIA GPUs.
 - [x86-64 ABI](https://gitlab.com/x86-psABIs/x86-64-ABI) — System V AMD64 ABI specification for x86-64 code generation.
+- [x64 Windows ABI](https://learn.microsoft.com/en-us/cpp/build/x64-software-conventions?view=msvc-170) - Windows x64 ABI specification for x64 code generation.
 - [ARM ABI](https://github.com/ARM-software/abi-aa) — ARM Architecture Procedure Call Standard (AAPCS) and related ABI specifications.
 - [LLVM C API](https://github.com/llvm/llvm-project/tree/main/llvm/include/llvm-c) — LLVM C API headers, useful as a guide to use LLVM.
