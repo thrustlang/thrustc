@@ -1,4 +1,4 @@
-name: Thrust Compiler (Windows x86_64)
+name: Thrust Compiler - Release (Windows x86_64)
 
 on:
   push:
@@ -110,7 +110,7 @@ jobs:
           tag_name: ${{ env.TAG_NAME }}
           name: ${{ env.TAG_NAME }}
           body: |
-            # Thrust Compiler
+            # Thrust Compiler - Release
 
             Version: ${{ env.VERSION }}
 
