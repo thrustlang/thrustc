@@ -55,7 +55,7 @@ use thrustc_typesystem::Type;
 
 ########################################################################*/
 
-pub fn compiler_int_cast<'ctx>(
+pub fn compile_int_cast<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     target_type: &Type,
     from_type: &Type,
@@ -196,7 +196,7 @@ pub fn try_smart_cast<'ctx>(
     }
 
     if from_value.is_int_value() && target_type.is_integer_type() {
-        return self::compiler_int_cast(context, &target_type, &from_type, from_value, span)
+        return self::compile_int_cast(context, &target_type, &from_type, from_value, span)
             .unwrap_or(from_value);
     }
 

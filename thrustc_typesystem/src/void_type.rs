@@ -17,10 +17,15 @@
 
 */
 
-use crate::{Type, traits::VoidTypeExtensions};
+use crate::{
+    Type,
+    traits::{ConstantTypeExtensions, VoidTypeExtensions},
+};
 
 impl VoidTypeExtensions for Type {
     fn contains_void_type(&self) -> bool {
+        let ty: Type = self.remove_all_constant_type();
+
         fn contains_void_type_inner_type(inner_type: &Type) -> bool {
             match inner_type {
                 Type::Ptr {
@@ -47,18 +52,17 @@ impl VoidTypeExtensions for Type {
                         || contains_void_type_inner_type(return_type)
                 }
 
-                Type::Void { .. } => true,
+                Type::Void { .. } | Type::Unresolved { .. } => true,
 
                 _ => false,
             }
         }
 
-        match self {
+        match &ty {
             Type::Ptr {
                 subtype: Some(inner_type),
                 ..
             } => contains_void_type_inner_type(inner_type),
-            Type::Const(inner_type, ..) => contains_void_type_inner_type(inner_type),
             Type::Array {
                 infered_type: Some((inner_type, _)),
                 ..
@@ -77,6 +81,8 @@ impl VoidTypeExtensions for Type {
                 parameter_types.iter().any(contains_void_type_inner_type)
                     || contains_void_type_inner_type(return_type)
             }
+
+            Type::Void { .. } | Type::Unresolved { .. } => true,
 
             _ => false,
         }

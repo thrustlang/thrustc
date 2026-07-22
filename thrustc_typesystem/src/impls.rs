@@ -49,7 +49,7 @@ impl TypeIsExtensions for Type {
             return subtype.is_void_type();
         }
 
-        matches!(self, Type::Void { .. })
+        matches!(self, Type::Void { .. } | Type::Unresolved { .. })
     }
 
     #[inline(always)]

@@ -29,6 +29,7 @@ use thrustc_ast::{
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::CompilationIssue;
 use thrustc_options::{CompilationUnit, CompilerOptions};
+use thrustc_typesystem::traits::{ConstantTypeExtensions, TypeIsExtensions};
 
 #[derive(Debug)]
 pub struct AstVerifier<'ast_verifier> {
@@ -303,17 +304,45 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 self.analyze_expression(node);
             }
 
-            Ast::FixedArray { items, .. } => {
+            Ast::FixedArray {
+                kind: ty, items, ..
+            } => {
                 for node in items.iter() {
                     self.expected_expression(node);
                     self.analyze_expression(node);
                 }
+
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
+                if !ty.is_fixed_array_type() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a literal fixed array value with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
             }
 
-            Ast::Array { items, .. } => {
+            Ast::Array {
+                kind: ty, items, ..
+            } => {
                 for node in items.iter() {
                     self.expected_expression(node);
                     self.analyze_expression(node);
+                }
+
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
+                if !ty.is_array_type() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a literal array value with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
                 }
             }
 
@@ -376,6 +405,86 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
             Ast::GetLocation { expr: node, .. } => {
                 self.expected_expression(node);
                 self.analyze_expression(node);
+            }
+
+            /* literals */
+            Ast::CString { kind: ty, .. } | Ast::CNString { kind: ty, .. } => {
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
+                if !ty.is_array_type() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a literal string with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
+            }
+            Ast::Char { kind: ty, .. } => {
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
+                if !ty.is_char_type() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a literal character with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
+            }
+            Ast::Boolean { kind: ty, .. } => {
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
+                if !ty.is_bool_type() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a literal boolean value with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
+            }
+            Ast::Integer { kind: ty, .. } => {
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
+                if !ty.is_integer_type() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a literal integer value with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
+            }
+            Ast::Float { kind: ty, .. } => {
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
+                if !ty.is_float_type() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a literal float value with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
+            }
+            Ast::NullPtr { kind: ty, .. } => {
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
+                if !ty.is_ptr_type() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a literal null pointer value with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
             }
 
             Ast::Builtin { builtin, .. } => match builtin {

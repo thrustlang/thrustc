@@ -22,6 +22,10 @@ thrustc_semantic = { path = "../thrustc_semantic" }
 thrustc_llvm_codegen = { path = "../thrustc_llvm_codegen" }
 thrustc_backends = { path = "../thrustc_backends" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
+thrustc_llvm_abi = { path = "../thrustc_llvm_abi" }
+thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
+thrustc_typesystem = { path = "../thrustc_typesystem"}
+thrustc_llvm_abi_representation = { path = "../thrustc_llvm_abi_representation"}
 
 inkwell = { path = "../crates/llvm/inkwell" }
 clang = { path = "../crates/llvm/clang" }
@@ -31,7 +35,7 @@ clang-sys = { path = "../crates/llvm/17/clang-sys" }
 llvm-sys = { path = "../crates/llvm/17/llvm-sys" }
 
 [[bin]]
-name = "lexing"
+name = "lexer"
 path = "fuzz_targets/lexer.rs"
 test = false
 doc = false
@@ -47,6 +51,20 @@ bench = false
 [[bin]]
 name = "llvm-codegen"
 path = "fuzz_targets/llvm_codegen.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dump_ast"
+path = "utils/dump_ast.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "reproduce"
+path = "utils/reproduce.rs"
 test = false
 doc = false
 bench = false

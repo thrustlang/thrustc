@@ -16,7 +16,6 @@
 "atomicGrab" "atomicDrop" "atomicSync" "atomicStrict"
 "threadInit" "threadDyn" "threadExec" "threadLDyn"
 
-"@asmAlignStack" "@asmSyntax" "@asmThrowErrors" "@asmSideEffects"
 "@align" "@optFuzzing" "@noUnwind" "@packed" "@heap" "@public"
 "@linkage" "@extern" "@arbitraryArgs" "@hot" "@minSize"
 "@alwaysInline" "@noInline" "@inline" "@safeStack" "@weakStack"

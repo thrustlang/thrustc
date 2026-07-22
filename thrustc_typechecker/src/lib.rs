@@ -179,8 +179,19 @@ impl<'type_checker> TypeChecker<'type_checker> {
             Ast::Static {
                 kind: static_type,
                 value,
+                span,
                 ..
             } => {
+                if static_type.contains_void_type() || static_type.is_void_type() {
+                    self.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0019,
+                        "Cannot use 'void' as a value.".into(),
+                        "You should remove whatever type or value where void type belongs.".into(),
+                        None,
+                        *span,
+                    ));
+                }
+
                 let Some(value) = value else {
                     return Ok(());
                 };
@@ -216,8 +227,19 @@ impl<'type_checker> TypeChecker<'type_checker> {
             Ast::Const {
                 kind: const_type,
                 value,
+                span,
                 ..
             } => {
+                if const_type.contains_void_type() || const_type.is_void_type() {
+                    self.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0019,
+                        "Cannot use 'void' as a value.".into(),
+                        "You should remove whatever type or value where void type belongs.".into(),
+                        None,
+                        *span,
+                    ));
+                }
+
                 let metadata: TypeCheckerNodeMetadata =
                     TypeCheckerNodeMetadata::new(value.is_totaly_literal_value());
 
@@ -296,8 +318,19 @@ impl<'type_checker> TypeChecker<'type_checker> {
             Ast::Static {
                 kind: static_type,
                 value,
+                span,
                 ..
             } => {
+                if static_type.contains_void_type() || static_type.is_void_type() {
+                    self.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0019,
+                        "Cannot use 'void' as a value.".into(),
+                        "You should remove whatever type or value where void type belongs.".into(),
+                        None,
+                        *span,
+                    ));
+                }
+
                 let Some(value) = value else {
                     return Ok(());
                 };
@@ -333,8 +366,19 @@ impl<'type_checker> TypeChecker<'type_checker> {
             Ast::Const {
                 kind: const_type,
                 value,
+                span,
                 ..
             } => {
+                if const_type.contains_void_type() || const_type.is_void_type() {
+                    self.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0019,
+                        "Cannot use 'void' as a value.".into(),
+                        "You should remove whatever type or value where void type belongs.".into(),
+                        None,
+                        *span,
+                    ));
+                }
+
                 let metadata: TypeCheckerNodeMetadata =
                     TypeCheckerNodeMetadata::new(value.is_totaly_literal_value());
 
@@ -370,8 +414,6 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 span,
                 ..
             } => {
-                self.get_mut_table().new_local(name, (local_type, *span));
-
                 if local_type.contains_void_type() || local_type.is_void_type() {
                     self.add_error_report(CompilationIssue::Error(
                         CompilationIssueCode::E0019,
@@ -381,6 +423,8 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         *span,
                     ));
                 }
+
+                self.get_mut_table().new_local(name, (local_type, *span));
 
                 let Some(value) = value else {
                     return Ok(());

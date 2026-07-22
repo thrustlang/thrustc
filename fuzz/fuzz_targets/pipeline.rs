@@ -2,33 +2,44 @@
 
 use arbitrary::{Arbitrary, Unstructured};
 use either::Either;
-use libfuzzer_sys::fuzz_target;
-use thrustc_ast::Ast;
+use libfuzzer_sys::{Corpus, fuzz_target};
+use thrustc_ast::{Ast, traits::AstStandardExtensions};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_semantic::SemanticAnalysis;
 
-fuzz_target!(|data: &[u8]| {
+fuzz_target!(|data: &[u8]| -> Corpus {
+    let stable_mode: bool = std::env::args().any(|arg| arg == "--stable");
+
     let mut unstructured = Unstructured::new(data);
 
-    if let Ok(ast) = Ast::arbitrary(&mut unstructured) {
-        let options: CompilerOptions = CompilerOptions::new();
+    let Ok(ast) = Ast::arbitrary(&mut unstructured) else {
+        return Corpus::Reject;
+    };
 
-        let file = CompilationUnit::new(
-            "pipeline.fuzz".into(),
-            std::path::PathBuf::from(file!()),
-            String::new(),
-            "pipeline".into(),
-        );
-
-        let failed =
-            SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &options).analyze(false);
-
-        if let Either::Left(had_errors) = failed
-            && !had_errors
-        {
-            save_interesting_ast(&ast);
-        }
+    if stable_mode && self::contains_unstable_ast(&ast) {
+        return Corpus::Reject;
     }
+
+    let options: CompilerOptions = CompilerOptions::new();
+
+    let file = CompilationUnit::new(
+        "pipeline.fuzz".into(),
+        std::path::PathBuf::from(file!()),
+        String::new(),
+        "pipeline".into(),
+    );
+
+    let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &options).analyze(false);
+
+    if let Either::Left(had_errors) = failed
+        && !had_errors
+    {
+        save_interesting_ast(&ast);
+
+        return Corpus::Keep;
+    }
+
+    Corpus::Keep
 });
 
 fn save_interesting_ast(ast: &Ast) {
@@ -61,4 +72,8 @@ fn save_interesting_ast(ast: &Ast) {
     } else {
         println!("✓ Saved interesting AST: {}", path);
     }
+}
+
+fn contains_unstable_ast(ast: &Ast) -> bool {
+    ast.is_asm_function() || ast.is_global_asm_keyword()
 }
