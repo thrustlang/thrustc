@@ -486,6 +486,19 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                     ));
                 }
             }
+            Ast::Struct { kind: ty, .. } => {
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
+                if !ty.is_struct_type() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a struct type with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
+            }
 
             Ast::Builtin { builtin, .. } => match builtin {
                 AstBuiltin::MemMove { src, dst, size, .. } => {

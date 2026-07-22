@@ -359,7 +359,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 
                 if !attributes.has_public_attribute() {
                     self.add_error(CompilationIssue::Error(
-                        CompilationIssueCode::E0013,
+                        CompilationIssueCode::E0012,
                         "Missing attribute".into(),
                         "Compiler intrinsic should always have public visibility.".into(),
                         None,
@@ -379,6 +379,36 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             }
 
             AttributeCheckerAttributeApplicant::Static => {
+                if let Some(align_attribute) = attributes.get_attr(ThrustAttributeComparator::Align)
+                {
+                    let ThrustAttribute::Align(align_to, _) = align_attribute else {
+                        return;
+                    };
+
+                    let is_power_of_two: bool = align_to % 2 == 0;
+                    let is_up_128: bool = align_to > 128;
+
+                    if !is_power_of_two {
+                        self.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0012,
+                            "Invalid memory aligment".into(),
+                            "The specified memory alignment should be power of two.".into(),
+                            None,
+                            align_attribute.get_span(),
+                        ));
+                    }
+
+                    if is_up_128 {
+                        self.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0012,
+                            "Invalid memory aligment".into(),
+                            "The specified memory alignment supasses 128 of aligment limit. Reduce it.".into(),
+                            None,
+                            align_attribute.get_span(),
+                        ));
+                    }
+                }
+
                 self.check_irrelevant_attributes(attributes, applicant);
                 self.check_illogical_attributes(attributes);
 
@@ -452,10 +482,98 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                 });
             }
 
-            AttributeCheckerAttributeApplicant::Constant
-            | AttributeCheckerAttributeApplicant::Struct
-            | AttributeCheckerAttributeApplicant::Enum
-            | AttributeCheckerAttributeApplicant::Local => {
+            AttributeCheckerAttributeApplicant::Constant => {
+                self.check_irrelevant_attributes(attributes, applicant);
+                self.check_illogical_attributes(attributes);
+
+                if let Some(align_attribute) = attributes.get_attr(ThrustAttributeComparator::Align)
+                {
+                    let ThrustAttribute::Align(align_to, _) = align_attribute else {
+                        return;
+                    };
+
+                    let is_power_of_two: bool = align_to % 2 == 0;
+                    let is_up_128: bool = align_to > 128;
+
+                    if !is_power_of_two {
+                        self.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0012,
+                            "Invalid memory aligment".into(),
+                            "The specified memory alignment should be power of two.".into(),
+                            None,
+                            align_attribute.get_span(),
+                        ));
+                    }
+
+                    if is_up_128 {
+                        self.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0012,
+                            "Invalid memory aligment".into(),
+                            "The specified memory alignment supasses 128 of aligment limit. Reduce it.".into(),
+                            None,
+                            align_attribute.get_span(),
+                        ));
+                    }
+                }
+
+                self.get_repeated_attrs(attributes).iter().for_each(|attr| {
+                    self.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0033,
+                        "Attribute conflict".into(),
+                        "Repetitive attributes are disallowed. Remove each one.".into(),
+                        None,
+                        attr.get_span(),
+                    ));
+                });
+            }
+
+            AttributeCheckerAttributeApplicant::Local => {
+                self.check_irrelevant_attributes(attributes, applicant);
+                self.check_illogical_attributes(attributes);
+
+                if let Some(align_attribute) = attributes.get_attr(ThrustAttributeComparator::Align)
+                {
+                    let ThrustAttribute::Align(align_to, _) = align_attribute else {
+                        return;
+                    };
+
+                    let is_power_of_two: bool = align_to % 2 == 0;
+                    let is_up_128: bool = align_to > 128;
+
+                    if !is_power_of_two {
+                        self.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0012,
+                            "Invalid memory aligment".into(),
+                            "The specified memory alignment should be power of two.".into(),
+                            None,
+                            align_attribute.get_span(),
+                        ));
+                    }
+
+                    if is_up_128 {
+                        self.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0012,
+                            "Invalid memory aligment".into(),
+                            "The specified memory alignment supasses 128 of aligment limit. Reduce it.".into(),
+                            None,
+                            align_attribute.get_span(),
+                        ));
+                    }
+                }
+
+                self.get_repeated_attrs(attributes).iter().for_each(|attr| {
+                    self.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0033,
+                        "Attribute conflict".into(),
+                        "Repetitive attributes are disallowed. Remove each one.".into(),
+                        None,
+                        attr.get_span(),
+                    ));
+                });
+            }
+
+            AttributeCheckerAttributeApplicant::Struct
+            | AttributeCheckerAttributeApplicant::Enum => {
                 self.check_irrelevant_attributes(attributes, applicant);
                 self.check_illogical_attributes(attributes);
 

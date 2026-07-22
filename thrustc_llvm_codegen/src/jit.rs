@@ -196,7 +196,7 @@ impl<'ctx> LLVMJITCompiler<'ctx> {
             .ok_or_else(|| {
                 thrustc_logging::print_error(
                     thrustc_logging::LoggingType::Error,
-                    "The program entrypoint can't be found.",
+                    "Entrypoint can't be found.",
                 );
             })
     }
