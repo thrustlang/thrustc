@@ -11,6 +11,7 @@ repository.workspace = true
 
 [dependencies]
 libloading = "0.8.9"
+lazy_static = "1.5.0"
 
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_logging = { path = "../thrustc_logging"}

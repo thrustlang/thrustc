@@ -49,20 +49,15 @@ impl TypeLayout {
 }
 
 impl TypeLayout {
+    #[inline]
     pub fn compute_abi_size(&mut self) {
-        if self.align == 0 {
-            self.abi_size = self.sizeof;
-        } else {
-            self.abi_size = (self.sizeof).div_ceil(self.align / 8) * (self.align / 8);
-        }
+        let align_bytes: u32 = (self.align / 8).max(1);
+        self.abi_size = self.sizeof.div_ceil(align_bytes) * align_bytes;
     }
 
+    #[inline]
     pub fn compute_abi_align(&mut self) {
-        if self.align == 0 {
-            self.abi_align = 1;
-        } else {
-            self.abi_align = self.align / 8;
-        }
+        self.abi_align = (self.align / 8).max(1);
     }
 }
 
@@ -99,20 +94,15 @@ impl StructTypeLayout {
 }
 
 impl StructTypeLayout {
+    #[inline]
     pub fn compute_abi_size(&mut self) {
-        if self.align == 0 {
-            self.abi_size = self.sizeof;
-        } else {
-            self.abi_size = (self.sizeof).div_ceil(self.align / 8) * (self.align / 8);
-        }
+        let align_bytes: u32 = (self.align / 8).max(1);
+        self.abi_size = self.sizeof.div_ceil(align_bytes) * align_bytes;
     }
 
+    #[inline]
     pub fn compute_abi_align(&mut self) {
-        if self.align == 0 {
-            self.abi_align = 1;
-        } else {
-            self.abi_align = self.align / 8;
-        }
+        self.abi_align = (self.align / 8).max(1);
     }
 }
 

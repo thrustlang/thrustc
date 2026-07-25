@@ -353,6 +353,17 @@ pub fn show_help() -> ! {
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stderr,
         &format!(
+            "{} {} {} {}\n",
+            "•".bold(),
+            "-mode".custom_color((141, 141, 142)).bold(),
+            "[stable|unstable]",
+            "Enable or disable compiler features to limit to stable features only or add support to unstable features.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
             "{} {} {}\n",
             "•".bold(),
             "-dbg".custom_color((141, 141, 142)).bold(),

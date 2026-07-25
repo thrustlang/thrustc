@@ -148,20 +148,20 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_aot_llvm(&mut self) -> CompileTime {
         cleaner::auto_clean(self.get_compilation_options());
 
-        let mut fail: bool = false;
+        let mut it_failed: bool = false;
 
         for file in self.unready.iter() {
-            fail = self.compile_file_with_llvm_aot(file).is_err();
+            it_failed = self.compile_file_with_llvm_aot(file).is_err();
         }
 
-        fail = fail
+        it_failed = it_failed
             || self.get_compilation_options().get_was_printed()
             || self.get_compilation_options().get_was_emited()
             || self.get_compiled_files().is_empty();
 
-        if fail {
+        if it_failed {
             return (
-                fail,
+                it_failed,
                 self.thrustc_time,
                 self.thrustc_frontend_time,
                 self.thrustc_backend_time,
@@ -178,10 +178,15 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             linkage::link_with_clang(self);
         } else if linking_compiler_config.get_use_gcc() {
             linkage::link_with_gcc(self);
+        } else {
+            thrustc_logging::print_warning(
+                thrustc_logging::LoggingType::Warning,
+                "Unknown linking method, ignoring linking.",
+            );
         }
 
         (
-            fail,
+            it_failed,
             self.thrustc_time,
             self.thrustc_frontend_time,
             self.thrustc_backend_time,
@@ -217,6 +222,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         }
 
         let mut preprocessor: Preprocessor = Preprocessor::new();
+
         let modules: Result<&[thrustc_preprocessor::module::Module], ()> =
             preprocessor.generate_modules(&tokens, self.options, file);
 
@@ -241,7 +247,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let parser: (ParserContext, bool) = Parser::parse(&tokens, modules, file, self.options);
 
         let parser_result: (ParserContext, bool) = parser;
-        let parser_fail: bool = parser_result.1;
+        let parser_failed: bool = parser_result.1;
 
         let parser_context: ParserContext = parser_result.0;
 
@@ -260,14 +266,17 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         }
 
         {
-            let semantic_analysis_fail: either::Either<bool, ()> =
-                SemanticAnalysis::new(ast, file, self.options).analyze(parser_fail);
+            let mut semantic_analysis: SemanticAnalysis<'_> =
+                SemanticAnalysis::new(ast, file, self.options);
+
+            let semantic_analysis_failed: either::Either<bool, ()> =
+                semantic_analysis.execute(parser_failed);
 
             self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-            match semantic_analysis_fail {
-                either::Either::Left(semantic_analysis_fail) => {
-                    if parser_fail || semantic_analysis_fail {
+            match semantic_analysis_failed {
+                either::Either::Left(semantic_analysis_failed) => {
+                    if parser_failed || semantic_analysis_failed {
                         return interrupt::archive_compilation_module(self, file, file_time);
                     }
                 }
@@ -399,7 +408,6 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let llvm_module: Module = llvm_context.create_module(file.get_name());
 
         llvm_module.set_triple(llvm_triple);
-
         llvm_module.set_data_layout(&target_machine.get_target_data().get_data_layout());
 
         let mut llvm_codegen_context: LLVMCodeGenContext = LLVMCodeGenContext::new(
@@ -514,14 +522,14 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let context: Context = Context::create();
 
-        let mut fail: bool = false;
+        let mut it_failed: bool = false;
         let mut modules: Vec<Module> = Vec::with_capacity(u8::MAX as usize);
 
         for file in self.unready.iter() {
             let compiled_file: Result<either::Either<MemoryBuffer, ()>, ()> =
                 self.compile_file_with_llvm_jit(file);
 
-            fail = compiled_file.is_err();
+            it_failed = compiled_file.is_err();
 
             if let Some(module) = compiled_file
                 .ok()
@@ -532,14 +540,14 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             }
         }
 
-        fail = fail
+        it_failed = it_failed
             || self.get_compilation_options().get_was_printed()
             || self.get_compilation_options().get_was_emited()
             || modules.is_empty();
 
-        if fail {
+        if it_failed {
             return (
-                fail,
+                it_failed,
                 self.thrustc_time,
                 self.thrustc_frontend_time,
                 self.thrustc_backend_time,
@@ -549,49 +557,49 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         modules.reverse();
 
-        if let Some(module) = modules.first() {
-            let llvm_backend: &LLVMBackend = self.options.get_llvm_backend();
-            let config: &JITConfiguration = llvm_backend.get_jit_config();
-            let opt_level: OptimizationLevel = llvm_backend.get_optimization().to_llvm_opt();
-
-            let engine: ExecutionEngine = match module.create_jit_execution_engine(opt_level) {
-                Ok(engine) => engine,
-                Err(_) => {
-                    thrustc_logging::print_error(
-                        thrustc_logging::LoggingType::Error,
-                        "The JIT compiler couldn't be created correctly. Unexpected issue.",
-                    );
-
-                    return (
-                        fail,
-                        self.thrustc_time,
-                        self.thrustc_frontend_time,
-                        self.thrustc_backend_time,
-                        self.linking_time,
-                    );
-                }
-            };
-
-            let llvm_jit: LLVMJITCompiler =
-                thrustc_llvm_codegen::jit::LLVMJITCompiler::new(engine, config, modules);
-
-            let llvm_jit_result: i32 = llvm_jit.compile_and_run().unwrap_or(1);
-
-            std::process::exit(llvm_jit_result)
-        } else {
+        let Some(module) = modules.first() else {
             thrustc_logging::print_warning(
                 thrustc_logging::LoggingType::Warning,
                 "There's nothing to compile for the JIT compiler. Skipping compilation.",
             );
-        }
 
-        (
-            fail,
-            self.thrustc_time,
-            self.thrustc_frontend_time,
-            self.thrustc_backend_time,
-            self.linking_time,
-        )
+            return (
+                it_failed,
+                self.thrustc_time,
+                self.thrustc_frontend_time,
+                self.thrustc_backend_time,
+                self.linking_time,
+            );
+        };
+
+        let llvm_backend: &LLVMBackend = self.options.get_llvm_backend();
+        let config: &JITConfiguration = llvm_backend.get_jit_config();
+        let opt_level: OptimizationLevel = llvm_backend.get_optimization().to_llvm_opt();
+
+        let engine: ExecutionEngine = match module.create_jit_execution_engine(opt_level) {
+            Ok(engine) => engine,
+            Err(_) => {
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    "The JIT compiler couldn't be created correctly. Unexpected issue.",
+                );
+
+                return (
+                    it_failed,
+                    self.thrustc_time,
+                    self.thrustc_frontend_time,
+                    self.thrustc_backend_time,
+                    self.linking_time,
+                );
+            }
+        };
+
+        let llvm_jit: LLVMJITCompiler =
+            thrustc_llvm_codegen::jit::LLVMJITCompiler::new(engine, config, modules);
+
+        let llvm_jit_result: i32 = llvm_jit.compile_and_run().unwrap_or(1);
+
+        std::process::exit(llvm_jit_result)
     }
 
     fn compile_file_with_llvm_jit(
@@ -647,7 +655,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let parser: (ParserContext, bool) = Parser::parse(&tokens, modules, file, self.options);
 
         let parser_result: (ParserContext, bool) = parser;
-        let parser_fail: bool = parser_result.1;
+        let parser_failed: bool = parser_result.1;
 
         let parser_context: ParserContext = parser_result.0;
 
@@ -666,14 +674,17 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         }
 
         {
-            let semantic_analysis_fail: either::Either<bool, ()> =
-                SemanticAnalysis::new(ast, file, self.options).analyze(parser_fail);
+            let mut semantic_analysis: SemanticAnalysis<'_> =
+                SemanticAnalysis::new(ast, file, self.options);
+
+            let semantic_analysis_failed: either::Either<bool, ()> =
+                semantic_analysis.execute(parser_failed);
 
             self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-            match semantic_analysis_fail {
-                either::Either::Left(semantic_analysis_fail) => {
-                    if parser_fail || semantic_analysis_fail {
+            match semantic_analysis_failed {
+                either::Either::Left(semantic_analysis_failed) => {
+                    if parser_failed || semantic_analysis_failed {
                         return interrupt::archive_compilation_module_jit(self, file, file_time);
                     }
                 }
@@ -793,7 +804,6 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let llvm_module: Module = llvm_context.create_module(file.get_name());
 
         llvm_module.set_triple(llvm_triple);
-
         llvm_module.set_data_layout(&target_machine.get_target_data().get_data_layout());
 
         jit::has_jit_available(&target)?;

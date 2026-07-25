@@ -66,14 +66,14 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
 }
 
 impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
-    pub fn analyze(&mut self, parser_throwed_errors: bool) -> either::Either<bool, ()> {
+    pub fn execute(&mut self, parser_throwed_errors: bool) -> either::Either<bool, ()> {
         if parser_throwed_errors {
             return either::Either::Left(true);
         }
 
-        let scoper_fail: bool = self.scoper.start();
+        let scoper_failed: bool = self.scoper.start();
 
-        if scoper_fail {
+        if scoper_failed {
             return either::Either::Left(true);
         }
 
@@ -81,9 +81,9 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
             return either::Either::Right(());
         }
 
-        let verifier_fail: bool = self.verifier.analyze_top();
+        let verifier_failed: bool = self.verifier.analyze();
 
-        if verifier_fail {
+        if verifier_failed {
             return either::Either::Left(true);
         }
 
@@ -103,7 +103,7 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
             return either::Either::Right(());
         }
 
-        let general_analyzer_fail: bool = self.general_analyzer.start();
+        let general_analyzer_failed: bool = self.general_analyzer.start();
 
         if self
             .options
@@ -112,7 +112,7 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
             return either::Either::Right(());
         }
 
-        let attribute_checker_fail: bool = self.attr_checker.start();
+        let attribute_checker_failed: bool = self.attr_checker.start();
 
         if self
             .options
@@ -122,9 +122,9 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
         }
 
         if !type_checker_fail
-            && !general_analyzer_fail
-            && !attribute_checker_fail
-            && !scoper_fail
+            && !general_analyzer_failed
+            && !attribute_checker_failed
+            && !scoper_failed
             && !self.options.disable_all_warnings()
         {
             self.linter.check();
@@ -134,8 +134,10 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
             }
         }
 
-        let fail: bool =
-            type_checker_fail || general_analyzer_fail || attribute_checker_fail || scoper_fail;
+        let fail: bool = type_checker_fail
+            || general_analyzer_failed
+            || attribute_checker_failed
+            || scoper_failed;
 
         either::Either::Left(fail)
     }

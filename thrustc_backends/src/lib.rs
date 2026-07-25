@@ -17,12 +17,21 @@
 
 */
 
+use std::sync::Mutex;
+
 use inkwell::{
     OptimizationLevel,
     targets::{CodeModel, RelocMode},
 };
 
+use lazy_static::lazy_static;
+
 pub mod llvm;
+
+lazy_static! {
+    pub static ref COMPILER_FEATURES: Mutex<CompilerFeaturesMode> =
+        CompilerFeaturesMode::Stable.into();
+}
 
 #[derive(Default, Debug, Clone, Copy)]
 pub enum ThrustOptimization {
@@ -63,6 +72,25 @@ impl ThrustOptimization {
     #[inline]
     pub fn is_none_opt(&self) -> bool {
         matches!(self, ThrustOptimization::None)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub enum CompilerFeaturesMode {
+    #[default]
+    Stable,
+    Unstable,
+}
+
+impl CompilerFeaturesMode {
+    #[inline]
+    pub fn is_stable_mode(&self) -> bool {
+        matches!(self, CompilerFeaturesMode::Stable)
+    }
+
+    #[inline]
+    pub fn is_unstable_mode(&self) -> bool {
+        matches!(self, CompilerFeaturesMode::Unstable)
     }
 }
 
@@ -111,4 +139,22 @@ impl ThrustCodeModel {
             ThrustCodeModel::Large => CodeModel::Large,
         }
     }
+}
+
+pub fn get_compiler_features() -> CompilerFeaturesMode {
+    *COMPILER_FEATURES.lock().unwrap_or_else(|_| {
+        thrustc_logging::print_critical_error(
+            thrustc_logging::LoggingType::Panic,
+            "Unable to get the compiler features!",
+        )
+    })
+}
+
+pub fn set_compiler_features(new_mode: CompilerFeaturesMode) {
+    *COMPILER_FEATURES.lock().unwrap_or_else(|_| {
+        thrustc_logging::print_critical_error(
+            thrustc_logging::LoggingType::Panic,
+            "Unable to set the compiler features mode!",
+        )
+    }) = new_mode;
 }

@@ -17,6 +17,7 @@
 
 */
 
+use thrustc_backends::CompilerFeaturesMode;
 use thrustc_errors::CompilationIssue;
 use thrustc_token_type::TokenType;
 
@@ -54,10 +55,7 @@ lazy_static! {
         let mut attributes: HashMap<&'static str, TokenType> =
             HashMap::with_capacity(u8::MAX as usize);
 
-        attributes.insert("@asmAlignStack", TokenType::AsmAlignStack);
-        attributes.insert("@asmSyntax", TokenType::AsmSyntax);
-        attributes.insert("@asmThrowErrors", TokenType::AsmThrow);
-        attributes.insert("@asmSideEffects", TokenType::AsmSideEffects);
+        let compiler_mode: CompilerFeaturesMode = thrustc_backends::get_compiler_features();
 
         attributes.insert("@align", TokenType::Align);
         attributes.insert("@optFuzzing", TokenType::OptFuzzing);
@@ -84,6 +82,13 @@ lazy_static! {
         attributes.insert("@constructor", TokenType::Constructor);
         attributes.insert("@destructor", TokenType::Destructor);
         attributes.insert("@promote", TokenType::Promote);
+
+        if compiler_mode.is_unstable_mode() {
+            attributes.insert("@asmAlignStack", TokenType::AsmAlignStack);
+            attributes.insert("@asmSyntax", TokenType::AsmSyntax);
+            attributes.insert("@asmThrowErrors", TokenType::AsmThrow);
+            attributes.insert("@asmSideEffects", TokenType::AsmSideEffects);
+        }
 
         attributes
     };
@@ -144,6 +149,8 @@ lazy_static! {
         let mut keywords: HashMap<&'static str, TokenType> =
             HashMap::with_capacity(u8::MAX as usize);
 
+        let compiler_mode: CompilerFeaturesMode = thrustc_backends::get_compiler_features();
+
         keywords.insert("var", TokenType::Var);
         keywords.insert("fn", TokenType::Fn);
         keywords.insert("if", TokenType::If);
@@ -167,9 +174,7 @@ lazy_static! {
         keywords.insert("pass", TokenType::Pass);
         keywords.insert("nullptr", TokenType::NullPtr);
         keywords.insert("as", TokenType::As);
-        keywords.insert("asmfn", TokenType::AsmFn);
-        keywords.insert("asm", TokenType::Asm);
-        keywords.insert("global_asm", TokenType::GlobalAsm);
+
         keywords.insert("deref", TokenType::Deref);
         keywords.insert("type", TokenType::Type);
         keywords.insert("enum", TokenType::Enum);
@@ -184,10 +189,16 @@ lazy_static! {
         keywords.insert("static", TokenType::Static);
         keywords.insert("unreachable", TokenType::Unreachable);
         keywords.insert("intrinsic", TokenType::Intrinsic);
-        keywords.insert("embedded", TokenType::Embedded);
-        keywords.insert("import", TokenType::Import);
-        keywords.insert("importC", TokenType::ImportC);
         keywords.insert("new", TokenType::New);
+
+        if compiler_mode.is_unstable_mode() {
+            keywords.insert("asmfn", TokenType::AsmFn);
+            keywords.insert("asm", TokenType::Asm);
+            keywords.insert("global_asm", TokenType::GlobalAsm);
+            keywords.insert("embedded", TokenType::Embedded);
+            keywords.insert("import", TokenType::Import);
+            keywords.insert("importC", TokenType::ImportC);
+        }
 
         keywords
     };

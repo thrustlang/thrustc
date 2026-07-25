@@ -943,29 +943,29 @@ pub fn compile_float_together_cast<'ctx>(
     (new_left_value, new_right_value)
 }
 
-pub fn select_ssa_integer_type<'a>(cast_type: Option<&'a Type>, integer_ty: &'a Type) -> &'a Type {
-    let ssa_integer_type: &Type = integer_ty;
+pub fn select_ssa_integer_type<'a>(cast_type: Option<&'a Type>, integer_ty: &'a Type) -> Type {
+    let ssa_integer_type: Type = integer_ty.remove_all_constant_type();
 
     let Some(cast_type) = cast_type else {
         return ssa_integer_type;
     };
 
     if cast_type.is_integer_type() {
-        return cast_type;
+        return cast_type.remove_all_constant_type();
     }
 
     ssa_integer_type
 }
 
-pub fn select_ssa_float_type<'a>(cast_type: Option<&'a Type>, float_ty: &'a Type) -> &'a Type {
-    let ssa_float_type: &Type = float_ty;
+pub fn select_ssa_float_type<'a>(cast_type: Option<&'a Type>, float_ty: &'a Type) -> Type {
+    let ssa_float_type: Type = float_ty.remove_all_constant_type();
 
     let Some(cast_type) = cast_type else {
         return ssa_float_type;
     };
 
     if cast_type.is_float_type() {
-        return cast_type;
+        return cast_type.remove_all_constant_type();
     }
 
     ssa_float_type

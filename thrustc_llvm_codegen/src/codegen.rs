@@ -927,12 +927,16 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
-            let ty: &Type = type_cast::select_ssa_float_type(cast_type, float_ty);
+            let ty: Type = type_cast::select_ssa_float_type(cast_type, float_ty);
 
             let float_value: BasicValueEnum =
-                expressions::literal_floatingpoint_expr::compile(context, ty, *value, *span).into();
+                expressions::literal_floatingpoint_expr::compile(context, &ty, *value, *span)
+                    .into();
 
-            type_cast::try_smart_cast(context, cast_type, float_ty, float_value, *span)
+            let auto_casted_value: BasicValueEnum<'_> =
+                type_cast::try_smart_cast(context, cast_type, float_ty, float_value, *span);
+
+            auto_casted_value
         }
 
         Ast::Integer {
@@ -941,12 +945,15 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
-            let ty: &Type = type_cast::select_ssa_integer_type(cast_type, integer_ty);
+            let ty: Type = type_cast::select_ssa_integer_type(cast_type, integer_ty);
 
             let int_value: BasicValueEnum =
-                expressions::literal_integer_expr::compile(context, ty, *value, *span).into();
+                expressions::literal_integer_expr::compile(context, &ty, *value, *span).into();
 
-            type_cast::try_smart_cast(context, cast_type, integer_ty, int_value, *span)
+            let auto_casted_value: BasicValueEnum<'_> =
+                type_cast::try_smart_cast(context, cast_type, integer_ty, int_value, *span);
+
+            auto_casted_value
         }
 
         Ast::NullPtr { .. } => context
@@ -1213,22 +1220,38 @@ pub fn compile_constant_as_value<'ctx>(
 
         // Floating-point constant handling
         Ast::Float {
-            value, kind, span, ..
+            value,
+            kind: float_ty,
+            span,
+            ..
         } => {
+            let ty: Type = type_cast::select_ssa_float_type(Some(cast_type), float_ty);
+
             let float_value: BasicValueEnum =
-                expressions::literal_floatingpoint_expr::compile(context, kind, *value, *span)
+                expressions::literal_floatingpoint_expr::compile(context, &ty, *value, *span)
                     .into();
 
-            type_cast::try_smart_constant_cast(context, cast_type, kind, float_value)
+            let auto_casted_value: BasicValueEnum<'_> =
+                type_cast::try_smart_constant_cast(context, cast_type, &ty, float_value);
+
+            auto_casted_value
         }
 
         Ast::Integer {
-            value, kind, span, ..
+            value,
+            kind: integer_ty,
+            span,
+            ..
         } => {
-            let int_value: BasicValueEnum =
-                expressions::literal_integer_expr::compile(context, kind, *value, *span).into();
+            let ty: Type = type_cast::select_ssa_integer_type(Some(cast_type), integer_ty);
 
-            type_cast::try_smart_constant_cast(context, cast_type, kind, int_value)
+            let int_value: BasicValueEnum =
+                expressions::literal_integer_expr::compile(context, &ty, *value, *span).into();
+
+            let auto_casted_value: BasicValueEnum<'_> =
+                type_cast::try_smart_constant_cast(context, cast_type, &ty, int_value);
+
+            auto_casted_value
         }
 
         // Boolean true/false cases

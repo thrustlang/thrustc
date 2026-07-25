@@ -21,6 +21,7 @@ pub mod linkage;
 
 use crate::linkage::LinkingCompilersConfiguration;
 use thrustc_abi::ABIConfiguration;
+use thrustc_backends::CompilerFeaturesMode;
 use thrustc_backends::llvm::LLVMBackend;
 
 use thrustc_ast::Ast;
@@ -49,6 +50,8 @@ pub struct CompilerOptions {
 
     enable_ansi_colors: bool,
     omit_default_optimizations: bool,
+
+    compiler_features: CompilerFeaturesMode,
 
     export_diagnostics_path: PathBuf,
     export_compiler_error_diagnostics: bool,
@@ -165,6 +168,8 @@ impl CompilerOptions {
 
             enable_ansi_colors: false,
             omit_default_optimizations: false,
+
+            compiler_features: CompilerFeaturesMode::Stable,
 
             export_diagnostics_path: "diagnostics".into(),
             export_compiler_error_diagnostics: false,
@@ -328,6 +333,12 @@ impl CompilerOptions {
     pub fn add_print_option(&mut self, printable: PrintableUnit) {
         self.printable.push(printable);
     }
+
+    #[inline]
+    pub fn set_compiler_feature_mode(&mut self, mode: CompilerFeaturesMode) {
+        self.compiler_features = mode;
+        thrustc_backends::set_compiler_features(mode);
+    }
 }
 
 impl CompilerOptions {
@@ -473,6 +484,11 @@ impl CompilerOptions {
     #[inline]
     pub fn get_linking_compilers_configuration(&self) -> &LinkingCompilersConfiguration {
         &self.linking_compilers_config
+    }
+
+    #[inline]
+    pub fn get_compiler_features(&self) -> CompilerFeaturesMode {
+        self.compiler_features
     }
 
     #[inline]

@@ -132,7 +132,7 @@ pub enum CompilationIssueCode {
     E0015, // Terminator declared before.
     E0016, // Invalid Scope Position.
     E0017, // Loop Control Flow outside of a loop
-    E0018, // NoSense Statatemt
+    E0018, // NoSense Statement
     E0019, // Type Error
     E0020, // Mismatched Types
     E0021, // Mismatched attributes
@@ -154,6 +154,7 @@ pub enum CompilationIssueCode {
     E0037, // Too many depth,
     E0038, // Not Mutable
     E0039, // Unsupported Native Type
+    E0040, // Not Found
 
     W0001, // Irrelevant Attribute
     W0002, // Unknown Call Convention
@@ -278,6 +279,9 @@ impl CompilationIssueCode {
             }
             CompilationIssueCode::E0039 => {
                 format!("UNSUPPORTED NATIVE TYPE - {}", "E0039".bright_red())
+            }
+            CompilationIssueCode::E0040 => {
+                format!("NOT FOUND - {}", "E0040".bright_red())
             }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())

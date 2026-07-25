@@ -408,7 +408,6 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 Ok(())
             }
             Ast::Var {
-                name,
                 kind: local_type,
                 value,
                 span,
@@ -423,8 +422,6 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         *span,
                     ));
                 }
-
-                self.get_mut_table().new_local(name, (local_type, *span));
 
                 let Some(value) = value else {
                     return Ok(());

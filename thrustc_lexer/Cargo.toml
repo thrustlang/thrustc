@@ -14,6 +14,7 @@ unicode_categories = "0.1.1"
 
 clipboard = { version = "0.5.0", optional = true }
 
+thrustc_backends = { path = "../thrustc_backends"}
 thrustc_options = { path = "../thrustc_options" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_errors = { path = "../thrustc_errors" }

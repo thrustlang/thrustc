@@ -296,7 +296,7 @@ pub fn lower_precedence<'parser>(
             Ast::new_unreacheable(Type::Void { span }, span)
         }
 
-        tk_type if tk_type.is_builtin() => builtins::build_builtin(ctx, *tk_type)?,
+        tk_type if tk_type.is_builtin() => builtins::build_compiler_builtin(ctx, *tk_type)?,
 
         _ => {
             let previous: &Token = ctx.advance()?;

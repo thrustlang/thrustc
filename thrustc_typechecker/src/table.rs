@@ -24,12 +24,10 @@ use thrustc_entities::typechecker_entities::*;
 #[derive(Debug)]
 pub struct TypeCheckerSymbolsTable<'symbol> {
     functions: TypeCheckerFunctions<'symbol>,
-    asm_functions: TypeCheckerAssemblerFunctions<'symbol>,
-    intrinsics: TypeCheckerIntrinsics<'symbol>,
+    assembler_functions: TypeCheckerAssemblerFunctions<'symbol>,
+    compiler_intrinsics: TypeCheckerIntrinsics<'symbol>,
 
     locals: TypeCheckerLocals<'symbol>,
-
-    scope: usize,
 }
 
 impl<'symbol> TypeCheckerSymbolsTable<'symbol> {
@@ -37,30 +35,21 @@ impl<'symbol> TypeCheckerSymbolsTable<'symbol> {
     pub fn new() -> Self {
         Self {
             functions: HashMap::with_capacity(u8::MAX as usize),
-            asm_functions: HashMap::with_capacity(u8::MAX as usize),
-            intrinsics: HashMap::with_capacity(u8::MAX as usize),
+            assembler_functions: HashMap::with_capacity(u8::MAX as usize),
+            compiler_intrinsics: HashMap::with_capacity(u8::MAX as usize),
             locals: Vec::with_capacity(u8::MAX as usize),
-
-            scope: 0,
         }
     }
 }
 
 impl<'symbol> TypeCheckerSymbolsTable<'symbol> {
     #[inline]
-    pub fn new_local(&mut self, name: &'symbol str, local: TypeCheckerLocal<'symbol>) {
-        if let Some(scope) = self.locals.last_mut() {
-            scope.insert(name, local);
-        }
-    }
-
-    #[inline]
     pub fn new_asm_function(
         &mut self,
         name: &'symbol str,
         function: TypeCheckerAssemblerFunction<'symbol>,
     ) {
-        self.asm_functions.insert(name, function);
+        self.assembler_functions.insert(name, function);
     }
 
     #[inline]
@@ -74,7 +63,7 @@ impl<'symbol> TypeCheckerSymbolsTable<'symbol> {
         name: &'symbol str,
         intrinsic: TypeCheckerIntrinsic<'symbol>,
     ) {
-        self.intrinsics.insert(name, intrinsic);
+        self.compiler_intrinsics.insert(name, intrinsic);
     }
 }
 
@@ -89,12 +78,12 @@ impl<'symbol> TypeCheckerSymbolsTable<'symbol> {
         &self,
         name: &'symbol str,
     ) -> Option<&TypeCheckerAssemblerFunction<'symbol>> {
-        self.asm_functions.get(name)
+        self.assembler_functions.get(name)
     }
 
     #[inline]
     pub fn get_intrinsic(&self, name: &'symbol str) -> Option<&TypeCheckerIntrinsic<'symbol>> {
-        self.intrinsics.get(name)
+        self.compiler_intrinsics.get(name)
     }
 }
 
@@ -106,12 +95,12 @@ impl<'symbol> TypeCheckerSymbolsTable<'symbol> {
 
     #[inline]
     pub fn contains_asm_function(&self, name: &'symbol str) -> bool {
-        self.asm_functions.contains_key(name)
+        self.assembler_functions.contains_key(name)
     }
 
     #[inline]
     pub fn contains_compiler_intrinsic(&self, name: &'symbol str) -> bool {
-        self.intrinsics.contains_key(name)
+        self.compiler_intrinsics.contains_key(name)
     }
 }
 
@@ -119,12 +108,10 @@ impl TypeCheckerSymbolsTable<'_> {
     #[inline]
     pub fn begin_scope(&mut self) {
         self.locals.push(HashMap::with_capacity(u8::MAX as usize));
-        self.scope = self.scope.saturating_add(1);
     }
 
     #[inline]
     pub fn end_scope(&mut self) {
         self.locals.pop();
-        self.scope = self.scope.saturating_sub(1);
     }
 }

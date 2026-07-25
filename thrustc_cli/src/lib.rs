@@ -636,6 +636,17 @@ impl CommandLine {
                 self.advance();
             }
 
+            "-mode" => {
+                self.advance();
+
+                let mode: thrustc_backends::CompilerFeaturesMode =
+                    self.parse_specific_compiler_feature(self.peek());
+
+                self.get_mut_options().set_compiler_feature_mode(mode);
+
+                self.advance();
+            }
+
             "-L" => {
                 self.advance();
                 self.validate_llvm_required(arg);
@@ -1238,6 +1249,18 @@ impl CommandLine {
     }
 
     #[inline]
+    fn parse_specific_compiler_feature(&self, abi: &str) -> thrustc_backends::CompilerFeaturesMode {
+        match abi.to_lowercase().as_str() {
+            "stable" => thrustc_backends::CompilerFeaturesMode::Stable,
+            "unstable" => thrustc_backends::CompilerFeaturesMode::Unstable,
+
+            any => {
+                self.report_error(&format!("Unknown compiler feature mode: '{}'.", any));
+            }
+        }
+    }
+
+    #[inline]
     fn parse_specific_abi(&self, abi: &str) -> thrustc_abi::SpecificABI {
         match abi.to_lowercase().as_str() {
             "system-v" => thrustc_abi::SpecificABI::SystemV,
@@ -1681,7 +1704,7 @@ pub fn report_compile_time(
         thrustc_logging::OutputIn::Stdout,
         &format!(
             "\n{}\n{}\n\n{}\n{}\n{}\n{}\n{}\n",
-            "─────────────────────────────────────────"
+            "──────────────────────────────────────────────────────"
                 .custom_color((141, 141, 142))
                 .bold(),
             "Compile time report".custom_color((141, 141, 142)).bold(),
@@ -1692,7 +1715,7 @@ pub fn report_compile_time(
                 backend_identifier, backend_time_ms
             ),
             format_args!("Linking: {}ms", linking_time_ms),
-            "─────────────────────────────────────────"
+            "──────────────────────────────────────────────────────"
                 .custom_color((141, 141, 142))
                 .bold(),
         ),

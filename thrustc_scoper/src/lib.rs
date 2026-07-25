@@ -19,16 +19,18 @@
 
 use thrustc_ast::{
     Ast,
+    ast_builtins::AstBuiltin,
     traits::{AstCodeLocation, AstDeclarationExtensions, AstStandardExtensions},
 };
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 
-use crate::context::ScoperContext;
+use crate::{context::ScoperContext, table::ScoperSymbolTable};
 
 mod checks;
 mod context;
+mod table;
 
 #[derive(Debug)]
 pub struct Scoper<'scoper> {
@@ -36,6 +38,8 @@ pub struct Scoper<'scoper> {
     context: ScoperContext,
     errors: Vec<CompilationIssue>,
     diagnostician: Diagnostician,
+
+    table: ScoperSymbolTable<'scoper>,
 }
 
 impl<'scoper> Scoper<'scoper> {
@@ -50,6 +54,8 @@ impl<'scoper> Scoper<'scoper> {
             context: ScoperContext::new(),
             errors: Vec::with_capacity(u8::MAX as usize),
             diagnostician: Diagnostician::new(file, options),
+
+            table: ScoperSymbolTable::new(),
         }
     }
 }
@@ -80,7 +86,7 @@ impl<'scoper> Scoper<'scoper> {
 }
 
 impl<'scoper> Scoper<'scoper> {
-    fn analyze_global_node(&mut self, node: &Ast) {
+    fn analyze_global_node(&mut self, node: &Ast<'scoper>) {
         if !node.is_declaration_keyword() {
             self.add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0016,
@@ -91,18 +97,63 @@ impl<'scoper> Scoper<'scoper> {
             ));
         }
 
-        if let Ast::Function { body, .. } = node {
-            let Some(body) = body else {
-                return;
-            };
+        match node {
+            Ast::Function {
+                name,
+                parameters,
+                body,
+                ..
+            } => {
+                self.get_mut_table().add_function(name);
 
-            self.get_mut_context().enter_function();
-            self.analyze_local_node(body);
-            self.get_mut_context().leave_function();
+                let Some(body) = body else {
+                    return;
+                };
+
+                {
+                    for parameter in parameters.iter() {
+                        let Ast::FunctionParameter { name, .. } = parameter else {
+                            continue;
+                        };
+
+                        self.get_mut_table().add_parameter(name);
+                    }
+                }
+
+                self.get_mut_context().enter_function();
+                self.analyze_local_node(body);
+                self.get_mut_context().leave_function();
+                self.get_mut_table().drop_parameters();
+            }
+
+            Ast::AssemblerFunction { name, .. } => {
+                self.get_mut_table().add_assembler_function(name);
+            }
+
+            Ast::Intrinsic { name, .. } => {
+                self.get_mut_table().add_compiler_intrinsic(name);
+            }
+
+            Ast::Static { name, value, .. } => {
+                self.get_mut_table().add_static(name);
+
+                let Some(value) = value else {
+                    return;
+                };
+
+                self.analyze_local_node(value);
+            }
+
+            Ast::Const { name, value, .. } => {
+                self.get_mut_table().add_constant(name);
+                self.analyze_local_node(value);
+            }
+
+            _ => (),
         }
     }
 
-    fn analyze_local_node(&mut self, node: &Ast) {
+    fn analyze_local_node(&mut self, node: &Ast<'scoper>) {
         if node.is_function_keyword() {
             self.add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0016,
@@ -174,6 +225,8 @@ impl<'scoper> Scoper<'scoper> {
         }
 
         if let Ast::Block { nodes, post, .. } = node {
+            self.get_mut_table().add_scope();
+
             checks::check_for_multiple_terminators(self, node);
             checks::check_for_unreachable_code_instructions(self, node);
 
@@ -184,9 +237,36 @@ impl<'scoper> Scoper<'scoper> {
             for postnode in post.iter() {
                 self.analyze_local_node(postnode);
             }
+
+            self.get_mut_table().pop_scope();
         }
 
         match node {
+            Ast::Static { name, value, .. } => {
+                self.get_mut_table().add_local(name);
+
+                let Some(value) = value else {
+                    return;
+                };
+
+                self.analyze_local_node(value);
+            }
+
+            Ast::Const { name, value, .. } => {
+                self.get_mut_table().add_local(name);
+                self.analyze_local_node(value);
+            }
+
+            Ast::Var { name, value, .. } => {
+                self.get_mut_table().add_local(name);
+
+                let Some(value) = value else {
+                    return;
+                };
+
+                self.analyze_local_node(value);
+            }
+
             Ast::If {
                 then_branch,
                 else_if_branch,
@@ -256,6 +336,120 @@ impl<'scoper> Scoper<'scoper> {
                 self.analyze_local_node(node);
             }
 
+            Ast::BinaryOp { left, right, .. } => {
+                self.analyze_local_node(left);
+                self.analyze_local_node(right);
+            }
+            Ast::UnaryOp { node, .. } => {
+                self.analyze_local_node(node);
+            }
+            Ast::Group { node, .. } => {
+                self.analyze_local_node(node);
+            }
+
+            Ast::FixedArray { items, .. } => {
+                for item in items.iter() {
+                    self.analyze_local_node(item);
+                }
+            }
+            Ast::Array { items, .. } => {
+                for item in items.iter() {
+                    self.analyze_local_node(item);
+                }
+            }
+
+            Ast::Index { source, index, .. } => {
+                self.analyze_local_node(source);
+                self.analyze_local_node(index);
+            }
+            Ast::Property { source, .. } => {
+                self.analyze_local_node(source);
+            }
+            Ast::Deref { value, .. } => {
+                self.analyze_local_node(value);
+            }
+            Ast::GetLocation { expr, .. } => {
+                self.analyze_local_node(expr);
+            }
+
+            Ast::Constructor { data, .. } => {
+                for (_, expr, _, _) in data.iter() {
+                    self.analyze_local_node(expr);
+                }
+            }
+
+            Ast::Call { args, .. } => {
+                for arg in args.iter() {
+                    self.analyze_local_node(arg);
+                }
+            }
+            Ast::IndirectCall { function, args, .. } => {
+                self.analyze_local_node(function);
+
+                for arg in args.iter() {
+                    self.analyze_local_node(arg);
+                }
+            }
+
+            Ast::As { from, .. } => {
+                self.analyze_local_node(from);
+            }
+
+            Ast::AsmValue { args, .. } => {
+                for arg in args.iter() {
+                    self.analyze_local_node(arg);
+                }
+            }
+
+            Ast::EnumValue { value, .. } => {
+                self.analyze_local_node(value);
+            }
+
+            Ast::Reference { name, span, .. } if !self.get_table().symbol_exists(name) => {
+                self.add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0040,
+                    format!("'{}' not found", name),
+                    "You should either create it or reference it correctly.".into(),
+                    None,
+                    *span,
+                ));
+            }
+
+            Ast::Builtin { builtin, .. } => match builtin {
+                AstBuiltin::MemSet {
+                    dst,
+                    new_size,
+                    size,
+                    ..
+                } => {
+                    self.analyze_local_node(dst);
+                    self.analyze_local_node(new_size);
+                    self.analyze_local_node(size);
+                }
+
+                AstBuiltin::MemMove { dst, src, size, .. } => {
+                    self.analyze_local_node(dst);
+                    self.analyze_local_node(src);
+                    self.analyze_local_node(size);
+                }
+
+                AstBuiltin::MemCpy { dst, src, size, .. } => {
+                    self.analyze_local_node(dst);
+                    self.analyze_local_node(src);
+                    self.analyze_local_node(size);
+                }
+
+                // No envuelven ninguna subexpresión: operan sobre
+                // tipos, no sobre valores.
+                AstBuiltin::Halloc { .. }
+                | AstBuiltin::AlignOf { .. }
+                | AstBuiltin::SizeOf { .. }
+                | AstBuiltin::AbiSizeOf { .. }
+                | AstBuiltin::BitSizeOf { .. }
+                | AstBuiltin::AbiAlignOf { .. } => (),
+            },
+
+            // ---------------------------------------------------------
             _ => (),
         }
     }
@@ -273,11 +467,21 @@ impl<'scoper> Scoper<'scoper> {
     fn get_context(&self) -> &ScoperContext {
         &self.context
     }
+
+    #[inline]
+    fn get_table(&self) -> &ScoperSymbolTable<'scoper> {
+        &self.table
+    }
 }
 
 impl<'scoper> Scoper<'scoper> {
     #[inline]
     fn get_mut_context(&mut self) -> &mut ScoperContext {
         &mut self.context
+    }
+
+    #[inline]
+    fn get_mut_table(&mut self) -> &mut ScoperSymbolTable<'scoper> {
+        &mut self.table
     }
 }

@@ -26,7 +26,7 @@ use thrustc_typesystem::Type;
 
 use crate::{ParserContext, expressions, typegeneration};
 
-pub fn build_builtin<'parser>(
+pub fn build_compiler_builtin<'parser>(
     ctx: &mut ParserContext<'parser>,
     tk_type: TokenType,
 ) -> Result<Ast<'parser>, CompilationIssue> {

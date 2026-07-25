@@ -54,96 +54,101 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
 }
 
 impl<'ast_verifier> AstVerifier<'ast_verifier> {
-    pub fn analyze_top(&mut self) -> bool {
-        {
-            for node in self.ast.iter() {
-                match node {
-                    Ast::Function {
-                        parameters, body, ..
-                    } => {
-                        if let Some(body) = body {
-                            self.expected_statement(body);
-                            self.analyze_stmt(body);
-                        }
+    pub fn analyze(&mut self) -> bool {
+        self.analyze_top_ast();
 
-                        for parameter in parameters.iter() {
-                            if !parameter.is_function_parameter() {
-                                self.add_error(CompilationIssue::Error(
-                                    thrustc_errors::CompilationIssueCode::E0001,
-                                    "Expected a parameter.".into(),
-                                    "You should remove it.".into(),
-                                    None,
-                                    node.get_span(),
-                                ));
-                            }
-                        }
+        let it_failed: bool = self.failed();
+
+        it_failed
+    }
+}
+
+impl<'ast_verifier> AstVerifier<'ast_verifier> {
+    pub fn analyze_top_ast(&mut self) {
+        for node in self.ast.iter() {
+            match node {
+                Ast::Function {
+                    parameters, body, ..
+                } => {
+                    if let Some(body) = body {
+                        self.expected_statement(body);
+                        self.analyze_stmt(body);
                     }
 
-                    Ast::Intrinsic { parameters, .. } => {
-                        for parameter in parameters.iter() {
-                            if !parameter.is_function_parameter() {
-                                self.add_error(CompilationIssue::Error(
-                                    thrustc_errors::CompilationIssueCode::E0001,
-                                    "Expected a parameter.".into(),
-                                    "You should remove it.".into(),
-                                    None,
-                                    node.get_span(),
-                                ));
-                            }
+                    for parameter in parameters.iter() {
+                        if !parameter.is_function_parameter() {
+                            self.add_error(CompilationIssue::Error(
+                                thrustc_errors::CompilationIssueCode::E0001,
+                                "Expected a parameter.".into(),
+                                "You should remove it.".into(),
+                                None,
+                                node.get_span(),
+                            ));
                         }
                     }
+                }
 
-                    Ast::AssemblerFunction { parameters, .. } => {
-                        for parameter in parameters.iter() {
-                            if !parameter.is_function_parameter() {
-                                self.add_error(CompilationIssue::Error(
-                                    thrustc_errors::CompilationIssueCode::E0001,
-                                    "Expected a parameter.".into(),
-                                    "You should remove it.".into(),
-                                    None,
-                                    node.get_span(),
-                                ));
-                            }
+                Ast::Intrinsic { parameters, .. } => {
+                    for parameter in parameters.iter() {
+                        if !parameter.is_function_parameter() {
+                            self.add_error(CompilationIssue::Error(
+                                thrustc_errors::CompilationIssueCode::E0001,
+                                "Expected a parameter.".into(),
+                                "You should remove it.".into(),
+                                None,
+                                node.get_span(),
+                            ));
                         }
                     }
+                }
 
-                    Ast::Const { value, .. } => {
+                Ast::AssemblerFunction { parameters, .. } => {
+                    for parameter in parameters.iter() {
+                        if !parameter.is_function_parameter() {
+                            self.add_error(CompilationIssue::Error(
+                                thrustc_errors::CompilationIssueCode::E0001,
+                                "Expected a parameter.".into(),
+                                "You should remove it.".into(),
+                                None,
+                                node.get_span(),
+                            ));
+                        }
+                    }
+                }
+
+                Ast::Const { value, .. } => {
+                    self.analyze_expression(value);
+                }
+
+                Ast::Static { value, .. } => {
+                    if let Some(value) = value {
                         self.analyze_expression(value);
                     }
+                }
 
-                    Ast::Static { value, .. } => {
-                        if let Some(value) = value {
-                            self.analyze_expression(value);
-                        }
+                Ast::Enum { data, .. } => {
+                    for (_, _, node, ..) in data.iter() {
+                        self.analyze_expression(node);
                     }
+                }
 
-                    Ast::Enum { data, .. } => {
-                        for (_, _, node, ..) in data.iter() {
-                            self.analyze_expression(node);
-                        }
-                    }
+                Ast::GlobalAssembler { .. }
+                | Ast::CustomType { .. }
+                | Ast::Import { .. }
+                | Ast::Embedded { .. }
+                | Ast::Struct { .. } => {}
 
-                    Ast::GlobalAssembler { .. }
-                    | Ast::CustomType { .. }
-                    | Ast::Import { .. }
-                    | Ast::Embedded { .. }
-                    | Ast::Struct { .. } => {}
-
-                    _ => {
-                        self.add_error(CompilationIssue::Error(
-                            thrustc_errors::CompilationIssueCode::E0001,
-                            "Expected a top entity, not a statement, and never an expression."
-                                .into(),
-                            "You should remove it.".into(),
-                            None,
-                            node.get_span(),
-                        ));
-                    }
+                _ => {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a top entity, not a statement, and never an expression.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
                 }
             }
         }
-
-        self.check()
     }
 
     pub fn analyze_stmt(&mut self, node: &Ast<'_>) {
@@ -359,10 +364,22 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 self.analyze_expression(source);
             }
 
-            Ast::Constructor { data, .. } => {
+            Ast::Constructor { kind: ty, data, .. } => {
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
                 for (_, node, _, _) in data.iter() {
                     self.expected_expression(node);
                     self.analyze_expression(node);
+                }
+
+                if !ty.is_struct_type() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a literal string with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
                 }
             }
 
@@ -584,7 +601,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
 }
 
 impl<'ast_verifier> AstVerifier<'ast_verifier> {
-    fn check(&mut self) -> bool {
+    fn failed(&mut self) -> bool {
         if !self.errors.is_empty() {
             self.errors.iter().for_each(|error| {
                 self.diagnostician

@@ -46,7 +46,7 @@ fuzz_target!(|data: &[u8]| -> Corpus {
         "codegen".into(),
     );
 
-    let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &options).analyze(false);
+    let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &options).execute(false);
 
     if let Either::Left(had_errors) = failed
         && !had_errors
