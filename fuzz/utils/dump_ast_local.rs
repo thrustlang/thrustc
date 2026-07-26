@@ -24,9 +24,9 @@ use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
 use thrustc_typesystem::Type;
 
-const MAX_DEPTH: usize = 8;
-const MAX_STATEMENTS_PER_BLOCK: usize = 12;
-const MAX_EXPR_DEPTH: usize = 4;
+const MAX_DEPTH: usize = 5;
+const MAX_STATEMENTS_PER_BLOCK: usize = 20;
+const MAX_EXPR_DEPTH: usize = 10;
 
 #[derive(Clone)]
 struct ScopedVar<'ast> {
@@ -244,11 +244,10 @@ fn gen_stmt<'ast>(
         10 | 11 => gen_block(u, scope, depth - 1),
         12 => gen_static(u, scope),
         13 => gen_mutation(u, scope, depth),
-        14 => gen_write(u, scope, depth),
-        15 => gen_call_stmt(u, scope, depth),
-        16 => gen_return(u, scope, depth),
-        17 => gen_defer(u, scope, depth),
-        18 => gen_loop_control(u),
+        14 => gen_call_stmt(u, scope, depth),
+        15 => gen_return(u, scope, depth),
+        16 => gen_defer(u, scope, depth),
+        17 => gen_loop_control(u),
         _ => gen_reference(u, scope),
     }
 }
@@ -642,23 +641,6 @@ fn gen_mutation<'ast>(
         source: Box::new(gen_reference(u, scope)?),
         value: Box::new(gen_expr(u, scope, depth.saturating_sub(1))?),
         kind: u.arbitrary()?,
-        span: u.arbitrary()?,
-        id: NodeId::new(),
-    })
-}
-
-fn gen_write<'ast>(
-    u: &mut Unstructured<'ast>,
-    scope: &mut ScopeStack<'ast>,
-    depth: usize,
-) -> arbitrary::Result<Ast<'ast>> {
-    if !scope.has_any() {
-        return gen_var(u, scope, depth);
-    }
-    Ok(Ast::Write {
-        source: Box::new(gen_reference(u, scope)?),
-        write_value: Box::new(gen_expr(u, scope, depth.saturating_sub(1))?),
-        write_type: u.arbitrary()?,
         span: u.arbitrary()?,
         id: NodeId::new(),
     })

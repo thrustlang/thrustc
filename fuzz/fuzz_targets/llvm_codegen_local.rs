@@ -28,13 +28,13 @@ use inkwell::{
     module::Module,
     targets::{InitializationConfig, Target, TargetMachine, TargetTriple},
 };
-use libfuzzer_sys::{fuzz_target, Corpus};
-use thrustc_ast::traits::AstStandardExtensions;
+use libfuzzer_sys::{Corpus, fuzz_target};
 use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
+use thrustc_ast::traits::AstStandardExtensions;
 use thrustc_backends::{
-    llvm::{target::LLVMTarget, LLVMBackend},
     ThrustOptimization,
+    llvm::{LLVMBackend, target::LLVMTarget},
 };
 use thrustc_diagnostician::Diagnostician;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
@@ -42,12 +42,12 @@ use thrustc_llvm_codegen::context::LLVMCodeGenContext;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_semantic::SemanticAnalysis;
-use thrustc_typesystem::type_layout::TargetInfo;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::type_layout::TargetInfo;
 
-const MAX_DEPTH: usize = 4;
-const MAX_STATEMENTS_PER_BLOCK: usize = 12;
-const MAX_EXPR_DEPTH: usize = 4;
+const MAX_DEPTH: usize = 5;
+const MAX_STATEMENTS_PER_BLOCK: usize = 30;
+const MAX_EXPR_DEPTH: usize = 10;
 
 #[derive(Clone)]
 struct ScopedVar<'ast> {
@@ -107,9 +107,9 @@ fn gen_function<'ast>(
 ) -> arbitrary::Result<Ast<'ast>> {
     scope.push();
 
-    let n_params = u.int_in_range(0..=4usize)?;
-    let mut parameters = Vec::with_capacity(n_params);
-    let mut parameter_types = Vec::with_capacity(n_params);
+    let n_params: usize = u.int_in_range(0..=4usize)?;
+    let mut parameters: Vec<Ast<'_>> = Vec::with_capacity(n_params);
+    let mut parameter_types: Vec<Type> = Vec::with_capacity(n_params);
 
     for i in 0..n_params {
         let name = gen_name(u)?;
@@ -129,7 +129,7 @@ fn gen_function<'ast>(
 
     let return_type: Type = u.arbitrary()?;
 
-    let body = Some(Box::new(gen_function_body(
+    let body: Option<Box<Ast<'_>>> = Some(Box::new(gen_function_body(
         u,
         scope,
         depth.saturating_sub(1).max(2),
@@ -153,12 +153,6 @@ fn gen_function<'ast>(
     })
 }
 
-// Igual que `gen_block`, pero pensado específicamente para el body de
-// una función: además de los statements normales, casi siempre agrega
-// un `Return` final coherente con `return_type` (con expresión si la
-// función no es void; sin expresión si lo es). Antes el `Return` solo
-// podía aparecer por azar dentro de `gen_stmt`, sin relación con el
-// tipo de retorno real de la función.
 fn gen_function_body<'ast>(
     u: &mut Unstructured<'ast>,
     scope: &mut ScopeStack<'ast>,
@@ -167,17 +161,15 @@ fn gen_function_body<'ast>(
 ) -> arbitrary::Result<Ast<'ast>> {
     scope.push();
 
-    let n_stmts = u.int_in_range(1..=MAX_STATEMENTS_PER_BLOCK)?;
-    let mut nodes = Vec::with_capacity(n_stmts + 1);
+    let n_stmts: usize = u.int_in_range(1..=MAX_STATEMENTS_PER_BLOCK)?;
+    let mut nodes: Vec<Ast<'_>> = Vec::with_capacity(n_stmts + 1);
+
     for _ in 0..n_stmts {
         nodes.push(gen_stmt(u, scope, depth)?);
     }
 
-    // NOTA: asumo que `Type::Void { .. }` existe (aparece en
-    // `Ast::invalid_ast` de tu lib.rs). Si el void real se llama
-    // distinto, ajusta este `matches!`.
-    let is_void = matches!(return_type, Type::Void { .. });
-    let should_return = !is_void || u.arbitrary()?;
+    let is_void: bool = matches!(return_type, Type::Void { .. });
+    let should_return: bool = !is_void || u.arbitrary()?;
 
     if should_return {
         let expression = if is_void {
@@ -193,8 +185,9 @@ fn gen_function_body<'ast>(
         });
     }
 
-    let n_post = u.int_in_range(0..=2usize)?;
-    let mut post = Vec::with_capacity(n_post);
+    let n_post: usize = u.int_in_range(0..=2usize)?;
+    let mut post: Vec<Ast<'_>> = Vec::with_capacity(n_post);
+
     for _ in 0..n_post {
         post.push(gen_defer(u, scope, depth)?);
     }
@@ -217,15 +210,16 @@ fn gen_block<'ast>(
 ) -> arbitrary::Result<Ast<'ast>> {
     scope.push();
 
-    let n_stmts = u.int_in_range(1..=MAX_STATEMENTS_PER_BLOCK)?;
-    let mut nodes = Vec::with_capacity(n_stmts);
+    let n_stmts: usize = u.int_in_range(1..=MAX_STATEMENTS_PER_BLOCK)?;
+    let mut nodes: Vec<Ast<'_>> = Vec::with_capacity(n_stmts);
+
     for _ in 0..n_stmts {
         nodes.push(gen_stmt(u, scope, depth)?);
     }
 
-    // `post` = statements ejecutados al salir del scope (defer-like).
-    let n_post = u.int_in_range(0..=2usize)?;
-    let mut post = Vec::with_capacity(n_post);
+    let n_post: usize = u.int_in_range(0..=2usize)?;
+    let mut post: Vec<Ast<'_>> = Vec::with_capacity(n_post);
+
     for _ in 0..n_post {
         post.push(gen_defer(u, scope, depth)?);
     }
@@ -288,9 +282,6 @@ fn gen_stmt<'ast>(
     }
 }
 
-// ----------------------------------------------------------------
-// DECLARACIONES
-// ----------------------------------------------------------------
 fn gen_var<'ast>(
     u: &mut Unstructured<'ast>,
     scope: &mut ScopeStack<'ast>,
@@ -371,17 +362,6 @@ fn gen_static<'ast>(
     })
 }
 
-// ----------------------------------------------------------------
-// CONDICIONES "REALES": en vez de un árbol de expresión arbitrario
-// (que casi siempre da algo sin sentido semántico, tipo `3.5 as i8`),
-// construimos una comparación concreta: `variable_existente OP literal`.
-// Si no hay ninguna variable visible todavía, caemos a un booleano.
-//
-// NOTA: `operator: u.arbitrary()?` sigue siendo un TokenType al azar
-// porque no tengo la lista de variantes de TokenType en este archivo.
-// Si quieres que sea siempre un operador de comparación real
-// (`<`, `<=`, `>`, `>=`, `==`, `!=`), dime cómo se llaman esas
-// variantes exactas y lo fijo a un `match` cerrado en vez de arbitrary.
 fn gen_condition<'ast>(
     u: &mut Unstructured<'ast>,
     scope: &ScopeStack<'ast>,
@@ -415,7 +395,6 @@ fn gen_condition<'ast>(
         });
     }
 
-    // Sin variables visibles todavía: condición literal booleana.
     Ok(Ast::Boolean {
         kind: u.arbitrary()?,
         value: u.arbitrary()?,
@@ -424,8 +403,6 @@ fn gen_condition<'ast>(
     })
 }
 
-// Construye `variable = variable OP paso` (p. ej. i = i + 1), usando
-// el mismo `kind` de la variable para que el incremento sea coherente.
 fn gen_increment<'ast>(
     u: &mut Unstructured<'ast>,
     name: &'ast str,
@@ -469,9 +446,6 @@ fn gen_increment<'ast>(
     })
 }
 
-// ----------------------------------------------------------------
-// CONTROL DE FLUJO
-// ----------------------------------------------------------------
 fn gen_if<'ast>(
     u: &mut Unstructured<'ast>,
     scope: &mut ScopeStack<'ast>,
@@ -521,11 +495,8 @@ fn gen_for<'ast>(
     scope: &mut ScopeStack<'ast>,
     depth: usize,
 ) -> arbitrary::Result<Ast<'ast>> {
-    scope.push(); // el `local` del for vive en su propio scope
+    scope.push();
 
-    // Loop estructurado y "real": `var i: T = <lit>; i OP <lit>; i = i OP <lit> { ... }`
-    // en vez de un local/condición/acción totalmente arbitrarios sin
-    // relación entre sí.
     let loop_var_name = gen_name(u)?;
     let loop_var_kind: Type = u.arbitrary()?;
 
