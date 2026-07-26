@@ -28,13 +28,13 @@ use inkwell::{
     module::Module,
     targets::{InitializationConfig, Target, TargetMachine, TargetTriple},
 };
-use libfuzzer_sys::{Corpus, fuzz_target};
+use libfuzzer_sys::{fuzz_target, Corpus};
+use thrustc_ast::traits::AstStandardExtensions;
 use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
-use thrustc_ast::traits::AstStandardExtensions;
 use thrustc_backends::{
+    llvm::{target::LLVMTarget, LLVMBackend},
     ThrustOptimization,
-    llvm::{LLVMBackend, target::LLVMTarget},
 };
 use thrustc_diagnostician::Diagnostician;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
@@ -42,8 +42,8 @@ use thrustc_llvm_codegen::context::LLVMCodeGenContext;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_semantic::SemanticAnalysis;
-use thrustc_typesystem::Type;
 use thrustc_typesystem::type_layout::TargetInfo;
+use thrustc_typesystem::Type;
 
 const MAX_DEPTH: usize = 5;
 const MAX_STATEMENTS_PER_BLOCK: usize = 30;
@@ -273,11 +273,10 @@ fn gen_stmt<'ast>(
         10 | 11 => gen_block(u, scope, depth - 1),
         12 => gen_static(u, scope),
         13 => gen_mutation(u, scope, depth),
-        14 => gen_write(u, scope, depth),
-        15 => gen_call_stmt(u, scope, depth),
-        16 => gen_return(u, scope, depth),
-        17 => gen_defer(u, scope, depth),
-        18 => gen_loop_control(u),
+        14 => gen_call_stmt(u, scope, depth),
+        15 => gen_return(u, scope, depth),
+        16 => gen_defer(u, scope, depth),
+        17 => gen_loop_control(u),
         _ => gen_reference(u, scope),
     }
 }
@@ -671,23 +670,6 @@ fn gen_mutation<'ast>(
         source: Box::new(gen_reference(u, scope)?),
         value: Box::new(gen_expr(u, scope, depth.saturating_sub(1))?),
         kind: u.arbitrary()?,
-        span: u.arbitrary()?,
-        id: NodeId::new(),
-    })
-}
-
-fn gen_write<'ast>(
-    u: &mut Unstructured<'ast>,
-    scope: &mut ScopeStack<'ast>,
-    depth: usize,
-) -> arbitrary::Result<Ast<'ast>> {
-    if !scope.has_any() {
-        return gen_var(u, scope, depth);
-    }
-    Ok(Ast::Write {
-        source: Box::new(gen_reference(u, scope)?),
-        write_value: Box::new(gen_expr(u, scope, depth.saturating_sub(1))?),
-        write_type: u.arbitrary()?,
         span: u.arbitrary()?,
         id: NodeId::new(),
     })

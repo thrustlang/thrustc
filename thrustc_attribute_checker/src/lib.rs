@@ -254,7 +254,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
         match applicant {
             AttributeCheckerAttributeApplicant::Function { return_type, .. } => {
                 self.check_irrelevant_attributes(attributes, applicant);
-                self.check_illogical_attributes(attributes);
+                self.check_illogical_attributes(attributes, applicant);
 
                 if let Some(attr) = attributes.get_attr(ThrustAttributeComparator::Constructor) {
                     if !return_type.is_void_type() {
@@ -355,7 +355,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 
             AttributeCheckerAttributeApplicant::Intrinsic => {
                 self.check_irrelevant_attributes(attributes, applicant);
-                self.check_illogical_attributes(attributes);
+                self.check_illogical_attributes(attributes, applicant);
 
                 if !attributes.has_public_attribute() {
                     self.add_error(CompilationIssue::Error(
@@ -410,7 +410,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                 }
 
                 self.check_irrelevant_attributes(attributes, applicant);
-                self.check_illogical_attributes(attributes);
+                self.check_illogical_attributes(attributes, applicant);
 
                 self.get_repeated_attrs(attributes).iter().for_each(|attr| {
                     self.add_error(CompilationIssue::Error(
@@ -425,7 +425,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 
             AttributeCheckerAttributeApplicant::AssemblerFunction => {
                 self.check_irrelevant_attributes(attributes, applicant);
-                self.check_illogical_attributes(attributes);
+                self.check_illogical_attributes(attributes, applicant);
 
                 if !attributes.has_asmsyntax_attribute() {
                     if let Some(span) = attributes.match_attr(ThrustAttributeComparator::Extern) {
@@ -484,7 +484,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 
             AttributeCheckerAttributeApplicant::Constant => {
                 self.check_irrelevant_attributes(attributes, applicant);
-                self.check_illogical_attributes(attributes);
+                self.check_illogical_attributes(attributes, applicant);
 
                 if let Some(align_attribute) = attributes.get_attr(ThrustAttributeComparator::Align)
                 {
@@ -529,7 +529,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 
             AttributeCheckerAttributeApplicant::Local => {
                 self.check_irrelevant_attributes(attributes, applicant);
-                self.check_illogical_attributes(attributes);
+                self.check_illogical_attributes(attributes, applicant);
 
                 if let Some(align_attribute) = attributes.get_attr(ThrustAttributeComparator::Align)
                 {
@@ -575,7 +575,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             AttributeCheckerAttributeApplicant::Struct
             | AttributeCheckerAttributeApplicant::Enum => {
                 self.check_irrelevant_attributes(attributes, applicant);
-                self.check_illogical_attributes(attributes);
+                self.check_illogical_attributes(attributes, applicant);
 
                 self.get_repeated_attrs(attributes).iter().for_each(|attr| {
                     self.add_error(CompilationIssue::Error(
@@ -781,7 +781,11 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
         }
     }
 
-    fn check_illogical_attributes(&mut self, attributes: &ThrustAttributes) {
+    fn check_illogical_attributes(
+        &mut self,
+        attributes: &ThrustAttributes,
+        applicant: AttributeCheckerAttributeApplicant,
+    ) {
         if attributes.has_extern_attribute() && !attributes.has_public_attribute() {
             if let Some(span) = attributes.match_attr(ThrustAttributeComparator::Extern) {
                 self.add_error(CompilationIssue::Error(
@@ -821,6 +825,16 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                     self.add_warning(CompilationIssue::Warning(
                         CompilationIssueCode::W0003,
                         "Unknown linking, assuming non-proprietary C standard.".into(),
+                        span,
+                    ));
+                }
+
+                if applicant.is_function() && linkage.is_common() {
+                    self.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0013,
+                        "A function can't have a common linkage.".into(),
+                        "You should change the linkage value.".into(),
+                        None,
                         span,
                     ));
                 }

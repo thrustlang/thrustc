@@ -287,6 +287,7 @@ pub fn compile_type_cast<'ctx>(
             return casted_value.into();
         } else if value.is_int_value() && cast.is_float_type() {
             let is_signed_int: bool = from_type.is_signed_integer_type();
+
             let int_value: IntValue<'_> = value.into_int_value();
             let cast_type: FloatType<'_> = cast.into_float_type();
 
@@ -294,6 +295,31 @@ pub fn compile_type_cast<'ctx>(
                 llvm_builder.build_signed_int_to_float(int_value, cast_type, "")
             } else {
                 llvm_builder.build_unsigned_int_to_float(int_value, cast_type, "")
+            }
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    &format!(
+                        "Failed to cast '{}' type to '{}' type.",
+                        from_type, target_type
+                    ),
+                    expr.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            });
+
+            return casted_value.into();
+        } else if value.is_float_value() && cast.is_int_type() {
+            let is_signed_int: bool = from_type.is_signed_integer_type();
+
+            let float_value: FloatValue<'_> = value.into_float_value();
+            let cast_type: IntType<'_> = cast.into_int_type();
+
+            let casted_value: IntValue<'_> = if is_signed_int {
+                llvm_builder.build_float_to_signed_int(float_value, cast_type, "")
+            } else {
+                llvm_builder.build_float_to_unsigned_int(float_value, cast_type, "")
             }
             .unwrap_or_else(|_| {
                 abort::abort_codegen(

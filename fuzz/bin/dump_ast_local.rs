@@ -17,6 +17,14 @@
 
 */
 
+// NOTE: The AST-generation logic below (constants + every `gen_*` function)
+// MUST be kept byte-for-byte identical to fuzz_targets/llvm_codegen_local.rs.
+// Any divergence (different MAX_* constants, different gen_name encoding,
+// different match arms/ranges in gen_stmt/gen_expr, missing variants such as
+// gen_write, etc.) desyncs the `Unstructured` cursor and this tool will dump
+// an AST that is NOT the one actually fed to codegen by the real fuzz target.
+// If llvm_codegen_local.rs changes its generator, mirror the change here too.
+
 use arbitrary::Unstructured;
 use std::fs;
 use std::path::PathBuf;
@@ -25,7 +33,7 @@ use thrustc_ast::NodeId;
 use thrustc_typesystem::Type;
 
 const MAX_DEPTH: usize = 5;
-const MAX_STATEMENTS_PER_BLOCK: usize = 20;
+const MAX_STATEMENTS_PER_BLOCK: usize = 30;
 const MAX_EXPR_DEPTH: usize = 10;
 
 #[derive(Clone)]
@@ -65,7 +73,11 @@ impl<'ast> ScopeStack<'ast> {
 
 #[inline]
 fn gen_name<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<&'ast str> {
-    u.arbitrary()
+    let len = u.int_in_range(1..=100usize)?;
+
+    let bytes = u.bytes(len)?;
+
+    std::str::from_utf8(bytes).map_err(|_| arbitrary::Error::IncorrectFormat)
 }
 
 fn gen_root<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Ast<'ast>> {
@@ -82,9 +94,9 @@ fn gen_function<'ast>(
 ) -> arbitrary::Result<Ast<'ast>> {
     scope.push();
 
-    let n_params = u.int_in_range(0..=4usize)?;
-    let mut parameters = Vec::with_capacity(n_params);
-    let mut parameter_types = Vec::with_capacity(n_params);
+    let n_params: usize = u.int_in_range(0..=4usize)?;
+    let mut parameters: Vec<Ast<'_>> = Vec::with_capacity(n_params);
+    let mut parameter_types: Vec<Type> = Vec::with_capacity(n_params);
 
     for i in 0..n_params {
         let name = gen_name(u)?;
@@ -104,7 +116,7 @@ fn gen_function<'ast>(
 
     let return_type: Type = u.arbitrary()?;
 
-    let body = Some(Box::new(gen_function_body(
+    let body: Option<Box<Ast<'_>>> = Some(Box::new(gen_function_body(
         u,
         scope,
         depth.saturating_sub(1).max(2),
@@ -136,14 +148,15 @@ fn gen_function_body<'ast>(
 ) -> arbitrary::Result<Ast<'ast>> {
     scope.push();
 
-    let n_stmts = u.int_in_range(1..=MAX_STATEMENTS_PER_BLOCK)?;
-    let mut nodes = Vec::with_capacity(n_stmts + 1);
+    let n_stmts: usize = u.int_in_range(1..=MAX_STATEMENTS_PER_BLOCK)?;
+    let mut nodes: Vec<Ast<'_>> = Vec::with_capacity(n_stmts + 1);
+
     for _ in 0..n_stmts {
         nodes.push(gen_stmt(u, scope, depth)?);
     }
 
-    let is_void = matches!(return_type, Type::Void { .. });
-    let should_return = !is_void || u.arbitrary()?;
+    let is_void: bool = matches!(return_type, Type::Void { .. });
+    let should_return: bool = !is_void || u.arbitrary()?;
 
     if should_return {
         let expression = if is_void {
@@ -159,8 +172,9 @@ fn gen_function_body<'ast>(
         });
     }
 
-    let n_post = u.int_in_range(0..=2usize)?;
-    let mut post = Vec::with_capacity(n_post);
+    let n_post: usize = u.int_in_range(0..=2usize)?;
+    let mut post: Vec<Ast<'_>> = Vec::with_capacity(n_post);
+
     for _ in 0..n_post {
         post.push(gen_defer(u, scope, depth)?);
     }
@@ -183,14 +197,16 @@ fn gen_block<'ast>(
 ) -> arbitrary::Result<Ast<'ast>> {
     scope.push();
 
-    let n_stmts = u.int_in_range(1..=MAX_STATEMENTS_PER_BLOCK)?;
-    let mut nodes = Vec::with_capacity(n_stmts);
+    let n_stmts: usize = u.int_in_range(1..=MAX_STATEMENTS_PER_BLOCK)?;
+    let mut nodes: Vec<Ast<'_>> = Vec::with_capacity(n_stmts);
+
     for _ in 0..n_stmts {
         nodes.push(gen_stmt(u, scope, depth)?);
     }
 
-    let n_post = u.int_in_range(0..=2usize)?;
-    let mut post = Vec::with_capacity(n_post);
+    let n_post: usize = u.int_in_range(0..=2usize)?;
+    let mut post: Vec<Ast<'_>> = Vec::with_capacity(n_post);
+
     for _ in 0..n_post {
         post.push(gen_defer(u, scope, depth)?);
     }
@@ -792,6 +808,34 @@ fn gen_expr<'ast>(
         8 => gen_call_stmt(u, scope, depth),
         _ => gen_literal(u),
     }
+}
+
+fn gen_struct<'ast>(
+    u: &mut Unstructured<'ast>,
+    _scope: &mut ScopeStack<'ast>,
+) -> arbitrary::Result<Ast<'ast>> {
+    Ok(Ast::Struct {
+        name: gen_name(u)?,
+        data: u.arbitrary()?,
+        kind: u.arbitrary()?,
+        span: u.arbitrary()?,
+        attributes: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_enum<'ast>(
+    u: &mut Unstructured<'ast>,
+    _scope: &mut ScopeStack<'ast>,
+) -> arbitrary::Result<Ast<'ast>> {
+    Ok(Ast::Enum {
+        name: gen_name(u)?,
+        data: u.arbitrary()?,
+        attributes: u.arbitrary()?,
+        kind: u.arbitrary()?,
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
 }
 
 fn main() {

@@ -17,7 +17,6 @@
 
 */
 
-
 use thrustc_typesystem::Type;
 
 #[derive(Debug, Clone, Copy)]
@@ -30,4 +29,11 @@ pub enum AttributeCheckerAttributeApplicant<'attr_checker> {
     Struct,
     Enum,
     Local,
+}
+
+impl AttributeCheckerAttributeApplicant<'_> {
+    #[inline]
+    pub fn is_function(&self) -> bool {
+        matches!(self, AttributeCheckerAttributeApplicant::Function { .. })
+    }
 }

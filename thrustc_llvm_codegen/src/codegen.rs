@@ -680,10 +680,20 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         .get_current_function(*span)
                         .get_return_type();
 
+                    let expr_type: &Type = expr.get_type_for_llvm();
+
                     let return_value: BasicValueEnum<'_> =
                         self::compile_as_value(self.context, expr, Some(cast_type));
 
-                    Some(return_value)
+                    let auto_casted_value: BasicValueEnum<'_> = type_cast::try_smart_cast(
+                        self.context,
+                        Some(cast_type),
+                        expr_type,
+                        return_value,
+                        *span,
+                    );
+
+                    Some(auto_casted_value)
                 } else {
                     None
                 };

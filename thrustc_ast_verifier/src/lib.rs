@@ -169,6 +169,13 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 }
             }
 
+            Ast::Var { value, .. } => {
+                if let Some(node) = value {
+                    self.expected_expression(node);
+                    self.analyze_expression(node);
+                }
+            }
+
             Ast::Const { value, .. } => {
                 self.analyze_expression(value);
             }

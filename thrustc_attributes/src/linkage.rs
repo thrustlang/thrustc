@@ -69,6 +69,11 @@ impl ThrustLinkage {
     pub fn is_internal(&self) -> bool {
         matches!(self, ThrustLinkage::Internal)
     }
+
+    #[inline]
+    pub fn is_common(&self) -> bool {
+        matches!(self, ThrustLinkage::Common)
+    }
 }
 
 impl ThrustLinkage {
