@@ -10,18 +10,19 @@ rustflags = [
 ]
 
 [alias]
-fuzz-llvm-top-level-stable = "fuzz run llvm-codegen-top-level fuzz/corpus_stable/llvm-codegen-top-level -- -dict=fuzz/thrust-stable.dict -- --stable"
-fuzz-llvm-top-level-unstable = "fuzz run llvm-codegen-top-level fuzz/corpus_unstable/llvm-codegen-top-level -- -dict=fuzz/thrust-unstable.dict"
+fuzz-llvm-top-level-stable = "fuzz run llvm-codegen-top-level fuzz/corpus_stable/llvm-codegen-top-level -- -dict=fuzz/thrust-stable.dict -rss_limit_mb=2048 -- --stable"
+fuzz-llvm-top-level-unstable = "fuzz run llvm-codegen-top-level fuzz/corpus_unstable/llvm-codegen-top-level -- -dict=fuzz/thrust-unstable.dict -rss_limit_mb=2048"
 
-fuzz-llvm-local-stable = "fuzz run llvm-codegen-local fuzz/corpus_stable/llvm-codegen-local -- -dict=fuzz/thrust-stable.dict -- --stable"
-fuzz-llvm-local-unstable = "fuzz run llvm-codegen-local fuzz/corpus_unstable/llvm-codegen-local -- -dict=fuzz/thrust-unstable.dict"
+fuzz-llvm-local-stable = "fuzz run llvm-codegen-local fuzz/corpus_stable/llvm-codegen-local -- -dict=fuzz/thrust-stable.dict -rss_limit_mb=4096 -- --stable"
+fuzz-llvm-local-unstable = "fuzz run llvm-codegen-local fuzz/corpus_unstable/llvm-codegen-local -- -dict=fuzz/thrust-unstable.dict -rss_limit_mb=2048"
 
-fuzz-pipeline-stable = "fuzz run pipeline fuzz/corpus_stable/pipeline -- -dict=fuzz/thrust-stable.dict -- --stable"
-fuzz-pipeline-unstable = "fuzz run pipeline fuzz/corpus_unstable/pipeline -- -dict=fuzz/thrust-unstable.dict"
+fuzz-pipeline-stable = "fuzz run pipeline fuzz/corpus_stable/pipeline -- -dict=fuzz/thrust-stable.dict -rss_limit_mb=2048 -- --stable"
+fuzz-pipeline-unstable = "fuzz run pipeline fuzz/corpus_unstable/pipeline -- -dict=fuzz/thrust-unstable.dict -rss_limit_mb=2048"
 
-fuzz-lexer = "fuzz run lexer fuzz/corpus_universal/lexer -- -dict=fuzz/thrust-stable.dict"
+fuzz-lexer = "fuzz run lexer fuzz/corpus_universal/lexer -- -dict=fuzz/thrust-stable.dict -rss_limit_mb=2048" 
 
 fuzz-dump-ast = "run --manifest-path fuzz/Cargo.toml --bin dump_ast"
+fuzz-dump-ast-local = "run --manifest-path fuzz/Cargo.toml --bin dump_ast_local"
 fuzz-reproduce-case = "run --manifest-path fuzz/Cargo.toml --bin reproduce"
 
 docs = "doc --workspace --no-deps --document-private-items --exclude clang --exclude inkwell --exclude inkwell_internals --exclude llvm-sys --exclude clang-sys"

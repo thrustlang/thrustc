@@ -39,11 +39,11 @@ impl TypeLayout {
         Layout {
             width: self.width,
             align: self.align,
-            alignof: self.alignof,
-            sizeof: self.sizeof,
+            alignof: self.alignof.max(1),
+            sizeof: self.sizeof.max(1),
             field_offsets: self.field_offsets,
-            abi_size: self.abi_size,
-            abi_align: self.abi_align,
+            abi_size: self.abi_size.max(1),
+            abi_align: self.abi_align.max(1),
         }
     }
 }
@@ -111,11 +111,11 @@ impl StructTypeLayout {
         Layout {
             width: self.width,
             align: self.align,
-            alignof: self.alignof,
-            sizeof: self.sizeof,
+            alignof: self.alignof.max(1),
+            sizeof: self.sizeof.max(1),
             field_offsets: self.field_offsets,
-            abi_size: self.abi_size,
-            abi_align: self.abi_align,
+            abi_size: self.abi_size.max(1),
+            abi_align: self.abi_align.max(1),
         }
     }
 }
@@ -653,10 +653,10 @@ impl TargetInfo {
                 let mut field_offsets_bits: Vec<u32> = Vec::with_capacity(*size as usize);
 
                 for i in 0..*size {
-                    field_offsets_bits.push(element_width * i);
+                    field_offsets_bits.push(element_width.saturating_mul(i));
                 }
 
-                type_info.width = element_width * size;
+                type_info.width = element_width.saturating_mul(*size);
                 type_info.align = element_align;
                 type_info.alignof = type_info.align / self.i8_width;
                 type_info.sizeof = type_info.width / self.i8_width;
@@ -702,7 +702,7 @@ impl TargetInfo {
                         either::Either::Right(rht) => rht.align,
                     };
 
-                    type_info.width = element_width * size;
+                    type_info.width = element_width.saturating_mul(size);
                     type_info.align = element_align;
                     type_info.alignof = type_info.align / self.i8_width;
                     type_info.sizeof = type_info.width / self.i8_width;
@@ -737,7 +737,9 @@ impl TargetInfo {
                     };
 
                     if !packed && f_align > 0 {
-                        current_offset_bits = current_offset_bits.div_ceil(f_align) * f_align;
+                        current_offset_bits = current_offset_bits
+                            .div_ceil(f_align)
+                            .saturating_mul(f_align);
                     }
 
                     field_offsets_bits.push(current_offset_bits);
@@ -752,7 +754,9 @@ impl TargetInfo {
                 let total_width_bits: u32 = if packed {
                     current_offset_bits
                 } else {
-                    current_offset_bits.div_ceil(max_align_bits) * max_align_bits
+                    current_offset_bits
+                        .div_ceil(max_align_bits)
+                        .saturating_mul(max_align_bits)
                 };
 
                 let mut struct_type_layout: StructTypeLayout = StructTypeLayout::new(

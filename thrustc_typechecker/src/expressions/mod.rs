@@ -37,8 +37,8 @@ use crate::{
     type_metadata::TypeCheckerNodeMetadata,
 };
 
-mod builtins;
 mod call_expr;
+mod compiler_builtins;
 
 pub fn validate_node<'type_checker>(
     typechecker: &mut TypeChecker<'type_checker>,
@@ -541,7 +541,7 @@ pub fn validate_node<'type_checker>(
             Ok(())
         }
 
-        Ast::Builtin { builtin, .. } => builtins::validate_node(typechecker, builtin),
+        Ast::Builtin { builtin, .. } => compiler_builtins::validate_node(typechecker, builtin),
 
         Ast::AsmValue { args, kind, .. } => {
             for node in args.iter() {

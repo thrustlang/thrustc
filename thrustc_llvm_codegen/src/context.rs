@@ -222,12 +222,14 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     pub fn add_parameter(
         &mut self,
         name: &'ctx str,
-        ascii_name: &'ctx str,
+        ascii_name: String,
         kind: &'ctx Type,
         value: BasicValueEnum<'ctx>,
         span: Span,
     ) {
-        value.set_name(ascii_name);
+        let ascii_name: String = ascii_name.replace("\0", "");
+
+        value.set_name(&ascii_name);
 
         let parameter: SymbolAllocated =
             SymbolAllocated::new(SymbolToAllocate::Parameter, kind, value, span);
@@ -298,7 +300,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
         let last: Option<&(PointerValue, Span, u32)> = self.ctors.iter().last();
 
         let order: u32 = if let Some((_, _, counter)) = last {
-            counter + 1
+            counter.saturating_add(1)
         } else {
             1
         };
@@ -311,7 +313,7 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
         let last: Option<&(PointerValue, Span, u32)> = self.ctors.iter().last();
 
         let order: u32 = if let Some((_, _, counter)) = last {
-            counter + 1
+            counter.saturating_add(1)
         } else {
             1
         };

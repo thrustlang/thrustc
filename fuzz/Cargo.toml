@@ -70,6 +70,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "dump_ast_local"
+path = "utils/dump_ast_local.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "reproduce"
 path = "utils/reproduce.rs"
 test = false

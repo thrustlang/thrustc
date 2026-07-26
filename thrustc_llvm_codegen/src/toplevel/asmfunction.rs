@@ -54,7 +54,7 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
     let llvm_builder: &Builder = context.get_llvm_builder();
 
     let name: &str = asm_fn.0;
-    let ascii_name: &str = asm_fn.1;
+    let ascii_name: &str = &asm_fn.1.replace("\0", "");
 
     let assembler: String = asm_fn.2.to_string();
     let constraints: String = asm_fn.3.to_string();

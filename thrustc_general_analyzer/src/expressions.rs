@@ -120,7 +120,15 @@ pub fn validate_node<'analyzer>(
             Ok(())
         }
 
-        Ast::Call { args, .. } => args.iter().try_for_each(|arg| analyzer.analyze_expr(arg)),
+        Ast::Call { args, .. } => {
+            {
+                for arg in args.iter() {
+                    analyzer.analyze_expr(arg)?;
+                }
+            }
+
+            Ok(())
+        }
 
         Ast::IndirectCall { function, args, .. } => {
             analyzer.analyze_expr(function)?;

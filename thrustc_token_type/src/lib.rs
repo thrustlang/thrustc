@@ -22,6 +22,7 @@ pub mod traits;
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
+
 use serde::Serialize;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]

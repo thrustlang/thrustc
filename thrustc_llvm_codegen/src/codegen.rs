@@ -118,7 +118,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             thrustc_entities::global_constant_from_ast(node);
 
                         let name: &str = constant.0;
-                        let ascii_name: &str = constant.1;
+                        let ascii_name: &str = &constant.1.replace("\0", "");
                         let ty: &Type = constant.2;
                         let value: &Ast = constant.3;
                         let value_ty: &Type = value.get_type_for_llvm();
@@ -172,7 +172,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         let static_: GlobalStatic = thrustc_entities::global_static_from_ast(node);
 
                         let name: &str = static_.0;
-                        let ascii_name: &str = static_.1;
+                        let ascii_name: &str = &static_.1.replace("\0", "");
 
                         let ty: &Type = static_.2;
                         let value: Option<&Ast> = static_.3;
@@ -423,7 +423,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let var: LocalVariable = thrustc_entities::local_variable_from_ast(node);
 
                     let name: &str = var.0;
-                    let ascii_name: &str = var.1;
+                    let ascii_name: &str = &var.1.replace("\0", "");
 
                     let kind: &Type = var.2;
 
@@ -458,7 +458,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     let var: LocalVariable = thrustc_entities::local_variable_from_ast(node);
 
                     let name: &str = var.0;
-                    let ascii_name: &str = var.1;
+                    let ascii_name: &str = &var.1.replace("\0", "");
 
                     let kind: &Type = var.2;
                     let value: Option<&Ast> = var.3;
@@ -525,7 +525,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 let constant: LocalConstant = thrustc_entities::local_constant_from_ast(node);
 
                 let name: &str = constant.0;
-                let ascii_name: &str = constant.1;
+                let ascii_name: &str = &constant.1.replace("\0", "");
                 let kind: &Type = constant.2;
                 let value: &Ast = constant.3;
                 let attributes: &ThrustAttributes = constant.4;
@@ -581,7 +581,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 let static_: LocalStatic = thrustc_entities::local_static_from_ast(node);
 
                 let name: &str = static_.0;
-                let ascii_name: &str = static_.1;
+                let ascii_name: &str = &static_.1.replace("\0", "");
 
                 let kind: &Type = static_.2;
                 let value: Option<&Ast> = static_.3;

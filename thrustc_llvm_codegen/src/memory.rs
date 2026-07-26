@@ -236,7 +236,12 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
             };
 
-            atomic_operations::set_atomic_behavior(context, instruction, atomic_config, span);
+            atomic_operations::set_atomic_behavior_load_instruction(
+                context,
+                instruction,
+                atomic_config,
+                span,
+            );
 
             let alignment: u32 = attributes
                 .get_explicit_memory_alignment()
@@ -285,7 +290,12 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
             };
 
-            atomic_operations::set_atomic_behavior(context, instruction, atomic_config, span);
+            atomic_operations::set_atomic_behavior_load_instruction(
+                context,
+                instruction,
+                atomic_config,
+                span,
+            );
 
             instruction.set_alignment(alignment).unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -329,7 +339,12 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
             };
 
-            atomic_operations::set_atomic_behavior(context, instruction, atomic_config, span);
+            atomic_operations::set_atomic_behavior_load_instruction(
+                context,
+                instruction,
+                atomic_config,
+                span,
+            );
 
             instruction.set_alignment(alignment).unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -727,7 +742,12 @@ pub fn dereference<'ctx>(
         atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
     };
 
-    atomic_operations::set_atomic_behavior(context, instruction, atomic_config, span);
+    atomic_operations::set_atomic_behavior_load_instruction(
+        context,
+        instruction,
+        atomic_config,
+        span,
+    );
 
     instruction.set_alignment(alignment).unwrap_or_else(|_| {
         abort::abort_codegen(

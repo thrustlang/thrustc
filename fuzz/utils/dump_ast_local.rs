@@ -17,35 +17,14 @@
 
 */
 
-#![no_main]
-
 use arbitrary::Unstructured;
-use either::Either;
-use inkwell::targets::TargetData;
-use inkwell::{
-    builder::Builder,
-    context::Context,
-    module::Module,
-    targets::{InitializationConfig, Target, TargetMachine, TargetTriple},
-};
-use libfuzzer_sys::{fuzz_target, Corpus};
-use thrustc_ast::traits::AstStandardExtensions;
+use std::fs;
+use std::path::PathBuf;
 use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
-use thrustc_backends::{
-    llvm::{target::LLVMTarget, LLVMBackend},
-    ThrustOptimization,
-};
-use thrustc_diagnostician::Diagnostician;
-use thrustc_llvm_abi_representation::LLVMABIRepresentation;
-use thrustc_llvm_codegen::context::LLVMCodeGenContext;
-use thrustc_llvm_target_triple::LLVMTargetTriple;
-use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_semantic::SemanticAnalysis;
-use thrustc_typesystem::type_layout::TargetInfo;
 use thrustc_typesystem::Type;
 
-const MAX_DEPTH: usize = 4;
+const MAX_DEPTH: usize = 8;
 const MAX_STATEMENTS_PER_BLOCK: usize = 12;
 const MAX_EXPR_DEPTH: usize = 4;
 
@@ -86,11 +65,7 @@ impl<'ast> ScopeStack<'ast> {
 
 #[inline]
 fn gen_name<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<&'ast str> {
-    let len = u.int_in_range(1..=100usize)?;
-
-    let bytes = u.bytes(len)?;
-
-    std::str::from_utf8(bytes).map_err(|_| arbitrary::Error::IncorrectFormat)
+    u.arbitrary()
 }
 
 fn gen_root<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Ast<'ast>> {
@@ -153,12 +128,6 @@ fn gen_function<'ast>(
     })
 }
 
-// Igual que `gen_block`, pero pensado específicamente para el body de
-// una función: además de los statements normales, casi siempre agrega
-// un `Return` final coherente con `return_type` (con expresión si la
-// función no es void; sin expresión si lo es). Antes el `Return` solo
-// podía aparecer por azar dentro de `gen_stmt`, sin relación con el
-// tipo de retorno real de la función.
 fn gen_function_body<'ast>(
     u: &mut Unstructured<'ast>,
     scope: &mut ScopeStack<'ast>,
@@ -173,9 +142,6 @@ fn gen_function_body<'ast>(
         nodes.push(gen_stmt(u, scope, depth)?);
     }
 
-    // NOTA: asumo que `Type::Void { .. }` existe (aparece en
-    // `Ast::invalid_ast` de tu lib.rs). Si el void real se llama
-    // distinto, ajusta este `matches!`.
     let is_void = matches!(return_type, Type::Void { .. });
     let should_return = !is_void || u.arbitrary()?;
 
@@ -223,7 +189,6 @@ fn gen_block<'ast>(
         nodes.push(gen_stmt(u, scope, depth)?);
     }
 
-    // `post` = statements ejecutados al salir del scope (defer-like).
     let n_post = u.int_in_range(0..=2usize)?;
     let mut post = Vec::with_capacity(n_post);
     for _ in 0..n_post {
@@ -288,9 +253,6 @@ fn gen_stmt<'ast>(
     }
 }
 
-// ----------------------------------------------------------------
-// DECLARACIONES
-// ----------------------------------------------------------------
 fn gen_var<'ast>(
     u: &mut Unstructured<'ast>,
     scope: &mut ScopeStack<'ast>,
@@ -371,17 +333,6 @@ fn gen_static<'ast>(
     })
 }
 
-// ----------------------------------------------------------------
-// CONDICIONES "REALES": en vez de un árbol de expresión arbitrario
-// (que casi siempre da algo sin sentido semántico, tipo `3.5 as i8`),
-// construimos una comparación concreta: `variable_existente OP literal`.
-// Si no hay ninguna variable visible todavía, caemos a un booleano.
-//
-// NOTA: `operator: u.arbitrary()?` sigue siendo un TokenType al azar
-// porque no tengo la lista de variantes de TokenType en este archivo.
-// Si quieres que sea siempre un operador de comparación real
-// (`<`, `<=`, `>`, `>=`, `==`, `!=`), dime cómo se llaman esas
-// variantes exactas y lo fijo a un `match` cerrado en vez de arbitrary.
 fn gen_condition<'ast>(
     u: &mut Unstructured<'ast>,
     scope: &ScopeStack<'ast>,
@@ -415,7 +366,6 @@ fn gen_condition<'ast>(
         });
     }
 
-    // Sin variables visibles todavía: condición literal booleana.
     Ok(Ast::Boolean {
         kind: u.arbitrary()?,
         value: u.arbitrary()?,
@@ -424,8 +374,6 @@ fn gen_condition<'ast>(
     })
 }
 
-// Construye `variable = variable OP paso` (p. ej. i = i + 1), usando
-// el mismo `kind` de la variable para que el incremento sea coherente.
 fn gen_increment<'ast>(
     u: &mut Unstructured<'ast>,
     name: &'ast str,
@@ -469,9 +417,6 @@ fn gen_increment<'ast>(
     })
 }
 
-// ----------------------------------------------------------------
-// CONTROL DE FLUJO
-// ----------------------------------------------------------------
 fn gen_if<'ast>(
     u: &mut Unstructured<'ast>,
     scope: &mut ScopeStack<'ast>,
@@ -521,11 +466,8 @@ fn gen_for<'ast>(
     scope: &mut ScopeStack<'ast>,
     depth: usize,
 ) -> arbitrary::Result<Ast<'ast>> {
-    scope.push(); // el `local` del for vive en su propio scope
+    scope.push();
 
-    // Loop estructurado y "real": `var i: T = <lit>; i OP <lit>; i = i OP <lit> { ... }`
-    // en vez de un local/condición/acción totalmente arbitrarios sin
-    // relación entre sí.
     let loop_var_name = gen_name(u)?;
     let loop_var_kind: Type = u.arbitrary()?;
 
@@ -870,155 +812,28 @@ fn gen_expr<'ast>(
     }
 }
 
-fn gen_struct<'ast>(
-    u: &mut Unstructured<'ast>,
-    _scope: &mut ScopeStack<'ast>,
-) -> arbitrary::Result<Ast<'ast>> {
-    Ok(Ast::Struct {
-        name: gen_name(u)?,
-        data: u.arbitrary()?,
-        kind: u.arbitrary()?,
-        span: u.arbitrary()?,
-        attributes: u.arbitrary()?,
-        id: NodeId::new(),
-    })
-}
+fn main() {
+    let path = std::env::args()
+        .nth(1)
+        .expect("usage: dump_ast_local <crash-file>");
+    let data = fs::read(&path).expect("could not read crash file");
 
-fn gen_enum<'ast>(
-    u: &mut Unstructured<'ast>,
-    _scope: &mut ScopeStack<'ast>,
-) -> arbitrary::Result<Ast<'ast>> {
-    Ok(Ast::Enum {
-        name: gen_name(u)?,
-        data: u.arbitrary()?,
-        attributes: u.arbitrary()?,
-        kind: u.arbitrary()?,
-        span: u.arbitrary()?,
-        id: NodeId::new(),
-    })
-}
+    let mut unstructured = Unstructured::new(&data);
+    match gen_root(&mut unstructured) {
+        Ok(ast) => {
+            let out_dir = PathBuf::from("fuzz/ast_dumps");
+            fs::create_dir_all(&out_dir).unwrap();
 
-fuzz_target!(|data: &[u8]| -> Corpus {
-    let stable_mode: bool = std::env::args().any(|arg| arg == "--stable");
+            let name = PathBuf::from(&path)
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
+            let out_path = out_dir.join(format!("{name}.txt"));
 
-    let mut unstructured = Unstructured::new(data);
-
-    let Ok(ast) = gen_root(&mut unstructured) else {
-        return Corpus::Reject;
-    };
-
-    if stable_mode && self::contains_unstable_ast(&ast) {
-        return Corpus::Reject;
-    }
-
-    let options: CompilerOptions = CompilerOptions::new();
-
-    let file = CompilationUnit::new(
-        "codegen_scoped.fuzz".into(),
-        std::path::PathBuf::from(file!()),
-        String::new(),
-        "codegen_scoped".into(),
-    );
-
-    let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &options).execute(false);
-
-    if let Either::Left(had_errors) = failed
-        && !had_errors
-    {
-        Target::initialize_all(&InitializationConfig::default());
-
-        let llvm_backend: LLVMBackend = LLVMBackend::new();
-
-        let target: &LLVMTarget = llvm_backend.get_target();
-        let llvm_triple: &TargetTriple = target.get_target_triple();
-
-        let llvm_target_triple_formatted: String =
-            llvm_triple.as_str().to_string_lossy().to_string();
-
-        let llvm_target_triple: LLVMTargetTriple =
-            LLVMTargetTriple::new(llvm_target_triple_formatted.clone());
-
-        let llvm_cpu_name: &str = llvm_backend.get_target_cpu().get_cpu_name();
-        let llvm_cpu_features: &str = llvm_backend.get_target_cpu().get_cpu_features();
-
-        let compiler_optimization: ThrustOptimization = llvm_backend.get_optimization();
-        let llvm_opt: inkwell::OptimizationLevel = compiler_optimization.to_llvm_opt();
-
-        let target: Target = Target::from_triple(llvm_triple).unwrap_or_else(|_| {
-            panic!("The compiler couldn't be configured correctly. The target is possibly unrecognizable. Try again another target or try to fix it.")
-        });
-
-        if !target.has_target_machine() {
-            panic!(
-                "The compiler couldn't be configured correctly. The specified target cannot be used for code generation. Try with another target."
-            );
+            fs::write(&out_path, format!("{ast:#?}")).unwrap();
+            println!("AST dumped successfully to: {}", out_path.display());
         }
-
-        let target_machine: TargetMachine = target
-            .create_target_machine(
-                llvm_triple,
-                llvm_cpu_name,
-                llvm_cpu_features,
-                llvm_opt,
-                llvm_backend.get_reloc_mode(),
-                llvm_backend.get_code_model(),
-            )
-            .unwrap_or_else(|| {
-                panic!(
-                    "The compiler couldn't be configured correctly. Possibly the target is not supported for code generation.",
-                )
-            });
-
-        let target_data: TargetData = target_machine.get_target_data();
-        let target_triple: TargetTriple = target_machine.get_triple();
-
-        let target_info: TargetInfo =
-            TargetInfo::new(LLVMTargetTriple::new(llvm_target_triple_formatted));
-
-        let target_abi: Option<LLVMABIRepresentation> = thrustc_llvm_abi::get_abi(
-            options.abi_configuration().specific(),
-            &file,
-            &options,
-            &llvm_target_triple,
-            &target_info,
-            &target_data,
-        );
-
-        let llvm_context: Context = Context::create();
-        let llvm_builder: Builder = llvm_context.create_builder();
-        let llvm_module: Module = llvm_context.create_module(file.get_name());
-
-        llvm_module.set_triple(llvm_triple);
-        llvm_module.set_data_layout(&target_machine.get_target_data().get_data_layout());
-
-        let mut llvm_codegen_context: LLVMCodeGenContext = LLVMCodeGenContext::new(
-            &llvm_module,
-            &llvm_context,
-            &llvm_builder,
-            &target_data,
-            &target_triple,
-            &target_machine,
-            target_abi.as_ref(),
-            Diagnostician::new(&file, &options),
-            &options,
-            &file,
-        );
-
-        thrustc_llvm_codegen::LLVMCompiler::compile(
-            &mut llvm_codegen_context,
-            std::slice::from_ref(&ast),
-        );
-
-        if let Err(codegen_error) = llvm_module.verify() {
-            panic!("LLVM CODEGEN ERROR: {}", codegen_error);
-        }
-
-        return Corpus::Keep;
+        Err(e) => eprintln!("Arbitrary failed to reconstruct the AST with gen_root: {e}"),
     }
-
-    Corpus::Reject
-});
-
-fn contains_unstable_ast(ast: &Ast) -> bool {
-    ast.is_asm_function() || ast.is_global_asm_keyword()
 }

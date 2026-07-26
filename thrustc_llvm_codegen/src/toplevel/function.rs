@@ -63,7 +63,7 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
     let has_abi: bool = context.has_abi();
 
     let name: &str = function.0;
-    let ascii_name: &str = function.1;
+    let ascii_name: &str = &function.1.replace("\0", "");
 
     let return_type: &Type = function.2;
 
@@ -273,7 +273,7 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                     {
                         for lowered_parameter in lowered_parameters {
                             let name: &str = lowered_parameter.get_name();
-                            let ascii_name: &str = lowered_parameter.get_ascii_name();
+                            let ascii_name: String = lowered_parameter.get_ascii_name().replace("\0", "");
                             let ty: &Type = lowered_parameter.get_type();
                             let value: BasicValueEnum = lowered_parameter.get_value();
                             let configuration: &thrustc_llvm_abi::LLVMABIConfiguration =
@@ -320,7 +320,7 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                     for parameter in function_parameters.iter().map(|node| thrustc_entities::function_parameter_from_ast(node))
                     {
                         let name: &str = parameter.0;
-                        let ascii_name: &str = parameter.1;
+                        let ascii_name: String = parameter.1.replace("\0", "");
 
                         let kind: &Type = parameter.2;
                         let position: u32 = parameter.3;
@@ -344,7 +344,7 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                     .map(|node| thrustc_entities::function_parameter_from_ast(node))
                 {
                     let name: &str = parameter.0;
-                    let ascii_name: &str = parameter.1;
+                    let ascii_name: String = parameter.1.replace("\0", "");
 
                     let kind: &Type = parameter.2;
                     let position: u32 = parameter.3;
