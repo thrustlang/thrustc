@@ -33,8 +33,8 @@ use thrustc_typesystem::{
 };
 
 use crate::{
-    TypeChecker, checking, context::TypeCheckerControlContext, metadata::TypeCheckerNodeMetadata,
-    operations,
+    TypeChecker, context::TypeCheckerControlContext, operations, type_checking,
+    type_metadata::TypeCheckerNodeMetadata,
 };
 
 mod builtins;
@@ -181,7 +181,7 @@ pub fn validate_node<'type_checker>(
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         &base_type,
                         item_type,
                         Some(node),
@@ -244,7 +244,7 @@ pub fn validate_node<'type_checker>(
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         &base_type,
                         item_type,
                         Some(node),
@@ -372,7 +372,7 @@ pub fn validate_node<'type_checker>(
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         target_type,
                         from_type,
                         Some(expr),
@@ -512,7 +512,7 @@ pub fn validate_node<'type_checker>(
             let control_context: &mut TypeCheckerControlContext =
                 typechecker.get_mut_control_context();
 
-            checking::check_type_cast(cast_type, from_type, metadata, span, control_context)?;
+            type_checking::check_type_cast(cast_type, from_type, metadata, span, control_context)?;
 
             control_context.reset_type_cast_depth();
 

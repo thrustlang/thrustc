@@ -28,7 +28,8 @@ use thrustc_span::Span;
 use thrustc_typesystem::{Type, traits::VoidTypeExtensions};
 
 use crate::{
-    TypeChecker, checking, context::TypeCheckerControlContext, metadata::TypeCheckerNodeMetadata,
+    TypeChecker, context::TypeCheckerControlContext, type_checking,
+    type_metadata::TypeCheckerNodeMetadata,
 };
 
 pub fn validate_node<'type_checker>(
@@ -105,7 +106,7 @@ pub fn validate_node<'type_checker>(
 
                 control_context.reset_checking_depth();
 
-                if let Err(error) = checking::check_type_together(
+                if let Err(error) = type_checking::check_type_together(
                     target_type,
                     from_type,
                     Some(expr),

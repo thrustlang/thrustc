@@ -33,17 +33,17 @@ use thrustc_typesystem::{
 
 use crate::{
     context::{TypeCheckerControlContext, TypeCheckerTypeContext},
-    metadata::TypeCheckerNodeMetadata,
     table::TypeCheckerSymbolsTable,
+    type_metadata::TypeCheckerNodeMetadata,
 };
 
-mod checking;
 mod context;
 mod expressions;
-mod metadata;
 mod operations;
 mod table;
 mod toplevel;
+mod type_checking;
+mod type_metadata;
 mod type_support;
 mod visit_type;
 
@@ -176,7 +176,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                             let control_context: &mut TypeCheckerControlContext =
                                 self.get_mut_control_context();
 
-                            checking::check_type_together(
+                            type_checking::check_type_together(
                                 target_type,
                                 from_type,
                                 Some(expr),
@@ -230,7 +230,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         static_type,
                         value_type,
                         Some(value),
@@ -278,7 +278,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         const_type,
                         value_type,
                         Some(value),
@@ -323,7 +323,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                             control_context.reset_checking_depth();
 
-                            if let Err(error) = checking::check_type_together(
+                            if let Err(error) = type_checking::check_type_together(
                                 target_type,
                                 from_type,
                                 Some(expr),
@@ -373,7 +373,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         static_type,
                         value_type,
                         Some(value),
@@ -417,7 +417,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         const_type,
                         value_type,
                         Some(value),
@@ -465,7 +465,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         local_type,
                         value_type,
                         Some(value),
@@ -525,7 +525,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         &Type::Bool { span },
                         condition.get_value_type()?,
                         Some(condition),
@@ -572,7 +572,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         span: condition.get_span(),
                     };
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         &target_type,
                         condition.get_value_type()?,
                         Some(condition),
@@ -617,7 +617,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     let target_type: Type = Type::Bool { span };
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         &target_type,
                         condition.get_value_type()?,
                         Some(condition),
@@ -655,7 +655,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     let target_type: Type = Type::Bool { span };
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         &target_type,
                         condition.get_value_type()?,
                         Some(condition),
@@ -709,7 +709,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                     control_context.reset_checking_depth();
 
-                    if let Err(error) = checking::check_type_together(
+                    if let Err(error) = type_checking::check_type_together(
                         return_type,
                         expr.get_value_type()?,
                         Some(expr),
@@ -748,7 +748,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
                         control_context.reset_checking_depth();
 
-                        if let Err(error) = checking::check_type_together(
+                        if let Err(error) = type_checking::check_type_together(
                             &source_type,
                             &value_type,
                             Some(value),

@@ -24,7 +24,7 @@ use thrustc_span::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 
-use crate::{context::TypeCheckerControlContext, metadata::TypeCheckerNodeMetadata};
+use crate::{context::TypeCheckerControlContext, type_metadata::TypeCheckerNodeMetadata};
 
 pub fn check_type_together(
     target: &Type,
