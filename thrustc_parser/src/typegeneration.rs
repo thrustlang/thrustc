@@ -24,7 +24,6 @@ use thrustc_ast::{
 };
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_llvm_target_triple::traits::LLVMTargetTripleSupport;
 use thrustc_span::Span;
 
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -52,8 +51,6 @@ use thrustc_parser_table::traits::{
 use crate::{ParserContext, attributes, expressions};
 
 pub fn build_type(ctx: &mut ParserContext<'_>, parse_expr: bool) -> Result<Type, CompilationIssue> {
-    let llvm: bool = ctx.get_options().llvm();
-
     match ctx.peek().get_type() {
         tk_kind if tk_kind.is_type() => {
             let tk: &Token = ctx.advance()?;
@@ -95,60 +92,8 @@ pub fn build_type(ctx: &mut ParserContext<'_>, parse_expr: bool) -> Result<Type,
                     TokenType::F64 => Ok(Type::F64 { span }),
                     TokenType::F128 => Ok(Type::F128 { span }),
 
-                    TokenType::FX8680 => {
-                        if llvm {
-                            let compiler_options: &thrustc_options::CompilerOptions =
-                                ctx.get_options();
-                            let llvm_backend: &thrustc_backends::llvm::LLVMBackend =
-                                compiler_options.get_llvm_backend();
-
-                            let normalized_target_triple: &thrustc_llvm_target_triple::LLVMTargetTriple =
-                                llvm_backend.get_target().get_normalized_target_triple();
-
-                            let support: bool =
-                                normalized_target_triple.support_80_bits_floating_point();
-
-                            if !support {
-                                ctx.add_error_report(CompilationIssue::Error(
-                                    CompilationIssueCode::E0039,
-                                    "Unsupported type".into(),
-                                    "Type isn't supported on the current target architecture."
-                                        .into(),
-                                    None,
-                                    span,
-                                ));
-                            }
-                        }
-
-                        Ok(Type::FX8680 { span })
-                    }
-                    TokenType::FPPC128 => {
-                        if llvm {
-                            let compiler_options: &thrustc_options::CompilerOptions =
-                                ctx.get_options();
-                            let llvm_backend: &thrustc_backends::llvm::LLVMBackend =
-                                compiler_options.get_llvm_backend();
-
-                            let normalized_target_triple: &thrustc_llvm_target_triple::LLVMTargetTriple =
-                                llvm_backend.get_target().get_normalized_target_triple();
-
-                            let support: bool =
-                                normalized_target_triple.support_128_bits_ppc_floating_point();
-
-                            if !support {
-                                ctx.add_error_report(CompilationIssue::Error(
-                                    CompilationIssueCode::E0039,
-                                    "Unsupported type".into(),
-                                    "Type isn't supported on the current target architecture."
-                                        .into(),
-                                    None,
-                                    span,
-                                ));
-                            }
-                        }
-
-                        Ok(Type::FPPC128 { span })
-                    }
+                    TokenType::FX8680 => Ok(Type::FX8680 { span }),
+                    TokenType::FPPC128 => Ok(Type::FPPC128 { span }),
 
                     TokenType::Ptr => Ok(Type::Ptr {
                         subtype: None,

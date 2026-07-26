@@ -29,7 +29,7 @@ pub trait AstBuiltinsExtensions {
 }
 
 pub trait AstGetType {
-    fn get_any_type(&self) -> Result<&Type, CompilationIssue>;
+    fn get_any_type(&self) -> &Type;
     fn get_value_type(&self) -> Result<&Type, CompilationIssue>;
 }
 

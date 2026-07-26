@@ -44,11 +44,14 @@ mod metadata;
 mod operations;
 mod table;
 mod toplevel;
+mod type_support;
+mod visit_type;
 
 #[derive(Debug)]
 pub struct TypeChecker<'type_checker> {
     ast: &'type_checker [Ast<'type_checker>],
     position: usize,
+    options: &'type_checker CompilerOptions,
 
     bugs: Vec<CompilationIssue>,
     errors: Vec<CompilationIssue>,
@@ -66,7 +69,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
     pub fn new(
         ast: &'type_checker [Ast<'type_checker>],
         file: &'type_checker CompilationUnit,
-        options: &CompilerOptions,
+        options: &'type_checker CompilerOptions,
     ) -> Self {
         Self {
             ast,
@@ -78,7 +81,11 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
             control_context: TypeCheckerControlContext::new(),
             type_context: TypeCheckerTypeContext::new(),
+
+            options,
+
             table: TypeCheckerSymbolsTable::new(),
+
             diagnostician: Diagnostician::new(file, options),
         }
     }
@@ -144,8 +151,20 @@ impl<'type_checker> TypeChecker<'type_checker> {
             Ast::Intrinsic { .. } | Ast::AssemblerFunction { .. } | Ast::Function { .. } => {
                 toplevel::functions::validate_node(self, node)
             }
-            Ast::CustomType { .. } | Ast::GlobalAssembler { .. } | Ast::Struct { .. } => Ok(()),
+
+            Ast::Struct { .. } | Ast::CustomType { .. } => {
+                visit_type::visit_all_types(node, &mut |ty, _| {
+                    type_support::check_target_type_support(self, ty);
+                });
+
+                Ok(())
+            }
+
             Ast::Enum { data, .. } => {
+                visit_type::visit_all_types(node, &mut |ty, _| {
+                    type_support::check_target_type_support(self, ty);
+                });
+
                 {
                     for (_, target_type, expr) in data.iter() {
                         let from_type: &Type = expr.get_value_type()?;
@@ -182,6 +201,10 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 span,
                 ..
             } => {
+                visit_type::visit_all_types(node, &mut |ty, _| {
+                    type_support::check_target_type_support(self, ty);
+                });
+
                 if static_type.contains_void_type() || static_type.is_void_type() {
                     self.add_error_report(CompilationIssue::Error(
                         CompilationIssueCode::E0019,
@@ -230,6 +253,10 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 span,
                 ..
             } => {
+                visit_type::visit_all_types(node, &mut |ty, _| {
+                    type_support::check_target_type_support(self, ty);
+                });
+
                 if const_type.contains_void_type() || const_type.is_void_type() {
                     self.add_error_report(CompilationIssue::Error(
                         CompilationIssueCode::E0019,
@@ -845,6 +872,11 @@ impl<'type_checker> TypeChecker<'type_checker> {
     #[inline]
     fn get_control_context(&self) -> &TypeCheckerControlContext {
         &self.control_context
+    }
+
+    #[inline]
+    fn get_compiler_options(&self) -> &CompilerOptions {
+        self.options
     }
 }
 

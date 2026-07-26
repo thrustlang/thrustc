@@ -3,8 +3,10 @@ corpus
 artifacts
 coverage
 fuzz_pipeline
-corpus_stable/llvm-codegen/*
-corpus_unstable/llvm-codegen/*
+corpus_stable/llvm-codegen-top-level/*
+corpus_stable/llvm-codegen-local/*
+corpus_unstable/llvm-codegen-top-level/*
+corpus_unstable/llvm-codegen-local/*
 corpus_stable/pipeline/*
 corpus_unstable/pipeline/*
 corpus_universal/lexer/*

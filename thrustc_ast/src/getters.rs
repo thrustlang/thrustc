@@ -28,122 +28,122 @@ use crate::{
 };
 
 impl AstGetType for Ast<'_> {
-    fn get_any_type(&self) -> Result<&Type, CompilationIssue> {
+    fn get_any_type(&self) -> &Type {
         match self {
             // Primitive Types & Literals
-            Ast::Integer { kind, .. } => Ok(kind),
-            Ast::Float { kind, .. } => Ok(kind),
-            Ast::Boolean { kind, .. } => Ok(kind),
-            Ast::Char { kind, .. } => Ok(kind),
-            Ast::CString { kind, .. } => Ok(kind),
-            Ast::CNString { kind, .. } => Ok(kind),
-            Ast::NullPtr { kind, .. } => Ok(kind),
+            Ast::Integer { kind, .. } => kind,
+            Ast::Float { kind, .. } => kind,
+            Ast::Boolean { kind, .. } => kind,
+            Ast::Char { kind, .. } => kind,
+            Ast::CString { kind, .. } => kind,
+            Ast::CNString { kind, .. } => kind,
+            Ast::NullPtr { kind, .. } => kind,
 
             // Custom Type
-            Ast::CustomType { kind, .. } => Ok(kind),
+            Ast::CustomType { kind, .. } => kind,
 
             // Embedded
-            Ast::Embedded { kind, .. } => Ok(kind),
+            Ast::Embedded { kind, .. } => kind,
 
             // Static
-            Ast::Static { kind, .. } => Ok(kind),
+            Ast::Static { kind, .. } => kind,
 
             // Variables & mutation
-            Ast::Var { kind, .. } => Ok(kind),
-            Ast::Mutation { kind, .. } => Ok(kind),
+            Ast::Var { kind, .. } => kind,
+            Ast::Mutation { kind, .. } => kind,
 
             // Reference
-            Ast::Reference { kind, .. } => Ok(kind),
-            Ast::GetLocation { kind, .. } => Ok(kind),
+            Ast::Reference { kind, .. } => kind,
+            Ast::GetLocation { kind, .. } => kind,
 
             // Memory operations
-            Ast::Deref { kind, .. } => Ok(kind),
+            Ast::Deref { kind, .. } => kind,
 
             // LLI
-            Ast::Address { kind, .. } => Ok(kind),
-            Ast::Load { kind, .. } => Ok(kind),
+            Ast::Address { kind, .. } => kind,
+            Ast::Load { kind, .. } => kind,
             Ast::Write {
                 write_type: kind, ..
-            } => Ok(kind),
+            } => kind,
 
             // Function-Related Operations
-            Ast::FunctionParameter { kind, .. } => Ok(kind),
-            Ast::AssemblerFunctionParameter { kind, .. } => Ok(kind),
-            Ast::Return { kind, .. } => Ok(kind),
-            Ast::Function { return_type, .. } => Ok(return_type),
-            Ast::AssemblerFunction { return_type, .. } => Ok(return_type),
+            Ast::FunctionParameter { kind, .. } => kind,
+            Ast::AssemblerFunctionParameter { kind, .. } => kind,
+            Ast::Return { kind, .. } => kind,
+            Ast::Function { return_type, .. } => return_type,
+            Ast::AssemblerFunction { return_type, .. } => return_type,
 
             // Expressions & Operators
             Ast::ModuleExpression { data, .. } => {
                 let ExternalSymbol { signature, .. } = data;
 
                 match signature {
-                    ExternalSignature::Constant { kind, .. } => Ok(kind),
-                    ExternalSignature::CustomType { kind, .. } => Ok(kind),
-                    ExternalSignature::Function { kind, .. } => Ok(kind),
-                    ExternalSignature::Struct { kind, .. } => Ok(kind),
-                    ExternalSignature::Static { kind, .. } => Ok(kind),
-                    ExternalSignature::Unavailable { kind, .. } => Ok(kind),
+                    ExternalSignature::Constant { kind, .. } => kind,
+                    ExternalSignature::CustomType { kind, .. } => kind,
+                    ExternalSignature::Function { kind, .. } => kind,
+                    ExternalSignature::Struct { kind, .. } => kind,
+                    ExternalSignature::Static { kind, .. } => kind,
+                    ExternalSignature::Unavailable { kind, .. } => kind,
                 }
             }
-            Ast::Call { kind, .. } => Ok(kind),
-            Ast::BinaryOp { kind, .. } => Ok(kind),
-            Ast::UnaryOp { kind, .. } => Ok(kind),
-            Ast::Group { kind, .. } => Ok(kind),
-            Ast::Index { kind, .. } => Ok(kind),
-            Ast::AsmValue { kind, .. } => Ok(kind),
+            Ast::Call { kind, .. } => kind,
+            Ast::BinaryOp { kind, .. } => kind,
+            Ast::UnaryOp { kind, .. } => kind,
+            Ast::Group { kind, .. } => kind,
+            Ast::Index { kind, .. } => kind,
+            Ast::AsmValue { kind, .. } => kind,
 
             // Builtins
-            Ast::Builtin { kind, .. } => Ok(kind),
+            Ast::Builtin { kind, .. } => kind,
 
             // Composite Types
-            Ast::Constructor { kind, .. } => Ok(kind),
-            Ast::Property { kind, .. } => Ok(kind),
-            Ast::EnumValue { kind, .. } => Ok(kind),
-            Ast::FixedArray { kind, .. } => Ok(kind),
-            Ast::Array { kind, .. } => Ok(kind),
-            Ast::Struct { kind, .. } => Ok(kind),
-            Ast::Enum { kind, .. } => Ok(kind),
+            Ast::Constructor { kind, .. } => kind,
+            Ast::Property { kind, .. } => kind,
+            Ast::EnumValue { kind, .. } => kind,
+            Ast::FixedArray { kind, .. } => kind,
+            Ast::Array { kind, .. } => kind,
+            Ast::Struct { kind, .. } => kind,
+            Ast::Enum { kind, .. } => kind,
 
             // Type Conversions
-            Ast::As { cast, .. } => Ok(cast),
+            Ast::As { cast, .. } => cast,
 
             // Constants
-            Ast::Const { kind, .. } => Ok(kind),
+            Ast::Const { kind, .. } => kind,
 
             // Intrinsic
-            Ast::Intrinsic { return_type, .. } => Ok(return_type),
-            Ast::IntrinsicParameter { kind, .. } => Ok(kind),
+            Ast::Intrinsic { return_type, .. } => return_type,
+            Ast::IntrinsicParameter { kind, .. } => kind,
 
             // Indirect Call
-            Ast::IndirectCall { kind, .. } => Ok(kind),
+            Ast::IndirectCall { kind, .. } => kind,
 
             // Control flow
-            Ast::If { kind, .. } => Ok(kind),
-            Ast::Elif { kind, .. } => Ok(kind),
-            Ast::Else { kind, .. } => Ok(kind),
-            Ast::For { kind, .. } => Ok(kind),
-            Ast::Loop { kind, .. } => Ok(kind),
-            Ast::Break { kind, .. } => Ok(kind),
-            Ast::BreakAll { kind, .. } => Ok(kind),
-            Ast::Continue { kind, .. } => Ok(kind),
-            Ast::ContinueAll { kind, .. } => Ok(kind),
-            Ast::Block { kind, .. } => Ok(kind),
-            Ast::Defer { kind, .. } => Ok(kind),
+            Ast::If { kind, .. } => kind,
+            Ast::Elif { kind, .. } => kind,
+            Ast::Else { kind, .. } => kind,
+            Ast::For { kind, .. } => kind,
+            Ast::Loop { kind, .. } => kind,
+            Ast::Break { kind, .. } => kind,
+            Ast::BreakAll { kind, .. } => kind,
+            Ast::Continue { kind, .. } => kind,
+            Ast::ContinueAll { kind, .. } => kind,
+            Ast::Block { kind, .. } => kind,
+            Ast::Defer { kind, .. } => kind,
 
             // Module imports
-            Ast::Import { kind, .. } => Ok(kind),
-            Ast::ImportC { kind, .. } => Ok(kind),
+            Ast::Import { kind, .. } => kind,
+            Ast::ImportC { kind, .. } => kind,
 
             // Others
-            Ast::Unreachable { kind, .. } => Ok(kind),
-            Ast::GlobalAssembler { kind, .. } => Ok(kind),
+            Ast::Unreachable { kind, .. } => kind,
+            Ast::GlobalAssembler { kind, .. } => kind,
 
             // Invalid
-            Ast::Invalid { kind, .. } => Ok(kind),
+            Ast::Invalid { kind, .. } => kind,
 
             // While doesn't have kind field
-            Ast::While { kind, .. } => Ok(kind),
+            Ast::While { kind, .. } => kind,
         }
     }
 

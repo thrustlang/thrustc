@@ -141,7 +141,7 @@ impl std::fmt::Display for SystemVABITypeClass {
     }
 }
 
-pub const SYSTEMV_ABI_TWO_INTEGERS: [SystemVABITypeClass; 8] = [
+pub const SYSTEM_V_ABI_TWO_INTEGERS: [SystemVABITypeClass; 8] = [
     SystemVABITypeClass::INTEGER,
     SystemVABITypeClass::INTEGER,
     SystemVABITypeClass::NO_CLASS,
@@ -154,6 +154,28 @@ pub const SYSTEMV_ABI_TWO_INTEGERS: [SystemVABITypeClass; 8] = [
 
 pub const SYSTEM_V_ABI_ONE_INTEGER: [SystemVABITypeClass; 8] = [
     SystemVABITypeClass::INTEGER,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+];
+
+pub const SYSTEM_V_ABI_MANTISSA: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::X87,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+];
+
+pub const SYSTEM_V_ABI_MANTISSA_UP: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::X87UP,
     SystemVABITypeClass::NO_CLASS,
     SystemVABITypeClass::NO_CLASS,
     SystemVABITypeClass::NO_CLASS,
@@ -215,6 +237,14 @@ impl SystemVABITypeClass {
             return SystemVABITypeClass::MEMORY;
         }
 
+        if accum == SystemVABITypeClass::X87 || current == SystemVABITypeClass::X87 {
+            return SystemVABITypeClass::MEMORY;
+        }
+
+        if accum == SystemVABITypeClass::X87UP || current == SystemVABITypeClass::X87UP {
+            return SystemVABITypeClass::MEMORY;
+        }
+
         if accum == SystemVABITypeClass::INTEGER || current == SystemVABITypeClass::INTEGER {
             return SystemVABITypeClass::INTEGER;
         }
@@ -254,13 +284,15 @@ impl SystemVABITypeClass {
                 SYSTEM_V_ABI_ONE_INTEGER
             }
 
-            Type::SSize { .. } | Type::USize { .. } => SYSTEMV_ABI_TWO_INTEGERS,
+            Type::SSize { .. } | Type::USize { .. } => SYSTEM_V_ABI_TWO_INTEGERS,
 
-            Type::U128 { .. } => SYSTEMV_ABI_TWO_INTEGERS,
+            Type::U128 { .. } => SYSTEM_V_ABI_TWO_INTEGERS,
+
+            Type::FX8680 { .. } => SYSTEM_V_ABI_MANTISSA,
 
             Type::F32 { .. } | Type::F64 { .. } => SYSTEM_V_ABI_F32_F64,
 
-            Type::F128 { .. } => SYSTEM_V_ABI_F128,
+            Type::F128 { .. } | Type::FPPC128 { .. } => SYSTEM_V_ABI_F128,
 
             t if t.is_ptr_like_type() => SYSTEM_V_ABI_ONE_INTEGER,
 
@@ -289,6 +321,21 @@ impl SystemVABITypeClass {
 
                 if current_classes.contains(&SystemVABITypeClass::MEMORY) {
                     return SYSTEM_V_ABI_STACK;
+                }
+
+                /*
+                    "if X87UP is not preceded by X87, the whole argument is passed in memory."
+                */
+                for (idx, class) in current_classes.iter().enumerate() {
+                    if matches!(class, SystemVABITypeClass::X87UP)
+                        && idx > 0
+                        && !matches!(
+                            current_classes[idx.saturating_sub(1)],
+                            SystemVABITypeClass::X87
+                        )
+                    {
+                        return SYSTEM_V_ABI_STACK;
+                    }
                 }
 
                 // https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig
@@ -363,6 +410,21 @@ impl SystemVABITypeClass {
 
                 if current_classes.contains(&SystemVABITypeClass::MEMORY) {
                     return SYSTEM_V_ABI_STACK;
+                }
+
+                /*
+                    "if X87UP is not preceded by X87, the whole argument is passed in memory."
+                */
+                for (idx, class) in current_classes.iter().enumerate() {
+                    if matches!(class, SystemVABITypeClass::X87UP)
+                        && idx > 0
+                        && !matches!(
+                            current_classes[idx.saturating_sub(1)],
+                            SystemVABITypeClass::X87
+                        )
+                    {
+                        return SYSTEM_V_ABI_STACK;
+                    }
                 }
 
                 // https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig

@@ -76,7 +76,7 @@ pub fn validate_node<'analyzer>(
         }
 
         Ast::Index { source, index, .. } => {
-            let source_type: &Type = source.get_any_type()?;
+            let source_type: &Type = source.get_any_type();
 
             if source.is_reference() && !source.is_memory_assigned_value()? {
                 analyzer.add_error(CompilationIssue::Error(

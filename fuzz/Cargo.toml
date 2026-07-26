@@ -49,8 +49,15 @@ doc = false
 bench = false
 
 [[bin]]
-name = "llvm-codegen"
-path = "fuzz_targets/llvm_codegen.rs"
+name = "llvm-codegen-top-level"
+path = "fuzz_targets/llvm_codegen_top_level.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "llvm-codegen-local"
+path = "fuzz_targets/llvm_codegen_local.rs"
 test = false
 doc = false
 bench = false

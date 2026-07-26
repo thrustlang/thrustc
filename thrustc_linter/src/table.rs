@@ -38,10 +38,7 @@ pub struct LinterSymbolsTable<'linter> {
     enums: LinterEnums<'linter>,
     structs: LinterStructs<'linter>,
     locals: LinterLocals<'linter>,
-    llis: LinterLLIs<'linter>,
     parameters: LinterFunctionParameters<'linter>,
-
-    scope: usize,
 }
 
 impl LinterSymbolsTable<'_> {
@@ -61,10 +58,7 @@ impl LinterSymbolsTable<'_> {
             enums: HashMap::with_capacity(u8::MAX as usize),
             structs: HashMap::with_capacity(u8::MAX as usize),
             locals: Vec::with_capacity(u8::MAX as usize),
-            llis: Vec::with_capacity(u8::MAX as usize),
             parameters: HashMap::with_capacity(u8::MAX as usize),
-
-            scope: 0,
         }
     }
 }
@@ -175,17 +169,6 @@ impl<'linter> LinterSymbolsTable<'linter> {
 
         None
     }
-
-    #[must_use]
-    pub fn get_lli_info(&mut self, name: &'linter str) -> Option<&mut LinterLLIInfo<'_>> {
-        for scope in self.llis.iter_mut().rev() {
-            if let Some(lli) = scope.get_mut(name) {
-                return Some(lli);
-            }
-        }
-
-        None
-    }
 }
 
 impl<'linter> LinterSymbolsTable<'linter> {
@@ -197,11 +180,6 @@ impl<'linter> LinterSymbolsTable<'linter> {
     #[inline]
     pub fn get_all_locals(&self) -> &LinterLocals<'_> {
         &self.locals
-    }
-
-    #[inline]
-    pub fn get_all_llis(&self) -> &LinterLLIs<'_> {
-        &self.llis
     }
 
     #[inline]
@@ -254,13 +232,6 @@ impl<'linter> LinterSymbolsTable<'linter> {
     #[inline]
     pub fn new_local(&mut self, name: &'linter str, info: LinterLocalInfo) {
         if let Some(scope) = self.locals.last_mut() {
-            scope.insert(name, info);
-        }
-    }
-
-    #[inline]
-    pub fn new_lli(&mut self, name: &'linter str, info: LinterLLIInfo) {
-        if let Some(scope) = self.llis.last_mut() {
             scope.insert(name, info);
         }
     }
@@ -330,18 +301,12 @@ impl LinterSymbolsTable<'_> {
         self.local_constants
             .push(HashMap::with_capacity(u8::MAX as usize));
         self.locals.push(HashMap::with_capacity(u8::MAX as usize));
-        self.llis.push(HashMap::with_capacity(u8::MAX as usize));
-
-        self.scope = self.scope.saturating_add(1);
     }
 
     #[inline]
     pub fn end_scope(&mut self) {
         self.local_constants.pop();
         self.locals.pop();
-        self.llis.pop();
-
-        self.scope = self.scope.saturating_sub(1);
     }
 }
 

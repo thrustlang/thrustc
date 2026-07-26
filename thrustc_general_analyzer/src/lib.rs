@@ -133,8 +133,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
             } => {
                 let values_at_registers: usize = parameters
                     .iter()
-                    .filter_map(|parameter| parameter.get_any_type().ok())
-                    .filter(|ty| ty.is_value())
+                    .filter(|parameter| parameter.get_any_type().is_value())
                     .count();
 
                 if values_at_registers > 12 {

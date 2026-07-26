@@ -10,13 +10,17 @@ rustflags = [
 ]
 
 [alias]
-fuzz-llvm-stable = "fuzz run llvm-codegen fuzz/corpus_stable/llvm-codegen -- -dict=fuzz/thrust-stable.dict -- --stable"
-fuzz-llvm-unstable = "fuzz run llvm-codegen fuzz/corpus_unstable/llvm-codegen -- -dict=fuzz/thrust-unstable.dict"
+fuzz-llvm-top-level-stable = "fuzz run llvm-codegen-top-level fuzz/corpus_stable/llvm-codegen-top-level -- -dict=fuzz/thrust-stable.dict -- --stable"
+fuzz-llvm-top-level-unstable = "fuzz run llvm-codegen-top-level fuzz/corpus_unstable/llvm-codegen-top-level -- -dict=fuzz/thrust-unstable.dict"
+
+fuzz-llvm-local-stable = "fuzz run llvm-codegen-local fuzz/corpus_stable/llvm-codegen-local -- -dict=fuzz/thrust-stable.dict -- --stable"
+fuzz-llvm-local-unstable = "fuzz run llvm-codegen-local fuzz/corpus_unstable/llvm-codegen-local -- -dict=fuzz/thrust-unstable.dict"
 
 fuzz-pipeline-stable = "fuzz run pipeline fuzz/corpus_stable/pipeline -- -dict=fuzz/thrust-stable.dict -- --stable"
 fuzz-pipeline-unstable = "fuzz run pipeline fuzz/corpus_unstable/pipeline -- -dict=fuzz/thrust-unstable.dict"
 
 fuzz-lexer = "fuzz run lexer fuzz/corpus_universal/lexer -- -dict=fuzz/thrust-stable.dict"
+
 fuzz-dump-ast = "run --manifest-path fuzz/Cargo.toml --bin dump_ast"
 fuzz-reproduce-case = "run --manifest-path fuzz/Cargo.toml --bin reproduce"
 

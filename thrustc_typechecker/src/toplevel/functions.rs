@@ -29,7 +29,7 @@ use thrustc_typesystem::{
     traits::{TypeCodeLocation, TypeIsExtensions, VoidTypeExtensions},
 };
 
-use crate::TypeChecker;
+use crate::{TypeChecker, type_support, visit_type};
 
 pub fn validate_node<'type_checker>(
     typechecker: &mut TypeChecker<'type_checker>,
@@ -44,6 +44,10 @@ pub fn validate_node<'type_checker>(
             attributes,
             ..
         } => {
+            visit_type::visit_all_types(node, &mut |ty, _| {
+                type_support::check_target_type_support(typechecker, ty);
+            });
+
             typechecker
                 .get_mut_table()
                 .new_asm_function(name, (return_type, parameters_types, attributes));
@@ -60,7 +64,7 @@ pub fn validate_node<'type_checker>(
 
             {
                 for node in parameters.iter() {
-                    let type_: &Type = node.get_any_type()?;
+                    let type_: &Type = node.get_any_type();
                     let span: Span = node.get_span();
 
                     if type_.contains_void_type() || type_.is_void_type() {
@@ -87,6 +91,10 @@ pub fn validate_node<'type_checker>(
             attributes,
             ..
         } => {
+            visit_type::visit_all_types(node, &mut |ty, _| {
+                type_support::check_target_type_support(typechecker, ty);
+            });
+
             typechecker
                 .get_mut_table()
                 .new_compiler_intrinsic(name, (return_type, parameters_types, attributes));
@@ -103,7 +111,7 @@ pub fn validate_node<'type_checker>(
 
             {
                 for node in parameters.iter() {
-                    let type_: &Type = node.get_any_type()?;
+                    let type_: &Type = node.get_any_type();
                     let span: Span = node.get_span();
 
                     if type_.contains_void_type() || type_.is_void_type() {
@@ -132,6 +140,10 @@ pub fn validate_node<'type_checker>(
             span,
             ..
         } => {
+            visit_type::visit_all_types(node, &mut |ty, _| {
+                type_support::check_target_type_support(typechecker, ty);
+            });
+
             typechecker
                 .get_mut_type_context()
                 .set_current_function_type((return_type, *span));
@@ -142,7 +154,7 @@ pub fn validate_node<'type_checker>(
 
             {
                 for node in parameters.iter() {
-                    let type_: &Type = node.get_any_type()?;
+                    let type_: &Type = node.get_any_type();
                     let span: Span = node.get_span();
 
                     if type_.contains_void_type() || type_.is_void_type() {
