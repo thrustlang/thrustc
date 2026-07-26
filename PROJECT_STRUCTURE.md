@@ -1,31 +1,35 @@
 <img src="https://github.com/thrustlang/.github/blob/main/assets/logos/thrustlang-logo-name.png" alt="logo" style="width: 80%; height: 80%;">
 
-# Thrust Compiler - Compiler Architecture
+# Thrust Compiler — Project Structure
 
 <img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
 
 `thrustc` is a modular compiler for the **Thrust** Programming Language — a general-purpose, statically-typed systems programming language focused on writing verbose, accurate, and fast code.
 
-The frontend uses a **handwritten recursive descent parser**. The backend performs code generation using the **LLVM C API** (via `llvm-sys` and `inkwell`) with custom abstractions and low-level tricks for access to LLVM C++ API indirectly.
+The frontend uses a **handwritten recursive descent parser**. The backend performs code generation through the **LLVM C API** (via `llvm-sys` and `inkwell`) with custom abstractions and low-level tricks for access to LLVM C++ API indirectly.
 
-## Crate Structure (`thrustc_*`)
+---
+
+## Workspace Crates (`thrustc_*`)
+
+### Entry Point & CLI
+
+- **`thrustc`**  
+  Main binary entry point. Contains only `main.rs` — delegates everything to `thrustc_core`.
+
+- **`thrustc_cli`**  
+  Command-line interface helpers and argument parsing utilities (`help.rs`, `lib.rs`).
+
+- **`thrustc_options`**  
+  Compiler configuration and command-line options: backends, optimization levels, debug information, linkage, target settings (`lib.rs`, `linkage.rs`).
 
 ### Core Infrastructure
 
-- **`thrustc`**  
-  Main binary entry point. Handles command-line arguments and orchestrates the entire compilation process.
-
 - **`thrustc_core`**  
-  Central driver of the compiler. Manages the compilation pipeline, emitters, printers (AST, LLVM IR, tokens, assembler), and lifecycle stages (`starter`, `cleaner`, `finisher`, `validate`).
-
-- **`thrustc_cli`**  
-  Command-line interface helpers and argument parsing utilities.
-
-- **`thrustc_options`**  
-  Compiler configuration and command-line options (backends, optimization levels, debug information, linkage, target settings, etc.).
+  Central driver of the compiler. Manages the compilation pipeline with lifecycle stages: `starter`, `cleaner`, `finisher`, and `validate`. Contains emission (`emitters/` for AST, LLVM IR, tokens, assembler, bitcode, object files), printing (`printers/`), linkage, and interrupt handling.
 
 - **`thrustc_diagnostician`**  
-  Rich diagnostic and error reporting system with source positions and pretty-printed messages.
+  Rich diagnostic and error reporting system with source positions and pretty-printed messages (`diagnostic.rs`, `position.rs`, `printers.rs`, `errors.rs`, `config.rs`).
 
 - **`thrustc_errors`**  
   Internal error types and utilities.
@@ -36,19 +40,28 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_utils`**  
   General shared utilities used across crates.
 
-### Frontend
+### Frontend — Lexing & Parsing
 
 - **`thrustc_lexer`**  
-  Handwritten lexer supporting identifiers, numbers, strings, characters, and language-specific rules.
+  Handwritten lexer supporting identifiers, numbers, strings, characters, and language-specific rules (`lex.rs`, `identifier.rs`, `number.rs`, `string.rs`, `character.rs`).
+
+- **`thrustc_reader`**  
+  Source file reading and input management.
+
+- **`thrustc_token`** & **`thrustc_token_type`**  
+  Token definitions, supporting traits, and type hierarchies.
+
+- **`thrustc_span`**  
+  Source span and location tracking used throughout the compiler.
 
 - **`thrustc_preprocessor`**  
-  Preprocessor for modules, imports, and early processing of source code.
+  Preprocessor for modules, imports, and early processing of source code. Handles high-level module parsing (`highmodule_parsing/`) and submodule parsing (`submodule_parsing/`).
 
 - **`thrustc_preprocessor_type_resolver`**  
   Early type resolution during the preprocessing phase.
 
 - **`thrustc_parser`**  
-  **Handwritten recursive descent parser** with layered precedence climbing. Parses declarations, expressions, statements, control flow, attributes (`@...`), imports, and more.
+  **Handwritten recursive descent parser** with layered precedence climbing. Parses expressions (`expressions/` with 14 precedence levels), statements (`statements/`), top-level declarations (`toplevel/`), attributes (`@...`), modificators, and imports.
 
 - **`thrustc_parser_context`**  
   Context state maintained by the parser during recursive descent.
@@ -56,8 +69,10 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_parser_table`** & **`thrustc_parser_external_table`**  
   Symbol and declaration tables for fast lookups during parsing and external access.
 
+### Frontend — AST
+
 - **`thrustc_ast`**  
-  Abstract Syntax Tree definitions, node types, visitor traits, metadata, and language builtins.
+  Abstract Syntax Tree definitions, node types, visitor traits (`traits.rs`), metadata (`ast_metadata.rs`), builtins (`ast_builtins.rs`), logic data (`ast_logic_data.rs`), and implementations (`impls/`).
 
 - **`thrustc_ast_external`**  
   Thin re-export layer that exposes selected AST types to other crates without circular dependencies.
@@ -65,52 +80,48 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_ast_verifier`**  
   Structural and consistency verification of the AST.
 
-- **`thrustc_span`**  
-  Source span and location tracking used throughout the compiler.
-
-- **`thrustc_token`** & **`thrustc_token_type`**  
-  Token definitions and supporting traits.
-
-- **`thrustc_reader`**  
-  Source file reading and input management.
+- **`thrustc_ast_modificators`**  
+  Handling of language modifiers (visibility, mutability, etc.) with traits and implementations.
 
 ### Semantic Analysis & Middle-end
 
 - **`thrustc_scoper`**  
-  Scope analysis and resolution.
-
-- **`thrustc_analyzer`**  
-  General static analysis.
-
-- **`thrustc_typechecker`**  
-  Main type checker with type inference for expressions, function calls, operations, and globals.
+  Scope analysis and resolution with context, table, and checks.
 
 - **`thrustc_typesystem`**  
-  Complete type system: arrays, fixed arrays, pointers, structures, function references, casting, inference, layout, and modifiers.
+  Complete type system: arrays, fixed arrays, pointers, structures, function references, casting, inference, layout, modifiers, precedence, location, indexation, and dereference.
+
+- **`thrustc_typechecker`**  
+  Main type checker with type inference for expressions (`expressions/`), operations (`operations/`), top-level declarations (`toplevel/`), metadata, and support utilities.
+
+- **`thrustc_general_analyzer`**  
+  General static analysis with context and expression visitors.
+
+- **`thrustc_linter`**  
+  Static linter for style and best-practice warnings (expressions, table).
+
+- **`thrustc_entities`**  
+  Shared entities consumed by the analyzer, parser, typechecker, and linter (`analyzer_entities.rs`, `parser_entities.rs`, `typechecker_entities.rs`, `linter_entities.rs`).
 
 - **`thrustc_semantic`**  
   General semantic analysis layer.
 
-- **`thrustc_entities`**  
-  Shared entities used by analyzer, parser, typechecker, and linter.
-
-- **`thrustc_linter`**  
-  Static linter for style and best-practice warnings.
-
 - **`thrustc_attributes`** & **`thrustc_attribute_checker`**  
-  Handling and validation of language and LLVM attributes.
+  Handling and validation of language and LLVM attributes (assembler, call conventions, linkage).
 
-- **`thrustc_modificators`**  
-  Handling of language modifiers (visibility, mutability, etc.).
+- **`thrustc_constants`**  
+  Language-level constant definitions.
+
+- **`thrustc_directive`**  
+  Compiler directive handling.
 
 - **`thrustc_mir`**  
-  Mid-level Intermediate Representation (atomic operations, thread mode, etc.).
+  Mid-level Intermediate Representation (atomic operations, thread mode).
 
 ### LLVM Backend
 
 - **`thrustc_llvm_codegen`**  
-  **Primary code generation backend**. Uses the **LLVM C API** directly with custom wrappers.  
-  Supports expressions, statements, globals, functions, intrinsics, inline assembly, heap/stack, JIT, and optimizations.
+  **Primary code generation backend**. Uses the LLVM C API directly with custom wrappers. Supports expressions (`expressions/` with binary operations, calls, structs, arrays, inline asm, literals), statements (`statements/` with conditionals and loops), top-level codegen (`toplevel/` with functions, intrinsics, asm functions), memory management (heap, stack, static), JIT, optimization, debug info, atomic operations, type generation, type casting, and attribute building.
 
 - **`thrustc_llvm_target_triple`**  
   Intelligent wrapper around LLVM target triples with architecture queries (`supports_f80`, `supports_ppc128`, `is_64_bit`, etc.).
@@ -121,38 +132,269 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_llvm_callconventions`** & **`thrustc_llvm_callconventions_checker`**  
   Support and validation of calling conventions.
 
-- **`thrustc_llvm_intrinsic_checker`**  
+- **`thrustc_llvm_compiler_intrinsic_checker`**  
   Validation of LLVM intrinsic usage.
 
-- **`thrustc_llvm_abi`** & **`thrustc_llvm_abi_x86`**  
-  ABI-specific handling (especially x86-64).
+- **`thrustc_llvm_abi`**  
+  Core ABI handling abstractions.
+
+- **`thrustc_llvm_system_v_abi`**  
+  System V ABI implementation (x86-64 Linux/macOS).
+
+- **`thrustc_llvm_nvidia_cuda_abi`**  
+  NVIDIA CUDA ABI implementation.
+
+- **`thrustc_llvm_abi_representation`**  
+  ABI data representation utilities.
+
+- **`thrustc_llvm_linker_driver`**  
+  Linker driver integration with platform-specific linkers (`linux_finders.rs`).
+
+### Backend Abstraction
 
 - **`thrustc_backends`**  
-  Backend abstraction layer (currently focused on LLVM).
+  Backend abstraction layer (currently focused on LLVM). Includes CPU, debug, info, JIT, linker, passes, and target modules.
 
-### Compiler Control & Support
+### Support
 
-- **`thrustc_frontend_abort`**  
-  Controlled handling of unrecoverable frontend errors.
+- **`thrustc_abi`**  
+  ABI type representation and utilities.
 
 - **`thrustc_heap_allocator`**  
   Custom heap allocation logic used by the compiler itself.
 
 ---
 
-## Compiler Pipeline
+## LLVM Vendor Crates (`crates/llvm/`)
 
-1. **Lexer**
-2. **Preprocessor** (and associated crates)
-3. **Parser** (recursive descent + tables)
-4. **Semantic Analysis**:
-   - Scoper
-   - AST Verifier
-   - Type Checker + Type System
-   - Analyzer & Linter
-   - Attribute Checker
-5. **MIR** (optional)
-6. **LLVM Codegen** (LLVM C API + custom abstractions)
-7. **Optimization** → Object file / LLVM IR / Assembler / JIT emission
+Vendored forks of LLVM Rust bindings, patched for thrustc compatibility:
+
+- **`crates/llvm/17/llvm-sys`** — Raw FFI bindings to the LLVM C API (LLVM 17).
+- **`crates/llvm/17/clang-sys`** — Raw FFI bindings to the Clang C API.
+- **`crates/llvm/inkwell`** — Safe Rust wrappers over `llvm-sys` with additional context and builder abstractions.
+- **`crates/llvm/clang`** — Safe Rust wrappers over `clang-sys`.
+
+These are patched via `[patch.crates-io]` in the workspace `Cargo.toml` and referenced as workspace dependencies.
 
 ---
+
+## Fuzzing (`fuzz/`)
+
+A comprehensive fuzzing infrastructure using `cargo-fuzz`:
+
+- **`fuzz_targets/`** — Fuzz targets for the lexer, LLVM codegen (local and top-level), and the full pipeline.
+- **`fuzz_pipeline/`** — 1984+ valid AST corpus files used for pipeline regression fuzzing.
+- **`corpus_stable/`**, **`corpus_universal/`**, **`corpus_unstable/`** — Categorized fuzzing corpora.
+- **`fuzz_reproduce_logs/`** — Logs from reproduced fuzzing failures.
+- **`ast_dumps/`** — AST dumps generated during fuzzing.
+- Dictionary files (`thrust-stable.dict`, `thrust-unstable.dict`) for coverage-guided fuzzing.
+
+---
+
+## Editor Support & Highlighting (`highlighting/`)
+
+- **Sublime Text** — `thrust.tmLanguage`, `llvm.sublime-syntax` for Thrust and LLVM IR syntax.
+- **VS Code** — `thrust-vscode/` extension and packaged `.vsix` for Thrust language support.
+- **Neovim / Vim** — `thrust.vim` syntax file and `thrust.nvim/` plugin package.
+- **Theme** — `One Dark.tmTheme` compatible theme.
+
+---
+
+## CI/CD (`.github/workflows/`)
+
+GitHub Actions workflows for four target platforms:
+
+| Platform | Dev | Release |
+|---|---|---|
+| `x86_64-linux-ubuntu` | ✅ | ✅ |
+| `x86_64-macos` | ✅ | ✅ |
+| `aarch64-macos` | ✅ | ✅ |
+| `x86_64-windows-msvc` | ✅ | ✅ |
+
+Builds, tests, and publishes release binaries for each platform.
+
+---
+
+## Scripts (`scripts/`)
+
+Cross-platform automation scripts (available as `.sh`, `.bat`, `.ps1`, `.fish`):
+
+- **`cargo-dependencies.*`** — Setup cargo dependencies and LLVM.
+- **`deploy-code-docs.*`** — Deploy compiler documentation.
+- **`deploy-version.*`** — Version deployment automation.
+- **`release-changelog.*`** — Generate and deploy changelogs for releases.
+- **`tag-manager.*`** — Git tag management helpers.
+
+---
+
+## Changelogs (`changelogs/`)
+
+Per-platform changelogs for each release version (v0.1.0 through v0.1.5):
+
+- `thrustc-x86_64-linux-ubuntu-v*`
+- `thrustc-x86_64-macos-v*`
+- `thrustc-aarch64-macos-v*`
+- `thrustc-x86_64-windows-msvc-v*`
+
+---
+
+## Assets & Examples (`assets/`)
+
+- **`assets/examples/diagnostics/`** — Example diagnostic output files.
+
+---
+
+## Resources (`resources/`)
+
+- **`resources/linkers.md`** — Linker documentation.
+- **`resources/llvm.md`** — LLVM integration documentation.
+
+---
+
+## Showcase (`showcase/`)
+
+Example Thrust projects demonstrating language capabilities:
+
+- **`showcase/Algorithms/`** — Algorithm implementations.
+- **`showcase/Cuda/`** — CUDA integration examples.
+- **`showcase/HttpServer/`** — HTTP server implementation.
+- **`showcase/OpenGL/`** — OpenGL graphics examples.
+
+---
+
+## Compiler Pipeline
+
+```
+Source File (.thrust)
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ 1. Reader          (thrustc_reader)             │
+│    - Reads source files into memory             │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ 2. Lexer           (thrustc_lexer)              │
+│    - Tokenizes source into tokens               │
+│    - Handles identifiers, numbers, strings,     │
+│      characters, and language-specific tokens   │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ 3. Preprocessor   (thrustc_preprocessor)        │
+│    - Module resolution and import handling      │
+│    - Early type resolution                      │
+│      (thrustc_preprocessor_type_resolver)       │
+│    - High-level and submodule parsing           │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ 4. Parser          (thrustc_parser)             │
+│    - Handwritten recursive descent parser       │
+│    - Precedence climbing for expressions        │
+│    - Builds AST nodes (thrustc_ast)             │
+│    - Uses parser context, tables, & AST         │
+│    - Token definitions (thrustc_token,          │
+│      thrustc_token_type)                        │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ 5. AST Verification (thrustc_ast_verifier)      │
+│    - Structural and consistency checks          │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ 6. Semantic Analysis                            │
+│                                                 │
+│    a. Scoper        (thrustc_scoper)            │
+│       - Scope resolution and binding            │
+│                                                 │
+│    b. Type Checker  (thrustc_typechecker)       │
+│       + Type System (thrustc_typesystem)        │
+│       - Type inference, checking, & layout      │
+│                                                 │
+│    c. Analyzer      (thrustc_general_analyzer)  │
+│       - General static analysis                 │
+│                                                 │
+│    d. Linter        (thrustc_linter)            │
+│       - Warnings                                │
+│                                                 │
+│    e. Attributes    (thrustc_attributes,        │
+│       thrustc_attribute_checker)                │
+│       - Language & LLVM attribute validation    │
+│                                                 │
+│    f. Semantic      (thrustc_semantic)          │
+│       - General semantic analysis               │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ 7. MIR (optional)  (thrustc_mir)                │
+│    - Mid-level Intermediate Representation      │
+│    - Atomic operations & thread mode            │
+│    - May be bypassed (direct to LLVM)           │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ 8. LLVM Codegen    (thrustc_llvm_codegen)       │
+│    + LLVM vendor crates (llvm-sys, inkwell)     │
+│    - Expression, statement, toplevel codegen    │
+│    - Heap/stack/static memory management        │
+│    - JIT compilation & optimization             │
+│    - Debug info & metadata                      │
+│                                                 │
+│    ABI handling:                                │
+│    - thrustc_llvm_abi                           │
+│    - thrustc_llvm_system_v_abi                  │
+│    - thrustc_llvm_nvidia_cuda_abi               │
+│    - thrustc_llvm_abi_representation            │
+│                                                 │
+│    Target & conventions:                        │
+│    - thrustc_llvm_target_triple                 │
+│    - thrustc_llvm_attributes                    │
+│    - thrustc_llvm_callconventions               │
+│    - thrustc_llvm_callconventions_checker       │
+│    - thrustc_llvm_compiler_intrinsic_checker    │
+│                                                 │
+│    Linker driver:                               │
+│    - thrustc_llvm_linker_driver                 │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ 9. Emission & Output                            │
+│    (thrustc_core → emitters/ & printers/)       │
+│                                                 │
+│    Output formats:                              │
+│    • Object file (.o)     — emitters/objfile.rs │
+│    • LLVM IR (.ll)        — emitters/llvmir.rs  │
+│    • LLVM Bitcode (.bc)   — emitters/llvmbit..  │
+│    • Assembly (.s)        — emitters/assembler  │
+│    • AST dump             — emitters/ast.rs     │
+│    • Token dump           — emitters/tokens.rs  │
+│    • JIT execution        — codegen JIT module  │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+  Binary / Library / Executable
+```
+
+---
+
+## Supported Compiler Host Platforms
+
+| Target | Tier | Status |
+|---|---|---|
+| `x86_64-unknown-linux-gnu` (Ubuntu) | ✅ | Full support, CI tested |
+| `x86_64-apple-darwin` (macOS) | ✅ | Full support, CI tested |
+| `aarch64-apple-darwin` (Apple Silicon) | ✅ | Full support, CI tested |
+| `x86_64-pc-windows-msvc` (Windows) | ✅ | Full support, CI tested |
+
+---
+
