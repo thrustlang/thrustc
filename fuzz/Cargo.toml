@@ -64,21 +64,21 @@ bench = false
 
 [[bin]]
 name = "dump_ast"
-path = "utils/dump_ast.rs"
+path = "bin/dump_ast.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "dump_ast_local"
-path = "utils/dump_ast_local.rs"
+path = "bin/dump_ast_local.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
 name = "reproduce"
-path = "utils/reproduce.rs"
+path = "bin/reproduce.rs"
 test = false
 doc = false
 bench = false

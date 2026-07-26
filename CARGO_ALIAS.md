@@ -6,17 +6,20 @@
 
 These are the available cargo alias in the whole project, to perform either compiler fuzzing or generation of Rust's code documentation.
 
-## Compiler Fuzzing
-
-It means the fuzzer only will perform tests including "stable" features on the compiler.
-
 ## Stable Compiler Fuzzing
 
-### LLVM
+### LLVM (Top-Level)
 
-It fuzz the LLVM backend with supposed stable features.
+It fuzz the LLVM backend with supposed stable features (top-level codegen).
 ```console
-cargo fuzz-llvm-stable
+cargo fuzz-llvm-top-level-stable
+```
+
+### LLVM (Local)
+
+It fuzz the LLVM backend with supposed stable features (local codegen).
+```console
+cargo fuzz-llvm-local-stable
 ```
 
 ### Pipeline
@@ -25,15 +28,21 @@ It fuzz the AST validation pipeline, including semantic analysis with supposed s
 ```console
 cargo fuzz-pipeline-stable
 ```
+
 ## Unstable Compiler Fuzzing
 
-It means the fuzzer only will perform tests including "unstable" features on the compiler.
+### LLVM (Top-Level)
 
-### LLVM
-
-It fuzz the LLVM backend with supposed unstable features.
+It fuzz the LLVM backend with supposed unstable features (top-level codegen).
 ```console
-cargo fuzz-llvm-unstable
+cargo fuzz-llvm-top-level-unstable
+```
+
+### LLVM (Local)
+
+It fuzz the LLVM backend with supposed unstable features (local codegen).
+```console
+cargo fuzz-llvm-local-unstable
 ```
 
 ### Pipeline
@@ -41,6 +50,13 @@ cargo fuzz-llvm-unstable
 It fuzz the AST validation pipeline, including semantic analysis with supposed unstable features.
 ```console
 cargo fuzz-pipeline-unstable
+```
+
+## Lexer Fuzzing
+
+It fuzz the lexer with a universal corpus and stable dictionary.
+```console
+cargo fuzz-lexer
 ```
 
 -------------------------------------------------
