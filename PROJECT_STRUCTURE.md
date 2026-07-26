@@ -389,12 +389,12 @@ Source File (.thrust)
 
 ## Supported Compiler Host Platforms
 
-| Target | Tier | Status |
+| Target | Support | Status |
 |---|---|---|
-| `x86_64-unknown-linux-gnu` (Ubuntu) | ✅ | Full support, CI tested |
-| `x86_64-apple-darwin` (macOS) | ✅ | Full support, CI tested |
-| `aarch64-apple-darwin` (Apple Silicon) | ✅ | Full support, CI tested |
-| `x86_64-pc-windows-msvc` (Windows) | ✅ | Full support, CI tested |
+| `x86_64-unknown-linux-gnu` (Ubuntu) | Yes | Full support, CI tested |
+| `x86_64-apple-darwin` (macOS) | Yes | Full support, CI tested |
+| `aarch64-apple-darwin` (Apple Silicon) | Yes | Full support, CI tested |
+| `x86_64-pc-windows-msvc` (Windows) | Yes | Full support, CI tested |
 
 ---
 
