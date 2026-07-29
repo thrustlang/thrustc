@@ -33,12 +33,12 @@
 <a href=#33 id=33 data-nosnippet>33</a>};
 <a href=#34 id=34 data-nosnippet>34</a>
 <a href=#35 id=35 data-nosnippet>35</a><span class="kw">use </span>crate::{
-<a href=#36 id=36 data-nosnippet>36</a>    TypeChecker, checking, context::TypeCheckerControlContext, metadata::TypeCheckerNodeMetadata,
-<a href=#37 id=37 data-nosnippet>37</a>    operations,
+<a href=#36 id=36 data-nosnippet>36</a>    TypeChecker, context::TypeCheckerControlContext, operations, type_checking,
+<a href=#37 id=37 data-nosnippet>37</a>    type_metadata::TypeCheckerNodeMetadata,
 <a href=#38 id=38 data-nosnippet>38</a>};
 <a href=#39 id=39 data-nosnippet>39</a>
-<a href=#40 id=40 data-nosnippet>40</a><span class="kw">mod </span>builtins;
-<a href=#41 id=41 data-nosnippet>41</a><span class="kw">mod </span>call_expr;
+<a href=#40 id=40 data-nosnippet>40</a><span class="kw">mod </span>call_expr;
+<a href=#41 id=41 data-nosnippet>41</a><span class="kw">mod </span>compiler_builtins;
 <a href=#42 id=42 data-nosnippet>42</a>
 <a href=#43 id=43 data-nosnippet>43</a><span class="kw">pub fn </span>validate_node&lt;<span class="lifetime">'type_checker</span>&gt;(
 <a href=#44 id=44 data-nosnippet>44</a>    typechecker: <span class="kw-2">&amp;mut </span>TypeChecker&lt;<span class="lifetime">'type_checker</span>&gt;,
@@ -181,7 +181,7 @@
 <a href=#181 id=181 data-nosnippet>181</a>
 <a href=#182 id=182 data-nosnippet>182</a>                    control_context.reset_checking_depth();
 <a href=#183 id=183 data-nosnippet>183</a>
-<a href=#184 id=184 data-nosnippet>184</a>                    <span class="kw">if let </span><span class="prelude-val">Err</span>(error) = checking::check_type_together(
+<a href=#184 id=184 data-nosnippet>184</a>                    <span class="kw">if let </span><span class="prelude-val">Err</span>(error) = type_checking::check_type_together(
 <a href=#185 id=185 data-nosnippet>185</a>                        <span class="kw-2">&amp;</span>base_type,
 <a href=#186 id=186 data-nosnippet>186</a>                        item_type,
 <a href=#187 id=187 data-nosnippet>187</a>                        <span class="prelude-val">Some</span>(node),
@@ -244,7 +244,7 @@
 <a href=#244 id=244 data-nosnippet>244</a>
 <a href=#245 id=245 data-nosnippet>245</a>                    control_context.reset_checking_depth();
 <a href=#246 id=246 data-nosnippet>246</a>
-<a href=#247 id=247 data-nosnippet>247</a>                    <span class="kw">if let </span><span class="prelude-val">Err</span>(error) = checking::check_type_together(
+<a href=#247 id=247 data-nosnippet>247</a>                    <span class="kw">if let </span><span class="prelude-val">Err</span>(error) = type_checking::check_type_together(
 <a href=#248 id=248 data-nosnippet>248</a>                        <span class="kw-2">&amp;</span>base_type,
 <a href=#249 id=249 data-nosnippet>249</a>                        item_type,
 <a href=#250 id=250 data-nosnippet>250</a>                        <span class="prelude-val">Some</span>(node),
@@ -372,7 +372,7 @@
 <a href=#372 id=372 data-nosnippet>372</a>
 <a href=#373 id=373 data-nosnippet>373</a>                    control_context.reset_checking_depth();
 <a href=#374 id=374 data-nosnippet>374</a>
-<a href=#375 id=375 data-nosnippet>375</a>                    <span class="kw">if let </span><span class="prelude-val">Err</span>(error) = checking::check_type_together(
+<a href=#375 id=375 data-nosnippet>375</a>                    <span class="kw">if let </span><span class="prelude-val">Err</span>(error) = type_checking::check_type_together(
 <a href=#376 id=376 data-nosnippet>376</a>                        target_type,
 <a href=#377 id=377 data-nosnippet>377</a>                        from_type,
 <a href=#378 id=378 data-nosnippet>378</a>                        <span class="prelude-val">Some</span>(expr),
@@ -512,7 +512,7 @@
 <a href=#512 id=512 data-nosnippet>512</a>            <span class="kw">let </span>control_context: <span class="kw-2">&amp;mut </span>TypeCheckerControlContext =
 <a href=#513 id=513 data-nosnippet>513</a>                typechecker.get_mut_control_context();
 <a href=#514 id=514 data-nosnippet>514</a>
-<a href=#515 id=515 data-nosnippet>515</a>            checking::check_type_cast(cast_type, from_type, metadata, span, control_context)<span class="question-mark">?</span>;
+<a href=#515 id=515 data-nosnippet>515</a>            type_checking::check_type_cast(cast_type, from_type, metadata, span, control_context)<span class="question-mark">?</span>;
 <a href=#516 id=516 data-nosnippet>516</a>
 <a href=#517 id=517 data-nosnippet>517</a>            control_context.reset_type_cast_depth();
 <a href=#518 id=518 data-nosnippet>518</a>
@@ -541,7 +541,7 @@
 <a href=#541 id=541 data-nosnippet>541</a>            <span class="prelude-val">Ok</span>(())
 <a href=#542 id=542 data-nosnippet>542</a>        }
 <a href=#543 id=543 data-nosnippet>543</a>
-<a href=#544 id=544 data-nosnippet>544</a>        Ast::Builtin { builtin, .. } =&gt; builtins::validate_node(typechecker, builtin),
+<a href=#544 id=544 data-nosnippet>544</a>        Ast::Builtin { builtin, .. } =&gt; compiler_builtins::validate_node(typechecker, builtin),
 <a href=#545 id=545 data-nosnippet>545</a>
 <a href=#546 id=546 data-nosnippet>546</a>        Ast::AsmValue { args, kind, .. } =&gt; {
 <a href=#547 id=547 data-nosnippet>547</a>            <span class="kw">for </span>node <span class="kw">in </span>args.iter() {

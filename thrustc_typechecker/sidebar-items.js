@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["checking","context","expressions","metadata","operations","table","toplevel"],"struct":["TypeChecker"]};
+window.SIDEBAR_ITEMS = {"mod":["context","expressions","operations","table","toplevel","type_checking","type_metadata","type_support","visit_type"],"struct":["TypeChecker"]};

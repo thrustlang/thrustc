@@ -66,14 +66,14 @@
 <a href=#66 id=66 data-nosnippet>66</a>}
 <a href=#67 id=67 data-nosnippet>67</a>
 <a href=#68 id=68 data-nosnippet>68</a><span class="kw">impl</span>&lt;<span class="lifetime">'semantic_analyzer</span>&gt; SemanticAnalysis&lt;<span class="lifetime">'semantic_analyzer</span>&gt; {
-<a href=#69 id=69 data-nosnippet>69</a>    <span class="kw">pub fn </span>analyze(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parser_throwed_errors: bool) -&gt; either::Either&lt;bool, ()&gt; {
+<a href=#69 id=69 data-nosnippet>69</a>    <span class="kw">pub fn </span>execute(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parser_throwed_errors: bool) -&gt; either::Either&lt;bool, ()&gt; {
 <a href=#70 id=70 data-nosnippet>70</a>        <span class="kw">if </span>parser_throwed_errors {
 <a href=#71 id=71 data-nosnippet>71</a>            <span class="kw">return </span>either::Either::Left(<span class="bool-val">true</span>);
 <a href=#72 id=72 data-nosnippet>72</a>        }
 <a href=#73 id=73 data-nosnippet>73</a>
-<a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">let </span>scoper_fail: bool = <span class="self">self</span>.scoper.start();
+<a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">let </span>scoper_failed: bool = <span class="self">self</span>.scoper.start();
 <a href=#75 id=75 data-nosnippet>75</a>
-<a href=#76 id=76 data-nosnippet>76</a>        <span class="kw">if </span>scoper_fail {
+<a href=#76 id=76 data-nosnippet>76</a>        <span class="kw">if </span>scoper_failed {
 <a href=#77 id=77 data-nosnippet>77</a>            <span class="kw">return </span>either::Either::Left(<span class="bool-val">true</span>);
 <a href=#78 id=78 data-nosnippet>78</a>        }
 <a href=#79 id=79 data-nosnippet>79</a>
@@ -81,9 +81,9 @@
 <a href=#81 id=81 data-nosnippet>81</a>            <span class="kw">return </span>either::Either::Right(());
 <a href=#82 id=82 data-nosnippet>82</a>        }
 <a href=#83 id=83 data-nosnippet>83</a>
-<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>verifier_fail: bool = <span class="self">self</span>.verifier.analyze_top();
+<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>verifier_failed: bool = <span class="self">self</span>.verifier.analyze();
 <a href=#85 id=85 data-nosnippet>85</a>
-<a href=#86 id=86 data-nosnippet>86</a>        <span class="kw">if </span>verifier_fail {
+<a href=#86 id=86 data-nosnippet>86</a>        <span class="kw">if </span>verifier_failed {
 <a href=#87 id=87 data-nosnippet>87</a>            <span class="kw">return </span>either::Either::Left(<span class="bool-val">true</span>);
 <a href=#88 id=88 data-nosnippet>88</a>        }
 <a href=#89 id=89 data-nosnippet>89</a>
@@ -103,7 +103,7 @@
 <a href=#103 id=103 data-nosnippet>103</a>            <span class="kw">return </span>either::Either::Right(());
 <a href=#104 id=104 data-nosnippet>104</a>        }
 <a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>general_analyzer_fail: bool = <span class="self">self</span>.general_analyzer.start();
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>general_analyzer_failed: bool = <span class="self">self</span>.general_analyzer.start();
 <a href=#107 id=107 data-nosnippet>107</a>
 <a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">if </span><span class="self">self
 <a href=#109 id=109 data-nosnippet>109</a>            </span>.options
@@ -112,7 +112,7 @@
 <a href=#112 id=112 data-nosnippet>112</a>            <span class="kw">return </span>either::Either::Right(());
 <a href=#113 id=113 data-nosnippet>113</a>        }
 <a href=#114 id=114 data-nosnippet>114</a>
-<a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">let </span>attribute_checker_fail: bool = <span class="self">self</span>.attr_checker.start();
+<a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">let </span>attribute_checker_failed: bool = <span class="self">self</span>.attr_checker.start();
 <a href=#116 id=116 data-nosnippet>116</a>
 <a href=#117 id=117 data-nosnippet>117</a>        <span class="kw">if </span><span class="self">self
 <a href=#118 id=118 data-nosnippet>118</a>            </span>.options
@@ -122,9 +122,9 @@
 <a href=#122 id=122 data-nosnippet>122</a>        }
 <a href=#123 id=123 data-nosnippet>123</a>
 <a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">if </span>!type_checker_fail
-<a href=#125 id=125 data-nosnippet>125</a>            &amp;&amp; !general_analyzer_fail
-<a href=#126 id=126 data-nosnippet>126</a>            &amp;&amp; !attribute_checker_fail
-<a href=#127 id=127 data-nosnippet>127</a>            &amp;&amp; !scoper_fail
+<a href=#125 id=125 data-nosnippet>125</a>            &amp;&amp; !general_analyzer_failed
+<a href=#126 id=126 data-nosnippet>126</a>            &amp;&amp; !attribute_checker_failed
+<a href=#127 id=127 data-nosnippet>127</a>            &amp;&amp; !scoper_failed
 <a href=#128 id=128 data-nosnippet>128</a>            &amp;&amp; !<span class="self">self</span>.options.disable_all_warnings()
 <a href=#129 id=129 data-nosnippet>129</a>        {
 <a href=#130 id=130 data-nosnippet>130</a>            <span class="self">self</span>.linter.check();
@@ -134,10 +134,12 @@
 <a href=#134 id=134 data-nosnippet>134</a>            }
 <a href=#135 id=135 data-nosnippet>135</a>        }
 <a href=#136 id=136 data-nosnippet>136</a>
-<a href=#137 id=137 data-nosnippet>137</a>        <span class="kw">let </span>fail: bool =
-<a href=#138 id=138 data-nosnippet>138</a>            type_checker_fail || general_analyzer_fail || attribute_checker_fail || scoper_fail;
-<a href=#139 id=139 data-nosnippet>139</a>
-<a href=#140 id=140 data-nosnippet>140</a>        either::Either::Left(fail)
-<a href=#141 id=141 data-nosnippet>141</a>    }
-<a href=#142 id=142 data-nosnippet>142</a>}
+<a href=#137 id=137 data-nosnippet>137</a>        <span class="kw">let </span>fail: bool = type_checker_fail
+<a href=#138 id=138 data-nosnippet>138</a>            || general_analyzer_failed
+<a href=#139 id=139 data-nosnippet>139</a>            || attribute_checker_failed
+<a href=#140 id=140 data-nosnippet>140</a>            || scoper_failed;
+<a href=#141 id=141 data-nosnippet>141</a>
+<a href=#142 id=142 data-nosnippet>142</a>        either::Either::Left(fail)
+<a href=#143 id=143 data-nosnippet>143</a>    }
+<a href=#144 id=144 data-nosnippet>144</a>}
 </code></pre></div></section></main></body></html>

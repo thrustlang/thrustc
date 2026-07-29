@@ -63,7 +63,7 @@
 <a href=#63 id=63 data-nosnippet>63</a>    <span class="kw">let </span>has_abi: bool = context.has_abi();
 <a href=#64 id=64 data-nosnippet>64</a>
 <a href=#65 id=65 data-nosnippet>65</a>    <span class="kw">let </span>name: <span class="kw-2">&amp;</span>str = function.<span class="number">0</span>;
-<a href=#66 id=66 data-nosnippet>66</a>    <span class="kw">let </span>ascii_name: <span class="kw-2">&amp;</span>str = function.<span class="number">1</span>;
+<a href=#66 id=66 data-nosnippet>66</a>    <span class="kw">let </span>ascii_name: <span class="kw-2">&amp;</span>str = <span class="kw-2">&amp;</span>function.<span class="number">1</span>.replace(<span class="string">"\0"</span>, <span class="string">""</span>);
 <a href=#67 id=67 data-nosnippet>67</a>
 <a href=#68 id=68 data-nosnippet>68</a>    <span class="kw">let </span>return_type: <span class="kw-2">&amp;</span>Type = function.<span class="number">2</span>;
 <a href=#69 id=69 data-nosnippet>69</a>
@@ -273,7 +273,7 @@
 <a href=#273 id=273 data-nosnippet>273</a>                    {
 <a href=#274 id=274 data-nosnippet>274</a>                        <span class="kw">for </span>lowered_parameter <span class="kw">in </span>lowered_parameters {
 <a href=#275 id=275 data-nosnippet>275</a>                            <span class="kw">let </span>name: <span class="kw-2">&amp;</span>str = lowered_parameter.get_name();
-<a href=#276 id=276 data-nosnippet>276</a>                            <span class="kw">let </span>ascii_name: <span class="kw-2">&amp;</span>str = lowered_parameter.get_ascii_name();
+<a href=#276 id=276 data-nosnippet>276</a>                            <span class="kw">let </span>ascii_name: String = lowered_parameter.get_ascii_name().replace(<span class="string">"\0"</span>, <span class="string">""</span>);
 <a href=#277 id=277 data-nosnippet>277</a>                            <span class="kw">let </span>ty: <span class="kw-2">&amp;</span>Type = lowered_parameter.get_type();
 <a href=#278 id=278 data-nosnippet>278</a>                            <span class="kw">let </span>value: BasicValueEnum = lowered_parameter.get_value();
 <a href=#279 id=279 data-nosnippet>279</a>                            <span class="kw">let </span>configuration: <span class="kw-2">&amp;</span>thrustc_llvm_abi::LLVMABIConfiguration =
@@ -320,7 +320,7 @@
 <a href=#320 id=320 data-nosnippet>320</a>                    <span class="kw">for </span>parameter <span class="kw">in </span>function_parameters.iter().map(|node| thrustc_entities::function_parameter_from_ast(node))
 <a href=#321 id=321 data-nosnippet>321</a>                    {
 <a href=#322 id=322 data-nosnippet>322</a>                        <span class="kw">let </span>name: <span class="kw-2">&amp;</span>str = parameter.<span class="number">0</span>;
-<a href=#323 id=323 data-nosnippet>323</a>                        <span class="kw">let </span>ascii_name: <span class="kw-2">&amp;</span>str = parameter.<span class="number">1</span>;
+<a href=#323 id=323 data-nosnippet>323</a>                        <span class="kw">let </span>ascii_name: String = parameter.<span class="number">1</span>.replace(<span class="string">"\0"</span>, <span class="string">""</span>);
 <a href=#324 id=324 data-nosnippet>324</a>
 <a href=#325 id=325 data-nosnippet>325</a>                        <span class="kw">let </span>kind: <span class="kw-2">&amp;</span>Type = parameter.<span class="number">2</span>;
 <a href=#326 id=326 data-nosnippet>326</a>                        <span class="kw">let </span>position: u32 = parameter.<span class="number">3</span>;
@@ -344,7 +344,7 @@
 <a href=#344 id=344 data-nosnippet>344</a>                    .map(|node| thrustc_entities::function_parameter_from_ast(node))
 <a href=#345 id=345 data-nosnippet>345</a>                {
 <a href=#346 id=346 data-nosnippet>346</a>                    <span class="kw">let </span>name: <span class="kw-2">&amp;</span>str = parameter.<span class="number">0</span>;
-<a href=#347 id=347 data-nosnippet>347</a>                    <span class="kw">let </span>ascii_name: <span class="kw-2">&amp;</span>str = parameter.<span class="number">1</span>;
+<a href=#347 id=347 data-nosnippet>347</a>                    <span class="kw">let </span>ascii_name: String = parameter.<span class="number">1</span>.replace(<span class="string">"\0"</span>, <span class="string">""</span>);
 <a href=#348 id=348 data-nosnippet>348</a>
 <a href=#349 id=349 data-nosnippet>349</a>                    <span class="kw">let </span>kind: <span class="kw-2">&amp;</span>Type = parameter.<span class="number">2</span>;
 <a href=#350 id=350 data-nosnippet>350</a>                    <span class="kw">let </span>position: u32 = parameter.<span class="number">3</span>;

@@ -69,55 +69,60 @@
 <a href=#69 id=69 data-nosnippet>69</a>    </span><span class="kw">pub fn </span>is_internal(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 <a href=#70 id=70 data-nosnippet>70</a>        <span class="macro">matches!</span>(<span class="self">self</span>, ThrustLinkage::Internal)
 <a href=#71 id=71 data-nosnippet>71</a>    }
-<a href=#72 id=72 data-nosnippet>72</a>}
-<a href=#73 id=73 data-nosnippet>73</a>
-<a href=#74 id=74 data-nosnippet>74</a><span class="kw">impl </span>ThrustLinkage {
-<a href=#75 id=75 data-nosnippet>75</a>    <span class="attr">#[inline]
-<a href=#76 id=76 data-nosnippet>76</a>    </span><span class="kw">pub fn </span>get_llvm_linkage(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Linkage {
-<a href=#77 id=77 data-nosnippet>77</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#78 id=78 data-nosnippet>78</a>            ThrustLinkage::Standard =&gt; Linkage::External,
-<a href=#79 id=79 data-nosnippet>79</a>            ThrustLinkage::Common =&gt; Linkage::Common,
-<a href=#80 id=80 data-nosnippet>80</a>            ThrustLinkage::DLLImport =&gt; Linkage::DLLImport,
-<a href=#81 id=81 data-nosnippet>81</a>            ThrustLinkage::DLLExport =&gt; Linkage::DLLExport,
-<a href=#82 id=82 data-nosnippet>82</a>            ThrustLinkage::ExternalWeak =&gt; Linkage::ExternalWeak,
-<a href=#83 id=83 data-nosnippet>83</a>            ThrustLinkage::Weak =&gt; Linkage::WeakAny,
-<a href=#84 id=84 data-nosnippet>84</a>            ThrustLinkage::Internal =&gt; Linkage::Internal,
-<a href=#85 id=85 data-nosnippet>85</a>            ThrustLinkage::LinkerPrivate =&gt; Linkage::LinkerPrivate,
-<a href=#86 id=86 data-nosnippet>86</a>            ThrustLinkage::LinkerPrivateWeak =&gt; Linkage::LinkerPrivateWeak,
-<a href=#87 id=87 data-nosnippet>87</a>        }
-<a href=#88 id=88 data-nosnippet>88</a>    }
-<a href=#89 id=89 data-nosnippet>89</a>
-<a href=#90 id=90 data-nosnippet>90</a>    <span class="attr">#[inline]
-<a href=#91 id=91 data-nosnippet>91</a>    </span><span class="kw">pub fn </span>get_linkage(id: <span class="kw-2">&amp;</span>str) -&gt; ThrustLinkage {
-<a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">match </span>id {
-<a href=#93 id=93 data-nosnippet>93</a>            <span class="string">"standard" </span>=&gt; ThrustLinkage::Standard,
-<a href=#94 id=94 data-nosnippet>94</a>            <span class="string">"common" </span>=&gt; ThrustLinkage::Common,
-<a href=#95 id=95 data-nosnippet>95</a>            <span class="string">"dllimport" </span>=&gt; ThrustLinkage::DLLImport,
-<a href=#96 id=96 data-nosnippet>96</a>            <span class="string">"dllexport" </span>=&gt; ThrustLinkage::DLLExport,
-<a href=#97 id=97 data-nosnippet>97</a>            <span class="string">"externweak" </span>=&gt; ThrustLinkage::ExternalWeak,
-<a href=#98 id=98 data-nosnippet>98</a>            <span class="string">"weak" </span>=&gt; ThrustLinkage::Weak,
-<a href=#99 id=99 data-nosnippet>99</a>            <span class="string">"internal" </span>=&gt; ThrustLinkage::Internal,
-<a href=#100 id=100 data-nosnippet>100</a>            <span class="string">"linkerprivate" </span>=&gt; ThrustLinkage::LinkerPrivate,
-<a href=#101 id=101 data-nosnippet>101</a>            <span class="string">"linkerprivateweak" </span>=&gt; ThrustLinkage::LinkerPrivateWeak,
-<a href=#102 id=102 data-nosnippet>102</a>
-<a href=#103 id=103 data-nosnippet>103</a>            <span class="kw">_ </span>=&gt; ThrustLinkage::Standard,
-<a href=#104 id=104 data-nosnippet>104</a>        }
-<a href=#105 id=105 data-nosnippet>105</a>    }
-<a href=#106 id=106 data-nosnippet>106</a>}
+<a href=#72 id=72 data-nosnippet>72</a>
+<a href=#73 id=73 data-nosnippet>73</a>    <span class="attr">#[inline]
+<a href=#74 id=74 data-nosnippet>74</a>    </span><span class="kw">pub fn </span>is_common(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#75 id=75 data-nosnippet>75</a>        <span class="macro">matches!</span>(<span class="self">self</span>, ThrustLinkage::Common)
+<a href=#76 id=76 data-nosnippet>76</a>    }
+<a href=#77 id=77 data-nosnippet>77</a>}
+<a href=#78 id=78 data-nosnippet>78</a>
+<a href=#79 id=79 data-nosnippet>79</a><span class="kw">impl </span>ThrustLinkage {
+<a href=#80 id=80 data-nosnippet>80</a>    <span class="attr">#[inline]
+<a href=#81 id=81 data-nosnippet>81</a>    </span><span class="kw">pub fn </span>get_llvm_linkage(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Linkage {
+<a href=#82 id=82 data-nosnippet>82</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#83 id=83 data-nosnippet>83</a>            ThrustLinkage::Standard =&gt; Linkage::External,
+<a href=#84 id=84 data-nosnippet>84</a>            ThrustLinkage::Common =&gt; Linkage::Common,
+<a href=#85 id=85 data-nosnippet>85</a>            ThrustLinkage::DLLImport =&gt; Linkage::DLLImport,
+<a href=#86 id=86 data-nosnippet>86</a>            ThrustLinkage::DLLExport =&gt; Linkage::DLLExport,
+<a href=#87 id=87 data-nosnippet>87</a>            ThrustLinkage::ExternalWeak =&gt; Linkage::ExternalWeak,
+<a href=#88 id=88 data-nosnippet>88</a>            ThrustLinkage::Weak =&gt; Linkage::WeakAny,
+<a href=#89 id=89 data-nosnippet>89</a>            ThrustLinkage::Internal =&gt; Linkage::Internal,
+<a href=#90 id=90 data-nosnippet>90</a>            ThrustLinkage::LinkerPrivate =&gt; Linkage::LinkerPrivate,
+<a href=#91 id=91 data-nosnippet>91</a>            ThrustLinkage::LinkerPrivateWeak =&gt; Linkage::LinkerPrivateWeak,
+<a href=#92 id=92 data-nosnippet>92</a>        }
+<a href=#93 id=93 data-nosnippet>93</a>    }
+<a href=#94 id=94 data-nosnippet>94</a>
+<a href=#95 id=95 data-nosnippet>95</a>    <span class="attr">#[inline]
+<a href=#96 id=96 data-nosnippet>96</a>    </span><span class="kw">pub fn </span>get_linkage(id: <span class="kw-2">&amp;</span>str) -&gt; ThrustLinkage {
+<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">match </span>id {
+<a href=#98 id=98 data-nosnippet>98</a>            <span class="string">"standard" </span>=&gt; ThrustLinkage::Standard,
+<a href=#99 id=99 data-nosnippet>99</a>            <span class="string">"common" </span>=&gt; ThrustLinkage::Common,
+<a href=#100 id=100 data-nosnippet>100</a>            <span class="string">"dllimport" </span>=&gt; ThrustLinkage::DLLImport,
+<a href=#101 id=101 data-nosnippet>101</a>            <span class="string">"dllexport" </span>=&gt; ThrustLinkage::DLLExport,
+<a href=#102 id=102 data-nosnippet>102</a>            <span class="string">"externweak" </span>=&gt; ThrustLinkage::ExternalWeak,
+<a href=#103 id=103 data-nosnippet>103</a>            <span class="string">"weak" </span>=&gt; ThrustLinkage::Weak,
+<a href=#104 id=104 data-nosnippet>104</a>            <span class="string">"internal" </span>=&gt; ThrustLinkage::Internal,
+<a href=#105 id=105 data-nosnippet>105</a>            <span class="string">"linkerprivate" </span>=&gt; ThrustLinkage::LinkerPrivate,
+<a href=#106 id=106 data-nosnippet>106</a>            <span class="string">"linkerprivateweak" </span>=&gt; ThrustLinkage::LinkerPrivateWeak,
 <a href=#107 id=107 data-nosnippet>107</a>
-<a href=#108 id=108 data-nosnippet>108</a><span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>ThrustLinkage {
-<a href=#109 id=109 data-nosnippet>109</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
-<a href=#110 id=110 data-nosnippet>110</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#111 id=111 data-nosnippet>111</a>            ThrustLinkage::Standard =&gt; <span class="macro">write!</span>(f, <span class="string">"standard"</span>),
-<a href=#112 id=112 data-nosnippet>112</a>            ThrustLinkage::Common =&gt; <span class="macro">write!</span>(f, <span class="string">"common"</span>),
-<a href=#113 id=113 data-nosnippet>113</a>            ThrustLinkage::DLLImport =&gt; <span class="macro">write!</span>(f, <span class="string">"dllimport"</span>),
-<a href=#114 id=114 data-nosnippet>114</a>            ThrustLinkage::DLLExport =&gt; <span class="macro">write!</span>(f, <span class="string">"dllexport"</span>),
-<a href=#115 id=115 data-nosnippet>115</a>            ThrustLinkage::ExternalWeak =&gt; <span class="macro">write!</span>(f, <span class="string">"externweak"</span>),
-<a href=#116 id=116 data-nosnippet>116</a>            ThrustLinkage::Weak =&gt; <span class="macro">write!</span>(f, <span class="string">"weak"</span>),
-<a href=#117 id=117 data-nosnippet>117</a>            ThrustLinkage::Internal =&gt; <span class="macro">write!</span>(f, <span class="string">"internal"</span>),
-<a href=#118 id=118 data-nosnippet>118</a>            ThrustLinkage::LinkerPrivate =&gt; <span class="macro">write!</span>(f, <span class="string">"linkerprivate"</span>),
-<a href=#119 id=119 data-nosnippet>119</a>            ThrustLinkage::LinkerPrivateWeak =&gt; <span class="macro">write!</span>(f, <span class="string">"linkerprivateweak"</span>),
-<a href=#120 id=120 data-nosnippet>120</a>        }
-<a href=#121 id=121 data-nosnippet>121</a>    }
-<a href=#122 id=122 data-nosnippet>122</a>}
+<a href=#108 id=108 data-nosnippet>108</a>            <span class="kw">_ </span>=&gt; ThrustLinkage::Standard,
+<a href=#109 id=109 data-nosnippet>109</a>        }
+<a href=#110 id=110 data-nosnippet>110</a>    }
+<a href=#111 id=111 data-nosnippet>111</a>}
+<a href=#112 id=112 data-nosnippet>112</a>
+<a href=#113 id=113 data-nosnippet>113</a><span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>ThrustLinkage {
+<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+<a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#116 id=116 data-nosnippet>116</a>            ThrustLinkage::Standard =&gt; <span class="macro">write!</span>(f, <span class="string">"standard"</span>),
+<a href=#117 id=117 data-nosnippet>117</a>            ThrustLinkage::Common =&gt; <span class="macro">write!</span>(f, <span class="string">"common"</span>),
+<a href=#118 id=118 data-nosnippet>118</a>            ThrustLinkage::DLLImport =&gt; <span class="macro">write!</span>(f, <span class="string">"dllimport"</span>),
+<a href=#119 id=119 data-nosnippet>119</a>            ThrustLinkage::DLLExport =&gt; <span class="macro">write!</span>(f, <span class="string">"dllexport"</span>),
+<a href=#120 id=120 data-nosnippet>120</a>            ThrustLinkage::ExternalWeak =&gt; <span class="macro">write!</span>(f, <span class="string">"externweak"</span>),
+<a href=#121 id=121 data-nosnippet>121</a>            ThrustLinkage::Weak =&gt; <span class="macro">write!</span>(f, <span class="string">"weak"</span>),
+<a href=#122 id=122 data-nosnippet>122</a>            ThrustLinkage::Internal =&gt; <span class="macro">write!</span>(f, <span class="string">"internal"</span>),
+<a href=#123 id=123 data-nosnippet>123</a>            ThrustLinkage::LinkerPrivate =&gt; <span class="macro">write!</span>(f, <span class="string">"linkerprivate"</span>),
+<a href=#124 id=124 data-nosnippet>124</a>            ThrustLinkage::LinkerPrivateWeak =&gt; <span class="macro">write!</span>(f, <span class="string">"linkerprivateweak"</span>),
+<a href=#125 id=125 data-nosnippet>125</a>        }
+<a href=#126 id=126 data-nosnippet>126</a>    }
+<a href=#127 id=127 data-nosnippet>127</a>}
 </code></pre></div></section></main></body></html>

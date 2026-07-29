@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["set_atomic_behavior"],"struct":["LLVMAtomicModificators"]};
+window.SIDEBAR_ITEMS = {"fn":["set_atomic_behavior_load_instruction"],"struct":["LLVMAtomicModificators"]};

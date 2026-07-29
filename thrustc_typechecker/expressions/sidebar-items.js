@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["validate_node"],"mod":["builtins","call_expr"]};
+window.SIDEBAR_ITEMS = {"fn":["validate_node"],"mod":["call_expr","compiler_builtins"]};

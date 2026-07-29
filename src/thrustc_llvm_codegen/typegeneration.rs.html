@@ -175,7 +175,7 @@
 <a href=#175 id=175 data-nosnippet>175</a>
 <a href=#176 id=176 data-nosnippet>176</a>    <span class="kw">match </span>kind {
 <a href=#177 id=177 data-nosnippet>177</a>        t <span class="kw">if </span>t.is_integer_type() || t.is_char_type() || t.is_bool_type() =&gt; <span class="kw">match </span>kind {
-<a href=#178 id=178 data-nosnippet>178</a>            Type::S8 { .. } | Type::U8 { .. }  =&gt; llvm_context.i8_type().into(),
+<a href=#178 id=178 data-nosnippet>178</a>            Type::S8 { .. } | Type::U8 { .. } | Type::Char { .. }  =&gt; llvm_context.i8_type().into(),
 <a href=#179 id=179 data-nosnippet>179</a>            Type::S16 { .. } | Type::U16 { .. } =&gt; llvm_context.i16_type().into(),
 <a href=#180 id=180 data-nosnippet>180</a>            Type::S32 { .. } | Type::U32 { .. } =&gt; llvm_context.i32_type().into(),
 <a href=#181 id=181 data-nosnippet>181</a>            Type::S64 { .. } | Type::U64 { .. } =&gt; llvm_context.i64_type().into(),
@@ -281,7 +281,7 @@
 <a href=#281 id=281 data-nosnippet>281</a>
 <a href=#282 id=282 data-nosnippet>282</a>    <span class="kw">match </span>kind {
 <a href=#283 id=283 data-nosnippet>283</a>        t <span class="kw">if </span>t.is_integer_type() || t.is_char_type() || t.is_bool_type() =&gt; <span class="kw">match </span>kind {
-<a href=#284 id=284 data-nosnippet>284</a>            Type::S8 { .. } | Type::U8 { .. }  =&gt; llvm_context.i8_type().into(),
+<a href=#284 id=284 data-nosnippet>284</a>            Type::S8 { .. } | Type::U8 { .. } | Type::Char { .. } =&gt; llvm_context.i8_type().into(),
 <a href=#285 id=285 data-nosnippet>285</a>            Type::S16 { .. } | Type::U16 { .. } =&gt; llvm_context.i16_type().into(),
 <a href=#286 id=286 data-nosnippet>286</a>            Type::S32 { .. } | Type::U32 { .. } =&gt; llvm_context.i32_type().into(),
 <a href=#287 id=287 data-nosnippet>287</a>            Type::S64 { .. } | Type::U64 { .. } =&gt; llvm_context.i64_type().into(),

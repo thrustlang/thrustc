@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["checks","context"],"struct":["Scoper"]};
+window.SIDEBAR_ITEMS = {"mod":["checks","context","table"],"struct":["Scoper"]};

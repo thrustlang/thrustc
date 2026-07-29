@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build_abi_align_of","build_abi_size_of","build_alignof","build_bit_size_of","build_builtin","build_halloc","build_memcpy","build_memmove","build_memset","build_sizeof"]};
+window.SIDEBAR_ITEMS = {"fn":["build_abi_align_of","build_abi_size_of","build_alignof","build_bit_size_of","build_compiler_builtin","build_halloc","build_memcpy","build_memmove","build_memset","build_sizeof"]};
