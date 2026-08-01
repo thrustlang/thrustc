@@ -26,6 +26,7 @@ fuzz-lexer = "fuzz run lexer fuzz/corpus_universal/lexer -- -dict=fuzz/thrust-st
 
 fuzz-dump-ast = "run --manifest-path fuzz/Cargo.toml --bin dump_ast"
 fuzz-dump-ast-local = "run --manifest-path fuzz/Cargo.toml --bin dump_ast_local"
+fuzz-dump-ast-local-loops = "run --manifest-path fuzz/Cargo.toml --bin dump_ast_local_loops"
 fuzz-reproduce-case = "run --manifest-path fuzz/Cargo.toml --bin reproduce"
 
 docs = "doc --workspace --no-deps --document-private-items --exclude clang --exclude inkwell --exclude inkwell_internals --exclude llvm-sys --exclude clang-sys"

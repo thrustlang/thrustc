@@ -34,6 +34,10 @@ clang = { path = "../crates/llvm/clang" }
 clang-sys = { path = "../crates/llvm/17/clang-sys" }
 llvm-sys = { path = "../crates/llvm/17/llvm-sys" }
 
+[lib]
+name = "thrustc_fuzz"
+path = "src/lib.rs"
+
 [[bin]]
 name = "lexer"
 path = "fuzz_targets/lexer.rs"
@@ -79,6 +83,13 @@ bench = false
 [[bin]]
 name = "dump_ast_local"
 path = "bin/dump_ast_local.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dump_ast_local_loops"
+path = "bin/dump_ast_local_loops.rs"
 test = false
 doc = false
 bench = false
