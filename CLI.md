@@ -5,6 +5,9 @@ A list of the commands and compiler flags supported by the command line interfac
 > [!WARNING]  
 > This might be a bit outdated, it could be information that's somewhat distant from the changes.
 
+> [!NOTE]
+> For every command line flag you can use `=` or `:` as the value indicator, in addition to the space. For example, these are all valid: `-abi=nvidia-cuda`, `-abi:nvidia-cuda` and `-abi nvidia-cuda`.
+
 ```console
 The Thrust Compiler
 
