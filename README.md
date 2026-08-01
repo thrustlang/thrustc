@@ -17,18 +17,18 @@ If you don't want to build the project from scratch, you can check if there are 
 
 [Thrust Compiler - Github Releases](https://github.com/thrustlang/thrustc/releases)
 
-Supported operating systems:
+Supported operating systems and architectures:
 
-- Windows x64 (MSVC) 
-- MacOS x64 (arm)
-- MacOS x64 (intel)
 - Linux x64 (GNU)
+- Windows x64 (MSVC) 
+- MacOS x64 (arm/aarch64)
+- MacOS x64 (intel)
 
 ## From Scratch
 
 ### Build dependencies 
 
-Among the dependencies required by the compiler is LLVM infrastructure.
+Among the dependencies required by the compiler is LLVM compiler infrastructure.
 
 Automatically:
 
@@ -56,9 +56,9 @@ $ git clone --depth=1 https://github.com/thrustlang/thrustc
 $ cd thrustc
 ```
 
-### Build Cargo dependencies 
+### Build Cargo/rustc dependencies 
 
-Among other obligatory dependencies we need also other libraries.
+Among other mandatory dependencies, we also need additional libraries specifically for Cargo and rustc.
 
 You must install each Cargo dependency automatically:
 
@@ -100,15 +100,9 @@ $ cargo build --release
 $ ./target/release/thrustc --help
 ```
 
-Another way:
-
-```console
-$ cargo run -- --help
-```
-
 ## Cross Compilation
 
-Thrust Compiler offers powerful cross-compilation support, just like [Clang](https://github.com/llvm/llvm-project/tree/main/clang).
+Thrust Compiler offers powerful cross-compilation support, just like '[Clang](https://github.com/llvm/llvm-project/tree/main/clang)'.
 
 ### RISC-V 64-bit
 
