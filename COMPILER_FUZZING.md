@@ -7,7 +7,8 @@
 Fuzzing is an important task in order to detect and fix issues could've been found on the compiler, then, you've to select either test with "stable" or "unstable"
 features the compiler.
 
-> **Note:** A **`rustc` nightly** toolchain is required in order to run fuzzing (this project uses `cargo-fuzz`/libFuzzer), even if you only intend to use the auxiliary
+> [!IMPORTANT]
+> A **`rustc` nightly** toolchain is required in order to run fuzzing (this project uses `cargo-fuzz`/libFuzzer), even if you only intend to use the auxiliary
 > binaries (e.g. `fuzz-dump-ast`, `fuzz-dump-ast-local`, `fuzz-reproduce-case`). Make sure to install it before building or running anything under `fuzz/`, for example:
 >
 > ```sh
