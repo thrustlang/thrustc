@@ -22,7 +22,13 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-const TARGETS: &[&str] = &["llvm-codegen-top-level", "llvm-codegen-local", "pipeline"];
+const TARGETS: &[&str] = &[
+    "llvm-codegen-top-level",
+    "llvm-codegen-local-loops",
+    "llvm-codegen-local",
+    "lexer",
+    "pipeline",
+];
 
 const CRASH_MARKERS: &[&str] = &[
     "ERROR: libFuzzer: deadly signal",

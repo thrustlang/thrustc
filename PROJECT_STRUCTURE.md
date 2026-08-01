@@ -1,4 +1,4 @@
-<img src="https://github.com/thrustlang/.github/blob/main/assets/logos/thrustlang-logo-name.png" alt="logo" style="width: 80%; height: 80%;">
+<img src="https://github.com/thrustlang/.github/blob/main/assets/logos/new%20logo/thrustlang-logo-banner-text-italic.png" alt="logo" style="width: 80%; height: 80%;">
 
 # Thrust Compiler — Project Structure
 

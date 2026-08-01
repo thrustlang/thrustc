@@ -63,6 +63,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "llvm-codegen-local-loops"
+path = "fuzz_targets/llvm_codegen_local_loops.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "dump_ast"
 path = "bin/dump_ast.rs"
 test = false

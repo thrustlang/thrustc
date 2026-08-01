@@ -72,7 +72,7 @@ pub fn show_help() -> ! {
         &format!(
             "{} {} [{}] {}\n",
             "•".bold(),
-            "-clang-link".custom_color((141, 141, 142)).bold(),
+            "-link-with-clang".custom_color((141, 141, 142)).bold(),
             "path/to/clang",
             "Specifies the path for use of an external Clang for linking purpose.",
         ),
@@ -83,7 +83,7 @@ pub fn show_help() -> ! {
         &format!(
             "{} {} [{}] {}\n",
             "•".bold(),
-            "-gcc-link".custom_color((141, 141, 142)).bold(),
+            "-link-with-gcc".custom_color((141, 141, 142)).bold(),
             "path/to/gcc",
             "Specifies GNU Compiler Collection (GCC) for linking purpose.",
         ),

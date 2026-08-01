@@ -321,7 +321,7 @@ impl CommandLine {
                 self.position = CommandLinePosition::ThrustCompiler;
             }
 
-            "-clang-link" => {
+            "-link-with-clang" => {
                 self.advance();
                 self.validate_llvm_required(arg);
                 self.validate_not_gcc_active();
@@ -342,7 +342,7 @@ impl CommandLine {
                 self.advance();
             }
 
-            "-gcc-link" => {
+            "-link-with-gcc" => {
                 self.advance();
                 self.validate_not_clang_active();
 

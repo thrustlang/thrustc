@@ -20,6 +20,7 @@
 use crate::{Type, traits::ConstantTypeExtensions};
 
 impl ConstantTypeExtensions for Type {
+    #[inline]
     fn remove_all_constant_type(&self) -> Type {
         if let Type::Const(subtype, ..) = self {
             return subtype.remove_all_constant_type();

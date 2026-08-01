@@ -16,6 +16,9 @@ fuzz-llvm-top-level-unstable = "fuzz run llvm-codegen-top-level fuzz/corpus_unst
 fuzz-llvm-local-stable = "fuzz run llvm-codegen-local fuzz/corpus_stable/llvm-codegen-local -- -dict=fuzz/thrust-stable.dict -rss_limit_mb=4096 -- --stable"
 fuzz-llvm-local-unstable = "fuzz run llvm-codegen-local fuzz/corpus_unstable/llvm-codegen-local -- -dict=fuzz/thrust-unstable.dict -rss_limit_mb=2048"
 
+fuzz-llvm-local-loops-unstable = "fuzz run llvm-codegen-local-loops fuzz/corpus_unstable/llvm-codegen-local-loops -- -dict=fuzz/thrust-unstable.dict -rss_limit_mb=2048"
+fuzz-llvm-local-loops-stable = "fuzz run llvm-codegen-local-loops fuzz/corpus_stable/llvm-codegen-local-loops -- -dict=fuzz/thrust-stable.dict -rss_limit_mb=4096 -- --stable"
+
 fuzz-pipeline-stable = "fuzz run pipeline fuzz/corpus_stable/pipeline -- -dict=fuzz/thrust-stable.dict -rss_limit_mb=2048 -- --stable"
 fuzz-pipeline-unstable = "fuzz run pipeline fuzz/corpus_unstable/pipeline -- -dict=fuzz/thrust-unstable.dict -rss_limit_mb=2048"
 
