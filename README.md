@@ -145,6 +145,10 @@ If you want to know regarding Rust code's structure that resides in the compiler
 
 If you require to know the command line shorcuts available in the project across rust-cargo, you should check out: [Thrust Programming Language - Cargo Alias](https://github.com/thrustlang/thrustc/blob/master/CARGO_ALIAS.md)
 
+## License
+
+Thrust Compiler is distributed under the terms of the GNU General Public License (version 3). See LICENSE.txt file for details.
+
 ## Q&A
 
 #### > Why isn't the compiler designed to use it as a bootstrap compiler?
@@ -152,10 +156,6 @@ If you require to know the command line shorcuts available in the project across
 Regarding the concept of bootstrapping in compilers (For more information: https://www.bootstrappable.org/).
 
 The decision was made to fully implement all the programming language functions in the compiler written in Rust, because it proposes a development approach similar to what Gleam Team did for Gleam Programming Language, and also to lighten the workload, given that we are already using LLVM.
-
-#### > When will this be released as a stable?
-
-https://github.com/user-attachments/assets/2cb6a406-eb2d-41d5-b5d8-784074a490d5
 
 #### > Agentic AI
 
