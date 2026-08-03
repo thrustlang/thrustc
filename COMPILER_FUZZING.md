@@ -73,22 +73,43 @@ Cargo's alias:
 
 - `cargo fuzz-lexer` It fuzz the lexer with a universal corpus and stable dictionary. RSS limit: 2048 MB.
 
+## Corpus directories
+
+The corpus directories (`corpus_stable/`, `corpus_unstable/`, `corpus_universal/`) are ignored by git (see `fuzz/.gitignore`), so they are **not** shipped when you clone the repository. If they are missing, fuzzing will fail. Before running any fuzzer, create them with one of the bundled scripts:
+
+```sh
+# Bash (Linux/macOS)
+bash fuzz/scripts/create_corpus_dirs.sh
+
+# Fish shell (Linux/MacOS)
+fish fuzz/scripts/create_corpus_dirs.fish
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -File fuzz\scripts\create_corpus_dirs.ps1
+
+# Windows (Command Prompt)
+fuzz\scripts\create_corpus_dirs.bat
+```
+
+All variants are idempotent: they resolve paths relative to `fuzz/` regardless of the current working directory, create any missing corpus folder with `mkdir -p`, and leave existing ones untouched.
+
 ## Fuzzing workflow
 
 This is the general workflow when a fuzzer finds an issue:
 
-1. **Run the fuzzer.** Start one of the fuzzing suites (e.g. `cargo fuzz-llvm-local-unstable`). libFuzzer keeps generating inputs and feeding them to the target until the compiler crashes (a panic, an ICE, an LLVM verification error, an out of memory, etc.). When that happens the fuzzer stops and writes the crashing input under `fuzz/artifacts/<target>/`.
-2. **Take the crash artifact.** The crash file is a raw bytes input, the exact data that made the compiler panic.
-3. **Inspect the AST.** Pass the crash file to the `dump-ast` binary that matches the fuzzer that crashed, to reconstruct and print the AST:
+1. **Create the corpus directories.** If this is a fresh clone, run one of the `create_corpus_dirs` scripts above (see [Corpus directories](#corpus-directories)).
+2. **Run the fuzzer.** Start one of the fuzzing suites (e.g. `cargo fuzz-llvm-local-unstable`). libFuzzer keeps generating inputs and feeding them to the target until the compiler crashes (a panic, an ICE, an LLVM verification error, an out of memory, etc.). When that happens the fuzzer stops and writes the crashing input under `fuzz/artifacts/<target>/`.
+3. **Take the crash artifact.** The crash file is a raw bytes input, the exact data that made the compiler panic.
+4. **Inspect the AST.** Pass the crash file to the `dump-ast` binary that matches the fuzzer that crashed, to reconstruct and print the AST:
    - `cargo fuzz-dump-ast <crash-file>` for the `pipeline` fuzzer.
    - `cargo fuzz-dump-ast-local <crash-file>` for the `llvm-codegen-local` fuzzer.
    - `cargo fuzz-dump-ast-local-loops <crash-file>` for the `llvm-codegen-local-loops` fuzzer.
    The dump is written to `fuzz/ast_dumps/`, so you can see which AST shape triggered the bug. For the lexer the crash file is plain UTF-8 source code, so you can inspect it directly.
-4. **Fix the compiler bug.** With the AST in front of you, locate the faulty code in the compiler (semantic analysis, AST validation, or LLVM codegen), fix it, and rebuild.
-5. **Reproduce to verify.** Run the same artifact again with `cargo fuzz-reproduce-case [<target> <artifact>]`, which rebuilds the target fuzzer and runs it against the crash file:
-   - If the `reproduce` result is **`REAL CRASH`**, the bug is still there. Go back to step 4.
+5. **Fix the compiler bug.** With the AST in front of you, locate the faulty code in the compiler (semantic analysis, AST validation, or LLVM codegen), fix it, and rebuild.
+6. **Reproduce to verify.** Run the same artifact again with `cargo fuzz-reproduce-case [<target> <artifact>]`, which rebuilds the target fuzzer and runs it against the crash file:
+   - If the `reproduce` result is **`REAL CRASH`**, the bug is still there. Go back to step 5.
    - If the result is **`no crash detected`**, the artifact no longer crashes the compiler, the bug was solved. The full output is logged under `fuzz/fuzz_reproduce_logs/<target>/`.
-6. **Continue fuzzing.** When verified, resume the fuzzer (`cargo fuzz-<target>-<mode>`) to look for the next issue. libFuzzer keeps the old artifacts in its corpus, so a regression that brings back the same bug is caught fast.
+7. **Continue fuzzing.** When verified, resume the fuzzer (`cargo fuzz-<target>-<mode>`) to look for the next issue. libFuzzer keeps the old artifacts in its corpus, so a regression that brings back the same bug is caught fast.
 
 ## Auxiliary binaries
 
