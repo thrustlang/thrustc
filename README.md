@@ -139,6 +139,30 @@ If you want to know regarding Rust code's structure that resides in the compiler
 
 If you require to know the command line shorcuts available in the project across rust-cargo, you should check out: [Thrust Programming Language - Cargo Alias](https://github.com/thrustlang/thrustc/blob/master/CARGO_ALIAS.md)
 
+## Commit Conventions
+
+If you want to know the commit conventions to follow in order to delivery a good Github commit, you should check out: [Thrust Programming Language - Commit Conventions](https://github.com/thrustlang/thrustc/blob/master/COMMIT_CONVENTIONS.md)
+
+## Compiler Diagnostics
+
+If you want to see examples of the type of compiler diagnostics you can find in thrustc, you should check out: [Thrust Programming Language - Compiler Diagnostics](https://github.com/thrustlang/thrustc/blob/master/COMPILER_DIAGNOSTICS.md)
+
+## Compiler Fuzzing
+
+If you want to know how to fuzz the compiler with stable and unstable features to find issues, you should check out: [Thrust Programming Language - Compiler Fuzzing](https://github.com/thrustlang/thrustc/blob/master/COMPILER_FUZZING.md)
+
+## Compiler Releasing
+
+If you want to know how a new compiler version is released, you should check out: [Thrust Programming Language - Compiler Releasing](https://github.com/thrustlang/thrustc/blob/master/COMPILER_RELEASING.md)
+
+## Release Binary Variants
+
+If you want to know the differences between the compiler binaries shipped in Github releases, you should check out: [Thrust Programming Language - Release Binary Variants](https://github.com/thrustlang/thrustc/blob/master/RELEASE_BINARY_VARIANTS.md)
+
+## Code of Conduct
+
+If you want to know the code of conduct expected from the project contributors, you should check out: [Thrust Programming Language - Code of Conduct](https://github.com/thrustlang/thrustc/blob/master/CODE_OF_CONDUCT.md)
+
 ## License
 
 Thrust Compiler is distributed under the terms of the GNU General Public License (version 3). See LICENSE.txt file for details.
