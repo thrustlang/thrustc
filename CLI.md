@@ -16,15 +16,15 @@ Usage: thrustc [-flags|--flags] [files..]
 General Commands:
 
 • -h, --help optional[opt|emit|print|code-model|
-        reloc-model|sanitizer|symbol-linkage-strategy|
-        denormal-floating-point-behavior|
-        denormal-floating-point-32-bits-behavior] Show help message.
+	reloc-model|sanitizer|symbol-linkage-strategy|
+	denormal-floating-point-behavior|
+	denormal-floating-point-32-bits-behavior] Show help message.
 • -v, --version Show the version.
 
 Linkage flags:
 
-• -clang-link [path/to/clang] Specifies the path for use of an external Clang for linking purpose.
-• -gcc-link [path/to/gcc] Specifies GNU Compiler Collection (GCC) for linking purpose.
+• -link-with-clang [path/to/clang] Specifies the path for use of an external Clang for linking purpose.
+• -link-with-gcc [path/to/gcc] Specifies GNU Compiler Collection (GCC) for linking purpose.
 • -start Marks the start of arguments to the active external or built-in linking compiler.
 • -end Marks the end of arguments to the active external or built-in linker compiler.
 
@@ -52,6 +52,7 @@ Compiler flags:
 • -jit-link [path/to/raylib.so] Specify, add, and link an external dynamic library for code execution via the JIT compiler.
 • -jit-entry [main] Specify the entry point name for the JIT compiler.
 • -abi [system-v|cuda] Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.
+• -mode [stable|unstable] Enable or disable compiler features to limit to stable features only or add support to unstable features.
 • -dbg Enable generation of debug information (DWARF).
 • -dbg-for-inlining Enable debug information specifically optimized for inlined functions.
 • -dbg-for-profiling Emit extra debug info to support source-level profiling tools.
