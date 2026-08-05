@@ -15,3 +15,5 @@ corpus_universal/lexer/*
 fuzz_reproduce_logs
 llvm_ir_dumps/*
 ast_dumps/*
+backlog
+fuzz_continuous

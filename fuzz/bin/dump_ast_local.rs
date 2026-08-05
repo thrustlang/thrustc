@@ -17,7 +17,6 @@
 
 */
 
-use arbitrary::Unstructured;
 use std::fs;
 use std::path::PathBuf;
 
@@ -28,10 +27,8 @@ fn main() {
 
     let data: Vec<u8> = fs::read(&path).expect("could not read crash file");
 
-    let mut unstructured: Unstructured<'_> = Unstructured::new(&data);
-
-    match thrustc_fuzz::llvm_codegen_local::gen_root(&mut unstructured) {
-        Ok(ast) => {
+    match thrustc_fuzz::dumps::ast_dump("llvm-codegen-local", &data) {
+        Ok(contents) => {
             let out_dir = PathBuf::from("fuzz/ast_dumps");
             fs::create_dir_all(&out_dir).unwrap();
 
@@ -42,9 +39,9 @@ fn main() {
                 .to_string();
             let out_path = out_dir.join(format!("{name}.txt"));
 
-            fs::write(&out_path, format!("{ast:#?}")).unwrap();
+            fs::write(&out_path, contents).unwrap();
             println!("AST dumped successfully to: {}", out_path.display());
         }
-        Err(e) => eprintln!("Arbitrary failed to reconstruct the AST with gen_root: {e}"),
+        Err(e) => eprintln!("{e}"),
     }
 }

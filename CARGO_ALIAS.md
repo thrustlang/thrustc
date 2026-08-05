@@ -112,6 +112,59 @@ Automates crash reproduction. Rebuilds and runs the target fuzzer against the cr
 cargo fuzz-reproduce-case [<target> <artifact>]
 ```
 
+## Continuous Compiler Fuzzing
+
+Unlike the one-shot aliases above (which stop at the first crash), the continuous supervisor runs a fuzzer in a loop, archives every crash/panic it finds (input + AST dump + LLVM IR dump) into `fuzz/backlog/`, records them in the cascading registry `fuzz/fuzz_continuous/<target>.log`, and immediately resumes fuzzing. The default mode is `stable`; pass `--mode unstable` to fuzz unstable features.
+
+### Supervisor commands
+
+```console
+cargo fuzz-continuous run <target> [--mode stable|unstable] [--runs N] [--max-time S]
+```
+
+Runs the target in a loop (one-shot with `--runs`/`--max-time`). Targets: `lexer`, `pipeline`, `llvm-codegen-top-level`, `llvm-codegen-local`, `llvm-codegen-local-loops`.
+
+```console
+cargo fuzz-continuous run-all [--mode stable|unstable]
+```
+
+Same, one fuzzer thread per target.
+
+### Backlog management
+
+```console
+cargo fuzz-backlog list [--all]
+cargo fuzz-backlog history [<target>]
+cargo fuzz-backlog import <target>
+cargo fuzz-backlog ignore <target> <issue-id>
+cargo fuzz-backlog reopen <target> <issue-id>
+cargo fuzz-backlog fixed <target> <issue-id>
+```
+
+- `list` shows the pending (`open`) errors per target (`--all` also shows `ignored`/`fixed`).
+- `history` prints the cascading registry log(s).
+- `import` archives crash artifacts already present under `fuzz/artifacts/<target>/`.
+- `ignore` / `reopen` / `fixed` change an issue's status (ignored inputs are never re-archived).
+
+### Shorthand aliases
+
+```console
+cargo fuzz-continuous-llvm-top-level-stable
+cargo fuzz-continuous-llvm-top-level-unstable
+cargo fuzz-continuous-llvm-local-stable
+cargo fuzz-continuous-llvm-local-unstable
+cargo fuzz-continuous-llvm-local-loops-stable
+cargo fuzz-continuous-llvm-local-loops-unstable
+cargo fuzz-continuous-pipeline-stable
+cargo fuzz-continuous-pipeline-unstable
+cargo fuzz-continuous-lexer
+```
+
+The first two are equivalent to `cargo fuzz-continuous run <target> --mode stable|unstable`; `fuzz-continuous-lexer` runs the lexer with the universal corpus (no mode).
+
+> [!NOTE]
+> The supervisor and `fuzz-reproduce-case` pick up the **nightly** channel declared in `fuzz/rust-toolchain.toml` automatically (they run `cargo +nightly fuzz run ...`), so you can invoke them from the repository root even though it pins a stable toolchain.
+
 -------------------------------------------------
 
 ## Rust Code Documentation

@@ -17,10 +17,8 @@
 
 */
 
-use arbitrary::{Arbitrary, Unstructured};
 use std::fs;
 use std::path::PathBuf;
-use thrustc_ast::Ast;
 
 fn main() {
     let path: String = std::env::args()
@@ -29,10 +27,8 @@ fn main() {
 
     let data: Vec<u8> = fs::read(&path).expect("could not read crash file");
 
-    let mut unstructured = Unstructured::new(&data);
-
-    match Ast::arbitrary(&mut unstructured) {
-        Ok(ast) => {
+    match thrustc_fuzz::dumps::ast_dump("pipeline", &data) {
+        Ok(contents) => {
             let out_dir = PathBuf::from("fuzz/ast_dumps");
             fs::create_dir_all(&out_dir).unwrap();
 
@@ -43,9 +39,9 @@ fn main() {
                 .to_string();
             let out_path = out_dir.join(format!("{name}.txt"));
 
-            fs::write(&out_path, format!("{ast:#?}")).unwrap();
+            fs::write(&out_path, contents).unwrap();
             println!("AST dumped to: {}", out_path.display());
         }
-        Err(e) => eprintln!("Arbitrary failed to reconstruct the AST: {e}"),
+        Err(e) => eprintln!("{e}"),
     }
 }

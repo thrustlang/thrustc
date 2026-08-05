@@ -30,6 +30,18 @@ fuzz-dump-ast-local-loops = "run --manifest-path fuzz/Cargo.toml --bin dump_ast_
 fuzz-dump-llvm-ir = "run --manifest-path fuzz/Cargo.toml --bin dump_llvm_ir"
 fuzz-reproduce-case = "run --manifest-path fuzz/Cargo.toml --bin reproduce"
 
+fuzz-continuous = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor"
+fuzz-backlog = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor"
+fuzz-continuous-llvm-top-level-stable = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor -- run llvm-codegen-top-level --mode stable"
+fuzz-continuous-llvm-top-level-unstable = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor -- run llvm-codegen-top-level --mode unstable"
+fuzz-continuous-llvm-local-stable = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor -- run llvm-codegen-local --mode stable"
+fuzz-continuous-llvm-local-unstable = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor -- run llvm-codegen-local --mode unstable"
+fuzz-continuous-llvm-local-loops-stable = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor -- run llvm-codegen-local-loops --mode stable"
+fuzz-continuous-llvm-local-loops-unstable = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor -- run llvm-codegen-local-loops --mode unstable"
+fuzz-continuous-pipeline-stable = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor -- run pipeline --mode stable"
+fuzz-continuous-pipeline-unstable = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor -- run pipeline --mode unstable"
+fuzz-continuous-lexer = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor -- run lexer"
+
 docs = "doc --workspace --no-deps --document-private-items --exclude clang --exclude inkwell --exclude inkwell_internals --exclude llvm-sys --exclude clang-sys"
 docs-open = "doc --workspace --no-deps --document-private-items --open --exclude clang --exclude inkwell --exclude inkwell_internals --exclude llvm-sys --exclude clang-sys"
 

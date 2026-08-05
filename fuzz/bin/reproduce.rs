@@ -22,29 +22,9 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-const TARGETS: &[&str] = &[
-    "llvm-codegen-top-level",
-    "llvm-codegen-local-loops",
-    "llvm-codegen-local",
-    "lexer",
-    "pipeline",
-];
+use thrustc_fuzz::dumps;
 
-const CRASH_MARKERS: &[&str] = &[
-    "ERROR: libFuzzer: deadly signal",
-    "ERROR: libFuzzer: out-of-memory",
-    "ERROR: libFuzzer: timeout",
-    "ERROR: AddressSanitizer",
-    "SUMMARY: AddressSanitizer",
-    "SUMMARY: libFuzzer",
-    "UNREACHABLE executed",
-    "panicked at",
-    "SEGV on unknown address",
-    "attempt to subtract with overflow",
-    "attempt to add with overflow",
-    "attempt to multiply with overflow",
-    "index out of bounds",
-];
+const TARGETS: &[&str] = dumps::TARGETS;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -160,6 +140,33 @@ fn infer_target_from_path(path: &Path) -> Option<String> {
         .map(|t| t.to_string())
 }
 
+/// The fuzz workspace requires a nightly compiler (see `fuzz/rust-toolchain.toml`).
+/// Returns the pinned channel override (e.g. `+nightly`), falling back to `+nightly`.
+fn fuzz_toolchain_arg() -> String {
+    let contents = std::fs::read_to_string("fuzz/rust-toolchain.toml").unwrap_or_default();
+
+    for line in contents.lines() {
+        let line = line.trim();
+
+        let Some(rest) = line.strip_prefix("channel") else {
+            continue;
+        };
+
+        let channel = rest
+            .trim()
+            .trim_start_matches('=')
+            .trim()
+            .trim_matches('"')
+            .trim();
+
+        if !channel.is_empty() {
+            return format!("+{channel}");
+        }
+    }
+
+    "+nightly".to_string()
+}
+
 fn prompt_for_target() -> String {
     println!("\nCouldn't infer the target from that path.");
 
@@ -193,7 +200,7 @@ fn run_and_report(target: &str, crash_file: &Path) {
     );
 
     let output = Command::new("cargo")
-        .args(["fuzz", "run", target])
+        .args([fuzz_toolchain_arg().as_str(), "fuzz", "run", target])
         .arg(crash_file)
         .output()
         .expect("failed to spawn `cargo fuzz run` — is cargo-fuzz installed?");
@@ -202,9 +209,7 @@ fn run_and_report(target: &str, crash_file: &Path) {
     let stderr = String::from_utf8_lossy(&output.stderr);
     let combined = format!("{stdout}\n{stderr}");
 
-    let matched_marker = CRASH_MARKERS
-        .iter()
-        .find(|marker| combined.contains(*marker));
+    let matched_marker = dumps::classify(&combined);
 
     let is_real_crash = matched_marker.is_some();
 

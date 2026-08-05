@@ -15,6 +15,8 @@ $corpusDirs = @(
     'corpus_universal\lexer'
     'fuzz_reproduce_logs'
     'fuzz_pipeline'
+    'backlog'
+    'fuzz_continuous'
 )
 
 foreach ($relative in $corpusDirs) {
