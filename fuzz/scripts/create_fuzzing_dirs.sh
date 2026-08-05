@@ -15,6 +15,8 @@ corpus_dirs=(
     corpus_unstable/llvm-codegen-local-loops
     corpus_unstable/pipeline
     corpus_universal/lexer
+    fuzz_reproduce_logs
+    fuzz_pipeline
 )
 
 for relative in "${corpus_dirs[@]}"; do
@@ -27,4 +29,4 @@ for relative in "${corpus_dirs[@]}"; do
     fi
 done
 
-echo "All corpus directories are present."
+echo "All required directories are present."

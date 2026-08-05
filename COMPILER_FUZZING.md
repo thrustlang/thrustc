@@ -81,25 +81,25 @@ The corpus directories (`corpus_stable/`, `corpus_unstable/`, `corpus_universal/
 
 ```sh
 # Bash (Linux/macOS)
-bash fuzz/scripts/create_corpus_dirs.sh
+bash fuzz/scripts/create_fuzzing_dirs.sh
 
 # Fish shell (Linux/MacOS)
-fish fuzz/scripts/create_corpus_dirs.fish
+fish fuzz/scripts/create_fuzzing_dirs.fish
 
 # Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -File fuzz\scripts\create_corpus_dirs.ps1
+powershell -ExecutionPolicy Bypass -File fuzz\scripts\create_fuzzing_dirs.ps1
 
 # Windows (Command Prompt)
-fuzz\scripts\create_corpus_dirs.bat
+fuzz\scripts\create_fuzzing_dirs.bat
 ```
 
-All variants are idempotent: they resolve paths relative to `fuzz/` regardless of the current working directory, create any missing corpus folder with `mkdir -p`, and leave existing ones untouched.
+All variants are idempotent: they resolve paths relative to `fuzz/` regardless of the current working directory, create any missing folder with `mkdir -p`, and leave existing ones untouched.
 
 ## Fuzzing workflow
 
 This is the general workflow when a fuzzer finds an issue:
 
-1. **Create the corpus directories.** If this is a fresh clone, run one of the `create_corpus_dirs` scripts above (see [Corpus directories](#corpus-directories)).
+1. **Create the required directories.** If this is a fresh clone, run one of the `create_fuzzing_dirs` scripts above (see [Corpus directories](#corpus-directories)).
 2. **Run the fuzzer.** Start one of the fuzzing suites (e.g. `cargo fuzz-llvm-local-unstable`). libFuzzer keeps generating inputs and feeding them to the target until the compiler crashes (a panic, an ICE, an LLVM verification error, an out of memory, etc.). When that happens the fuzzer stops and writes the crashing input under `fuzz/artifacts/<target>/`.
 3. **Take the crash artifact.** The crash file is a raw bytes input, the exact data that made the compiler panic.
 4. **Inspect the AST.** Pass the crash file to the `dump-ast` binary that matches the fuzzer that crashed, to reconstruct and print the AST:

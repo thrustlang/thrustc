@@ -13,6 +13,8 @@ $corpusDirs = @(
     'corpus_unstable\llvm-codegen-local-loops'
     'corpus_unstable\pipeline'
     'corpus_universal\lexer'
+    'fuzz_reproduce_logs'
+    'fuzz_pipeline'
 )
 
 foreach ($relative in $corpusDirs) {
@@ -25,4 +27,4 @@ foreach ($relative in $corpusDirs) {
     }
 }
 
-Write-Output 'All corpus directories are present.'
+Write-Output 'All required directories are present.'

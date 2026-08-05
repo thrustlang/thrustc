@@ -10,7 +10,9 @@ set corpus_dirs \
     corpus_unstable/llvm-codegen-local \
     corpus_unstable/llvm-codegen-local-loops \
     corpus_unstable/pipeline \
-    corpus_universal/lexer
+    corpus_universal/lexer \
+    fuzz_reproduce_logs \
+    fuzz_pipeline
 
 for relative in $corpus_dirs
     set target "$FUZZ_DIR/$relative"
@@ -22,4 +24,4 @@ for relative in $corpus_dirs
     end
 end
 
-echo "All corpus directories are present."
+echo "All required directories are present."

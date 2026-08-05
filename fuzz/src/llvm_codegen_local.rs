@@ -71,11 +71,7 @@ pub fn gen_root<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Ast<'ast>
 
 #[inline]
 fn gen_name<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<&'ast str> {
-    let len: usize = u.int_in_range(1..=100usize)?;
-
-    let bytes: &[u8] = u.bytes(len)?;
-
-    std::str::from_utf8(bytes).map_err(|_| arbitrary::Error::IncorrectFormat)
+    crate::names::gen_name(u)
 }
 
 fn gen_function<'ast>(

@@ -22,9 +22,14 @@
 use arbitrary::{Arbitrary, Unstructured};
 use either::Either;
 use libfuzzer_sys::{fuzz_target, Corpus};
+use std::sync::atomic::{AtomicU32, Ordering};
 use thrustc_ast::{traits::AstStandardExtensions, Ast};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_semantic::SemanticAnalysis;
+
+const MAX_SAVED_ASTS: u32 = 512;
+
+static SAVED_ASTS: AtomicU32 = AtomicU32::new(0);
 
 fuzz_target!(|data: &[u8]| -> Corpus {
     let stable_mode: bool = std::env::args().any(|arg| arg == "--stable");
@@ -50,24 +55,25 @@ fuzz_target!(|data: &[u8]| -> Corpus {
 
     let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &options).execute(false);
 
-    if let Either::Left(had_errors) = failed
-        && !had_errors
-    {
-        save_interesting_ast(&ast);
+    let Either::Left(had_errors) = failed else {
+        return Corpus::Reject;
+    };
 
-        return Corpus::Keep;
+    if had_errors {
+        return Corpus::Reject;
     }
+
+    save_interesting_ast(&ast, data.len());
 
     Corpus::Keep
 });
 
-fn save_interesting_ast(ast: &Ast) {
-    static mut COUNTER: u32 = 0;
+fn save_interesting_ast(ast: &Ast, input_size: usize) {
+    let counter: u32 = SAVED_ASTS.fetch_add(1, Ordering::Relaxed);
 
-    let counter: u32 = unsafe {
-        COUNTER = COUNTER.saturating_add(1);
-        COUNTER
-    };
+    if counter >= MAX_SAVED_ASTS {
+        return;
+    }
 
     let filename: String = format!("valid_ast_{:04}.txt", counter);
 
@@ -78,7 +84,7 @@ fn save_interesting_ast(ast: &Ast) {
          {:#?}\n",
         counter,
         chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-        std::mem::size_of_val(ast),
+        input_size,
         ast
     );
 

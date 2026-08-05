@@ -86,7 +86,7 @@ impl<'ast> ScopeStack<'ast> {
 
 #[inline]
 fn gen_name<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<&'ast str> {
-    u.arbitrary()
+    thrustc_fuzz::names::gen_name(u)
 }
 
 fn gen_root<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Ast<'ast>> {

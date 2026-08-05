@@ -71,7 +71,7 @@ pub fn gen_root<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Ast<'ast>
 
 #[inline]
 fn gen_name<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<&'ast str> {
-    u.arbitrary()
+    crate::names::gen_name(u)
 }
 
 fn gen_function<'ast>(
