@@ -112,8 +112,8 @@
 <a href=#112 id=112 data-nosnippet>112</a>            </span>Ast::Const { kind, .. } =&gt; kind,
 <a href=#113 id=113 data-nosnippet>113</a>
 <a href=#114 id=114 data-nosnippet>114</a>            <span class="comment">// Intrinsic
-<a href=#115 id=115 data-nosnippet>115</a>            </span>Ast::Intrinsic { return_type, .. } =&gt; return_type,
-<a href=#116 id=116 data-nosnippet>116</a>            Ast::IntrinsicParameter { kind, .. } =&gt; kind,
+<a href=#115 id=115 data-nosnippet>115</a>            </span>Ast::CompilerIntrinsic { return_type, .. } =&gt; return_type,
+<a href=#116 id=116 data-nosnippet>116</a>            Ast::CompilerIntrinsicParameter { kind, .. } =&gt; kind,
 <a href=#117 id=117 data-nosnippet>117</a>
 <a href=#118 id=118 data-nosnippet>118</a>            <span class="comment">// Indirect Call
 <a href=#119 id=119 data-nosnippet>119</a>            </span>Ast::IndirectCall { kind, .. } =&gt; kind,
@@ -209,10 +209,10 @@
 <a href=#209 id=209 data-nosnippet>209</a>            </span>Ast::AsmValue { kind, .. } =&gt; <span class="prelude-val">Ok</span>(kind),
 <a href=#210 id=210 data-nosnippet>210</a>
 <a href=#211 id=211 data-nosnippet>211</a>            <span class="comment">// Intrinsic
-<a href=#212 id=212 data-nosnippet>212</a>            </span>Ast::Intrinsic {
+<a href=#212 id=212 data-nosnippet>212</a>            </span>Ast::CompilerIntrinsic {
 <a href=#213 id=213 data-nosnippet>213</a>                return_type: kind, ..
 <a href=#214 id=214 data-nosnippet>214</a>            } =&gt; <span class="prelude-val">Ok</span>(kind),
-<a href=#215 id=215 data-nosnippet>215</a>            Ast::IntrinsicParameter { kind, .. } =&gt; <span class="prelude-val">Ok</span>(kind),
+<a href=#215 id=215 data-nosnippet>215</a>            Ast::CompilerIntrinsicParameter { kind, .. } =&gt; <span class="prelude-val">Ok</span>(kind),
 <a href=#216 id=216 data-nosnippet>216</a>
 <a href=#217 id=217 data-nosnippet>217</a>            <span class="comment">// Invalid
 <a href=#218 id=218 data-nosnippet>218</a>            </span>Ast::Invalid { kind, .. } =&gt; <span class="prelude-val">Ok</span>(kind),
@@ -320,8 +320,8 @@
 <a href=#320 id=320 data-nosnippet>320</a>            </span>Ast::GlobalAssembler { span, .. } =&gt; <span class="kw-2">*</span>span,
 <a href=#321 id=321 data-nosnippet>321</a>
 <a href=#322 id=322 data-nosnippet>322</a>            <span class="comment">// Intrinsic
-<a href=#323 id=323 data-nosnippet>323</a>            </span>Ast::Intrinsic { span, .. } =&gt; <span class="kw-2">*</span>span,
-<a href=#324 id=324 data-nosnippet>324</a>            Ast::IntrinsicParameter { span, .. } =&gt; <span class="kw-2">*</span>span,
+<a href=#323 id=323 data-nosnippet>323</a>            </span>Ast::CompilerIntrinsic { span, .. } =&gt; <span class="kw-2">*</span>span,
+<a href=#324 id=324 data-nosnippet>324</a>            Ast::CompilerIntrinsicParameter { span, .. } =&gt; <span class="kw-2">*</span>span,
 <a href=#325 id=325 data-nosnippet>325</a>
 <a href=#326 id=326 data-nosnippet>326</a>            <span class="comment">// Module Import
 <a href=#327 id=327 data-nosnippet>327</a>            </span>Ast::Import { span, .. } =&gt; <span class="kw-2">*</span>span,

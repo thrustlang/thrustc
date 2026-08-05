@@ -106,10 +106,10 @@
 <a href=#106 id=106 data-nosnippet>106</a>            </span>Ast::IndirectCall { kind, .. } =&gt; kind,
 <a href=#107 id=107 data-nosnippet>107</a>
 <a href=#108 id=108 data-nosnippet>108</a>            <span class="comment">// Intrinsic
-<a href=#109 id=109 data-nosnippet>109</a>            </span>Ast::Intrinsic {
+<a href=#109 id=109 data-nosnippet>109</a>            </span>Ast::CompilerIntrinsic {
 <a href=#110 id=110 data-nosnippet>110</a>                return_type: kind, ..
 <a href=#111 id=111 data-nosnippet>111</a>            } =&gt; kind,
-<a href=#112 id=112 data-nosnippet>112</a>            Ast::IntrinsicParameter { kind, .. } =&gt; kind,
+<a href=#112 id=112 data-nosnippet>112</a>            Ast::CompilerIntrinsicParameter { kind, .. } =&gt; kind,
 <a href=#113 id=113 data-nosnippet>113</a>
 <a href=#114 id=114 data-nosnippet>114</a>            <span class="comment">// Invalid
 <a href=#115 id=115 data-nosnippet>115</a>            </span>Ast::Invalid { kind, .. } =&gt; kind,

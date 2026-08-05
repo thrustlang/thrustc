@@ -121,7 +121,7 @@
 <a href=#121 id=121 data-nosnippet>121</a>    Span,
 <a href=#122 id=122 data-nosnippet>122</a>);
 <a href=#123 id=123 data-nosnippet>123</a>
-<a href=#124 id=124 data-nosnippet>124</a><span class="kw">pub type </span>Intrinsic&lt;<span class="lifetime">'entity</span>&gt; = (
+<a href=#124 id=124 data-nosnippet>124</a><span class="kw">pub type </span>CompilerIntrinsic&lt;<span class="lifetime">'entity</span>&gt; = (
 <a href=#125 id=125 data-nosnippet>125</a>    <span class="kw-2">&amp;</span><span class="lifetime">'entity </span>str,
 <a href=#126 id=126 data-nosnippet>126</a>    <span class="kw-2">&amp;</span><span class="lifetime">'entity </span>str,
 <a href=#127 id=127 data-nosnippet>127</a>    <span class="kw-2">&amp;</span><span class="lifetime">'entity </span>Type,
@@ -161,8 +161,8 @@
 <a href=#161 id=161 data-nosnippet>161</a>    <span class="macro">unreachable!</span>()
 <a href=#162 id=162 data-nosnippet>162</a>}
 <a href=#163 id=163 data-nosnippet>163</a>
-<a href=#164 id=164 data-nosnippet>164</a><span class="kw">pub fn </span>intrinsic_from_ast&lt;<span class="lifetime">'entity</span>&gt;(ast: <span class="kw-2">&amp;</span><span class="lifetime">'entity </span>Ast) -&gt; Intrinsic&lt;<span class="lifetime">'entity</span>&gt; {
-<a href=#165 id=165 data-nosnippet>165</a>    <span class="kw">if let </span>Ast::Intrinsic {
+<a href=#164 id=164 data-nosnippet>164</a><span class="kw">pub fn </span>compiler_intrinsic_from_ast&lt;<span class="lifetime">'entity</span>&gt;(ast: <span class="kw-2">&amp;</span><span class="lifetime">'entity </span>Ast) -&gt; CompilerIntrinsic&lt;<span class="lifetime">'entity</span>&gt; {
+<a href=#165 id=165 data-nosnippet>165</a>    <span class="kw">if let </span>Ast::CompilerIntrinsic {
 <a href=#166 id=166 data-nosnippet>166</a>        name,
 <a href=#167 id=167 data-nosnippet>167</a>        external_name,
 <a href=#168 id=168 data-nosnippet>168</a>        parameters,

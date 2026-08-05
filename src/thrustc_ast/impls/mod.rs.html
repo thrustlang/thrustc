@@ -56,7 +56,7 @@
 <a href=#56 id=56 data-nosnippet>56</a>
 <a href=#57 id=57 data-nosnippet>57</a>    <span class="attr">#[inline]
 <a href=#58 id=58 data-nosnippet>58</a>    </span><span class="kw">fn </span>is_intrinsic_keyword(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#59 id=59 data-nosnippet>59</a>        <span class="macro">matches!</span>(<span class="self">self</span>, Ast::Intrinsic { .. })
+<a href=#59 id=59 data-nosnippet>59</a>        <span class="macro">matches!</span>(<span class="self">self</span>, Ast::CompilerIntrinsic { .. })
 <a href=#60 id=60 data-nosnippet>60</a>    }
 <a href=#61 id=61 data-nosnippet>61</a>
 <a href=#62 id=62 data-nosnippet>62</a>    <span class="attr">#[inline]
@@ -149,7 +149,7 @@
 <a href=#149 id=149 data-nosnippet>149</a>            <span class="self">self</span>,
 <a href=#150 id=150 data-nosnippet>150</a>            Ast::FunctionParameter { .. }
 <a href=#151 id=151 data-nosnippet>151</a>                | Ast::AssemblerFunctionParameter { .. }
-<a href=#152 id=152 data-nosnippet>152</a>                | Ast::IntrinsicParameter { .. }
+<a href=#152 id=152 data-nosnippet>152</a>                | Ast::CompilerIntrinsicParameter { .. }
 <a href=#153 id=153 data-nosnippet>153</a>        )
 <a href=#154 id=154 data-nosnippet>154</a>    }
 <a href=#155 id=155 data-nosnippet>155</a>
@@ -200,7 +200,7 @@
 <a href=#200 id=200 data-nosnippet>200</a>                | Ast::Static { .. }
 <a href=#201 id=201 data-nosnippet>201</a>                | Ast::Enum { .. }
 <a href=#202 id=202 data-nosnippet>202</a>                | Ast::Function { .. }
-<a href=#203 id=203 data-nosnippet>203</a>                | Ast::Intrinsic { .. }
+<a href=#203 id=203 data-nosnippet>203</a>                | Ast::CompilerIntrinsic { .. }
 <a href=#204 id=204 data-nosnippet>204</a>                | Ast::AssemblerFunction { .. }
 <a href=#205 id=205 data-nosnippet>205</a>                | Ast::GlobalAssembler { .. }
 <a href=#206 id=206 data-nosnippet>206</a>                | Ast::Import { .. }
