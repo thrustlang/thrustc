@@ -23,7 +23,8 @@ use thrustc_ast::{
     Ast,
     ast_builtins::AstBuiltin,
     traits::{
-        AstCodeLocation, AstExpressionExtensions, AstStandardExtensions, AstStatementExtensions,
+        AstCodeLocation, AstExpressionExtensions, AstGetType, AstStandardExtensions,
+        AstStatementExtensions,
     },
 };
 use thrustc_diagnostician::Diagnostician;
@@ -70,11 +71,6 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 Ast::Function {
                     parameters, body, ..
                 } => {
-                    if let Some(body) = body {
-                        self.expected_statement(body);
-                        self.analyze_stmt(body);
-                    }
-
                     for parameter in parameters.iter() {
                         if !parameter.is_function_parameter() {
                             self.add_error(CompilationIssue::Error(
@@ -86,9 +82,14 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                             ));
                         }
                     }
+
+                    if let Some(body) = body {
+                        self.expected_statement(body);
+                        self.analyze_stmt(body);
+                    }
                 }
 
-                Ast::Intrinsic { parameters, .. } => {
+                Ast::CompilerIntrinsic { parameters, .. } => {
                     for parameter in parameters.iter() {
                         if !parameter.is_function_parameter() {
                             self.add_error(CompilationIssue::Error(
@@ -311,7 +312,19 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 self.analyze_expression(node);
             }
 
-            Ast::Group { node, .. } => {
+            Ast::Group { node, kind: ty, .. } => {
+                let node_type: &thrustc_typesystem::Type = node.get_any_type();
+
+                if node_type != ty {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a group expression with an inherited type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
+
                 self.expected_expression(node);
                 self.analyze_expression(node);
             }

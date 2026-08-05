@@ -279,7 +279,7 @@ pub fn generate_function_type<'llvm_abi>(
             }
 
             Ast::AssemblerFunctionParameter { .. } => (),
-            Ast::IntrinsicParameter { .. } => (),
+            Ast::CompilerIntrinsicParameter { .. } => (),
 
             _ => (),
         }

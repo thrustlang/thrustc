@@ -82,7 +82,7 @@ impl LLVMCallConventionsChecker<'_> {
             Ast::Function { attributes, .. } => {
                 self.analyze_applicant(attributes, LLVMCallConventionAplicant::Function);
             }
-            Ast::Intrinsic { attributes, .. } => {
+            Ast::CompilerIntrinsic { attributes, .. } => {
                 self.analyze_applicant(attributes, LLVMCallConventionAplicant::Instrinsic);
             }
 

@@ -50,7 +50,7 @@ impl<'llvm> LLVMIntrinsicChecker<'llvm> {
     pub fn analyze(&mut self) -> bool {
         {
             for node in self.ast.iter() {
-                if let Ast::Intrinsic {
+                if let Ast::CompilerIntrinsic {
                     external_name,
                     span,
                     ..

@@ -148,9 +148,9 @@ impl<'type_checker> TypeChecker<'type_checker> {
 impl<'type_checker> TypeChecker<'type_checker> {
     pub fn analyze_decl(&mut self, node: &'type_checker Ast) -> Result<(), CompilationIssue> {
         match node {
-            Ast::Intrinsic { .. } | Ast::AssemblerFunction { .. } | Ast::Function { .. } => {
-                toplevel::functions::validate_node(self, node)
-            }
+            Ast::CompilerIntrinsic { .. }
+            | Ast::AssemblerFunction { .. }
+            | Ast::Function { .. } => toplevel::functions::validate_node(self, node),
 
             Ast::Struct { .. } | Ast::CustomType { .. } => {
                 visit_type::visit_all_types(node, &mut |ty, _| {
@@ -809,7 +809,7 @@ impl TypeChecker<'_> {
                         self.get_mut_table()
                             .new_function(name, (return_type, types, attributes));
                     }
-                    Ast::Intrinsic {
+                    Ast::CompilerIntrinsic {
                         name,
                         parameters_types: types,
                         attributes,

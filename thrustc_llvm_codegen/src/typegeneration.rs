@@ -63,12 +63,13 @@ pub fn compile_as_function_type<'ctx>(
         for parameter in parameters {
             match parameter {
                 Ast::FunctionParameter { kind, .. }
-                | Ast::IntrinsicParameter { kind, .. }
+                | Ast::CompilerIntrinsicParameter { kind, .. }
                 | Ast::AssemblerFunctionParameter { kind, .. } => {
                     let generated_type: BasicTypeEnum<'ctx> = self::generate_type(context, kind);
                     llvm_parameters_types.push(generated_type.into());
                 }
-                _ => {}
+                
+                _ => ()
             }
         }
     

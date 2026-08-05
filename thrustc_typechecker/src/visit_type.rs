@@ -39,7 +39,7 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
         | Ast::ContinueAll { kind, span, .. }
         | Ast::BreakAll { kind, span, .. }
         | Ast::CustomType { kind, span, .. }
-        | Ast::IntrinsicParameter { kind, span, .. }
+        | Ast::CompilerIntrinsicParameter { kind, span, .. }
         | Ast::AssemblerFunctionParameter { kind, span, .. }
         | Ast::FunctionParameter { kind, span, .. }
         | Ast::Reference { kind, span, .. }
@@ -199,7 +199,7 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             visit_all_types(value, on_type);
         }
 
-        Ast::Intrinsic {
+        Ast::CompilerIntrinsic {
             parameters,
             parameters_types,
             return_type,

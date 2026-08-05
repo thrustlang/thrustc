@@ -82,8 +82,7 @@ pub fn validate_node<'type_checker>(
 
             Ok(())
         }
-
-        Ast::Intrinsic {
+        Ast::CompilerIntrinsic {
             name,
             parameters,
             parameters_types,

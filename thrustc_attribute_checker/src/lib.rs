@@ -135,7 +135,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                     *span,
                 );
             }
-            Ast::Intrinsic {
+            Ast::CompilerIntrinsic {
                 attributes, span, ..
             } => {
                 self.analyze_attrs(

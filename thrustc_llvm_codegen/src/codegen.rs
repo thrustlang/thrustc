@@ -95,10 +95,10 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
         {
             for node in self.ast.iter() {
                 match node {
-                    Ast::Intrinsic { .. } => {
+                    Ast::CompilerIntrinsic { .. } => {
                         intrinsic::compile(
                             self.context,
-                            thrustc_entities::intrinsic_from_ast(node),
+                            thrustc_entities::compiler_intrinsic_from_ast(node),
                         );
                     }
                     Ast::AssemblerFunction { .. } => asmfunction::compile(

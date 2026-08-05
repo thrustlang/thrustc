@@ -70,6 +70,24 @@ impl LLVMSymbolsTable<'_> {
 impl<'ctx> LLVMSymbolsTable<'ctx> {
     #[must_use]
     pub fn get_symbol(&self, name: &str) -> SymbolAllocated<'ctx> {
+        for scope in self.locals.iter().rev() {
+            if let Some(local) = scope.get(name) {
+                return *local;
+            }
+        }
+
+        for scope in self.local_constants.iter().rev() {
+            if let Some(local_constant) = scope.get(name) {
+                return *local_constant;
+            }
+        }
+
+        for scope in self.local_statics.iter().rev() {
+            if let Some(local_static) = scope.get(name) {
+                return *local_static;
+            }
+        }
+
         if let Some(parameter) = self.parameters.get(name) {
             return *parameter;
         }
@@ -78,34 +96,12 @@ impl<'ctx> LLVMSymbolsTable<'ctx> {
             return *allocated_parameter;
         }
 
-        for position in (0..self.scope).rev() {
-            if let Some(scope) = self.locals.get(position) {
-                if let Some(local) = scope.get(name) {
-                    return *local;
-                }
-            }
-        }
-
         if let Some(global_constant) = self.global_constants.get(name) {
             return *global_constant;
-        }
-        for position in (0..self.scope).rev() {
-            if let Some(scope) = self.local_constants.get(position) {
-                if let Some(local_constant) = scope.get(name) {
-                    return *local_constant;
-                }
-            }
         }
 
         if let Some(global_static) = self.global_statics.get(name) {
             return *global_static;
-        }
-        for position in (0..self.scope).rev() {
-            if let Some(scope) = self.local_statics.get(position) {
-                if let Some(local_static) = scope.get(name) {
-                    return *local_static;
-                }
-            }
         }
 
         if let Some(function) = self.functions.get(name) {
@@ -198,6 +194,7 @@ impl<'ctx> LLVMSymbolsTable<'ctx> {
 }
 
 impl LLVMSymbolsTable<'_> {
+    #[inline]
     pub fn begin_scope(&mut self) {
         self.local_statics
             .push(HashMap::with_capacity(u8::MAX as usize));
@@ -206,14 +203,37 @@ impl LLVMSymbolsTable<'_> {
         self.locals.push(HashMap::with_capacity(u8::MAX as usize));
 
         self.scope = self.scope.saturating_add(1);
+
+        debug_assert_eq!(
+            self.locals.len(),
+            self.scope,
+            "LLVMSymbolsTable desync on begin_scope: locals.len()={} but scope={}. \
+             A scope stack was pushed/popped without going through begin_scope/end_scope, \
+             or begin_scope was called out of order relative to symbol registration.",
+            self.locals.len(),
+            self.scope
+        );
+        debug_assert_eq!(self.local_constants.len(), self.scope);
+        debug_assert_eq!(self.local_statics.len(), self.scope);
     }
 
+    #[inline]
     pub fn end_scope(&mut self) {
         self.local_statics.pop();
         self.local_constants.pop();
         self.locals.pop();
 
         self.scope = self.scope.saturating_sub(1);
+
+        debug_assert_eq!(
+            self.locals.len(),
+            self.scope,
+            "LLVMSymbolsTable desync on end_scope: locals.len()={} but scope={}.",
+            self.locals.len(),
+            self.scope
+        );
+        debug_assert_eq!(self.local_constants.len(), self.scope);
+        debug_assert_eq!(self.local_statics.len(), self.scope);
 
         if self.scope == 0 {
             self.parameters.clear();

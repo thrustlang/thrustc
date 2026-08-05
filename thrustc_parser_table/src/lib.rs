@@ -404,24 +404,6 @@ impl<'parser> SymbolTable<'parser> {
         id: &'parser str,
         span: Span,
     ) -> Result<FoundSymbolId<'parser>, CompilationIssue> {
-        for (idx, scope) in self.llis.iter().enumerate().rev() {
-            if scope.contains_key(id) {
-                return Ok((
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    Some((id, idx)),
-                    None,
-                    None,
-                ));
-            }
-        }
-
         for (idx, scope) in self.locals.iter().enumerate().rev() {
             if scope.contains_key(id) {
                 return Ok((
@@ -435,6 +417,96 @@ impl<'parser> SymbolTable<'parser> {
                     None,
                     None,
                     Some((id, idx)),
+                    None,
+                ));
+            }
+        }
+
+        for (idx, scope) in self.local_structs.iter().enumerate().rev() {
+            if scope.contains_key(id) {
+                return Ok((
+                    Some((id, idx)),
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ));
+            }
+        }
+
+        for (idx, scope) in self.local_enums.iter().enumerate().rev() {
+            if scope.contains_key(id) {
+                return Ok((
+                    None,
+                    None,
+                    Some((id, idx)),
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ));
+            }
+        }
+
+        for (idx, scope) in self.local_custom_types.iter().enumerate().rev() {
+            if scope.contains_key(id) {
+                return Ok((
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    Some((id, idx)),
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ));
+            }
+        }
+
+        for (idx, scope) in self.local_constants.iter().enumerate().rev() {
+            if scope.contains_key(id) {
+                return Ok((
+                    None,
+                    None,
+                    None,
+                    None,
+                    Some((id, idx)),
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ));
+            }
+        }
+
+        for (idx, scope) in self.local_statics.iter().enumerate().rev() {
+            if scope.contains_key(id) {
+                return Ok((
+                    None,
+                    None,
+                    None,
+                    Some((id, idx)),
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
                     None,
                 ));
             }
@@ -456,23 +528,6 @@ impl<'parser> SymbolTable<'parser> {
             ));
         }
 
-        for (idx, scope) in self.local_structs.iter().enumerate().rev() {
-            if scope.contains_key(id) {
-                return Ok((
-                    Some((id, idx)),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                ));
-            }
-        }
         if self.global_structs.contains_key(id) {
             return Ok((
                 Some((id, 0)),
@@ -489,23 +544,6 @@ impl<'parser> SymbolTable<'parser> {
             ));
         }
 
-        for (idx, scope) in self.local_enums.iter().enumerate().rev() {
-            if scope.contains_key(id) {
-                return Ok((
-                    None,
-                    None,
-                    Some((id, idx)),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                ));
-            }
-        }
         if self.global_enums.contains_key(id) {
             return Ok((
                 None,
@@ -522,23 +560,6 @@ impl<'parser> SymbolTable<'parser> {
             ));
         }
 
-        for (idx, scope) in self.local_custom_types.iter().enumerate().rev() {
-            if scope.contains_key(id) {
-                return Ok((
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    Some((id, idx)),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                ));
-            }
-        }
         if self.global_custom_types.contains_key(id) {
             return Ok((
                 None,
@@ -603,24 +624,6 @@ impl<'parser> SymbolTable<'parser> {
             ));
         }
 
-        for (idx, scope) in self.local_constants.iter().enumerate().rev() {
-            if scope.contains_key(id) {
-                return Ok((
-                    None,
-                    None,
-                    None,
-                    None,
-                    Some((id, idx)),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                ));
-            }
-        }
-
         if self.global_constants.contains_key(id) {
             return Ok((
                 None,
@@ -637,23 +640,6 @@ impl<'parser> SymbolTable<'parser> {
             ));
         }
 
-        for (idx, scope) in self.local_statics.iter().enumerate().rev() {
-            if scope.contains_key(id) {
-                return Ok((
-                    None,
-                    None,
-                    None,
-                    Some((id, idx)),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                ));
-            }
-        }
         if self.global_statics.contains_key(id) {
             return Ok((
                 None,

@@ -130,7 +130,7 @@ impl<'scoper> Scoper<'scoper> {
                 self.get_mut_table().add_assembler_function(name);
             }
 
-            Ast::Intrinsic { name, .. } => {
+            Ast::CompilerIntrinsic { name, .. } => {
                 self.get_mut_table().add_compiler_intrinsic(name);
             }
 

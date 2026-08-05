@@ -274,7 +274,7 @@ pub enum Ast<'ast> {
     },
 
     // Functions
-    Intrinsic {
+    CompilerIntrinsic {
         name: &'ast str,
         external_name: &'ast str,
         parameters: std::vec::Vec<Ast<'ast>>,
@@ -284,7 +284,7 @@ pub enum Ast<'ast> {
         span: Span,
         id: NodeId,
     },
-    IntrinsicParameter {
+    CompilerIntrinsicParameter {
         kind: Type,
         span: Span,
         id: NodeId,

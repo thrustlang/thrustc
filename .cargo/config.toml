@@ -24,9 +24,10 @@ fuzz-pipeline-unstable = "fuzz run pipeline fuzz/corpus_unstable/pipeline -- -di
 
 fuzz-lexer = "fuzz run lexer fuzz/corpus_universal/lexer -- -dict=fuzz/thrust-stable.dict -rss_limit_mb=2048" 
 
-fuzz-dump-ast = "run --manifest-path fuzz/Cargo.toml --bin dump_ast"
+fuzz-dump-ast-top-level = "run --manifest-path fuzz/Cargo.toml --bin dump_ast_top_level"
 fuzz-dump-ast-local = "run --manifest-path fuzz/Cargo.toml --bin dump_ast_local"
 fuzz-dump-ast-local-loops = "run --manifest-path fuzz/Cargo.toml --bin dump_ast_local_loops"
+fuzz-dump-llvm-ir = "run --manifest-path fuzz/Cargo.toml --bin dump_llvm_ir"
 fuzz-reproduce-case = "run --manifest-path fuzz/Cargo.toml --bin reproduce"
 
 docs = "doc --workspace --no-deps --document-private-items --exclude clang --exclude inkwell --exclude inkwell_internals --exclude llvm-sys --exclude clang-sys"

@@ -100,7 +100,7 @@ pub fn build_compiler_intrinsic<'parser>(
 
         parameters_types.push(kind.clone());
 
-        parameters.push(Ast::IntrinsicParameter {
+        parameters.push(Ast::CompilerIntrinsicParameter {
             kind,
             span,
             id: NodeId::new(),
@@ -146,7 +146,7 @@ pub fn build_compiler_intrinsic<'parser>(
 
         Ok(Ast::new_nullptr(span))
     } else {
-        Ok(Ast::Intrinsic {
+        let ast: Ast<'_> = Ast::CompilerIntrinsic {
             name,
             external_name,
             parameters,
@@ -155,6 +155,8 @@ pub fn build_compiler_intrinsic<'parser>(
             attributes,
             span,
             id: NodeId::new(),
-        })
+        };
+
+        Ok(ast)
     }
 }

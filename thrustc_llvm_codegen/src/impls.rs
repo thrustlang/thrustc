@@ -106,10 +106,10 @@ impl AstLLVMGetType for Ast<'_> {
             Ast::IndirectCall { kind, .. } => kind,
 
             // Intrinsic
-            Ast::Intrinsic {
+            Ast::CompilerIntrinsic {
                 return_type: kind, ..
             } => kind,
-            Ast::IntrinsicParameter { kind, .. } => kind,
+            Ast::CompilerIntrinsicParameter { kind, .. } => kind,
 
             // Invalid
             Ast::Invalid { kind, .. } => kind,

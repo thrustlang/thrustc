@@ -74,8 +74,8 @@ doc = false
 bench = false
 
 [[bin]]
-name = "dump_ast"
-path = "bin/dump_ast.rs"
+name = "dump_ast_top_level"
+path = "bin/dump_ast_top_level.rs"
 test = false
 doc = false
 bench = false
@@ -90,6 +90,13 @@ bench = false
 [[bin]]
 name = "dump_ast_local_loops"
 path = "bin/dump_ast_local_loops.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dump_llvm_ir"
+path = "bin/dump_llvm_ir.rs"
 test = false
 doc = false
 bench = false

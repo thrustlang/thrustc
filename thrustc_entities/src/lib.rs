@@ -121,7 +121,7 @@ pub type AssemblerFunction<'entity> = (
     Span,
 );
 
-pub type Intrinsic<'entity> = (
+pub type CompilerIntrinsic<'entity> = (
     &'entity str,
     &'entity str,
     &'entity Type,
@@ -161,8 +161,8 @@ pub fn assembler_function_from_ast<'entity>(ast: &'entity Ast) -> AssemblerFunct
     unreachable!()
 }
 
-pub fn intrinsic_from_ast<'entity>(ast: &'entity Ast) -> Intrinsic<'entity> {
-    if let Ast::Intrinsic {
+pub fn compiler_intrinsic_from_ast<'entity>(ast: &'entity Ast) -> CompilerIntrinsic<'entity> {
+    if let Ast::CompilerIntrinsic {
         name,
         external_name,
         parameters,

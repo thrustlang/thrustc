@@ -112,8 +112,8 @@ impl AstGetType for Ast<'_> {
             Ast::Const { kind, .. } => kind,
 
             // Intrinsic
-            Ast::Intrinsic { return_type, .. } => return_type,
-            Ast::IntrinsicParameter { kind, .. } => kind,
+            Ast::CompilerIntrinsic { return_type, .. } => return_type,
+            Ast::CompilerIntrinsicParameter { kind, .. } => kind,
 
             // Indirect Call
             Ast::IndirectCall { kind, .. } => kind,
@@ -209,10 +209,10 @@ impl AstGetType for Ast<'_> {
             Ast::AsmValue { kind, .. } => Ok(kind),
 
             // Intrinsic
-            Ast::Intrinsic {
+            Ast::CompilerIntrinsic {
                 return_type: kind, ..
             } => Ok(kind),
-            Ast::IntrinsicParameter { kind, .. } => Ok(kind),
+            Ast::CompilerIntrinsicParameter { kind, .. } => Ok(kind),
 
             // Invalid
             Ast::Invalid { kind, .. } => Ok(kind),
@@ -320,8 +320,8 @@ impl AstCodeLocation for Ast<'_> {
             Ast::GlobalAssembler { span, .. } => *span,
 
             // Intrinsic
-            Ast::Intrinsic { span, .. } => *span,
-            Ast::IntrinsicParameter { span, .. } => *span,
+            Ast::CompilerIntrinsic { span, .. } => *span,
+            Ast::CompilerIntrinsicParameter { span, .. } => *span,
 
             // Module Import
             Ast::Import { span, .. } => *span,

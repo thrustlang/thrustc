@@ -157,4 +157,11 @@ pub fn set_compiler_features(new_mode: CompilerFeaturesMode) {
             "Unable to set the compiler features mode!",
         )
     }) = new_mode;
+
+    if matches!(new_mode, CompilerFeaturesMode::Unstable) {
+        thrustc_logging::print_warning(
+            thrustc_logging::LoggingType::Warning,
+            "Compiler features mode set to 'Unstable'. This may lead to unexpected behavior or unexpected panics using unstable features.",
+        );
+    }
 }

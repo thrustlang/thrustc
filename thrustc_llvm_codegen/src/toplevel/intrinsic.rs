@@ -18,7 +18,7 @@
 */
 
 use thrustc_ast::Ast;
-use thrustc_entities::Intrinsic;
+use thrustc_entities::CompilerIntrinsic;
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributeComparator;
 use thrustc_llvm_attributes::LLVMAttributes;
@@ -38,7 +38,10 @@ use inkwell::module::Module;
 use inkwell::types::FunctionType;
 use inkwell::values::FunctionValue;
 
-pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, intrinsic: Intrinsic<'ctx>) {
+pub fn compile<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    intrinsic: CompilerIntrinsic<'ctx>,
+) {
     let llvm_module: &Module = context.get_llvm_module();
 
     let name: &str = intrinsic.0;

@@ -347,7 +347,7 @@ impl Linter<'_> {
                         .new_function(name, (*span, attributes.has_public_attribute()));
                 }
 
-                Ast::Intrinsic {
+                Ast::CompilerIntrinsic {
                     name,
                     span,
                     attributes,

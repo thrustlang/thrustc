@@ -56,7 +56,7 @@ impl AstStandardExtensions for Ast<'_> {
 
     #[inline]
     fn is_intrinsic_keyword(&self) -> bool {
-        matches!(self, Ast::Intrinsic { .. })
+        matches!(self, Ast::CompilerIntrinsic { .. })
     }
 
     #[inline]
@@ -149,7 +149,7 @@ impl AstStandardExtensions for Ast<'_> {
             self,
             Ast::FunctionParameter { .. }
                 | Ast::AssemblerFunctionParameter { .. }
-                | Ast::IntrinsicParameter { .. }
+                | Ast::CompilerIntrinsicParameter { .. }
         )
     }
 
@@ -200,7 +200,7 @@ impl AstDeclarationExtensions for Ast<'_> {
                 | Ast::Static { .. }
                 | Ast::Enum { .. }
                 | Ast::Function { .. }
-                | Ast::Intrinsic { .. }
+                | Ast::CompilerIntrinsic { .. }
                 | Ast::AssemblerFunction { .. }
                 | Ast::GlobalAssembler { .. }
                 | Ast::Import { .. }
