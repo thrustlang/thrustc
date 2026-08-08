@@ -11,3 +11,6 @@ generators, auxiliary binaries, dictionaries and corpora.
 
 > [!IMPORTANT]
 > The complete fuzzing guide is in `COMPILER_FUZZING.md` at the repository root.
+>
+> For the continuous fuzzing supervisor (loop fuzzing, backlog and registry log)
+> see `COMPILER_CONTINUOUS_FUZZING.md` in this folder.
