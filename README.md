@@ -131,6 +131,10 @@ If you want to know a high-level command line view, you should check out: [Thrus
 
 If you want to know a little about the compiler's structure, you should check out: [Thrust Programming Language - Compiler Structure](https://github.com/thrustlang/thrustc/blob/master/PROJECT_STRUCTURE.md)
 
+## Contributing
+
+If you want to know how to contribute to the compiler, you should check out: [Thrust Programming Language - Contributing](https://github.com/thrustlang/thrustc/blob/master/CONTRIBUTING.md)
+
 ## Rust Code Documentation
 
 If you want to know regarding Rust code's structure that resides in the compiler, you should check out: [Thrust Programming Language - Rust Code Documentation](https://thrustlang.github.io/thrustc/)

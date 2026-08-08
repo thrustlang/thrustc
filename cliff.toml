@@ -36,11 +36,13 @@ commit_parsers = [
   { message = "^\\(.*feat\\(llvm_linker_driver\\).*\\)", group = "Features",      scope = "llvm_linker_driver" },
   { message = "^\\(.*feat\\(project-visual\\).*\\)",     group = "Documentation", scope = "project-visual" },
   { message = "^\\(.*feat\\(project\\).*\\)",            group = "Project",       scope = "project" },
+  { message = "^\\(.*feat\\(doc\\).*\\)",                group = "Documentation", scope = "doc" },
   { message = "^\\(.*fix\\(frontend\\).*\\)",            group = "Bug Fixes",     scope = "frontend" },
   { message = "^\\(.*fix\\(llvm_backend\\).*\\)",        group = "Bug Fixes",     scope = "llvm_backend" },
   { message = "^\\(.*fix\\(gcc_backend\\).*\\)",         group = "Bug Fixes",     scope = "gcc_backend" },
   { message = "^\\(.*fix\\(llvm_linker_driver\\).*\\)",  group = "Bug Fixes",     scope = "llvm_linker_driver" },
   { message = "^\\(.*fix\\(project\\).*\\)",             group = "Bug Fixes",     scope = "project" },
+  { message = "^\\(.*fix\\(doc\\).*\\)",                 group = "Bug Fixes",     scope = "doc" },
 
   # --- Sintaxis simple: feat(...) / fix(...) ---
   { message = "^feat\\(llvm_backend\\)",       group = "Features",      scope = "llvm_backend" },
@@ -49,6 +51,7 @@ commit_parsers = [
   { message = "^feat\\(frontend\\)",           group = "Features",      scope = "frontend" },
   { message = "^feat\\(project-visual\\)",     group = "Documentation", scope = "project-visual" },
   { message = "^feat\\(project\\)",            group = "Project",       scope = "project" },
+  { message = "^feat\\(doc\\)",                group = "Documentation", scope = "doc" },
   { message = "^feat\\(",                      group = "Features" },
   { message = "^fix\\(llvm_backend\\)",        group = "Bug Fixes",     scope = "llvm_backend" },
   { message = "^fix\\(gcc_backend\\)",         group = "Bug Fixes",     scope = "gcc_backend" },
@@ -56,6 +59,7 @@ commit_parsers = [
   { message = "^fix\\(frontend\\)",            group = "Bug Fixes",     scope = "frontend" },
   { message = "^fix\\(project-visual\\)",      group = "Bug Fixes",     scope = "project-visual" },
   { message = "^fix\\(project\\)",             group = "Bug Fixes",     scope = "project" },
+  { message = "^fix\\(doc\\)",                 group = "Bug Fixes",     scope = "doc" },
   { message = "^fix\\(",                       group = "Bug Fixes" },
   { message = ".*", skip = true },
 ]

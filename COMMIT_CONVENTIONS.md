@@ -22,9 +22,10 @@ Valid locations:
 - `llvm_linker_driver` Any location that usually involucrates the compiler LLVM Linker Driver invocation.
 - `gcc_backend` Any location that usually involucrates the GNU Compiler Collection (GCC) backend.
 - `frontend` Any locations that usually involucrates the Abstract Syntax Tree (AST), Lexer, Parser, TypeChecker and we could continue...
-- `project-visual` Any location that usually involucrates the visual representation or human guide for the compiler available on Github (Example: README.md).
+- `project-visual` Any location that usually involucrates general or visual changes of the compiler project available on Github (Examples: README.md, assets, highlighting, banners).
 - `project` Any location that usually involucrates Cargo, Rust Compiler and Github repository changes, Github actions or the conception of a new part of the compiler (Cargo Workspaces).
 - `fuzzing` Any location that usually involucrates the compiler fuzzing suite (`fuzz/`), its corpora and fuzz targets.
+- `doc` Any location that usually involucrates the compiler documentation and guides available on the repository (Examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
 
 Example:
 
@@ -42,7 +43,9 @@ Valid locations:
 - `llvm_linker_driver` Any location that usually involucrates the compiler LLVM Linker Driver invocation.
 - `gcc_backend` Any location that usually involucrates the GNU Compiler Collection (GCC) backend.
 - `frontend` Any locations that usually involucrates the Abstract Syntax Tree (AST), Lexer, Parser, TypeChecker and we could continue...
+- `project-visual` Any location that usually involucrates general or visual changes of the compiler project available on Github (Examples: README.md, assets, highlighting, banners).
 - `fuzzing` Any location that usually involucrates the compiler fuzzing suite (`fuzz/`), its corpora and fuzz targets.
+- `doc` Any location that usually involucrates the compiler documentation and guides available on the repository (Examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
 
 Any consecutive location written to the next one needs to be follow for a COMMA character `,`.
 
