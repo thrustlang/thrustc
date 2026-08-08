@@ -4,25 +4,25 @@
 
 <img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
 
-Contributing to the Thrust Compiler (`thrustc`). If you are reading this, you probably hit a bug, or you want to add something, or you are just curious how a compiler with no build system test suite survives. Either way, welcome.
+Welcome to the Thrust Compiler (`thrustc`). If you are reading this, you probably found a bug, want to add something, or are just curious how a compiler project this size actually runs. Whatever the reason, good to have you around.
 
-This guide is long on purpose. It covers how the repo is laid out, how the code is written, and how to get a change from your head into a pull request without tripping over conventions you did not know existed. Skim it once, then come back to the sections you need.
+This guide is long on purpose. It covers where things live, how the code is written, and how to go from an idea to a pull request without tripping over conventions you did not know existed. Skim it once, then come back to whatever section you need.
 
-## A quick word on how this project is run
+## How this project is run
 
-Thrust is written and reviewed by people who want to understand every line that goes in. See the note at the bottom of `README.md`:
+Thrust is written and reviewed by people who want to understand every line that goes in. The note at the bottom of `README.md` says it plainly:
 
 > Agentic AI: No, I don't use it and I never will. This compiler will always have code analyzed, processed, and studied by a human.
 
-What that means in practice: do not submit AI-generated code as if you wrote it, and do not expect an automated agent to review or merge your work. You are responsible for understanding the code you propose, line by line, and for explaining it if asked. Read the [Code of Conduct](CODE_OF_CONDUCT.md) before anything else.
+In practice, that means: don't submit AI-generated code as if you wrote it, and don't expect an automated agent to review or merge your work. You are expected to understand the code you propose and to be able to talk about it if someone asks. Read the [Code of Conduct](CODE_OF_CONDUCT.md) before anything else.
 
 ## Before you start
 
-You need a machine that can build the project. There is no way around the LLVM part.
+You need a machine that can build the project. The LLVM part is unavoidable, but it is a one-time setup.
 
 - Rust 1.85 or newer, edition 2024. The repo pins `stable` at the root (`rust-toolchain.toml`); the `fuzz/` workspace pins `nightly` because cargo-fuzz needs it.
 - LLVM 17. The project does not use system LLVM directly. You build it once with the [compiler-dependency-builder](https://github.com/thrustlang/compiler-dependency-builder), following the README instructions under "From Scratch".
-- The cargo tool deps: `sccache`, `panic-analyzer`, `git-cliff`. Install them with `scripts/cargo-dependencies.sh` (or the `.ps1`, `.fish`, `.bat` twins — every script in this repo ships all four flavors).
+- The cargo tool deps: `sccache`, `panic-analyzer`, `git-cliff`. Install them with `scripts/cargo-dependencies.sh` (or the `.ps1`, `.fish`, `.bat` twins. Every script in this repo ships all four flavors).
 
 Then:
 
@@ -31,7 +31,7 @@ $ cargo build --release
 $ ./target/release/thrustc --help
 ```
 
-The binary is a thin `main` that parses the command line and hands off to `thrustc_core` (`thrustc/src/main.rs`). If `--help` prints, you are ready to work.
+The binary is a thin `main` that parses the command line and hands off to `thrustc_core` (`thrustc/src/main.rs`). If `--help` prints, you are ready to go.
 
 ## Where things live
 
@@ -39,29 +39,29 @@ Read `PROJECT_STRUCTURE.md` first. It walks the whole pipeline with a diagram: r
 
 The short version, by crate:
 
-- `thrustc` — the binary entry point, nothing else.
-- `thrustc_cli`, `thrustc_options` — argument parsing and configuration.
-- `thrustc_core` — the driver. Orchestrates the pipeline through stage modules: `cleaner`, `starter`, `interrupt`, `finisher`, `validate`, plus `emitters/` and `printers/`.
-- `thrustc_lexer`, `thrustc_reader`, `thrustc_token`, `thrustc_token_type`, `thrustc_span`, `thrustc_preprocessor`, `thrustc_parser` (+ `thrustc_parser_context`, `thrustc_parser_table`, `thrustc_parser_external_table`) — the frontend.
-- `thrustc_ast`, `thrustc_ast_external`, `thrustc_ast_verifier`, `thrustc_ast_modificators` — the AST and its checks.
-- `thrustc_scoper`, `thrustc_typesystem`, `thrustc_typechecker`, `thrustc_general_analyzer`, `thrustc_linter`, `thrustc_semantic`, `thrustc_entities`, `thrustc_attributes`, `thrustc_attribute_checker`, `thrustc_constants`, `thrustc_directive`, `thrustc_mir` — semantic analysis and the middle end.
-- `thrustc_llvm_*` — the backend: codegen, ABI (System V, NVIDIA CUDA), attributes, call conventions, target triples, linker driver.
-- `thrustc_backends`, `thrustc_heap_allocator`, `thrustc_abi`, `thrustc_utils`, `thrustc_errors`, `thrustc_diagnostician`, `thrustc_logging` — shared infrastructure.
-- `crates/llvm/` — vendored, patched bindings (`llvm-sys`, `inkwell`, `clang`, `clang-sys`). You almost never touch these.
-- `fuzz/` — the fuzzing suite. Separate cargo workspace, excluded from the main one (`Cargo.toml:54-56`).
-- `scripts/`, `.github/workflows/`, `changelogs/`, `showcase/`, `tests/`, `highlighting/` — tooling, CI, release artifacts, examples, and editor support.
+- `thrustc`, the binary entry point, nothing else.
+- `thrustc_cli`, `thrustc_options`, argument parsing and configuration.
+- `thrustc_core`, the driver. Orchestrates the pipeline through stage modules: `cleaner`, `starter`, `interrupt`, `finisher`, `validate`, plus `emitters/` and `printers/`.
+- `thrustc_lexer`, `thrustc_reader`, `thrustc_token`, `thrustc_token_type`, `thrustc_span`, `thrustc_preprocessor`, `thrustc_parser` (+ `thrustc_parser_context`, `thrustc_parser_table`, `thrustc_parser_external_table`), the frontend.
+- `thrustc_ast`, `thrustc_ast_external`, `thrustc_ast_verifier`, `thrustc_ast_modificators`, the AST and its checks.
+- `thrustc_scoper`, `thrustc_typesystem`, `thrustc_typechecker`, `thrustc_general_analyzer`, `thrustc_linter`, `thrustc_semantic`, `thrustc_entities`, `thrustc_attributes`, `thrustc_attribute_checker`, `thrustc_constants`, `thrustc_directive`, `thrustc_mir`, semantic analysis and the middle end.
+- `thrustc_llvm_*`, the backend: codegen, ABI (System V, NVIDIA CUDA), attributes, call conventions, target triples, linker driver.
+- `thrustc_backends`, `thrustc_heap_allocator`, `thrustc_abi`, `thrustc_utils`, `thrustc_errors`, `thrustc_diagnostician`, `thrustc_logging`, shared infrastructure.
+- `crates/llvm/`, vendored, patched bindings (`llvm-sys`, `inkwell`, `clang`, `clang-sys`). You almost never touch these.
+- `fuzz/`, the fuzzing suite. Separate cargo workspace, excluded from the main one (`Cargo.toml:54-56`).
+- `scripts/`, `.github/workflows/`, `changelogs/`, `showcase/`, `tests/`, `highlighting/`, tooling, CI, release artifacts, examples, and editor support.
 
-The `tests/` folder is git-ignored scratch space. Do not commit files there.
+The `tests/` folder is git-ignored, so treat it as local scratch space. Keep your commits out of it.
 
 ## Where to start
 
-If you want a first change that you can actually finish, in increasing order of difficulty:
+If you want a first change you can actually finish, in increasing order of difficulty:
 
 1. **Fix an issue from the fuzz backlog.** The continuous fuzzer archives crashes under `fuzz/backlog/` with the AST dump and the LLVM IR. Pick a target, reproduce with `cargo fuzz-reproduce-case <target> <input.bin>`, find the faulty crate, fix it, then mark it done with `cargo fuzz-backlog fixed <target> <issue-id>`. See `COMPILER_FUZZING.md` and `fuzz/COMPILER_CONTINUOUS_FUZZING.md`.
 2. **Add or improve a diagnostic.** New error and warning codes are small, self-contained changes. The codes live in `thrustc_errors`, the formatting in `thrustc_diagnostician`. Details in the [diagnostics section](#diagnostics) below.
 3. **Extend an AST trait.** Need a predicate or accessor on all AST nodes? Add a trait in `thrustc_ast/src/traits.rs` and implement it in `getters.rs` or `impls/mod.rs`. There is a mechanical pattern for it; see [AST extension traits](#ast-extension-traits).
 4. **Touch the lexer.** `thrustc_lexer` is small and self-contained (five files). Good way to learn the frontend style without the parser's complexity.
-5. **Take on a parser or codegen task.** These are the hard ones. Do these only after you have a feel for the conventions.
+5. **Take on a parser or codegen task.** These are the hard ones. Save them for when you have a feel for the conventions.
 
 ## The license header
 
@@ -88,21 +88,21 @@ Every `.rs` file starts with the same GPL-3.0 block comment, lines 1-18, followe
 */
 ```
 
-A few files skip it (a handful of `lib.rs` files), but new files should include it. If the year in the header is out of date, `scripts/license_updater.py` fixes the whole tree; do not hand-edit years file by file.
+A few files skip it (a handful of `lib.rs` files), but new files should include it. If the year in the header is out of date, `scripts/license_updater.py` fixes the whole tree; no need to hand-edit years file by file.
 
 ## How the code is written
 
-These are not suggestions. A PR that ignores them gets sent back.
+These conventions are not hard law, but the project is pretty consistent about them. Following them makes review a lot smoother.
 
 ### File and module layout
 
-- One crate per folder, named `thrustc_<name>`. Modules are declared in `lib.rs` right after the `use` statements — `mod foo;` for private, `pub mod foo;` for public (`thrustc_core/src/lib.rs:20-30`).
+- One crate per folder, named `thrustc_<name>`. Modules are declared in `lib.rs` right after the `use` statements: `mod foo;` for private, `pub mod foo;` for public (`thrustc_core/src/lib.rs:20-30`).
 - Split by concern, one concern per file. The lexer has `identifier.rs`, `number.rs`, `string.rs`, `character.rs`, and `lex.rs` dispatches between them (`thrustc_lexer/src/lex.rs:107-114`).
 - Use subdirectories when a group gets big, each with its own `mod.rs`. The parser is the example: `expressions/`, `expressions/precedences/`, `statements/`, `toplevel/` (`thrustc_parser/src/lib.rs:34-43`).
 
 ### Style
 
-- 4 spaces, no tabs. Allman braces — opening brace on its own line for `fn`, `impl`, `struct`, `enum`, and match arm blocks.
+- 4 spaces, no tabs. Allman braces. Opening brace on its own line for `fn`, `impl`, `struct`, `enum`, and match arm blocks.
 - `snake_case` for functions and variables, `CamelCase` for types, `SCREAMING_SNAKE_CASE` for constants (`PREALLOCATED_TOKENS_CAPACITY`, `thrustc_lexer/src/lib.rs:31`).
 - Accessors are named `get_xxx` and return by reference (`get_any_type`, `get_span`). Predicates are `is_xxx` and return `bool`, implemented with `matches!` where possible.
 - Annotate local bindings with their type. The codebase does `let span: Span = ...;` everywhere (`thrustc_parser/src/toplevel/global_function.rs:51`). Follow it.
@@ -118,7 +118,7 @@ The project does not use `thiserror` or `anyhow`, and there are no custom macros
 - Construct errors inline where they happen. See `thrustc_parser/src/lib.rs:303-309` and `thrustc_lexer/src/lex.rs:57-63`.
 - Dispatch through `Diagnostician::dispatch_diagnostic(&mut self, &CompilationIssue, LoggingType)` (`thrustc_diagnostician/src/lib.rs:81-202`).
 - Fatal internal bugs go through `abort_compilation` (frontend: `thrustc_parser/src/abort.rs`, backend: `thrustc_llvm_abi/src/abort.rs`), which dispatches a `FrontendBug`/`BackendBug` and exits with `thrustc_constants::FAILURE_CODE`.
-- Pipeline-boundary crates often return `Result<T, ()>` — the coarse failed/ok channel — with `#![allow(clippy::result_unit_err)]` at the top of the file.
+- Pipeline-boundary crates often return `Result<T, ()>`, the coarse failed/ok channel, with `#![allow(clippy::result_unit_err)]` at the top of the file.
 
 ### AST extension traits
 
@@ -135,19 +135,19 @@ Recursive predicates call the trait method on their children, like `has_terminat
 
 `Ast` is one big enum with struct-variants (`thrustc_ast/src/lib.rs:49-537`). Every node derives `Debug, Clone, Serialize`, and the AST crates add `#[cfg_attr(feature = "fuzz", derive(Arbitrary))]` (`thrustc_ast/src/lib.rs:49-50`, `thrustc_span/src/lib.rs:24-25`).
 
-If you add an AST variant, you must also:
+If you add an AST variant, you also need to:
 
 - keep it serializable (`Serialize`) and `Arbitrary` behind the `fuzz` feature;
-- handle it in the accessor `match`es in `getters.rs` (the compiler will not compile until you do — that is the point);
+- handle it in the accessor `match`es in `getters.rs`. This one is non-negotiable in a fun way: the compiler will not compile until you do.
 - if it matters for fuzzing, cover it in the scoped generators under `fuzz/src/` (`llvm_codegen_local.rs`, `llvm_codegen_local_loops.rs`, `llvm_codegen_top_level.rs`).
 
 ### Lints
 
-The project's lint policy is deliberately permissive, configured once in `.cargo/config.toml:4-10,48-52`: `dead_code` and `missing_abi` are allowed, and the clippy `style`, `complexity`, and `pedantic` groups are allowed. Individual files opt out of specific lints with an inner attribute right after the license header, e.g. `#![allow(clippy::result_unit_err)]` (`thrustc_lexer/src/lib.rs:20`).
+The lint policy is deliberately permissive, configured once in `.cargo/config.toml:4-10,48-52`. `dead_code` and `missing_abi` are allowed, and the clippy `style`, `complexity`, and `pedantic` groups are allowed. Individual files opt out of specific lints with an inner attribute right after the license header, e.g. `#![allow(clippy::result_unit_err)]` (`thrustc_lexer/src/lib.rs:20`).
 
-Do not widen these global allowances. If you hit a lint, silence it locally in your file with a justification, or fix the code. Do not add a `rustfmt.toml` or a per-crate `[lints]` section without talking about it first.
+Please don't widen those global allowances. If you hit a lint, silence it locally in your file with a justification, or fix the code. Same for adding a `rustfmt.toml` or a per-crate `[lints]` section: ask before you add one.
 
-## A walkthrough: adding a diagnostic
+## A walkthrough of adding a diagnostic
 
 Say you want a new error. The concrete steps:
 
@@ -160,33 +160,33 @@ Warnings work the same way with `CompilationIssue::Warning(code, message, span)`
 
 ## Verifying your change
 
-Be honest with yourself about this part: the project does not have a test suite in the usual sense. There is exactly one `#[test]` in the whole workspace (`thrustc_llvm_linker_driver/src/lib.rs:464`). CI builds the compiler on four platforms and cuts releases; it does not run tests, clippy, or fmt. The testing burden sits on you and on the fuzzers.
+Here's the honest part: the project does not have a test suite in the usual sense. There is exactly one `#[test]` in the whole workspace (`thrustc_llvm_linker_driver/src/lib.rs:464`). CI builds the compiler on four platforms and cuts releases; it does not run tests, clippy, or fmt. So the testing burden sits on you and on the fuzzers.
 
-What you should do before opening a PR:
+What to do before opening a PR:
 
 - `cargo build --release` and fix every warning you introduced.
 - Compile and run at least one real program end to end. `showcase/` has examples; `tests/` has scratch files if you want a quick loop.
 - If you touched the frontend, run the fuzzers that cover it. `cargo fuzz-lexer`, `cargo fuzz-pipeline-stable` for a bounded sanity check, and the continuous supervisor if you have time: `cargo fuzz-continuous-<target>-<mode>` with a `--max-time`. The fuzz docs (`COMPILER_FUZZING.md`, `fuzz/COMPILER_CONTINUOUS_FUZZING.md`) explain the workflow.
 - If you fixed a bug the fuzzer found, reproduce the old artifact first (`cargo fuzz-reproduce-case <target> <input.bin>`) to confirm it crashed before, then confirm it no longer crashes after, and finish by marking the issue `fixed` in the backlog.
 
-If you feel the absence of a test suite is a problem, that is a real gap. Adding tests is one of the most useful contributions you can make. There is room to build an integration harness on top of `tests/` or the fuzz corpus — propose it.
+If the lack of a test suite bothers you, that is a real gap, and adding tests is one of the most useful contributions you can make. There is room to build an integration harness on top of `tests/` or the fuzz corpus. Propose it.
 
 ## Commits and pull requests
 
 Commit titles follow `COMMIT_CONVENTIONS.md`. The shape is `feat(scope)` or `fix(scope)` (or `(feat(...), fix(...))` when combined), where scope is one of:
 
-- `llvm_backend` — the LLVM backend.
-- `llvm_linker_driver` — the linker driver invocation.
-- `gcc_backend` — reserved for the (not yet existing) GCC backend.
-- `frontend` — AST, lexer, parser, typechecker, and friends.
-- `fuzzing` — the `fuzz/` suite, corpora, fuzz targets.
-- `project` — Cargo, Rust toolchain, GitHub Actions, new crates.
-- `project-visual` — general and visual project changes (README, assets, editor highlighting, banners).
-- `doc` — the compiler documentation and guides (CONTRIBUTING, the `COMPILER_*.md` files).
+- `llvm_backend`, the LLVM backend.
+- `llvm_linker_driver`, the linker driver invocation.
+- `gcc_backend`, reserved for the (not yet existing) GCC backend.
+- `frontend`, AST, lexer, parser, typechecker, and friends.
+- `fuzzing`, the `fuzz/` suite, corpora, fuzz targets.
+- `project`, Cargo, Rust toolchain, GitHub Actions, new crates.
+- `project-visual`, general and visual project changes (README, assets, editor highlighting, banners).
+- `doc`, the compiler documentation and guides (CONTRIBUTING, the `COMPILER_*.md` files).
 
 Title first, then a short, specific description. "feat(frontend) Adding support for X" reads better than "Update parser".
 
-Branch off `main`, open the PR, and fill in the description with what changed and how you verified it. There is no PR template in the repo; keep the description honest and complete.
+Branch off `main`, open the PR, and fill in the description with what changed and how you verified it. There is no PR template in the repo; just be honest and complete.
 
 ## A checklist before you push
 
@@ -196,16 +196,16 @@ Branch off `main`, open the PR, and fill in the description with what changed an
 - `cargo build --release` is clean.
 - You ran the relevant fuzzer or a real program, and you can say what you ran in the PR.
 - Commit title follows `COMMIT_CONVENTIONS.md` and the scope is right.
-- You understand the code you are submitting, line by line, and you can defend it in review.
+- You understand the code you are submitting, line by line, and you can talk about it in review.
 
 ## Other guides
 
-- `PROJECT_STRUCTURE.md` — the full architecture and pipeline.
-- `CLI.md` — commands and flags.
-- `COMPILER_DIAGNOSTICS.md` — diagnostic examples and codes.
-- `COMPILER_FUZZING.md` and `fuzz/COMPILER_CONTINUOUS_FUZZING.md` — fuzzing, one-shot and continuous.
-- `COMMIT_CONVENTIONS.md` — commit titles.
-- `COMPILER_RELEASING.md` — how releases are cut (mostly scripts, mostly not your concern unless you maintain releases).
-- `CODE_OF_CONDUCT.md` — the ground rules.
+- `PROJECT_STRUCTURE.md`, the full architecture and pipeline.
+- `CLI.md`, commands and flags.
+- `COMPILER_DIAGNOSTICS.md`, diagnostic examples and codes.
+- `COMPILER_FUZZING.md` and `fuzz/COMPILER_CONTINUOUS_FUZZING.md`, fuzzing, one-shot and continuous.
+- `COMMIT_CONVENTIONS.md`, commit titles.
+- `COMPILER_RELEASING.md`, how releases are cut (mostly scripts, mostly not your concern unless you maintain releases).
+- `CODE_OF_CONDUCT.md`, the ground rules.
 
-If a guide is missing something or wrong, fix the guide. Documentation is `project-visual` work and it counts.
+If a guide is missing something or wrong, fix the guide. Documentation is `doc` work and it counts.
