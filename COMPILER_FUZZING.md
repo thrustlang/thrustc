@@ -83,6 +83,9 @@ Cargo's alias:
 
 ## Continuous fuzzing
 
+> [!TIP]
+> A hands-on guide to the supervisor and the backlog lives in `fuzz/COMPILER_CONTINUOUS_FUZZING.md`.
+
 The one-shot aliases above stop as soon as libFuzzer finds a crash. The **continuous supervisor** instead runs a fuzzer in a loop: whenever a crash or panic is found it archives it, records it, and immediately starts fuzzing again — so it can accumulate every bug a target hits, not just the first one.
 
 ### How it works
