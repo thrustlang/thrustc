@@ -28,7 +28,7 @@ use thrustc_entities::parser_entities::{
     LocalSymbol, ParameterSymbol, StaticSymbol, Struct,
 };
 use thrustc_errors::{CompilationIssue, CompilationPosition};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::{Type, traits::TypeStructExtensions, type_metadata::StructTypeMetadata};
 
 use crate::traits::{

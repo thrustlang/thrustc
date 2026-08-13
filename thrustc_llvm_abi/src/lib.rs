@@ -38,7 +38,7 @@ use thrustc_llvm_system_v_abi::{
 };
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::{Type, type_layout::TargetInfo};
 
 mod abort;

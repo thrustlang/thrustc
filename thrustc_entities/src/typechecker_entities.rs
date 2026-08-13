@@ -20,7 +20,7 @@
 
 use ahash::AHashMap as HashMap;
 use thrustc_attributes::ThrustAttributes;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 pub type TypeCheckerLocal<'symbol> = (&'symbol Type, Span);

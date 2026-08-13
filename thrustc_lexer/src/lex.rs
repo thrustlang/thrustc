@@ -18,7 +18,7 @@
 */
 
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 
 use crate::{Lexer, character, identifier, number, string};

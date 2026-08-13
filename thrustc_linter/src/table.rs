@@ -21,7 +21,7 @@ use thrustc_ast::{Ast, ast_metadata::FunctionParameterMetadata};
 use thrustc_entities::{FunctionParameter, linter_entities::*};
 
 use ahash::AHashMap as HashMap;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 #[derive(Debug)]
 pub struct LinterSymbolsTable<'linter> {

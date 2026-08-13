@@ -20,7 +20,7 @@
 use colored::Colorize;
 
 use thrustc_logging::LoggingType;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 use crate::{DiagnosticType, Notificator, position::CodePosition};
 

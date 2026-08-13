@@ -40,7 +40,7 @@ use thrustc_llvm_abi_representation::LLVMABIRepresentation;
 use thrustc_llvm_codegen::context::LLVMCodeGenContext;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_semantic::SemanticAnalysis;
+use thrustc_semantic_analysis::SemanticAnalysis;
 use thrustc_typesystem::type_layout::TargetInfo;
 
 const MAX_DEPTH: usize = 5;

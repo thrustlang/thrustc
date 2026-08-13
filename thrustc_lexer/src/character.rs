@@ -18,7 +18,7 @@
 */
 
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token::Token;
 use thrustc_token_type::TokenType;
 

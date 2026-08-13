@@ -20,7 +20,7 @@
 use std::hash::Hash;
 use std::hash::Hasher;
 
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 use crate::traits::ConstantTypeExtensions;
 use crate::traits::TypePointerExtensions;

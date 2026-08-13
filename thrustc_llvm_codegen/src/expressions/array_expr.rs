@@ -18,7 +18,7 @@
 */
 
 use thrustc_ast::Ast;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::{TypeArrayEntensions, TypeExtensions};
 use thrustc_typesystem::type_metadata::FixedArrayTypeMetadata;

@@ -19,7 +19,7 @@
 
 use ahash::AHashMap as HashMap;
 
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 pub type AnalyzerLocal<'symbol> = &'symbol Type;

@@ -1,5 +1,5 @@
 [package]
-name = "thrustc_semantic"
+name = "thrustc_semantic_analysis"
 description.workspace = true
 edition.workspace = true
 license.workspace = true

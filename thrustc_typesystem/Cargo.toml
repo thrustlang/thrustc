@@ -11,7 +11,7 @@ ahash = "0.8.11"
 either = "1.15.0"
 serde = { version = "1.0.228", features = ["derive"] }
 
-thrustc_span = { path = "../thrustc_span" }
+thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_token_type = { path = "../thrustc_token_type" }
 
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }

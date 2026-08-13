@@ -19,7 +19,7 @@
 
 use thrustc_ast::{Ast, ast_builtins::AstBuiltin, traits::AstCodeLocation};
 use thrustc_errors::{CompilationIssue, CompilationPosition};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token_type::traits::TokenTypeExtensions;
 
 use crate::Linter;

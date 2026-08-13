@@ -18,7 +18,7 @@
 */
 
 use inkwell::{AtomicOrdering, values::InstructionValue};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 use crate::{abort, context::LLVMCodeGenContext};
 

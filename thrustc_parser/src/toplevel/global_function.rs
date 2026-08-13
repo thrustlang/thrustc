@@ -21,7 +21,7 @@ use thrustc_ast::{Ast, NodeId, ast_metadata::FunctionParameterMetadata};
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_entities::parser_entities::FunctionParametersTypes;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{TokenType, traits::TokenTypeAttributesExtensions};
 use thrustc_typesystem::{Type, traits::TypePointerExtensions};

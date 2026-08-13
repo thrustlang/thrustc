@@ -23,7 +23,7 @@ use thrustc_ast::{
     traits::{AstCodeLocation, AstGetType},
 };
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::{
     Type,
     traits::{TypeCodeLocation, TypeIsExtensions, VoidTypeExtensions},

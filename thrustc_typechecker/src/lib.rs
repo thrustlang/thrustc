@@ -25,7 +25,7 @@ use thrustc_ast::{
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::{
     Type,
     traits::{DereferenceExtensions, TypeIsExtensions, VoidTypeExtensions},

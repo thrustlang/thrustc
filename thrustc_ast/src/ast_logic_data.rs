@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 use crate::Ast;

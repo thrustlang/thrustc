@@ -12,7 +12,7 @@ repository.workspace = true
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
 
-thrustc_span = { path = "../thrustc_span" }
+thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_attributes = { path = "../thrustc_attributes" }
 
@@ -21,7 +21,7 @@ arbitrary =  { version = "1.4.2", features = ["derive"], optional = true }
 [features]
 fuzz = [
     "dep:arbitrary",
-    "thrustc_span/fuzz",
+    "thrustc_code_location/fuzz",
     "thrustc_typesystem/fuzz",
     "thrustc_attributes/fuzz",
 ]

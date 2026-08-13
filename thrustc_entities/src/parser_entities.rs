@@ -22,7 +22,7 @@ use thrustc_ast::{
     ast_metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 };
 use thrustc_attributes::ThrustAttributes;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 use ahash::AHashMap as HashMap;

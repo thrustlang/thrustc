@@ -21,7 +21,7 @@ use inkwell::basic_block::BasicBlock;
 use inkwell::context::Context;
 use inkwell::values::FunctionValue;
 
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 use crate::context::LLVMCodeGenContext;
 use crate::traits::LLVMFunctionExtensions;

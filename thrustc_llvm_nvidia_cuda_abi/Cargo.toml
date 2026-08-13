@@ -20,7 +20,7 @@ thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_constants = { path = "../thrustc_constants"  }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
-thrustc_span = { path = "../thrustc_span" }
+thrustc_code_location = { path = "../thrustc_code_location" }
 
 inkwell = { workspace = true, optional = true }
 clang = { workspace = true, optional = true }

@@ -37,7 +37,7 @@ use thrustc_ast::ast_metadata::LLVMStaticMetadata;
 
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::ConstantTypeExtensions;
 use thrustc_typesystem::traits::TypeExtensions;

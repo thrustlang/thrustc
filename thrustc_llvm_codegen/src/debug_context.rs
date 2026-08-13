@@ -40,7 +40,7 @@ use inkwell::values::FunctionValue;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 

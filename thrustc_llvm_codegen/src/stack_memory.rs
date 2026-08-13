@@ -22,7 +22,7 @@ use inkwell::types::BasicTypeEnum;
 use inkwell::values::PointerValue;
 use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 use std::path::PathBuf;

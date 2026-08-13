@@ -21,7 +21,7 @@ mod impls;
 pub mod traits;
 
 use serde::Serialize;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;

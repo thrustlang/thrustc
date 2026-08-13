@@ -25,7 +25,7 @@ use crate::traits::AstLLVMGetType;
 use crate::type_cast;
 
 use thrustc_entities::BinaryOperation;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 use thrustc_token_type::traits::TokenTypeExtensions;
 

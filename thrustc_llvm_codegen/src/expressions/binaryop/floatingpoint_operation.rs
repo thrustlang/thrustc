@@ -29,7 +29,7 @@ use inkwell::values::PointerValue;
 use thrustc_ast::Ast;
 use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_entities::BinaryOperation;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::Type;

@@ -14,4 +14,4 @@ fastrand = "2.3.0"
 thrustc_options = { path = "../thrustc_options" }
 thrustc_logging = { path = "../thrustc_logging" }
 thrustc_errors = { path = "../thrustc_errors" }
-thrustc_span = { path = "../thrustc_span" }
+thrustc_code_location = { path = "../thrustc_code_location" }

@@ -20,7 +20,7 @@
 use inkwell::FloatPredicate;
 use inkwell::IntPredicate;
 
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 
 use crate::abort;

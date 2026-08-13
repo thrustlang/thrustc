@@ -23,7 +23,7 @@ use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_backends::llvm::LLVMBackend;
 use thrustc_entities::UnaryOperation;
 use thrustc_options::CompilerOptions;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;

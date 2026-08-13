@@ -23,7 +23,7 @@ use thrustc_ast::{
     traits::{AstConstantExtensions, AstMemoryExtensions},
 };
 use thrustc_errors::CompilationIssue;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;

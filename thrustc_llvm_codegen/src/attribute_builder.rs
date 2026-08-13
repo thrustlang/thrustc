@@ -29,7 +29,7 @@ use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_llvm_callconventions::LLVMCallConvention;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 use crate::context::LLVMCodeGenContext;
 

@@ -18,7 +18,7 @@
 */
 
 use thrustc_errors::CompilationIssue;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
@@ -359,7 +359,7 @@ impl AstConstructorDataExtensions for ConstructorData<'_> {
 
 impl<'a> AstStructureDataExtensions<'a> for StructureData<'a> {
     #[inline]
-    fn new(name: &'a str, metadata: StructTypeMetadata, span: thrustc_span::Span) -> Self {
+    fn new(name: &'a str, metadata: StructTypeMetadata, span: thrustc_code_location::Span) -> Self {
         (name, Vec::with_capacity(u8::MAX as usize), metadata, span)
     }
 

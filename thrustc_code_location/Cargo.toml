@@ -1,5 +1,5 @@
 [package]
-name = "thrustc_span"
+name = "thrustc_code_location"
 description.workspace = true
 edition.workspace = true
 license.workspace = true

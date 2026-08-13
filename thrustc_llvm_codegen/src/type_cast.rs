@@ -44,7 +44,7 @@ use crate::typegeneration;
 
 use thrustc_typesystem::traits::TypeIsExtensions;
 
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 /* ######################################################################

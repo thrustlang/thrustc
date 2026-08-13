@@ -11,5 +11,5 @@ colored = "3.0.0"
 lazy_static = "1.5.0"
 ahash = "0.8.12"
 
-thrustc_span = { path = "../thrustc_span" }
+thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_logging = { path = "../thrustc_logging" }

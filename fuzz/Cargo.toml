@@ -20,7 +20,7 @@ arbitrary = { version = "1.4.2", features = ["derive"] }
 thrustc_lexer = { path = "../thrustc_lexer" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_ast = { path = "../thrustc_ast" , features = ["fuzz"] }
-thrustc_semantic = { path = "../thrustc_semantic" }
+thrustc_semantic_analysis = { path = "../thrustc_semantic_analysis" }
 thrustc_llvm_codegen = { path = "../thrustc_llvm_codegen" }
 thrustc_backends = { path = "../thrustc_backends" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }

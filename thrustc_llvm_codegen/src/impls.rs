@@ -23,7 +23,7 @@ use thrustc_ast::Ast;
 use thrustc_ast_external::{ExternalSignature, ExternalSymbol};
 use thrustc_llvm_abi::LLVMABIConfiguration;
 use thrustc_llvm_attributes::LLVMAttributes;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 use crate::{

@@ -24,7 +24,7 @@ use thrustc_ast::{
 use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_entities::typechecker_entities::TypeCheckerFunction;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::{Type, traits::VoidTypeExtensions};
 
 use crate::{

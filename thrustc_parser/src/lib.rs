@@ -18,6 +18,7 @@
 */
 
 use thrustc_ast::Ast;
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_entities::parser_entities::{AssemblerFunctions, Functions};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
@@ -26,7 +27,6 @@ use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_parser_context::{ControlContext, TypeContext};
 use thrustc_parser_table::SymbolTable;
 use thrustc_preprocessor::module::Module;
-use thrustc_span::Span;
 
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
@@ -77,12 +77,12 @@ impl<'parser> Parser<'parser> {
         file: &'parser CompilationUnit,
         options: &'parser CompilerOptions,
     ) -> (ParserContext<'parser>, bool) {
-        Self { tokens, file }.start_parsing(modules, options)
+        Self { tokens, file }.start_parsing_nodes(modules, options)
     }
 }
 
 impl<'parser> Parser<'parser> {
-    fn start_parsing(
+    fn start_parsing_nodes(
         &mut self,
         modules: &'parser [Module],
         options: &'parser CompilerOptions,
@@ -158,27 +158,25 @@ impl<'parser> ParserContext<'parser> {
 
 impl<'parser> ParserContext<'parser> {
     pub fn verify(&mut self) -> bool {
-        if !self.errors.is_empty() || !self.bugs.is_empty() {
-            {
-                for bug in self.bugs.iter() {
-                    self.diagnostician
-                        .dispatch_diagnostic(bug, LoggingType::Bug);
-                }
-
-                for error in self.errors.iter() {
-                    self.diagnostician
-                        .dispatch_diagnostic(error, LoggingType::Error);
-                }
+        if !self.bugs.is_empty() {
+            for bug in self.bugs.iter() {
+                self.diagnostician
+                    .dispatch_diagnostic(bug, LoggingType::Bug);
             }
 
-            true
-        } else {
-            false
+            return true;
         }
-    }
 
-    pub fn verify_for_only_parse_signature(&mut self) -> bool {
-        !self.errors.is_empty() || !self.bugs.is_empty()
+        if !self.errors.is_empty() {
+            for error in self.errors.iter() {
+                self.diagnostician
+                    .dispatch_diagnostic(error, LoggingType::Error);
+            }
+
+            return true;
+        }
+
+        false
     }
 }
 

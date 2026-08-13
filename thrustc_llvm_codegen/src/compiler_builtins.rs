@@ -23,7 +23,7 @@ use inkwell::{
     values::{BasicValueEnum, IntValue, PointerValue},
 };
 use thrustc_ast::traits::AstCodeLocation;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 use thrustc_ast::{Ast, ast_builtins::AstBuiltin};

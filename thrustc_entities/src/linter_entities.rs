@@ -19,7 +19,7 @@
 
 
 use ahash::AHashMap as HashMap;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 pub type LinterStaticInfo = (Span, bool, bool);
 pub type LinterGlobalStatics<'linter> = HashMap<&'linter str, LinterStaticInfo>;

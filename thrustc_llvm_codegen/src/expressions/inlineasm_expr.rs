@@ -26,7 +26,7 @@ use inkwell::{AddressSpace, InlineAsmDialect};
 use thrustc_ast::Ast;
 use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_llvm_attributes::{LLVMAttribute, LLVMAttributeComparator, LLVMAttributes};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 

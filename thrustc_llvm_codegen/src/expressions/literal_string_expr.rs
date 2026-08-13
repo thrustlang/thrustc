@@ -25,7 +25,7 @@ use inkwell::module::Linkage;
 use inkwell::module::Module;
 use inkwell::types::ArrayType;
 use inkwell::values::GlobalValue;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 use crate::abort;
 use crate::context::LLVMCodeGenContext;

@@ -25,7 +25,7 @@ use thrustc_ast::Ast;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 use thrustc_entities::parser_entities::{
     AssemblerFunction, AssemblerFunctions, ConstantSymbol, CustomTypeSymbol, EnumSymbol,

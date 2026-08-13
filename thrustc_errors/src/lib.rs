@@ -22,7 +22,7 @@
 use colored::Colorize;
 
 use thrustc_logging::{self, LoggingType};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 #[derive(Debug, Clone)]
 pub enum CompilationIssue {

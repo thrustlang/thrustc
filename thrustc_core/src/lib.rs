@@ -66,7 +66,7 @@ use thrustc_options::linkage::LinkingCompilersConfiguration;
 use thrustc_parser::Parser;
 use thrustc_parser::ParserContext;
 use thrustc_preprocessor::Preprocessor;
-use thrustc_semantic::SemanticAnalysis;
+use thrustc_semantic_analysis::SemanticAnalysis;
 use thrustc_typesystem::type_layout::TargetInfo;
 
 #[derive(Debug)]
@@ -121,7 +121,7 @@ impl ThrustCompiler<'_> {
             if self
                 .get_compilation_options()
                 .get_llvm_backend()
-                .is_full_jit()
+                .is_execution_in_jit()
             {
                 return self.compile_jit_llvm();
             } else {

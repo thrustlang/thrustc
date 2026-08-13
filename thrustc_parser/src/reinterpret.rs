@@ -18,7 +18,7 @@
 */
 
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 pub fn floating_point(lexeme: &str, span: Span) -> Result<(Type, f64), CompilationIssue> {

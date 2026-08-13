@@ -26,7 +26,7 @@ use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_ast::traits::{
     AstCodeLocation, AstPropertyDataExtensions, AstPropertyDataFieldExtensions,
 };
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 use thrustc_typesystem::traits::TypePointerExtensions;

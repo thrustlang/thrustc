@@ -19,7 +19,7 @@ thrustc_constants = { path = "../thrustc_constants" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
-thrustc_span = { path = "../thrustc_span" }
+thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_attributes = { path = "../thrustc_attributes" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_ast = { path = "../thrustc_ast" }

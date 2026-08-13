@@ -22,7 +22,7 @@ thrustc_lexer = { path = "../thrustc_lexer" }
 thrustc_ast = { path = "../thrustc_ast"}
 thrustc_diagnostician = { path = "../thrustc_diagnostician"}
 thrustc_typesystem = { path = "../thrustc_typesystem"}
-thrustc_span = { path = "../thrustc_span" }
+thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_reader = { path = "../thrustc_reader" }
 thrustc_constants = { path = "../thrustc_constants" }

@@ -156,16 +156,17 @@ impl CommandLine {
             self.analyze(argument);
         }
 
-        self.validate();
+        self.validate_extra();
     }
 }
 
 impl CommandLine {
-    fn validate(&mut self) {
-        if !self.get_options().get_llvm_backend().is_full_jit() {
+    #[inline]
+    fn validate_extra(&mut self) {
+        if !self.get_options().get_llvm_backend().is_execution_in_jit() {
             self.get_mut_options()
                 .get_mut_linking_compilers_configuration()
-                .comprobate_status();
+                .comprobate_status_to_determinate_usage_automatically();
         }
     }
 }
@@ -1228,7 +1229,7 @@ impl CommandLine {
 
     fn handle_unknown_argument(&mut self, arg: &str) {
         if self.position.at_external() {
-            if self.options.get_llvm_backend().is_full_jit() {
+            if self.options.get_llvm_backend().is_execution_in_jit() {
                 self.options
                     .get_mut_llvm_backend()
                     .get_mut_jit_config()
@@ -1602,7 +1603,7 @@ impl CommandLine {
     }
 
     fn validate_jit_required(&self, arg: &str) {
-        if !self.options.get_llvm_backend().is_full_jit() {
+        if !self.options.get_llvm_backend().is_execution_in_jit() {
             self.report_error(&format!(
                 "Can't use '{}' without '-jit' flag previously.",
                 arg
@@ -1611,7 +1612,7 @@ impl CommandLine {
     }
 
     fn validate_aot_is_enable(&self, arg: &str) {
-        if self.options.get_llvm_backend().is_full_jit() {
+        if self.options.get_llvm_backend().is_execution_in_jit() {
             self.report_error(&format!(
                 "Can't use '{}' if the '-jit' flag was enabled previously.",
                 arg

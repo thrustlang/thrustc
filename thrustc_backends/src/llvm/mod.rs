@@ -44,7 +44,7 @@ pub struct LLVMBackend {
     reloc_mode: RelocMode,
     code_model: CodeModel,
 
-    needs_jit: bool,
+    execution_in_jit: bool,
     jit_config: JITConfiguration,
     linker_config: LinkerConfiguration,
 
@@ -110,7 +110,7 @@ impl LLVMBackend {
             reloc_mode: RelocMode::PIC,
             code_model: CodeModel::Default,
 
-            needs_jit: false,
+            execution_in_jit: false,
             jit_config: JITConfiguration::new(),
             linker_config: LinkerConfiguration::new(),
 
@@ -257,8 +257,8 @@ impl LLVMBackend {
     }
 
     #[inline]
-    pub fn is_full_jit(&self) -> bool {
-        self.needs_jit
+    pub fn is_execution_in_jit(&self) -> bool {
+        self.execution_in_jit
     }
 
     #[inline]
@@ -386,7 +386,7 @@ impl LLVMBackend {
 
     #[inline]
     pub fn set_jit(&mut self, value: bool) {
-        self.needs_jit = value;
+        self.execution_in_jit = value;
     }
 
     #[inline]

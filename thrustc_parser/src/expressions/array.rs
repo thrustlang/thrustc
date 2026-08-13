@@ -20,7 +20,7 @@
 use thrustc_ast::{Ast, NodeId, traits::AstGetType};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_context::traits::TypeContextExtensions;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
@@ -76,7 +76,7 @@ pub fn build_array<'parser>(
     if let Some(item) = items.iter().try_fold(None::<&Ast>, |current, item| {
         let item_type: &Type = item.get_value_type()?;
 
-        Ok(match current {
+        let node: Option<&Ast<'_>> = match current {
             None => Some(item),
             Some(current) => {
                 let current_type: &Type = current.get_value_type()?;
@@ -87,7 +87,9 @@ pub fn build_array<'parser>(
                     Some(current)
                 }
             }
-        })
+        };
+
+        Ok(node)
     })? {
         let size: Result<u32, std::num::TryFromIntError> = u32::try_from(items.len());
 

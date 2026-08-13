@@ -32,7 +32,7 @@ use thrustc_llvm_attributes::{
 };
 use thrustc_llvm_callconventions::LLVMCallConvention;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 #[derive(Debug)]
 pub struct LLVMCallConventionsChecker<'call_conv_checker> {

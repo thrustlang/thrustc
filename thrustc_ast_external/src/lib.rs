@@ -1,6 +1,6 @@
 use serde::Serialize;
 use thrustc_attributes::ThrustAttributes;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 #[cfg(feature = "fuzz")]

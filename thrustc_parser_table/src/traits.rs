@@ -22,7 +22,7 @@ use thrustc_ast::{
     ast_metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 };
 use thrustc_errors::CompilationIssue;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 pub trait FoundSymbolExtensions {

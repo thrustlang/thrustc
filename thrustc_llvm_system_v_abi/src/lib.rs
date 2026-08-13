@@ -38,7 +38,7 @@ use thrustc_ast::Ast;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::{
     Type,
     traits::{

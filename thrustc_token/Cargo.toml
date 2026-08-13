@@ -9,7 +9,7 @@ rust-version.workspace = true
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
 
-thrustc_span = { path = "../thrustc_span" }
+thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_token_type = { path = "../thrustc_token_type" }

@@ -25,7 +25,7 @@ use libfuzzer_sys::{Corpus, fuzz_target};
 use std::sync::atomic::{AtomicU32, Ordering};
 use thrustc_ast::{Ast, traits::AstStandardExtensions};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_semantic::SemanticAnalysis;
+use thrustc_semantic_analysis::SemanticAnalysis;
 
 const MAX_SAVED_ASTS: u32 = 512;
 

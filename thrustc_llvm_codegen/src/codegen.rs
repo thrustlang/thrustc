@@ -32,7 +32,7 @@ use thrustc_backends::llvm::LLVMBackend;
 use thrustc_entities::{GlobalConstant, GlobalStatic, LocalConstant, LocalStatic, LocalVariable};
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_options::CompilerOptions;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 use crate::compiler_builtins::LLVMBuiltin;
 use crate::context::{CodeGenLocation, LLVMCodeGenContext};

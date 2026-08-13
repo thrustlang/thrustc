@@ -19,7 +19,7 @@
 
 use inkwell::{context::Context, values::FloatValue};
 
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 use crate::{abort, context::LLVMCodeGenContext};

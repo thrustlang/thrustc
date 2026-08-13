@@ -24,7 +24,7 @@ use inkwell::values::IntValue;
 use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeBlockEntensions;
 use thrustc_ast::traits::AstCodeLocation;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 

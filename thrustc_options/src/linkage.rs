@@ -17,7 +17,6 @@
 
 */
 
-
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -52,7 +51,7 @@ impl LinkingCompilersConfiguration {
 }
 
 impl LinkingCompilersConfiguration {
-    pub fn comprobate_status(&mut self) {
+    pub fn comprobate_status_to_determinate_usage_automatically(&mut self) {
         let mut clang_binding: std::process::Command =
             std::process::Command::new(&self.custom_clang);
 

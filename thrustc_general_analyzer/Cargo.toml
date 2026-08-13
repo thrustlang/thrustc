@@ -13,5 +13,5 @@ thrustc_options = { path = "../thrustc_options" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_logging = { path = "../thrustc_logging" }
 thrustc_attributes = { path = "../thrustc_attributes" }
-thrustc_span = { path = "../thrustc_span" }
+thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }

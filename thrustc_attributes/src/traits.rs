@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 use crate::{ThrustAttribute, ThrustAttributeComparator};
 

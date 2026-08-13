@@ -35,7 +35,7 @@ use thrustc_llvm_abi_representation::LLVMABIRepresentation;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::type_layout::TargetInfo;
 

@@ -37,7 +37,7 @@ mod type_precedence;
 mod void_type;
 
 use serde::Serialize;
-use thrustc_span::Span;
+use thrustc_code_location::Span;
 
 use crate::type_metadata::ArrayTypeMetadata;
 use crate::type_metadata::FixedArrayTypeMetadata;
