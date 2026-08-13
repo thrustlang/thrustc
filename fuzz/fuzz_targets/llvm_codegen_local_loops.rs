@@ -28,12 +28,12 @@ use inkwell::{
     module::Module,
     targets::{InitializationConfig, Target, TargetMachine, TargetTriple},
 };
-use libfuzzer_sys::{Corpus, fuzz_target};
-use thrustc_ast::Ast;
+use libfuzzer_sys::{fuzz_target, Corpus};
 use thrustc_ast::traits::AstStandardExtensions;
+use thrustc_ast::Ast;
 use thrustc_backends::{
+    llvm::{target::LLVMTarget, LLVMBackend},
     ThrustOptimization,
-    llvm::{LLVMBackend, target::LLVMTarget},
 };
 use thrustc_diagnostician::Diagnostician;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;

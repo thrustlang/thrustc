@@ -21,9 +21,9 @@
 
 use arbitrary::{Arbitrary, Unstructured};
 use either::Either;
-use libfuzzer_sys::{fuzz_target, Corpus};
+use libfuzzer_sys::{Corpus, fuzz_target};
 use std::sync::atomic::{AtomicU32, Ordering};
-use thrustc_ast::{traits::AstStandardExtensions, Ast};
+use thrustc_ast::{Ast, traits::AstStandardExtensions};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_semantic::SemanticAnalysis;
 

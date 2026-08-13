@@ -81,9 +81,9 @@ lazy_static! {
         attributes.insert("@cuda", TokenType::Cuda);
         attributes.insert("@constructor", TokenType::Constructor);
         attributes.insert("@destructor", TokenType::Destructor);
-        attributes.insert("@promote", TokenType::Promote);
 
         if compiler_mode.is_unstable_mode() {
+            attributes.insert("@promote", TokenType::Promote);
             attributes.insert("@asmAlignStack", TokenType::AsmAlignStack);
             attributes.insert("@asmSyntax", TokenType::AsmSyntax);
             attributes.insert("@asmThrowErrors", TokenType::AsmThrow);
