@@ -34,7 +34,7 @@ members = [
     "thrustc_llvm_callconventions",
     "thrustc_llvm_target_triple",
     "thrustc_llvm_compiler_intrinsic_checker", 
-    "thrustc_llvm_callconventions_checker", 
+    "thrustc_llvm_call_conventions_checker", 
     "thrustc_backends", 
     "thrustc_directive",
     "thrustc_ast_modificators", 

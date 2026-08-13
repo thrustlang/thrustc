@@ -1,5 +1,5 @@
 [package]
-name = "thrustc_llvm_callconventions_checker"
+name = "thrustc_llvm_call_conventions_checker"
 description.workspace = true
 edition.workspace = true
 license.workspace = true

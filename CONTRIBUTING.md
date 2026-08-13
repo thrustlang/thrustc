@@ -42,9 +42,9 @@ The short version, by crate:
 - `thrustc`, the binary entry point, nothing else.
 - `thrustc_cli`, `thrustc_options`, argument parsing and configuration.
 - `thrustc_core`, the driver. Orchestrates the pipeline through stage modules: `cleaner`, `starter`, `interrupt`, `finisher`, `validate`, plus `emitters/` and `printers/`.
-- `thrustc_lexer`, `thrustc_reader`, `thrustc_token`, `thrustc_token_type`, `thrustc_span`, `thrustc_preprocessor`, `thrustc_parser` (+ `thrustc_parser_context`, `thrustc_parser_table`, `thrustc_parser_external_table`), the frontend.
+- `thrustc_lexer`, `thrustc_reader`, `thrustc_token`, `thrustc_token_type`, `thrustc_code_location`, `thrustc_preprocessor`, `thrustc_parser` (+ `thrustc_parser_context`, `thrustc_parser_table`, `thrustc_parser_external_table`), the frontend.
 - `thrustc_ast`, `thrustc_ast_external`, `thrustc_ast_verifier`, `thrustc_ast_modificators`, the AST and its checks.
-- `thrustc_scoper`, `thrustc_typesystem`, `thrustc_typechecker`, `thrustc_general_analyzer`, `thrustc_linter`, `thrustc_semantic`, `thrustc_entities`, `thrustc_attributes`, `thrustc_attribute_checker`, `thrustc_constants`, `thrustc_directive`, `thrustc_mir`, semantic analysis and the middle end.
+- `thrustc_scoper`, `thrustc_typesystem`, `thrustc_typechecker`, `thrustc_general_analyzer`, `thrustc_linter`, `thrustc_semantic_analysis`, `thrustc_entities`, `thrustc_attributes`, `thrustc_attribute_checker`, `thrustc_constants`, `thrustc_directive`, `thrustc_mir`, semantic analysis and the middle end.
 - `thrustc_llvm_*`, the backend: codegen, ABI (System V, NVIDIA CUDA), attributes, call conventions, target triples, linker driver.
 - `thrustc_backends`, `thrustc_heap_allocator`, `thrustc_abi`, `thrustc_utils`, `thrustc_errors`, `thrustc_diagnostician`, `thrustc_logging`, shared infrastructure.
 - `crates/llvm/`, vendored, patched bindings (`llvm-sys`, `inkwell`, `clang`, `clang-sys`). You almost never touch these.
@@ -133,7 +133,7 @@ Recursive predicates call the trait method on their children, like `has_terminat
 
 ### AST nodes and serde / fuzzing
 
-`Ast` is one big enum with struct-variants (`thrustc_ast/src/lib.rs:49-537`). Every node derives `Debug, Clone, Serialize`, and the AST crates add `#[cfg_attr(feature = "fuzz", derive(Arbitrary))]` (`thrustc_ast/src/lib.rs:49-50`, `thrustc_span/src/lib.rs:24-25`).
+`Ast` is one big enum with struct-variants (`thrustc_ast/src/lib.rs:49-537`). Every node derives `Debug, Clone, Serialize`, and the AST crates add `#[cfg_attr(feature = "fuzz", derive(Arbitrary))]` (`thrustc_ast/src/lib.rs:49-50`, `thrustc_code_location/src/lib.rs:24-25`).
 
 If you add an AST variant, you also need to:
 

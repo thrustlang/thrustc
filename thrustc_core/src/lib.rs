@@ -50,7 +50,7 @@ use thrustc_backends::llvm::target::LLVMTarget;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_lexer::Lexer;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
-use thrustc_llvm_callconventions_checker::LLVMCallConventionsChecker;
+use thrustc_llvm_call_conventions_checker::LLVMCallConventionsChecker;
 use thrustc_llvm_codegen::context::LLVMCodeGenContext;
 use thrustc_llvm_codegen::jit::LLVMJITCompiler;
 use thrustc_llvm_codegen::optimizer::LLVMOptimizationConfig;

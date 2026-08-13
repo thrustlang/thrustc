@@ -51,7 +51,7 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_token`** & **`thrustc_token_type`**  
   Token definitions, supporting traits, and type hierarchies.
 
-- **`thrustc_span`**  
+- **`thrustc_code_location`**  
   Source span and location tracking used throughout the compiler.
 
 - **`thrustc_preprocessor`**  
@@ -103,7 +103,7 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_entities`**  
   Shared entities consumed by the analyzer, parser, typechecker, and linter (`analyzer_entities.rs`, `parser_entities.rs`, `typechecker_entities.rs`, `linter_entities.rs`).
 
-- **`thrustc_semantic`**  
+- **`thrustc_semantic_analysis`**  
   General semantic analysis layer.
 
 - **`thrustc_attributes`** & **`thrustc_attribute_checker`**  
@@ -328,7 +328,7 @@ Source File (.thrust)
 │       thrustc_attribute_checker)                │
 │       - Language & LLVM attribute validation    │
 │                                                 │
-│    f. Semantic      (thrustc_semantic)          │
+│    f. Semantic      (thrustc_semantic_analysis) │
 │       - General semantic analysis               │
 └─────────────────────────────────────────────────┘
     │
