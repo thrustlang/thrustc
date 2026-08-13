@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["after_frontend","before_frontend","llvm_after_optimization","llvm_before_optimization"]};

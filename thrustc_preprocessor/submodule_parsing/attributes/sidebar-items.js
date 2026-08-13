@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["build_align_attribute","build_assembler_syntax_attribute","build_attributes","build_call_convention_attribute","build_external_attribute","build_linkage_attribute","build_promotion_type_attribute"]};

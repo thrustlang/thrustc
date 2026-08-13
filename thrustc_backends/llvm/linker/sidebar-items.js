@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["LinuxEmulationVariant","LinuxLTOOptimization"],"struct":["LinkerConfiguration","LinkerLinuxConfiguration"]};

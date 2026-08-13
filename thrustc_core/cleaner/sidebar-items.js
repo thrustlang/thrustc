@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["auto_clean","clean_assembler","clean_build","clean_exported_diagnostics","clean_llvm_bitcode","clean_llvm_ir","clean_objects","clean_tokens"]};

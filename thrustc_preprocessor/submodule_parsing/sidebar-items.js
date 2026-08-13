@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["attributes","constant","customtype","expressions","import","reinterpret","typegeneration"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["LLVM_AVAILABLE_DIRECTIVES"],"struct":["CompilerDirectiveContext","LLVMDirective","LLVM_AVAILABLE_DIRECTIVES_VALUES"]};

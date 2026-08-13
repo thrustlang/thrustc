@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["abort","impls","traits"],"struct":["SymbolTable"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["SYNC_DECLARATIONS","SYNC_STATEMENTS"],"fn":["synchonize_expression","synchonize_top_level","synchronize_statement"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["INLINE_ASSEMBLER_SYNTAXES"]};

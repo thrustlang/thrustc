@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["print_compiler_backend_bug","print_compiler_frontend_bug","print_to_string"]};

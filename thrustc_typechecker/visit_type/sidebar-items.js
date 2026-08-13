@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["visit_all_types"]};

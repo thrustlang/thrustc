@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["compile_as_ptr_value","compile_as_value","compile_constant_as_ptr_value","compile_constant_as_value","compile_entry_point_constructors","compile_entry_point_desctructors"],"struct":["LLVMCodegen"]};

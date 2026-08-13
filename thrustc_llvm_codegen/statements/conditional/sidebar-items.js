@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["compile","compile_else","compile_elseif","short_circuit_comparison"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"type":["BackendError","Error","FrontendError"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["link_with_clang","link_with_gcc"],"struct":["ClangLinker","GCCLinker"]};

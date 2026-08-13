@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["archive_compilation_module","archive_compilation_module_jit","archive_compilation_unit_with_message"]};

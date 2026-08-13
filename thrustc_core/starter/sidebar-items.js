@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["archive_compilation_unit","linking_phase"]};

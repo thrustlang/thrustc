@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["CommandLinePosition"],"fn":["report_compile_time","set_up_ansi","set_up_basic"],"mod":["help"],"struct":["CommandLine","ParsedArg"]};

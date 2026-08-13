@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["get_float_predicate","get_integer_predicate","get_pointer_predicate"]};

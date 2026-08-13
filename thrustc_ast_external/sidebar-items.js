@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ExternalSignature","ExternalVariant"],"struct":["ExternalSymbol"]};

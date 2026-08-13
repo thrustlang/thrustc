@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["and","cast","cmp","equality","factor","indexation","indirect_call","lower","mutation","or","property","term","unary"]};

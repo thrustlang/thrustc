@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["append_block","move_specific_after_the_last","move_terminator_to_end"]};

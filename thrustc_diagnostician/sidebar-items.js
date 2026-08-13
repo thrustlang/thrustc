@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["DiagnosticType","Notificator"],"mod":["config","diagnostic","errors","impls","position","printers","traits"],"struct":["Diagnostician"]};

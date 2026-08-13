@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["parse_expr","parse_expression"],"mod":["array","asm","call","deref","enum_value","fixed_array","index","precedences","property","reference","struct_constructor"]};

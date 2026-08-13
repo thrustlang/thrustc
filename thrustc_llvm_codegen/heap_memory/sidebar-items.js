@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["try_allocate_at_heap"]};

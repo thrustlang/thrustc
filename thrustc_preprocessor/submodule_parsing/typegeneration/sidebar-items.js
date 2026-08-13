@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["build_type","parse_anonymous_function_type","parse_array_type","parse_constant_type","parse_pointer_type"]};

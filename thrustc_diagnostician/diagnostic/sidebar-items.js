@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["build","generate","generate_basic"],"struct":["Diagnostic"]};

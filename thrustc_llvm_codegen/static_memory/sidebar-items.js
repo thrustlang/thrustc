@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["allocate_global_constant","allocate_global_static","allocate_local_constant","allocate_local_static","generate_llvm_name","set_global_common_attributes"]};

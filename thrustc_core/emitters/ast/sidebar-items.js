@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["to_file","to_file_pretty"]};

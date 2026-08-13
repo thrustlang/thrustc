@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["print_all_available_opt_passes","print_all_targets","print_host_target_triple","print_specific_cpu_support"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["CompilerFeaturesMode","ThrustCodeModel","ThrustOptimization","ThrustRelocMode"],"fn":["get_compiler_features","set_compiler_features"],"mod":["llvm"],"struct":["COMPILER_FEATURES"]};

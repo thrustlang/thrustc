@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Ast","ModuleExpressionValues"],"fn":["get_unique_discriminat"],"mod":["ast_builtins","ast_logic_data","ast_metadata","getters","impls","traits"],"static":["NODE_DISCRIMINANT_COUNTER"],"struct":["NodeId"]};

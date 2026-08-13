@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["build_statement_modificator","build_structure_modificator"]};

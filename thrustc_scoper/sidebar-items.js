@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["checks","context","table"],"struct":["Scoper"]};

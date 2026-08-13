@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["lex"],"struct":["ATOMIC","ATTRIBUTES","BUILTINS","KEYWORDS","TYPES"]};

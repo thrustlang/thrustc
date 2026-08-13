@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["LoggingType","OutputIn"],"fn":["print_backend_bug","print_backend_panic","print_backend_panic_not_exit","print_critical_error","print_debug","print_error","print_frontend_panic","print_warning","write"]};

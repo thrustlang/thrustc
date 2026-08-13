@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"type":["TypeCheckerAssemblerFunction","TypeCheckerAssemblerFunctions","TypeCheckerFunction","TypeCheckerFunctions","TypeCheckerIntrinsic","TypeCheckerIntrinsics","TypeCheckerLocal","TypeCheckerLocals"]};

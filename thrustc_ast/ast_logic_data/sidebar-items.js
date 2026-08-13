@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"type":["ConstructorData","EnumData","EnumDataField","PropertyData","PropertyDataBaseField","PropertyDataField","StructDataField","StructureData","StructureDataFields"]};

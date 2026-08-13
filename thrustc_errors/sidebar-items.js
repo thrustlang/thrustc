@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["CompilationIssue","CompilationIssueCode","CompilationPosition"],"struct":["COMPILATION_ISSUE_CODE_EXPLANATIONS"]};

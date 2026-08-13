@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["compile","compile_with_anchor","compile_without_anchor"]};
