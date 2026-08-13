@@ -28,6 +28,7 @@ use colored::Colorize;
 use thrustc_backends::ThrustCodeModel;
 use thrustc_backends::ThrustOptimization;
 use thrustc_core::CompileTime;
+use thrustc_errors::CompilationIssueCode;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_logging::LoggingType;
 use thrustc_logging::OutputIn;
@@ -301,12 +302,12 @@ impl CommandLine {
                 self.validate_llvm_required(arg);
                 self.validate_jit_required(arg);
 
-                let entrypoint: Vec<u8> = self.peek().as_bytes().to_vec();
+                let entrypoint_in_bytes: Vec<u8> = self.peek().as_bytes().to_vec();
 
                 self.get_mut_options()
                     .get_mut_llvm_backend()
                     .get_mut_jit_config()
-                    .set_entry(entrypoint);
+                    .set_entry(entrypoint_in_bytes);
 
                 self.advance();
             }
@@ -540,9 +541,11 @@ impl CommandLine {
                 self.advance();
                 self.validate_llvm_required(arg);
 
-                let phase: CompilationPhase = self.parse_stop_compilation_phase_at(self.peek());
+                let compilation_phase: CompilationPhase =
+                    self.parse_stop_compilation_phase_at(self.peek());
 
-                self.get_mut_options().set_stop_compilation_at(phase);
+                self.get_mut_options()
+                    .set_stop_compilation_at(compilation_phase);
 
                 self.advance();
             }
@@ -648,6 +651,12 @@ impl CommandLine {
             }
 
             "-L" => {
+                if self.position.at_external() {
+                    self.advance();
+                    self.handle_unknown_argument(arg);
+                    return;
+                }
+
                 self.advance();
                 self.validate_llvm_required(arg);
 
@@ -662,6 +671,12 @@ impl CommandLine {
             }
 
             "-l" => {
+                if self.position.at_external() {
+                    self.advance();
+                    self.handle_unknown_argument(arg);
+                    return;
+                }
+
                 self.advance();
                 self.validate_llvm_required(arg);
 
@@ -685,7 +700,13 @@ impl CommandLine {
                     .set_build_executable(false);
             }
 
-            "-output" => {
+            "-o" | "-output" => {
+                if self.position.at_external() {
+                    self.advance();
+                    self.handle_unknown_argument(arg);
+                    return;
+                }
+
                 self.advance();
                 self.validate_llvm_required(arg);
 
@@ -742,12 +763,6 @@ impl CommandLine {
                 });
 
                 std::process::exit(thrustc_constants::SUCCESFUL_CODE);
-            }
-
-            "--link-check" => {
-                self.advance();
-                self.validate_llvm_required(arg);
-                self.validate_aot_is_enable(arg);
             }
 
             "--stack-protector" => {
@@ -978,6 +993,18 @@ impl CommandLine {
                 self.advance();
             }
 
+            "--disable-warnings" => {
+                self.advance();
+
+                let warnings_to_disable: Vec<CompilationIssueCode> =
+                    self.parse_warnings_to_disable(self.peek());
+
+                self.get_mut_options()
+                    .set_warnings_to_disable(warnings_to_disable);
+
+                self.advance();
+            }
+
             "--disable-all-warnings" => {
                 self.advance();
 
@@ -1038,7 +1065,7 @@ impl CommandLine {
                 self.advance();
 
                 self.get_mut_options()
-                    .set_compiler_exported_diagnostics_clean();
+                    .set_clean_exported_compiler_diagnostics();
             }
 
             "--clean-build" => {
@@ -1225,6 +1252,22 @@ impl CommandLine {
 }
 
 impl CommandLine {
+    fn parse_warnings_to_disable(&self, raw: &str) -> Vec<CompilationIssueCode> {
+        let splitted: std::str::Split<'_, &str> = raw.split(";");
+        let mut warnings: Vec<CompilationIssueCode> = Vec::new();
+
+        for warning in splitted {
+            let code: CompilationIssueCode =
+                CompilationIssueCode::parse(warning).unwrap_or_else(|_| {
+                    self.report_error(&format!("Invalid warning to disable: '{}'.", warning));
+                });
+
+            warnings.push(code);
+        }
+
+        warnings
+    }
+
     fn parse_sanitizer_config(&self, spec: &str) -> (bool, bool) {
         let splitted: std::str::Split<'_, &str> = spec.split(";");
 
@@ -1264,7 +1307,7 @@ impl CommandLine {
     fn parse_specific_abi(&self, abi: &str) -> thrustc_abi::SpecificABI {
         match abi.to_lowercase().as_str() {
             "system-v" => thrustc_abi::SpecificABI::SystemV,
-            "cuda" => thrustc_abi::SpecificABI::NvidiaCuda,
+            "nvidia-cuda" => thrustc_abi::SpecificABI::NvidiaCuda,
 
             any => {
                 self.report_error(&format!("Unknown specific ABI: '{}'.", any));

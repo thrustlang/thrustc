@@ -22,10 +22,7 @@ use colored::Colorize;
 pub fn show_help() -> ! {
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{}",
-            "The Thrust Compiler".custom_color((141, 141, 142)).bold()
-        ),
+        &format!("{}", "Thrust Compiler".custom_color((141, 141, 142)).bold()),
     );
 
     thrustc_logging::write(
@@ -345,7 +342,7 @@ pub fn show_help() -> ! {
             "{} {} {} {}\n",
             "•".bold(),
             "-abi".custom_color((141, 141, 142)).bold(),
-            "[system-v|cuda]",
+            "[system-v|nvidia-cuda]",
             "Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.",
         ),
     );
@@ -638,6 +635,17 @@ pub fn show_help() -> ! {
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stderr,
         "\nWarning compiler flags:\n\n",
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {}  {} {}\n",
+            "•".bold(),
+            "--disable-warnings".custom_color((141, 141, 142)).bold(),
+            "W0001;W0005;W0010",
+            "Disable the specified warnings.",
+        ),
     );
 
     thrustc_logging::write(

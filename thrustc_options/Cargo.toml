@@ -20,6 +20,7 @@ thrustc_token = { path = "../thrustc_token" }
 thrustc_logging = { path = "../thrustc_logging" }
 thrustc_span = { path = "../thrustc_span" }
 thrustc_ast = { path = "../thrustc_ast" }
+thrustc_errors = { path = "../thrustc_errors" }
 
 [features]
 default = ["llvm_backend_static"]

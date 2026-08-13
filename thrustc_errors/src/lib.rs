@@ -17,6 +17,8 @@
 
 */
 
+#![allow(clippy::result_unit_err)]
+
 use colored::Colorize;
 
 use thrustc_logging::{self, LoggingType};
@@ -173,6 +175,14 @@ pub enum CompilationIssueCode {
     W0016, // Structure Field not Used,
     W0017, // Function not used
     W0018, // Circular Import
+}
+
+#[inline]
+pub fn filter_warnings(to: &[CompilationIssueCode], from: &mut Vec<CompilationIssue>) {
+    from.retain(|issue| match issue {
+        CompilationIssue::Warning(code, _, _) => !to.contains(code),
+        _ => true,
+    });
 }
 
 impl CompilationIssueCode {
@@ -344,66 +354,60 @@ impl CompilationIssueCode {
     }
 }
 
-impl From<&str> for CompilationIssueCode {
-    fn from(n: &str) -> Self {
+impl CompilationIssueCode {
+    pub fn parse(n: &str) -> Result<Self, ()> {
         match n {
-            "E0001" => CompilationIssueCode::E0001,
-            "E0002" => CompilationIssueCode::E0002,
-            "E0003" => CompilationIssueCode::E0003,
-            "E0004" => CompilationIssueCode::E0004,
-            "E0005" => CompilationIssueCode::E0005,
-            "E0006" => CompilationIssueCode::E0006,
-            "E0007" => CompilationIssueCode::E0007,
-            "E0008" => CompilationIssueCode::E0008,
-            "E0010" => CompilationIssueCode::E0010,
-            "E0011" => CompilationIssueCode::E0011,
-            "E0012" => CompilationIssueCode::E0012,
-            "E0013" => CompilationIssueCode::E0013,
-            "E0014" => CompilationIssueCode::E0014,
-            "E0015" => CompilationIssueCode::E0015,
-            "E0016" => CompilationIssueCode::E0016,
-            "E0017" => CompilationIssueCode::E0017,
-            "E0018" => CompilationIssueCode::E0018,
-            "E0019" => CompilationIssueCode::E0019,
-            "E0020" => CompilationIssueCode::E0020,
-            "E0021" => CompilationIssueCode::E0021,
-            "E0022" => CompilationIssueCode::E0022,
-            "E0023" => CompilationIssueCode::E0023,
-            "E0024" => CompilationIssueCode::E0024,
-            "E0025" => CompilationIssueCode::E0025,
-            "E0026" => CompilationIssueCode::E0026,
-            "E0027" => CompilationIssueCode::E0027,
-            "E0028" => CompilationIssueCode::E0028,
-            "E0029" => CompilationIssueCode::E0029,
-            "E0030" => CompilationIssueCode::E0030,
-            "E0031" => CompilationIssueCode::E0031,
-            "E0032" => CompilationIssueCode::E0032,
-            "E0033" => CompilationIssueCode::E0033,
+            "E0001" => Ok(CompilationIssueCode::E0001),
+            "E0002" => Ok(CompilationIssueCode::E0002),
+            "E0003" => Ok(CompilationIssueCode::E0003),
+            "E0004" => Ok(CompilationIssueCode::E0004),
+            "E0005" => Ok(CompilationIssueCode::E0005),
+            "E0006" => Ok(CompilationIssueCode::E0006),
+            "E0007" => Ok(CompilationIssueCode::E0007),
+            "E0008" => Ok(CompilationIssueCode::E0008),
+            "E0010" => Ok(CompilationIssueCode::E0010),
+            "E0011" => Ok(CompilationIssueCode::E0011),
+            "E0012" => Ok(CompilationIssueCode::E0012),
+            "E0013" => Ok(CompilationIssueCode::E0013),
+            "E0014" => Ok(CompilationIssueCode::E0014),
+            "E0015" => Ok(CompilationIssueCode::E0015),
+            "E0016" => Ok(CompilationIssueCode::E0016),
+            "E0017" => Ok(CompilationIssueCode::E0017),
+            "E0018" => Ok(CompilationIssueCode::E0018),
+            "E0019" => Ok(CompilationIssueCode::E0019),
+            "E0020" => Ok(CompilationIssueCode::E0020),
+            "E0021" => Ok(CompilationIssueCode::E0021),
+            "E0022" => Ok(CompilationIssueCode::E0022),
+            "E0023" => Ok(CompilationIssueCode::E0023),
+            "E0024" => Ok(CompilationIssueCode::E0024),
+            "E0025" => Ok(CompilationIssueCode::E0025),
+            "E0026" => Ok(CompilationIssueCode::E0026),
+            "E0027" => Ok(CompilationIssueCode::E0027),
+            "E0028" => Ok(CompilationIssueCode::E0028),
+            "E0029" => Ok(CompilationIssueCode::E0029),
+            "E0030" => Ok(CompilationIssueCode::E0030),
+            "E0031" => Ok(CompilationIssueCode::E0031),
+            "E0032" => Ok(CompilationIssueCode::E0032),
+            "E0033" => Ok(CompilationIssueCode::E0033),
 
-            "W0001" => CompilationIssueCode::W0001,
-            "W0002" => CompilationIssueCode::W0002,
-            "W0003" => CompilationIssueCode::W0003,
-            "W0004" => CompilationIssueCode::W0004,
-            "W0005" => CompilationIssueCode::W0005,
-            "W0007" => CompilationIssueCode::W0007,
-            "W0008" => CompilationIssueCode::W0008,
-            "W0009" => CompilationIssueCode::W0009,
-            "W0010" => CompilationIssueCode::W0010,
-            "W0011" => CompilationIssueCode::W0011,
-            "W0012" => CompilationIssueCode::W0012,
-            "W0013" => CompilationIssueCode::W0013,
-            "W0014" => CompilationIssueCode::W0014,
-            "W0015" => CompilationIssueCode::W0015,
-            "W0016" => CompilationIssueCode::W0016,
-            "W0017" => CompilationIssueCode::W0017,
+            "W0001" => Ok(CompilationIssueCode::W0001),
+            "W0002" => Ok(CompilationIssueCode::W0002),
+            "W0003" => Ok(CompilationIssueCode::W0003),
+            "W0004" => Ok(CompilationIssueCode::W0004),
+            "W0005" => Ok(CompilationIssueCode::W0005),
+            "W0007" => Ok(CompilationIssueCode::W0007),
+            "W0008" => Ok(CompilationIssueCode::W0008),
+            "W0009" => Ok(CompilationIssueCode::W0009),
+            "W0010" => Ok(CompilationIssueCode::W0010),
+            "W0011" => Ok(CompilationIssueCode::W0011),
+            "W0012" => Ok(CompilationIssueCode::W0012),
+            "W0013" => Ok(CompilationIssueCode::W0013),
+            "W0014" => Ok(CompilationIssueCode::W0014),
+            "W0015" => Ok(CompilationIssueCode::W0015),
+            "W0016" => Ok(CompilationIssueCode::W0016),
+            "W0017" => Ok(CompilationIssueCode::W0017),
 
-            unknown => thrustc_logging::print_critical_error(
-                LoggingType::Error,
-                &format!(
-                    "Unknown '{}' as valid issue code. Try again with another.",
-                    unknown
-                ),
-            ),
+            _ => Err(()),
         }
     }
 }

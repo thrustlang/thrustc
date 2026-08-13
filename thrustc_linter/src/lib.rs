@@ -38,6 +38,7 @@ pub struct Linter<'linter> {
     warnings: Vec<CompilationIssue>,
     bugs: Vec<CompilationIssue>,
 
+    options: &'linter CompilerOptions,
     diagnostician: Diagnostician,
 
     symbols: LinterSymbolsTable<'linter>,
@@ -47,43 +48,44 @@ impl<'linter> Linter<'linter> {
     pub fn new(
         ast: &'linter [Ast],
         file: &'linter CompilationUnit,
-        options: &CompilerOptions,
+
+        options: &'linter CompilerOptions,
     ) -> Self {
         Self {
             ast,
             warnings: Vec::with_capacity(u8::MAX as usize),
             bugs: Vec::with_capacity(u8::MAX as usize),
 
+            options,
             diagnostician: Diagnostician::new(file, options),
+
             symbols: LinterSymbolsTable::new(),
         }
     }
 }
 
 impl<'linter> Linter<'linter> {
-    pub fn check(&mut self) {
+    pub fn start(&mut self) {
         self.declare_forward();
 
-        {
-            for node in self.ast.iter() {
-                self.analyze_decl(node);
-            }
+        for node in self.ast.iter() {
+            self.analyze_decl(node);
         }
 
         self.generate_warnings();
 
-        {
-            for bug in self.bugs.iter() {
-                self.diagnostician
-                    .dispatch_diagnostic(bug, thrustc_logging::LoggingType::Bug);
-            }
+        for bug in self.bugs.iter() {
+            self.diagnostician
+                .dispatch_diagnostic(bug, thrustc_logging::LoggingType::Bug);
         }
 
-        {
-            for warning in self.warnings.iter() {
-                self.diagnostician
-                    .dispatch_diagnostic(warning, thrustc_logging::LoggingType::Warning);
-            }
+        let warnings_to_disable: &[CompilationIssueCode] = self.options.get_warnings_to_disable();
+
+        thrustc_errors::filter_warnings(warnings_to_disable, &mut self.warnings);
+
+        for warning in self.warnings.iter() {
+            self.diagnostician
+                .dispatch_diagnostic(warning, thrustc_logging::LoggingType::Warning);
         }
     }
 }

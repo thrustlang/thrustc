@@ -155,8 +155,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         }
 
         it_failed = it_failed
-            || self.get_compilation_options().get_was_printed()
-            || self.get_compilation_options().get_was_emited()
+            || self.get_compilation_options().was_printed()
+            || self.get_compilation_options().was_emited()
             || self.get_compiled_files().is_empty();
 
         if it_failed {
@@ -541,8 +541,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         }
 
         it_failed = it_failed
-            || self.get_compilation_options().get_was_printed()
-            || self.get_compilation_options().get_was_emited()
+            || self.get_compilation_options().was_printed()
+            || self.get_compilation_options().was_emited()
             || modules.is_empty();
 
         if it_failed {

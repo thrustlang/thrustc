@@ -17,7 +17,6 @@
 
 */
 
-
 use thrustc_options::CompilerOptions;
 
 pub fn auto_clean(options: &CompilerOptions) {
@@ -25,7 +24,7 @@ pub fn auto_clean(options: &CompilerOptions) {
         self::clean_build(options);
     }
 
-    if options.get_compiler_exported_diagnostics_clean() {
+    if options.clean_exported_compiler_diagnostics() {
         self::clean_exported_diagnostics(options)
     }
 

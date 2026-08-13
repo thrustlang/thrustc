@@ -25,6 +25,7 @@ use thrustc_backends::CompilerFeaturesMode;
 use thrustc_backends::llvm::LLVMBackend;
 
 use thrustc_ast::Ast;
+use thrustc_errors::CompilationIssueCode;
 use thrustc_logging::{self, LoggingType};
 use thrustc_token::Token;
 
@@ -53,10 +54,11 @@ pub struct CompilerOptions {
 
     compiler_features: CompilerFeaturesMode,
 
+    warnings_to_disable: Vec<CompilationIssueCode>,
     export_diagnostics_path: PathBuf,
     export_compiler_error_diagnostics: bool,
     export_compiler_warning_diagnostics: bool,
-    compiler_export_diagnostics_clean: bool,
+    clean_exported_compiler_diagnostics: bool,
 
     copy_output_to_clipboard: bool,
     clean_tokens: bool,
@@ -171,10 +173,11 @@ impl CompilerOptions {
 
             compiler_features: CompilerFeaturesMode::Stable,
 
+            warnings_to_disable: Vec::with_capacity(u8::MAX as usize),
             export_diagnostics_path: "diagnostics".into(),
             export_compiler_error_diagnostics: false,
             export_compiler_warning_diagnostics: false,
-            compiler_export_diagnostics_clean: false,
+            clean_exported_compiler_diagnostics: false,
 
             copy_output_to_clipboard: false,
             clean_tokens: false,
@@ -295,8 +298,8 @@ impl CompilerOptions {
     }
 
     #[inline]
-    pub fn set_compiler_exported_diagnostics_clean(&mut self) {
-        self.compiler_export_diagnostics_clean = true;
+    pub fn set_clean_exported_compiler_diagnostics(&mut self) {
+        self.clean_exported_compiler_diagnostics = true;
     }
 
     #[inline]
@@ -322,6 +325,11 @@ impl CompilerOptions {
     #[inline]
     pub fn set_utilize_specific_abi(&mut self, specific: thrustc_abi::SpecificABI) {
         self.abi_configuration.set_specific(specific);
+    }
+
+    #[inline]
+    pub fn set_warnings_to_disable(&mut self, warnings: Vec<CompilationIssueCode>) {
+        self.warnings_to_disable = warnings;
     }
 
     #[inline]
@@ -447,18 +455,23 @@ impl CompilerOptions {
     }
 
     #[inline]
-    pub fn get_compiler_exported_diagnostics_clean(&self) -> bool {
-        self.compiler_export_diagnostics_clean
+    pub fn clean_exported_compiler_diagnostics(&self) -> bool {
+        self.clean_exported_compiler_diagnostics
     }
 
     #[inline]
-    pub fn get_was_emited(&self) -> bool {
+    pub fn was_emited(&self) -> bool {
         !self.emit.is_empty()
     }
 
     #[inline]
-    pub fn get_was_printed(&self) -> bool {
+    pub fn was_printed(&self) -> bool {
         !self.printable.is_empty()
+    }
+
+    #[inline]
+    pub fn get_warnings_to_disable(&self) -> &[CompilationIssueCode] {
+        self.warnings_to_disable.as_slice()
     }
 
     #[inline]

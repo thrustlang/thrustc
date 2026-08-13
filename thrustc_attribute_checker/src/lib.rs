@@ -41,6 +41,7 @@ pub struct AttributeChecker<'attr_checker> {
     errors: Vec<CompilationIssue>,
     warnings: Vec<CompilationIssue>,
 
+    options: &'attr_checker CompilerOptions,
     diagnostician: Diagnostician,
 }
 
@@ -49,13 +50,14 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
     pub fn new(
         ast: &'attr_checker [Ast<'attr_checker>],
         file: &'attr_checker CompilationUnit,
-        options: &CompilerOptions,
+        options: &'attr_checker CompilerOptions,
     ) -> Self {
         Self {
             ast,
             errors: Vec::with_capacity(u8::MAX as usize),
             warnings: Vec::with_capacity(u8::MAX as usize),
 
+            options,
             diagnostician: Diagnostician::new(file, options),
         }
     }
@@ -73,6 +75,10 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 
 impl<'attr_checker> AttributeChecker<'attr_checker> {
     fn check(&mut self) -> bool {
+        let warnings_to_disable: &[CompilationIssueCode] = self.options.get_warnings_to_disable();
+
+        thrustc_errors::filter_warnings(warnings_to_disable, &mut self.errors);
+
         if !self.warnings.is_empty() {
             for warning in self.warnings.iter() {
                 self.diagnostician

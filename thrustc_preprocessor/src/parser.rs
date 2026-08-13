@@ -20,7 +20,7 @@
 use std::path::PathBuf;
 
 use thrustc_diagnostician::Diagnostician;
-use thrustc_errors::{CompilationIssue, CompilationPosition};
+use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_span::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -34,11 +34,13 @@ use ahash::AHashSet as HashSet;
 pub struct ModuleParser<'module_parser> {
     module: Module,
     tokens: Vec<Token>,
-    diagnostician: Diagnostician,
     errors: Vec<CompilationIssue>,
     warnings: Vec<CompilationIssue>,
     visited: HashSet<PathBuf>,
+
     options: &'module_parser CompilerOptions,
+    diagnostician: Diagnostician,
+
     current: usize,
 }
 
@@ -53,11 +55,14 @@ impl<'module_parser> ModuleParser<'module_parser> {
         Self {
             module: Module::new(name, file.get_path().to_path_buf()),
             tokens,
-            diagnostician: Diagnostician::new(file, options),
+
             errors: Vec::with_capacity(u8::MAX as usize),
             warnings: Vec::with_capacity(u8::MAX as usize),
             visited,
+
+            diagnostician: Diagnostician::new(file, options),
             options,
+
             current: 0,
         }
     }
@@ -69,19 +74,19 @@ impl<'module_parser> ModuleParser<'module_parser> {
             let _ = self.start();
         }
 
-        {
-            for warning in self.warnings.iter() {
-                self.diagnostician
-                    .dispatch_diagnostic(warning, thrustc_logging::LoggingType::Warning);
-            }
+        let warnings_to_disable: &[CompilationIssueCode] = self.options.get_warnings_to_disable();
+
+        thrustc_errors::filter_warnings(warnings_to_disable, &mut self.warnings);
+
+        for warning in self.warnings.iter() {
+            self.diagnostician
+                .dispatch_diagnostic(warning, thrustc_logging::LoggingType::Warning);
         }
 
         if !self.errors.is_empty() {
-            {
-                for error in self.errors.iter() {
-                    self.diagnostician
-                        .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
-                }
+            for error in self.errors.iter() {
+                self.diagnostician
+                    .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
             }
 
             return Err(());

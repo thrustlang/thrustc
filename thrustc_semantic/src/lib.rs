@@ -127,7 +127,7 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
             && !scoper_failed
             && !self.options.disable_all_warnings()
         {
-            self.linter.check();
+            self.linter.start();
 
             if self.options.stop_compilation_at(CompilationPhase::Linter) {
                 return either::Either::Right(());

@@ -9,16 +9,16 @@ A list of the commands and compiler flags supported by the command line interfac
 > For every command line flag you can use `=` or `:` as the value indicator, in addition to the space. For example, these are all valid: `-abi=nvidia-cuda`, `-abi:nvidia-cuda` and `-abi nvidia-cuda`.
 
 ```console
-The Thrust Compiler
+Thrust Compiler
 
 Usage: thrustc [-flags|--flags] [files..]
 
 General Commands:
 
 • -h, --help optional[opt|emit|print|code-model|
-	reloc-model|sanitizer|symbol-linkage-strategy|
-	denormal-floating-point-behavior|
-	denormal-floating-point-32-bits-behavior] Show help message.
+        reloc-model|sanitizer|symbol-linkage-strategy|
+        denormal-floating-point-behavior|
+        denormal-floating-point-32-bits-behavior] Show help message.
 • -v, --version Show the version.
 
 Linkage flags:
@@ -51,7 +51,7 @@ Compiler flags:
 • -jit-libc [path/to/libc.so] Specify the C runtime to link for code execution via the JIT compiler.
 • -jit-link [path/to/raylib.so] Specify, add, and link an external dynamic library for code execution via the JIT compiler.
 • -jit-entry [main] Specify the entry point name for the JIT compiler.
-• -abi [system-v|cuda] Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.
+• -abi [system-v|nvidia-cuda] Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.
 • -mode [stable|unstable] Enable or disable compiler features to limit to stable features only or add support to unstable features.
 • -dbg Enable generation of debug information (DWARF).
 • -dbg-for-inlining Enable debug information specifically optimized for inlined functions.
@@ -83,6 +83,7 @@ Disable compiler flags:
 
 Warning compiler flags:
 
+• --disable-warnings  W0001;W0005;W0010 Disable the specified warnings.
 • --disable-all-warnings Disable all the general and specific warnings.
 
 Other compiler flags:

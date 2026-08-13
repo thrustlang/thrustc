@@ -21,3 +21,4 @@ thrustc_logging = { path = "../thrustc_logging" }
 thrustc_reader = { path = "../thrustc_reader" }
 thrustc_constants = { path = "../thrustc_constants" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" } 
+thrustc_errors = { path = "../thrustc_errors" }
