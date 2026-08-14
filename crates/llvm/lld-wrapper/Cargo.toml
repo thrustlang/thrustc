@@ -1,0 +1,15 @@
+[package]
+name = "lld"
+description = "The LLD wrapper for the Thrush Programming Language."
+license = "GPL-3.0"
+version = "1.0.0"
+authors = ["Kevin Benavides <https://github.com/DevCheckOG>"]
+homepage = "https://github.com/thrushlang/lld-wrapper"
+repository = "https://github.com/thrushlang/lld-wrapper"
+edition = "2024"
+rust-version = "1.85.0"
+
+[build-dependencies]
+libc = "0.2.174"
+cc = "1.2.30"
+lazy_static = "1.5.0"
