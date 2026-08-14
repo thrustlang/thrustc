@@ -42,7 +42,19 @@ if test -n "$help_output"
     echo '```' >> "$release_dir/README.md"
 end
 
-git add "$release_dir/README.md"
+set version (string match -r '[0-9]+\.[0-9]+\.[0-9]+' "$tag_name")
+if test -z "$version"
+    echo "Error: Could not extract a version number (x.y.z) from tag '$tag_name'."
+    exit 1
+end
+awk -v ver="$version" '
+    /^\[package\]/ { inpkg=1; print; next }
+    /^\[/ { inpkg=0; print; next }
+    inpkg && /^version[[:space:]]*=/ { print "version = \"" ver "\""; next }
+    { print }
+' Cargo.toml > Cargo.toml.tmp; and mv Cargo.toml.tmp Cargo.toml
+
+git add "$release_dir/README.md" Cargo.toml
 git commit -m "Bumping '$tag_name'"
 
 git tag $tag_name

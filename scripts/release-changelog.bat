@@ -49,7 +49,17 @@ if not "!help_output!"=="" (
     echo ```>> "%release_dir%\README.md"
 )
 
-git add "%release_dir%\README.md"
+set "version="
+for /f "delims=" %%v in ('powershell -NoProfile -Command "$m = [regex]::Match('%tag_name%', '\d+\.\d+\.\d+'); if ($m.Success) { $m.Value }"') do set "version=%%v"
+
+if "%version%"=="" (
+    echo Error: Could not extract a version number ^(x.y.z^) from tag '%tag_name%'.
+    exit /b 1
+)
+
+powershell -NoProfile -Command "$version = $env:version; $inPkg=$false; $c = Get-Content 'Cargo.toml' | ForEach-Object { if ($_ -match '^\[package\]') {$inPkg=$true} elseif ($_ -match '^\[') {$inPkg=$false}; if ($inPkg -and $_ -match '^version\s*=') { 'version = \"' + $version + '\"' } else { $_ } }; Set-Content 'Cargo.toml' $c"
+
+git add "%release_dir%\README.md" "Cargo.toml"
 git commit -m "Bumping '%tag_name%'"
 
 git tag "%tag_name%"

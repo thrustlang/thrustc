@@ -44,7 +44,25 @@ if (-not [string]::IsNullOrWhiteSpace($help_output)) {
     Add-Content "$release_dir/README.md" '```'
 }
 
-git add "$release_dir/README.md"
+$versionMatch = [regex]::Match($tag_name, '\d+\.\d+\.\d+')
+if (-not $versionMatch.Success) {
+    Write-Error "Error: Could not extract a version number (x.y.z) from tag '$tag_name'."
+    exit 1
+}
+$version = $versionMatch.Value
+$inPkg = $false
+$cargoContent = Get-Content "Cargo.toml" | ForEach-Object {
+    if ($_ -match '^\[package\]') { $inPkg = $true }
+    elseif ($_ -match '^\[') { $inPkg = $false }
+    if ($inPkg -and $_ -match '^version\s*=') {
+        "version = `"$version`""
+    } else {
+        $_
+    }
+}
+Set-Content "Cargo.toml" $cargoContent
+
+git add "$release_dir/README.md" "Cargo.toml"
 git commit -m "Bumping '$tag_name'"
 
 git tag $tag_name
