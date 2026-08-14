@@ -42,12 +42,12 @@ if test -n "$help_output"
     echo '```' >> "$release_dir/README.md"
 end
 
-set version (string match -r '[0-9]+\.[0-9]+\.[0-9]+' "$tag_name")
-if test -z "$version"
+set pkg_version (string match -r '[0-9]+\.[0-9]+\.[0-9]+' "$tag_name")
+if test -z "$pkg_version"
     echo "Error: Could not extract a version number (x.y.z) from tag '$tag_name'."
     exit 1
 end
-awk -v ver="$version" '
+awk -v ver="$pkg_version" '
     /^\[package\]/ { inpkg=1; print; next }
     /^\[/ { inpkg=0; print; next }
     inpkg && /^version[[:space:]]*=/ { print "version = \"" ver "\""; next }
