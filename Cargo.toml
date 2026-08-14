@@ -66,7 +66,6 @@ version = "0.1.6"
 rust-version = "1.85.0"
 
 authors = [
-    "Thrust Team <thrustlangproject@gmail.com>",
     "Stevens Benavides <foss.stevens.benavides@gmail.com>"
 ]
 
