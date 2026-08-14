@@ -17,12 +17,15 @@
 
 */
 
-use thrustc_ast::{Ast, traits::AstCodeLocation};
-use thrustc_attributes::traits::ThrustAttributesExtensions;
+use thrustc_ast::{
+    Ast,
+    traits::{AstAttributeExtensions, AstCodeLocation},
+};
+use thrustc_attributes::{ThrustAttributeComparator, traits::ThrustAttributesExtensions};
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 
 use ahash::AHashMap as HashMap;
 
@@ -92,12 +95,13 @@ impl<'linter> Linter<'linter> {
 
 impl<'linter> Linter<'linter> {
     fn analyze_decl(&mut self, node: &'linter Ast) {
+        self.analyze_attributes(node);
+
         match node {
             Ast::Enum { data, .. } => {
-                data.iter().for_each(|field| {
-                    let expr: &Ast = &field.2;
+                for (_, _, expr) in data.iter() {
                     self.analyze_expr(expr);
-                });
+                }
             }
             Ast::Static {
                 name,
@@ -131,11 +135,22 @@ impl<'linter> Linter<'linter> {
                 self.generate_scoped_function_warnings();
             }
 
+            Ast::AssemblerFunction { span, .. } => {
+                self.add_warning(CompilationIssue::Warning(
+                    CompilationIssueCode::W0019,
+                    "An unstable feature could produce unexpected compiler panics on weird behaviors."
+                        .into(),
+                    *span,
+                ));
+            }
+
             _ => (),
         }
     }
 
     fn analyze_stmt(&mut self, node: &'linter Ast) {
+        self.analyze_attributes(node);
+
         match node {
             Ast::Var {
                 name,
@@ -376,6 +391,72 @@ impl Linter<'_> {
 }
 
 impl Linter<'_> {
+    fn analyze_attributes(&mut self, node: &Ast) {
+        let Some(attributes) = node.get_attributes() else {
+            return;
+        };
+
+        if let Some(promote_attr) = attributes.get_attr(ThrustAttributeComparator::Promote) {
+            let span: Span = promote_attr.get_span();
+
+            self.add_warning(CompilationIssue::Warning(
+                CompilationIssueCode::W0019,
+                "An unstable feature could produce unexpected compiler panics on weird behaviors."
+                    .into(),
+                span,
+            ));
+        }
+
+        if let Some(asm_syntax_attr) = attributes.get_attr(ThrustAttributeComparator::AsmSyntax) {
+            let span: Span = asm_syntax_attr.get_span();
+
+            self.add_warning(CompilationIssue::Warning(
+                CompilationIssueCode::W0019,
+                "An unstable feature could produce unexpected compiler panics on weird behaviors."
+                    .into(),
+                span,
+            ));
+        }
+
+        if let Some(asm_align_attr) = attributes.get_attr(ThrustAttributeComparator::AsmAlignStack)
+        {
+            let span: Span = asm_align_attr.get_span();
+
+            self.add_warning(CompilationIssue::Warning(
+                CompilationIssueCode::W0019,
+                "An unstable feature could produce unexpected compiler panics on weird behaviors."
+                    .into(),
+                span,
+            ));
+        }
+
+        if let Some(asm_throw_attr) = attributes.get_attr(ThrustAttributeComparator::AsmThrow) {
+            let span: Span = asm_throw_attr.get_span();
+
+            self.add_warning(CompilationIssue::Warning(
+                CompilationIssueCode::W0019,
+                "An unstable feature could produce unexpected compiler panics on weird behaviors."
+                    .into(),
+                span,
+            ));
+        }
+
+        if let Some(asm_side_effects_attr) =
+            attributes.get_attr(ThrustAttributeComparator::AsmSideEffects)
+        {
+            let span: Span = asm_side_effects_attr.get_span();
+
+            self.add_warning(CompilationIssue::Warning(
+                CompilationIssueCode::W0019,
+                "An unstable feature could produce unexpected compiler panics on weird behaviors."
+                    .into(),
+                span,
+            ));
+        }
+    }
+}
+
+impl Linter<'_> {
     fn generate_scoped_warnings(&mut self) {
         let mut warnings: Vec<CompilationIssue> = Vec::with_capacity(u8::MAX.into());
 
@@ -576,8 +657,13 @@ impl Linter<'_> {
 
 impl Linter<'_> {
     #[inline]
-    pub fn add_bulk_warnings(&mut self, warnings: Vec<CompilationIssue>) {
+    fn add_bulk_warnings(&mut self, warnings: Vec<CompilationIssue>) {
         self.warnings.extend(warnings);
+    }
+
+    #[inline]
+    fn add_warning(&mut self, warning: CompilationIssue) {
+        self.warnings.push(warning);
     }
 }
 

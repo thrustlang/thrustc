@@ -21,8 +21,8 @@
 
 use colored::Colorize;
 
-use thrustc_logging::{self, LoggingType};
 use thrustc_code_location::Span;
+use thrustc_logging::{self, LoggingType};
 
 #[derive(Debug, Clone)]
 pub enum CompilationIssue {
@@ -175,6 +175,7 @@ pub enum CompilationIssueCode {
     W0016, // Structure Field not Used,
     W0017, // Function not used
     W0018, // Circular Import
+    W0019, // Unstable Feature
 }
 
 #[inline]
@@ -333,6 +334,9 @@ impl CompilationIssueCode {
             }
             CompilationIssueCode::W0018 => {
                 format!("CIRCULAR IMPORT - {}", "W0018".bright_yellow())
+            }
+            CompilationIssueCode::W0019 => {
+                format!("UNSTABLE FEATURE - {}", "W0019".bright_yellow())
             }
         }
     }

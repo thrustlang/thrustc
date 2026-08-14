@@ -17,8 +17,9 @@
 
 */
 
-use thrustc_errors::CompilationIssue;
+use thrustc_attributes::ThrustAttributes;
 use thrustc_code_location::Span;
+use thrustc_errors::CompilationIssue;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
@@ -32,16 +33,17 @@ use crate::{
         ConstructorData, EnumData, EnumDataField, PropertyData, PropertyDataField, StructureData,
     },
     traits::{
-        AstCodeBlockEntensions, AstConstructorDataExtensions, AstDeclarationExtensions,
-        AstEnumFieldsDataExtensions, AstExpressionExtensions, AstGetType, AstMemoryExtensions,
-        AstPropertyDataExtensions, AstPropertyDataFieldExtensions, AstStandardExtensions,
-        AstStatementExtensions, AstStructFieldsDataExtensions, AstStructureDataExtensions,
+        AstAttributeExtensions, AstCodeBlockEntensions, AstConstructorDataExtensions,
+        AstDeclarationExtensions, AstEnumFieldsDataExtensions, AstExpressionExtensions, AstGetType,
+        AstMemoryExtensions, AstPropertyDataExtensions, AstPropertyDataFieldExtensions,
+        AstStandardExtensions, AstStatementExtensions, AstStructFieldsDataExtensions,
+        AstStructureDataExtensions,
     },
 };
 
-mod compiler_builtins;
-mod constant;
-mod literal_values;
+mod ast_compiler_builtins;
+mod ast_constant;
+mod ast_literal_values;
 
 impl AstStandardExtensions for Ast<'_> {
     #[inline]
@@ -161,6 +163,35 @@ impl AstStandardExtensions for Ast<'_> {
     #[inline]
     fn is_defer_keyword(&self) -> bool {
         matches!(self, Ast::Defer { .. })
+    }
+
+    #[inline]
+    fn is_unstable_feature(&self) -> bool {
+        matches!(
+            self,
+            Ast::AssemblerFunction { .. }
+                | Ast::AssemblerFunctionParameter { .. }
+                | Ast::AsmValue { .. }
+        )
+    }
+}
+
+impl AstAttributeExtensions for Ast<'_> {
+    #[inline]
+    fn get_attributes(&self) -> Option<&ThrustAttributes> {
+        match self {
+            Ast::Struct { attributes, .. } => Some(attributes),
+            Ast::Enum { attributes, .. } => Some(attributes),
+            Ast::CompilerIntrinsic { attributes, .. } => Some(attributes),
+            Ast::AssemblerFunction { attributes, .. } => Some(attributes),
+            Ast::Function { attributes, .. } => Some(attributes),
+            Ast::Static { attributes, .. } => Some(attributes),
+            Ast::Const { attributes, .. } => Some(attributes),
+            Ast::Var { attributes, .. } => Some(attributes),
+            Ast::AsmValue { attributes, .. } => Some(attributes),
+
+            _ => None,
+        }
     }
 }
 

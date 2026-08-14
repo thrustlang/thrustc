@@ -17,8 +17,9 @@
 
 */
 
-use thrustc_errors::CompilationIssue;
+use thrustc_attributes::ThrustAttributes;
 use thrustc_code_location::Span;
+use thrustc_errors::CompilationIssue;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
@@ -47,11 +48,16 @@ pub trait AstDeclarationExtensions {
 
 pub trait AstExpressionExtensions {
     fn is_expression(&self) -> bool;
+
     fn is_binary_operation(&self) -> bool;
     fn is_unary_operation(&self) -> bool;
     fn is_unary_before_operation(&self) -> bool;
 
     fn get_binary_operator(&self) -> Option<TokenType>;
+}
+
+pub trait AstAttributeExtensions {
+    fn get_attributes(&self) -> Option<&ThrustAttributes>;
 }
 
 pub trait AstStandardExtensions {
@@ -78,6 +84,7 @@ pub trait AstStandardExtensions {
     fn is_conditional_keyword(&self) -> bool;
     fn is_function_parameter(&self) -> bool;
     fn is_defer_keyword(&self) -> bool;
+    fn is_unstable_feature(&self) -> bool;
 }
 
 pub trait AstLiteralExtensions {

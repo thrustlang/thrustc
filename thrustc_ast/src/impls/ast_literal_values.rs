@@ -47,6 +47,7 @@ impl AstLiteralExtensions for Ast<'_> {
         }
     }
 
+    #[inline]
     fn is_literal_value(&self) -> bool {
         matches!(
             self,
