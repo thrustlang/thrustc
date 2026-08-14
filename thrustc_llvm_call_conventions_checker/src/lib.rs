@@ -30,7 +30,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_llvm_attributes::{
     LLVMAttribute, LLVMAttributeComparator, LLVMAttributes, traits::LLVMAttributesExtensions,
 };
-use thrustc_llvm_callconventions::LLVMCallConvention;
+use thrustc_llvm_call_conventions::LLVMCallConvention;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_code_location::Span;
 

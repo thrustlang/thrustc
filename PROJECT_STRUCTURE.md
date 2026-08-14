@@ -129,7 +129,7 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_llvm_attributes`**  
   Mapping and emission of LLVM-specific attributes.
 
-- **`thrustc_llvm_callconventions`** & **`thrustc_llvm_callconventions_checker`**  
+- **`thrustc_llvm_call_conventions`** & **`thrustc_llvm_call_conventions_checker`**  
   Support and validation of calling conventions.
 
 - **`thrustc_llvm_compiler_intrinsic_checker`**  
@@ -358,8 +358,8 @@ Source File (.thrust)
 │    Target & conventions:                        │
 │    - thrustc_llvm_target_triple                 │
 │    - thrustc_llvm_attributes                    │
-│    - thrustc_llvm_callconventions               │
-│    - thrustc_llvm_callconventions_checker       │
+│    - thrustc_llvm_call_conventions              │
+│    - thrustc_llvm_call_conventions_checker      │
 │    - thrustc_llvm_compiler_intrinsic_checker    │
 │                                                 │
 │    Linker driver:                               │

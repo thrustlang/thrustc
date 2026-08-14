@@ -15,7 +15,7 @@ clang = { workspace = true, optional = true }
 thrustc_attributes = { path = "../thrustc_attributes" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_code_location = { path = "../thrustc_code_location" }
-thrustc_llvm_callconventions = { path = "../thrustc_llvm_callconventions" }
+thrustc_llvm_call_conventions = { path = "../thrustc_llvm_call_conventions" }
 
 [features]
 default = ["llvm_backend_static"]

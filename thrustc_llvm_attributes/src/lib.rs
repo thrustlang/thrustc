@@ -21,7 +21,7 @@ use ahash::{HashMap, HashMapExt};
 use inkwell::module::Linkage;
 
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
-use thrustc_llvm_callconventions::LLVMCallConvention;
+use thrustc_llvm_call_conventions::LLVMCallConvention;
 use thrustc_typesystem::Type;
 
 pub mod impls;
@@ -210,7 +210,7 @@ pub fn into_llvm_attribute(attribute: &ThrustAttribute) -> LLVMAttribute<'_> {
         ThrustAttribute::Extern(external_name, ..) => LLVMAttribute::Extern(external_name),
         ThrustAttribute::Linkage(linkage, ..) => LLVMAttribute::Linkage(linkage.get_llvm_linkage()),
         ThrustAttribute::Convention(name, ..) => LLVMAttribute::Convention(
-            thrustc_llvm_callconventions::get_call_convention(name.as_bytes()),
+            thrustc_llvm_call_conventions::get_call_convention(name.as_bytes()),
         ),
         ThrustAttribute::Public(..) => LLVMAttribute::Public,
         ThrustAttribute::Ignore(..) => LLVMAttribute::Ignore,

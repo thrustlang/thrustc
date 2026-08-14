@@ -23,7 +23,7 @@ use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributeComparator;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
-use thrustc_llvm_callconventions::LLVMCallConvention;
+use thrustc_llvm_call_conventions::LLVMCallConvention;
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 

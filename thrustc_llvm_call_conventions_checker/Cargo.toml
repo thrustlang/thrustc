@@ -8,7 +8,7 @@ rust-version.workspace = true
 
 [dependencies]
 
-thrustc_llvm_callconventions = { path = "../thrustc_llvm_callconventions" }
+thrustc_llvm_call_conventions = { path = "../thrustc_llvm_call_conventions" }
 thrustc_llvm_attributes = { path = "../thrustc_llvm_attributes"  } 
 thrustc_backends = { path = "../thrustc_backends" }
 thrustc_attributes = { path = "../thrustc_attributes" } 
