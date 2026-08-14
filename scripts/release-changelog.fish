@@ -32,7 +32,7 @@ echo "Generating changelog for: $range"
 git-cliff "$range" --output "$release_dir/README.md"
 
 cargo run --quiet 2>/dev/null; or true
-set help_output (./target/debug/thrustc --help 2>&1; or true)
+set help_output (./target/debug/thrustc --help 2>&1 | string collect; or true)
 
 if test -n "$help_output"
     echo "" >> "$release_dir/README.md"
