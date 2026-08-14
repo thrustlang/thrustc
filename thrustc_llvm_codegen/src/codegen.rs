@@ -29,10 +29,10 @@ use inkwell::{builder::Builder, values::BasicValueEnum};
 use thrustc_ast::ast_metadata::{ConstantMetadata, LocalMetadata, ReferenceType, StaticMetadata};
 use thrustc_attributes::ThrustAttributes;
 use thrustc_backends::llvm::LLVMBackend;
+use thrustc_code_location::Span;
 use thrustc_entities::{GlobalConstant, GlobalStatic, LocalConstant, LocalStatic, LocalVariable};
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_options::CompilerOptions;
-use thrustc_code_location::Span;
 
 use crate::compiler_builtins::LLVMBuiltin;
 use crate::context::{CodeGenLocation, LLVMCodeGenContext};
@@ -867,7 +867,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 let value: BasicValueEnum =
                     codegen::compile_as_value(self.context, value, Some(&cast_type));
 
-                memory::store(self.context, ptr.into_pointer_value(), value, *span);
+                memory::store(self.context, ptr.into_pointer_value(), value, None, *span);
             }
 
             Ast::Write { .. } => {

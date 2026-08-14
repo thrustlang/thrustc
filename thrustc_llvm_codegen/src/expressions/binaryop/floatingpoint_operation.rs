@@ -18,6 +18,7 @@
 */
 
 use crate::abort;
+use crate::atomic_operations::LLVMAtomicModificators;
 use crate::codegen;
 use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
@@ -28,8 +29,8 @@ use crate::type_cast;
 use inkwell::values::PointerValue;
 use thrustc_ast::Ast;
 use thrustc_ast::traits::AstMemoryExtensions;
-use thrustc_entities::BinaryOperation;
 use thrustc_code_location::Span;
+use thrustc_entities::BinaryOperation;
 use thrustc_token_type::TokenType;
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::Type;
@@ -56,6 +57,21 @@ pub fn compile_float_operation<'ctx>(
                     codegen::compile_as_ptr_value(context, lhs, cast);
                 context.pop_current_codegen_location();
 
+                let symbol: memory::SymbolAllocated<'_> = if let Ast::Reference { name, .. } = lhs {
+                    context.get_table().get_symbol(name)
+                } else {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile '+' operation!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    );
+                };
+
+                let atomic_config: Option<LLVMAtomicModificators> =
+                    symbol.determinate_atomic_configuration();
+
                 if reference.is_pointer_value() {
                     let ptr: PointerValue<'_> = reference.into_pointer_value();
 
@@ -77,7 +93,7 @@ pub fn compile_float_operation<'ctx>(
                         })
                         .into();
 
-                    memory::store(context, ptr, new_value, span);
+                    memory::store(context, ptr, new_value, atomic_config, span);
 
                     new_value
                 } else {
@@ -118,6 +134,21 @@ pub fn compile_float_operation<'ctx>(
                     codegen::compile_as_ptr_value(context, lhs, cast);
                 context.pop_current_codegen_location();
 
+                let symbol: memory::SymbolAllocated<'_> = if let Ast::Reference { name, .. } = lhs {
+                    context.get_table().get_symbol(name)
+                } else {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile '+' operation!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    );
+                };
+
+                let atomic_config: Option<LLVMAtomicModificators> =
+                    symbol.determinate_atomic_configuration();
+
                 if reference.is_pointer_value() {
                     let ptr: PointerValue<'_> = reference.into_pointer_value();
 
@@ -139,7 +170,7 @@ pub fn compile_float_operation<'ctx>(
                         })
                         .into();
 
-                    memory::store(context, ptr, new_value, span);
+                    memory::store(context, ptr, new_value, atomic_config, span);
 
                     new_value
                 } else {

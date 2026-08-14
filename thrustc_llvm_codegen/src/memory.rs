@@ -35,9 +35,9 @@ use thrustc_ast::ast_metadata::LLVMDereferenceMetadata;
 use thrustc_ast::ast_metadata::LLVMLocalMetadata;
 use thrustc_ast::ast_metadata::LLVMStaticMetadata;
 
+use thrustc_code_location::Span;
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
-use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::ConstantTypeExtensions;
 use thrustc_typesystem::traits::TypeExtensions;
@@ -426,52 +426,106 @@ impl<'ctx> SymbolAllocated<'ctx> {
 
         context.mark_dbg_location(self.get_symbol_span());
 
-        if let Self::Local { ptr, .. } = self {
-            if let Ok(store) = llvm_builder.build_store(*ptr, new_value) {
-                store.set_alignment(alignment).unwrap_or_else(|_| {
+        if let Self::Local { ptr, metadata, .. } = self {
+            let instruction = llvm_builder
+                .build_store(*ptr, new_value)
+                .unwrap_or_else(|_| {
                     abort::abort_codegen(
                         context,
-                        "Failed to set type alignment!",
+                        "Failed to store a value in memory!",
                         span,
                         PathBuf::from(file!()),
                         line!(),
                     );
                 });
 
-                return;
-            }
+            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
+                atomic_volatile: metadata.volatile,
+                atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
+            };
+
+            atomic_operations::set_atomic_behavior_store_instruction(
+                context,
+                instruction,
+                atomic_config,
+                span,
+            );
+
+            instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to set type alignment!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            });
+
+            return;
+        }
+
+        if let Self::Static { ptr, metadata, .. } = self {
+            let instruction = llvm_builder
+                .build_store(*ptr, new_value)
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to store a value in memory!",
+                        span,
+                        PathBuf::from(file!()),
+                        line!(),
+                    );
+                });
+
+            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
+                atomic_volatile: metadata.volatile,
+                atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
+            };
+
+            atomic_operations::set_atomic_behavior_store_instruction(
+                context,
+                instruction,
+                atomic_config,
+                span,
+            );
+
+            instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to set type alignment!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            });
+
+            return;
         }
 
         if let Self::AllocatedParameter { ptr, .. } = self {
-            if let Ok(store) = llvm_builder.build_store(*ptr, new_value) {
-                store.set_alignment(alignment).unwrap_or_else(|_| {
+            let store = llvm_builder
+                .build_store(*ptr, new_value)
+                .unwrap_or_else(|_| {
                     abort::abort_codegen(
                         context,
-                        "Failed to set type alignment!",
+                        "Failed to store a value in memory!",
                         span,
                         PathBuf::from(file!()),
                         line!(),
                     );
                 });
 
-                return;
-            }
-        }
+            store.set_alignment(alignment).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to set type alignment!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            });
 
-        if let Self::LowLevelInstruction { value, .. } | Self::Parameter { value, .. } = self {
-            if let Ok(store) = llvm_builder.build_store(value.into_pointer_value(), new_value) {
-                store.set_alignment(alignment).unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to set type alignment!",
-                        span,
-                        PathBuf::from(file!()),
-                        line!(),
-                    );
-                });
-
-                return;
-            }
+            return;
         }
 
         abort::abort_codegen(
@@ -481,6 +535,32 @@ impl<'ctx> SymbolAllocated<'ctx> {
             PathBuf::from(file!()),
             line!(),
         );
+    }
+}
+
+impl<'ctx> SymbolAllocated<'ctx> {
+    pub fn determinate_atomic_configuration(&self) -> Option<LLVMAtomicModificators> {
+        match self {
+            Self::Local { metadata, .. } => {
+                let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
+                    atomic_volatile: metadata.volatile,
+                    atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
+                };
+
+                Some(atomic_config)
+            }
+
+            Self::Static { metadata, .. } => {
+                let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
+                    atomic_volatile: metadata.volatile,
+                    atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
+                };
+
+                Some(atomic_config)
+            }
+
+            _ => None,
+        }
     }
 }
 
@@ -559,9 +639,10 @@ impl<'ctx> SymbolAllocated<'ctx> {
 }
 
 pub fn store<'ctx>(
-    context: &mut LLVMCodeGenContext<'_, '_>,
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
     ptr: PointerValue<'ctx>,
     new_value: BasicValueEnum<'ctx>,
+    atomic_config: Option<LLVMAtomicModificators>,
     span: Span,
 ) {
     let llvm_builder: &Builder = context.get_llvm_builder();
@@ -581,6 +662,15 @@ pub fn store<'ctx>(
                     line!(),
                 )
             });
+
+    if let Some(atomic_config) = atomic_config {
+        atomic_operations::set_atomic_behavior_store_instruction(
+            context,
+            store,
+            atomic_config,
+            span,
+        );
+    }
 
     store.set_alignment(alignment).unwrap_or_else(|_| {
         abort::abort_codegen(

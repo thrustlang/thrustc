@@ -98,7 +98,7 @@ fn compile_with_anchor<'ctx>(
                 )
             });
 
-        memory::store(context, field_ptr_value, *value, span);
+        memory::store(context, field_ptr_value, *value, None, span);
     }
 
     context
@@ -160,7 +160,7 @@ fn compile_without_anchor<'ctx>(
                 )
             });
 
-        memory::store(context, field_ptr_value, *value, span);
+        memory::store(context, field_ptr_value, *value, None, span);
     }
 
     memory::load(context, ptr_value, struct_type, span)
