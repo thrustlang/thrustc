@@ -157,6 +157,7 @@ pub enum CompilationIssueCode {
     E0038, // Not Mutable
     E0039, // Unsupported Native Type
     E0040, // Not Found
+    E0041, // Unresolved Type
 
     W0001, // Irrelevant Attribute
     W0002, // Unknown Call Convention
@@ -293,6 +294,9 @@ impl CompilationIssueCode {
             }
             CompilationIssueCode::E0040 => {
                 format!("NOT FOUND - {}", "E0040".bright_red())
+            }
+            CompilationIssueCode::E0041 => {
+                format!("UNRESOLVED TYPE - {}", "E0041".bright_red())
             }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())

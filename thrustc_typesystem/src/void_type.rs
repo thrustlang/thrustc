@@ -23,6 +23,7 @@ use crate::{
 };
 
 impl VoidTypeExtensions for Type {
+    #[inline]
     fn contains_void_type(&self) -> bool {
         let ty: Type = self.remove_all_constant_type();
 
@@ -83,6 +84,146 @@ impl VoidTypeExtensions for Type {
             }
 
             Type::Void { .. } | Type::Unresolved { .. } => true,
+
+            _ => false,
+        }
+    }
+
+    #[inline]
+    fn contains_inner_void_type(&self) -> bool {
+        let ty: Type = self.remove_all_constant_type();
+
+        fn contains_void_type_inner_type(inner_type: &Type) -> bool {
+            match inner_type {
+                Type::Ptr {
+                    subtype: Some(inner_type),
+                    ..
+                } => contains_void_type_inner_type(inner_type),
+                Type::Const(inner_type, ..) => contains_void_type_inner_type(inner_type),
+                Type::Array {
+                    infered_type: Some((inner_type, _)),
+                    ..
+                } => contains_void_type_inner_type(inner_type),
+                Type::Array {
+                    base_type: inner_type,
+                    ..
+                } => contains_void_type_inner_type(inner_type),
+                Type::Struct { fields, .. } => fields.iter().any(contains_void_type_inner_type),
+                Type::FixedArray { base_type, .. } => contains_void_type_inner_type(base_type),
+                Type::Fn {
+                    parameter_types,
+                    return_type,
+                    ..
+                } => {
+                    parameter_types.iter().any(contains_void_type_inner_type)
+                        || contains_void_type_inner_type(return_type)
+                }
+
+                Type::Void { .. } => true,
+
+                _ => false,
+            }
+        }
+
+        match &ty {
+            Type::Ptr {
+                subtype: Some(inner_type),
+                ..
+            } => contains_void_type_inner_type(inner_type),
+            Type::Array {
+                infered_type: Some((inner_type, _)),
+                ..
+            } => contains_void_type_inner_type(inner_type),
+            Type::Array {
+                base_type: inner_type,
+                ..
+            } => contains_void_type_inner_type(inner_type),
+            Type::FixedArray { base_type, .. } => contains_void_type_inner_type(base_type),
+            Type::Struct { fields, .. } => fields.iter().any(contains_void_type_inner_type),
+            Type::Fn {
+                parameter_types,
+                return_type,
+                ..
+            } => {
+                parameter_types.iter().any(contains_void_type_inner_type)
+                    || contains_void_type_inner_type(return_type)
+            }
+
+            _ => false,
+        }
+    }
+
+    #[inline]
+    fn contains_an_unresolved_type(&self) -> bool {
+        let ty: Type = self.remove_all_constant_type();
+
+        fn contains_an_unresolved_type_inner_type(inner_type: &Type) -> bool {
+            match inner_type {
+                Type::Ptr {
+                    subtype: Some(inner_type),
+                    ..
+                } => contains_an_unresolved_type_inner_type(inner_type),
+                Type::Const(inner_type, ..) => contains_an_unresolved_type_inner_type(inner_type),
+                Type::Array {
+                    infered_type: Some((inner_type, _)),
+                    ..
+                } => contains_an_unresolved_type_inner_type(inner_type),
+                Type::Array {
+                    base_type: inner_type,
+                    ..
+                } => contains_an_unresolved_type_inner_type(inner_type),
+                Type::Struct { fields, .. } => {
+                    fields.iter().any(contains_an_unresolved_type_inner_type)
+                }
+                Type::FixedArray { base_type, .. } => {
+                    contains_an_unresolved_type_inner_type(base_type)
+                }
+                Type::Fn {
+                    parameter_types,
+                    return_type,
+                    ..
+                } => {
+                    parameter_types
+                        .iter()
+                        .any(contains_an_unresolved_type_inner_type)
+                        || contains_an_unresolved_type_inner_type(return_type)
+                }
+
+                Type::Void { .. } | Type::Unresolved { .. } => true,
+
+                _ => false,
+            }
+        }
+
+        match &ty {
+            Type::Ptr {
+                subtype: Some(inner_type),
+                ..
+            } => contains_an_unresolved_type_inner_type(inner_type),
+            Type::Array {
+                infered_type: Some((inner_type, _)),
+                ..
+            } => contains_an_unresolved_type_inner_type(inner_type),
+            Type::Array {
+                base_type: inner_type,
+                ..
+            } => contains_an_unresolved_type_inner_type(inner_type),
+            Type::FixedArray { base_type, .. } => contains_an_unresolved_type_inner_type(base_type),
+            Type::Struct { fields, .. } => {
+                fields.iter().any(contains_an_unresolved_type_inner_type)
+            }
+            Type::Fn {
+                parameter_types,
+                return_type,
+                ..
+            } => {
+                parameter_types
+                    .iter()
+                    .any(contains_an_unresolved_type_inner_type)
+                    || contains_an_unresolved_type_inner_type(return_type)
+            }
+
+            Type::Unresolved { .. } => true,
 
             _ => false,
         }

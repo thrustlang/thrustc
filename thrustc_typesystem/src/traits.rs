@@ -126,6 +126,9 @@ pub trait InfererTypeExtensions {
 
 pub trait VoidTypeExtensions {
     fn contains_void_type(&self) -> bool;
+    fn contains_inner_void_type(&self) -> bool;
+
+    fn contains_an_unresolved_type(&self) -> bool;
 }
 
 pub trait PrecedenceTypeExtensions {

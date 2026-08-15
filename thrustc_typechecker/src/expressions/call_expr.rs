@@ -22,10 +22,13 @@ use thrustc_ast::{
     traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
 };
 use thrustc_attributes::traits::ThrustAttributesExtensions;
+use thrustc_code_location::Span;
 use thrustc_entities::typechecker_entities::TypeCheckerFunction;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_code_location::Span;
-use thrustc_typesystem::{Type, traits::VoidTypeExtensions};
+use thrustc_typesystem::{
+    Type,
+    traits::{TypeIsExtensions, VoidTypeExtensions},
+};
 
 use crate::{
     TypeChecker, context::TypeCheckerControlContext, type_checking,
@@ -45,7 +48,7 @@ pub fn validate_node<'type_checker>(
 
     let var_args: bool = attributes.has_ignore_attribute();
 
-    if return_type.contains_void_type() {
+    if return_type.contains_inner_void_type() {
         typechecker.add_error_report(CompilationIssue::Error(
             CompilationIssueCode::E0019,
             "Cannot use 'void' as a value.".into(),
@@ -55,7 +58,10 @@ pub fn validate_node<'type_checker>(
         ));
     }
 
-    if parameter_types.iter().any(|ty| ty.contains_void_type()) {
+    if parameter_types
+        .iter()
+        .any(|ty| ty.contains_void_type() || ty.is_void_type())
+    {
         typechecker.add_error_report(CompilationIssue::Error(
             CompilationIssueCode::E0019,
             "Cannot use 'void' as a value.".into(),

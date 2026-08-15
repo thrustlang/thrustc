@@ -157,9 +157,11 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             ..
         } => {
             on_type(kind, *span);
+
             if let Some(variable) = variable {
                 visit_all_types(variable, on_type);
             }
+
             visit_all_types(condition, on_type);
             visit_all_types(block, on_type);
         }
@@ -167,6 +169,7 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             block, kind, span, ..
         } => {
             on_type(kind, *span);
+
             visit_all_types(block, on_type);
         }
 
@@ -178,9 +181,11 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             ..
         } => {
             on_type(kind, *span);
+
             for node in nodes {
                 visit_all_types(node, on_type);
             }
+
             for node in post {
                 visit_all_types(node, on_type);
             }
@@ -189,6 +194,7 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             node, kind, span, ..
         } => {
             on_type(kind, *span);
+
             visit_all_types(node, on_type);
         }
 
@@ -301,6 +307,7 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             ..
         } => {
             on_type(kind, *span);
+
             visit_all_types(source, on_type);
             visit_all_types(value, on_type);
         }
@@ -312,7 +319,9 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             ..
         } => {
             on_type(kind, *span);
+
             visit_all_types(source, on_type);
+
             for idx in indexes {
                 visit_all_types(idx, on_type);
             }
@@ -325,6 +334,7 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             ..
         } => {
             on_type(write_type, *span);
+
             visit_all_types(source, on_type);
             visit_all_types(write_value, on_type);
         }
@@ -352,6 +362,7 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             expr, kind, span, ..
         } => {
             on_type(kind, *span);
+
             visit_all_types(expr, on_type);
         }
         Ast::ModuleExpression { values, .. } => match values {
@@ -360,12 +371,14 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
                     visit_all_types(arg, on_type);
                 }
             }
+
             ModuleExpressionValues::Reference { .. } => {}
         },
         Ast::Call {
             args, kind, span, ..
         } => {
             on_type(kind, *span);
+
             for arg in args {
                 visit_all_types(arg, on_type);
             }
@@ -380,7 +393,9 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
         } => {
             on_type(kind, *span);
             on_type(function_type, *span);
+
             visit_all_types(function, on_type);
+
             for arg in args {
                 visit_all_types(arg, on_type);
             }
@@ -401,6 +416,7 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             ..
         } => {
             on_type(kind, *span);
+
             visit_all_types(left, on_type);
             visit_all_types(right, on_type);
         }
@@ -408,12 +424,14 @@ pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Sp
             kind, node, span, ..
         } => {
             on_type(kind, *span);
+
             visit_all_types(node, on_type);
         }
         Ast::Group {
             node, kind, span, ..
         } => {
             on_type(kind, *span);
+
             visit_all_types(node, on_type);
         }
     }

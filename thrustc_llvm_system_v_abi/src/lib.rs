@@ -35,10 +35,10 @@ use inkwell::{
     },
 };
 use thrustc_ast::Ast;
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 use thrustc_typesystem::{
     Type,
     traits::{
@@ -309,14 +309,25 @@ impl SystemVABITypeClass {
                 let subty_classes: [SystemVABITypeClass; 8] =
                     Self::get_system_v_type_class(abi_context, base_type);
 
-                for (i, _) in subty_classes.iter().enumerate() {
-                    let current_subty_class: SystemVABITypeClass = subty_classes[i];
+                for &elem_offset_bits in layout.field_offsets.iter() {
+                    let base_eightbyte: usize = ((elem_offset_bits / 8) / 8) as usize;
 
-                    if matches!(current_subty_class, SystemVABITypeClass::NO_CLASS) {
-                        break;
+                    for (sub_idx, _) in subty_classes.iter().enumerate() {
+                        let current_subty_class: SystemVABITypeClass = subty_classes[sub_idx];
+
+                        if matches!(current_subty_class, SystemVABITypeClass::NO_CLASS) {
+                            continue;
+                        }
+
+                        let target: usize = base_eightbyte + sub_idx;
+
+                        if target >= 8 {
+                            return SYSTEM_V_ABI_STACK;
+                        }
+
+                        current_classes[target] =
+                            Self::combine(current_classes[target], current_subty_class);
                     }
-
-                    current_classes[i] = Self::combine(current_classes[i], current_subty_class);
                 }
 
                 if current_classes.contains(&SystemVABITypeClass::MEMORY) {
@@ -397,6 +408,10 @@ impl SystemVABITypeClass {
                     let field_classes: [SystemVABITypeClass; 8] =
                         Self::get_system_v_type_class(abi_context, field_type);
 
+                    let field_offset_bytes: u32 =
+                        layout.field_offsets.get(i).copied().unwrap_or(0) / 8;
+                    let base_eightbyte: usize = (field_offset_bytes / 8) as usize;
+
                     for (sub_idx, _) in field_classes.iter().enumerate() {
                         let current_field_class: SystemVABITypeClass = field_classes[sub_idx];
 
@@ -404,7 +419,14 @@ impl SystemVABITypeClass {
                             continue;
                         }
 
-                        current_classes[i] = Self::combine(current_classes[i], current_field_class);
+                        let target: usize = base_eightbyte + sub_idx;
+
+                        if target >= 8 {
+                            return SYSTEM_V_ABI_STACK;
+                        }
+
+                        current_classes[target] =
+                            Self::combine(current_classes[target], current_field_class);
                     }
                 }
 
@@ -481,6 +503,7 @@ impl SystemVABITypeClass {
 pub enum SystemVABIType<'llvm_abi> {
     Same(&'llvm_abi Type),
     ToMemory(&'llvm_abi Type),
+    Coerce(&'llvm_abi Type, u32),
     DecomposeAndExpand(Vec<Type>, SystemVABITypeDecomposeAndExpandVariant),
     Ignore,
 }
@@ -537,6 +560,11 @@ impl SystemVABIType<'_> {
     #[inline]
     pub fn is_decompose_and_expand(&self) -> bool {
         matches!(self, SystemVABIType::DecomposeAndExpand(..))
+    }
+
+    #[inline]
+    pub fn is_coerce(&self) -> bool {
+        matches!(self, SystemVABIType::Coerce(..))
     }
 }
 
@@ -652,7 +680,11 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                 }
 
                 SystemVABITypeClass::MEMORY => SystemVABIType::ToMemory(ty),
-
+                SystemVABITypeClass::INTEGER
+                    if ty.is_struct_type() || ty.is_fixed_array_type() =>
+                {
+                    SystemVABIType::Coerce(ty, layout.width)
+                }
                 SystemVABITypeClass::INTEGER | SystemVABITypeClass::SSE => SystemVABIType::Same(ty),
 
                 _ => SystemVABIType::Same(ty),
@@ -853,6 +885,13 @@ pub enum SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi> {
         variant: SystemVABITypeDecomposeAndExpandVariant,
         index: usize,
     },
+    Coerce {
+        name: &'llvm_abi str,
+        ascii_name: &'llvm_abi str,
+        original_ty: &'llvm_abi Type,
+        coerced_width_bits: u32,
+        index: usize,
+    },
     Ignore {
         name: &'llvm_abi str,
         ascii_name: &'llvm_abi str,
@@ -938,6 +977,7 @@ pub fn lower_function_parameters<'llvm_abi>(
     let _ = ordered_configurations.is_sorted_by_key(|config| match config {
         SystemVABIFunctionTypeArgumentConfiguration::Same { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::ToMemory { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::Coerce { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
     });
@@ -998,6 +1038,84 @@ pub fn lower_function_parameters<'llvm_abi>(
                         abi_context,
                         "Failed to get the parameter value from the function declaration for System V ABI!",
                         ty.get_span(),
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                }
+            }
+
+            SystemVABIFunctionTypeArgumentConfiguration::Coerce {
+                name,
+                ascii_name,
+                original_ty,
+                index,
+                ..
+            } => {
+                if let Some(coerced_value) = function_parameters.get(*index) {
+                    let original_llvm_ty: BasicTypeEnum<'_> =
+                        self::generate_type(llvm_context, abi_context, original_ty);
+
+                    let ptr: PointerValue<'_> =
+                        llvm_builder.build_alloca(original_llvm_ty, "").unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to allocate memory for a coerced parameter in System V ABI!",
+                                original_ty.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                    let alignment: u32 = abi_context
+                        .get_target_data()
+                        .get_preferred_alignment(&original_llvm_ty);
+
+                    llvm_builder
+                        .build_store(ptr, *coerced_value)
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to store a coerced parameter value in memory for System V ABI!",
+                                original_ty.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        })
+                        .set_alignment(alignment)
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to set the alignment of a store instruction for a coerced parameter in System V ABI!",
+                                original_ty.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                    let loaded_value: BasicValueEnum<'_> = llvm_builder
+                        .build_load(original_llvm_ty, ptr, "")
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to load a coerced parameter from memory for System V ABI!",
+                                original_ty.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                    processed_parameters.push((
+                        name,
+                        ascii_name,
+                        original_ty,
+                        SystemVABIFunctionParameterConfiguration::Normal,
+                        loaded_value,
+                    ));
+                } else {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to get the coerced parameter value from the function declaration for System V ABI!",
+                        original_ty.get_span(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -1333,6 +1451,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
     let _ = ordered_configuration.is_sorted_by_key(|config| match config {
         SystemVABIFunctionTypeArgumentConfiguration::Same { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::ToMemory { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::Coerce { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
     });
@@ -1347,6 +1466,70 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
 
             SystemVABIFunctionTypeArgumentConfiguration::Same { .. } => {
                 processed_args.push((*arg_value).into());
+            }
+
+            SystemVABIFunctionTypeArgumentConfiguration::Coerce {
+                original_ty,
+                coerced_width_bits,
+                ..
+            } => {
+                let original_llvm_ty: BasicTypeEnum<'_> =
+                    self::generate_type(llvm_context, abi_context, original_ty);
+
+                let coerced_llvm_ty: BasicTypeEnum<'_> =
+                    llvm_context.custom_width_int_type(*coerced_width_bits).into();
+
+                let ptr: PointerValue<'_> = llvm_builder
+                    .build_alloca(original_llvm_ty, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to allocate memory for a coerced argument in System V ABI!",
+                            original_ty.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let alignment: u32 = abi_context
+                    .get_target_data()
+                    .get_preferred_alignment(&original_llvm_ty);
+
+                llvm_builder
+                    .build_store(ptr, *arg_value)
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to store a coerced argument value in memory for System V ABI!",
+                            original_ty.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                    .set_alignment(alignment)
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to set the alignment of a store instruction for a coerced argument in System V ABI!",
+                            original_ty.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let coerced_value: BasicValueEnum<'_> = llvm_builder
+                    .build_load(coerced_llvm_ty, ptr, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to load a coerced argument from memory for System V ABI!",
+                            original_ty.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                processed_args.push(coerced_value.into());
             }
 
             SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
@@ -2291,6 +2474,23 @@ pub fn generate_function_type<'llvm_abi>(
                         llvm_parameters_types.push(llvm_ty.into());
                     }
 
+                    SystemVABIType::Coerce(original_ty, coerced_width_bits) => {
+                        let llvm_coerced_ty: BasicTypeEnum<'_> =
+                            llvm_context.custom_width_int_type(coerced_width_bits).into();
+
+                        configuration_parameter_types.push(
+                            SystemVABIFunctionTypeArgumentConfiguration::Coerce {
+                                name,
+                                ascii_name,
+                                original_ty,
+                                coerced_width_bits,
+                                index: idx,
+                            },
+                        );
+
+                        llvm_parameters_types.push(llvm_coerced_ty.into());
+                    }
+
                     SystemVABIType::ToMemory(ty) => {
                         let byval_ty: Type = ty.dereference();
 
@@ -2471,6 +2671,16 @@ pub fn generate_function_type<'llvm_abi>(
                 )
             }
 
+            SystemVABIType::Coerce(_, coerced_width_bits) => {
+                let llvm_return_ty: BasicTypeEnum<'_> =
+                    llvm_context.custom_width_int_type(coerced_width_bits).into();
+
+                (
+                    llvm_return_ty.fn_type(&llvm_parameters_types, is_variatic),
+                    configuration,
+                )
+            }
+
             SystemVABIType::ToMemory(..) => {
                 if is_memory_return {
                     (
@@ -2517,6 +2727,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
     let _ = ordered_configurations.is_sorted_by_key(|config| match config {
         SystemVABIFunctionTypeArgumentConfiguration::Same { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::ToMemory { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::Coerce { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
     });
@@ -2525,6 +2736,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
         match parameter_configuration {
             SystemVABIFunctionTypeArgumentConfiguration::Ignore { .. } => {}
             SystemVABIFunctionTypeArgumentConfiguration::Same { .. } => {}
+            SystemVABIFunctionTypeArgumentConfiguration::Coerce { .. } => {}
 
             SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
                 ty,

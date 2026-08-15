@@ -18,13 +18,18 @@
 */
 
 use thrustc_ast::{Ast, ast_metadata::CastingMetadata};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::Type;
+use thrustc_typesystem::{
+    Type,
+    traits::{TypeCodeLocation, VoidTypeExtensions},
+};
 
-use crate::{context::TypeCheckerControlContext, type_metadata::TypeCheckerNodeMetadata};
+use crate::{
+    TypeChecker, context::TypeCheckerControlContext, type_metadata::TypeCheckerNodeMetadata,
+};
 
 pub fn check_type_together(
     target: &Type,
@@ -974,5 +979,18 @@ pub fn check_type_cast(
             None,
             *span,
         )),
+    }
+}
+
+#[inline]
+pub fn check_if_a_type_is_unresolved(typechecker: &mut TypeChecker, ty: &Type) {
+    if ty.contains_an_unresolved_type() {
+        typechecker.add_error_report(CompilationIssue::Error(
+            CompilationIssueCode::E0041,
+            "Unresolved type".into(),
+            "Type can't be resolved on compile time. You should check the suggestion that the compiler provide you to resolve the type.".into(),
+            None,
+            ty.get_span(),
+        ));
     }
 }

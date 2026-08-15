@@ -22,10 +22,10 @@ use thrustc_ast::{
     traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
 };
 
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 use thrustc_typesystem::{
     Type,
     traits::{DereferenceExtensions, TypeIsExtensions, VoidTypeExtensions},
@@ -155,6 +155,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
             Ast::Struct { .. } | Ast::CustomType { .. } => {
                 visit_type::visit_all_types(node, &mut |ty, _| {
                     type_support::check_target_type_support(self, ty);
+                    type_checking::check_if_a_type_is_unresolved(self, ty);
                 });
 
                 Ok(())
@@ -163,6 +164,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
             Ast::Enum { data, .. } => {
                 visit_type::visit_all_types(node, &mut |ty, _| {
                     type_support::check_target_type_support(self, ty);
+                    type_checking::check_if_a_type_is_unresolved(self, ty);
                 });
 
                 {
@@ -203,6 +205,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
             } => {
                 visit_type::visit_all_types(node, &mut |ty, _| {
                     type_support::check_target_type_support(self, ty);
+                    type_checking::check_if_a_type_is_unresolved(self, ty);
                 });
 
                 if static_type.contains_void_type() || static_type.is_void_type() {
@@ -255,6 +258,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
             } => {
                 visit_type::visit_all_types(node, &mut |ty, _| {
                     type_support::check_target_type_support(self, ty);
+                    type_checking::check_if_a_type_is_unresolved(self, ty);
                 });
 
                 if const_type.contains_void_type() || const_type.is_void_type() {

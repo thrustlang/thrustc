@@ -22,14 +22,14 @@ use thrustc_ast::{
     traits::{AstCodeBlockEntensions, AstCodeLocation, AstGetType},
 };
 
-use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_typesystem::{
     Type,
     traits::{TypeCodeLocation, TypeIsExtensions, VoidTypeExtensions},
 };
 
-use crate::{TypeChecker, type_support, visit_type};
+use crate::{TypeChecker, type_checking, type_support, visit_type};
 
 pub fn validate_node<'type_checker>(
     typechecker: &mut TypeChecker<'type_checker>,
@@ -46,13 +46,14 @@ pub fn validate_node<'type_checker>(
         } => {
             visit_type::visit_all_types(node, &mut |ty, _| {
                 type_support::check_target_type_support(typechecker, ty);
+                type_checking::check_if_a_type_is_unresolved(typechecker, ty);
             });
 
             typechecker
                 .get_mut_table()
                 .new_asm_function(name, (return_type, parameters_types, attributes));
 
-            if return_type.contains_void_type() {
+            if return_type.contains_inner_void_type() {
                 typechecker.add_error_report(CompilationIssue::Error(
                     CompilationIssueCode::E0019,
                     "Cannot use 'void' as a value.".into(),
@@ -92,13 +93,14 @@ pub fn validate_node<'type_checker>(
         } => {
             visit_type::visit_all_types(node, &mut |ty, _| {
                 type_support::check_target_type_support(typechecker, ty);
+                type_checking::check_if_a_type_is_unresolved(typechecker, ty);
             });
 
             typechecker
                 .get_mut_table()
                 .new_compiler_intrinsic(name, (return_type, parameters_types, attributes));
 
-            if return_type.contains_void_type() {
+            if return_type.contains_inner_void_type() {
                 typechecker.add_error_report(CompilationIssue::Error(
                     CompilationIssueCode::E0019,
                     "Cannot use 'void' as a value.".into(),
@@ -141,6 +143,7 @@ pub fn validate_node<'type_checker>(
         } => {
             visit_type::visit_all_types(node, &mut |ty, _| {
                 type_support::check_target_type_support(typechecker, ty);
+                type_checking::check_if_a_type_is_unresolved(typechecker, ty);
             });
 
             typechecker
@@ -169,7 +172,7 @@ pub fn validate_node<'type_checker>(
                 }
             }
 
-            if return_type.contains_void_type() {
+            if return_type.contains_inner_void_type() {
                 typechecker.add_error_report(CompilationIssue::Error(
                     CompilationIssueCode::E0019,
                     "Cannot use 'void' as a value.".into(),
