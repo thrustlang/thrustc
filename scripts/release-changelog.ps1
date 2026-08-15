@@ -52,7 +52,7 @@ if (-not $versionMatch.Success) {
 $version = $versionMatch.Value
 $inPkg = $false
 $cargoContent = Get-Content "Cargo.toml" | ForEach-Object {
-    if ($_ -match '^\[package\]') { $inPkg = $true }
+    if ($_ -match '^\[workspace\.package\]') { $inPkg = $true }
     elseif ($_ -match '^\[') { $inPkg = $false }
     if ($inPkg -and $_ -match '^version\s*=') {
         "version = `"$version`""

@@ -57,7 +57,7 @@ if "%version%"=="" (
     exit /b 1
 )
 
-powershell -NoProfile -Command "$version = $env:version; $inPkg=$false; $c = Get-Content 'Cargo.toml' | ForEach-Object { if ($_ -match '^\[package\]') {$inPkg=$true} elseif ($_ -match '^\[') {$inPkg=$false}; if ($inPkg -and $_ -match '^version\s*=') { 'version = \"' + $version + '\"' } else { $_ } }; Set-Content 'Cargo.toml' $c"
+powershell -NoProfile -Command "$version = $env:version; $inPkg=$false; $c = Get-Content 'Cargo.toml' | ForEach-Object { if ($_ -match '^\[workspace\.package\]') {$inPkg=$true} elseif ($_ -match '^\[') {$inPkg=$false}; if ($inPkg -and $_ -match '^version\s*=') { 'version = \"' + $version + '\"' } else { $_ } }; Set-Content 'Cargo.toml' $c"
 
 git add "%release_dir%\README.md" "Cargo.toml"
 git commit -m "Bumping '%tag_name%'"

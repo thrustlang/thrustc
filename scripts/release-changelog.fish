@@ -48,7 +48,7 @@ if test -z "$pkg_version"
     exit 1
 end
 awk -v ver="$pkg_version" '
-    /^\[package\]/ { inpkg=1; print; next }
+    /^\[workspace\.package\]/ { inpkg=1; print; next }
     /^\[/ { inpkg=0; print; next }
     inpkg && /^version[[:space:]]*=/ { print "version = \"" ver "\""; next }
     { print }
