@@ -144,6 +144,7 @@ impl LLVMCallConventionsChecker<'_> {
             LLVMCallConvention::X86_FastCall,
             LLVMCallConvention::X86_ThisCall,
             LLVMCallConvention::X86_64_SysV,
+            LLVMCallConvention::Win64,
             LLVMCallConvention::X86_INTR,
             LLVMCallConvention::X86_VectorCall,
             LLVMCallConvention::X86_RegCall,

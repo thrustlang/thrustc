@@ -56,6 +56,13 @@ pub struct SystemVABIContext<'system_v_abi> {
     target_info: TargetInfo,
     target_data: &'system_v_abi TargetData,
     codegen_location: SystemVCodeGenLocation,
+    abi_variant: X64ABIVariant,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum X64ABIVariant {
+    SystemV,
+    Windows,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -77,12 +84,19 @@ impl<'system_v_abi> SystemVABIContext<'system_v_abi> {
         target_data: &'system_v_abi TargetData,
         codegen_location: SystemVCodeGenLocation,
     ) -> Self {
+        let abi_variant = if target_triple.is_windows_based() {
+            X64ABIVariant::Windows
+        } else {
+            X64ABIVariant::SystemV
+        };
+
         Self {
             target_triple,
             diagnostician: Diagnostician::new(file, options),
             target_info,
             target_data,
             codegen_location,
+            abi_variant,
         }
     }
 }
@@ -583,6 +597,18 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
             either::Either::Left(ty) => ty.into_layout(),
             either::Either::Right(ty) => ty.into_layout(),
         };
+
+        if abi_context.abi_variant == X64ABIVariant::Windows {
+            if ty.is_struct_type() || ty.is_fixed_array_type() {
+                if layout.abi_size > 8 {
+                    return SystemVABIType::ToMemory(ty);
+                } else {
+                    return SystemVABIType::Coerce(ty, layout.width);
+                }
+            }
+
+            return SystemVABIType::Same(ty);
+        }
 
         if classes.contains(&SystemVABITypeClass::MEMORY) {
             return SystemVABIType::ToMemory(ty);
