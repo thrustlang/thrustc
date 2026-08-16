@@ -201,9 +201,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
         context.mark_dbg_location(span);
 
         if let Self::Local {
-            ptr,
-            attributes,
-            ..
+            ptr, attributes, ..
         } = self
         {
             let loaded_value = llvm_builder
@@ -543,6 +541,10 @@ impl<'ctx> SymbolAllocated<'ctx> {
     pub fn determinate_atomic_configuration(&self) -> Option<LLVMAtomicModificators> {
         match self {
             Self::Local { metadata, .. } => {
+                if !metadata.volatile && metadata.atomic_ord.is_none() {
+                    return None;
+                }
+
                 let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
                     atomic_volatile: metadata.volatile,
                     atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
@@ -552,6 +554,10 @@ impl<'ctx> SymbolAllocated<'ctx> {
             }
 
             Self::Static { metadata, .. } => {
+                if !metadata.volatile && metadata.atomic_ord.is_none() {
+                    return None;
+                }
+
                 let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
                     atomic_volatile: metadata.volatile,
                     atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
