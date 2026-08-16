@@ -22,10 +22,10 @@ use thrustc_attributes::{
     ThrustAttribute, ThrustAttributeComparator, ThrustAttributes,
     traits::{ThrustAttributeComparatorExtensions, ThrustAttributesExtensions},
 };
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::applicant::AttributeCheckerAttributeApplicant;
@@ -77,7 +77,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
     fn check(&mut self) -> bool {
         let warnings_to_disable: &[CompilationIssueCode] = self.options.get_warnings_to_disable();
 
-        thrustc_errors::filter_warnings(warnings_to_disable, &mut self.errors);
+        thrustc_errors::filter_warnings(warnings_to_disable, &mut self.warnings);
 
         if !self.warnings.is_empty() {
             for warning in self.warnings.iter() {
