@@ -17,9 +17,11 @@
 
 */
 
+#![allow(clippy::explicit_counter_loop)]
+
 use thrustc_ast::{
     Ast, NodeId,
-    ast_metadata::{ReferenceMetadata, ReferenceType, StaticMetadata},
+    ast_metadata::{FunctionParameterMetadata, ReferenceMetadata, ReferenceType, StaticMetadata},
 };
 use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
@@ -32,6 +34,7 @@ use thrustc_preprocessor::signatures::{Signature, Variant};
 
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::traits::TypePointerExtensions;
 
 use crate::{ParserContext, expressions};
 
@@ -236,10 +239,27 @@ fn synthesize_function<'parser>(
     attributes: ThrustAttributes,
     span: Span,
 ) {
+    let mut parameters: Vec<Ast> = Vec::with_capacity(parameter_types.len());
+    let mut position: u32 = 0;
+
+    for kind in parameter_types.iter() {
+        parameters.push(Ast::FunctionParameter {
+            name: "",
+            ascii_name: "",
+            kind: kind.clone(),
+            position,
+            metadata: FunctionParameterMetadata::new(kind.is_ptr_like_type()),
+            span,
+            id: NodeId::new(),
+        });
+
+        position += 1;
+    }
+
     let declaration: Ast = Ast::Function {
         name: symbol,
         ascii_name: symbol,
-        parameters: Vec::with_capacity(u8::MAX as usize),
+        parameters,
         parameter_types,
         body: None,
         return_type,

@@ -85,6 +85,7 @@ pub trait AstStandardExtensions {
     fn is_function_parameter(&self) -> bool;
     fn is_defer_keyword(&self) -> bool;
     fn is_unstable_feature(&self) -> bool;
+    fn is_invalid_ast_node(&self) -> bool;
 }
 
 pub trait AstLiteralExtensions {

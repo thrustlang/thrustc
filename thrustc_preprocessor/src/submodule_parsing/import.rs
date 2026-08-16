@@ -19,17 +19,21 @@
 
 use std::path::PathBuf;
 
+use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_lexer::Lexer;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 
-use crate::{module::Module, parser::ModuleParser};
+use crate::{module::Module, parser::ModuleParser, std_library};
 
 pub fn parse_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -> Result<(), ()> {
     parser.consume(TokenType::Import)?;
+
+    if parser.check(TokenType::Identifier) {
+        return self::parse_std_import(parser);
+    }
 
     let current_path: PathBuf = parser.get_module().get_path().to_path_buf();
 
@@ -193,4 +197,76 @@ pub fn parse_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
     parser.get_mut_module().add_submodule(submodule);
 
     Ok(())
+}
+
+fn parse_std_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -> Result<(), ()> {
+    let mut access: Vec<String> = Vec::with_capacity(4);
+
+    let first_tk: &Token = parser.consume(TokenType::Identifier)?;
+    let first_span: Span = first_tk.get_span();
+
+    access.push(first_tk.get_lexeme().to_string());
+
+    let mut last_span: Span = first_span;
+
+    while parser.check(TokenType::ColonColon) {
+        parser.only_advance()?;
+
+        let part_tk: &Token = parser.consume(TokenType::Identifier)?;
+        last_span = part_tk.get_span();
+        access.push(part_tk.get_lexeme().to_string());
+    }
+
+    let mut alias: Option<String> = None;
+
+    if parser.check(TokenType::As) {
+        parser.consume(TokenType::As)?;
+
+        let alias_tk: &Token = parser.consume(TokenType::Identifier)?;
+        alias = Some(alias_tk.get_lexeme().to_string());
+    }
+
+    parser.consume(TokenType::SemiColon)?;
+
+    if access.first().map(String::as_str) != Some("std") {
+        parser.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0035,
+            "The identifier import is only supported for the standard library.".into(),
+            "You should import standard library modules as 'std.mem' or use a path string otherwise."
+                .into(),
+            None,
+            first_span,
+        ));
+
+        return Err(());
+    }
+
+    match std_library::find_std_module(&access, parser.get_options()) {
+        Ok(mut module) => {
+            if let Some(alias) = alias {
+                module.set_alias(alias);
+            }
+
+            parser.get_registry().borrow_mut().register(&module);
+
+            parser.get_mut_module().add_submodule(module);
+
+            Ok(())
+        }
+        Err(()) => {
+            parser.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0035,
+                format!(
+                    "The standard library module '{}' could not be resolved.",
+                    access.join("::")
+                ),
+                "You should make sure the module exists in the current standard library version."
+                    .into(),
+                None,
+                last_span,
+            ));
+
+            Err(())
+        }
+    }
 }

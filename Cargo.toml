@@ -48,6 +48,7 @@ members = [
     "thrustc_llvm_nvidia_cuda_abi", 
     "thrustc_llvm_linker_driver", 
     "thrustc_utils", 
+    "thrustc_std", 
 ]
 
 exclude = [

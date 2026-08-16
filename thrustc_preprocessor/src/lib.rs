@@ -35,6 +35,7 @@ mod moduletable;
 mod parser;
 pub mod registry;
 pub mod signatures;
+pub mod std_library;
 mod submodule_parsing;
 
 #[derive(Debug)]

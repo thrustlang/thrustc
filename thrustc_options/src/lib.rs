@@ -70,6 +70,9 @@ pub struct CompilerOptions {
     obfuscate_archive_names: bool,
     obfuscate_ir: bool,
 
+    std_root_path: Option<std::path::PathBuf>,
+    std_version: Option<String>,
+
     linking_compilers_config: LinkingCompilersConfiguration,
     build_id: uuid::Uuid,
 }
@@ -188,6 +191,9 @@ impl CompilerOptions {
             clean_build: false,
             obfuscate_archive_names: true,
             obfuscate_ir: true,
+
+            std_root_path: None,
+            std_version: None,
 
             linking_compilers_config: LinkingCompilersConfiguration::new(),
             build_id: uuid::Uuid::new_v4(),
@@ -347,6 +353,16 @@ impl CompilerOptions {
         self.compiler_features = mode;
         thrustc_backends::set_compiler_features(mode);
     }
+
+    #[inline]
+    pub fn set_std_root_path(&mut self, std_root_path: std::path::PathBuf) {
+        self.std_root_path = Some(std_root_path);
+    }
+
+    #[inline]
+    pub fn set_std_version(&mut self, std_version: String) {
+        self.std_version = Some(std_version);
+    }
 }
 
 impl CompilerOptions {
@@ -502,6 +518,16 @@ impl CompilerOptions {
     #[inline]
     pub fn get_compiler_features(&self) -> CompilerFeaturesMode {
         self.compiler_features
+    }
+
+    #[inline]
+    pub fn get_std_root_path(&self) -> Option<&Path> {
+        self.std_root_path.as_deref()
+    }
+
+    #[inline]
+    pub fn get_std_version(&self) -> Option<&str> {
+        self.std_version.as_deref()
     }
 
     #[inline]

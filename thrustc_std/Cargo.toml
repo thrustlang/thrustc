@@ -1,0 +1,16 @@
+[package]
+name = "thrustc_std"
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+include_dir = "0.7.4"
+
+thrustc_constants = { path = "../thrustc_constants" }
+thrustc_logging = { path = "../thrustc_logging" }

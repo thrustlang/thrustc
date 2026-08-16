@@ -651,6 +651,26 @@ impl CommandLine {
                 self.advance();
             }
 
+            "-std" => {
+                self.advance();
+
+                let std_root_path: PathBuf = PathBuf::from(self.peek().to_string());
+
+                self.get_mut_options().set_std_root_path(std_root_path);
+
+                self.advance();
+            }
+
+            "-std-version" => {
+                self.advance();
+
+                let std_version: String = self.peek().to_string();
+
+                self.get_mut_options().set_std_version(std_version);
+
+                self.advance();
+            }
+
             "-L" => {
                 if self.position.at_external() {
                     self.advance();

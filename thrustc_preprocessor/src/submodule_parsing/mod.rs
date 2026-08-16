@@ -28,3 +28,33 @@ pub mod reinterpret;
 pub mod r#static;
 pub mod structure;
 pub mod typegeneration;
+
+use thrustc_attributes::{ThrustAttribute, ThrustAttributes, traits::ThrustAttributesExtensions};
+use thrustc_code_location::Span;
+
+/// Ensures a module symbol is exposed for cross-file reference.
+///
+/// It adds the missing visibility attributes without duplicating existing ones:
+/// `@public` is always ensured, and `@extern` is ensured when `needs_extern` is
+/// true (functions and statics, whose cross-file declarations are bodyless).
+///
+/// Returns `true` when `@public` had to be added because the original signature
+/// did not provide it.
+pub fn ensure_exposed(
+    attributes: &mut ThrustAttributes,
+    name: &str,
+    span: Span,
+    needs_extern: bool,
+) -> bool {
+    let added_public: bool = !attributes.has_public_attribute();
+
+    if added_public {
+        attributes.push(ThrustAttribute::Public(span));
+    }
+
+    if needs_extern && !attributes.has_extern_attribute() {
+        attributes.push(ThrustAttribute::Extern(name.to_string(), span));
+    }
+
+    added_public
+}

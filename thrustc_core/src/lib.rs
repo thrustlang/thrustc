@@ -148,6 +148,10 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_aot_llvm(&mut self) -> CompileTime {
         cleaner::auto_clean(self.get_compilation_options());
 
+        self.discover_std_usage();
+
+        self.compile_imported_std();
+
         let mut it_failed: bool = false;
 
         for file in self.unready.iter() {
@@ -194,7 +198,53 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         )
     }
 
-    fn compile_file_with_llvm_aot(&mut self, file: &'thrustc CompilationUnit) -> Result<(), ()> {
+    fn discover_std_usage(&mut self) {
+        for file in self.unready.iter() {
+            let Ok(tokens) = Lexer::lex(file, self.options) else {
+                continue;
+            };
+
+            let mut preprocessor: Preprocessor = Preprocessor::new();
+
+            let _ = preprocessor.generate_modules(&tokens, self.options, file);
+        }
+    }
+
+    fn compile_imported_std(&mut self) {
+        if !thrustc_preprocessor::std_library::has_imported_std() {
+            return;
+        }
+
+        let mut compiled_paths: std::collections::HashSet<std::path::PathBuf> =
+            std::collections::HashSet::new();
+
+        for module in thrustc_preprocessor::std_library::get_imported_std_modules() {
+            let path: std::path::PathBuf = module.get_path().to_path_buf();
+
+            if !path.is_file() {
+                continue;
+            }
+
+            if !compiled_paths.insert(path.clone()) {
+                continue;
+            }
+
+            let name: String = path
+                .file_name()
+                .map_or_else(String::new, |name| name.to_string_lossy().to_string());
+
+            let base_name: String = path.file_stem().map_or_else(String::new, |base_name| {
+                base_name.to_string_lossy().to_string()
+            });
+
+            let content: String = thrustc_reader::get_file_source_code(&path);
+            let unit: CompilationUnit = CompilationUnit::new(name, path, content, base_name);
+
+            let _ = self.compile_file_with_llvm_aot(&unit);
+        }
+    }
+
+    fn compile_file_with_llvm_aot(&mut self, file: &CompilationUnit) -> Result<(), ()> {
         let file_time: std::time::Instant = std::time::Instant::now();
         let frontend_time: std::time::Instant = std::time::Instant::now();
 

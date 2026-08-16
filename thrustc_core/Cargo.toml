@@ -38,6 +38,7 @@ thrustc_semantic_analysis = { path = "../thrustc_semantic_analysis" }
 thrustc_llvm_codegen = { path = "../thrustc_llvm_codegen" }
 thrustc_logging = { path = "../thrustc_logging" }
 thrustc_utils = { path = "../thrustc_utils" }
+thrustc_reader = { path = "../thrustc_reader" }
 
 [features]
 default = ["llvm_backend_static"]

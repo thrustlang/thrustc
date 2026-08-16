@@ -706,9 +706,7 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                 }
 
                 SystemVABITypeClass::MEMORY => SystemVABIType::ToMemory(ty),
-                SystemVABITypeClass::INTEGER
-                    if ty.is_struct_type() || ty.is_fixed_array_type() =>
-                {
+                SystemVABITypeClass::INTEGER if ty.is_struct_type() || ty.is_fixed_array_type() => {
                     SystemVABIType::Coerce(ty, layout.width)
                 }
                 SystemVABITypeClass::INTEGER | SystemVABITypeClass::SSE => SystemVABIType::Same(ty),
@@ -1502,8 +1500,9 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                 let original_llvm_ty: BasicTypeEnum<'_> =
                     self::generate_type(llvm_context, abi_context, original_ty);
 
-                let coerced_llvm_ty: BasicTypeEnum<'_> =
-                    llvm_context.custom_width_int_type(*coerced_width_bits).into();
+                let coerced_llvm_ty: BasicTypeEnum<'_> = llvm_context
+                    .custom_width_int_type(*coerced_width_bits)
+                    .into();
 
                 let ptr: PointerValue<'_> = llvm_builder
                     .build_alloca(original_llvm_ty, "")
@@ -2501,8 +2500,9 @@ pub fn generate_function_type<'llvm_abi>(
                     }
 
                     SystemVABIType::Coerce(original_ty, coerced_width_bits) => {
-                        let llvm_coerced_ty: BasicTypeEnum<'_> =
-                            llvm_context.custom_width_int_type(coerced_width_bits).into();
+                        let llvm_coerced_ty: BasicTypeEnum<'_> = llvm_context
+                            .custom_width_int_type(coerced_width_bits)
+                            .into();
 
                         configuration_parameter_types.push(
                             SystemVABIFunctionTypeArgumentConfiguration::Coerce {
@@ -2698,8 +2698,9 @@ pub fn generate_function_type<'llvm_abi>(
             }
 
             SystemVABIType::Coerce(_, coerced_width_bits) => {
-                let llvm_return_ty: BasicTypeEnum<'_> =
-                    llvm_context.custom_width_int_type(coerced_width_bits).into();
+                let llvm_return_ty: BasicTypeEnum<'_> = llvm_context
+                    .custom_width_int_type(coerced_width_bits)
+                    .into();
 
                 (
                     llvm_return_ty.fn_type(&llvm_parameters_types, is_variatic),

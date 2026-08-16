@@ -19,6 +19,7 @@
 
 use thrustc_attributes::ThrustAttributes;
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -67,8 +68,21 @@ pub fn parse_function<'module_parser>(
         typegeneration::build_type(ctx)?
     };
 
-    let attributes: ThrustAttributes =
+    let mut attributes: ThrustAttributes =
         attributes::build_attributes(ctx, &[TokenType::SemiColon, TokenType::LBrace])?;
+
+    let added_public: bool =
+        crate::submodule_parsing::ensure_exposed(&mut attributes, &name, span, true);
+
+    if added_public {
+        ctx.add_warning(CompilationIssue::Warning(
+            CompilationIssueCode::W0030,
+            format!(
+                "The module symbol '{name}' lacks the '@public' attribute in its definition. It may fail at link time if referenced from another module."
+            ),
+            span,
+        ));
+    }
 
     if ctx.check(TokenType::LBrace) {
         self::skip_function_body(ctx)?;
@@ -91,9 +105,7 @@ pub fn parse_function<'module_parser>(
     Ok(symbol)
 }
 
-fn skip_function_body<'module_parser>(
-    ctx: &mut ModuleParser<'module_parser>,
-) -> Result<(), ()> {
+fn skip_function_body<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> Result<(), ()> {
     ctx.only_advance()?;
 
     let mut depth: usize = 1;

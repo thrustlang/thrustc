@@ -361,6 +361,28 @@ pub fn show_help() -> ! {
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stderr,
         &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "-std".custom_color((141, 141, 142)).bold(),
+            "path/to/std",
+            "Set the standard library root path.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "-std-version".custom_color((141, 141, 142)).bold(),
+            "x.x.x",
+            "Set the standard library version to use.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
             "{} {} {}\n",
             "•".bold(),
             "-dbg".custom_color((141, 141, 142)).bold(),

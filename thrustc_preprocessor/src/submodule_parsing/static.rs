@@ -19,6 +19,7 @@
 
 use thrustc_attributes::ThrustAttributes;
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -26,12 +27,10 @@ use thrustc_typesystem::Type;
 use crate::{
     parser::ModuleParser,
     signatures::{Signature, Symbol, Variant},
-    submodule_parsing::{attributes, modificators, typegeneration},
+    submodule_parsing::{self, attributes, modificators, typegeneration},
 };
 
-pub fn parse_static<'module_parser>(
-    ctx: &mut ModuleParser<'module_parser>,
-) -> Result<Symbol, ()> {
+pub fn parse_static<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> Result<Symbol, ()> {
     ctx.consume(TokenType::Static)?;
 
     let is_mutable: bool = ctx.match_token(TokenType::Mut)?;
@@ -47,8 +46,20 @@ pub fn parse_static<'module_parser>(
 
     let r#type: Type = typegeneration::build_type(ctx)?;
 
-    let attributes: ThrustAttributes =
+    let mut attributes: ThrustAttributes =
         attributes::build_attributes(ctx, &[TokenType::Eq, TokenType::SemiColon])?;
+
+    let added_public: bool = submodule_parsing::ensure_exposed(&mut attributes, &name, span, true);
+
+    if added_public {
+        ctx.add_warning(CompilationIssue::Warning(
+            CompilationIssueCode::W0030,
+            format!(
+                "The module symbol '{name}' lacks the '@public' attribute in its definition. It may fail at link time if referenced from another module."
+            ),
+            span,
+        ));
+    }
 
     if ctx.check(TokenType::Eq) {
         ctx.advance_until(TokenType::SemiColon)?;

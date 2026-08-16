@@ -18,9 +18,9 @@
 */
 
 use thrustc_ast::{Ast, NodeId};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
+use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 
@@ -35,13 +35,36 @@ pub fn build_import<'parser>(
         "Expected 'import' keyword.".into(),
     )?;
 
-    let tk: &Token = ctx.consume_these(
-        &[TokenType::CString, TokenType::CNString],
-        CompilationIssueCode::E0001,
-        "Expected string literal.".into(),
-    )?;
+    let span: Span = if ctx.check(TokenType::Identifier) {
+        let mut identifier_span: Span = ctx
+            .consume(
+                TokenType::Identifier,
+                CompilationIssueCode::E0001,
+                "Expected an identifier.".into(),
+            )?
+            .get_span();
 
-    let span: Span = tk.get_span();
+        while ctx.check(TokenType::ColonColon) {
+            ctx.only_advance()?;
+
+            identifier_span = ctx
+                .consume(
+                    TokenType::Identifier,
+                    CompilationIssueCode::E0001,
+                    "Expected an identifier after the path separator.".into(),
+                )?
+                .get_span();
+        }
+
+        identifier_span
+    } else {
+        ctx.consume_these(
+            &[TokenType::CString, TokenType::CNString],
+            CompilationIssueCode::E0001,
+            "Expected string literal.".into(),
+        )?
+        .get_span()
+    };
 
     if ctx.match_token(TokenType::As)? {
         ctx.consume(

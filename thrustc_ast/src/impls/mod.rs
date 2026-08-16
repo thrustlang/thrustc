@@ -174,6 +174,11 @@ impl AstStandardExtensions for Ast<'_> {
                 | Ast::AsmValue { .. }
         )
     }
+
+    #[inline]
+    fn is_invalid_ast_node(&self) -> bool {
+        matches!(self, Ast::Invalid { .. })
+    }
 }
 
 impl AstAttributeExtensions for Ast<'_> {

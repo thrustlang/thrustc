@@ -28,6 +28,7 @@ Valid locations:
 - `doc` Any location that usually involucrates the compiler documentation and guides available on the repository (Examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
 - `abi` Any location that usually involucrates the compiler Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
 - `preprocessador` Any location that usually involucrates the compiler preprocessor and module/import resolution (`thrustc_preprocessor`).
+- `std` Any location that usually involucrates the standard library (`std/`).
 
 Example:
 
@@ -50,6 +51,7 @@ Valid locations:
 - `doc` Any location that usually involucrates the compiler documentation and guides available on the repository (Examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
 - `abi` Any location that usually involucrates the compiler Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
 - `preprocessador` Any location that usually involucrates the compiler preprocessor and module/import resolution (`thrustc_preprocessor`).
+- `std` Any location that usually involucrates the standard library (`std/`).
 
 Any consecutive location written to the next one needs to be follow for a COMMA character `,`.
 

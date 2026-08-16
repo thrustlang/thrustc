@@ -121,6 +121,7 @@ lazy_static::lazy_static! {
         explanations.insert(CompilationIssueCode::W0027, r#""#);
         explanations.insert(CompilationIssueCode::W0028, r#""#);
         explanations.insert(CompilationIssueCode::W0029, r#""#);
+        explanations.insert(CompilationIssueCode::W0030, r#""#);
 
         explanations
     };
@@ -198,6 +199,7 @@ pub enum CompilationIssueCode {
     W0027, // Dead store
     W0028, // Statement with no effect
     W0029, // Condition always constant
+    W0030, // Module signature without public may fail at linking
 }
 
 #[inline]
@@ -396,6 +398,12 @@ impl CompilationIssueCode {
             CompilationIssueCode::W0029 => {
                 format!("CONDITION ALWAYS CONSTANT - {}", "W0029".bright_yellow())
             }
+            CompilationIssueCode::W0030 => {
+                format!(
+                    "MODULE SIGNATURE WITHOUT PUBLIC - {}",
+                    "W0030".bright_yellow()
+                )
+            }
         }
     }
 
@@ -479,6 +487,7 @@ impl CompilationIssueCode {
             "W0027" => Ok(CompilationIssueCode::W0027),
             "W0028" => Ok(CompilationIssueCode::W0028),
             "W0029" => Ok(CompilationIssueCode::W0029),
+            "W0030" => Ok(CompilationIssueCode::W0030),
 
             _ => Err(()),
         }

@@ -129,6 +129,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
 
                 Ast::Enum { data, .. } => {
                     for (_, _, node, ..) in data.iter() {
+                        self.expected_expression(node);
                         self.analyze_expression(node);
                     }
                 }
@@ -138,6 +139,16 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 | Ast::Import { .. }
                 | Ast::Embedded { .. }
                 | Ast::Struct { .. } => {}
+
+                Ast::Invalid { .. } => {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a valid AST node, not an invalid one.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
 
                 _ => {
                     self.add_error(CompilationIssue::Error(
@@ -155,18 +166,14 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
     pub fn analyze_stmt(&mut self, node: &Ast<'_>) {
         match node {
             Ast::Block { nodes, post, .. } => {
-                {
-                    for node in nodes.iter() {
-                        self.expected_statement_or_loose_expression(node);
-                        self.analyze_stmt(node);
-                    }
+                for node in nodes.iter() {
+                    self.expected_statement_or_loose_expression(node);
+                    self.analyze_stmt(node);
                 }
 
-                {
-                    for node in post.iter() {
-                        self.expected_statement_or_loose_expression(node);
-                        self.analyze_stmt(node);
-                    }
+                for node in post.iter() {
+                    self.expected_statement_or_loose_expression(node);
+                    self.analyze_stmt(node);
                 }
             }
 
@@ -289,8 +296,8 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
             }
 
             Ast::Defer { node, .. } => {
-                self.expected_expression(node);
-                self.analyze_expression(node);
+                self.expected_statement_or_loose_expression(node);
+                self.analyze_stmt(node);
             }
 
             node => self.analyze_expression(node),
@@ -442,6 +449,69 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
             Ast::GetLocation { expr: node, .. } => {
                 self.expected_expression(node);
                 self.analyze_expression(node);
+            }
+
+            Ast::Address {
+                source, indexes, ..
+            } => {
+                self.expected_expression(source);
+                self.analyze_expression(source);
+
+                for node in indexes.iter() {
+                    self.expected_expression(node);
+                    self.analyze_expression(node);
+                }
+            }
+
+            Ast::Write {
+                source,
+                write_value,
+                ..
+            } => {
+                self.expected_expression(source);
+                self.analyze_expression(source);
+
+                self.expected_expression(write_value);
+                self.analyze_expression(write_value);
+            }
+
+            Ast::Load { source, .. } => {
+                self.expected_expression(source);
+                self.analyze_expression(source);
+            }
+
+            Ast::Deref { value, .. } => {
+                self.expected_expression(value);
+                self.analyze_expression(value);
+            }
+
+            Ast::ModuleExpression { values, .. } => {
+                if let thrustc_ast::ModuleExpressionValues::Call { arguments, .. } = values {
+                    for node in arguments.iter() {
+                        self.expected_expression(node);
+                        self.analyze_expression(node);
+                    }
+                }
+            }
+
+            Ast::Invalid { .. } => {
+                self.add_error(CompilationIssue::Error(
+                    thrustc_errors::CompilationIssueCode::E0001,
+                    "Expected a valid AST node, not an invalid one.".into(),
+                    "You should remove it.".into(),
+                    None,
+                    node.get_span(),
+                ));
+            }
+
+            Ast::ImportC { .. } => {
+                self.add_error(CompilationIssue::Error(
+                    thrustc_errors::CompilationIssueCode::E0001,
+                    "Expected an expression, not a C import.".into(),
+                    "You should remove it.".into(),
+                    None,
+                    node.get_span(),
+                ));
             }
 
             /* literals */
@@ -628,14 +698,15 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                     .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
             });
 
-            true
-        } else {
-            false
+            return true;
         }
+
+        false
     }
 }
 
 impl<'ast_verifier> AstVerifier<'ast_verifier> {
+    #[inline]
     pub fn add_error(&mut self, error: CompilationIssue) {
         self.errors.push(error);
     }
