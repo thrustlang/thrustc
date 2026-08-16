@@ -235,8 +235,9 @@ pub fn validate_node<'type_checker>(
                 if has_noreturn_attribute && !body.has_terminator() {
                     typechecker.add_error_report(CompilationIssue::Error(
                         CompilationIssueCode::E0019,
-                        "@noReturn function must always terminate and never fall off the end.".into(),
-                        "A noreturn function must end with a return, an unreachable, or a terminator."
+                        "@noReturn function must always terminate and never fall off the end."
+                            .into(),
+                        "A noreturn function must end with a return, or a unreachable instruction."
                             .into(),
                         None,
                         *span,

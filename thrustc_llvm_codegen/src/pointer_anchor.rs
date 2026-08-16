@@ -42,7 +42,19 @@ impl<'ctx> PointerAnchor<'ctx> {
         value: BasicValueEnum<'ctx>,
     ) {
         if !self.is_triggered() {
+            let atomic_config: Option<crate::atomic_operations::LLVMAtomicModificators> =
+                symbol.determinate_atomic_configuration();
+
+            if let Some(config) = atomic_config {
+                context.push_atomic_modificators(config);
+            }
+
             symbol.store(context, value);
+
+            if atomic_config.is_some() {
+                context.pop_atomic_modificators();
+            }
+
             self.triggered = true;
         }
     }

@@ -49,7 +49,49 @@ impl AstConstantExtensions for Ast<'_> {
                 data.iter().all(|(_, node, ..)| node.is_constant_value())
             }
 
-            _ => false,
+            // No es una constante evaluable en tiempo de compilación.
+            Ast::GlobalAssembler { .. }
+            | Ast::Index { .. }
+            | Ast::Embedded { .. }
+            | Ast::Struct { .. }
+            | Ast::Property { .. }
+            | Ast::If { .. }
+            | Ast::Elif { .. }
+            | Ast::Else { .. }
+            | Ast::For { .. }
+            | Ast::While { .. }
+            | Ast::Loop { .. }
+            | Ast::Continue { .. }
+            | Ast::Break { .. }
+            | Ast::ContinueAll { .. }
+            | Ast::BreakAll { .. }
+            | Ast::Block { .. }
+            | Ast::Defer { .. }
+            | Ast::CustomType { .. }
+            | Ast::Enum { .. }
+            | Ast::CompilerIntrinsic { .. }
+            | Ast::CompilerIntrinsicParameter { .. }
+            | Ast::AssemblerFunction { .. }
+            | Ast::AssemblerFunctionParameter { .. }
+            | Ast::Function { .. }
+            | Ast::FunctionParameter { .. }
+            | Ast::Return { .. }
+            | Ast::Static { .. }
+            | Ast::Const { .. }
+            | Ast::Var { .. }
+            | Ast::Mutation { .. }
+            | Ast::Address { .. }
+            | Ast::Write { .. }
+            | Ast::Load { .. }
+            | Ast::Deref { .. }
+            | Ast::ModuleExpression { .. }
+            | Ast::Call { .. }
+            | Ast::IndirectCall { .. }
+            | Ast::AsmValue { .. }
+            | Ast::Import { .. }
+            | Ast::ImportC { .. }
+            | Ast::Unreachable { .. }
+            | Ast::Invalid { .. } => false,
         }
     }
 }

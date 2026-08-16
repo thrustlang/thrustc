@@ -89,6 +89,15 @@ pub fn ensure_std_present(root: &Path, version: &str) -> Result<PathBuf, StdErro
 
     if self::embedded_has_version(version) {
         self::dump_version_std(root, version)?;
+
+        thrustc_logging::print_warning(
+            thrustc_logging::LoggingType::Warning,
+            &format!(
+                "The standard library version '{version}' was not found in '{}', so the included standard library was installed into: '{}'.\n",
+                root.display(),
+                version_dir.display()
+            ),
+        );
     }
 
     if version_dir.is_dir() {

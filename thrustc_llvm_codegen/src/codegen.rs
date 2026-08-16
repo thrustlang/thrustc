@@ -35,6 +35,7 @@ use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_options::CompilerOptions;
 
 use crate::compiler_builtins::LLVMBuiltin;
+use crate::atomic_operations::LLVMAtomicModificators;
 use crate::context::{CodeGenLocation, LLVMCodeGenContext};
 use crate::expressions::unary_expr;
 use crate::memory::SymbolAllocated;
@@ -245,7 +246,61 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         }
                     }
 
-                    _ => {}
+                    Ast::CString { .. }
+                    | Ast::CNString { .. }
+                    | Ast::Char { .. }
+                    | Ast::Boolean { .. }
+                    | Ast::Integer { .. }
+                    | Ast::Float { .. }
+                    | Ast::NullPtr { .. }
+                    | Ast::GlobalAssembler { .. }
+                    | Ast::FixedArray { .. }
+                    | Ast::Array { .. }
+                    | Ast::Index { .. }
+                    | Ast::Embedded { .. }
+                    | Ast::Struct { .. }
+                    | Ast::Constructor { .. }
+                    | Ast::Property { .. }
+                    | Ast::If { .. }
+                    | Ast::Elif { .. }
+                    | Ast::Else { .. }
+                    | Ast::For { .. }
+                    | Ast::While { .. }
+                    | Ast::Loop { .. }
+                    | Ast::Continue { .. }
+                    | Ast::Break { .. }
+                    | Ast::ContinueAll { .. }
+                    | Ast::BreakAll { .. }
+                    | Ast::Block { .. }
+                    | Ast::Defer { .. }
+                    | Ast::CustomType { .. }
+                    | Ast::Enum { .. }
+                    | Ast::EnumValue { .. }
+                    | Ast::CompilerIntrinsicParameter { .. }
+                    | Ast::AssemblerFunctionParameter { .. }
+                    | Ast::FunctionParameter { .. }
+                    | Ast::Return { .. }
+                    | Ast::Var { .. }
+                    | Ast::Reference { .. }
+                    | Ast::Mutation { .. }
+                    | Ast::Address { .. }
+                    | Ast::Write { .. }
+                    | Ast::Load { .. }
+                    | Ast::Deref { .. }
+                    | Ast::As { .. }
+                    | Ast::GetLocation { .. }
+                    | Ast::ModuleExpression { .. }
+                    | Ast::Call { .. }
+                    | Ast::IndirectCall { .. }
+                    | Ast::AsmValue { .. }
+                    | Ast::BinaryOp { .. }
+                    | Ast::UnaryOp { .. }
+                    | Ast::Group { .. }
+                    | Ast::Builtin { .. }
+                    | Ast::Import { .. }
+                    | Ast::ImportC { .. }
+                    | Ast::Unreachable { .. }
+                    | Ast::Invalid { .. } => {}
                 }
             }
         }
@@ -259,14 +314,72 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
     fn codegen_declaration(&mut self, node: &'ctx Ast) {
         match node {
-            Ast::Function { body, .. } if body.is_some() => {
+            Ast::Function { body: Some(_), .. } => {
                 function::compile_body(self, thrustc_entities::function_from_ast(node));
             }
             Ast::GlobalAssembler { asm, .. } => {
                 self.context.get_llvm_module().set_inline_assembly(asm);
             }
 
-            _ => {}
+            Ast::Function { body: None, .. } => {}
+            Ast::CompilerIntrinsic { .. }
+            | Ast::AssemblerFunction { .. }
+            | Ast::Const { .. }
+            | Ast::Static { .. }
+            | Ast::CString { .. }
+            | Ast::CNString { .. }
+            | Ast::Char { .. }
+            | Ast::Boolean { .. }
+            | Ast::Integer { .. }
+            | Ast::Float { .. }
+            | Ast::NullPtr { .. }
+            | Ast::FixedArray { .. }
+            | Ast::Array { .. }
+            | Ast::Index { .. }
+            | Ast::Embedded { .. }
+            | Ast::Struct { .. }
+            | Ast::Constructor { .. }
+            | Ast::Property { .. }
+            | Ast::If { .. }
+            | Ast::Elif { .. }
+            | Ast::Else { .. }
+            | Ast::For { .. }
+            | Ast::While { .. }
+            | Ast::Loop { .. }
+            | Ast::Continue { .. }
+            | Ast::Break { .. }
+            | Ast::ContinueAll { .. }
+            | Ast::BreakAll { .. }
+            | Ast::Block { .. }
+            | Ast::Defer { .. }
+            | Ast::CustomType { .. }
+            | Ast::Enum { .. }
+            | Ast::EnumValue { .. }
+            | Ast::CompilerIntrinsicParameter { .. }
+            | Ast::AssemblerFunctionParameter { .. }
+            | Ast::FunctionParameter { .. }
+            | Ast::Return { .. }
+            | Ast::Var { .. }
+            | Ast::Reference { .. }
+            | Ast::Mutation { .. }
+            | Ast::Address { .. }
+            | Ast::Write { .. }
+            | Ast::Load { .. }
+            | Ast::Deref { .. }
+            | Ast::As { .. }
+            | Ast::GetLocation { .. }
+            | Ast::ModuleExpression { .. }
+            | Ast::Call { .. }
+            | Ast::IndirectCall { .. }
+            | Ast::AsmValue { .. }
+            | Ast::BinaryOp { .. }
+            | Ast::UnaryOp { .. }
+            | Ast::Group { .. }
+            | Ast::Builtin { .. }
+            | Ast::Import { .. }
+            | Ast::ImportC { .. }
+            | Ast::Unreachable { .. }
+            | Ast::Invalid { .. } => {}
         }
     }
 
@@ -510,7 +623,19 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     {
                         if let Some(anchor) = self.context.get_mut_pointer_anchor() {
                             anchor.trigger();
+
+                            let atomic_config: Option<LLVMAtomicModificators> =
+                                symbol.determinate_atomic_configuration();
+
+                            if let Some(config) = atomic_config {
+                                self.context.push_atomic_modificators(config);
+                            }
+
                             symbol.store(self.context, value);
+
+                            if atomic_config.is_some() {
+                                self.context.pop_atomic_modificators();
+                            }
                         }
                     }
 
@@ -867,7 +992,24 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 let value: BasicValueEnum =
                     codegen::compile_as_value(self.context, value, Some(&cast_type));
 
-                memory::store(self.context, ptr.into_pointer_value(), value, None, *span);
+                let atomic_config: Option<LLVMAtomicModificators> = match source.as_ref() {
+                    Ast::Reference { name, .. } => self
+                        .context
+                        .get_table()
+                        .get_symbol(name)
+                        .determinate_atomic_configuration(),
+                    _ => None,
+                };
+
+                if let Some(config) = atomic_config {
+                    self.context.push_atomic_modificators(config);
+                }
+
+                memory::store(self.context, ptr.into_pointer_value(), value, *span);
+
+                if atomic_config.is_some() {
+                    self.context.pop_atomic_modificators();
+                }
             }
 
             Ast::Write { .. } => {
@@ -1088,7 +1230,19 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
-            let value: BasicValueEnum<'_> = context.get_table().get_symbol(name).load(context);
+            let symbol: SymbolAllocated<'_> = context.get_table().get_symbol(name);
+            let atomic_config: Option<LLVMAtomicModificators> =
+                symbol.determinate_atomic_configuration();
+
+            if let Some(config) = atomic_config {
+                context.push_atomic_modificators(config);
+            }
+
+            let value: BasicValueEnum<'_> = symbol.load(context);
+
+            if atomic_config.is_some() {
+                context.pop_atomic_modificators();
+            }
 
             type_cast::try_smart_cast(context, cast_type, ty, value, *span)
         }
@@ -1120,13 +1274,21 @@ pub fn compile_as_value<'ctx>(
                 context.pop_current_codegen_location();
 
                 let deref_value: BasicValueEnum = if value.is_pointer_value() {
-                    memory::dereference(
-                        context,
-                        value.into_pointer_value(),
-                        kind,
-                        metadata.get_llvm_metadata(),
-                        *span,
-                    )
+                    let deref_metadata = metadata.get_llvm_metadata();
+
+                    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
+                        atomic_volatile: deref_metadata.volatile,
+                        atomic_ord: deref_metadata.atomic_ord.map(|ord| ord.to_llvm()),
+                    };
+
+                    context.push_atomic_modificators(atomic_config);
+
+                    let deref_value: BasicValueEnum =
+                        memory::dereference(context, value.into_pointer_value(), kind, *span);
+
+                    context.pop_atomic_modificators();
+
+                    deref_value
                 } else {
                     value
                 };
@@ -1434,7 +1596,8 @@ pub fn compile_as_ptr_value<'ctx>(
             let codegen_location: CodeGenLocation = context.get_codegen_location();
             let reference_ty: thrustc_ast::ast_metadata::ReferenceType = metadata.get_type();
 
-            let base_ptr: PointerValue<'_> = context.get_table().get_symbol(name).get_ptr_value();
+            let symbol: SymbolAllocated<'_> = context.get_table().get_symbol(name);
+            let base_ptr: PointerValue<'_> = symbol.get_ptr_value();
             let ptr_type: &Type = &ty.remove_all_constant_type();
             let nested_ptr_count: usize = ty.get_nested_ptr_type_count(0);
 
@@ -1455,7 +1618,14 @@ pub fn compile_as_ptr_value<'ctx>(
                 CodeGenLocation::RValue | CodeGenLocation::CallArgExpr
             ) && is_ptr_like_type
             {
-                if nested_ptr_count <= 1 {
+                let atomic_config: Option<LLVMAtomicModificators> =
+                    symbol.determinate_atomic_configuration();
+
+                if let Some(config) = atomic_config {
+                    context.push_atomic_modificators(config);
+                }
+
+                let result: BasicValueEnum = if nested_ptr_count <= 1 {
                     memory::load_pointer(context, base_ptr, *span)
                 } else {
                     memory::auto_deference_a_nested_pointer(
@@ -1465,7 +1635,13 @@ pub fn compile_as_ptr_value<'ctx>(
                         nested_ptr_count,
                         *span,
                     )
+                };
+
+                if atomic_config.is_some() {
+                    context.pop_atomic_modificators();
                 }
+
+                result
             } else {
                 base_ptr.into()
             }

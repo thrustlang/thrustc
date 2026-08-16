@@ -40,18 +40,22 @@ pub enum Modificator {
 }
 
 impl Modificator {
+    #[inline]
     pub fn is_thread_mode(&self) -> bool {
         matches!(self, Modificator::ThreadMode(..))
     }
 
+    #[inline]
     pub fn is_atomic_ordering(&self) -> bool {
         matches!(self, Modificator::AtomicOrdering(..))
     }
 
+    #[inline]
     pub fn is_volatile(&self) -> bool {
         matches!(self, Modificator::Volatile)
     }
 
+    #[inline]
     pub fn is_lazy_thread(&self) -> bool {
         matches!(self, Modificator::LazyThread)
     }

@@ -31,7 +31,6 @@ use inkwell::values::InstructionValue;
 use inkwell::values::IntValue;
 use inkwell::values::PointerValue;
 use thrustc_ast::ast_metadata::LLVMConstantMetadata;
-use thrustc_ast::ast_metadata::LLVMDereferenceMetadata;
 use thrustc_ast::ast_metadata::LLVMLocalMetadata;
 use thrustc_ast::ast_metadata::LLVMStaticMetadata;
 
@@ -203,7 +202,6 @@ impl<'ctx> SymbolAllocated<'ctx> {
 
         if let Self::Local {
             ptr,
-            metadata,
             attributes,
             ..
         } = self
@@ -231,17 +229,14 @@ impl<'ctx> SymbolAllocated<'ctx> {
                     );
                 });
 
-            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                atomic_volatile: metadata.volatile,
-                atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
-            };
-
-            atomic_operations::set_atomic_behavior_load_instruction(
-                context,
-                instruction,
-                atomic_config,
-                span,
-            );
+            if let Some(atomic_config) = context.get_atomic_modificators() {
+                atomic_operations::set_atomic_behavior_load_instruction(
+                    context,
+                    instruction,
+                    atomic_config,
+                    span,
+                );
+            }
 
             let alignment: u32 = attributes
                 .get_explicit_memory_alignment()
@@ -261,7 +256,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
             return loaded_value;
         }
 
-        if let Self::Constant { ptr, metadata, .. } = self {
+        if let Self::Constant { ptr, .. } = self {
             let loaded_value = llvm_builder
                 .build_load(llvm_type, *ptr, "")
                 .unwrap_or_else(|_| {
@@ -285,17 +280,14 @@ impl<'ctx> SymbolAllocated<'ctx> {
                     );
                 });
 
-            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                atomic_volatile: metadata.volatile,
-                atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
-            };
-
-            atomic_operations::set_atomic_behavior_load_instruction(
-                context,
-                instruction,
-                atomic_config,
-                span,
-            );
+            if let Some(atomic_config) = context.get_atomic_modificators() {
+                atomic_operations::set_atomic_behavior_load_instruction(
+                    context,
+                    instruction,
+                    atomic_config,
+                    span,
+                );
+            }
 
             instruction.set_alignment(alignment).unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -310,7 +302,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
             return loaded_value;
         }
 
-        if let Self::Static { ptr, metadata, .. } = self {
+        if let Self::Static { ptr, .. } = self {
             let loaded_value = llvm_builder
                 .build_load(llvm_type, *ptr, "")
                 .unwrap_or_else(|_| {
@@ -334,17 +326,14 @@ impl<'ctx> SymbolAllocated<'ctx> {
                     );
                 });
 
-            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                atomic_volatile: metadata.volatile,
-                atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
-            };
-
-            atomic_operations::set_atomic_behavior_load_instruction(
-                context,
-                instruction,
-                atomic_config,
-                span,
-            );
+            if let Some(atomic_config) = context.get_atomic_modificators() {
+                atomic_operations::set_atomic_behavior_load_instruction(
+                    context,
+                    instruction,
+                    atomic_config,
+                    span,
+                );
+            }
 
             instruction.set_alignment(alignment).unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -387,6 +376,15 @@ impl<'ctx> SymbolAllocated<'ctx> {
                     );
                 });
 
+            if let Some(atomic_config) = context.get_atomic_modificators() {
+                atomic_operations::set_atomic_behavior_load_instruction(
+                    context,
+                    instruction,
+                    atomic_config,
+                    *span,
+                );
+            }
+
             instruction.set_alignment(alignment).unwrap_or_else(|_| {
                 abort::abort_codegen(
                     context,
@@ -426,7 +424,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
 
         context.mark_dbg_location(self.get_symbol_span());
 
-        if let Self::Local { ptr, metadata, .. } = self {
+        if let Self::Local { ptr, .. } = self {
             let instruction = llvm_builder
                 .build_store(*ptr, new_value)
                 .unwrap_or_else(|_| {
@@ -439,17 +437,14 @@ impl<'ctx> SymbolAllocated<'ctx> {
                     );
                 });
 
-            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                atomic_volatile: metadata.volatile,
-                atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
-            };
-
-            atomic_operations::set_atomic_behavior_store_instruction(
-                context,
-                instruction,
-                atomic_config,
-                span,
-            );
+            if let Some(atomic_config) = context.get_atomic_modificators() {
+                atomic_operations::set_atomic_behavior_store_instruction(
+                    context,
+                    instruction,
+                    atomic_config,
+                    span,
+                );
+            }
 
             instruction.set_alignment(alignment).unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -464,7 +459,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
             return;
         }
 
-        if let Self::Static { ptr, metadata, .. } = self {
+        if let Self::Static { ptr, .. } = self {
             let instruction = llvm_builder
                 .build_store(*ptr, new_value)
                 .unwrap_or_else(|_| {
@@ -477,17 +472,14 @@ impl<'ctx> SymbolAllocated<'ctx> {
                     );
                 });
 
-            let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                atomic_volatile: metadata.volatile,
-                atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
-            };
-
-            atomic_operations::set_atomic_behavior_store_instruction(
-                context,
-                instruction,
-                atomic_config,
-                span,
-            );
+            if let Some(atomic_config) = context.get_atomic_modificators() {
+                atomic_operations::set_atomic_behavior_store_instruction(
+                    context,
+                    instruction,
+                    atomic_config,
+                    span,
+                );
+            }
 
             instruction.set_alignment(alignment).unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -514,6 +506,15 @@ impl<'ctx> SymbolAllocated<'ctx> {
                         line!(),
                     );
                 });
+
+            if let Some(atomic_config) = context.get_atomic_modificators() {
+                atomic_operations::set_atomic_behavior_store_instruction(
+                    context,
+                    store,
+                    atomic_config,
+                    span,
+                );
+            }
 
             store.set_alignment(alignment).unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -642,7 +643,6 @@ pub fn store<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     ptr: PointerValue<'ctx>,
     new_value: BasicValueEnum<'ctx>,
-    atomic_config: Option<LLVMAtomicModificators>,
     span: Span,
 ) {
     let llvm_builder: &Builder = context.get_llvm_builder();
@@ -663,7 +663,7 @@ pub fn store<'ctx>(
                 )
             });
 
-    if let Some(atomic_config) = atomic_config {
+    if let Some(atomic_config) = context.get_atomic_modificators() {
         atomic_operations::set_atomic_behavior_store_instruction(
             context,
             store,
@@ -722,6 +722,15 @@ pub fn load<'ctx>(
             )
         });
 
+    if let Some(atomic_config) = context.get_atomic_modificators() {
+        atomic_operations::set_atomic_behavior_load_instruction(
+            context,
+            instruction,
+            atomic_config,
+            span,
+        );
+    }
+
     instruction.set_alignment(alignment).unwrap_or_else(|_| {
         abort::abort_codegen(
             context,
@@ -774,6 +783,15 @@ pub fn load_pointer<'ctx>(
             )
         });
 
+    if let Some(atomic_config) = context.get_atomic_modificators() {
+        atomic_operations::set_atomic_behavior_load_instruction(
+            context,
+            instruction,
+            atomic_config,
+            span,
+        );
+    }
+
     instruction.set_alignment(alignment).unwrap_or_else(|_| {
         abort::abort_codegen(
             context,
@@ -791,7 +809,6 @@ pub fn dereference<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     ptr: PointerValue<'ctx>,
     ptr_type: &Type,
-    metadata: LLVMDereferenceMetadata,
     span: Span,
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder = context.get_llvm_builder();
@@ -827,17 +844,14 @@ pub fn dereference<'ctx>(
             )
         });
 
-    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-        atomic_volatile: metadata.volatile,
-        atomic_ord: metadata.atomic_ord.map(|atomic_ord| atomic_ord.to_llvm()),
-    };
-
-    atomic_operations::set_atomic_behavior_load_instruction(
-        context,
-        instruction,
-        atomic_config,
-        span,
-    );
+    if let Some(atomic_config) = context.get_atomic_modificators() {
+        atomic_operations::set_atomic_behavior_load_instruction(
+            context,
+            instruction,
+            atomic_config,
+            span,
+        );
+    }
 
     instruction.set_alignment(alignment).unwrap_or_else(|_| {
         abort::abort_codegen(
@@ -1031,6 +1045,15 @@ pub fn auto_deference_a_nested_pointer<'ctx>(
             );
         });
 
+    if let Some(atomic_config) = context.get_atomic_modificators() {
+        atomic_operations::set_atomic_behavior_load_instruction(
+            context,
+            instruction,
+            atomic_config,
+            span,
+        );
+    }
+
     instruction.set_alignment(alignment).unwrap_or_else(|_| {
         abort::abort_codegen(
             context,
@@ -1065,6 +1088,15 @@ pub fn auto_deference_a_nested_pointer<'ctx>(
                 line!(),
             );
         });
+
+        if let Some(atomic_config) = context.get_atomic_modificators() {
+            atomic_operations::set_atomic_behavior_load_instruction(
+                context,
+                instruction,
+                atomic_config,
+                span,
+            );
+        }
 
         instruction.set_alignment(alignment).unwrap_or_else(|_| {
             abort::abort_codegen(

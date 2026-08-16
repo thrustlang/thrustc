@@ -19,7 +19,7 @@
 
 use thrustc_ast::{
     Ast,
-    traits::{AstCodeLocation, AstStandardExtensions},
+    traits::{AstCodeBlockEntensions, AstCodeLocation, AstStandardExtensions},
 };
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
@@ -55,7 +55,7 @@ pub fn check_for_multiple_terminators(scoper: &mut Scoper, node: &Ast) {
     let return_positions: Vec<(usize, &Ast)> = nodes
         .iter()
         .enumerate()
-        .filter(|(_, stmt)| stmt.is_terminator_keyword())
+        .filter(|(_, stmt)| stmt.is_terminator_keyword() || stmt.has_terminator())
         .collect();
 
     if return_positions.len() > 1 {

@@ -40,6 +40,7 @@ use thrustc_typesystem::Type;
 use thrustc_typesystem::type_layout::TargetInfo;
 
 use crate::abort;
+use crate::atomic_operations::LLVMAtomicModificators;
 use crate::branch_context::LLVMLoopContext;
 use crate::debug_context::LLVMDebugContext;
 use crate::memory::SymbolAllocated;
@@ -72,6 +73,8 @@ pub struct LLVMCodeGenContext<'a, 'ctx> {
     dtors: LLVMDtors<'ctx>,
 
     codegen_location: Vec<CodeGenLocation>,
+
+    atomic_modificators: Vec<LLVMAtomicModificators>,
 
     ptr_anchor: Option<PointerAnchor<'ctx>>,
 
@@ -130,6 +133,8 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
             dtors: LLVMDtors::new(),
 
             codegen_location: Vec::new(),
+
+            atomic_modificators: Vec::new(),
 
             ptr_anchor: None,
 
@@ -331,6 +336,23 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     #[inline]
     pub fn pop_current_codegen_location(&mut self) {
         self.codegen_location.pop();
+    }
+}
+
+impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
+    #[inline]
+    pub fn push_atomic_modificators(&mut self, modificators: LLVMAtomicModificators) {
+        self.atomic_modificators.push(modificators);
+    }
+
+    #[inline]
+    pub fn pop_atomic_modificators(&mut self) {
+        self.atomic_modificators.pop();
+    }
+
+    #[inline]
+    pub fn get_atomic_modificators(&self) -> Option<LLVMAtomicModificators> {
+        self.atomic_modificators.last().copied()
     }
 }
 

@@ -118,6 +118,13 @@ fn compile_increment_decrement_ref<'ctx>(
     let llvm_builder: &Builder = context.get_llvm_builder();
     let symbol: SymbolAllocated = context.get_table().get_symbol(name);
 
+    let atomic_config: Option<crate::atomic_operations::LLVMAtomicModificators> =
+        symbol.determinate_atomic_configuration();
+
+    if let Some(config) = atomic_config {
+        context.push_atomic_modificators(config);
+    }
+
     match kind {
         kind if kind.is_integer_type() => {
             let old_value: IntValue = symbol.load(context).into_int_value();
@@ -225,6 +232,10 @@ fn compile_increment_decrement_ref<'ctx>(
 
             symbol.store(context, result);
 
+            if atomic_config.is_some() {
+                context.pop_atomic_modificators();
+            }
+
             result
         }
         _ => {
@@ -272,6 +283,10 @@ fn compile_increment_decrement_ref<'ctx>(
                 type_cast::try_smart_cast(context, cast_type, kind, result, span);
 
             symbol.store(context, new_value);
+
+            if atomic_config.is_some() {
+                context.pop_atomic_modificators();
+            }
 
             new_value
         }

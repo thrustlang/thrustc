@@ -166,7 +166,7 @@ fn compile_array_without_anchor<'ctx>(
         memory::allocate_in(context, LLVMAllocationSite::Stack, &fixed_array_type, span);
 
     if items.is_empty() {
-        memory::store(context, array_ptr, llvm_type.const_zero(), None, span);
+        memory::store(context, array_ptr, llvm_type.const_zero(), span);
         array_ptr.into()
     } else {
         let items: Vec<BasicValueEnum> = items
@@ -195,7 +195,7 @@ fn compile_array_without_anchor<'ctx>(
                 span,
             );
 
-            memory::store(context, ptr, *value, None, span);
+            memory::store(context, ptr, *value, span);
         }
 
         array_ptr.into()
@@ -244,7 +244,7 @@ fn compile_array_with_anchor<'ctx>(
     }
 
     if items.is_empty() {
-        memory::store(context, anchor_ptr, llvm_type.const_zero(), None, span);
+        memory::store(context, anchor_ptr, llvm_type.const_zero(), span);
         anchor_ptr.into()
     } else {
         let items: Vec<BasicValueEnum> = items
@@ -276,7 +276,7 @@ fn compile_array_with_anchor<'ctx>(
                     span,
                 );
 
-                memory::store(context, ptr, *value, None, span);
+                memory::store(context, ptr, *value, span);
 
                 ptr
             })

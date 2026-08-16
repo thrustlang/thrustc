@@ -28,27 +28,27 @@ use arbitrary::Arbitrary;
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[derive(Debug, Clone, Serialize)]
-pub enum AstBuiltin<'mir> {
+pub enum AstBuiltin<'compiler_builtin> {
     Halloc {
         of: Type,
         span: Span,
     },
     MemCpy {
-        src: std::boxed::Box<Ast<'mir>>,
-        dst: std::boxed::Box<Ast<'mir>>,
-        size: std::boxed::Box<Ast<'mir>>,
+        src: std::boxed::Box<Ast<'compiler_builtin>>,
+        dst: std::boxed::Box<Ast<'compiler_builtin>>,
+        size: std::boxed::Box<Ast<'compiler_builtin>>,
         span: Span,
     },
     MemMove {
-        src: std::boxed::Box<Ast<'mir>>,
-        dst: std::boxed::Box<Ast<'mir>>,
-        size: std::boxed::Box<Ast<'mir>>,
+        src: std::boxed::Box<Ast<'compiler_builtin>>,
+        dst: std::boxed::Box<Ast<'compiler_builtin>>,
+        size: std::boxed::Box<Ast<'compiler_builtin>>,
         span: Span,
     },
     MemSet {
-        dst: std::boxed::Box<Ast<'mir>>,
-        new_size: std::boxed::Box<Ast<'mir>>,
-        size: std::boxed::Box<Ast<'mir>>,
+        dst: std::boxed::Box<Ast<'compiler_builtin>>,
+        new_size: std::boxed::Box<Ast<'compiler_builtin>>,
+        size: std::boxed::Box<Ast<'compiler_builtin>>,
         span: Span,
     },
     BitSizeOf {

@@ -67,7 +67,7 @@ fn compile_fixed_array_with_anchor<'ctx>(
     let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, array_type);
 
     if items.is_empty() {
-        memory::store(context, anchor, llvm_type.const_zero(), None, span);
+        memory::store(context, anchor, llvm_type.const_zero(), span);
 
         context
             .get_llvm_context()
@@ -101,7 +101,7 @@ fn compile_fixed_array_with_anchor<'ctx>(
                 span,
             );
 
-            memory::store(context, ptr, *value, None, span);
+            memory::store(context, ptr, *value, span);
         }
 
         context
@@ -158,7 +158,7 @@ fn compile_fixed_array_without_anchor<'ctx>(
                 span,
             );
 
-            memory::store(context, ptr, *value, None, span);
+            memory::store(context, ptr, *value, span);
         }
 
         memory::load(context, array_ptr, array_type, span)

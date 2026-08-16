@@ -185,17 +185,105 @@ impl AstAttributeExtensions for Ast<'_> {
     #[inline]
     fn get_attributes(&self) -> Option<&ThrustAttributes> {
         match self {
+            // Primitive Types & Literals
+            Ast::CString { .. } => None,
+            Ast::CNString { .. } => None,
+            Ast::Char { .. } => None,
+            Ast::Boolean { .. } => None,
+            Ast::Integer { .. } => None,
+            Ast::Float { .. } => None,
+            Ast::NullPtr { .. } => None,
+
+            // Global Assembler
+            Ast::GlobalAssembler { .. } => None,
+
+            // Arrays & Indexing
+            Ast::FixedArray { .. } => None,
+            Ast::Array { .. } => None,
+            Ast::Index { .. } => None,
+
+            // Embedded
+            Ast::Embedded { .. } => None,
+
+            // Composite Types
             Ast::Struct { attributes, .. } => Some(attributes),
+            Ast::Constructor { .. } => None,
+            Ast::Property { .. } => None,
+
+            // Conditional
+            Ast::If { .. } => None,
+            Ast::Elif { .. } => None,
+            Ast::Else { .. } => None,
+
+            // Loops
+            Ast::For { .. } => None,
+            Ast::While { .. } => None,
+            Ast::Loop { .. } => None,
+
+            // Loop Control Flow
+            Ast::Continue { .. } => None,
+            Ast::Break { .. } => None,
+            Ast::ContinueAll { .. } => None,
+            Ast::BreakAll { .. } => None,
+
+            // Code Block & Scope
+            Ast::Block { .. } => None,
+            Ast::Defer { .. } => None,
+
+            // Custom Type
+            Ast::CustomType { .. } => None,
+
+            // Enums
             Ast::Enum { attributes, .. } => Some(attributes),
+            Ast::EnumValue { .. } => None,
+
+            // Functions
             Ast::CompilerIntrinsic { attributes, .. } => Some(attributes),
+            Ast::CompilerIntrinsicParameter { .. } => None,
             Ast::AssemblerFunction { attributes, .. } => Some(attributes),
+            Ast::AssemblerFunctionParameter { .. } => None,
             Ast::Function { attributes, .. } => Some(attributes),
+            Ast::FunctionParameter { .. } => None,
+            Ast::Return { .. } => None,
+
+            // Static & Constants & Locals
             Ast::Static { attributes, .. } => Some(attributes),
             Ast::Const { attributes, .. } => Some(attributes),
             Ast::Var { attributes, .. } => Some(attributes),
-            Ast::AsmValue { attributes, .. } => Some(attributes),
 
-            _ => None,
+            // Reference & Mutation
+            Ast::Reference { .. } => None,
+            Ast::Mutation { .. } => None,
+
+            // Memory Operations
+            Ast::Address { .. } => None,
+            Ast::Write { .. } => None,
+            Ast::Load { .. } => None,
+            Ast::Deref { .. } => None,
+
+            // Casts
+            Ast::As { .. } => None,
+
+            // Expressions
+            Ast::GetLocation { .. } => None,
+            Ast::ModuleExpression { .. } => None,
+            Ast::Call { .. } => None,
+            Ast::IndirectCall { .. } => None,
+            Ast::AsmValue { attributes, .. } => Some(attributes),
+            Ast::BinaryOp { .. } => None,
+            Ast::UnaryOp { .. } => None,
+            Ast::Group { .. } => None,
+
+            // Builtins
+            Ast::Builtin { .. } => None,
+
+            // Module Imports
+            Ast::Import { .. } => None,
+            Ast::ImportC { .. } => None,
+
+            // Unreachable & Invalid
+            Ast::Unreachable { .. } => None,
+            Ast::Invalid { .. } => None,
         }
     }
 }
@@ -294,7 +382,11 @@ impl AstCodeBlockEntensions for Ast<'_> {
 
         {
             for node in nodes.iter() {
-                if node.is_terminator_keyword() {
+                if node.is_terminator_keyword() || node.is_unreacheable_keyword() {
+                    return true;
+                }
+
+                if node.has_terminator() {
                     return true;
                 }
 

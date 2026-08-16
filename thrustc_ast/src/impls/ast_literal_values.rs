@@ -43,7 +43,54 @@ impl AstLiteralExtensions for Ast<'_> {
             }
             Ast::UnaryOp { node, .. } => node.is_totaly_literal_value(),
 
-            _ => false,
+            // No es un valor literal completo.
+            Ast::GlobalAssembler { .. }
+            | Ast::Index { .. }
+            | Ast::Embedded { .. }
+            | Ast::Struct { .. }
+            | Ast::Property { .. }
+            | Ast::Constructor { .. }
+            | Ast::If { .. }
+            | Ast::Elif { .. }
+            | Ast::Else { .. }
+            | Ast::For { .. }
+            | Ast::While { .. }
+            | Ast::Loop { .. }
+            | Ast::Continue { .. }
+            | Ast::Break { .. }
+            | Ast::ContinueAll { .. }
+            | Ast::BreakAll { .. }
+            | Ast::Block { .. }
+            | Ast::Defer { .. }
+            | Ast::CustomType { .. }
+            | Ast::Enum { .. }
+            | Ast::CompilerIntrinsic { .. }
+            | Ast::CompilerIntrinsicParameter { .. }
+            | Ast::AssemblerFunction { .. }
+            | Ast::AssemblerFunctionParameter { .. }
+            | Ast::Function { .. }
+            | Ast::FunctionParameter { .. }
+            | Ast::Return { .. }
+            | Ast::Static { .. }
+            | Ast::Const { .. }
+            | Ast::Var { .. }
+            | Ast::Reference { .. }
+            | Ast::Mutation { .. }
+            | Ast::Address { .. }
+            | Ast::Write { .. }
+            | Ast::Load { .. }
+            | Ast::Deref { .. }
+            | Ast::As { .. }
+            | Ast::GetLocation { .. }
+            | Ast::ModuleExpression { .. }
+            | Ast::Call { .. }
+            | Ast::IndirectCall { .. }
+            | Ast::AsmValue { .. }
+            | Ast::Builtin { .. }
+            | Ast::Import { .. }
+            | Ast::ImportC { .. }
+            | Ast::Unreachable { .. }
+            | Ast::Invalid { .. } => false,
         }
     }
 
@@ -65,6 +112,6 @@ impl AstLiteralExtensions for Ast<'_> {
 
     #[inline]
     fn is_literal_ptr_value(&self) -> bool {
-        matches!(self, |Ast::CString { .. }| Ast::CNString { .. })
+        matches!(self, Ast::CString { .. } | Ast::CNString { .. })
     }
 }

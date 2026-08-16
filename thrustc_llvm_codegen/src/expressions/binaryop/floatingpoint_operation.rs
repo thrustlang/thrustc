@@ -72,6 +72,10 @@ pub fn compile_float_operation<'ctx>(
                 let atomic_config: Option<LLVMAtomicModificators> =
                     symbol.determinate_atomic_configuration();
 
+                if let Some(config) = atomic_config {
+                    context.push_atomic_modificators(config);
+                }
+
                 if reference.is_pointer_value() {
                     let ptr: PointerValue<'_> = reference.into_pointer_value();
 
@@ -93,7 +97,11 @@ pub fn compile_float_operation<'ctx>(
                         })
                         .into();
 
-                    memory::store(context, ptr, new_value, atomic_config, span);
+                    memory::store(context, ptr, new_value, span);
+
+                    if atomic_config.is_some() {
+                        context.pop_atomic_modificators();
+                    }
 
                     new_value
                 } else {
@@ -149,6 +157,10 @@ pub fn compile_float_operation<'ctx>(
                 let atomic_config: Option<LLVMAtomicModificators> =
                     symbol.determinate_atomic_configuration();
 
+                if let Some(config) = atomic_config {
+                    context.push_atomic_modificators(config);
+                }
+
                 if reference.is_pointer_value() {
                     let ptr: PointerValue<'_> = reference.into_pointer_value();
 
@@ -170,7 +182,11 @@ pub fn compile_float_operation<'ctx>(
                         })
                         .into();
 
-                    memory::store(context, ptr, new_value, atomic_config, span);
+                    memory::store(context, ptr, new_value, span);
+
+                    if atomic_config.is_some() {
+                        context.pop_atomic_modificators();
+                    }
 
                     new_value
                 } else {
