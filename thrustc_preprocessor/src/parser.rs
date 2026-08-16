@@ -43,6 +43,8 @@ pub struct ModuleParser<'module_parser> {
     diagnostician: Diagnostician,
 
     current: usize,
+    type_depth: u32,
+    block_depth: u32,
 }
 
 impl<'module_parser> ModuleParser<'module_parser> {
@@ -67,6 +69,8 @@ impl<'module_parser> ModuleParser<'module_parser> {
             options,
 
             current: 0,
+            type_depth: 0,
+            block_depth: 0,
         }
     }
 }
@@ -80,6 +84,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
         self.reset_position();
 
         while !self.is_eof() {
+            self.reset_depths();
             let _ = self.start();
         }
 
@@ -102,6 +107,46 @@ impl<'module_parser> ModuleParser<'module_parser> {
         }
 
         Ok(self.module)
+    }
+}
+
+impl<'module_parser> ModuleParser<'module_parser> {
+    #[inline]
+    pub fn enter_type(&mut self) -> Result<(), ()> {
+        self.type_depth = self.type_depth.saturating_add(1);
+
+        if self.type_depth > thrustc_constants::COMPILER_TOO_MANY_TYPE_DEPTH {
+            return Err(());
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    pub fn leave_type(&mut self) {
+        self.type_depth = self.type_depth.saturating_sub(1);
+    }
+
+    #[inline]
+    pub fn enter_block(&mut self) -> Result<(), ()> {
+        self.block_depth = self.block_depth.saturating_add(1);
+
+        if self.block_depth > thrustc_constants::COMPILER_TOO_MANY_BLOCK_DEPTH {
+            return Err(());
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    pub fn leave_block(&mut self) {
+        self.block_depth = self.block_depth.saturating_sub(1);
+    }
+
+    #[inline]
+    pub fn reset_depths(&mut self) {
+        self.type_depth = 0;
+        self.block_depth = 0;
     }
 }
 

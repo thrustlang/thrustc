@@ -17,10 +17,10 @@
 
 */
 
-
 #[derive(Debug)]
 pub struct AnalyzerContext {
     global_assembler: bool,
+    node_depth: u32,
 }
 
 impl AnalyzerContext {
@@ -28,6 +28,7 @@ impl AnalyzerContext {
     pub fn new() -> Self {
         Self {
             global_assembler: false,
+            node_depth: 0,
         }
     }
 }
@@ -37,11 +38,31 @@ impl AnalyzerContext {
     pub fn set_has_global_assembler(&mut self) {
         self.global_assembler = true;
     }
+
+    #[inline]
+    pub fn enter_node(&mut self) {
+        self.node_depth = self.node_depth.saturating_add(1);
+    }
+
+    #[inline]
+    pub fn leave_node(&mut self) {
+        self.node_depth = self.node_depth.saturating_sub(1);
+    }
+
+    #[inline]
+    pub fn reset_node_depth(&mut self) {
+        self.node_depth = 0;
+    }
 }
 
 impl AnalyzerContext {
     #[inline]
     pub fn has_global_assembler(&self) -> bool {
         self.global_assembler
+    }
+
+    #[inline]
+    pub fn get_node_depth(&self) -> u32 {
+        self.node_depth
     }
 }

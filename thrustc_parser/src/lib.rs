@@ -409,6 +409,58 @@ impl<'parser> ParserContext<'parser> {
     pub fn leave_expression(&mut self) {
         self.get_mut_control_context().decrease_expression_depth();
     }
+
+    #[inline(always)]
+    pub fn enter_type(&mut self) -> Result<(), CompilationIssue> {
+        let control: &mut ControlContext = self.get_mut_control_context();
+
+        control.increase_type_depth();
+
+        if control.get_type_depth() > thrustc_constants::COMPILER_TOO_MANY_TYPE_DEPTH {
+            let span: Span = self.peek().get_span();
+
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many depth for a type.".into(),
+                "You should remove the type nesting".into(),
+                None,
+                span,
+            ));
+        }
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    pub fn leave_type(&mut self) {
+        self.get_mut_control_context().decrease_type_depth();
+    }
+
+    #[inline(always)]
+    pub fn enter_block(&mut self) -> Result<(), CompilationIssue> {
+        let control: &mut ControlContext = self.get_mut_control_context();
+
+        control.increase_block_depth();
+
+        if control.get_block_depth() > thrustc_constants::COMPILER_TOO_MANY_BLOCK_DEPTH {
+            let span: Span = self.peek().get_span();
+
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many depth for a code block.".into(),
+                "You should remove the code block nesting".into(),
+                None,
+                span,
+            ));
+        }
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    pub fn leave_block(&mut self) {
+        self.get_mut_control_context().decrease_block_depth();
+    }
 }
 
 impl ParserContext<'_> {

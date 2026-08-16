@@ -45,10 +45,18 @@ pub fn validate_node<'type_checker>(
             attributes,
             ..
         } => {
-            visit_type::visit_all_types(node, &mut |ty, _| {
+            if let Some(span) = visit_type::visit_all_types(node, &mut |ty, _| {
                 type_support::check_target_type_support(typechecker, ty);
                 type_checking::check_if_a_type_is_unresolved(typechecker, ty);
-            });
+            }) {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0037,
+                    "Too many depth for a node.".into(),
+                    "You should remove the code nesting".into(),
+                    None,
+                    span,
+                ));
+            }
 
             typechecker
                 .get_mut_table()
@@ -92,10 +100,18 @@ pub fn validate_node<'type_checker>(
             attributes,
             ..
         } => {
-            visit_type::visit_all_types(node, &mut |ty, _| {
+            if let Some(span) = visit_type::visit_all_types(node, &mut |ty, _| {
                 type_support::check_target_type_support(typechecker, ty);
                 type_checking::check_if_a_type_is_unresolved(typechecker, ty);
-            });
+            }) {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0037,
+                    "Too many depth for a node.".into(),
+                    "You should remove the code nesting".into(),
+                    None,
+                    span,
+                ));
+            }
 
             typechecker
                 .get_mut_table()
@@ -152,10 +168,18 @@ pub fn validate_node<'type_checker>(
             span,
             ..
         } => {
-            visit_type::visit_all_types(node, &mut |ty, _| {
+            if let Some(span) = visit_type::visit_all_types(node, &mut |ty, _| {
                 type_support::check_target_type_support(typechecker, ty);
                 type_checking::check_if_a_type_is_unresolved(typechecker, ty);
-            });
+            }) {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0037,
+                    "Too many depth for a node.".into(),
+                    "You should remove the code nesting".into(),
+                    None,
+                    span,
+                ));
+            }
 
             typechecker
                 .get_mut_type_context()

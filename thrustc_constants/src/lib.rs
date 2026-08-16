@@ -22,8 +22,9 @@ pub const COMPILER_ID: &str = const_format::formatcp!("thrustc version {}", COMP
 pub const COMPILER_GITHUB_URL: &str = "https://github.com/thrustlang/thrustc";
 
 pub const COMPILER_OWN_FILE_EXTENSIONS: [&str; 3] = ["thrust", "tht", "🐦"];
-pub const COMPILER_TOO_MANY_EXPRESSION_DEPTH: u32 = 10 << 10;
-pub const COMPILER_TOO_MANY_TYPE_DEPTH: u32 = 1 << 9;
+pub const COMPILER_TOO_MANY_EXPRESSION_DEPTH: u32 = 1 << 12;
+pub const COMPILER_TOO_MANY_TYPE_DEPTH: u32 = 1 << 12;
+pub const COMPILER_TOO_MANY_BLOCK_DEPTH: u32 = 1 << 12;
 
 pub const SUCCESFUL_CODE: i32 = 0;
 pub const FAILURE_CODE: i32 = 1;

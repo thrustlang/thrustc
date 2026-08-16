@@ -45,6 +45,16 @@ use crate::{
 };
 
 pub fn build_type(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
+    ctx.enter_type()?;
+
+    let ty: Result<Type, ()> = self::build_type_inner(ctx);
+
+    ctx.leave_type();
+
+    ty
+}
+
+fn build_type_inner(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
     match ctx.peek().kind {
         tk_kind if tk_kind.is_type() => {
             let tk: &Token = ctx.advance()?;

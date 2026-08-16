@@ -71,6 +71,8 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
 
 impl<'analyzer> GeneralAnalyzer<'analyzer> {
     pub fn start(&mut self) -> bool {
+        self.get_mut_context().reset_node_depth();
+
         for node in self.ast.iter() {
             if let Err(error) = self.analyze_decl(node) {
                 self.add_error(error);
@@ -108,6 +110,30 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
 
 impl<'analyzer> GeneralAnalyzer<'analyzer> {
     fn analyze_decl(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
+        self.get_mut_context().enter_node();
+
+        if self.get_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+            self.get_mut_context().leave_node();
+
+            self.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many depth for a node.".into(),
+                "You should remove the code nesting".into(),
+                None,
+                node.get_span(),
+            ));
+
+            return Ok(());
+        }
+
+        let result: Result<(), CompilationIssue> = self.analyze_decl_inner(node);
+
+        self.get_mut_context().leave_node();
+
+        result
+    }
+
+    fn analyze_decl_inner(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
         match node {
             Ast::AssemblerFunction {
                 parameters, span, ..
@@ -232,6 +258,30 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
     }
 
     fn analyze_stmt(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
+        self.get_mut_context().enter_node();
+
+        if self.get_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+            self.get_mut_context().leave_node();
+
+            self.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many depth for a node.".into(),
+                "You should remove the code nesting".into(),
+                None,
+                node.get_span(),
+            ));
+
+            return Ok(());
+        }
+
+        let result: Result<(), CompilationIssue> = self.analyze_stmt_inner(node);
+
+        self.get_mut_context().leave_node();
+
+        result
+    }
+
+    fn analyze_stmt_inner(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
         match node {
             Ast::Enum { data, .. } => {
                 {
@@ -456,6 +506,30 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
     }
 
     fn analyze_expr(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
+        self.get_mut_context().enter_node();
+
+        if self.get_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+            self.get_mut_context().leave_node();
+
+            self.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many depth for a node.".into(),
+                "You should remove the code nesting".into(),
+                None,
+                node.get_span(),
+            ));
+
+            return Ok(());
+        }
+
+        let result: Result<(), CompilationIssue> = self.analyze_expr_inner(node);
+
+        self.get_mut_context().leave_node();
+
+        result
+    }
+
+    fn analyze_expr_inner(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
         expressions::validate_node(self, node)
     }
 }

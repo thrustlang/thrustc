@@ -24,6 +24,7 @@ use thrustc_typesystem::Type;
 pub struct TypeCheckerControlContext {
     checking_depth: u32,
     type_cast_depth: u32,
+    node_depth: u32,
 }
 
 impl TypeCheckerControlContext {
@@ -32,6 +33,7 @@ impl TypeCheckerControlContext {
         Self {
             checking_depth: 0,
             type_cast_depth: 0,
+            node_depth: 0,
         }
     }
 }
@@ -56,6 +58,21 @@ impl TypeCheckerControlContext {
     pub fn reset_type_cast_depth(&mut self) {
         self.type_cast_depth = 0;
     }
+
+    #[inline]
+    pub fn enter_node(&mut self) {
+        self.node_depth = self.node_depth.saturating_add(1);
+    }
+
+    #[inline]
+    pub fn leave_node(&mut self) {
+        self.node_depth = self.node_depth.saturating_sub(1);
+    }
+
+    #[inline]
+    pub fn reset_node_depth(&mut self) {
+        self.node_depth = 0;
+    }
 }
 
 impl TypeCheckerControlContext {
@@ -67,6 +84,11 @@ impl TypeCheckerControlContext {
     #[inline]
     pub fn get_type_cast_depth(&self) -> u32 {
         self.type_cast_depth
+    }
+
+    #[inline]
+    pub fn get_node_depth(&self) -> u32 {
+        self.node_depth
     }
 }
 

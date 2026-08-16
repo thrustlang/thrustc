@@ -41,6 +41,7 @@ pub struct Linter<'linter> {
 
     warnings: Vec<CompilationIssue>,
     bugs: Vec<CompilationIssue>,
+    errors: Vec<CompilationIssue>,
 
     options: &'linter CompilerOptions,
     diagnostician: Diagnostician,
@@ -48,6 +49,8 @@ pub struct Linter<'linter> {
     symbols: LinterSymbolsTable<'linter>,
 
     noreturn_functions: ahash::AHashSet<&'linter str>,
+
+    node_depth: u32,
 }
 
 impl<'linter> Linter<'linter> {
@@ -61,6 +64,7 @@ impl<'linter> Linter<'linter> {
             ast,
             warnings: Vec::with_capacity(u8::MAX as usize),
             bugs: Vec::with_capacity(u8::MAX as usize),
+            errors: Vec::with_capacity(u8::MAX as usize),
 
             options,
             diagnostician: Diagnostician::new(file, options),
@@ -68,6 +72,8 @@ impl<'linter> Linter<'linter> {
             symbols: LinterSymbolsTable::new(),
 
             noreturn_functions: ahash::AHashSet::new(),
+
+            node_depth: 0,
         }
     }
 }
@@ -76,11 +82,18 @@ impl<'linter> Linter<'linter> {
     pub fn start(&mut self) {
         self.declare_forward();
 
+        self.reset_node_depth();
+
         for node in self.ast.iter() {
             self.analyze_decl(node);
         }
 
         self.generate_warnings();
+
+        for error in self.errors.iter() {
+            self.diagnostician
+                .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
+        }
 
         for bug in self.bugs.iter() {
             self.diagnostician
@@ -158,6 +171,28 @@ impl<'linter> Linter<'linter> {
     }
 
     fn analyze_stmt(&mut self, node: &'linter Ast) {
+        self.enter_node();
+
+        if self.too_deep() {
+            self.leave_node();
+
+            self.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many depth for a node.".into(),
+                "You should remove the code nesting".into(),
+                None,
+                node.get_span(),
+            ));
+
+            return;
+        }
+
+        self.analyze_stmt_inner(node);
+
+        self.leave_node();
+    }
+
+    fn analyze_stmt_inner(&mut self, node: &'linter Ast) {
         self.analyze_attributes(node);
 
         match node {
@@ -428,7 +463,25 @@ impl<'linter> Linter<'linter> {
     }
 
     fn analyze_expr(&mut self, expr: &'linter Ast) {
+        self.enter_node();
+
+        if self.too_deep() {
+            self.leave_node();
+
+            self.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many depth for a node.".into(),
+                "You should remove the code nesting".into(),
+                None,
+                expr.get_span(),
+            ));
+
+            return;
+        }
+
         expressions::analyze(self, expr);
+
+        self.leave_node();
     }
 }
 
@@ -952,8 +1005,34 @@ impl Linter<'_> {
 
 impl Linter<'_> {
     #[inline]
+    fn enter_node(&mut self) {
+        self.node_depth = self.node_depth.saturating_add(1);
+    }
+
+    #[inline]
+    fn leave_node(&mut self) {
+        self.node_depth = self.node_depth.saturating_sub(1);
+    }
+
+    #[inline]
+    fn reset_node_depth(&mut self) {
+        self.node_depth = 0;
+    }
+
+    #[inline]
+    fn too_deep(&self) -> bool {
+        self.node_depth > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH
+    }
+}
+
+impl Linter<'_> {
+    #[inline]
     fn add_bug(&mut self, bug: CompilationIssue) {
         self.bugs.push(bug);
+    }
+
+    fn add_error(&mut self, error: CompilationIssue) {
+        self.errors.push(error);
     }
 }
 

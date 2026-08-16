@@ -21,6 +21,7 @@
 pub struct ScoperContext {
     loop_depth: u32,
     inside_function: bool,
+    node_depth: u32,
 }
 
 impl ScoperContext {
@@ -29,6 +30,7 @@ impl ScoperContext {
         ScoperContext {
             loop_depth: 0,
             inside_function: false,
+            node_depth: 0,
         }
     }
 }
@@ -50,6 +52,21 @@ impl ScoperContext {
     }
 
     #[inline]
+    pub fn enter_node(&mut self) {
+        self.node_depth = self.node_depth.saturating_add(1);
+    }
+
+    #[inline]
+    pub fn leave_node(&mut self) {
+        self.node_depth = self.node_depth.saturating_sub(1);
+    }
+
+    #[inline]
+    pub fn reset_node_depth(&mut self) {
+        self.node_depth = 0;
+    }
+
+    #[inline]
     pub fn leave_function(&mut self) {
         self.inside_function = false;
     }
@@ -64,5 +81,10 @@ impl ScoperContext {
     #[inline]
     pub fn is_inside_function(&self) -> bool {
         self.inside_function
+    }
+
+    #[inline]
+    pub fn get_node_depth(&self) -> u32 {
+        self.node_depth
     }
 }

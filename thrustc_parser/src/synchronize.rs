@@ -60,6 +60,9 @@ pub const SYNC_DECLARATIONS: [TokenType; 11] = [
 impl<'parser> ParserContext<'parser> {
     pub fn synchronize(&mut self) {
         self.get_mut_control_context().reset_position();
+        self.get_mut_control_context().reset_expression_depth();
+        self.get_mut_control_context().reset_type_depth();
+        self.get_mut_control_context().reset_block_depth();
 
         if let Some(position) = self.get_control_context().get_sync_position() {
             match position {

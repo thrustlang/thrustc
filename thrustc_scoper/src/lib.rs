@@ -62,6 +62,8 @@ impl<'scoper> Scoper<'scoper> {
 
 impl<'scoper> Scoper<'scoper> {
     pub fn start(&mut self) -> bool {
+        self.get_mut_context().reset_node_depth();
+
         for node in self.ast.iter() {
             self.analyze_global_node(node);
         }
@@ -154,6 +156,28 @@ impl<'scoper> Scoper<'scoper> {
     }
 
     fn analyze_local_node(&mut self, node: &Ast<'scoper>) {
+        self.get_mut_context().enter_node();
+
+        if self.get_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+            self.get_mut_context().leave_node();
+
+            self.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many depth for a node.".into(),
+                "You should remove the code nesting".into(),
+                None,
+                node.get_span(),
+            ));
+
+            return;
+        }
+
+        self.analyze_local_node_inner(node);
+
+        self.get_mut_context().leave_node();
+    }
+
+    fn analyze_local_node_inner(&mut self, node: &Ast<'scoper>) {
         if node.is_function_keyword() {
             self.add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0016,

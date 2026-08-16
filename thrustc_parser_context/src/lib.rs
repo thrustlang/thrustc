@@ -49,6 +49,8 @@ pub struct ControlContext {
     position: Position,
     synchronous_position: Vec<SynchronizationPosition>,
     expression_depth: u32,
+    type_depth: u32,
+    block_depth: u32,
 }
 
 impl ControlContext {
@@ -58,6 +60,8 @@ impl ControlContext {
             position: Position::NoRelevant,
             synchronous_position: Vec::with_capacity(u8::MAX as usize),
             expression_depth: 0,
+            type_depth: 0,
+            block_depth: 0,
         }
     }
 }
@@ -97,6 +101,41 @@ impl ControlContext {
     pub fn decrease_expression_depth(&mut self) {
         self.expression_depth = self.expression_depth.saturating_sub(1);
     }
+
+    #[inline]
+    pub fn reset_expression_depth(&mut self) {
+        self.expression_depth = 0;
+    }
+
+    #[inline]
+    pub fn increase_type_depth(&mut self) {
+        self.type_depth = self.type_depth.saturating_add(1);
+    }
+
+    #[inline]
+    pub fn decrease_type_depth(&mut self) {
+        self.type_depth = self.type_depth.saturating_sub(1);
+    }
+
+    #[inline]
+    pub fn reset_type_depth(&mut self) {
+        self.type_depth = 0;
+    }
+
+    #[inline]
+    pub fn increase_block_depth(&mut self) {
+        self.block_depth = self.block_depth.saturating_add(1);
+    }
+
+    #[inline]
+    pub fn decrease_block_depth(&mut self) {
+        self.block_depth = self.block_depth.saturating_sub(1);
+    }
+
+    #[inline]
+    pub fn reset_block_depth(&mut self) {
+        self.block_depth = 0;
+    }
 }
 
 impl ControlContext {
@@ -108,6 +147,16 @@ impl ControlContext {
     #[inline]
     pub fn get_expression_depth(&self) -> u32 {
         self.expression_depth
+    }
+
+    #[inline]
+    pub fn get_type_depth(&self) -> u32 {
+        self.type_depth
+    }
+
+    #[inline]
+    pub fn get_block_depth(&self) -> u32 {
+        self.block_depth
     }
 
     #[inline]

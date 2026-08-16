@@ -9,6 +9,7 @@ rust-version.workspace = true
 [dependencies]
 ahash = "0.8.11"
 
+thrustc_constants = { path = "../thrustc_constants" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_ast = { path = "../thrustc_ast" }
 thrustc_options = { path = "../thrustc_options" }

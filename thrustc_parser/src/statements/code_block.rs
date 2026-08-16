@@ -29,6 +29,8 @@ use crate::{ParserContext, statements};
 pub fn parse_code_block_stmt<'parser>(
     ctx: &mut ParserContext<'parser>,
 ) -> Result<Ast<'parser>, CompilationIssue> {
+    ctx.enter_block()?;
+
     let block_tk: &Token = ctx.consume(
         TokenType::LBrace,
         CompilationIssueCode::E0001,
@@ -56,6 +58,8 @@ pub fn parse_code_block_stmt<'parser>(
     ctx.get_mut_symbols().end_scope();
     ctx.end_scope();
 
+    ctx.leave_block();
+
     Ok(Ast::Block {
         nodes,
         post,
@@ -68,6 +72,8 @@ pub fn parse_code_block_stmt<'parser>(
 pub fn parse_code_block_without_start_stmt<'parser>(
     ctx: &mut ParserContext<'parser>,
 ) -> Result<Ast<'parser>, CompilationIssue> {
+    ctx.enter_block()?;
+
     ctx.begin_scope();
     ctx.get_mut_symbols().begin_scope();
 
@@ -94,6 +100,8 @@ pub fn parse_code_block_without_start_stmt<'parser>(
 
     ctx.get_mut_symbols().end_scope();
     ctx.end_scope();
+
+    ctx.leave_block();
 
     Ok(Ast::Block {
         nodes,

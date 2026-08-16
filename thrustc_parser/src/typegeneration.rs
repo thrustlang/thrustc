@@ -56,6 +56,19 @@ pub fn build_type<'parser>(
     ctx: &mut ParserContext<'parser>,
     parse_expr: bool,
 ) -> Result<Type, CompilationIssue> {
+    ctx.enter_type()?;
+
+    let ty: Result<Type, CompilationIssue> = self::build_type_inner(ctx, parse_expr);
+
+    ctx.leave_type();
+
+    ty
+}
+
+fn build_type_inner<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    parse_expr: bool,
+) -> Result<Type, CompilationIssue> {
     match ctx.peek().get_type() {
         tk_kind if tk_kind.is_type() => {
             let tk: &Token = ctx.advance()?;

@@ -153,19 +153,35 @@ impl<'type_checker> TypeChecker<'type_checker> {
             | Ast::Function { .. } => toplevel::functions::validate_node(self, node),
 
             Ast::Struct { .. } | Ast::CustomType { .. } => {
-                visit_type::visit_all_types(node, &mut |ty, _| {
+                if let Some(span) = visit_type::visit_all_types(node, &mut |ty, _| {
                     type_support::check_target_type_support(self, ty);
                     type_checking::check_if_a_type_is_unresolved(self, ty);
-                });
+                }) {
+                    self.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0037,
+                        "Too many depth for a node.".into(),
+                        "You should remove the code nesting".into(),
+                        None,
+                        span,
+                    ));
+                }
 
                 Ok(())
             }
 
             Ast::Enum { data, .. } => {
-                visit_type::visit_all_types(node, &mut |ty, _| {
+                if let Some(span) = visit_type::visit_all_types(node, &mut |ty, _| {
                     type_support::check_target_type_support(self, ty);
                     type_checking::check_if_a_type_is_unresolved(self, ty);
-                });
+                }) {
+                    self.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0037,
+                        "Too many depth for a node.".into(),
+                        "You should remove the code nesting".into(),
+                        None,
+                        span,
+                    ));
+                }
 
                 {
                     for (_, target_type, expr) in data.iter() {
@@ -203,10 +219,18 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 span,
                 ..
             } => {
-                visit_type::visit_all_types(node, &mut |ty, _| {
+                if let Some(span) = visit_type::visit_all_types(node, &mut |ty, _| {
                     type_support::check_target_type_support(self, ty);
                     type_checking::check_if_a_type_is_unresolved(self, ty);
-                });
+                }) {
+                    self.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0037,
+                        "Too many depth for a node.".into(),
+                        "You should remove the code nesting".into(),
+                        None,
+                        span,
+                    ));
+                }
 
                 if static_type.contains_void_type() || static_type.is_void_type() {
                     self.add_error_report(CompilationIssue::Error(
@@ -256,10 +280,18 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 span,
                 ..
             } => {
-                visit_type::visit_all_types(node, &mut |ty, _| {
+                if let Some(span) = visit_type::visit_all_types(node, &mut |ty, _| {
                     type_support::check_target_type_support(self, ty);
                     type_checking::check_if_a_type_is_unresolved(self, ty);
-                });
+                }) {
+                    self.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0037,
+                        "Too many depth for a node.".into(),
+                        "You should remove the code nesting".into(),
+                        None,
+                        span,
+                    ));
+                }
 
                 if const_type.contains_void_type() || const_type.is_void_type() {
                     self.add_error_report(CompilationIssue::Error(
@@ -305,6 +337,30 @@ impl<'type_checker> TypeChecker<'type_checker> {
     }
 
     fn analyze_stmt(&mut self, node: &'type_checker Ast) -> Result<(), CompilationIssue> {
+        self.get_mut_control_context().enter_node();
+
+        if self.get_control_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+            self.get_mut_control_context().leave_node();
+
+            self.add_error_report(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many depth for a node.".into(),
+                "You should remove the code nesting".into(),
+                None,
+                node.get_span(),
+            ));
+
+            return Ok(());
+        }
+
+        let result: Result<(), CompilationIssue> = self.analyze_stmt_inner(node);
+
+        self.get_mut_control_context().leave_node();
+
+        result
+    }
+
+    fn analyze_stmt_inner(&mut self, node: &'type_checker Ast) -> Result<(), CompilationIssue> {
         match node {
             Ast::CustomType { .. }
             | Ast::Struct { .. }
@@ -777,7 +833,27 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
     #[inline]
     fn analyze_expr(&mut self, node: &'type_checker Ast) -> Result<(), CompilationIssue> {
-        expressions::validate_node(self, node)
+        self.get_mut_control_context().enter_node();
+
+        if self.get_control_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+            self.get_mut_control_context().leave_node();
+
+            self.add_error_report(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many depth for a node.".into(),
+                "You should remove the code nesting".into(),
+                None,
+                node.get_span(),
+            ));
+
+            return Ok(());
+        }
+
+        let result: Result<(), CompilationIssue> = expressions::validate_node(self, node);
+
+        self.get_mut_control_context().leave_node();
+
+        result
     }
 }
 

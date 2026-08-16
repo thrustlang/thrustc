@@ -22,8 +22,8 @@ use thrustc_ast::{
     ast_builtins::AstBuiltin,
     traits::{AstCodeLocation, AstGetType, AstMemoryExtensions, AstStandardExtensions},
 };
-use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_typesystem::{
     Type,
     traits::{TypeExtensions, TypePointerExtensions},
@@ -56,20 +56,16 @@ pub fn validate_node<'analyzer>(
         }
 
         Ast::FixedArray { items, .. } => {
-            {
-                for node in items.iter() {
-                    analyzer.analyze_expr(node)?;
-                }
+            for node in items.iter() {
+                analyzer.analyze_expr(node)?;
             }
 
             Ok(())
         }
 
         Ast::Array { items, .. } => {
-            {
-                for node in items.iter() {
-                    analyzer.analyze_expr(node)?;
-                }
+            for node in items.iter() {
+                analyzer.analyze_expr(node)?;
             }
 
             Ok(())
