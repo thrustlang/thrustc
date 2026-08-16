@@ -53,9 +53,24 @@ pub fn parse_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
         module_path = current_dir.join(import_str);
     }
 
+    let mut alias: Option<String> = None;
+
+    if parser.check(TokenType::As) {
+        parser.consume(TokenType::As)?;
+
+        let alias_tk: &Token = parser.consume(TokenType::Identifier)?;
+        alias = Some(alias_tk.get_lexeme().to_string());
+    }
+
     parser.consume(TokenType::SemiColon)?;
 
-    if module_path == current_dir {
+    let mut current_file_path: PathBuf = current_path.clone();
+
+    if let Ok(canonicalized_current) = current_path.canonicalize() {
+        current_file_path = canonicalized_current;
+    }
+
+    if module_path == current_file_path {
         parser.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0035,
             "The module cannot be imported itself.".into(),
@@ -164,9 +179,16 @@ pub fn parse_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
         options,
         &file,
         parser.get_global_visited_modules(),
+        parser.get_registry(),
     );
 
-    let submodule: Module = subparser.parse()?;
+    let mut submodule: Module = subparser.parse()?;
+
+    if let Some(alias) = alias {
+        submodule.set_alias(alias);
+    }
+
+    parser.get_registry().borrow_mut().register(&submodule);
 
     parser.get_mut_module().add_submodule(submodule);
 

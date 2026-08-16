@@ -22,8 +22,8 @@ use thrustc_ast::{
     traits::{AstGetType, AstStandardExtensions},
 };
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
@@ -40,7 +40,7 @@ use thrustc_typesystem::{
 
 use crate::{
     parser::ModuleParser,
-    signatures::{Signature, Symbol, Variant},
+    signatures::{Signature, Variant},
     submodule_parsing::{attributes, expressions},
 };
 
@@ -106,29 +106,75 @@ pub fn build_type(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
 
             let name: String = identifier_tk.get_lexeme().to_string();
 
-            let symbol: Option<&crate::signatures::Symbol> =
-                ctx.get_module().search_symbol(name, Variant::CustomType);
+            if ctx.check(TokenType::ColonColon) {
+                let mut access: Vec<String> = vec![name];
 
-            match symbol {
-                Some(symbol) => {
-                    if let Symbol {
-                        signature: Signature::CustomType { kind, .. },
-                        variant: Variant::CustomType,
-                        ..
-                    } = symbol
-                    {
-                        Ok(kind.clone())
-                    } else {
-                        Err(())
+                loop {
+                    ctx.consume(TokenType::ColonColon)?;
+
+                    let part_tk: &Token = ctx.consume(TokenType::Identifier)?;
+                    let part: String = part_tk.get_lexeme().to_string();
+
+                    access.push(part);
+
+                    if !ctx.check(TokenType::ColonColon) {
+                        break;
                     }
                 }
 
-                None => Err(()),
+                return self::resolve_qualified_type(ctx, &access);
             }
+
+            if let Some(symbol) = ctx.get_module().search_symbol(name.clone(), Variant::CustomType)
+            {
+                if let Signature::CustomType { kind, .. } = &symbol.signature {
+                    return Ok(kind.clone());
+                }
+            }
+
+            if let Some(symbol) = ctx.get_module().search_symbol(name, Variant::Struct) {
+                if let Signature::Struct { kind, .. } = &symbol.signature {
+                    return Ok(kind.clone());
+                }
+            }
+
+            Err(())
         }
 
         _ => Err(()),
     }
+}
+
+fn resolve_qualified_type(ctx: &mut ModuleParser<'_>, access: &[String]) -> Result<Type, ()> {
+    let module_name: &String = access.first().ok_or(())?;
+    let type_name: &String = access.last().ok_or(())?;
+
+    let registry = ctx.get_registry();
+    let registry = registry.borrow();
+
+    let module: std::rc::Rc<crate::module::Module> = registry.find(module_name).ok_or(())?;
+
+    let mut current: &crate::module::Module = &module;
+
+    let mid: &[String] = &access[1..access.len().saturating_sub(1)];
+
+    for segment in mid.iter() {
+        current = current.find_submodule(vec![segment.clone()]).ok_or(())?;
+    }
+
+    if let Some(symbol) = current.search_symbol(type_name.clone(), Variant::CustomType) {
+        if let Signature::CustomType { kind, .. } = &symbol.signature {
+            return Ok(kind.clone());
+        }
+    }
+
+    if let Some(symbol) = current.search_symbol(type_name.clone(), Variant::Struct) {
+        if let Signature::Struct { kind, .. } = &symbol.signature {
+            return Ok(kind.clone());
+        }
+    }
+
+    Err(())
 }
 
 fn parse_anonymous_function_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> {
@@ -371,6 +417,7 @@ fn parse_pointer_type(
             ctx.consume(TokenType::Comma)?;
 
             let memory_address_expr: Ast<'_> = expressions::parse_expr(ctx)?;
+
             let memory_address_type: &Type =
                 memory_address_expr.get_value_type().map_err(|_| ())?;
 

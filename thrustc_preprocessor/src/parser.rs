@@ -37,6 +37,7 @@ pub struct ModuleParser<'module_parser> {
     errors: Vec<CompilationIssue>,
     warnings: Vec<CompilationIssue>,
     visited: HashSet<PathBuf>,
+    registry: crate::registry::SharedModuleRegistry,
 
     options: &'module_parser CompilerOptions,
     diagnostician: Diagnostician,
@@ -51,6 +52,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
         options: &'module_parser CompilerOptions,
         file: &CompilationUnit,
         visited: HashSet<PathBuf>,
+        registry: crate::registry::SharedModuleRegistry,
     ) -> Self {
         Self {
             module: Module::new(name, file.get_path().to_path_buf()),
@@ -59,6 +61,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
             errors: Vec::with_capacity(u8::MAX as usize),
             warnings: Vec::with_capacity(u8::MAX as usize),
             visited,
+            registry,
 
             diagnostician: Diagnostician::new(file, options),
             options,
@@ -70,6 +73,12 @@ impl<'module_parser> ModuleParser<'module_parser> {
 
 impl<'module_parser> ModuleParser<'module_parser> {
     pub fn parse(mut self) -> Result<Module, ()> {
+        while !self.is_eof() {
+            let _ = self.forward_declare();
+        }
+
+        self.reset_position();
+
         while !self.is_eof() {
             let _ = self.start();
         }
@@ -98,16 +107,75 @@ impl<'module_parser> ModuleParser<'module_parser> {
 
 impl<'module_parser> ModuleParser<'module_parser> {
     pub fn start(&mut self) -> Result<(), ()> {
-        if self.check(TokenType::Import) {
-            submodule_parsing::import::parse_import(self)?;
-        } else if self.check(TokenType::Const) {
-            let symbol: Symbol = submodule_parsing::constant::parse_constant(self)?;
-            self.module.add_symbol(symbol);
-        } else if self.check(TokenType::Type) {
-            let symbol: Symbol = submodule_parsing::customtype::parse_type(self)?;
-            self.module.add_symbol(symbol);
+        match self.peek().get_type() {
+            TokenType::Fn => {
+                let symbol: Symbol = submodule_parsing::function::parse_function(self)?;
+                self.module.add_symbol(symbol);
+            }
+            TokenType::Static => {
+                let symbol: Symbol = submodule_parsing::r#static::parse_static(self)?;
+                self.module.add_symbol(symbol);
+            }
+            TokenType::Const => {
+                let symbol: Symbol = submodule_parsing::constant::parse_constant(self)?;
+                self.module.add_symbol(symbol);
+            }
+            _ => {
+                let _ = self.advance();
+            }
+        }
+
+        Ok(())
+    }
+
+    fn forward_declare(&mut self) -> Result<(), ()> {
+        match self.peek().get_type() {
+            TokenType::Import => {
+                submodule_parsing::import::parse_import(self)?;
+            }
+            TokenType::Type => {
+                let symbol: Symbol = submodule_parsing::customtype::parse_type(self)?;
+                self.module.add_symbol(symbol);
+            }
+            TokenType::Struct => {
+                let symbol: Symbol = submodule_parsing::structure::parse_structure(self)?;
+                self.module.add_symbol(symbol);
+            }
+            TokenType::Fn => {
+                self.skip_signature_or_body()?;
+            }
+            TokenType::Static | TokenType::Const => {
+                self.advance_until(TokenType::SemiColon)?;
+            }
+            _ => {
+                let _ = self.advance();
+            }
+        }
+
+        Ok(())
+    }
+
+    fn skip_signature_or_body(&mut self) -> Result<(), ()> {
+        while !self.check(TokenType::LBrace) && !self.check(TokenType::SemiColon) {
+            self.only_advance()?;
+        }
+
+        if self.check(TokenType::LBrace) {
+            self.only_advance()?;
+
+            let mut depth: usize = 1;
+
+            while depth > 0 {
+                if self.check(TokenType::RBrace) {
+                    depth = depth.saturating_sub(1);
+                } else if self.check(TokenType::LBrace) {
+                    depth = depth.saturating_add(1);
+                }
+
+                self.only_advance()?;
+            }
         } else {
-            let _ = self.advance();
+            self.only_advance()?;
         }
 
         Ok(())
@@ -274,6 +342,11 @@ impl ModuleParser<'_> {
 
 impl ModuleParser<'_> {
     #[inline]
+    pub fn reset_position(&mut self) {
+        self.current = 0;
+    }
+
+    #[inline]
     pub fn only_advance(&mut self) -> Result<(), ()> {
         if !self.is_eof() {
             self.current = self.current.saturating_add(1);
@@ -334,5 +407,10 @@ impl<'module_parser> ModuleParser<'module_parser> {
     #[inline]
     pub fn get_global_visited_modules(&self) -> HashSet<PathBuf> {
         self.visited.clone()
+    }
+
+    #[inline]
+    pub fn get_registry(&self) -> crate::registry::SharedModuleRegistry {
+        self.registry.clone()
     }
 }

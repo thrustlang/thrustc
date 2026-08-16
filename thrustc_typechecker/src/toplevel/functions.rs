@@ -22,6 +22,7 @@ use thrustc_ast::{
     traits::{AstCodeBlockEntensions, AstCodeLocation, AstGetType},
 };
 
+use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_typesystem::{
@@ -110,6 +111,16 @@ pub fn validate_node<'type_checker>(
                 ));
             }
 
+            if attributes.has_noreturn_attribute() && !return_type.is_void_type() {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    "@noReturn intrinsic must have a void return type.".into(),
+                    "A function that never returns cannot produce a value.".into(),
+                    None,
+                    return_type.get_span(),
+                ));
+            }
+
             {
                 for node in parameters.iter() {
                     let type_: &Type = node.get_any_type();
@@ -182,8 +193,31 @@ pub fn validate_node<'type_checker>(
                 ));
             }
 
+            let has_noreturn_attribute: bool = attributes.has_noreturn_attribute();
+
+            if has_noreturn_attribute && !return_type.is_void_type() {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    "@noReturn function must have a void return type.".into(),
+                    "A function that never returns cannot produce a value.".into(),
+                    None,
+                    return_type.get_span(),
+                ));
+            }
+
             if let Some(body) = body {
                 typechecker.analyze_stmt(body)?;
+
+                if has_noreturn_attribute && !body.has_terminator() {
+                    typechecker.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0019,
+                        "@noReturn function must always terminate and never fall off the end.".into(),
+                        "A noreturn function must end with a return, an unreachable, or a terminator."
+                            .into(),
+                        None,
+                        *span,
+                    ));
+                }
 
                 if !body.has_terminator() && !return_type.is_void_type() {
                     typechecker.add_error_report(CompilationIssue::Error(

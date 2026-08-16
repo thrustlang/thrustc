@@ -16,6 +16,7 @@ thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_backends = { path = "../thrustc_backends" }
 thrustc_parser_context = { path = "../thrustc_parser_context" }
 thrustc_parser_table = { path = "../thrustc_parser_table" }
+thrustc_parser_external_table = { path = "../thrustc_parser_external_table" }
 thrustc_preprocessor = { path = "../thrustc_preprocessor" }
 thrustc_entities = { path = "../thrustc_entities" }
 thrustc_ast_modificators = { path = "../thrustc_ast_modificators" }

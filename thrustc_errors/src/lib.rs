@@ -111,6 +111,16 @@ lazy_static::lazy_static! {
         explanations.insert(CompilationIssueCode::W0015, r#""#);
         explanations.insert(CompilationIssueCode::W0016, r#""#);
         explanations.insert(CompilationIssueCode::W0017, r#""#);
+        explanations.insert(CompilationIssueCode::W0020, r#""#);
+        explanations.insert(CompilationIssueCode::W0021, r#""#);
+        explanations.insert(CompilationIssueCode::W0022, r#""#);
+        explanations.insert(CompilationIssueCode::W0023, r#""#);
+        explanations.insert(CompilationIssueCode::W0024, r#""#);
+        explanations.insert(CompilationIssueCode::W0025, r#""#);
+        explanations.insert(CompilationIssueCode::W0026, r#""#);
+        explanations.insert(CompilationIssueCode::W0027, r#""#);
+        explanations.insert(CompilationIssueCode::W0028, r#""#);
+        explanations.insert(CompilationIssueCode::W0029, r#""#);
 
         explanations
     };
@@ -158,6 +168,7 @@ pub enum CompilationIssueCode {
     E0039, // Unsupported Native Type
     E0040, // Not Found
     E0041, // Unresolved Type
+    E0042, // Type could not be determined
 
     W0001, // Irrelevant Attribute
     W0002, // Unknown Call Convention
@@ -177,6 +188,16 @@ pub enum CompilationIssueCode {
     W0017, // Function not used
     W0018, // Circular Import
     W0019, // Unstable Feature
+    W0020, // Mutable but never mutated
+    W0021, // Name shadows an outer declaration
+    W0022, // Self assignment
+    W0023, // Empty block
+    W0024, // Non-standard naming
+    W0025, // Possible infinite loop
+    W0026, // Tautological comparison
+    W0027, // Dead store
+    W0028, // Statement with no effect
+    W0029, // Condition always constant
 }
 
 #[inline]
@@ -298,6 +319,9 @@ impl CompilationIssueCode {
             CompilationIssueCode::E0041 => {
                 format!("UNRESOLVED TYPE - {}", "E0041".bright_red())
             }
+            CompilationIssueCode::E0042 => {
+                format!("TYPE COULD NOT BE DETERMINED - {}", "E0042".bright_red())
+            }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())
             }
@@ -341,6 +365,36 @@ impl CompilationIssueCode {
             }
             CompilationIssueCode::W0019 => {
                 format!("UNSTABLE FEATURE - {}", "W0019".bright_yellow())
+            }
+            CompilationIssueCode::W0020 => {
+                format!("MUTABLE BUT NEVER MUTATED - {}", "W0020".bright_yellow())
+            }
+            CompilationIssueCode::W0021 => {
+                format!("NAME SHADOWS OUTER DECLARATION - {}", "W0021".bright_yellow())
+            }
+            CompilationIssueCode::W0022 => {
+                format!("SELF ASSIGNMENT - {}", "W0022".bright_yellow())
+            }
+            CompilationIssueCode::W0023 => {
+                format!("EMPTY BLOCK - {}", "W0023".bright_yellow())
+            }
+            CompilationIssueCode::W0024 => {
+                format!("NON-STANDARD NAMING - {}", "W0024".bright_yellow())
+            }
+            CompilationIssueCode::W0025 => {
+                format!("POSSIBLE INFINITE LOOP - {}", "W0025".bright_yellow())
+            }
+            CompilationIssueCode::W0026 => {
+                format!("TAUTOLOGICAL COMPARISON - {}", "W0026".bright_yellow())
+            }
+            CompilationIssueCode::W0027 => {
+                format!("DEAD STORE - {}", "W0027".bright_yellow())
+            }
+            CompilationIssueCode::W0028 => {
+                format!("STATEMENT WITH NO EFFECT - {}", "W0028".bright_yellow())
+            }
+            CompilationIssueCode::W0029 => {
+                format!("CONDITION ALWAYS CONSTANT - {}", "W0029".bright_yellow())
             }
         }
     }
@@ -397,6 +451,7 @@ impl CompilationIssueCode {
             "E0031" => Ok(CompilationIssueCode::E0031),
             "E0032" => Ok(CompilationIssueCode::E0032),
             "E0033" => Ok(CompilationIssueCode::E0033),
+            "E0042" => Ok(CompilationIssueCode::E0042),
 
             "W0001" => Ok(CompilationIssueCode::W0001),
             "W0002" => Ok(CompilationIssueCode::W0002),
@@ -414,6 +469,16 @@ impl CompilationIssueCode {
             "W0015" => Ok(CompilationIssueCode::W0015),
             "W0016" => Ok(CompilationIssueCode::W0016),
             "W0017" => Ok(CompilationIssueCode::W0017),
+            "W0020" => Ok(CompilationIssueCode::W0020),
+            "W0021" => Ok(CompilationIssueCode::W0021),
+            "W0022" => Ok(CompilationIssueCode::W0022),
+            "W0023" => Ok(CompilationIssueCode::W0023),
+            "W0024" => Ok(CompilationIssueCode::W0024),
+            "W0025" => Ok(CompilationIssueCode::W0025),
+            "W0026" => Ok(CompilationIssueCode::W0026),
+            "W0027" => Ok(CompilationIssueCode::W0027),
+            "W0028" => Ok(CompilationIssueCode::W0028),
+            "W0029" => Ok(CompilationIssueCode::W0029),
 
             _ => Err(()),
         }

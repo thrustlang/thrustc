@@ -23,9 +23,10 @@ use uuid::Uuid;
 
 use crate::signatures::{Symbol, Variant};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Module {
     base_name: String,
+    alias: Option<String>,
     symbols: Vec<Symbol>,
     submodules: Vec<Module>,
     path: PathBuf,
@@ -36,11 +37,17 @@ impl Module {
     pub fn new(base_name: String, path: PathBuf) -> Self {
         Module {
             base_name,
+            alias: None,
             symbols: Vec::with_capacity(u8::MAX as usize),
             submodules: Vec::with_capacity(u8::MAX as usize),
             path,
             unique_id: Uuid::new_v4(),
         }
+    }
+
+    #[inline]
+    pub fn set_alias(&mut self, alias: String) {
+        self.alias = Some(alias);
     }
 }
 
@@ -60,6 +67,16 @@ impl Module {
     #[inline]
     pub fn get_path(&self) -> &Path {
         &self.path
+    }
+
+    #[inline]
+    pub fn get_symbols(&self) -> &[Symbol] {
+        &self.symbols
+    }
+
+    #[inline]
+    pub fn get_submodules(&self) -> &[Module] {
+        &self.submodules
     }
 }
 
@@ -86,7 +103,7 @@ impl Module {
             let mut found: bool = false;
 
             for submodule in &current_module.submodules {
-                if submodule.get_name() == name {
+                if submodule.matches_name(name) {
                     current_module = submodule;
                     found = true;
                     break;
@@ -106,6 +123,16 @@ impl Module {
     #[inline]
     pub fn get_name(&self) -> &str {
         &self.base_name
+    }
+
+    #[inline]
+    pub fn get_alias(&self) -> Option<&str> {
+        self.alias.as_deref()
+    }
+
+    #[inline]
+    pub fn matches_name(&self, name: &str) -> bool {
+        self.base_name == name || self.alias.as_deref() == Some(name)
     }
 
     #[inline]

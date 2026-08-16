@@ -18,11 +18,12 @@
 */
 
 #![allow(clippy::if_same_then_else)]
+#![allow(unused_assignments)]
 
 use thrustc_ast::{Ast, NodeId, traits::AstGetType};
+use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_context::traits::PositionExtensions;
-use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{TokenType, traits::TokenTypeBuiltinExtensions};
 use thrustc_typesystem::{
@@ -250,7 +251,7 @@ pub fn lower_precedence<'parser>(
         TokenType::Identifier => {
             let tk: &Token = ctx.advance()?;
 
-            let name: &str = tk.get_lexeme();
+            let name: &'parser str = tk.get_lexeme();
             let span: Span = tk.get_span();
 
             if ctx.match_token(TokenType::Arrow)? {
@@ -258,7 +259,31 @@ pub fn lower_precedence<'parser>(
             } else if ctx.match_token(TokenType::LParen)? {
                 call::build_call(ctx, name, span)?
             } else if ctx.match_token(TokenType::ColonColon)? {
-                todo!()
+                let mut access: Vec<String> = Vec::with_capacity(4);
+
+                access.push(name.to_string());
+
+                let mut symbol_span: Span = span;
+
+                let symbol: &'parser str = loop {
+                    let part_tk: &Token = ctx.consume(
+                        TokenType::Identifier,
+                        CompilationIssueCode::E0001,
+                        "Expected identifier after '::'.".into(),
+                    )?;
+
+                    let part: &'parser str = part_tk.get_lexeme();
+
+                    symbol_span = part_tk.get_span();
+
+                    if ctx.match_token(TokenType::ColonColon)? {
+                        access.push(part.to_string());
+                    } else {
+                        break part;
+                    }
+                };
+
+                crate::module_import::build_qualified_expression(ctx, &access, symbol, symbol_span)?
             } else {
                 reference::build_reference(ctx, name, span)?
             }

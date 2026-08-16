@@ -200,6 +200,7 @@ impl TokenTypeAttributesExtensions for TokenType {
                 | TokenType::AsmSyntax
                 | TokenType::Packed
                 | TokenType::NoUnwind
+                | TokenType::NoReturn
                 | TokenType::OptFuzzing
                 | TokenType::Constructor
                 | TokenType::Destructor
@@ -320,6 +321,7 @@ impl std::fmt::Display for TokenType {
             TokenType::Align => write!(f, "@align"),
             TokenType::OptFuzzing => write!(f, "@optFuzzing"),
             TokenType::NoUnwind => write!(f, "@noUnwind"),
+            TokenType::NoReturn => write!(f, "@noReturn"),
             TokenType::Packed => write!(f, "@packed"),
             TokenType::Thunk => writeln!(f, "@thunk"),
             TokenType::Heap => write!(f, "@heap"),

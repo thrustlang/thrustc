@@ -39,7 +39,6 @@ members = [
     "thrustc_directive",
     "thrustc_ast_modificators", 
     "thrustc_token_type", 
-    "thrustc_preprocessor_type_resolver", 
     "thrustc_ast_verifier", 
     "thrustc_heap_allocator", 
     "thrustc_ast_external", 

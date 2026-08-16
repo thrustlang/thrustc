@@ -88,6 +88,7 @@ pub enum TokenType {
     PreciseFloats,
     Convention,
     NoUnwind,
+    NoReturn,
     Packed,
     AsmAlignStack,
     AsmSyntax,

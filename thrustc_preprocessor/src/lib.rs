@@ -33,6 +33,7 @@ mod highmodule_parsing;
 pub mod module;
 mod moduletable;
 mod parser;
+pub mod registry;
 pub mod signatures;
 mod submodule_parsing;
 
@@ -61,8 +62,11 @@ impl<'preprocessor> Preprocessor {
         let mut visited: HashSet<std::path::PathBuf> = HashSet::with_capacity(u8::MAX as usize);
         visited.insert(file_path);
 
+        let registry: crate::registry::SharedModuleRegistry =
+            std::rc::Rc::new(std::cell::RefCell::new(crate::registry::ModuleRegistry::new()));
+
         let mut context: PreprocessorContext<'_> =
-            PreprocessorContext::new(tokens, options, file, visited);
+            PreprocessorContext::new(tokens, options, file, visited, registry);
 
         while !context.is_eof() {
             if context.check(TokenType::Import) {

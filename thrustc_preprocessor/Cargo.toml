@@ -23,6 +23,8 @@ thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_attributes = { path = "../thrustc_attributes" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_ast = { path = "../thrustc_ast" }
+thrustc_ast_modificators = { path = "../thrustc_ast_modificators" }
+thrustc_mir = { path = "../thrustc_mir" }
 thrustc_token = { path = "../thrustc_token" }
 thrustc_token_type = { path = "../thrustc_token_type" }
 thrustc_lexer = { path = "../thrustc_lexer" }

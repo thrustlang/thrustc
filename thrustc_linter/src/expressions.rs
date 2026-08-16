@@ -18,9 +18,10 @@
 */
 
 use thrustc_ast::{Ast, ast_builtins::AstBuiltin, traits::AstCodeLocation};
-use thrustc_errors::{CompilationIssue, CompilationPosition};
+use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_code_location::Span;
-use thrustc_token_type::traits::TokenTypeExtensions;
+use thrustc_token_type::{TokenType, traits::TokenTypeExtensions};
+use thrustc_typesystem::Type;
 
 use crate::Linter;
 
@@ -30,17 +31,46 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
             linter.analyze_expr(node);
         }
 
-        Ast::BinaryOp { left, right, .. } => {
+        Ast::BinaryOp {
+            left,
+            right,
+            operator,
+            span,
+            ..
+        } => {
+            if let (Ast::Reference { name: lname, .. }, Ast::Reference { name: rname, .. }) =
+                (&**left, &**right)
+            {
+                if lname == rname {
+                    let always_true: bool = matches!(
+                        operator,
+                        TokenType::EqEq | TokenType::LessEq | TokenType::GreaterEq
+                    );
+
+                    linter.add_warning(CompilationIssue::Warning(
+                        CompilationIssueCode::W0026,
+                        format!(
+                            "Comparing '{}' with itself is always {}.",
+                            lname,
+                            if always_true { "true" } else { "false" }
+                        ),
+                        *span,
+                    ));
+                }
+            }
+
             linter.analyze_expr(left);
             linter.analyze_expr(right);
         }
 
-        Ast::UnaryOp { operator, node, .. } => {
+        Ast::UnaryOp { operator, node, span, .. } => {
             if let Ast::Reference { name, .. } = &**node {
                 crate::mark_as_used(linter, name);
 
                 if operator.is_minus_minus_operator() || operator.is_plus_plus_operator() {
-                    crate::mark_as_mutated(linter, name);
+                    crate::mark_as_mutated(linter, name, *span, true);
+                } else {
+                    crate::mark_as_read(linter, name);
                 }
             }
 
@@ -58,8 +88,16 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
             linter.analyze_expr(index);
         }
 
-        Ast::Property { source, .. } => {
+        Ast::Property { source, data, .. } => {
             linter.analyze_expr(source);
+
+            for (base_type, (_, index)) in data.iter() {
+                if let Type::Struct { name, .. } = base_type {
+                    linter
+                        .get_mut_symbols()
+                        .mark_struct_field_used_by_index(name.as_str(), *index);
+                }
+            }
         }
 
         Ast::Constructor {
@@ -70,7 +108,7 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
             }
 
             if let Some(structure) = linter.symbols.get_struct_info(name) {
-                structure.2 = true;
+                structure.3 = true;
             } else {
                 linter.add_bug(CompilationIssue::FrontendBug(
                     String::from("Structure not caught"),
@@ -144,6 +182,7 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
 
         Ast::Reference { name, .. } => {
             crate::mark_as_used(linter, name);
+            crate::mark_as_read(linter, name);
         }
 
         Ast::FixedArray { items, .. } | Ast::Array { items, .. } => {

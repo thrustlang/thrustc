@@ -43,6 +43,14 @@ pub fn build_import<'parser>(
 
     let span: Span = tk.get_span();
 
+    if ctx.match_token(TokenType::As)? {
+        ctx.consume(
+            TokenType::Identifier,
+            CompilationIssueCode::E0001,
+            "Expected identifier for the module alias.".into(),
+        )?;
+    }
+
     ctx.consume(
         TokenType::SemiColon,
         CompilationIssueCode::E0001,

@@ -29,38 +29,44 @@ use crate::{
     submodule_parsing::{attributes, modificators, typegeneration},
 };
 
-pub fn parse_constant<'module_parser>(
+pub fn parse_static<'module_parser>(
     ctx: &mut ModuleParser<'module_parser>,
 ) -> Result<Symbol, ()> {
-    ctx.consume(TokenType::Const)?;
+    ctx.consume(TokenType::Static)?;
+
+    let is_mutable: bool = ctx.match_token(TokenType::Mut)?;
 
     let modificators: thrustc_ast_modificators::Modificators =
         modificators::build_statement_modificator(ctx, &[TokenType::Identifier])?;
 
-    let identifier_tk: &Token = ctx.consume(TokenType::Identifier)?;
-    let name: String = identifier_tk.get_lexeme().to_string();
-    let span: Span = identifier_tk.get_span();
+    let name_tk: &Token = ctx.consume(TokenType::Identifier)?;
+    let name: String = name_tk.get_lexeme().to_string();
+    let span: Span = name_tk.get_span();
 
     ctx.consume(TokenType::Colon)?;
 
     let r#type: Type = typegeneration::build_type(ctx)?;
 
-    let attributes: ThrustAttributes = attributes::build_attributes(ctx, &[TokenType::Eq])?;
+    let attributes: ThrustAttributes =
+        attributes::build_attributes(ctx, &[TokenType::Eq, TokenType::SemiColon])?;
 
-    ctx.consume(TokenType::Eq)?;
-
-    ctx.advance_until(TokenType::SemiColon)?;
+    if ctx.check(TokenType::Eq) {
+        ctx.advance_until(TokenType::SemiColon)?;
+    } else {
+        ctx.consume(TokenType::SemiColon)?;
+    }
 
     let symbol: Symbol = Symbol {
         name,
-        signature: Signature::Constant {
-            kind: r#type,
+        signature: Signature::Static {
+            kind: r#type.clone(),
             invalid_kind: Type::Void { span },
-            span,
+            is_mutable,
             attributes,
             modificators,
+            span,
         },
-        variant: Variant::Constant,
+        variant: Variant::Static,
     };
 
     Ok(symbol)

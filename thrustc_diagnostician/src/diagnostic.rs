@@ -195,10 +195,36 @@ pub(crate) fn generate(
         }
     }
 
+    let highlighted_line: String = if visible_end > visible_start {
+        let before: String = display_line_str.chars().take(visible_start).collect();
+        let span_text: String = display_line_str
+            .chars()
+            .skip(visible_start)
+            .take(visible_end - visible_start)
+            .collect();
+        let after: String = display_line_str.chars().skip(visible_end).collect();
+
+        let span_highlight = match r#type {
+            DiagnosticType::Warning => span_text.on_yellow().bold(),
+            DiagnosticType::Error
+            | DiagnosticType::FrontendBug
+            | DiagnosticType::BackendBug => span_text.on_red().bold(),
+        };
+
+        format!(
+            "{}{}{}",
+            before.bright_white().bold(),
+            span_highlight,
+            after.bright_white().bold()
+        )
+    } else {
+        display_line.bright_white().bold().to_string()
+    };
+
     signaler.push_str(&format!(
         "{:>width$} │ {}\n",
         line_num,
-        display_line.bright_white().bold(),
+        highlighted_line,
         width = line_num_width
     ));
 

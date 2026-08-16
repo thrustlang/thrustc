@@ -20,7 +20,7 @@
 use std::path::PathBuf;
 
 use thrustc_diagnostician::Diagnostician;
-use thrustc_errors::{CompilationIssue, CompilationPosition};
+use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -38,6 +38,8 @@ pub struct PreprocessorContext<'preprocessor> {
     file: &'preprocessor CompilationUnit,
     diagnostician: Diagnostician,
     errors: Vec<CompilationIssue>,
+    warnings: Vec<CompilationIssue>,
+    registry: crate::registry::SharedModuleRegistry,
     current: usize,
 }
 
@@ -47,6 +49,7 @@ impl<'preprocessor> PreprocessorContext<'preprocessor> {
         options: &'preprocessor CompilerOptions,
         file: &'preprocessor CompilationUnit,
         visited: HashSet<PathBuf>,
+        registry: crate::registry::SharedModuleRegistry,
     ) -> Self {
         Self {
             tokens,
@@ -55,6 +58,8 @@ impl<'preprocessor> PreprocessorContext<'preprocessor> {
             file,
             diagnostician: Diagnostician::new(file, options),
             errors: Vec::with_capacity(u8::MAX as usize),
+            warnings: Vec::with_capacity(u8::MAX as usize),
+            registry,
             current: 0,
         }
     }
@@ -62,6 +67,18 @@ impl<'preprocessor> PreprocessorContext<'preprocessor> {
 
 impl PreprocessorContext<'_> {
     pub fn check_status(&mut self) -> Result<(), ()> {
+        if !self.warnings.is_empty() {
+            let warnings_to_disable: &[CompilationIssueCode] =
+                self.options.get_warnings_to_disable();
+
+            thrustc_errors::filter_warnings(warnings_to_disable, &mut self.warnings);
+
+            for warning in self.warnings.iter() {
+                self.diagnostician
+                    .dispatch_diagnostic(warning, thrustc_logging::LoggingType::Warning);
+            }
+        }
+
         if !self.errors.is_empty() {
             {
                 for error in self.errors.iter() {
@@ -262,6 +279,11 @@ impl PreprocessorContext<'_> {
     pub fn add_error(&mut self, error: CompilationIssue) {
         self.errors.push(error);
     }
+
+    #[inline]
+    pub fn add_warning(&mut self, warning: CompilationIssue) {
+        self.warnings.push(warning);
+    }
 }
 
 impl PreprocessorContext<'_> {
@@ -285,6 +307,11 @@ impl<'module_parser> PreprocessorContext<'module_parser> {
     #[inline]
     pub fn get_global_visited_modules(&self) -> HashSet<PathBuf> {
         self.visited.clone()
+    }
+
+    #[inline]
+    pub fn get_registry(&self) -> crate::registry::SharedModuleRegistry {
+        self.registry.clone()
     }
 
     #[inline]

@@ -17,14 +17,16 @@
 
 */
 
+#![allow(unused_assignments)]
+
 use thrustc_ast::{
     Ast,
     ast_logic_data::StructureData,
     traits::{AstGetType, AstStandardExtensions, AstStructFieldsDataExtensions},
 };
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
@@ -50,7 +52,10 @@ use thrustc_parser_table::traits::{
 
 use crate::{ParserContext, attributes, expressions};
 
-pub fn build_type(ctx: &mut ParserContext<'_>, parse_expr: bool) -> Result<Type, CompilationIssue> {
+pub fn build_type<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    parse_expr: bool,
+) -> Result<Type, CompilationIssue> {
     match ctx.peek().get_type() {
         tk_kind if tk_kind.is_type() => {
             let tk: &Token = ctx.advance()?;
@@ -117,8 +122,50 @@ pub fn build_type(ctx: &mut ParserContext<'_>, parse_expr: bool) -> Result<Type,
         TokenType::Identifier => {
             let identifier_tk: &Token = ctx.advance()?;
 
-            let name: &str = identifier_tk.get_lexeme();
+            let name: &'parser str = identifier_tk.get_lexeme();
             let span: Span = identifier_tk.get_span();
+
+            if ctx.match_token(TokenType::ColonColon)? {
+                let mut access: Vec<String> = vec![name.to_string()];
+
+                let mut symbol_span: Span = span;
+
+                let symbol: &'parser str = loop {
+                    let part_tk: &Token = ctx.consume(
+                        TokenType::Identifier,
+                        CompilationIssueCode::E0001,
+                        "Expected identifier after '::'.".into(),
+                    )?;
+
+                    let part: &'parser str = part_tk.get_lexeme();
+
+                    symbol_span = part_tk.get_span();
+
+                    if ctx.match_token(TokenType::ColonColon)? {
+                        access.push(part.to_string());
+                    } else {
+                        break part;
+                    }
+                };
+
+                if let Some(qualified_type) =
+                    crate::module_import::resolve_qualified_type(ctx, &access, symbol)
+                {
+                    return Ok(qualified_type);
+                }
+
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0042,
+                    format!(
+                        "Type '{}::{}' could not be determined.",
+                        access.join("::"),
+                        symbol
+                    ),
+                    "The module does not export that type.".into(),
+                    None,
+                    symbol_span,
+                ));
+            }
 
             let object: Result<FoundSymbolId, CompilationIssue> =
                 ctx.get_symbols().get_symbols_id(name, span);

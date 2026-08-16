@@ -26,6 +26,8 @@ Valid locations:
 - `project` Any location that usually involucrates Cargo, Rust Compiler and Github repository changes, Github actions or the conception of a new part of the compiler (Cargo Workspaces).
 - `fuzzing` Any location that usually involucrates the compiler fuzzing suite (`fuzz/`), its corpora and fuzz targets.
 - `doc` Any location that usually involucrates the compiler documentation and guides available on the repository (Examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
+- `abi` Any location that usually involucrates the compiler Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
+- `preprocessador` Any location that usually involucrates the compiler preprocessor and module/import resolution (`thrustc_preprocessor`).
 
 Example:
 
@@ -46,6 +48,8 @@ Valid locations:
 - `project-visual` Any location that usually involucrates general or visual changes of the compiler project available on Github (Examples: README.md, assets, highlighting, banners).
 - `fuzzing` Any location that usually involucrates the compiler fuzzing suite (`fuzz/`), its corpora and fuzz targets.
 - `doc` Any location that usually involucrates the compiler documentation and guides available on the repository (Examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
+- `abi` Any location that usually involucrates the compiler Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
+- `preprocessador` Any location that usually involucrates the compiler preprocessor and module/import resolution (`thrustc_preprocessor`).
 
 Any consecutive location written to the next one needs to be follow for a COMMA character `,`.
 

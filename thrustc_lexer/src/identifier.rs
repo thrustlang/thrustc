@@ -60,6 +60,7 @@ lazy_static! {
         attributes.insert("@align", TokenType::Align);
         attributes.insert("@optFuzzing", TokenType::OptFuzzing);
         attributes.insert("@noUnwind", TokenType::NoUnwind);
+        attributes.insert("@noReturn", TokenType::NoReturn);
         attributes.insert("@packed", TokenType::Packed);
         attributes.insert("@heap", TokenType::Heap);
         attributes.insert("@public", TokenType::Public);
@@ -190,13 +191,13 @@ lazy_static! {
         keywords.insert("unreachable", TokenType::Unreachable);
         keywords.insert("intrinsic", TokenType::Intrinsic);
         keywords.insert("new", TokenType::New);
+        keywords.insert("import", TokenType::Import);
 
         if compiler_mode.is_unstable_mode() {
             keywords.insert("asmfn", TokenType::AsmFn);
             keywords.insert("asm", TokenType::Asm);
             keywords.insert("global_asm", TokenType::GlobalAsm);
             keywords.insert("embedded", TokenType::Embedded);
-            keywords.insert("import", TokenType::Import);
             keywords.insert("importC", TokenType::ImportC);
         }
 

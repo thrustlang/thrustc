@@ -229,6 +229,36 @@ impl<'linter> LinterSymbolsTable<'linter> {
 }
 
 impl<'linter> LinterSymbolsTable<'linter> {
+    #[must_use]
+    pub fn shadows_local(&self, name: &'linter str) -> bool {
+        for scope in self.locals.iter() {
+            if scope.contains_key(name) {
+                return true;
+            }
+        }
+
+        for scope in self.local_constants.iter() {
+            if scope.contains_key(name) {
+                return true;
+            }
+        }
+
+        for scope in self.local_statics.iter() {
+            if scope.contains_key(name) {
+                return true;
+            }
+        }
+
+        self.parameters.contains_key(name)
+            || self.global_constants.contains_key(name)
+            || self.global_statics.contains_key(name)
+            || self.functions.contains_key(name)
+            || self.asm_functions.contains_key(name)
+            || self.intrinsics.contains_key(name)
+            || self.enums.contains_key(name)
+            || self.structs.contains_key(name)
+    }
+
     #[inline]
     pub fn new_local(&mut self, name: &'linter str, info: LinterLocalInfo) {
         if let Some(scope) = self.locals.last_mut() {
@@ -293,6 +323,20 @@ impl<'linter> LinterSymbolsTable<'linter> {
     pub fn new_struct(&mut self, name: &'linter str, info: LinterStructFieldsInfo<'linter>) {
         self.structs.insert(name, info);
     }
+
+    pub fn mark_struct_field_used_by_index(&mut self, struct_name: &str, index: u32) {
+        let Some(raw_struct) = self.structs.get_mut(struct_name) else {
+            return;
+        };
+
+        let Some(field_name) = raw_struct.1.get(index as usize).copied() else {
+            return;
+        };
+
+        if let Some(field) = raw_struct.0.get_mut(field_name) {
+            field.1 = true;
+        }
+    }
 }
 
 impl LinterSymbolsTable<'_> {
@@ -338,7 +382,7 @@ impl<'linter> LinterSymbolsTable<'linter> {
             let metadata: FunctionParameterMetadata = parameter.5;
             let span: Span = parameter.4;
 
-            self.new_parameter(name, (span, false, !metadata.is_mutable()));
+            self.new_parameter(name, (span, false, metadata.is_mutable(), false, None));
         });
     }
 

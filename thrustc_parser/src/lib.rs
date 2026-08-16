@@ -36,6 +36,7 @@ mod attributes;
 mod builtins;
 mod expressions;
 mod modificators;
+mod module_import;
 mod reinterpret;
 mod statements;
 mod synchronize;
@@ -153,6 +154,13 @@ impl<'parser> ParserContext<'parser> {
             position: 0,
             scope: 0,
         }
+    }
+}
+
+impl<'parser> ParserContext<'parser> {
+    #[inline(always)]
+    pub fn get_modules(&self) -> &'parser [Module] {
+        self.modules
     }
 }
 

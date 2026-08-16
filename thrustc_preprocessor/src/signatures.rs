@@ -17,18 +17,19 @@
 
 */
 
+use thrustc_ast_modificators::Modificators;
 use thrustc_attributes::ThrustAttributes;
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Symbol {
     pub name: String,
     pub signature: Signature,
     pub variant: Variant,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Variant {
     Function,
     Constant,
@@ -37,7 +38,7 @@ pub enum Variant {
     CustomType,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Signature {
     Function {
         kind: Type,
@@ -50,12 +51,15 @@ pub enum Signature {
         kind: Type,
         invalid_kind: Type,
         attributes: ThrustAttributes,
+        modificators: Modificators,
         span: Span,
     },
     Static {
         kind: Type,
         invalid_kind: Type,
+        is_mutable: bool,
         attributes: ThrustAttributes,
+        modificators: Modificators,
         span: Span,
     },
     Struct {

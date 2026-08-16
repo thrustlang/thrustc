@@ -21,7 +21,7 @@
 use ahash::AHashMap as HashMap;
 use thrustc_code_location::Span;
 
-pub type LinterStaticInfo = (Span, bool, bool);
+pub type LinterStaticInfo = (Span, bool, bool, bool, Option<Span>);
 pub type LinterGlobalStatics<'linter> = HashMap<&'linter str, LinterStaticInfo>;
 pub type LinterLocalStatics<'linter> = Vec<HashMap<&'linter str, LinterStaticInfo>>;
 
@@ -42,7 +42,7 @@ pub type LinterFunctions<'linter> = HashMap<&'linter str, LinterFunctionInfo<'li
 pub type LinterIntrinsicInfo<'linter> = (Span, bool);
 pub type LinterIntrinsics<'linter> = HashMap<&'linter str, LinterIntrinsicInfo<'linter>>;
 
-pub type LinterLocalInfo = (Span, bool, bool);
+pub type LinterLocalInfo = (Span, bool, bool, bool, Option<Span>);
 pub type LinterLocals<'linter> = Vec<HashMap<&'linter str, LinterLocalInfo>>;
 
 pub type LinterEnumFieldInfo = (Span, bool);
@@ -51,9 +51,13 @@ pub type LinterEnumsFieldsInfo<'linter> = (HashMap<&'linter str, LinterEnumField
 pub type LinterEnums<'linter> = HashMap<&'linter str, LinterEnumsFieldsInfo<'linter>>;
 
 pub type LinterStructFieldInfo = (Span, bool);
-pub type LinterStructFieldsInfo<'linter> =
-    (HashMap<&'linter str, LinterStructFieldInfo>, Span, bool);
+pub type LinterStructFieldsInfo<'linter> = (
+    HashMap<&'linter str, LinterStructFieldInfo>,
+    Vec<&'linter str>,
+    Span,
+    bool,
+);
 pub type LinterStructs<'linter> = HashMap<&'linter str, LinterStructFieldsInfo<'linter>>;
 
-pub type LinterFunctionParameterInfo = (Span, bool, bool);
+pub type LinterFunctionParameterInfo = (Span, bool, bool, bool, Option<Span>);
 pub type LinterFunctionParameters<'linter> = HashMap<&'linter str, LinterFunctionParameterInfo>;

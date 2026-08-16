@@ -41,6 +41,7 @@ impl std::fmt::Display for ThrustAttribute {
             ThrustAttribute::Hot(..) => write!(f, "@hot"),
             ThrustAttribute::Ignore(..) => write!(f, "@arbitraryArgs"),
             ThrustAttribute::NoUnwind(..) => write!(f, "@noUnwind"),
+            ThrustAttribute::NoReturn(..) => write!(f, "@noReturn"),
             ThrustAttribute::AsmThrow(..) => write!(f, "@asmThrow"),
             ThrustAttribute::AsmSyntax(..) => write!(f, "@asmSyntax"),
             ThrustAttribute::AsmSideEffects(..) => write!(f, "@asmEffects"),

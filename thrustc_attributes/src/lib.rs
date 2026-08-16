@@ -57,6 +57,7 @@ pub enum ThrustAttribute {
     WeakStack(Span),
     PreciseFloats(Span),
     NoUnwind(Span),
+    NoReturn(Span),
     OptFuzzing(Span),
     Align(u64, Span),
     Pure(Span),
@@ -102,6 +103,7 @@ pub enum ThrustAttributeComparator {
     WeakStack,
     PreciseFloats,
     NoUnwind,
+    NoReturn,
     OptFuzzing,
     Align,
     Pure,
@@ -224,6 +226,11 @@ impl ThrustAttribute {
     pub fn is_cuda_attribute(&self) -> bool {
         matches!(self, ThrustAttribute::Cuda(..))
     }
+
+    #[inline]
+    pub fn is_noreturn_attribute(&self) -> bool {
+        matches!(self, ThrustAttribute::NoReturn(..))
+    }
 }
 
 impl ThrustAttribute {
@@ -252,6 +259,7 @@ impl ThrustAttribute {
             ThrustAttribute::Heap(span) => *span,
             ThrustAttribute::Packed(span) => *span,
             ThrustAttribute::NoUnwind(span) => *span,
+            ThrustAttribute::NoReturn(span) => *span,
             ThrustAttribute::OptFuzzing(span) => *span,
             ThrustAttribute::Align(_, span) => *span,
             ThrustAttribute::Pure(span) => *span,
@@ -283,6 +291,7 @@ pub fn as_attribute(token_type: TokenType, span: Span) -> Option<ThrustAttribute
         TokenType::AsmAlignStack => Some(ThrustAttribute::AsmAlignStack(span)),
         TokenType::Packed => Some(ThrustAttribute::Packed(span)),
         TokenType::NoUnwind => Some(ThrustAttribute::NoUnwind(span)),
+        TokenType::NoReturn => Some(ThrustAttribute::NoReturn(span)),
         TokenType::OptFuzzing => Some(ThrustAttribute::OptFuzzing(span)),
         TokenType::Pure => Some(ThrustAttribute::Pure(span)),
         TokenType::Thunk => Some(ThrustAttribute::Thunk(span)),
@@ -390,6 +399,11 @@ impl ThrustAttributesExtensions for ThrustAttributes {
     }
 
     #[inline]
+    fn has_noreturn_attribute(&self) -> bool {
+        self.iter().any(|attr| attr.is_noreturn_attribute())
+    }
+
+    #[inline]
     fn match_attr(&self, cmp: ThrustAttributeComparator) -> Option<Span> {
         if let Some(attr_found) = self.iter().find(|attr| attr.as_attr_cmp() == cmp) {
             return Some(attr_found.get_span());
@@ -434,6 +448,7 @@ impl ThrustAttributeComparatorExtensions for ThrustAttribute {
             ThrustAttribute::AsmSideEffects(..) => ThrustAttributeComparator::AsmSideEffects,
             ThrustAttribute::Packed(..) => ThrustAttributeComparator::Packed,
             ThrustAttribute::NoUnwind(..) => ThrustAttributeComparator::NoUnwind,
+            ThrustAttribute::NoReturn(..) => ThrustAttributeComparator::NoReturn,
             ThrustAttribute::OptFuzzing(..) => ThrustAttributeComparator::OptFuzzing,
             ThrustAttribute::Align(..) => ThrustAttributeComparator::Align,
             ThrustAttribute::Pure(..) => ThrustAttributeComparator::Pure,
