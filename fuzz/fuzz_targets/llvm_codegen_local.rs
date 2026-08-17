@@ -52,7 +52,21 @@ fuzz_target!(|data: &[u8]| -> Corpus {
 
     let mut unstructured = Unstructured::new(data);
 
-    let Ok(ast) = thrustc_fuzz::llvm_codegen_local::gen_root(&mut unstructured) else {
+    let config: thrustc_fuzz::gen_local_common::Config = thrustc_fuzz::gen_local_common::Config {
+        max_depth: MAX_DEPTH,
+        max_statements_per_block: MAX_STATEMENTS_PER_BLOCK,
+        max_expr_depth: MAX_EXPR_DEPTH,
+        max_loop_nesting: 4,
+        loop_bias: false,
+        allow_loops: true,
+        allow_defer: true,
+        allow_const_static: true,
+        allow_self_calls: true,
+        allow_extras: false,
+    };
+
+    let Ok(ast) = thrustc_fuzz::llvm_codegen_local::gen_root_with_config(&mut unstructured, &config)
+    else {
         return Corpus::Reject;
     };
 

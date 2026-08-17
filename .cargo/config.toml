@@ -29,6 +29,8 @@ fuzz-dump-ast-local = "run --manifest-path fuzz/Cargo.toml --bin dump_ast_local"
 fuzz-dump-ast-local-loops = "run --manifest-path fuzz/Cargo.toml --bin dump_ast_local_loops"
 fuzz-dump-llvm-ir = "run --manifest-path fuzz/Cargo.toml --bin dump_llvm_ir"
 fuzz-reproduce-case = "run --manifest-path fuzz/Cargo.toml --bin reproduce"
+fuzz-measure-pass-rate = "run --manifest-path fuzz/Cargo.toml --bin measure_pass_rate"
+fuzz-debug-sample = "run --manifest-path fuzz/Cargo.toml --bin _debug"
 
 fuzz-continuous = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor"
 fuzz-backlog = "run --manifest-path fuzz/Cargo.toml --bin fuzz_supervisor"

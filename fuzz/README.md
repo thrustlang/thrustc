@@ -11,6 +11,8 @@ generators, auxiliary binaries, dictionaries and corpora.
 
 > [!IMPORTANT]
 > The complete fuzzing guide is in `COMPILER_FUZZING.md` at the repository root.
+> It includes the deterministic keep-rate measurement tools (`measure_pass_rate`
+> and `_debug`) under **Generator keep rate**.
 >
 > For the continuous fuzzing supervisor (loop fuzzing, backlog and registry log)
 > see `COMPILER_CONTINUOUS_FUZZING.md` in this folder.

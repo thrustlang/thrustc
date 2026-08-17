@@ -220,6 +220,7 @@ fn parse_std_import<'preprocessor>(
 
     let first_tk: &Token = parser.consume(TokenType::Identifier)?;
     let first_span: Span = first_tk.get_span();
+
     access.push(first_tk.get_lexeme().to_string());
 
     let mut last_span: Span = first_span;
@@ -247,7 +248,7 @@ fn parse_std_import<'preprocessor>(
         parser.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0035,
             "The identifier import is only supported for the standard library.".into(),
-            "You should import standard library modules as 'std.mem' or use a path string otherwise."
+            "You should import standard library modules as 'std::io' or use a path string otherwise."
                 .into(),
             None,
             first_span,

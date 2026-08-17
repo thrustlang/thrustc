@@ -158,7 +158,9 @@ impl<'scoper> Scoper<'scoper> {
     fn analyze_local_node(&mut self, node: &Ast<'scoper>) {
         self.get_mut_context().enter_node();
 
-        if self.get_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+        if self.get_context().get_node_depth()
+            > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH
+        {
             self.get_mut_context().leave_node();
 
             self.add_error(CompilationIssue::Error(
@@ -299,10 +301,8 @@ impl<'scoper> Scoper<'scoper> {
             } => {
                 self.analyze_local_node(then_branch);
 
-                {
-                    for node in else_if_branch.iter() {
-                        self.analyze_local_node(node);
-                    }
+                for node in else_if_branch.iter() {
+                    self.analyze_local_node(node);
                 }
 
                 if let Some(node) = else_branch {
@@ -316,9 +316,17 @@ impl<'scoper> Scoper<'scoper> {
                 self.analyze_local_node(block);
             }
 
-            Ast::While { block, .. } => {
+            Ast::While {
+                variable, block, ..
+            } => {
                 self.get_mut_context().enter_loop();
+
+                if let Some(node) = variable {
+                    self.analyze_local_node(node);
+                }
+
                 self.analyze_local_node(block);
+
                 self.get_mut_context().leave_loop();
             }
             Ast::Loop { block, .. } => {

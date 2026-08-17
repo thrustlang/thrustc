@@ -27,6 +27,8 @@ thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_llvm_abi = { path = "../thrustc_llvm_abi" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_typesystem = { path = "../thrustc_typesystem"}
+thrustc_token_type = { path = "../thrustc_token_type" }
+thrustc_code_location = { path = "../thrustc_code_location", features = ["fuzz"] }
 thrustc_llvm_abi_representation = { path = "../thrustc_llvm_abi_representation"}
 
 inkwell = { path = "../crates/llvm/inkwell" }
@@ -90,8 +92,22 @@ doc = false
 bench = false
 
 [[bin]]
+name = "_debug"
+path = "bin/_debug.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "dump_ast_local_loops"
 path = "bin/dump_ast_local_loops.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "measure_pass_rate"
+path = "bin/measure_pass_rate.rs"
 test = false
 doc = false
 bench = false

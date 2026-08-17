@@ -41,6 +41,8 @@ The fuzzing project lives under `fuzz/` and is structured as follows:
   - `dump_ast_local_loops.rs`: Same as `dump_ast_local` but for the loop oriented AST generator. Matches the `llvm-codegen-local-loops` fuzzer.
   - `dump_llvm_ir.rs`: Reconstructs the AST using a scoped generator, then runs semantic analysis + LLVM codegen and dumps the module IR to `fuzz/llvm_ir_dumps/`. It does **not** run `module.verify()`, so the IR is dumped even when it is invalid. `--stable` rejects ASTs that use unstable constructs (e.g. inline assembly).
   - `reproduce.rs`: Automates crash reproduction. It accepts a target and a crash artifact (or shows an interactive selection menu), rebuilds and runs the fuzzer against the artifact, classifies the result against known crash signatures, and writes a log under `fuzz/fuzz_reproduce_logs/<target>/`.
+  - `measure_pass_rate.rs`: Measures how many generated ASTs survive semantic analysis (the "keep rate"). Same seed plus same arguments always produce the same inputs. You can compare a generator before and after a change.
+  - `_debug.rs`: Generates the same deterministic samples. It dumps the raw input of a specific failing sample to the system temp dir. Then you feed it to a `dump-ast` binary.
   - `fuzz_supervisor.rs`: The continuous fuzz supervisor. Runs a fuzzer in a loop, archives every crash/panic it finds, and keeps going (see [Continuous fuzzing](#continuous-fuzzing)).
 - **`corpus_stable/`**: Input corpora for stable features fuzzing, organized per fuzzer (`llvm-codegen-top-level/`, `llvm-codegen-local/`, `llvm-codegen-local-loops/`, `pipeline/`).
 - **`corpus_unstable/`**: Input corpora for unstable features fuzzing, organized per fuzzer (same layout as `corpus_stable/`).
@@ -170,6 +172,77 @@ The `hash` is an FNV-1a content hash of `input.bin`; the `issue-id` is derived f
 ### Toolchain
 
 Because the repository root pins a **stable** toolchain but cargo-fuzz needs nightly, the supervisor (and the `reproduce` binary) automatically prepend the channel declared in `fuzz/rust-toolchain.toml` to every `cargo` invocation (i.e. they run `cargo +nightly fuzz run ...`). You can keep working from the repo root without worrying about the toolchain.
+
+## Generator keep rate
+
+The AST fuzzers build programs in two steps. A generator turns the raw input bytes
+into an AST. Then the compiler runs semantic analysis and LLVM codegen on it. When
+the generator produces an invalid AST (a reference to a variable that does not exist,
+a cast between incompatible types, ...), semantic analysis rejects it. That sample
+never reaches codegen. The time is spent, but nothing past the frontend is exercised.
+
+`measure_pass_rate` measures how often that happens. For a given seed it generates
+`--samples` inputs. It runs semantic analysis on each one. Then it counts how many
+were kept:
+
+```sh
+cargo fuzz-measure-pass-rate
+llvm-codegen-local: 200/200 kept (100.00%)  [seed=0xdecafbad]
+```
+
+The higher the keep rate, the more of the fuzzing effort actually reaches codegen.
+A low rate means the generator wastes most samples on ASTs the compiler rejects
+early. In that case the generator is what needs fixing, not the codegen.
+
+Because the inputs come from a PRNG seeded with `--seed`, the same command always
+produces the same inputs. That is what makes before/after comparisons meaningful.
+You change the generator, you run the command, and any change in the number is
+caused by your edit, not by randomness.
+
+Options:
+- `--samples N`    number of inputs to test (default 200)
+- `--seed N`       PRNG seed (default `0xDECAF_BAD`)
+- `--max-bytes N`  input size in bytes (default 8192)
+- `--all`          test every generator and print one line per target
+- `[target]`       test a single generator (`llvm-codegen-local` by default)
+
+```sh
+cargo fuzz-measure-pass-rate --all
+pipeline: 1/2 kept (50.00%)  [seed=0xdecafbad]
+llvm-codegen-top-level: 0/2 kept (0.00%)  [seed=0xdecafbad]
+llvm-codegen-local: 2/2 kept (100.00%)  [seed=0xdecafbad]
+llvm-codegen-local-loops: 2/2 kept (100.00%)  [seed=0xdecafbad]
+```
+
+`measure_pass_rate` tells you the rate. `_debug` gives you the sample. It runs the
+same generation loop. Then it dumps the raw input of a failing sample to the system
+temp dir. That way you can inspect its AST:
+
+```sh
+cargo fuzz-debug-sample -- <samples> <seed> [index]
+```
+
+- `samples`   how many inputs to generate (default 300)
+- `seed`      PRNG seed (default 4660)
+- `index`     optional. Only dump the failing sample at this position, then stop
+
+It prints `### sample #N had errors` for every sample that fails semantic analysis.
+When `index` matches one of them, it writes the raw input to `fail.bin` in the
+system temp dir and prints the path:
+
+```sh
+wrote /tmp/fail.bin for sample #42
+```
+
+Feed that file to the matching dump binary to see the AST that failed:
+
+```sh
+cargo fuzz-dump-ast-local /tmp/fail.bin
+```
+
+`_debug` is hardcoded to the `llvm-codegen-local` generator. For the other two,
+run `measure_pass_rate <target>` to pick a seed. Then dump an artifact with
+`cargo fuzz-dump-ast-local-loops` or `cargo fuzz-dump-llvm-ir` instead.
 
 ## Corpus directories
 

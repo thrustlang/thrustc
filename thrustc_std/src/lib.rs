@@ -17,11 +17,15 @@
 
 */
 
-use std::path::{Path, PathBuf};
+use std::{
+    fs::OpenOptions,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use include_dir::{Dir, DirEntry, include_dir};
 
-pub static STD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../std");
+pub static EMBEDDED_STD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../std");
 pub const STD_ROOT_DIR_NAME: &str = "std";
 pub const STD_VERSION_FILE_NAME: &str = "VERSION.txt";
 
@@ -79,15 +83,46 @@ pub fn resolve_target_version(flag: Option<&str>) -> String {
     )
 }
 
-#[inline]
-pub fn version_dir_name(version: &str) -> String {
-    format!("v{version}")
-}
-
 pub fn ensure_std_present(root: &Path, version: &str) -> Result<PathBuf, StdError> {
-    let version_dir: PathBuf = root.join(self::version_dir_name(version));
+    let version_dir: PathBuf = root.join(format!("v{version}"));
+    let version_file: PathBuf = root.join("VERSION.txt");
 
-    if self::embedded_has_version(version) {
+    if !version_file.exists() {
+        if let Some(version_file) = EMBEDDED_STD_DIR.get_file(STD_VERSION_FILE_NAME) {
+            let destination: PathBuf = root.join(STD_VERSION_FILE_NAME);
+
+            let needs_append = match std::fs::read(&destination) {
+                Ok(existing) => !existing
+                    .windows(version_file.contents().len())
+                    .any(|window| window == version_file.contents()),
+                Err(_) => true,
+            };
+
+            if needs_append {
+                let mut file: std::fs::File = OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&destination)?;
+
+                file.write_all(version_file.contents())?;
+            }
+        }
+
+        thrustc_logging::print_warning(
+            thrustc_logging::LoggingType::Warning,
+            &format!(
+                "The standard library version history was not found in '{}', so the included standard library was with the version history initialized into: '{}'.\n",
+                root.display(),
+                version_file.display()
+            ),
+        );
+    }
+
+    if version_dir.is_dir() && version_dir.exists() {
+        return Ok(version_dir);
+    }
+
+    if EMBEDDED_STD_DIR.get_dir(format!("v{version}")).is_some() {
         self::dump_version_std(root, version)?;
 
         thrustc_logging::print_warning(
@@ -100,7 +135,7 @@ pub fn ensure_std_present(root: &Path, version: &str) -> Result<PathBuf, StdErro
         );
     }
 
-    if version_dir.is_dir() {
+    if version_dir.is_dir() && version_dir.exists() {
         Ok(version_dir)
     } else {
         Err(StdError::VersionNotFound(version.to_string()))
@@ -129,24 +164,32 @@ pub fn validate_version(root: &Path, version: &str) -> Result<(), StdError> {
     }
 }
 
-fn embedded_has_version(version: &str) -> bool {
-    STD_DIR.get_dir(self::version_dir_name(version)).is_some()
-}
-
 fn dump_version_std(root: &Path, version: &str) -> Result<(), StdError> {
     if !root.exists() {
         std::fs::create_dir_all(root)?;
     }
 
-    if let Some(version_file) = STD_DIR.get_file(STD_VERSION_FILE_NAME) {
+    if let Some(version_file) = EMBEDDED_STD_DIR.get_file(STD_VERSION_FILE_NAME) {
         let destination: PathBuf = root.join(STD_VERSION_FILE_NAME);
 
-        if !destination.exists() {
-            std::fs::write(&destination, version_file.contents())?;
+        let needs_append = match std::fs::read(&destination) {
+            Ok(existing) => !existing
+                .windows(version_file.contents().len())
+                .any(|window| window == version_file.contents()),
+            Err(_) => true,
+        };
+
+        if needs_append {
+            let mut file: std::fs::File = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&destination)?;
+
+            file.write_all(version_file.contents())?;
         }
     }
 
-    if let Some(version_dir) = STD_DIR.get_dir(self::version_dir_name(version)) {
+    if let Some(version_dir) = EMBEDDED_STD_DIR.get_dir(format!("v{version}")) {
         self::dump_dir_files(root, version_dir)?;
     }
 

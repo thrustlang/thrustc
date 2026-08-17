@@ -1,0 +1,1545 @@
+/*
+    Copyright (C) 2026  Stevens Benavides
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+use arbitrary::Unstructured;
+use thrustc_ast::ast_builtins::AstBuiltin;
+use thrustc_ast::ast_metadata::{
+    CastingMetadata, FunctionParameterMetadata, ReferenceMetadata, ReferenceType,
+};
+use thrustc_ast::Ast;
+use thrustc_ast::NodeId;
+use thrustc_token_type::TokenType;
+use thrustc_typesystem::traits::TypeIsExtensions;
+use thrustc_typesystem::Type;
+
+pub struct Config {
+    pub max_depth: usize,
+    pub max_statements_per_block: usize,
+    pub max_expr_depth: usize,
+    pub max_loop_nesting: usize,
+    pub loop_bias: bool,
+    pub allow_loops: bool,
+    pub allow_defer: bool,
+    pub allow_const_static: bool,
+    pub allow_self_calls: bool,
+    pub allow_extras: bool,
+}
+
+impl Config {
+    pub fn general() -> Self {
+        Self {
+            max_depth: 5,
+            max_statements_per_block: 12,
+            max_expr_depth: 6,
+            max_loop_nesting: 4,
+            loop_bias: false,
+            allow_loops: true,
+            allow_defer: true,
+            allow_const_static: true,
+            allow_self_calls: true,
+            allow_extras: false,
+        }
+    }
+
+    pub fn loops() -> Self {
+        Self {
+            max_depth: 6,
+            max_statements_per_block: 8,
+            max_expr_depth: 3,
+            max_loop_nesting: 4,
+            loop_bias: true,
+            allow_loops: true,
+            allow_defer: false,
+            allow_const_static: false,
+            allow_self_calls: false,
+            allow_extras: false,
+        }
+    }
+}
+
+#[derive(Clone)]
+struct ScopedVar<'ast> {
+    name: &'ast str,
+    kind: Type,
+}
+
+#[derive(Default)]
+struct ScopeStack<'ast> {
+    frames: Vec<Vec<ScopedVar<'ast>>>,
+}
+
+impl<'ast> ScopeStack<'ast> {
+    fn push(&mut self) {
+        self.frames.push(Vec::new());
+    }
+
+    fn pop(&mut self) {
+        self.frames.pop();
+    }
+
+    fn declare(&mut self, name: &'ast str, kind: Type) {
+        if let Some(frame) = self.frames.last_mut() {
+            frame.push(ScopedVar { name, kind });
+        }
+    }
+
+    fn visible(&self) -> Vec<ScopedVar<'ast>> {
+        self.frames.iter().flatten().cloned().collect()
+    }
+
+    fn has_any(&self) -> bool {
+        self.frames.iter().any(|f| !f.is_empty())
+    }
+
+    fn pick_any(&self, u: &mut Unstructured<'ast>) -> arbitrary::Result<Option<ScopedVar<'ast>>> {
+        let visible = self.visible();
+        if visible.is_empty() {
+            return Ok(None);
+        }
+        let idx = u.int_in_range(0..=(visible.len() - 1))?;
+        Ok(Some(visible[idx].clone()))
+    }
+
+    fn has_of_type(&self, target: &Type) -> bool {
+        self.frames
+            .iter()
+            .flatten()
+            .any(|var| var.kind == *target)
+    }
+
+    fn has_ptr_of(&self, pointee: &Type) -> Option<ScopedVar<'ast>> {
+        self.visible().into_iter().find(|var| match &var.kind {
+            Type::Ptr {
+                subtype: Some(inner),
+                ..
+            } => **inner == *pointee,
+            _ => false,
+        })
+    }
+
+    fn has_array_of(&self, base: &Type) -> Option<ScopedVar<'ast>> {
+        self.visible().into_iter().find(|var| match &var.kind {
+            Type::FixedArray {
+                base_type: inner, ..
+            } => **inner == *base,
+            _ => false,
+        })
+    }
+}
+
+pub fn gen_root<'ast>(u: &mut Unstructured<'ast>, cfg: &Config) -> arbitrary::Result<Ast<'ast>> {
+    let mut scope: ScopeStack<'_> = ScopeStack::default();
+    scope.push();
+
+    gen_function(u, &mut scope, cfg, cfg.max_depth)
+}
+
+#[inline]
+fn gen_name<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<&'ast str> {
+    crate::names::gen_name(u)
+}
+
+#[inline]
+fn ref_metadata() -> ReferenceMetadata {
+    ReferenceMetadata::new(true, true, ReferenceType::Local, false)
+}
+
+fn gen_scalar_type<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Type> {
+    match u.int_in_range(0..=13)? {
+        0 => Ok(Type::S8 {
+            span: u.arbitrary()?,
+        }),
+        1 => Ok(Type::S16 {
+            span: u.arbitrary()?,
+        }),
+        2 => Ok(Type::S32 {
+            span: u.arbitrary()?,
+        }),
+        3 => Ok(Type::S64 {
+            span: u.arbitrary()?,
+        }),
+        4 => Ok(Type::SSize {
+            span: u.arbitrary()?,
+        }),
+        5 => Ok(Type::U8 {
+            span: u.arbitrary()?,
+        }),
+        6 => Ok(Type::U16 {
+            span: u.arbitrary()?,
+        }),
+        7 => Ok(Type::U32 {
+            span: u.arbitrary()?,
+        }),
+        8 => Ok(Type::U64 {
+            span: u.arbitrary()?,
+        }),
+        9 => Ok(Type::USize {
+            span: u.arbitrary()?,
+        }),
+        10 => Ok(Type::F32 {
+            span: u.arbitrary()?,
+        }),
+        11 => Ok(Type::F64 {
+            span: u.arbitrary()?,
+        }),
+        12 => Ok(Type::Bool {
+            span: u.arbitrary()?,
+        }),
+        _ => Ok(Type::Char {
+            span: u.arbitrary()?,
+        }),
+    }
+}
+
+fn gen_integer_type<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Type> {
+    match u.int_in_range(0..=9)? {
+        0 => Ok(Type::S8 {
+            span: u.arbitrary()?,
+        }),
+        1 => Ok(Type::S16 {
+            span: u.arbitrary()?,
+        }),
+        2 => Ok(Type::S32 {
+            span: u.arbitrary()?,
+        }),
+        3 => Ok(Type::S64 {
+            span: u.arbitrary()?,
+        }),
+        4 => Ok(Type::SSize {
+            span: u.arbitrary()?,
+        }),
+        5 => Ok(Type::U8 {
+            span: u.arbitrary()?,
+        }),
+        6 => Ok(Type::U16 {
+            span: u.arbitrary()?,
+        }),
+        7 => Ok(Type::U32 {
+            span: u.arbitrary()?,
+        }),
+        8 => Ok(Type::U64 {
+            span: u.arbitrary()?,
+        }),
+        _ => Ok(Type::USize {
+            span: u.arbitrary()?,
+        }),
+    }
+}
+
+fn gen_ptr_type<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Type> {
+    Ok(Type::Ptr {
+        subtype: Some(Box::new(gen_scalar_type(u)?)),
+        address_space: None,
+        span: u.arbitrary()?,
+    })
+}
+
+fn gen_decl_type<'ast>(
+    u: &mut Unstructured<'ast>,
+    cfg: &Config,
+) -> arbitrary::Result<Type> {
+    if cfg.allow_extras && u.arbitrary()? {
+        return gen_ptr_type(u);
+    }
+    gen_scalar_type(u)
+}
+
+fn gen_function<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+) -> arbitrary::Result<Ast<'ast>> {
+    scope.push();
+
+    let n_params: usize = u.int_in_range(0..=4usize)?;
+    let mut parameters: Vec<Ast<'_>> = Vec::with_capacity(n_params);
+    let mut parameter_types: Vec<Type> = Vec::with_capacity(n_params);
+
+    for i in 0..n_params {
+        let name = gen_name(u)?;
+        let kind: Type = gen_scalar_type(u)?;
+        scope.declare(name, kind.clone());
+        parameter_types.push(kind.clone());
+        parameters.push(Ast::FunctionParameter {
+            name,
+            ascii_name: name,
+            kind,
+            position: i as u32,
+            metadata: FunctionParameterMetadata::new(true),
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+
+    let return_type: Type = if u.arbitrary()? {
+        gen_scalar_type(u)?
+    } else {
+        Type::Void {
+            span: u.arbitrary()?,
+        }
+    };
+
+    let name = gen_name(u)?;
+
+    let body: Option<Box<Ast<'_>>> = Some(Box::new(gen_function_body(
+        u,
+        scope,
+        cfg,
+        depth.saturating_sub(1).max(2),
+        &name,
+        &parameter_types,
+        &return_type,
+    )?));
+
+    scope.pop();
+
+    Ok(Ast::Function {
+        name,
+        ascii_name: name,
+        parameters,
+        parameter_types,
+        body,
+        return_type,
+        attributes: Vec::new(),
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_function_body<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    fn_name: &'ast str,
+    param_types: &[Type],
+    return_type: &Type,
+) -> arbitrary::Result<Ast<'ast>> {
+    scope.push();
+
+    let n_stmts: usize = u.int_in_range(1..=cfg.max_statements_per_block)?;
+    let mut nodes: Vec<Ast<'_>> = Vec::with_capacity(n_stmts + 1);
+
+    for _ in 0..n_stmts {
+        nodes.push(gen_stmt(u, scope, cfg, depth, 0, fn_name, param_types)?);
+    }
+
+    let is_void: bool = return_type.is_void_type();
+
+    if !is_void {
+        nodes.push(Ast::Return {
+            expression: Some(Box::new(gen_expr_of_type(
+                u,
+                scope,
+                cfg,
+                cfg.max_expr_depth,
+                return_type,
+            )?)),
+            kind: return_type.clone(),
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    } else if u.arbitrary()? {
+        nodes.push(Ast::Return {
+            expression: None,
+            kind: return_type.clone(),
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+
+    let mut post: Vec<Ast<'_>> = Vec::new();
+    if cfg.allow_defer && u.arbitrary()? {
+        post.push(gen_defer(u, scope, cfg, depth, fn_name, param_types)?);
+    }
+
+    scope.pop();
+
+    Ok(Ast::Block {
+        nodes,
+        post,
+        kind: return_type.clone(),
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_block<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    loop_depth: usize,
+    is_loop_body: bool,
+    fn_name: &'ast str,
+    param_types: &[Type],
+) -> arbitrary::Result<Ast<'ast>> {
+    scope.push();
+
+    let n_stmts: usize = u.int_in_range(1..=cfg.max_statements_per_block)?;
+    let mut nodes: Vec<Ast<'_>> = Vec::with_capacity(n_stmts + 1);
+
+    for _ in 0..n_stmts {
+        nodes.push(gen_stmt(
+            u, scope, cfg, depth, loop_depth, fn_name, param_types,
+        )?);
+    }
+
+    if is_loop_body && u.arbitrary()? {
+        nodes.push(gen_loop_control(u)?);
+    }
+
+    scope.pop();
+
+    Ok(Ast::Block {
+        nodes,
+        post: Vec::new(),
+        kind: Type::Void {
+            span: u.arbitrary()?,
+        },
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_stmt<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    loop_depth: usize,
+    fn_name: &'ast str,
+    param_types: &[Type],
+) -> arbitrary::Result<Ast<'ast>> {
+    if depth == 0 {
+        return if u.arbitrary()? {
+            gen_var(u, scope, cfg, 1)
+        } else {
+            gen_expr_stmt(u, scope, cfg, 1)
+        };
+    }
+
+    let can_nest_loop = cfg.allow_loops && depth > 1 && loop_depth < cfg.max_loop_nesting;
+    let has_vars = scope.has_any();
+
+    let mut options: Vec<u8> = Vec::with_capacity(16);
+    options.push(0); // var
+    options.push(1); // if
+    if has_vars {
+        options.push(2); // mutation
+    }
+    options.push(3); // nested block
+    if can_nest_loop {
+        let weight: u8 = if cfg.loop_bias { 4 } else { 1 };
+        for _ in 0..weight {
+            options.push(4); // while
+            options.push(5); // for
+            options.push(6); // loop
+        }
+    }
+    if cfg.allow_const_static {
+        options.push(7); // static
+        options.push(8); // const
+    }
+    if cfg.allow_defer {
+        options.push(9); // defer
+    }
+    if cfg.allow_self_calls {
+        options.push(10); // self call
+    }
+    options.push(11); // bare expression statement
+
+    match *u.choose(&options)? {
+        0 => gen_var(u, scope, cfg, depth.saturating_sub(1)),
+        1 => gen_if(u, scope, cfg, depth.saturating_sub(1), loop_depth, fn_name, param_types),
+        2 => gen_mutation(u, scope, cfg, depth.saturating_sub(1)),
+        3 => gen_block(
+            u,
+            scope,
+            cfg,
+            depth.saturating_sub(1),
+            loop_depth,
+            false,
+            fn_name,
+            param_types,
+        ),
+        4 => gen_while(u, scope, cfg, depth.saturating_sub(1), loop_depth, fn_name, param_types),
+        5 => gen_for(u, scope, cfg, depth.saturating_sub(1), loop_depth, fn_name, param_types),
+        6 => gen_loop(u, scope, cfg, depth.saturating_sub(1), loop_depth, fn_name, param_types),
+        7 => gen_static(u, scope, cfg),
+        8 => gen_const(u, scope, cfg),
+        9 => gen_defer(u, scope, cfg, depth.saturating_sub(1), fn_name, param_types),
+        10 => gen_self_call(u, scope, cfg, depth.saturating_sub(1), fn_name, param_types),
+        _ => gen_expr_stmt(u, scope, cfg, depth.saturating_sub(1)),
+    }
+}
+
+fn gen_var<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+) -> arbitrary::Result<Ast<'ast>> {
+    let name = gen_name(u)?;
+    let kind: Type = gen_decl_type(u, cfg)?;
+
+    let value = if u.arbitrary()? {
+        Some(Box::new(gen_expr_of_type(u, scope, cfg, depth, &kind)?))
+    } else {
+        None
+    };
+
+    scope.declare(name, kind.clone());
+
+    Ok(Ast::Var {
+        name,
+        ascii_name: name,
+        kind,
+        value,
+        attributes: Vec::new(),
+        modificators: Vec::new(),
+        metadata: u.arbitrary()?,
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_const<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+) -> arbitrary::Result<Ast<'ast>> {
+    let name = gen_name(u)?;
+    let kind: Type = gen_decl_type(u, cfg)?;
+    let value = Box::new(gen_const_expr_of_type(
+        u,
+        scope,
+        cfg,
+        cfg.max_expr_depth,
+        &kind,
+    )?);
+
+    scope.declare(name, kind.clone());
+
+    Ok(Ast::Const {
+        name,
+        ascii_name: name,
+        kind,
+        value,
+        attributes: Vec::new(),
+        modificators: Vec::new(),
+        metadata: u.arbitrary()?,
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_static<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+) -> arbitrary::Result<Ast<'ast>> {
+    let name = gen_name(u)?;
+    let kind: Type = gen_decl_type(u, cfg)?;
+
+    let value = if u.arbitrary()? {
+        Some(Box::new(gen_const_expr_of_type(
+            u,
+            scope,
+            cfg,
+            cfg.max_expr_depth,
+            &kind,
+        )?))
+    } else {
+        None
+    };
+
+    scope.declare(name, kind.clone());
+
+    Ok(Ast::Static {
+        name,
+        ascii_name: name,
+        kind,
+        value,
+        attributes: Vec::new(),
+        modificators: Vec::new(),
+        metadata: u.arbitrary()?,
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_if<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    loop_depth: usize,
+    fn_name: &'ast str,
+    param_types: &[Type],
+) -> arbitrary::Result<Ast<'ast>> {
+    let bool_kind: Type = Type::Bool {
+        span: u.arbitrary()?,
+    };
+    let condition = Box::new(gen_expr_of_type(
+        u,
+        scope,
+        cfg,
+        cfg.max_expr_depth,
+        &bool_kind,
+    )?);
+    let then_branch = Box::new(gen_block(
+        u,
+        scope,
+        cfg,
+        depth,
+        loop_depth,
+        false,
+        fn_name,
+        param_types,
+    )?);
+
+    let n_elif = u.int_in_range(0..=2usize)?;
+    let mut else_if_branch: Vec<Ast<'_>> = Vec::with_capacity(n_elif);
+    for _ in 0..n_elif {
+        let elif_bool_kind: Type = Type::Bool {
+            span: u.arbitrary()?,
+        };
+        let elif_condition = Box::new(gen_expr_of_type(
+            u,
+            scope,
+            cfg,
+            cfg.max_expr_depth,
+            &elif_bool_kind,
+        )?);
+        let elif_block = Box::new(gen_block(
+            u,
+            scope,
+            cfg,
+            depth,
+            loop_depth,
+            false,
+            fn_name,
+            param_types,
+        )?);
+        else_if_branch.push(Ast::Elif {
+            condition: elif_condition,
+            block: elif_block,
+            kind: Type::Void {
+                span: u.arbitrary()?,
+            },
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+
+    let else_branch = if u.arbitrary()? {
+        Some(Box::new(Ast::Else {
+            block: Box::new(gen_block(
+                u,
+                scope,
+                cfg,
+                depth,
+                loop_depth,
+                false,
+                fn_name,
+                param_types,
+            )?),
+            kind: Type::Void {
+                span: u.arbitrary()?,
+            },
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }))
+    } else {
+        None
+    };
+
+    Ok(Ast::If {
+        condition,
+        then_branch,
+        else_if_branch,
+        else_branch,
+        kind: Type::Void {
+            span: u.arbitrary()?,
+        },
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_for<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    loop_depth: usize,
+    fn_name: &'ast str,
+    param_types: &[Type],
+) -> arbitrary::Result<Ast<'ast>> {
+    scope.push();
+
+    let loop_var_name = gen_name(u)?;
+    let loop_var_kind: Type = gen_integer_type(u)?;
+
+    let init_value = Box::new(Ast::Integer {
+        kind: loop_var_kind.clone(),
+        value: u.arbitrary()?,
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    });
+
+    let local = Box::new(Ast::Var {
+        name: loop_var_name,
+        ascii_name: loop_var_name,
+        kind: loop_var_kind.clone(),
+        value: Some(init_value),
+        attributes: Vec::new(),
+        modificators: Vec::new(),
+        metadata: u.arbitrary()?,
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    });
+
+    let condition = Box::new(Ast::BinaryOp {
+        left: Box::new(reference(loop_var_name, loop_var_kind.clone())),
+        operator: relational_operator(u)?,
+        right: Box::new(Ast::Integer {
+            kind: loop_var_kind.clone(),
+            value: u.arbitrary()?,
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }),
+        kind: Type::Bool {
+            span: u.arbitrary()?,
+        },
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    });
+
+    let actions = Box::new(Ast::BinaryOp {
+        left: Box::new(reference(loop_var_name, loop_var_kind.clone())),
+        operator: TokenType::PlusEq,
+        right: Box::new(Ast::Integer {
+            kind: loop_var_kind.clone(),
+            value: u.arbitrary()?,
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }),
+        kind: loop_var_kind.clone(),
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    });
+
+    let block = Box::new(gen_block(
+        u,
+        scope,
+        cfg,
+        depth,
+        loop_depth + 1,
+        true,
+        fn_name,
+        param_types,
+    )?);
+
+    scope.pop();
+
+    Ok(Ast::For {
+        local,
+        condition,
+        actions,
+        block,
+        kind: Type::Void {
+            span: u.arbitrary()?,
+        },
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_while<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    loop_depth: usize,
+    fn_name: &'ast str,
+    param_types: &[Type],
+) -> arbitrary::Result<Ast<'ast>> {
+    scope.push();
+
+    let variable_node: Option<Ast<'ast>> = if u.arbitrary()? {
+        Some(gen_var(u, scope, cfg, depth.saturating_sub(1))?)
+    } else {
+        None
+    };
+
+    let bool_kind: Type = Type::Bool {
+        span: u.arbitrary()?,
+    };
+    let condition = Box::new(gen_expr_of_type(
+        u,
+        scope,
+        cfg,
+        cfg.max_expr_depth,
+        &bool_kind,
+    )?);
+    let mut block = gen_block(
+        u,
+        scope,
+        cfg,
+        depth,
+        loop_depth + 1,
+        true,
+        fn_name,
+        param_types,
+    )?;
+
+    if let Some(var_node) = variable_node {
+        if let Ast::Block { nodes, .. } = &mut block {
+            nodes.insert(0, var_node);
+        }
+    }
+
+    scope.pop();
+
+    Ok(Ast::While {
+        variable: None,
+        condition,
+        block: Box::new(block),
+        kind: Type::Void {
+            span: u.arbitrary()?,
+        },
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_loop<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    loop_depth: usize,
+    fn_name: &'ast str,
+    param_types: &[Type],
+) -> arbitrary::Result<Ast<'ast>> {
+    Ok(Ast::Loop {
+        block: Box::new(gen_block(
+            u,
+            scope,
+            cfg,
+            depth,
+            loop_depth + 1,
+            true,
+            fn_name,
+            param_types,
+        )?),
+        kind: Type::Void {
+            span: u.arbitrary()?,
+        },
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_loop_control<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Ast<'ast>> {
+    match u.int_in_range(0..=3)? {
+        0 => Ok(Ast::Continue {
+            kind: Type::Void {
+                span: u.arbitrary()?,
+            },
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }),
+        1 => Ok(Ast::Break {
+            kind: Type::Void {
+                span: u.arbitrary()?,
+            },
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }),
+        2 => Ok(Ast::ContinueAll {
+            kind: Type::Void {
+                span: u.arbitrary()?,
+            },
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }),
+        _ => Ok(Ast::BreakAll {
+            kind: Type::Void {
+                span: u.arbitrary()?,
+            },
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }),
+    }
+}
+
+fn gen_defer<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    fn_name: &'ast str,
+    param_types: &[Type],
+) -> arbitrary::Result<Ast<'ast>> {
+    Ok(Ast::Defer {
+        node: Box::new(gen_stmt(
+            u, scope, cfg, depth, 0, fn_name, param_types,
+        )?),
+        kind: Type::Void {
+            span: u.arbitrary()?,
+        },
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_mutation<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+) -> arbitrary::Result<Ast<'ast>> {
+    let Some(picked) = scope.pick_any(u)? else {
+        return gen_var(u, scope, cfg, depth);
+    };
+    let kind: Type = picked.kind.clone();
+
+    Ok(Ast::Mutation {
+        source: Box::new(reference(picked.name, kind.clone())),
+        value: Box::new(gen_expr_of_type(u, scope, cfg, depth, &kind)?),
+        kind: kind.clone(),
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_self_call<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    fn_name: &'ast str,
+    param_types: &[Type],
+) -> arbitrary::Result<Ast<'ast>> {
+    let mut args: Vec<Ast<'_>> = Vec::with_capacity(param_types.len());
+    for param_type in param_types.iter() {
+        args.push(gen_expr_of_type(u, scope, cfg, depth, param_type)?);
+    }
+
+    Ok(Ast::Call {
+        name: fn_name,
+        args,
+        kind: gen_scalar_type(u)?,
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_expr_stmt<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+) -> arbitrary::Result<Ast<'ast>> {
+    let kind: Type = gen_scalar_type(u)?;
+    if scope.has_of_type(&kind) && u.arbitrary()? {
+        return Ok(gen_reference_of_type(u, scope, &kind)?);
+    }
+    gen_expr_of_type(u, scope, cfg, depth.max(1), &kind)
+}
+
+fn reference<'ast>(name: &'ast str, kind: Type) -> Ast<'ast> {
+    Ast::Reference {
+        name,
+        kind,
+        metadata: ref_metadata(),
+        span: thrustc_code_location::Span::nothing(),
+        id: NodeId::new(),
+    }
+}
+
+fn gen_reference_of_type<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &ScopeStack<'ast>,
+    target: &Type,
+) -> arbitrary::Result<Ast<'ast>> {
+    let visible = scope.visible();
+    let matches: Vec<_> = visible.into_iter().filter(|var| var.kind == *target).collect();
+
+    let picked = if matches.is_empty() {
+        return Err(arbitrary::Error::IncorrectFormat);
+    } else {
+        let idx = u.int_in_range(0..=(matches.len() - 1))?;
+        matches[idx].clone()
+    };
+
+    Ok(Ast::Reference {
+        name: picked.name,
+        kind: picked.kind,
+        metadata: ref_metadata(),
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_expr_leaf<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrary::Result<Ast<'ast>> {
+    if target.is_integer_type() {
+        return Ok(Ast::Integer {
+            kind: target.clone(),
+            value: u.arbitrary()?,
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+    if target.is_float_type() {
+        return Ok(Ast::Float {
+            kind: target.clone(),
+            value: u.arbitrary()?,
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+    if target.is_bool_type() {
+        return Ok(Ast::Boolean {
+            kind: target.clone(),
+            value: u.arbitrary()?,
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+    if target.is_char_type() {
+        return Ok(Ast::Char {
+            kind: target.clone(),
+            byte: u.arbitrary()?,
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+    if target.is_ptr_type() {
+        return Ok(Ast::NullPtr {
+            span: u.arbitrary()?,
+            kind: target.clone(),
+        });
+    }
+    Err(arbitrary::Error::IncorrectFormat)
+}
+
+fn gen_binary_of_type<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    target: &Type,
+) -> arbitrary::Result<Ast<'ast>> {
+    if target.is_char_type() {
+        return gen_expr_leaf(u, target);
+    }
+
+    if target.is_bool_type() {
+        let bool_kind: Type = Type::Bool {
+            span: u.arbitrary()?,
+        };
+        if u.arbitrary()? {
+            let operator = logical_operator(u)?;
+            return Ok(Ast::BinaryOp {
+                left: Box::new(gen_expr_of_type(u, scope, cfg, depth, &bool_kind)?),
+                operator,
+                right: Box::new(gen_expr_of_type(u, scope, cfg, depth, &bool_kind)?),
+                kind: target.clone(),
+                span: u.arbitrary()?,
+                id: NodeId::new(),
+            });
+        }
+
+        let operand_type: Type = gen_integer_type(u)?;
+        let operator = relational_operator(u)?;
+        return Ok(Ast::BinaryOp {
+            left: Box::new(gen_expr_of_type(u, scope, cfg, depth, &operand_type)?),
+            operator,
+            right: Box::new(gen_expr_of_type(u, scope, cfg, depth, &operand_type)?),
+            kind: target.clone(),
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+
+    let operator: TokenType = if target.is_float_type() {
+        floating_operator(u)?
+    } else {
+        integer_operator(u)?
+    };
+
+    Ok(Ast::BinaryOp {
+        left: Box::new(gen_expr_of_type(u, scope, cfg, depth, target)?),
+        operator,
+        right: Box::new(gen_expr_of_type(u, scope, cfg, depth, target)?),
+        kind: target.clone(),
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_unary_of_type<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    target: &Type,
+) -> arbitrary::Result<Option<Ast<'ast>>> {
+    let operator: TokenType = if target.is_char_type() {
+        return Ok(None);
+    } else if target.is_bool_type() {
+        TokenType::Bang
+    } else if target.is_integer_type() {
+        if u.arbitrary()? {
+            TokenType::Minus
+        } else {
+            TokenType::Not
+        }
+    } else if target.is_float_type() {
+        TokenType::Minus
+    } else {
+        return Ok(None);
+    };
+
+    Ok(Some(Ast::UnaryOp {
+        operator,
+        kind: target.clone(),
+        node: Box::new(gen_expr_of_type(u, scope, cfg, depth, target)?),
+        before: false,
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    }))
+}
+
+fn gen_deref_of_type<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &ScopeStack<'ast>,
+    target: &Type,
+) -> arbitrary::Result<Option<Ast<'ast>>> {
+    let Some(ptr_var) = scope.has_ptr_of(target) else {
+        return Ok(None);
+    };
+
+    Ok(Some(Ast::Deref {
+        value: Box::new(Ast::Reference {
+            name: ptr_var.name,
+            kind: ptr_var.kind,
+            metadata: ref_metadata(),
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }),
+        kind: target.clone(),
+        modificators: Vec::new(),
+        metadata: u.arbitrary()?,
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    }))
+}
+
+fn gen_cast_of_type<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    target: &Type,
+) -> arbitrary::Result<Ast<'ast>> {
+    let source: Type = cast_source_type(u, target)?;
+
+    let from = gen_expr_of_type(u, scope, cfg, depth, &source)?;
+
+    Ok(Ast::As {
+        from: Box::new(from),
+        cast: target.clone(),
+        metadata: CastingMetadata::new(false, false),
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn cast_source_type<'ast>(
+    u: &mut Unstructured<'ast>,
+    target: &Type,
+) -> arbitrary::Result<Type> {
+    if target.is_char_type() {
+        let r: Type = match u.int_in_range(0..=1)? {
+            0 => gen_integer_type(u),
+            _ => Ok(Type::Char {
+                span: u.arbitrary()?,
+            }),
+        }?;
+        return Ok(r);
+    }
+    if target.is_integer_type() {
+        return match u.int_in_range(0..=4)? {
+            0 => gen_scalar_type(u),
+            1 => gen_float_type(u),
+            2 => Ok(Type::Char {
+                span: u.arbitrary()?,
+            }),
+            3 => Ok(Type::Bool {
+                span: u.arbitrary()?,
+            }),
+            _ => gen_ptr_type(u),
+        };
+    }
+    if target.is_float_type() {
+        return match u.int_in_range(0..=2)? {
+            0 => gen_integer_type(u),
+            1 => gen_float_type(u),
+            _ => Ok(Type::Char {
+                span: u.arbitrary()?,
+            }),
+        };
+    }
+    if target.is_bool_type() {
+        return gen_integer_type(u);
+    }
+    if target.is_ptr_type() {
+        return match u.int_in_range(0..=1)? {
+            0 => gen_integer_type(u),
+            _ => gen_ptr_type(u),
+        };
+    }
+    Err(arbitrary::Error::IncorrectFormat)
+}
+
+fn gen_float_type<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Type> {
+    match u.int_in_range(0..=1)? {
+        0 => Ok(Type::F32 {
+            span: u.arbitrary()?,
+        }),
+        _ => Ok(Type::F64 {
+            span: u.arbitrary()?,
+        }),
+    }
+}
+
+fn gen_expr_of_type<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    target: &Type,
+) -> arbitrary::Result<Ast<'ast>> {
+    if depth == 0 {
+        return gen_expr_leaf(u, target);
+    }
+
+    if target.is_ptr_type() {
+        return Ok(Ast::NullPtr {
+            span: u.arbitrary()?,
+            kind: target.clone(),
+        });
+    }
+
+    let has_matching_ref = scope.has_of_type(target);
+    let has_ptr = scope.has_ptr_of(target).is_some();
+
+    let upper: u32 = if has_matching_ref && has_ptr {
+        8
+    } else if has_matching_ref {
+        7
+    } else if has_ptr {
+        6
+    } else {
+        5
+    };
+
+    match u.int_in_range(0..=upper)? {
+        0 => gen_expr_leaf(u, target),
+        1 if has_matching_ref => gen_reference_of_type(u, scope, target),
+        2 => gen_binary_of_type(u, scope, cfg, depth - 1, target),
+        3 => gen_unary_of_type(u, scope, cfg, depth - 1, target)
+            .map(|opt| opt.unwrap_or_else(|| gen_expr_leaf(u, target).unwrap())),
+        4 => gen_cast_of_type(u, scope, cfg, depth - 1, target),
+        5 => gen_group_of_type(u, scope, cfg, depth - 1, target),
+        6 if has_ptr => gen_deref_of_type(u, scope, target)
+            .map(|opt| opt.unwrap_or_else(|| gen_expr_leaf(u, target).unwrap())),
+        7 if has_matching_ref => gen_reference_of_type(u, scope, target),
+        _ => gen_expr_leaf(u, target),
+    }
+}
+
+fn gen_group_of_type<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    target: &Type,
+) -> arbitrary::Result<Ast<'ast>> {
+    Ok(Ast::Group {
+        node: Box::new(gen_expr_of_type(u, scope, cfg, depth, target)?),
+        kind: target.clone(),
+        span: u.arbitrary()?,
+        id: NodeId::new(),
+    })
+}
+
+fn gen_const_expr_of_type<'ast>(
+    u: &mut Unstructured<'ast>,
+    scope: &mut ScopeStack<'ast>,
+    cfg: &Config,
+    depth: usize,
+    target: &Type,
+) -> arbitrary::Result<Ast<'ast>> {
+    if target.is_ptr_type() {
+        return Ok(Ast::NullPtr {
+            span: u.arbitrary()?,
+            kind: target.clone(),
+        });
+    }
+
+    if depth == 0 {
+        return gen_const_leaf(u, target);
+    }
+
+    if target.is_bool_type() {
+        let bool_kind: Type = Type::Bool {
+            span: u.arbitrary()?,
+        };
+        if u.arbitrary()? {
+            return Ok(Ast::Boolean {
+                kind: target.clone(),
+                value: u.arbitrary()?,
+                span: u.arbitrary()?,
+                id: NodeId::new(),
+            });
+        }
+        let operator = logical_operator(u)?;
+        return Ok(Ast::BinaryOp {
+            left: Box::new(gen_const_expr_of_type(
+                u,
+                scope,
+                cfg,
+                depth.saturating_sub(1),
+                &bool_kind,
+            )?),
+            operator,
+            right: Box::new(gen_const_expr_of_type(
+                u,
+                scope,
+                cfg,
+                depth.saturating_sub(1),
+                &bool_kind,
+            )?),
+            kind: target.clone(),
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+
+    if target.is_char_type() {
+        return gen_const_leaf(u, target);
+    }
+
+    match u.int_in_range(0..=5)? {
+        0 => gen_const_leaf(u, target),
+        1 => {
+            let operator: TokenType = if target.is_float_type() {
+                floating_operator(u)?
+            } else {
+                const_integer_operator(u)?
+            };
+            Ok(Ast::BinaryOp {
+                left: Box::new(gen_const_expr_of_type(
+                    u,
+                    scope,
+                    cfg,
+                    depth.saturating_sub(1),
+                    target,
+                )?),
+                operator,
+                right: Box::new(gen_const_expr_of_type(
+                    u,
+                    scope,
+                    cfg,
+                    depth.saturating_sub(1),
+                    target,
+                )?),
+                kind: target.clone(),
+                span: u.arbitrary()?,
+                id: NodeId::new(),
+            })
+        }
+        2 => {
+            let operator: TokenType = if target.is_bool_type() {
+                TokenType::Bang
+            } else if target.is_integer_type() {
+                if u.arbitrary()? {
+                    TokenType::Minus
+                } else {
+                    TokenType::Not
+                }
+            } else {
+                TokenType::Minus
+            };
+            Ok(Ast::UnaryOp {
+                operator,
+                kind: target.clone(),
+                node: Box::new(gen_const_expr_of_type(
+                    u,
+                    scope,
+                    cfg,
+                    depth.saturating_sub(1),
+                    target,
+                )?),
+                before: false,
+                span: u.arbitrary()?,
+                id: NodeId::new(),
+            })
+        }
+        3 => Ok(Ast::Group {
+            node: Box::new(gen_const_expr_of_type(
+                u,
+                scope,
+                cfg,
+                depth.saturating_sub(1),
+                target,
+            )?),
+            kind: target.clone(),
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }),
+        4 => {
+            let source: Type = cast_source_type(u, target)?;
+            Ok(Ast::As {
+                from: Box::new(gen_const_expr_of_type(
+                    u,
+                    scope,
+                    cfg,
+                    depth.saturating_sub(1),
+                    &source,
+                )?),
+                cast: target.clone(),
+                metadata: CastingMetadata::new(true, false),
+                span: u.arbitrary()?,
+                id: NodeId::new(),
+            })
+        }
+        _ => {
+            if target.is_integer_type() && u.arbitrary()? {
+                return Ok(Ast::Builtin {
+                    builtin: AstBuiltin::SizeOf {
+                        ty: gen_scalar_type(u)?,
+                        span: u.arbitrary()?,
+                    },
+                    kind: target.clone(),
+                    span: u.arbitrary()?,
+                    id: NodeId::new(),
+                });
+            }
+            gen_const_leaf(u, target)
+        }
+    }
+}
+
+fn gen_const_leaf<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrary::Result<Ast<'ast>> {
+    if target.is_integer_type() {
+        return Ok(Ast::Integer {
+            kind: target.clone(),
+            value: u.arbitrary()?,
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+    if target.is_float_type() {
+        return Ok(Ast::Float {
+            kind: target.clone(),
+            value: u.arbitrary()?,
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+    if target.is_bool_type() {
+        return Ok(Ast::Boolean {
+            kind: target.clone(),
+            value: u.arbitrary()?,
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+    if target.is_char_type() {
+        return Ok(Ast::Char {
+            kind: target.clone(),
+            byte: u.arbitrary()?,
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        });
+    }
+    Err(arbitrary::Error::IncorrectFormat)
+}
+
+fn integer_operator<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<TokenType> {
+    const OPS: [TokenType; 11] = [
+        TokenType::Plus,
+        TokenType::Minus,
+        TokenType::Star,
+        TokenType::Slash,
+        TokenType::Arith,
+        TokenType::Xor,
+        TokenType::Bor,
+        TokenType::BAnd,
+        TokenType::LShift,
+        TokenType::RShift,
+        TokenType::Plus,
+    ];
+    Ok(*u.choose(&OPS)?)
+}
+
+fn const_integer_operator<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<TokenType> {
+    const OPS: [TokenType; 6] = [
+        TokenType::Plus,
+        TokenType::Minus,
+        TokenType::Star,
+        TokenType::Xor,
+        TokenType::Bor,
+        TokenType::BAnd,
+    ];
+    Ok(*u.choose(&OPS)?)
+}
+
+fn floating_operator<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<TokenType> {
+    const OPS: [TokenType; 4] = [
+        TokenType::Plus,
+        TokenType::Minus,
+        TokenType::Star,
+        TokenType::Slash,
+    ];
+    Ok(*u.choose(&OPS)?)
+}
+
+fn logical_operator<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<TokenType> {
+    const OPS: [TokenType; 2] = [TokenType::And, TokenType::Or];
+    Ok(*u.choose(&OPS)?)
+}
+
+fn relational_operator<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<TokenType> {
+    const OPS: [TokenType; 6] = [
+        TokenType::EqEq,
+        TokenType::BangEq,
+        TokenType::Less,
+        TokenType::LessEq,
+        TokenType::Greater,
+        TokenType::GreaterEq,
+    ];
+    Ok(*u.choose(&OPS)?)
+}
