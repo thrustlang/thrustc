@@ -74,6 +74,8 @@ impl<'preprocessor> Preprocessor {
                 if let Ok(Some(module)) = highmodule_parsing::import::parse_import(&mut context) {
                     self.modules.push(module);
                 }
+
+                continue;
             }
 
             let _ = context.only_advance();

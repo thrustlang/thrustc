@@ -41,6 +41,20 @@ impl<'parser> ExternalSymbolTable<'parser> {
     }
 
     pub fn resolve(&self, access: &[String]) -> Option<&'parser Module> {
+        for module in self.modules {
+            if let Some(length) = module.alias_prefix_len(access) {
+                let rest: &[String] = &access[length..];
+
+                if rest.is_empty() {
+                    return Some(module);
+                }
+
+                if let Some(submodule) = module.find_submodule(rest.to_vec()) {
+                    return Some(submodule);
+                }
+            }
+        }
+
         let first: &String = access.first()?;
 
         let module: &Module = self.find_module(first)?;

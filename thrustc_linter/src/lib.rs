@@ -129,7 +129,7 @@ impl<'linter> Linter<'linter> {
                 ..
             } => {
                 self.symbols
-                    .new_local_static(name, (*span, false, metadata.is_mutable(), false, None));
+                    .new_local_static(name, (*span, false, metadata.is_mutable(), false, None, false));
 
                 if let Some(value) = value {
                     self.analyze_expr(value);
@@ -140,9 +140,16 @@ impl<'linter> Linter<'linter> {
                 }
             }
             Ast::Const {
-                name, value, span, ..
+                name,
+                value,
+                span,
+                attributes,
+                ..
             } => {
-                self.symbols.new_global_constant(name, (*span, false));
+                self.symbols.new_global_constant(
+                    name,
+                    (*span, false, attributes.has_public_attribute()),
+                );
                 self.analyze_expr(value);
             }
             Ast::Function {
@@ -235,7 +242,7 @@ impl<'linter> Linter<'linter> {
                 ..
             } => {
                 self.symbols
-                    .new_local_static(name, (*span, false, metadata.is_mutable(), false, None));
+                    .new_local_static(name, (*span, false, metadata.is_mutable(), false, None, false));
 
                 if let Some(value) = value {
                     self.analyze_expr(value);
@@ -248,7 +255,7 @@ impl<'linter> Linter<'linter> {
             Ast::Const {
                 name, value, span, ..
             } => {
-                self.symbols.new_local_constant(name, (*span, false));
+                self.symbols.new_local_constant(name, (*span, false, false));
                 self.analyze_expr(value);
             }
             Ast::CustomType { .. } | Ast::Struct { .. } => (),
@@ -493,15 +500,29 @@ impl Linter<'_> {
                     name,
                     metadata,
                     span,
+                    attributes,
                     ..
                 } => {
                     self.symbols.new_global_static(
                         name,
-                        (*span, false, metadata.is_mutable(), false, None),
+                        (
+                            *span,
+                            false,
+                            metadata.is_mutable(),
+                            false,
+                            None,
+                            attributes.has_public_attribute(),
+                        ),
                     );
                 }
-                Ast::Const { name, span, .. } => {
-                    self.symbols.new_global_constant(name, (*span, false));
+                Ast::Const {
+                    name,
+                    span,
+                    attributes,
+                    ..
+                } => {
+                    self.symbols
+                        .new_global_constant(name, (*span, false, attributes.has_public_attribute()));
                 }
                 Ast::Struct {
                     name,
@@ -525,13 +546,18 @@ impl Linter<'_> {
                             converted_fields,
                             field_names,
                             *span,
+                            false,
                             attributes.has_public_attribute(),
                         ),
                     );
                 }
 
                 Ast::Enum {
-                    name, data, span, ..
+                    name,
+                    data,
+                    span,
+                    attributes,
+                    ..
                 } => {
                     let mut converted_fields: HashMap<&str, (Span, bool)> =
                         HashMap::with_capacity(100);
@@ -542,8 +568,10 @@ impl Linter<'_> {
                         converted_fields.insert(field_name, (expr_span, false));
                     }
 
-                    self.symbols
-                        .new_enum(name, (converted_fields, *span, false));
+                    self.symbols.new_enum(
+                        name,
+                        (converted_fields, *span, false, attributes.has_public_attribute()),
+                    );
                 }
 
                 Ast::Function {
@@ -553,7 +581,7 @@ impl Linter<'_> {
                     ..
                 } => {
                     self.symbols
-                        .new_function(name, (*span, attributes.has_public_attribute()));
+                        .new_function(name, (*span, false, attributes.has_public_attribute()));
 
                     if attributes.has_noreturn_attribute() {
                         self.noreturn_functions.insert(name);
@@ -567,7 +595,7 @@ impl Linter<'_> {
                     ..
                 } => {
                     self.symbols
-                        .new_intrinsic(name, (*span, attributes.has_public_attribute()));
+                        .new_intrinsic(name, (*span, false, attributes.has_public_attribute()));
 
                     if attributes.has_noreturn_attribute() {
                         self.noreturn_functions.insert(name);
@@ -581,7 +609,7 @@ impl Linter<'_> {
                     ..
                 } => {
                     self.symbols
-                        .new_asm_function(name, (*span, attributes.has_public_attribute()));
+                        .new_asm_function(name, (*span, false, attributes.has_public_attribute()));
                 }
 
                 _ => (),
@@ -813,7 +841,7 @@ impl Linter<'_> {
             let span: Span = info.0;
             let used: bool = info.1;
 
-            if !used {
+            if !used && !info.5 {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0009,
                     format!("'{}' not used.", name),
@@ -851,7 +879,7 @@ impl Linter<'_> {
             let span: Span = info.0;
             let used: bool = info.1;
 
-            if !used {
+            if !used && !info.2 {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0010,
                     format!("'{}' not used.", name),
@@ -868,7 +896,7 @@ impl Linter<'_> {
             let span: Span = info.0;
             let used: bool = info.1;
 
-            if !used {
+            if !used && !info.2 {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0017,
                     format!("'{}' not used.", name),
@@ -885,7 +913,7 @@ impl Linter<'_> {
             let span: Span = info.0;
             let used: bool = info.1;
 
-            if !used {
+            if !used && !info.2 {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0011,
                     format!("'{}' not used.", name),
@@ -902,7 +930,7 @@ impl Linter<'_> {
             let span: Span = info.1;
             let used: bool = info.2;
 
-            if !used {
+            if !used && !info.3 {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0012,
                     format!("'{}' not used.", name),
@@ -938,7 +966,7 @@ impl Linter<'_> {
             let span: Span = info.0;
             let used: bool = info.1;
 
-            if !used {
+            if !used && !info.2 {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0014,
                     format!("'{}' not used.", name),
@@ -955,7 +983,7 @@ impl Linter<'_> {
             let span: Span = info.2;
             let used: bool = info.3;
 
-            if !used {
+            if !used && !info.4 {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0015,
                     format!("'{}' not used.", name),

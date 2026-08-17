@@ -72,6 +72,14 @@ pub fn build_import<'parser>(
             CompilationIssueCode::E0001,
             "Expected identifier for the module alias.".into(),
         )?;
+
+        while ctx.match_token(TokenType::ColonColon)? {
+            ctx.consume(
+                TokenType::Identifier,
+                CompilationIssueCode::E0001,
+                "Expected identifier after the path separator.".into(),
+            )?;
+        }
     }
 
     ctx.consume(

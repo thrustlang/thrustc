@@ -48,4 +48,32 @@ impl ModuleRegistry {
     pub fn find(&self, name: &str) -> Option<Rc<Module>> {
         self.modules.get(name).cloned()
     }
+
+    pub fn resolve(&self, access: &[String]) -> Option<Rc<Module>> {
+        for module in self.modules.values() {
+            if let Some(length) = module.alias_prefix_len(access) {
+                let rest: &[String] = &access[length..];
+
+                if rest.is_empty() {
+                    return Some(module.clone());
+                }
+
+                if let Some(submodule) = module.find_submodule(rest.to_vec()) {
+                    return Some(Rc::new(submodule.clone()));
+                }
+            }
+        }
+
+        let first: &String = access.first()?;
+
+        let module: Rc<Module> = self.find(first)?;
+
+        if access.len() == 1 {
+            return Some(module);
+        }
+
+        module
+            .find_submodule(access[1..].to_vec())
+            .map(|submodule| Rc::new(submodule.clone()))
+    }
 }

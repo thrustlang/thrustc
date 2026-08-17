@@ -150,7 +150,15 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         self.discover_std_usage();
 
-        self.compile_imported_std();
+        if self.compile_imported_std().is_err() {
+            return (
+                true,
+                self.thrustc_time,
+                self.thrustc_frontend_time,
+                self.thrustc_backend_time,
+                self.linking_time,
+            );
+        }
 
         let mut it_failed: bool = false;
 
@@ -210,9 +218,9 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         }
     }
 
-    fn compile_imported_std(&mut self) {
+    fn compile_imported_std(&mut self) -> Result<(), ()> {
         if !thrustc_preprocessor::std_library::has_imported_std() {
-            return;
+            return Ok(());
         }
 
         let mut compiled_paths: std::collections::HashSet<std::path::PathBuf> =
@@ -240,8 +248,59 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             let content: String = thrustc_reader::get_file_source_code(&path);
             let unit: CompilationUnit = CompilationUnit::new(name, path, content, base_name);
 
-            let _ = self.compile_file_with_llvm_aot(&unit);
+            self.compile_file_with_llvm_aot(&unit)?;
         }
+
+        Ok(())
+    }
+
+    fn compile_imported_std_jit<'a>(
+        &mut self,
+        context: &'a Context,
+    ) -> Result<Vec<Module<'a>>, ()> {
+        if !thrustc_preprocessor::std_library::has_imported_std() {
+            return Ok(Vec::with_capacity(0));
+        }
+
+        let mut modules: Vec<Module<'a>> = Vec::with_capacity(u8::MAX as usize);
+
+        let mut compiled_paths: std::collections::HashSet<std::path::PathBuf> =
+            std::collections::HashSet::new();
+
+        for module in thrustc_preprocessor::std_library::get_imported_std_modules() {
+            let path: std::path::PathBuf = module.get_path().to_path_buf();
+
+            if !path.is_file() {
+                continue;
+            }
+
+            if !compiled_paths.insert(path.clone()) {
+                continue;
+            }
+
+            let name: String = path
+                .file_name()
+                .map_or_else(String::new, |name| name.to_string_lossy().to_string());
+
+            let base_name: String = path.file_stem().map_or_else(String::new, |base_name| {
+                base_name.to_string_lossy().to_string()
+            });
+
+            let content: String = thrustc_reader::get_file_source_code(&path);
+            let unit: CompilationUnit = CompilationUnit::new(name, path, content, base_name);
+
+            let compiled_file: either::Either<MemoryBuffer, ()> =
+                self.compile_file_with_llvm_jit(&unit)?;
+
+            if let Some(module) = compiled_file
+                .left()
+                .and_then(|memory_buffer| context.create_module_from_ir(memory_buffer).ok())
+            {
+                modules.push(module);
+            }
+        }
+
+        Ok(modules)
     }
 
     fn compile_file_with_llvm_aot(&mut self, file: &CompilationUnit) -> Result<(), ()> {
@@ -275,8 +334,6 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let modules: Result<&[thrustc_preprocessor::module::Module], ()> =
             preprocessor.generate_modules(&tokens, self.options, file);
-
-        //println!("{:?}", modules);
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
@@ -570,10 +627,29 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_jit_llvm(&mut self) -> CompileTime {
         cleaner::auto_clean(self.get_compilation_options());
 
+        self.discover_std_usage();
+
         let context: Context = Context::create();
 
         let mut it_failed: bool = false;
         let mut modules: Vec<Module> = Vec::with_capacity(u8::MAX as usize);
+
+        let std_modules: Result<Vec<Module>, ()> = self.compile_imported_std_jit(&context);
+
+        let std_modules: Vec<Module> = match std_modules {
+            Ok(std_modules) => std_modules,
+            Err(()) => {
+                return (
+                    true,
+                    self.thrustc_time,
+                    self.thrustc_frontend_time,
+                    self.thrustc_backend_time,
+                    self.linking_time,
+                );
+            }
+        };
+
+        modules.extend(std_modules);
 
         for file in self.unready.iter() {
             let compiled_file: Result<either::Either<MemoryBuffer, ()>, ()> =
@@ -654,7 +730,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
     fn compile_file_with_llvm_jit(
         &mut self,
-        file: &'thrustc CompilationUnit,
+        file: &CompilationUnit,
     ) -> Result<either::Either<MemoryBuffer, ()>, ()> {
         let file_time: std::time::Instant = std::time::Instant::now();
         let frontend_time: std::time::Instant = std::time::Instant::now();

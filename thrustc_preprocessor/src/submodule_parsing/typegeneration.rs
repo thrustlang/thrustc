@@ -156,29 +156,22 @@ fn build_type_inner(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
 }
 
 fn resolve_qualified_type(ctx: &mut ModuleParser<'_>, access: &[String]) -> Result<Type, ()> {
-    let module_name: &String = access.first().ok_or(())?;
     let type_name: &String = access.last().ok_or(())?;
 
     let registry = ctx.get_registry();
     let registry = registry.borrow();
 
-    let module: std::rc::Rc<crate::module::Module> = registry.find(module_name).ok_or(())?;
+    let module_access: &[String] = &access[..access.len().saturating_sub(1)];
 
-    let mut current: &crate::module::Module = &module;
+    let module: std::rc::Rc<crate::module::Module> = registry.resolve(module_access).ok_or(())?;
 
-    let mid: &[String] = &access[1..access.len().saturating_sub(1)];
-
-    for segment in mid.iter() {
-        current = current.find_submodule(vec![segment.clone()]).ok_or(())?;
-    }
-
-    if let Some(symbol) = current.search_symbol(type_name.clone(), Variant::CustomType) {
+    if let Some(symbol) = module.search_symbol(type_name.clone(), Variant::CustomType) {
         if let Signature::CustomType { kind, .. } = &symbol.signature {
             return Ok(kind.clone());
         }
     }
 
-    if let Some(symbol) = current.search_symbol(type_name.clone(), Variant::Struct) {
+    if let Some(symbol) = module.search_symbol(type_name.clone(), Variant::Struct) {
         if let Signature::Struct { kind, .. } = &symbol.signature {
             return Ok(kind.clone());
         }

@@ -59,13 +59,22 @@ pub fn parse_import<'preprocessor>(
         module_path = current_dir.join(import_str);
     }
 
-    let mut alias: Option<String> = None;
+    let mut alias: Option<Vec<String>> = None;
 
     if parser.check(TokenType::As) {
         parser.consume(TokenType::As)?;
 
         let alias_tk: &Token = parser.consume(TokenType::Identifier)?;
-        alias = Some(alias_tk.get_lexeme().to_string());
+        let mut alias_parts: Vec<String> = vec![alias_tk.get_lexeme().to_string()];
+
+        while parser.check(TokenType::ColonColon) {
+            parser.only_advance()?;
+
+            let part_tk: &Token = parser.consume(TokenType::Identifier)?;
+            alias_parts.push(part_tk.get_lexeme().to_string());
+        }
+
+        alias = Some(alias_parts);
     }
 
     parser.consume(TokenType::SemiColon)?;
@@ -223,13 +232,13 @@ fn parse_std_import<'preprocessor>(
         access.push(part_tk.get_lexeme().to_string());
     }
 
-    let mut alias: Option<String> = None;
+    let mut alias: Option<Vec<String>> = None;
 
     if parser.check(TokenType::As) {
         parser.consume(TokenType::As)?;
 
         let alias_tk: &Token = parser.consume(TokenType::Identifier)?;
-        alias = Some(alias_tk.get_lexeme().to_string());
+        alias = Some(vec![alias_tk.get_lexeme().to_string()]);
     }
 
     parser.consume(TokenType::SemiColon)?;

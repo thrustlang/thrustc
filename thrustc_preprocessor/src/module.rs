@@ -26,7 +26,7 @@ use crate::signatures::{Symbol, Variant};
 #[derive(Debug, Clone)]
 pub struct Module {
     base_name: String,
-    alias: Option<String>,
+    alias: Option<Vec<String>>,
     symbols: Vec<Symbol>,
     submodules: Vec<Module>,
     path: PathBuf,
@@ -46,7 +46,7 @@ impl Module {
     }
 
     #[inline]
-    pub fn set_alias(&mut self, alias: String) {
+    pub fn set_alias(&mut self, alias: Vec<String>) {
         self.alias = Some(alias);
     }
 }
@@ -98,19 +98,34 @@ impl Module {
     #[inline]
     pub fn find_submodule(&self, access: Vec<String>) -> Option<&Module> {
         let mut current_module: &Module = self;
+        let mut index: usize = 0;
 
-        for name in access.iter() {
-            let mut found: bool = false;
+        while index < access.len() {
+            let mut matched: bool = false;
 
             for submodule in &current_module.submodules {
-                if submodule.matches_name(name) {
+                if let Some(length) = submodule.alias_prefix_len(&access[index..]) {
                     current_module = submodule;
-                    found = true;
+                    index += length;
+                    matched = true;
                     break;
                 }
             }
 
-            if !found {
+            if matched {
+                continue;
+            }
+
+            for submodule in &current_module.submodules {
+                if submodule.matches_name(&access[index]) {
+                    current_module = submodule;
+                    index += 1;
+                    matched = true;
+                    break;
+                }
+            }
+
+            if !matched {
                 return None;
             }
         }
@@ -126,13 +141,30 @@ impl Module {
     }
 
     #[inline]
-    pub fn get_alias(&self) -> Option<&str> {
+    pub fn get_alias(&self) -> Option<&[String]> {
         self.alias.as_deref()
     }
 
     #[inline]
     pub fn matches_name(&self, name: &str) -> bool {
-        self.base_name == name || self.alias.as_deref() == Some(name)
+        self.base_name == name
+            || self
+                .alias
+                .as_ref()
+                .is_some_and(|alias| alias.len() == 1 && alias[0] == name)
+    }
+
+    #[inline]
+    pub fn alias_prefix_len(&self, access: &[String]) -> Option<usize> {
+        let alias: &[String] = self.alias.as_ref()?;
+
+        if access.len() < alias.len() {
+            return None;
+        }
+
+        let (prefix, _) = access.split_at(alias.len());
+
+        (prefix == alias).then_some(alias.len())
     }
 
     #[inline]
