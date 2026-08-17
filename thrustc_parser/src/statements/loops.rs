@@ -18,8 +18,8 @@
 */
 
 use thrustc_ast::{Ast, NodeId};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -134,14 +134,7 @@ pub fn parse_while_loop_stmt<'parser>(
         ctx.begin_scope();
 
         let local: Ast<'_> = variable::build_variable_stmt(ctx)?;
-
-        ctx.consume(
-            TokenType::Colon,
-            CompilationIssueCode::E0001,
-            "Expected ':'.".into(),
-        )?;
-
-        let condition: Ast = expressions::parse_expr(ctx)?;
+        let condition: Ast = expressions::parse_expression(ctx)?;
 
         let body: Ast = if ctx.check(TokenType::LBrace) {
             code_block::parse_code_block_stmt(ctx)?
