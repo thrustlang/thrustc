@@ -4,7 +4,7 @@
 "nullptr" "as" "asmfn" "asm" "global_asm" "deref" "type"
 "enum" "alloc" "address" "addr" "load" "write" "fixed"
 "ref" "mut" "static" "unreachable" "intrinsic" "embedded"
-"import" "importC" "new"
+"import" "importC" "only" "new"
 
 "s8" "s16" "s32" "s64" "ssize" "u8" "u16" "u32" "u64" "u128" "usize"
 "f32" "f64" "f128" "f80" "fppc_128" "bool" "char" "ptr" "array" "void" "Fn"

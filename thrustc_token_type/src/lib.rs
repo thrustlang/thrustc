@@ -142,6 +142,7 @@ pub enum TokenType {
     Fixed,
     Import,
     ImportC,
+    Only,
     Embedded,
     Mut,
     Type,

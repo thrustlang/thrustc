@@ -57,6 +57,14 @@ pub fn parse_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
         module_path = current_dir.join(import_str);
     }
 
+    let mut only: Option<Vec<String>> = None;
+
+    if parser.check(TokenType::Only) {
+        parser.consume(TokenType::Only)?;
+
+        only = Some(self::parse_only_list(parser)?);
+    }
+
     let mut alias: Option<Vec<String>> = None;
 
     if parser.check(TokenType::As) {
@@ -104,8 +112,6 @@ pub fn parse_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
         ));
 
         return Ok(());
-    } else {
-        parser.mark_visited(module_path.clone());
     }
 
     if !module_path.exists() {
@@ -183,9 +189,14 @@ pub fn parse_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
     let options: &CompilerOptions = parser.get_options();
 
     let content: String = thrustc_reader::get_file_source_code(&module_path);
-    let file: CompilationUnit = CompilationUnit::new(name, module_path, content, base_name.clone());
+
+    parser.mark_visited(module_path.clone());
+
+    let file: CompilationUnit =
+        CompilationUnit::new(name, module_path.clone(), content, base_name.clone());
 
     let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&file, options)?;
+
     let subparser: ModuleParser = ModuleParser::new(
         base_name,
         tokens,
@@ -197,13 +208,19 @@ pub fn parse_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
 
     let mut submodule: Module = subparser.parse()?;
 
+    parser.unmark_visited(&module_path);
+
     if let Some(alias) = alias {
         submodule.set_alias(alias);
     }
 
+    if let Some(only) = only {
+        submodule.set_only(only);
+    }
+
     parser.get_registry().borrow_mut().register(&submodule);
 
-    parser.get_mut_module().add_submodule(submodule);
+    parser.get_mut_module().merge_submodule(submodule);
 
     Ok(())
 }
@@ -224,6 +241,14 @@ fn parse_std_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
         let part_tk: &Token = parser.consume(TokenType::Identifier)?;
         last_span = part_tk.get_span();
         access.push(part_tk.get_lexeme().to_string());
+    }
+
+    let mut only: Option<Vec<String>> = None;
+
+    if parser.check(TokenType::Only) {
+        parser.consume(TokenType::Only)?;
+
+        only = Some(self::parse_only_list(parser)?);
     }
 
     let mut alias: Option<Vec<String>> = None;
@@ -256,9 +281,13 @@ fn parse_std_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
                 module.set_alias(alias);
             }
 
+            if let Some(only) = only {
+                module.set_only(only);
+            }
+
             parser.get_registry().borrow_mut().register(&module);
 
-            parser.get_mut_module().add_submodule(module);
+            parser.get_mut_module().merge_submodule(module);
 
             Ok(())
         }
@@ -278,4 +307,25 @@ fn parse_std_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
             Err(())
         }
     }
+}
+
+fn parse_only_list<'module_parser>(
+    parser: &mut ModuleParser<'module_parser>,
+) -> Result<Vec<String>, ()> {
+    parser.consume(TokenType::LBrace)?;
+
+    let mut names: Vec<String> = Vec::with_capacity(u8::MAX as usize);
+
+    while !parser.check(TokenType::RBrace) {
+        let name_tk: &Token = parser.consume(TokenType::Identifier)?;
+        names.push(name_tk.get_lexeme().to_string());
+
+        if parser.check(TokenType::Comma) {
+            parser.only_advance()?;
+        }
+    }
+
+    parser.consume(TokenType::RBrace)?;
+
+    Ok(names)
 }

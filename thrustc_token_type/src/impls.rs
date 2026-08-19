@@ -415,6 +415,7 @@ impl std::fmt::Display for TokenType {
             // Import
             TokenType::Import => write!(f, "import"),
             TokenType::ImportC => write!(f, "importC"),
+            TokenType::Only => write!(f, "only"),
         }
     }
 }

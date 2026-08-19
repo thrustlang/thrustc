@@ -296,6 +296,11 @@ impl PreprocessorContext<'_> {
     pub fn mark_visited(&mut self, path: PathBuf) {
         self.visited.insert(path);
     }
+
+    #[inline]
+    pub fn unmark_visited(&mut self, path: &PathBuf) {
+        self.visited.remove(path);
+    }
 }
 
 impl<'module_parser> PreprocessorContext<'module_parser> {

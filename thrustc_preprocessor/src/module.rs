@@ -27,6 +27,7 @@ use crate::signatures::{Symbol, Variant};
 pub struct Module {
     base_name: String,
     alias: Option<Vec<String>>,
+    only: Option<Vec<String>>,
     symbols: Vec<Symbol>,
     submodules: Vec<Module>,
     path: PathBuf,
@@ -38,6 +39,7 @@ impl Module {
         Module {
             base_name,
             alias: None,
+            only: None,
             symbols: Vec::with_capacity(u8::MAX as usize),
             submodules: Vec::with_capacity(u8::MAX as usize),
             path,
@@ -49,12 +51,59 @@ impl Module {
     pub fn set_alias(&mut self, alias: Vec<String>) {
         self.alias = Some(alias);
     }
+
+    #[inline]
+    pub fn set_only(&mut self, only: Vec<String>) {
+        self.only = Some(only);
+    }
+
+    #[inline]
+    pub fn get_only(&self) -> Option<&[String]> {
+        self.only.as_deref()
+    }
+
+    #[inline]
+    pub fn merge_import(&mut self, other: Module) {
+        if other.only.is_none() {
+            self.only = None;
+        } else if let Some(names) = self.only.as_mut() {
+            for name in other.only.unwrap_or_default() {
+                if !names.contains(&name) {
+                    names.push(name);
+                }
+            }
+        }
+
+        if self.alias.is_none() && other.alias.is_some() {
+            self.alias = other.alias;
+        }
+    }
+
+    #[inline]
+    pub fn is_only_restricted(&self) -> bool {
+        self.only.is_some()
+    }
 }
 
 impl Module {
     #[inline]
     pub fn add_submodule(&mut self, module: Module) {
         self.submodules.push(module);
+    }
+
+    #[inline]
+    pub fn merge_submodule(&mut self, module: Module) {
+        let path: PathBuf = module.get_path().to_path_buf();
+
+        if let Some(existing) = self
+            .submodules
+            .iter_mut()
+            .find(|submodule| submodule.get_path() == path)
+        {
+            existing.merge_import(module);
+        } else {
+            self.submodules.push(module);
+        }
     }
 
     #[inline]
@@ -82,6 +131,10 @@ impl Module {
 
 impl Module {
     pub fn search_symbol(&self, hint: String, target_variant: Variant) -> Option<&Symbol> {
+        if self.is_only_restricted() {
+            return None;
+        }
+
         {
             for symbol in self.symbols.iter() {
                 let Symbol { name, variant, .. } = symbol;
@@ -102,6 +155,10 @@ impl Module {
 
         while index < access.len() {
             let mut matched: bool = false;
+
+            if current_module.is_only_restricted() {
+                return None;
+            }
 
             for submodule in &current_module.submodules {
                 if let Some(length) = submodule.alias_prefix_len(&access[index..]) {

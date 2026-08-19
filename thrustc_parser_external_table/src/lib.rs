@@ -37,11 +37,13 @@ impl<'parser> ExternalSymbolTable<'parser> {
 impl<'parser> ExternalSymbolTable<'parser> {
     #[inline]
     pub fn find_module(&self, name: &str) -> Option<&'parser Module> {
-        self.modules.iter().find(|module| module.matches_name(name))
+        self.modules
+            .iter()
+            .find(|module| module.matches_name(name))
     }
 
     pub fn resolve(&self, access: &[String]) -> Option<&'parser Module> {
-        for module in self.modules {
+        for module in self.modules.iter() {
             if let Some(length) = module.alias_prefix_len(access) {
                 let rest: &[String] = &access[length..];
 

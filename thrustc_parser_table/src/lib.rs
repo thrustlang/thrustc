@@ -21,6 +21,8 @@ mod abort;
 mod impls;
 pub mod traits;
 
+use std::path::PathBuf;
+
 use thrustc_ast::Ast;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
@@ -57,6 +59,8 @@ pub struct SymbolTable<'parser> {
     llis: LLIs<'parser>,
     parameters: Parameters<'parser>,
 
+    imported_symbols: ahash::AHashMap<&'parser str, PathBuf>,
+
     diagnostician: Diagnostician,
 }
 
@@ -88,8 +92,48 @@ impl<'parser> SymbolTable<'parser> {
             llis: Vec::with_capacity(u8::MAX as usize),
 
             parameters: ahash::AHashMap::with_capacity(10),
+            imported_symbols: ahash::AHashMap::with_capacity(u8::MAX as usize),
             diagnostician: Diagnostician::new(file, options),
         }
+    }
+}
+
+impl SymbolTable<'_> {
+    #[inline]
+    pub fn has_function(&self, id: &str) -> bool {
+        self.functions.contains_key(id)
+    }
+
+    #[inline]
+    pub fn has_global_constant(&self, id: &str) -> bool {
+        self.global_constants.contains_key(id)
+    }
+
+    #[inline]
+    pub fn has_global_static(&self, id: &str) -> bool {
+        self.global_statics.contains_key(id)
+    }
+
+    #[inline]
+    pub fn has_global_custom_type(&self, id: &str) -> bool {
+        self.global_custom_types.contains_key(id)
+    }
+
+    #[inline]
+    pub fn has_global_struct(&self, id: &str) -> bool {
+        self.global_structs.contains_key(id)
+    }
+}
+
+impl<'parser> SymbolTable<'parser> {
+    #[inline]
+    pub fn record_import_origin(&mut self, id: &'parser str, path: PathBuf) {
+        self.imported_symbols.insert(id, path);
+    }
+
+    #[inline]
+    pub fn get_import_origin(&self, id: &str) -> Option<&PathBuf> {
+        self.imported_symbols.get(id)
     }
 }
 

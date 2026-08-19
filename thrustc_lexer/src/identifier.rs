@@ -192,6 +192,7 @@ lazy_static! {
         keywords.insert("intrinsic", TokenType::Intrinsic);
         keywords.insert("new", TokenType::New);
         keywords.insert("import", TokenType::Import);
+        keywords.insert("only", TokenType::Only);
 
         if compiler_mode.is_unstable_mode() {
             keywords.insert("asmfn", TokenType::AsmFn);

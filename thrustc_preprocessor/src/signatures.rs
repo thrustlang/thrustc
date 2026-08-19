@@ -65,6 +65,7 @@ pub enum Signature {
     Struct {
         kind: Type,
         invalid_kind: Type,
+        fields: Vec<(String, Type, Span)>,
         span: Span,
     },
     CustomType {

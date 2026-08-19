@@ -69,10 +69,13 @@ impl<'preprocessor> Preprocessor {
         let mut context: PreprocessorContext<'_> =
             PreprocessorContext::new(tokens, options, file, visited, registry);
 
+        let mut merged: ahash::AHashMap<std::path::PathBuf, usize> =
+            ahash::AHashMap::with_capacity(u8::MAX as usize);
+
         while !context.is_eof() {
             if context.check(TokenType::Import) {
                 if let Ok(Some(module)) = highmodule_parsing::import::parse_import(&mut context) {
-                    self.modules.push(module);
+                    self.merge_module(&mut merged, module);
                 }
 
                 continue;
@@ -84,5 +87,17 @@ impl<'preprocessor> Preprocessor {
         context.check_status()?;
 
         Ok(self.modules.as_slice())
+    }
+
+    fn merge_module(&mut self, merged: &mut ahash::AHashMap<std::path::PathBuf, usize>, module: Module) {
+        let key: std::path::PathBuf = module.get_path().to_path_buf();
+
+        if let Some(&index) = merged.get(&key) {
+            self.modules[index].merge_import(module);
+        } else {
+            let index: usize = self.modules.len();
+            self.modules.push(module);
+            merged.insert(key, index);
+        }
     }
 }

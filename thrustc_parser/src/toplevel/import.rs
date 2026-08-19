@@ -17,6 +17,8 @@
 
 */
 
+use std::path::Path;
+
 use thrustc_ast::{Ast, NodeId};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
@@ -35,50 +37,92 @@ pub fn build_import<'parser>(
         "Expected 'import' keyword.".into(),
     )?;
 
-    let span: Span = if ctx.check(TokenType::Identifier) {
-        let mut identifier_span: Span = ctx
-            .consume(
-                TokenType::Identifier,
-                CompilationIssueCode::E0001,
-                "Expected an identifier.".into(),
-            )?
-            .get_span();
+    let span: Span;
+    let mut path_segments: Vec<String> = Vec::with_capacity(u8::MAX as usize);
+    let mut string_path: Option<String> = None;
+
+    if ctx.check(TokenType::Identifier) {
+        let first_tk: &thrustc_token::Token = ctx.consume(
+            TokenType::Identifier,
+            CompilationIssueCode::E0001,
+            "Expected an identifier.".into(),
+        )?;
+
+        let mut identifier_span: Span = first_tk.get_span();
+        path_segments.push(first_tk.get_lexeme().to_string());
 
         while ctx.check(TokenType::ColonColon) {
             ctx.only_advance()?;
 
-            identifier_span = ctx
-                .consume(
-                    TokenType::Identifier,
-                    CompilationIssueCode::E0001,
-                    "Expected an identifier after the path separator.".into(),
-                )?
-                .get_span();
+            let part_tk: &thrustc_token::Token = ctx.consume(
+                TokenType::Identifier,
+                CompilationIssueCode::E0001,
+                "Expected an identifier after the path separator.".into(),
+            )?;
+
+            identifier_span = part_tk.get_span();
+            path_segments.push(part_tk.get_lexeme().to_string());
         }
 
-        identifier_span
+        span = identifier_span;
     } else {
-        ctx.consume_these(
+        let tk: &thrustc_token::Token = ctx.consume_these(
             &[TokenType::CString, TokenType::CNString],
             CompilationIssueCode::E0001,
             "Expected string literal.".into(),
-        )?
-        .get_span()
+        )?;
+
+        span = tk.get_span();
+        string_path = Some(tk.get_lexeme().to_string());
     };
 
-    if ctx.match_token(TokenType::As)? {
+    let mut only_names: Vec<String> = Vec::with_capacity(u8::MAX as usize);
+
+    if ctx.match_token(TokenType::Only)? {
         ctx.consume(
+            TokenType::LBrace,
+            CompilationIssueCode::E0001,
+            "Expected '{' after 'only'.".into(),
+        )?;
+
+        while !ctx.check(TokenType::RBrace) {
+            let name_tk: &thrustc_token::Token = ctx.consume(
+                TokenType::Identifier,
+                CompilationIssueCode::E0001,
+                "Expected an identifier in the 'only' list.".into(),
+            )?;
+
+            only_names.push(name_tk.get_lexeme().to_string());
+
+            let _ = ctx.match_token(TokenType::Comma)?;
+        }
+
+        ctx.consume(
+            TokenType::RBrace,
+            CompilationIssueCode::E0001,
+            "Expected '}' to close the 'only' list.".into(),
+        )?;
+    }
+
+    let mut alias_parts: Vec<String> = Vec::with_capacity(u8::MAX as usize);
+
+    if ctx.match_token(TokenType::As)? {
+        let alias_tk: &thrustc_token::Token = ctx.consume(
             TokenType::Identifier,
             CompilationIssueCode::E0001,
             "Expected identifier for the module alias.".into(),
         )?;
 
+        alias_parts.push(alias_tk.get_lexeme().to_string());
+
         while ctx.match_token(TokenType::ColonColon)? {
-            ctx.consume(
+            let part_tk: &thrustc_token::Token = ctx.consume(
                 TokenType::Identifier,
                 CompilationIssueCode::E0001,
                 "Expected identifier after the path separator.".into(),
             )?;
+
+            alias_parts.push(part_tk.get_lexeme().to_string());
         }
     }
 
@@ -87,6 +131,24 @@ pub fn build_import<'parser>(
         CompilationIssueCode::E0001,
         "Expected ';'.".into(),
     )?;
+
+    if !only_names.is_empty() {
+        let access: Vec<String> = if !alias_parts.is_empty() {
+            alias_parts
+        } else if let Some(last) = path_segments.last() {
+            vec![last.clone()]
+        } else if let Some(path) = &string_path {
+            vec![Path::new(path)
+                .file_stem()
+                .map_or_else(String::new, |stem| stem.to_string_lossy().to_string())]
+        } else {
+            Vec::new()
+        };
+
+        if !access.is_empty() {
+            crate::module_import::synthesize_only_import(ctx, &access, &only_names, span)?;
+        }
+    }
 
     Ok(Ast::Import {
         span,

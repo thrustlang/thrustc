@@ -49,15 +49,18 @@ pub fn parse_structure<'module_parser>(
     ctx.consume(TokenType::LBrace)?;
 
     let mut field_types: Vec<Type> = Vec::with_capacity(u8::MAX as usize);
+    let mut fields: Vec<(String, Type, Span)> = Vec::with_capacity(u8::MAX as usize);
 
     while !ctx.check(TokenType::RBrace) {
-        ctx.consume(TokenType::Identifier)?;
+        let field_name: String = ctx.consume(TokenType::Identifier)?.get_lexeme().to_string();
+        let field_span: Span = ctx.previous().get_span();
 
         ctx.consume(TokenType::Colon)?;
 
         let field_type: Type = typegeneration::build_type(ctx)?;
 
-        field_types.push(field_type);
+        field_types.push(field_type.clone());
+        fields.push((field_name, field_type, field_span));
 
         if ctx.check(TokenType::RBrace) {
             break;
@@ -93,6 +96,7 @@ pub fn parse_structure<'module_parser>(
         signature: Signature::Struct {
             kind: structure_type,
             invalid_kind: Type::Void { span },
+            fields,
             span,
         },
         variant: Variant::Struct,

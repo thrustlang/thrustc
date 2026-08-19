@@ -122,6 +122,7 @@ lazy_static::lazy_static! {
         explanations.insert(CompilationIssueCode::W0028, r#""#);
         explanations.insert(CompilationIssueCode::W0029, r#""#);
         explanations.insert(CompilationIssueCode::W0030, r#""#);
+        explanations.insert(CompilationIssueCode::E0043, r#""#);
 
         explanations
     };
@@ -170,6 +171,7 @@ pub enum CompilationIssueCode {
     E0040, // Not Found
     E0041, // Unresolved Type
     E0042, // Type could not be determined
+    E0043, // Ambiguous imported name
 
     W0001, // Irrelevant Attribute
     W0002, // Unknown Call Convention
@@ -324,6 +326,9 @@ impl CompilationIssueCode {
             CompilationIssueCode::E0042 => {
                 format!("TYPE COULD NOT BE DETERMINED - {}", "E0042".bright_red())
             }
+            CompilationIssueCode::E0043 => {
+                format!("AMBIGUOUS IMPORTED NAME - {}", "E0043".bright_red())
+            }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())
             }
@@ -460,6 +465,7 @@ impl CompilationIssueCode {
             "E0032" => Ok(CompilationIssueCode::E0032),
             "E0033" => Ok(CompilationIssueCode::E0033),
             "E0042" => Ok(CompilationIssueCode::E0042),
+            "E0043" => Ok(CompilationIssueCode::E0043),
 
             "W0001" => Ok(CompilationIssueCode::W0001),
             "W0002" => Ok(CompilationIssueCode::W0002),

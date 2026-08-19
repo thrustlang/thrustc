@@ -19,10 +19,10 @@
 
 use std::path::PathBuf;
 
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 
@@ -440,6 +440,11 @@ impl ModuleParser<'_> {
     #[inline]
     pub fn mark_visited(&mut self, path: PathBuf) {
         self.visited.insert(path);
+    }
+
+    #[inline]
+    pub fn unmark_visited(&mut self, path: &PathBuf) {
+        self.visited.remove(path);
     }
 }
 
