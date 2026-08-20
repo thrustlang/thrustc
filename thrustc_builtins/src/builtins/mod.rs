@@ -1,5 +1,4 @@
 /*
-
     Copyright (C) 2026  Stevens Benavides
 
     This program is free software: you can redistribute it and/or modify
@@ -14,14 +13,14 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 */
 
-use crate::{ast_builtins::AstBuiltin, traits::AstBuiltinsExtensions};
+mod alignof;
+mod sizeof;
 
-impl AstBuiltinsExtensions for AstBuiltin<'_> {
-    #[inline]
-    fn is_avalaible_at_compile_time(&self) -> bool {
-        matches!(self, AstBuiltin::AlignOf { .. } | AstBuiltin::SizeOf { .. })
-    }
+use crate::registry::BuiltinRegistry;
+
+pub fn register_default_builtins(registry: &mut BuiltinRegistry) {
+    registry.register_function(alignof::AlignOf);
+    registry.register_function(sizeof::SizeOf);
 }

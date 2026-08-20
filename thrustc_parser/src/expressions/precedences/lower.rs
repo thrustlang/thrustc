@@ -35,7 +35,8 @@ use thrustc_typesystem::{
 use crate::{
     ParserContext, builtins,
     expressions::{
-        self, array, asm, call, deref, enum_value, fixed_array, reference, struct_constructor,
+        self, array, asm, builtin_call, call, deref, enum_value, fixed_array, reference,
+        struct_constructor,
     },
     reinterpret,
 };
@@ -257,7 +258,11 @@ pub fn lower_precedence<'parser>(
             if ctx.match_token(TokenType::Arrow)? {
                 enum_value::build_enum_value(ctx, name, span)?
             } else if ctx.match_token(TokenType::LParen)? {
-                call::build_call(ctx, name, span)?
+                if ctx.get_builtins().get_function(name).is_some() {
+                    builtin_call::build_builtin_call(ctx, name, span)?
+                } else {
+                    call::build_call(ctx, name, span)?
+                }
             } else if ctx.match_token(TokenType::ColonColon)? {
                 let mut access: Vec<String> = Vec::with_capacity(4);
 

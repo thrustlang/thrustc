@@ -52,8 +52,6 @@ pub fn validate_node<'type_checker>(
         }
 
         AstBuiltin::Halloc { .. }
-        | AstBuiltin::AlignOf { .. }
-        | AstBuiltin::SizeOf { .. }
         | AstBuiltin::AbiSizeOf { .. }
         | AstBuiltin::BitSizeOf { .. }
         | AstBuiltin::AbiAlignOf { .. } => Ok(()),

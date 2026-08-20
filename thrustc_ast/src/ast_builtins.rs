@@ -63,12 +63,4 @@ pub enum AstBuiltin<'compiler_builtin> {
         ty: Type,
         span: Span,
     },
-    AlignOf {
-        ty: Type,
-        span: Span,
-    },
-    SizeOf {
-        ty: Type,
-        span: Span,
-    },
 }

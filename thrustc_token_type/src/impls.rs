@@ -224,8 +224,6 @@ impl TokenTypeBuiltinExtensions for TokenType {
                 | TokenType::MemCpy
                 | TokenType::MemMove
                 | TokenType::MemSet
-                | TokenType::AlignOf
-                | TokenType::SizeOf
                 | TokenType::BitSizeOf
                 | TokenType::AbiSizeOf
                 | TokenType::AbiAlignOf
@@ -403,11 +401,9 @@ impl std::fmt::Display for TokenType {
 
             // Builtins
             TokenType::Halloc => write!(f, "halloc"),
-            TokenType::AlignOf => write!(f, "alignOf"),
             TokenType::MemSet => write!(f, "memset"),
             TokenType::MemMove => write!(f, "memmove"),
             TokenType::MemCpy => write!(f, "memcpy"),
-            TokenType::SizeOf => write!(f, "sizeOf"),
             TokenType::AbiSizeOf => write!(f, "abiSizeOf"),
             TokenType::BitSizeOf => write!(f, "bitSizeOf"),
             TokenType::AbiAlignOf => write!(f, "abiAlignOf"),

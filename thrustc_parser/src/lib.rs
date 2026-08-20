@@ -18,6 +18,7 @@
 */
 
 use thrustc_ast::Ast;
+use thrustc_builtins::BuiltinRegistry;
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_entities::parser_entities::{AssemblerFunctions, Functions};
@@ -43,7 +44,6 @@ mod synchronize;
 mod toplevel;
 mod typegeneration;
 
-#[derive(Debug)]
 pub struct ParserContext<'parser> {
     tokens: &'parser [Token],
     ast: Vec<Ast<'parser>>,
@@ -56,6 +56,8 @@ pub struct ParserContext<'parser> {
     type_context: TypeContext,
 
     options: &'parser CompilerOptions,
+    file: &'parser CompilationUnit,
+    builtins: &'parser mut BuiltinRegistry,
 
     diagnostician: Diagnostician,
     table: SymbolTable<'parser>,
@@ -77,8 +79,9 @@ impl<'parser> Parser<'parser> {
         modules: &'parser [Module],
         file: &'parser CompilationUnit,
         options: &'parser CompilerOptions,
+        builtins: &'parser mut BuiltinRegistry,
     ) -> (ParserContext<'parser>, bool) {
-        Self { tokens, file }.start_parsing_nodes(modules, options)
+        Self { tokens, file }.start_parsing_nodes(modules, options, builtins)
     }
 }
 
@@ -87,8 +90,10 @@ impl<'parser> Parser<'parser> {
         &mut self,
         modules: &'parser [Module],
         options: &'parser CompilerOptions,
+        builtins: &'parser mut BuiltinRegistry,
     ) -> (ParserContext<'parser>, bool) {
-        let mut ctx: ParserContext = ParserContext::new(self.tokens, modules, self.file, options);
+        let mut ctx: ParserContext =
+            ParserContext::new(self.tokens, modules, self.file, options, builtins);
 
         toplevel::parse_forward(&mut ctx);
 
@@ -124,6 +129,7 @@ impl<'parser> ParserContext<'parser> {
         modules: &'parser [Module],
         file: &'parser CompilationUnit,
         options: &'parser CompilerOptions,
+        builtins: &'parser mut BuiltinRegistry,
     ) -> Self {
         let functions: Functions = Functions::with_capacity(u8::MAX as usize);
         let asm_functions: AssemblerFunctions = AssemblerFunctions::with_capacity(u8::MAX as usize);
@@ -147,6 +153,8 @@ impl<'parser> ParserContext<'parser> {
             type_context,
 
             options,
+            file,
+            builtins,
 
             diagnostician: Diagnostician::new(file, options),
             table,
@@ -502,8 +510,18 @@ impl<'parser> ParserContext<'parser> {
     }
 
     #[inline(always)]
-    pub fn get_options(&self) -> &CompilerOptions {
+    pub fn get_options(&self) -> &'parser CompilerOptions {
         self.options
+    }
+
+    #[inline(always)]
+    pub fn get_file(&self) -> &'parser CompilationUnit {
+        self.file
+    }
+
+    #[inline(always)]
+    pub fn get_builtins(&self) -> &BuiltinRegistry {
+        self.builtins
     }
 
     #[inline(always)]
@@ -532,6 +550,11 @@ impl<'parser> ParserContext<'parser> {
     pub fn get_mut_diagnostician(&mut self) -> &mut Diagnostician {
         &mut self.diagnostician
     }
+
+    #[inline(always)]
+    pub fn get_mut_builtins(&mut self) -> &mut BuiltinRegistry {
+        self.builtins
+    }
 }
 
 impl<'parser> ParserContext<'parser> {
@@ -548,6 +571,18 @@ impl<'parser> ParserContext<'parser> {
     #[inline(always)]
     pub fn add_bug_report(&mut self, error: CompilationIssue) {
         self.bugs.push(error);
+    }
+}
+
+impl<'parser> ParserContext<'parser> {
+    pub fn evaluate_builtin(
+        &mut self,
+        name: &str,
+        args: &[thrustc_builtins::BuiltinArgument],
+        span: Span,
+    ) -> Result<Ast<'parser>, CompilationIssue> {
+        self.builtins
+            .evaluate(name, args, span, self.options, self.file)
     }
 }
 

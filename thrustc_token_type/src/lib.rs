@@ -173,12 +173,10 @@ pub enum TokenType {
     NullPtr,
 
     // -- Builtins --
-    AlignOf,
     Halloc,
     AbiSizeOf,
     BitSizeOf,
     AbiAlignOf,
-    SizeOf,
     MemCpy,
     MemMove,
     MemSet,

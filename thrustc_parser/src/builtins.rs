@@ -31,8 +31,6 @@ pub fn build_compiler_builtin<'parser>(
     tk_type: TokenType,
 ) -> Result<Ast<'parser>, CompilationIssue> {
     match tk_type {
-        TokenType::SizeOf => self::build_sizeof(ctx),
-        TokenType::AlignOf => self::build_alignof(ctx),
         TokenType::Halloc => self::build_halloc(ctx),
         TokenType::MemSet => self::build_memset(ctx),
         TokenType::MemMove => self::build_memmove(ctx),
@@ -268,72 +266,6 @@ pub fn build_memset<'parser>(
             address_space: None,
             span,
         },
-        span,
-        id: NodeId::new(),
-    })
-}
-
-pub fn build_alignof<'parser>(
-    ctx: &mut ParserContext<'parser>,
-) -> Result<Ast<'parser>, CompilationIssue> {
-    let sizeof_tk: &Token = ctx.consume(
-        TokenType::AlignOf,
-        CompilationIssueCode::E0001,
-        "Expected 'alignof' keyword.".into(),
-    )?;
-
-    let span: Span = sizeof_tk.get_span();
-
-    ctx.consume(
-        TokenType::LParen,
-        CompilationIssueCode::E0001,
-        "Expected '('.".into(),
-    )?;
-
-    let ty: Type = typegeneration::build_type(ctx, true)?;
-
-    ctx.consume(
-        TokenType::RParen,
-        CompilationIssueCode::E0001,
-        "Expected ')'.".into(),
-    )?;
-
-    Ok(Ast::Builtin {
-        builtin: AstBuiltin::AlignOf { ty, span },
-        kind: Type::U32 { span },
-        span,
-        id: NodeId::new(),
-    })
-}
-
-pub fn build_sizeof<'parser>(
-    ctx: &mut ParserContext<'parser>,
-) -> Result<Ast<'parser>, CompilationIssue> {
-    let sizeof_tk: &Token = ctx.consume(
-        TokenType::SizeOf,
-        CompilationIssueCode::E0001,
-        String::from("Expected 'sizeof' keyword."),
-    )?;
-
-    let span: Span = sizeof_tk.get_span();
-
-    ctx.consume(
-        TokenType::LParen,
-        CompilationIssueCode::E0001,
-        "Expected '('.".into(),
-    )?;
-
-    let ty: Type = typegeneration::build_type(ctx, true)?;
-
-    ctx.consume(
-        TokenType::RParen,
-        CompilationIssueCode::E0001,
-        "Expected ')'.".into(),
-    )?;
-
-    Ok(Ast::Builtin {
-        builtin: AstBuiltin::SizeOf { ty, span },
-        kind: Type::USize { span },
         span,
         id: NodeId::new(),
     })

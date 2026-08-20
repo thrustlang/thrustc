@@ -1,0 +1,18 @@
+[package]
+name = "thrustc_builtins"
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ahash = "0.8.11"
+either = "1.15.0"
+
+thrustc_ast = { path = "../thrustc_ast" }
+thrustc_code_location = { path = "../thrustc_code_location" }
+thrustc_errors = { path = "../thrustc_errors" }
+thrustc_options = { path = "../thrustc_options" }
+thrustc_token_type = { path = "../thrustc_token_type" }
+thrustc_typesystem = { path = "../thrustc_typesystem" }

@@ -22,6 +22,7 @@ thrustc_entities = { path = "../thrustc_entities" }
 thrustc_ast_modificators = { path = "../thrustc_ast_modificators" }
 thrustc_mir = { path = "../thrustc_mir" }
 thrustc_attributes = { path = "../thrustc_attributes" }
+thrustc_builtins = { path = "../thrustc_builtins" }
 thrustc_ast = { path = "../thrustc_ast" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_options = { path = "../thrustc_options" }

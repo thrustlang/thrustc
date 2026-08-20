@@ -16,7 +16,6 @@
 */
 
 use arbitrary::Unstructured;
-use thrustc_ast::ast_builtins::AstBuiltin;
 use thrustc_ast::ast_metadata::{
     CastingMetadata, FunctionParameterMetadata, ReferenceMetadata, ReferenceType,
 };
@@ -1435,20 +1434,7 @@ fn gen_const_expr_of_type<'ast>(
                 id: NodeId::new(),
             })
         }
-        _ => {
-            if target.is_integer_type() && u.arbitrary()? {
-                return Ok(Ast::Builtin {
-                    builtin: AstBuiltin::SizeOf {
-                        ty: gen_scalar_type(u)?,
-                        span: u.arbitrary()?,
-                    },
-                    kind: target.clone(),
-                    span: u.arbitrary()?,
-                    id: NodeId::new(),
-                });
-            }
-            gen_const_leaf(u, target)
-        }
+        _ => gen_const_leaf(u, target),
     }
 }
 

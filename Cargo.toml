@@ -3,6 +3,7 @@ members = [
     "thrustc",
     "thrustc_core",
     "thrustc_ast",
+    "thrustc_builtins",
     "thrustc_lexer",
     "thrustc_parser",
     "thrustc_parser_table",

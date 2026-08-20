@@ -249,8 +249,6 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
                 linter.analyze_expr(size);
             }
             AstBuiltin::Halloc { .. }
-            | AstBuiltin::AlignOf { .. }
-            | AstBuiltin::SizeOf { .. }
             | AstBuiltin::AbiSizeOf { .. }
             | AstBuiltin::BitSizeOf { .. }
             | AstBuiltin::AbiAlignOf { .. } => (),

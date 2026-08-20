@@ -25,10 +25,6 @@ use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 use crate::ast_logic_data::{EnumDataField, PropertyDataField, StructureDataFields};
 
-pub trait AstBuiltinsExtensions {
-    fn is_avalaible_at_compile_time(&self) -> bool;
-}
-
 pub trait AstGetType {
     fn get_any_type(&self) -> &Type;
     fn get_value_type(&self) -> Result<&Type, CompilationIssue>;

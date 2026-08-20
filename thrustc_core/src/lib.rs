@@ -47,6 +47,7 @@ use thrustc_backends::llvm::LLVMBackend;
 use thrustc_backends::llvm::jit;
 use thrustc_backends::llvm::jit::JITConfiguration;
 use thrustc_backends::llvm::target::LLVMTarget;
+use thrustc_builtins::BuiltinRegistry;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_lexer::Lexer;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
@@ -103,6 +104,20 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             thrustc_backend_time: std::time::Duration::default(),
             thrustc_time: std::time::Duration::default(),
         }
+    }
+
+    fn create_builtins_registry(&self) -> BuiltinRegistry {
+        let llvm_backend: &LLVMBackend = self.options.get_llvm_backend();
+        let target: &LLVMTarget = llvm_backend.get_target();
+        let llvm_triple: &TargetTriple = target.get_target_triple();
+
+        let target_triple_formatted: String =
+            llvm_triple.as_str().to_string_lossy().to_string();
+
+        let target_info: TargetInfo =
+            TargetInfo::new(LLVMTargetTriple::new(target_triple_formatted));
+
+        thrustc_builtins::default_registry(target_info)
     }
 }
 
@@ -351,7 +366,10 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             );
         })?;
 
-        let parser: (ParserContext, bool) = Parser::parse(&tokens, modules, file, self.options);
+        let mut builtins: BuiltinRegistry = self.create_builtins_registry();
+
+        let parser: (ParserContext, bool) =
+            Parser::parse(&tokens, modules, file, self.options, &mut builtins);
 
         let parser_result: (ParserContext, bool) = parser;
         let parser_failed: bool = parser_result.1;
@@ -778,7 +796,10 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             );
         })?;
 
-        let parser: (ParserContext, bool) = Parser::parse(&tokens, modules, file, self.options);
+        let mut builtins: BuiltinRegistry = self.create_builtins_registry();
+
+        let parser: (ParserContext, bool) =
+            Parser::parse(&tokens, modules, file, self.options, &mut builtins);
 
         let parser_result: (ParserContext, bool) = parser;
         let parser_failed: bool = parser_result.1;

@@ -474,8 +474,6 @@ impl<'scoper> Scoper<'scoper> {
                 // No envuelven ninguna subexpresión: operan sobre
                 // tipos, no sobre valores.
                 AstBuiltin::Halloc { .. }
-                | AstBuiltin::AlignOf { .. }
-                | AstBuiltin::SizeOf { .. }
                 | AstBuiltin::AbiSizeOf { .. }
                 | AstBuiltin::BitSizeOf { .. }
                 | AstBuiltin::AbiAlignOf { .. } => (),

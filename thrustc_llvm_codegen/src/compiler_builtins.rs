@@ -68,14 +68,6 @@ pub enum LLVMBuiltin<'ctx> {
         ty: &'ctx Type,
         span: Span,
     },
-    AlignOf {
-        ty: &'ctx Type,
-        span: Span,
-    },
-    SizeOf {
-        ty: &'ctx Type,
-        span: Span,
-    },
 }
 
 pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ctx> {
@@ -114,8 +106,6 @@ pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ct
             size,
             span: *span,
         },
-        AstBuiltin::AlignOf { ty, span } => LLVMBuiltin::AlignOf { ty, span: *span },
-        AstBuiltin::SizeOf { ty, span } => LLVMBuiltin::SizeOf { ty, span: *span },
         AstBuiltin::BitSizeOf { ty, span } => LLVMBuiltin::BitSizeOf { ty, span: *span },
         AstBuiltin::AbiSizeOf { ty, span } => LLVMBuiltin::AbiSizeOf { ty, span: *span },
         AstBuiltin::AbiAlignOf { ty, span } => LLVMBuiltin::AbiAlignOf { ty, span: *span },
@@ -291,50 +281,6 @@ pub fn compile<'ctx>(
                 )
             })
             .into(),
-        LLVMBuiltin::AlignOf { ty, span } => {
-            let builtin_ty: Type = Type::U32 { span };
-            let cast_type: &Type = cast_type.unwrap_or(&builtin_ty);
-
-            let type_layout_result: either::Either<
-                thrustc_typesystem::type_layout::TypeLayout,
-                thrustc_typesystem::type_layout::StructTypeLayout,
-            > = context.get_mut_target_info().get_type_layout(ty);
-
-            let align_of: u32 = match type_layout_result {
-                either::Either::Left(t) => t.into_layout().alignof,
-                either::Either::Right(t) => t.into_layout().alignof,
-            };
-
-            let align_of_value: BasicValueEnum = context
-                .get_llvm_context()
-                .i32_type()
-                .const_int(align_of.into(), false)
-                .into();
-
-            type_cast::try_smart_constant_cast(context, cast_type, &builtin_ty, align_of_value)
-        }
-        LLVMBuiltin::SizeOf { ty, span } => {
-            let builtin_ty: Type = Type::USize { span };
-            let cast_type: &Type = cast_type.unwrap_or(&builtin_ty);
-
-            let type_layout_result: either::Either<
-                thrustc_typesystem::type_layout::TypeLayout,
-                thrustc_typesystem::type_layout::StructTypeLayout,
-            > = context.get_mut_target_info().get_type_layout(ty);
-
-            let size_of: u32 = match type_layout_result {
-                either::Either::Left(t) => t.into_layout().sizeof,
-                either::Either::Right(t) => t.into_layout().sizeof,
-            };
-
-            let size_of_value: BasicValueEnum = context
-                .get_llvm_context()
-                .i32_type()
-                .const_int(size_of.into(), false)
-                .into();
-
-            type_cast::try_smart_constant_cast(context, cast_type, &builtin_ty, size_of_value)
-        }
         LLVMBuiltin::AbiSizeOf { ty, span } => {
             let builtin_ty: Type = Type::U64 { span };
             let cast_type: &Type = cast_type.unwrap_or(&builtin_ty);

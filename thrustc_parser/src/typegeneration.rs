@@ -184,6 +184,7 @@ fn build_type_inner<'parser>(
                 ctx.get_symbols().get_symbols_id(name, span);
 
             match object {
+                Err(_) => self::resolve_builtin_type_or_unknown(ctx, name, span),
                 Ok(object) if object.is_structure() => {
                     let (id, scope_idx) = object.expected_struct(span)?;
                     let reference: Result<Struct, CompilationIssue> =
@@ -300,13 +301,7 @@ fn build_type_inner<'parser>(
                     Ok(object_type)
                 }
 
-                _ => Err(CompilationIssue::Error(
-                    CompilationIssueCode::E0001,
-                    format!("Unknown type '{}'.", name),
-                    "You should make sure that it exist at this scope.".into(),
-                    None,
-                    span,
-                )),
+                _ => self::resolve_builtin_type_or_unknown(ctx, name, span),
             }
         }
 
@@ -320,6 +315,24 @@ fn build_type_inner<'parser>(
             ctx.peek().get_span(),
         )),
     }
+}
+
+fn resolve_builtin_type_or_unknown<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    name: &'parser str,
+    span: Span,
+) -> Result<Type, CompilationIssue> {
+    if let Some(builtin_type) = ctx.get_builtins().get_type(name) {
+        return Ok(builtin_type.clone());
+    }
+
+    Err(CompilationIssue::Error(
+        CompilationIssueCode::E0001,
+        format!("Unknown type '{}'.", name),
+        "You should make sure that it exist at this scope.".into(),
+        None,
+        span,
+    ))
 }
 
 fn parse_anonymous_function_type(

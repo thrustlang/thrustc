@@ -86,6 +86,8 @@ fn validate_band_expression(
             | Type::U16 { .. }
             | Type::U32 { .. }
             | Type::U64 { .. }
+            | Type::SSize { .. }
+            | Type::USize { .. }
             | Type::U128 { .. },
             Type::S8 { .. }
             | Type::S16 { .. }
@@ -95,10 +97,10 @@ fn validate_band_expression(
             | Type::U16 { .. }
             | Type::U32 { .. }
             | Type::U64 { .. }
+            | Type::SSize { .. }
+            | Type::USize { .. }
             | Type::U128 { .. },
         ) => Ok(()),
-        (Type::SSize { .. }, Type::SSize { .. }) => Ok(()),
-        (Type::USize { .. }, Type::USize { .. }) => Ok(()),
 
         _ => Err(CompilationIssue::Error(
             CompilationIssueCode::E0030,
@@ -130,6 +132,8 @@ fn validate_bor_expression(
             | Type::U16 { .. }
             | Type::U32 { .. }
             | Type::U64 { .. }
+            | Type::SSize { .. }
+            | Type::USize { .. }
             | Type::U128 { .. },
             Type::S8 { .. }
             | Type::S16 { .. }
@@ -139,10 +143,10 @@ fn validate_bor_expression(
             | Type::U16 { .. }
             | Type::U32 { .. }
             | Type::U64 { .. }
+            | Type::SSize { .. }
+            | Type::USize { .. }
             | Type::U128 { .. },
         ) => Ok(()),
-        (Type::SSize { .. }, Type::SSize { .. }) => Ok(()),
-        (Type::USize { .. }, Type::USize { .. }) => Ok(()),
 
         _ => Err(CompilationIssue::Error(
             CompilationIssueCode::E0030,
@@ -173,7 +177,9 @@ fn validate_xor_expression(
             | Type::U8 { .. }
             | Type::U16 { .. }
             | Type::U32 { .. }
-            | Type::U64 { .. },
+            | Type::U64 { .. }
+            | Type::SSize { .. }
+            | Type::USize { .. },
             Type::S8 { .. }
             | Type::S16 { .. }
             | Type::S32 { .. }
@@ -181,10 +187,10 @@ fn validate_xor_expression(
             | Type::U8 { .. }
             | Type::U16 { .. }
             | Type::U32 { .. }
-            | Type::U64 { .. },
+            | Type::U64 { .. }
+            | Type::SSize { .. }
+            | Type::USize { .. },
         ) => Ok(()),
-        (Type::SSize { .. }, Type::SSize { .. }) => Ok(()),
-        (Type::USize { .. }, Type::USize { .. }) => Ok(()),
 
         _ => Err(CompilationIssue::Error(
             CompilationIssueCode::E0030,
@@ -285,6 +291,8 @@ fn validate_binary_comparasion_expression(
             | Type::U16 { .. }
             | Type::U32 { .. }
             | Type::U64 { .. }
+            | Type::SSize { .. }
+            | Type::USize { .. }
             | Type::U128 { .. },
             Type::S8 { .. }
             | Type::S16 { .. }
@@ -294,10 +302,10 @@ fn validate_binary_comparasion_expression(
             | Type::U16 { .. }
             | Type::U32 { .. }
             | Type::U64 { .. }
+            | Type::SSize { .. }
+            | Type::USize { .. }
             | Type::U128 { .. },
         ) => Ok(()),
-        (Type::SSize { .. }, Type::SSize { .. }) => Ok(()),
-        (Type::USize { .. }, Type::USize { .. }) => Ok(()),
         (Type::FPPC128 { .. }, Type::FPPC128 { .. }) => Ok(()),
         (Type::FX8680 { .. }, Type::FX8680 { .. }) => Ok(()),
         (
@@ -335,6 +343,8 @@ fn validate_binary_equality_expression(
             | Type::U16 { .. }
             | Type::U32 { .. }
             | Type::U64 { .. }
+            | Type::SSize { .. }
+            | Type::USize { .. }
             | Type::U128 { .. },
             Type::S8 { .. }
             | Type::S16 { .. }
@@ -344,10 +354,10 @@ fn validate_binary_equality_expression(
             | Type::U16 { .. }
             | Type::U32 { .. }
             | Type::U64 { .. }
+            | Type::SSize { .. }
+            | Type::USize { .. }
             | Type::U128 { .. },
         ) => Ok(()),
-        (Type::SSize { .. }, Type::SSize { .. }) => Ok(()),
-        (Type::USize { .. }, Type::USize { .. }) => Ok(()),
         (
             Type::F32 { .. } | Type::F64 { .. } | Type::F128 { .. },
             Type::F32 { .. } | Type::F64 { .. } | Type::F128 { .. },

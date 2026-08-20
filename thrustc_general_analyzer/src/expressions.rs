@@ -203,8 +203,6 @@ pub fn validate_node<'analyzer>(
             }
 
             AstBuiltin::Halloc { .. }
-            | AstBuiltin::AlignOf { .. }
-            | AstBuiltin::SizeOf { .. }
             | AstBuiltin::AbiSizeOf { .. }
             | AstBuiltin::BitSizeOf { .. }
             | AstBuiltin::AbiAlignOf { .. } => Ok(()),

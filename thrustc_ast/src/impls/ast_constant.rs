@@ -19,7 +19,7 @@
 
 use crate::{
     Ast,
-    traits::{AstBuiltinsExtensions, AstConstantExtensions},
+    traits::AstConstantExtensions,
 };
 
 impl AstConstantExtensions for Ast<'_> {
@@ -33,7 +33,6 @@ impl AstConstantExtensions for Ast<'_> {
             | Ast::CString { .. }
             | Ast::NullPtr { .. } => true,
 
-            Ast::Builtin { builtin, .. } => builtin.is_avalaible_at_compile_time(),
             Ast::EnumValue { value, .. } => value.is_constant_value(),
             Ast::GetLocation { expr, .. } => expr.is_constant_value(),
             Ast::Group { node, .. } => node.is_constant_value(),
@@ -88,6 +87,7 @@ impl AstConstantExtensions for Ast<'_> {
             | Ast::Call { .. }
             | Ast::IndirectCall { .. }
             | Ast::AsmValue { .. }
+            | Ast::Builtin { .. }
             | Ast::Import { .. }
             | Ast::ImportC { .. }
             | Ast::Unreachable { .. }

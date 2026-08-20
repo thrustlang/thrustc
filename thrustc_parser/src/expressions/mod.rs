@@ -19,6 +19,7 @@
 
 pub mod array;
 pub mod asm;
+pub mod builtin_call;
 pub mod call;
 pub mod deref;
 pub mod enum_value;

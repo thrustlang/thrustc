@@ -101,11 +101,9 @@ lazy_static! {
             HashMap::with_capacity(u8::MAX as usize);
 
         builtins.insert("halloc", TokenType::Halloc);
-        builtins.insert("sizeOf", TokenType::SizeOf);
         builtins.insert("memset", TokenType::MemSet);
         builtins.insert("memmove", TokenType::MemMove);
         builtins.insert("memcpy", TokenType::MemCpy);
-        builtins.insert("alignOf", TokenType::AlignOf);
         builtins.insert("abiSizeOf", TokenType::AbiSizeOf);
         builtins.insert("bitSizeOf", TokenType::BitSizeOf);
         builtins.insert("abiAlignOf", TokenType::AbiAlignOf);
