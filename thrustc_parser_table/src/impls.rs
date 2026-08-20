@@ -346,6 +346,11 @@ impl FunctionExtensions for Function<'_> {
     fn get_type(&self) -> Type {
         self.0.clone()
     }
+
+    #[inline]
+    fn get_parameter_names(&self) -> Vec<&str> {
+        self.2.0.clone()
+    }
 }
 
 impl LLISymbolExtensions for LLISymbol<'_> {

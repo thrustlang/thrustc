@@ -35,14 +35,24 @@ pub type Struct<'parser> = (
     Span,
 );
 
-pub type Function<'parser> = (Type, FunctionParametersTypes, bool);
+pub type Function<'parser> = (
+    Type,
+    FunctionParametersTypes,
+    FunctionParameterNames<'parser>,
+    bool,
+);
 pub type AssemblerFunction<'parser> = (Type, AssemblerFunctionParametersTypes, bool);
 pub type Intrinsic<'parser> = (Type, IntrinsicParametersTypes, bool);
 
 #[derive(Debug, Clone)]
 pub struct FunctionParametersTypes(pub Vec<Type>);
+
+#[derive(Debug, Clone)]
+pub struct FunctionParameterNames<'parser>(pub Vec<&'parser str>);
+
 #[derive(Debug, Clone)]
 pub struct AssemblerFunctionParametersTypes(pub Vec<Type>);
+
 #[derive(Debug, Clone)]
 pub struct IntrinsicParametersTypes(pub Vec<Type>);
 

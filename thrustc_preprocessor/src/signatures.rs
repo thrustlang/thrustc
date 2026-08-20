@@ -43,7 +43,7 @@ pub enum Signature {
     Function {
         kind: Type,
         invalid_kind: Type,
-        parameters: Vec<(Type, Span)>,
+        parameters: Vec<(String, Type, Span)>,
         attributes: ThrustAttributes,
         span: Span,
     },

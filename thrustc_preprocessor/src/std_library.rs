@@ -18,8 +18,11 @@
 */
 
 use std::cell::RefCell;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
+
+use ahash::AHashMap as HashMap;
+use ahash::AHashSet as HashSet;
 
 use thrustc_lexer::Lexer;
 use thrustc_options::{CompilationUnit, CompilerOptions};
@@ -35,16 +38,26 @@ pub struct StdLibrary {
     imported: RefCell<Vec<Module>>,
 }
 
+#[derive(Debug)]
+struct BuildingStd {
+    root: RefCell<Module>,
+    registry: SharedModuleRegistry,
+    version_dir: PathBuf,
+    parsed: RefCell<HashMap<PathBuf, Module>>,
+    parsing: RefCell<HashSet<PathBuf>>,
+}
+
 thread_local! {
     static STD_LIBRARY: RefCell<Option<StdLibrary>> = const { RefCell::new(None) };
-    static STD_BUILDING: RefCell<bool> = const { RefCell::new(false) };
+    static STD_BUILDING_STATE: RefCell<Option<Rc<BuildingStd>>> = const { RefCell::new(None) };
 }
 
 pub fn find_std_module(access: &[String], options: &CompilerOptions) -> Result<Module, ()> {
-    let building: bool = STD_BUILDING.with(|cell| *cell.borrow());
+    let building_state: Option<Rc<BuildingStd>> =
+        STD_BUILDING_STATE.with(|cell| cell.borrow().as_ref().cloned());
 
-    if building {
-        return Err(());
+    if let Some(state) = building_state {
+        return self::find_std_module_building(&state, access, options);
     }
 
     self::ensure_built(options)?;
@@ -93,6 +106,131 @@ pub fn find_std_module(access: &[String], options: &CompilerOptions) -> Result<M
     })
 }
 
+fn find_std_module_building(
+    state: &Rc<BuildingStd>,
+    access: &[String],
+    options: &CompilerOptions,
+) -> Result<Module, ()> {
+    let relative: &[String] = if access.first().map(String::as_str) == Some("std") {
+        &access[1..]
+    } else {
+        access
+    };
+
+    if relative.is_empty() {
+        return Ok(state.root.borrow().clone());
+    }
+
+    {
+        let root: std::cell::Ref<'_, Module> = state.root.borrow();
+
+        if let Some(module) = root.find_submodule(relative.to_vec()) {
+            return Ok(module.clone());
+        }
+    }
+
+    let file_path: PathBuf = self::resolve_std_path(state, relative)?;
+    let module: Module = self::ensure_parsed(state, &file_path, options)?;
+    self::attach_into_root(state, &file_path, module.clone())?;
+
+    Ok(module)
+}
+
+fn resolve_std_path(state: &Rc<BuildingStd>, relative: &[String]) -> Result<PathBuf, ()> {
+    if relative.is_empty() {
+        return Err(());
+    }
+
+    let mut path: PathBuf = state.version_dir.clone();
+
+    for (index, part) in relative.iter().enumerate() {
+        let is_last: bool = index + 1 == relative.len();
+
+        if !is_last {
+            path.push(part);
+            continue;
+        }
+
+        for extension in thrustc_constants::COMPILER_OWN_FILE_EXTENSIONS {
+            let candidate: PathBuf = path.join(format!("{part}.{extension}"));
+
+            if candidate.is_file() {
+                return Ok(candidate);
+            }
+        }
+
+        return Err(());
+    }
+
+    Err(())
+}
+
+fn ensure_parsed(
+    state: &Rc<BuildingStd>,
+    file_path: &Path,
+    options: &CompilerOptions,
+) -> Result<Module, ()> {
+    if let Some(module) = state.parsed.borrow().get(file_path) {
+        return Ok(module.clone());
+    }
+
+    if !state.parsing.borrow_mut().insert(file_path.to_path_buf()) {
+        return Err(());
+    }
+
+    let result: Result<Module, ()> =
+        self::parse_std_module_file(file_path, options, &state.registry);
+
+    state.parsing.borrow_mut().remove(file_path);
+
+    let module: Module = result?;
+
+    state
+        .parsed
+        .borrow_mut()
+        .insert(file_path.to_path_buf(), module.clone());
+
+    state.registry.borrow_mut().register(&module);
+
+    Ok(module)
+}
+
+fn attach_into_root(state: &Rc<BuildingStd>, file_path: &Path, module: Module) -> Result<(), ()> {
+    let relative: &Path = file_path
+        .strip_prefix(state.version_dir.as_path())
+        .map_err(|_| ())?;
+
+    let components: Vec<String> = relative
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().into_owned())
+        .collect();
+
+    let folder_parts: usize = components.len().saturating_sub(1);
+
+    let mut root: std::cell::RefMut<'_, Module> = state.root.borrow_mut();
+    let mut current: &mut Module = &mut root;
+
+    let mut current_path: PathBuf = state.version_dir.clone();
+
+    for (index, part) in components.iter().enumerate() {
+        if index >= folder_parts {
+            break;
+        }
+
+        current_path.push(part);
+
+        if current.get_submodule_mut(part).is_none() {
+            current.add_submodule(Module::new(part.clone(), current_path.clone()));
+        }
+
+        current = current.get_submodule_mut(part).ok_or(())?;
+    }
+
+    current.merge_submodule(module);
+
+    Ok(())
+}
+
 fn collect_compileable(module: &Module, out: &mut Vec<Module>) {
     if module.get_path().is_file() {
         out.push(module.clone());
@@ -137,28 +275,33 @@ fn ensure_built(options: &CompilerOptions) -> Result<(), ()> {
 }
 
 fn build_library(options: &CompilerOptions) -> Result<StdLibrary, ()> {
-    let root: std::path::PathBuf = thrustc_std::resolve_std_root(options.get_std_root_path());
+    let root: PathBuf = thrustc_std::resolve_std_root(options.get_std_root_path());
     let version: String = thrustc_std::resolve_target_version(options.get_std_version());
 
-    let version_dir: std::path::PathBuf =
-        thrustc_std::ensure_std_present(&root, &version).map_err(|_| ())?;
+    let version_dir: PathBuf = thrustc_std::ensure_std_present(&root, &version).map_err(|_| ())?;
 
     thrustc_std::validate_version(&root, &version).map_err(|_| ())?;
 
     let registry: SharedModuleRegistry = Rc::new(RefCell::new(ModuleRegistry::new()));
 
-    STD_BUILDING.with(|cell| *cell.borrow_mut() = true);
+    let state: Rc<BuildingStd> = Rc::new(BuildingStd {
+        root: RefCell::new(Module::new("std".to_string(), root.clone())),
+        registry: registry.clone(),
+        version_dir: version_dir.clone(),
+        parsed: RefCell::new(HashMap::with_capacity(u8::MAX as usize)),
+        parsing: RefCell::new(HashSet::with_capacity(u8::MAX as usize)),
+    });
 
-    let mut std_module: Module = Module::new("std".to_string(), root.clone());
+    STD_BUILDING_STATE.with(|cell| *cell.borrow_mut() = Some(state.clone()));
 
-    let result: Result<(), ()> =
-        self::parse_std_directory(&version_dir, options, &mut std_module, &registry);
+    let result: Result<(), ()> = self::build_std_tree(&state, options);
 
-    STD_BUILDING.with(|cell| *cell.borrow_mut() = false);
+    STD_BUILDING_STATE.with(|cell| *cell.borrow_mut() = None);
 
     result?;
 
-    registry.borrow_mut().register(&std_module);
+    let root_borrow: std::cell::Ref<'_, Module> = state.root.borrow();
+    registry.borrow_mut().register(&root_borrow);
 
     Ok(StdLibrary {
         registry,
@@ -166,32 +309,27 @@ fn build_library(options: &CompilerOptions) -> Result<StdLibrary, ()> {
     })
 }
 
-fn parse_std_directory(
+fn build_std_tree(state: &Rc<BuildingStd>, options: &CompilerOptions) -> Result<(), ()> {
+    let version_dir: PathBuf = state.version_dir.clone();
+    self::walk_and_attach(state, &version_dir, options)
+}
+
+fn walk_and_attach(
+    state: &Rc<BuildingStd>,
     directory: &Path,
     options: &CompilerOptions,
-    parent: &mut Module,
-    registry: &SharedModuleRegistry,
 ) -> Result<(), ()> {
     let entries: std::fs::ReadDir = std::fs::read_dir(directory).map_err(|_| ())?;
 
     for entry in entries {
         let entry: std::fs::DirEntry = entry.map_err(|_| ())?;
-        let path: std::path::PathBuf = entry.path();
+        let path: PathBuf = entry.path();
 
         if path.is_dir() {
-            let folder_name: String = path
-                .file_name()
-                .map_or_else(String::new, |name| name.to_string_lossy().to_string());
-
-            let mut folder_module: Module = Module::new(folder_name, path.clone());
-
-            self::parse_std_directory(&path, options, &mut folder_module, registry)?;
-
-            parent.add_submodule(folder_module);
+            self::walk_and_attach(state, &path, options)?;
         } else if self::is_thrust_file(&path) {
-            let module: Module = self::parse_std_module_file(&path, options, registry)?;
-
-            parent.add_submodule(module);
+            let module: Module = self::ensure_parsed(state, &path, options)?;
+            self::attach_into_root(state, &path, module)?;
         }
     }
 
@@ -235,4 +373,68 @@ fn parse_std_module_file(
     );
 
     subparser.parse()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::signatures::Variant;
+    use thrustc_options::CompilerOptions;
+
+    fn with_temp_std(files: &[(&str, &str)], run: impl FnOnce(&CompilerOptions, &std::path::Path)) {
+        let root: PathBuf = std::env::temp_dir().join(format!(
+            "thrustc_std_reexport_test_{}_{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|duration| duration.subsec_nanos())
+                .unwrap_or_default()
+        ));
+
+        let version_dir: PathBuf = root.join("vtest");
+        std::fs::create_dir_all(&version_dir).unwrap();
+        std::fs::write(root.join("VERSION.txt"), "test\n").unwrap();
+
+        for (name, content) in files {
+            std::fs::write(version_dir.join(name), content).unwrap();
+        }
+
+        let mut options: CompilerOptions = CompilerOptions::new();
+        options.set_std_root_path(root.clone());
+        options.set_std_version("test".to_string());
+
+        run(&options, &root);
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn std_module_can_import_another_std_module() {
+        with_temp_std(
+            &[
+                ("a.thrust", "import std::b;\n"),
+                ("b.thrust", "type Foo = u8;\n"),
+            ],
+            |options, _| {
+                let module: Module = super::find_std_module(
+                    &["std".to_string(), "a".to_string()],
+                    options,
+                )
+                .expect("std::a should resolve");
+
+                assert_eq!(module.get_name(), "a");
+
+                let b: &Module = module
+                    .get_submodules()
+                    .iter()
+                    .find(|submodule| submodule.get_name() == "b")
+                    .expect("std::a should reexport std::b");
+
+                assert!(
+                    b.search_symbol("Foo".to_string(), Variant::CustomType).is_some(),
+                    "std::b symbols must be resolvable through std::a"
+                );
+            },
+        );
+    }
 }

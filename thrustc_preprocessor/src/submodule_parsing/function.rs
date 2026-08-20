@@ -41,17 +41,18 @@ pub fn parse_function<'module_parser>(
 
     ctx.consume(TokenType::LParen)?;
 
-    let mut parameters: Vec<(Type, Span)> = Vec::with_capacity(u8::MAX as usize);
+    let mut parameters: Vec<(String, Type, Span)> = Vec::with_capacity(u8::MAX as usize);
 
     while !ctx.check(TokenType::RParen) {
         let param_name_tk: &Token = ctx.consume(TokenType::Identifier)?;
+        let param_name: String = param_name_tk.get_lexeme().to_string();
         let param_span: Span = param_name_tk.get_span();
 
         ctx.consume(TokenType::Colon)?;
 
         let param_type: Type = typegeneration::build_type(ctx)?;
 
-        parameters.push((param_type, param_span));
+        parameters.push((param_name, param_type, param_span));
 
         if ctx.check(TokenType::RParen) {
             break;

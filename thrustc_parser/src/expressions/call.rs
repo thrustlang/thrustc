@@ -24,6 +24,7 @@ use thrustc_ast::{
 use thrustc_entities::parser_entities::{FoundSymbolId, Function, Intrinsic};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, traits::FunctionReferenceExtensions};
 
@@ -34,21 +35,56 @@ use thrustc_parser_table::traits::{
 
 use crate::{ParserContext, expressions};
 
-pub fn build_call<'parser>(
+pub struct ParsedCallArguments<'parser> {
+    pub positional: Vec<Ast<'parser>>,
+    pub named: Vec<(&'parser str, Span, Ast<'parser>)>,
+}
+
+pub fn parse_call_arguments<'parser>(
     ctx: &mut ParserContext<'parser>,
-    name: &'parser str,
-    span: Span,
-) -> Result<Ast<'parser>, CompilationIssue> {
-    let mut args: Vec<Ast> = Vec::with_capacity(u8::MAX as usize);
+) -> Result<ParsedCallArguments<'parser>, CompilationIssue> {
+    let mut positional: Vec<Ast> = Vec::with_capacity(u8::MAX as usize);
+    let mut named: Vec<(&str, Span, Ast)> = Vec::with_capacity(u8::MAX as usize);
 
     loop {
         if ctx.check(TokenType::RParen) {
             break;
         }
 
-        let expr: Ast<'_> = expressions::parse_expr(ctx)?;
+        if ctx.check(TokenType::Identifier) && ctx.check_to(TokenType::Eq, 1) {
+            let name_tk: &Token = ctx.consume(
+                TokenType::Identifier,
+                CompilationIssueCode::E0001,
+                "Expected 'identifier'.".into(),
+            )?;
 
-        args.push(expr);
+            let name: &str = name_tk.get_lexeme();
+            let name_span: Span = name_tk.get_span();
+
+            ctx.consume(
+                TokenType::Eq,
+                CompilationIssueCode::E0001,
+                "Expected '='.".into(),
+            )?;
+
+            let expr: Ast = expressions::parse_expr(ctx)?;
+
+            named.push((name, name_span, expr));
+        } else {
+            if !named.is_empty() {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0046,
+                    "A positional argument cannot follow a named argument.".into(),
+                    "You should place all positional arguments before the named ones.".into(),
+                    None,
+                    ctx.peek().get_span(),
+                ));
+            }
+
+            let expr: Ast = expressions::parse_expr(ctx)?;
+
+            positional.push(expr);
+        }
 
         if ctx.check(TokenType::RParen) {
             break;
@@ -67,12 +103,113 @@ pub fn build_call<'parser>(
         "Expected ')'.".into(),
     )?;
 
+    Ok(ParsedCallArguments { positional, named })
+}
+
+pub fn reorder_call_arguments<'parser>(
+    name: &str,
+    span: Span,
+    arguments: ParsedCallArguments<'parser>,
+    parameter_names: &[&str],
+    var_args: bool,
+) -> Result<Vec<Ast<'parser>>, CompilationIssue> {
+    let positional: Vec<Ast> = arguments.positional;
+    let named: Vec<(&str, Span, Ast)> = arguments.named;
+
+    if named.is_empty() {
+        return Ok(positional);
+    }
+
+    if var_args {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0044,
+            format!(
+                "Function '{}' does not support named arguments because it accepts a variable number of arguments.",
+                name
+            ),
+            "You should use only positional arguments.".into(),
+            None,
+            span,
+        ));
+    }
+
+    if positional.len() + named.len() != parameter_names.len() {
+        let mut combined: Vec<Ast> = positional;
+        for (_, _, expr) in named.into_iter() {
+            combined.push(expr);
+        }
+
+        return Ok(combined);
+    }
+
+    let mut slots: Vec<Option<Ast>> = vec![None; parameter_names.len()];
+
+    for (index, expr) in positional.into_iter().enumerate() {
+        slots[index] = Some(expr);
+    }
+
+    for (parameter_name, parameter_span, expr) in named.into_iter() {
+        let index: Option<usize> = parameter_names
+            .iter()
+            .position(|candidate| *candidate == parameter_name);
+
+        let Some(index) = index else {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0044,
+                format!(
+                    "Function '{}' has no parameter named '{}'.",
+                    name, parameter_name
+                ),
+                "You should use one of the declared parameter names.".into(),
+                None,
+                parameter_span,
+            ));
+        };
+
+        if slots[index].is_some() {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0045,
+                format!(
+                    "Argument '{}' was already provided for function '{}'.",
+                    parameter_name, name
+                ),
+                "You should remove the duplicated argument.".into(),
+                None,
+                parameter_span,
+            ));
+        }
+
+        slots[index] = Some(expr);
+    }
+
+    let args: Vec<Ast> = slots.into_iter().map(|slot| slot.unwrap()).collect();
+
+    Ok(args)
+}
+
+pub fn build_call<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    name: &'parser str,
+    span: Span,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let arguments: ParsedCallArguments = parse_call_arguments(ctx)?;
+
     let reference: Result<FoundSymbolId, CompilationIssue> =
         ctx.get_symbols().get_symbols_id(name, span);
 
     match reference {
         Ok(object) => {
             let function_type: Type = if object.is_intrinsic() {
+                if !arguments.named.is_empty() {
+                    return Err(CompilationIssue::Error(
+                        CompilationIssueCode::E0044,
+                        "Named arguments are not supported for compiler intrinsics.".into(),
+                        "You should use only positional arguments.".into(),
+                        None,
+                        span,
+                    ));
+                }
+
                 let id: &str = object.expected_intrinsic(span)?;
                 let intrinsic: Result<Intrinsic, CompilationIssue> =
                     ctx.get_symbols().get_intrinsic_by_id(span, id);
@@ -85,6 +222,16 @@ pub fn build_call<'parser>(
                     }
                 }
             } else if object.is_function_asm() {
+                if !arguments.named.is_empty() {
+                    return Err(CompilationIssue::Error(
+                        CompilationIssueCode::E0044,
+                        "Named arguments are not supported for assembler functions.".into(),
+                        "You should use only positional arguments.".into(),
+                        None,
+                        span,
+                    ));
+                }
+
                 let id: &str = object.expected_asm_function(span)?;
                 let asm_function: Result<
                     thrustc_entities::parser_entities::AssemblerFunction,
@@ -105,13 +252,40 @@ pub fn build_call<'parser>(
                     ctx.get_symbols().get_function_by_id(span, id);
 
                 match function {
-                    Ok(function) => FunctionExtensions::get_type(&function),
+                    Ok(function) => {
+                        let parameter_names: Vec<&str> =
+                            FunctionExtensions::get_parameter_names(&function);
+
+                        let args: Vec<Ast> = match reorder_call_arguments(
+                            name,
+                            span,
+                            arguments,
+                            &parameter_names,
+                            function.3,
+                        ) {
+                            Ok(args) => args,
+                            Err(error) => {
+                                ctx.add_error_report(error);
+                                return Ok(Ast::invalid_ast(span));
+                            }
+                        };
+
+                        return Ok(Ast::Call {
+                            name,
+                            args,
+                            kind: FunctionExtensions::get_type(&function),
+                            span,
+                            id: NodeId::new(),
+                        });
+                    }
                     Err(error) => {
                         ctx.add_error_report(error);
                         return Ok(Ast::invalid_ast(span));
                     }
                 }
             };
+
+            let args: Vec<Ast> = arguments.positional;
 
             Ok(Ast::Call {
                 name,
@@ -141,33 +315,17 @@ pub fn build_anonymous_call<'parser>(
 
     let span: Span = expr.get_span();
 
-    let mut args: Vec<Ast> = Vec::with_capacity(u8::MAX as usize);
+    let arguments: ParsedCallArguments = parse_call_arguments(ctx)?;
 
-    loop {
-        if ctx.check(TokenType::RParen) {
-            break;
-        }
-
-        let expr: Ast<'_> = expressions::parse_expr(ctx)?;
-
-        args.push(expr);
-
-        if ctx.check(TokenType::RParen) {
-            break;
-        } else {
-            ctx.consume(
-                TokenType::Comma,
-                CompilationIssueCode::E0001,
-                "Expected ','.".into(),
-            )?;
-        }
+    if !arguments.named.is_empty() {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0044,
+            "Named arguments are not supported in anonymous function calls.".into(),
+            "You should use only positional arguments.".into(),
+            None,
+            span,
+        ));
     }
-
-    ctx.consume(
-        TokenType::RParen,
-        CompilationIssueCode::E0001,
-        "Expected ')'.".into(),
-    )?;
 
     let expr_type: &Type = expr.get_value_type()?;
     let return_type: Type = expr_type.get_function_reference_return_type();
@@ -175,7 +333,7 @@ pub fn build_anonymous_call<'parser>(
     Ok(Ast::IndirectCall {
         function: expr.clone().into(),
         function_type: expr_type.clone(),
-        args,
+        args: arguments.positional,
         kind: return_type,
         span,
         id: NodeId::new(),

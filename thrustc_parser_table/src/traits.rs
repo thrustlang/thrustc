@@ -94,6 +94,7 @@ pub trait LLISymbolExtensions {
 
 pub trait FunctionExtensions {
     fn get_type(&self) -> Type;
+    fn get_parameter_names(&self) -> Vec<&str>;
 }
 
 pub trait FunctionAssemblerExtensions {

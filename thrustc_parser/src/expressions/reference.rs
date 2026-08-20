@@ -68,7 +68,7 @@ pub fn build_reference<'parser>(
                         let return_type: Type = object.get_type();
                         let parameter_types: Vec<Type> = object.1.0;
 
-                        let has_ignore: bool = object.2;
+                        let has_ignore: bool = object.3;
 
                         let modificator: FunctionReferenceTypeModificator =
                             FunctionReferenceTypeModificator::new(

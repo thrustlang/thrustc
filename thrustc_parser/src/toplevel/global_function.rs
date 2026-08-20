@@ -19,7 +19,7 @@
 
 use thrustc_ast::{Ast, NodeId, ast_metadata::FunctionParameterMetadata};
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
-use thrustc_entities::parser_entities::FunctionParametersTypes;
+use thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParametersTypes};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -58,6 +58,7 @@ pub fn build_function<'parser>(
 
     let mut parameters: Vec<Ast> = Vec::with_capacity(16);
     let mut parameters_types: Vec<Type> = Vec::with_capacity(16);
+    let mut parameter_names: Vec<&'parser str> = Vec::with_capacity(16);
     let mut parameter_position: u32 = 0;
 
     loop {
@@ -86,6 +87,7 @@ pub fn build_function<'parser>(
             FunctionParameterMetadata::new(kind.is_ptr_like_type());
 
         parameters_types.push(kind.clone());
+        parameter_names.push(name);
 
         parameters.push(Ast::FunctionParameter {
             name,
@@ -142,6 +144,7 @@ pub fn build_function<'parser>(
             (
                 return_type,
                 FunctionParametersTypes(parameters_types),
+                FunctionParameterNames(parameter_names),
                 function_has_ignore,
             ),
         )?;

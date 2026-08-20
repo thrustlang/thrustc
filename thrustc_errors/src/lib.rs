@@ -123,6 +123,9 @@ lazy_static::lazy_static! {
         explanations.insert(CompilationIssueCode::W0029, r#""#);
         explanations.insert(CompilationIssueCode::W0030, r#""#);
         explanations.insert(CompilationIssueCode::E0043, r#""#);
+        explanations.insert(CompilationIssueCode::E0044, r#""#);
+        explanations.insert(CompilationIssueCode::E0045, r#""#);
+        explanations.insert(CompilationIssueCode::E0046, r#""#);
 
         explanations
     };
@@ -172,6 +175,9 @@ pub enum CompilationIssueCode {
     E0041, // Unresolved Type
     E0042, // Type could not be determined
     E0043, // Ambiguous imported name
+    E0044, // Unknown named argument.
+    E0045, // Duplicated named argument.
+    E0046, // Positional argument after a named argument.
 
     W0001, // Irrelevant Attribute
     W0002, // Unknown Call Convention
@@ -329,6 +335,15 @@ impl CompilationIssueCode {
             CompilationIssueCode::E0043 => {
                 format!("AMBIGUOUS IMPORTED NAME - {}", "E0043".bright_red())
             }
+            CompilationIssueCode::E0044 => {
+                format!("UNKNOWN NAMED ARGUMENT - {}", "E0044".bright_red())
+            }
+            CompilationIssueCode::E0045 => {
+                format!("DUPLICATED NAMED ARGUMENT - {}", "E0045".bright_red())
+            }
+            CompilationIssueCode::E0046 => {
+                format!("POSITIONAL AFTER NAMED ARGUMENT - {}", "E0046".bright_red())
+            }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())
             }
@@ -466,6 +481,9 @@ impl CompilationIssueCode {
             "E0033" => Ok(CompilationIssueCode::E0033),
             "E0042" => Ok(CompilationIssueCode::E0042),
             "E0043" => Ok(CompilationIssueCode::E0043),
+            "E0044" => Ok(CompilationIssueCode::E0044),
+            "E0045" => Ok(CompilationIssueCode::E0045),
+            "E0046" => Ok(CompilationIssueCode::E0046),
 
             "W0001" => Ok(CompilationIssueCode::W0001),
             "W0002" => Ok(CompilationIssueCode::W0002),

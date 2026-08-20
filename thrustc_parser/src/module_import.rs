@@ -26,7 +26,7 @@ use thrustc_ast::{
 use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_code_location::Span;
-use thrustc_entities::parser_entities::FunctionParametersTypes;
+use thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParametersTypes};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_mir::{atomicord::ThrustAtomicOrdering, threadmode::ThrustThreadMode};
 use thrustc_parser_external_table::ExternalSymbolTable;
@@ -37,7 +37,7 @@ use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypePointerExtensions;
 use thrustc_typesystem::type_metadata::StructTypeMetadata;
 
-use crate::{ParserContext, expressions};
+use crate::ParserContext;
 
 pub fn build_qualified_expression<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -72,38 +72,32 @@ pub fn build_qualified_expression<'parser>(
             "Expected '('.".into(),
         )?;
 
-        let mut args: Vec<Ast> = Vec::with_capacity(u8::MAX as usize);
-
-        loop {
-            if ctx.check(TokenType::RParen) {
-                break;
-            }
-
-            let expr: Ast = expressions::parse_expr(ctx)?;
-            args.push(expr);
-
-            if ctx.check(TokenType::RParen) {
-                break;
-            }
-
-            ctx.consume(
-                TokenType::Comma,
-                CompilationIssueCode::E0001,
-                "Expected ','.".into(),
-            )?;
-        }
-
-        ctx.consume(
-            TokenType::RParen,
-            CompilationIssueCode::E0001,
-            "Expected ')'.".into(),
-        )?;
+        let arguments: crate::expressions::call::ParsedCallArguments =
+            crate::expressions::call::parse_call_arguments(ctx)?;
 
         let return_type: Type = kind.clone();
 
-        let parameter_types: Vec<Type> = parameters.iter().map(|(ty, _)| ty.clone()).collect();
+        let parameter_types: Vec<Type> = parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
+        let parameter_names: Vec<&str> = parameters
+            .iter()
+            .map(|(name, _, _)| name.as_str())
+            .collect();
 
         let has_ignore: bool = attributes.has_ignore_attribute();
+
+        let args: Vec<Ast> = match crate::expressions::call::reorder_call_arguments(
+            symbol,
+            span,
+            arguments,
+            &parameter_names,
+            has_ignore,
+        ) {
+            Ok(args) => args,
+            Err(error) => {
+                ctx.add_error_report(error);
+                return Ok(Ast::invalid_ast(span));
+            }
+        };
 
         if ctx.get_symbols().has_function(symbol) {
             self::check_qualified_collision(ctx, symbol, access, origin.as_ref(), span)?;
@@ -113,6 +107,7 @@ pub fn build_qualified_expression<'parser>(
                 (
                     return_type.clone(),
                     FunctionParametersTypes(parameter_types.clone()),
+                    FunctionParameterNames(parameter_names.clone()),
                     has_ignore,
                 ),
             );
@@ -127,6 +122,7 @@ pub fn build_qualified_expression<'parser>(
                 symbol,
                 return_type.clone(),
                 parameter_types,
+                parameter_names,
                 attributes.clone(),
                 span,
             );
@@ -265,7 +261,11 @@ pub(crate) fn synthesize_only_import<'parser>(
 
                 let return_type: Type = kind.clone();
                 let parameter_types: Vec<Type> =
-                    parameters.iter().map(|(ty, _)| ty.clone()).collect();
+                    parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
+                let parameter_names: Vec<&str> = parameters
+                    .iter()
+                    .map(|(name, _, _)| name.as_str())
+                    .collect();
                 let has_ignore: bool = attributes.has_ignore_attribute();
 
                 let _ = ctx.get_mut_symbols().new_function(
@@ -273,6 +273,7 @@ pub(crate) fn synthesize_only_import<'parser>(
                     (
                         return_type.clone(),
                         FunctionParametersTypes(parameter_types.clone()),
+                        FunctionParameterNames(parameter_names.clone()),
                         has_ignore,
                     ),
                 );
@@ -285,6 +286,7 @@ pub(crate) fn synthesize_only_import<'parser>(
                     &symbol.name,
                     return_type,
                     parameter_types,
+                    parameter_names,
                     attributes.clone(),
                     span,
                 );
@@ -500,16 +502,17 @@ fn synthesize_function<'parser>(
     symbol: &'parser str,
     return_type: thrustc_typesystem::Type,
     parameter_types: Vec<thrustc_typesystem::Type>,
+    parameter_names: Vec<&'parser str>,
     attributes: ThrustAttributes,
     span: Span,
 ) {
     let mut parameters: Vec<Ast> = Vec::with_capacity(parameter_types.len());
     let mut position: u32 = 0;
 
-    for kind in parameter_types.iter() {
+    for (kind, &name) in parameter_types.iter().zip(parameter_names.iter()) {
         parameters.push(Ast::FunctionParameter {
-            name: "",
-            ascii_name: "",
+            name,
+            ascii_name: name,
             kind: kind.clone(),
             position,
             metadata: FunctionParameterMetadata::new(kind.is_ptr_like_type()),

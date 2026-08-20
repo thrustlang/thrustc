@@ -110,6 +110,13 @@ impl Module {
     pub fn add_symbol(&mut self, symbol: Symbol) {
         self.symbols.push(symbol);
     }
+
+    #[inline]
+    pub fn get_submodule_mut(&mut self, name: &str) -> Option<&mut Module> {
+        self.submodules
+            .iter_mut()
+            .find(|submodule| submodule.matches_name(name))
+    }
 }
 
 impl Module {
