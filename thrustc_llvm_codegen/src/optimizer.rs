@@ -110,7 +110,11 @@ impl LLVMOptimizer<'_, '_> {
 
         LLVMMachineSpecificFunctionOptimizer::new(module, context, config).run();
 
-        if !custom_passes.is_empty() {
+        if flags.get_disable_default_opt() {
+            LLVMOptimizationBlocker::new(module, context).run();
+        }
+
+        if !flags.get_disable_default_opt() && !custom_passes.is_empty() {
             if let Err(error) = self
                 .get_module()
                 .run_passes(custom_passes, machine, options)
@@ -123,7 +127,7 @@ impl LLVMOptimizer<'_, '_> {
                     ),
                 );
             }
-        } else {
+        } else if !flags.get_disable_default_opt() {
             match config.get_compiler_optimization() {
                 ThrustOptimization::None => {}
 
@@ -2157,5 +2161,40 @@ impl LLVMExpressionOptimization {
     #[inline]
     pub fn denegate_all_expression_optimizations(&mut self) {
         self.unnamed_addr = false;
+    }
+}
+
+#[derive(Debug)]
+pub struct LLVMOptimizationBlocker<'a, 'ctx> {
+    module: &'a Module<'ctx>,
+    context: &'ctx Context,
+}
+
+impl<'a, 'ctx> LLVMOptimizationBlocker<'a, 'ctx> {
+    #[inline]
+    pub fn new(module: &'a Module<'ctx>, context: &'ctx Context) -> Self {
+        Self { module, context }
+    }
+}
+
+impl LLVMOptimizationBlocker<'_, '_> {
+    pub fn run(&self) {
+        for function in self.module.get_functions() {
+            if function.get_first_basic_block().is_none() {
+                continue;
+            }
+
+            let optnone_id: u32 = Attribute::get_named_enum_kind_id("optnone");
+            let optnone: Attribute = self.context.create_enum_attribute(optnone_id, 0);
+            function.add_attribute(AttributeLoc::Function, optnone);
+
+            let noinline_id: u32 = Attribute::get_named_enum_kind_id("noinline");
+            let noinline: Attribute = self.context.create_enum_attribute(noinline_id, 0);
+            function.add_attribute(AttributeLoc::Function, noinline);
+
+            let nounwind_id: u32 = Attribute::get_named_enum_kind_id("nounwind");
+            let nounwind: Attribute = self.context.create_enum_attribute(nounwind_id, 0);
+            function.add_attribute(AttributeLoc::Function, nounwind);
+        }
     }
 }

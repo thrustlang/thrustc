@@ -24,6 +24,7 @@ use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::memory;
 use crate::predicates;
+use crate::traits::AstLLVMGetType;
 use crate::type_cast;
 
 use inkwell::values::PointerValue;
@@ -82,7 +83,8 @@ pub fn compile_float_operation<'ctx>(
                     let old_value: FloatValue<'_> =
                         codegen::compile_as_value(context, lhs, cast).into_float_value();
                     let value: FloatValue<'_> =
-                        codegen::compile_as_value(context, rhs, cast).into_float_value();
+                        type_cast::compile_type_cast(context, rhs, lhs.get_type_for_llvm())
+                            .into_float_value();
 
                     let new_value: BasicValueEnum<'_> = llvm_builder
                         .build_float_add(old_value, value, "")
@@ -114,11 +116,13 @@ pub fn compile_float_operation<'ctx>(
                     )
                 }
             } else {
+                let lhs_type: &Type = lhs.get_type_for_llvm();
+                let rhs_ast: &Ast<'_> = rhs;
                 let lhs: BasicValueEnum = codegen::compile_as_value(context, lhs, cast);
-                let rhs: BasicValueEnum = codegen::compile_as_value(context, rhs, cast);
 
                 let old_value: FloatValue<'_> = lhs.into_float_value();
-                let value: FloatValue<'_> = rhs.into_float_value();
+                let value: FloatValue<'_> = type_cast::compile_type_cast(context, rhs_ast, lhs_type)
+                    .into_float_value();
 
                 llvm_builder
                     .build_float_add(old_value, value, "")
@@ -167,7 +171,8 @@ pub fn compile_float_operation<'ctx>(
                     let old_value: FloatValue<'_> =
                         codegen::compile_as_value(context, lhs, cast).into_float_value();
                     let value: FloatValue<'_> =
-                        codegen::compile_as_value(context, rhs, cast).into_float_value();
+                        type_cast::compile_type_cast(context, rhs, lhs.get_type_for_llvm())
+                            .into_float_value();
 
                     let new_value: BasicValueEnum<'_> = llvm_builder
                         .build_float_sub(old_value, value, "")
@@ -199,11 +204,13 @@ pub fn compile_float_operation<'ctx>(
                     )
                 }
             } else {
+                let lhs_type: &Type = lhs.get_type_for_llvm();
+                let rhs_ast: &Ast<'_> = rhs;
                 let lhs: BasicValueEnum = codegen::compile_as_value(context, lhs, cast);
-                let rhs: BasicValueEnum = codegen::compile_as_value(context, rhs, cast);
 
                 let old_value: FloatValue<'_> = lhs.into_float_value();
-                let value: FloatValue<'_> = rhs.into_float_value();
+                let value: FloatValue<'_> = type_cast::compile_type_cast(context, rhs_ast, lhs_type)
+                    .into_float_value();
 
                 llvm_builder
                     .build_float_sub(old_value, value, "")

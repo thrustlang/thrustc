@@ -97,6 +97,14 @@ fn compile_int_operation<'ctx>(
                     let value: IntValue<'_> =
                         codegen::compile_as_value(context, rhs, cast_type).into_int_value();
 
+                    let (old_value, value) = type_cast::compile_int_together_cast(
+                        context,
+                        old_value,
+                        value,
+                        (signatures.0, signatures.1),
+                        span,
+                    );
+
                     let new_value: BasicValueEnum<'_>;
 
                     let options: &CompilerOptions = context.get_compiler_options();
@@ -168,6 +176,14 @@ fn compile_int_operation<'ctx>(
                 let old_value: IntValue<'_> = lhs.into_int_value();
                 let value: IntValue<'_> = rhs.into_int_value();
 
+                let (old_value, value) = type_cast::compile_int_together_cast(
+                    context,
+                    old_value,
+                    value,
+                    (signatures.0, signatures.1),
+                    span,
+                );
+
                 llvm_builder
                     .build_int_nsw_add(old_value, value, "")
                     .unwrap_or_else(|_| {
@@ -218,6 +234,14 @@ fn compile_int_operation<'ctx>(
                         codegen::compile_as_value(context, lhs, cast_type).into_int_value();
                     let value: IntValue<'_> =
                         codegen::compile_as_value(context, rhs, cast_type).into_int_value();
+
+                    let (old_value, value) = type_cast::compile_int_together_cast(
+                        context,
+                        old_value,
+                        value,
+                        (signatures.0, signatures.1),
+                        span,
+                    );
 
                     let options: &CompilerOptions = context.get_compiler_options();
                     let llvm_backend: &LLVMBackend = options.get_llvm_backend();
@@ -289,6 +313,14 @@ fn compile_int_operation<'ctx>(
 
                 let old_value: IntValue<'_> = lhs.into_int_value();
                 let value: IntValue<'_> = rhs.into_int_value();
+
+                let (old_value, value) = type_cast::compile_int_together_cast(
+                    context,
+                    old_value,
+                    value,
+                    (signatures.0, signatures.1),
+                    span,
+                );
 
                 let options: &CompilerOptions = context.get_compiler_options();
                 let llvm_backend: &LLVMBackend = options.get_llvm_backend();

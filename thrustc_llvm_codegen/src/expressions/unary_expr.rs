@@ -19,7 +19,6 @@
 
 use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeLocation;
-use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_backends::llvm::LLVMBackend;
 use thrustc_entities::UnaryOperation;
 use thrustc_options::CompilerOptions;
@@ -30,7 +29,6 @@ use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::abort;
 use crate::codegen;
-use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::memory::SymbolAllocated;
 use crate::type_cast;
@@ -463,15 +461,7 @@ fn compile_logical_negation<'ctx>(
 
     let kind: &Type = expr.get_type_for_llvm();
 
-    let value: BasicValueEnum = if expr.is_memory_assigned_value().unwrap_or(false) {
-        context.add_codegen_location(CodeGenLocation::LValue);
-        let value: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, expr, cast_type);
-        context.pop_current_codegen_location();
-
-        value
-    } else {
-        codegen::compile_as_value(context, expr, cast_type)
-    };
+    let value: BasicValueEnum = codegen::compile_as_value(context, expr, cast_type);
 
     let span: Span = expr.get_span();
 
