@@ -19,6 +19,7 @@
 
 use std::path::PathBuf;
 
+use thrustc_builtins::BuiltinRegistry;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_options::{CompilationUnit, CompilerOptions};
@@ -40,6 +41,7 @@ pub struct PreprocessorContext<'preprocessor> {
     errors: Vec<CompilationIssue>,
     warnings: Vec<CompilationIssue>,
     registry: crate::registry::SharedModuleRegistry,
+    builtins: &'preprocessor BuiltinRegistry,
     current: usize,
 }
 
@@ -50,6 +52,7 @@ impl<'preprocessor> PreprocessorContext<'preprocessor> {
         file: &'preprocessor CompilationUnit,
         visited: HashSet<PathBuf>,
         registry: crate::registry::SharedModuleRegistry,
+        builtins: &'preprocessor BuiltinRegistry,
     ) -> Self {
         Self {
             tokens,
@@ -60,6 +63,7 @@ impl<'preprocessor> PreprocessorContext<'preprocessor> {
             errors: Vec::with_capacity(u8::MAX as usize),
             warnings: Vec::with_capacity(u8::MAX as usize),
             registry,
+            builtins,
             current: 0,
         }
     }
@@ -317,6 +321,11 @@ impl<'module_parser> PreprocessorContext<'module_parser> {
     #[inline]
     pub fn get_registry(&self) -> crate::registry::SharedModuleRegistry {
         self.registry.clone()
+    }
+
+    #[inline]
+    pub fn get_builtins(&self) -> &BuiltinRegistry {
+        self.builtins
     }
 
     #[inline]

@@ -27,6 +27,7 @@ use crate::traits::CompileTimeBuiltinFunction;
 use crate::value::BuiltinArgument;
 use crate::value::BuiltinValue;
 
+#[derive(Debug)]
 pub struct AlignOf;
 
 impl CompileTimeBuiltinFunction for AlignOf {

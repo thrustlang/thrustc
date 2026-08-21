@@ -21,6 +21,7 @@ use thrustc_ast::Ast;
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
+use thrustc_typesystem::traits::TypePointerExtensions;
 
 use inkwell::AddressSpace;
 use inkwell::builder::Builder;
@@ -79,8 +80,32 @@ pub fn compile<'ctx>(
         .iter()
         .enumerate()
         .map(|(index, expr)| {
-            let cast_type: Option<&Type> = parameter_types.get(index);
-            codegen::compile_as_value(context, expr, cast_type).into()
+            let cast: Option<&Type> = parameter_types.get(index);
+
+            context.add_codegen_location(CodeGenLocation::CallArgExpr);
+
+            if let Some(cast_type) = cast {
+                if cast_type.is_ptr_like_type() {
+                    let value: BasicValueEnum<'_> =
+                        codegen::compile_as_ptr_value(context, expr, cast);
+
+                    context.pop_current_codegen_location();
+
+                    value.into()
+                } else {
+                    let value: BasicValueEnum<'_> = codegen::compile_as_value(context, expr, cast);
+
+                    context.pop_current_codegen_location();
+
+                    value.into()
+                }
+            } else {
+                let value: BasicValueEnum<'_> = codegen::compile_as_value(context, expr, cast);
+
+                context.pop_current_codegen_location();
+
+                value.into()
+            }
         })
         .collect();
 

@@ -33,7 +33,7 @@ pub struct BuiltinFunctionSignature {
     pub parameters: Vec<BuiltinParameter>,
 }
 
-pub trait CompileTimeBuiltinFunction {
+pub trait CompileTimeBuiltinFunction: std::fmt::Debug {
     fn name(&self) -> &'static str;
 
     fn signature(&self) -> BuiltinFunctionSignature;

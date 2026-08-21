@@ -111,8 +111,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let target: &LLVMTarget = llvm_backend.get_target();
         let llvm_triple: &TargetTriple = target.get_target_triple();
 
-        let target_triple_formatted: String =
-            llvm_triple.as_str().to_string_lossy().to_string();
+        let target_triple_formatted: String = llvm_triple.as_str().to_string_lossy().to_string();
 
         let target_info: TargetInfo =
             TargetInfo::new(LLVMTargetTriple::new(target_triple_formatted));
@@ -229,7 +228,9 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
             let mut preprocessor: Preprocessor = Preprocessor::new();
 
-            let _ = preprocessor.generate_modules(&tokens, self.options, file);
+            let builtins: BuiltinRegistry = self.create_builtins_registry();
+
+            let _ = preprocessor.generate_modules(&tokens, self.options, file, &builtins);
         }
     }
 
@@ -345,10 +346,12 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return finisher::archive_compilation(self, file_time, file);
         }
 
+        let mut builtins: BuiltinRegistry = self.create_builtins_registry();
+
         let mut preprocessor: Preprocessor = Preprocessor::new();
 
         let modules: Result<&[thrustc_preprocessor::module::Module], ()> =
-            preprocessor.generate_modules(&tokens, self.options, file);
+            preprocessor.generate_modules(&tokens, self.options, file, &builtins);
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
@@ -365,8 +368,6 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 file_time,
             );
         })?;
-
-        let mut builtins: BuiltinRegistry = self.create_builtins_registry();
 
         let parser: (ParserContext, bool) =
             Parser::parse(&tokens, modules, file, self.options, &mut builtins);
@@ -776,9 +777,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
+        let mut builtins: BuiltinRegistry = self.create_builtins_registry();
+
         let mut preprocessor: Preprocessor = Preprocessor::new();
         let modules: Result<&[thrustc_preprocessor::module::Module], ()> =
-            preprocessor.generate_modules(&tokens, self.options, file);
+            preprocessor.generate_modules(&tokens, self.options, file, &builtins);
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
@@ -795,8 +798,6 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 file_time,
             );
         })?;
-
-        let mut builtins: BuiltinRegistry = self.create_builtins_registry();
 
         let parser: (ParserContext, bool) =
             Parser::parse(&tokens, modules, file, self.options, &mut builtins);

@@ -21,7 +21,6 @@ use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeLocation;
 use thrustc_builtins::BuiltinArgument;
 use thrustc_builtins::BuiltinFunctionSignature;
-use thrustc_builtins::value::fold;
 use thrustc_code_location::Span;
 use thrustc_errors::CompilationIssue;
 use thrustc_errors::CompilationIssueCode;
@@ -71,15 +70,16 @@ pub fn build_builtin_call<'parser>(
                 }
             } else {
                 let expr: Ast<'_> = expressions::parse_expr(ctx)?;
-                let value: thrustc_builtins::BuiltinValue = fold(&expr).ok_or_else(|| {
-                    CompilationIssue::Error(
-                        CompilationIssueCode::E0006,
-                        "The compiler builtin expects a constant argument.".into(),
-                        "You should pass a constant value.".into(),
-                        None,
-                        expr.get_span(),
-                    )
-                })?;
+                let value: thrustc_builtins::BuiltinValue = thrustc_builtins::value::fold(&expr)
+                    .ok_or_else(|| {
+                        CompilationIssue::Error(
+                            CompilationIssueCode::E0006,
+                            "The compiler builtin expects a constant argument.".into(),
+                            "You should pass a constant value.".into(),
+                            None,
+                            expr.get_span(),
+                        )
+                    })?;
 
                 BuiltinArgument::Value {
                     value,

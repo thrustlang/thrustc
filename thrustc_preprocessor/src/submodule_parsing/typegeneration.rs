@@ -142,10 +142,14 @@ fn build_type_inner(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
                 }
             }
 
-            if let Some(symbol) = ctx.get_module().search_symbol(name, Variant::Struct) {
+            if let Some(symbol) = ctx.get_module().search_symbol(name.clone(), Variant::Struct) {
                 if let Signature::Struct { kind, .. } = &symbol.signature {
                     return Ok(kind.clone());
                 }
+            }
+
+            if let Some(builtin_type) = ctx.get_builtins().get_type(&name) {
+                return Ok(builtin_type.clone());
             }
 
             Err(())

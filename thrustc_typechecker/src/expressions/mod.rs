@@ -27,8 +27,8 @@ use thrustc_code_location::Span;
 use thrustc_typesystem::{
     Type,
     traits::{
-        TypeArrayEntensions, TypeCodeLocation, TypeFixedArrayEntensions, TypeIsExtensions,
-        TypePointerExtensions, VoidTypeExtensions,
+        ConstantTypeExtensions, TypeArrayEntensions, TypeCodeLocation, TypeFixedArrayEntensions,
+        TypeIsExtensions, TypePointerExtensions, VoidTypeExtensions,
     },
 };
 
@@ -442,9 +442,14 @@ pub fn validate_node<'type_checker>(
             function,
             function_type,
             args,
+            span,
             ..
         } => {
-            if !function_type.is_function_reference_type() {
+            typechecker.analyze_expr(function)?;
+
+            let fn_type: Type = function_type.remove_all_constant_type();
+
+            if !fn_type.is_function_reference_type() {
                 typechecker.add_error_report(CompilationIssue::Error(
                     CompilationIssueCode::E0019,
                     "Expected function reference type for call anonymously.".into(),
@@ -452,6 +457,108 @@ pub fn validate_node<'type_checker>(
                     None,
                     function.get_span(),
                 ));
+
+                {
+                    for argument in args.iter() {
+                        typechecker.analyze_expr(argument)?;
+                    }
+                }
+
+                return Ok(());
+            }
+
+            let Type::Fn {
+                return_type,
+                parameter_types,
+                modificator,
+                ..
+            } = fn_type
+            else {
+                unreachable!()
+            };
+
+            let required_count: usize = parameter_types.len();
+            let provided_count: usize = args.len();
+
+            let var_args: bool = modificator.llvm().has_ignore();
+
+            if return_type.contains_inner_void_type() {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    "Cannot use 'void' as a value.".into(),
+                    "You should remove whatever type or value where void type belongs.".into(),
+                    None,
+                    *span,
+                ));
+            }
+
+            if parameter_types
+                .iter()
+                .any(|ty| ty.contains_void_type() || ty.is_void_type())
+            {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    "Cannot use 'void' as a value.".into(),
+                    "You should remove whatever type or value where void type belongs.".into(),
+                    None,
+                    *span,
+                ));
+            }
+
+            if required_count != provided_count && !var_args {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0022,
+                    format!(
+                        "Expected arguments total '{}', not '{}'.",
+                        required_count, provided_count
+                    ),
+                    "You should try to filling it out using the equals type.".into(),
+                    None,
+                    *span,
+                ));
+
+                let expected_types: String = parameter_types
+                    .iter()
+                    .map(|t| t.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0023,
+                    format!("Arguments were expected in the order '{}'.", expected_types),
+                    "You should reorder it equals to its type.".into(),
+                    None,
+                    *span,
+                ));
+
+                return Ok(());
+            }
+
+            {
+                for (target_type, expr) in parameter_types.iter().zip(args.iter()) {
+                    let from_type: &Type = expr.get_value_type()?;
+                    let expr_metadata: TypeCheckerNodeMetadata =
+                        TypeCheckerNodeMetadata::new(expr.is_totaly_literal_value());
+
+                    {
+                        let control_context: &mut TypeCheckerControlContext =
+                            typechecker.get_mut_control_context();
+
+                        control_context.reset_checking_depth();
+
+                        if let Err(error) = type_checking::check_type_together(
+                            target_type,
+                            from_type,
+                            Some(expr),
+                            None,
+                            expr_metadata,
+                            expr.get_span(),
+                            control_context,
+                        ) {
+                            typechecker.add_error_report(error);
+                        }
+                    }
+                }
             }
 
             {

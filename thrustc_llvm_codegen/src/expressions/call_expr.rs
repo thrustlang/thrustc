@@ -142,7 +142,7 @@ pub fn compile<'ctx>(
     if !has_abi {
         build_standard_call()
     } else {
-        if is_variatic {
+        if is_variatic || abi_configuration.is_none() {
             return build_standard_call();
         }
 

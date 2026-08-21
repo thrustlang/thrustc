@@ -33,6 +33,7 @@ use crate::traits::CompileTimeBuiltinFunction;
 use crate::value::BuiltinArgument;
 use crate::value::BuiltinValue;
 
+#[derive(Debug)]
 pub struct BuiltinRegistry {
     functions: HashMap<&'static str, Box<dyn CompileTimeBuiltinFunction>>,
     types: HashMap<&'static str, BuiltinTypeInfo>,

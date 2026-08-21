@@ -210,6 +210,7 @@ pub fn parse_import<'preprocessor>(
         &file,
         parser.get_global_visited_modules(),
         parser.get_registry(),
+        parser.get_builtins(),
     );
 
     let mut submodule: Module = subparser.parse()?;

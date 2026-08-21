@@ -18,9 +18,27 @@
 mod alignof;
 mod sizeof;
 
+use thrustc_code_location::Span;
+use thrustc_typesystem::Type;
+use thrustc_typesystem::type_metadata::ArrayTypeMetadata;
+
+use crate::builtin_type::BuiltinTypeInfo;
 use crate::registry::BuiltinRegistry;
 
 pub fn register_default_builtins(registry: &mut BuiltinRegistry) {
     registry.register_function(alignof::AlignOf);
     registry.register_function(sizeof::SizeOf);
+
+    registry.register_type(BuiltinTypeInfo::new(
+        "CString",
+        Type::Array {
+            base_type: Type::Char {
+                span: Span::nothing(),
+            }
+            .into(),
+            infered_type: None,
+            metadata: ArrayTypeMetadata::new(None, None),
+            span: Span::nothing(),
+        },
+    ));
 }

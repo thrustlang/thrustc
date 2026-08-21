@@ -19,6 +19,7 @@
 
 use std::path::PathBuf;
 
+use thrustc_builtins::BuiltinRegistry;
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
@@ -38,6 +39,7 @@ pub struct ModuleParser<'module_parser> {
     warnings: Vec<CompilationIssue>,
     visited: HashSet<PathBuf>,
     registry: crate::registry::SharedModuleRegistry,
+    builtins: &'module_parser BuiltinRegistry,
 
     options: &'module_parser CompilerOptions,
     diagnostician: Diagnostician,
@@ -55,6 +57,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
         file: &CompilationUnit,
         visited: HashSet<PathBuf>,
         registry: crate::registry::SharedModuleRegistry,
+        builtins: &'module_parser BuiltinRegistry,
     ) -> Self {
         Self {
             module: Module::new(name, file.get_path().to_path_buf()),
@@ -64,6 +67,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
             warnings: Vec::with_capacity(u8::MAX as usize),
             visited,
             registry,
+            builtins,
 
             diagnostician: Diagnostician::new(file, options),
             options,
@@ -462,5 +466,10 @@ impl<'module_parser> ModuleParser<'module_parser> {
     #[inline]
     pub fn get_registry(&self) -> crate::registry::SharedModuleRegistry {
         self.registry.clone()
+    }
+
+    #[inline]
+    pub fn get_builtins(&self) -> &BuiltinRegistry {
+        self.builtins
     }
 }

@@ -24,9 +24,15 @@ use std::rc::Rc;
 use ahash::AHashMap as HashMap;
 use ahash::AHashSet as HashSet;
 
+use thrustc_backends::llvm::LLVMBackend;
+use thrustc_backends::llvm::target::LLVMTarget;
+use thrustc_builtins::BuiltinRegistry;
+use thrustc_builtins::default_registry;
 use thrustc_lexer::Lexer;
+use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_token::Token;
+use thrustc_typesystem::type_layout::TargetInfo;
 
 use crate::module::Module;
 use crate::parser::ModuleParser;
@@ -42,6 +48,7 @@ pub struct StdLibrary {
 struct BuildingStd {
     root: RefCell<Module>,
     registry: SharedModuleRegistry,
+    builtins: BuiltinRegistry,
     version_dir: PathBuf,
     parsed: RefCell<HashMap<PathBuf, Module>>,
     parsing: RefCell<HashSet<PathBuf>>,
@@ -179,7 +186,7 @@ fn ensure_parsed(
     }
 
     let result: Result<Module, ()> =
-        self::parse_std_module_file(file_path, options, &state.registry);
+        self::parse_std_module_file(file_path, options, &state.registry, &state.builtins);
 
     state.parsing.borrow_mut().remove(file_path);
 
@@ -284,9 +291,18 @@ fn build_library(options: &CompilerOptions) -> Result<StdLibrary, ()> {
 
     let registry: SharedModuleRegistry = Rc::new(RefCell::new(ModuleRegistry::new()));
 
+    let llvm_backend: &LLVMBackend = options.get_llvm_backend();
+    let target: &LLVMTarget = llvm_backend.get_target();
+    let target_triple: &LLVMTargetTriple = target.get_normalized_target_triple();
+
+    let target_info: TargetInfo = TargetInfo::new(target_triple.clone());
+
+    let builtins: BuiltinRegistry = default_registry(target_info);
+
     let state: Rc<BuildingStd> = Rc::new(BuildingStd {
         root: RefCell::new(Module::new("std".to_string(), root.clone())),
         registry: registry.clone(),
+        builtins,
         version_dir: version_dir.clone(),
         parsed: RefCell::new(HashMap::with_capacity(u8::MAX as usize)),
         parsing: RefCell::new(HashSet::with_capacity(u8::MAX as usize)),
@@ -348,6 +364,7 @@ fn parse_std_module_file(
     path: &Path,
     options: &CompilerOptions,
     registry: &SharedModuleRegistry,
+    builtins: &BuiltinRegistry,
 ) -> Result<Module, ()> {
     let name: String = path
         .file_name()
@@ -370,6 +387,7 @@ fn parse_std_module_file(
         &file,
         Default::default(),
         registry.clone(),
+        builtins,
     );
 
     subparser.parse()
@@ -416,11 +434,9 @@ mod tests {
                 ("b.thrust", "type Foo = u8;\n"),
             ],
             |options, _| {
-                let module: Module = super::find_std_module(
-                    &["std".to_string(), "a".to_string()],
-                    options,
-                )
-                .expect("std::a should resolve");
+                let module: Module =
+                    super::find_std_module(&["std".to_string(), "a".to_string()], options)
+                        .expect("std::a should resolve");
 
                 assert_eq!(module.get_name(), "a");
 
@@ -431,7 +447,8 @@ mod tests {
                     .expect("std::a should reexport std::b");
 
                 assert!(
-                    b.search_symbol("Foo".to_string(), Variant::CustomType).is_some(),
+                    b.search_symbol("Foo".to_string(), Variant::CustomType)
+                        .is_some(),
                     "std::b symbols must be resolvable through std::a"
                 );
             },

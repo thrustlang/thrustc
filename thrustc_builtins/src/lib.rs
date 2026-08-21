@@ -23,7 +23,6 @@ pub mod traits;
 pub mod value;
 
 pub use crate::builtin_type::BuiltinTypeInfo;
-pub use crate::builtins::register_default_builtins;
 pub use crate::context::BuiltinContext;
 pub use crate::registry::BuiltinRegistry;
 pub use crate::traits::BuiltinFunctionSignature;
@@ -37,7 +36,7 @@ use thrustc_typesystem::type_layout::TargetInfo;
 pub fn default_registry(target_info: TargetInfo) -> BuiltinRegistry {
     let mut registry: BuiltinRegistry = BuiltinRegistry::new(target_info);
 
-    register_default_builtins(&mut registry);
+    builtins::register_default_builtins(&mut registry);
 
     registry
 }

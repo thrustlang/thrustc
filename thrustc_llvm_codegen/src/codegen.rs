@@ -34,8 +34,8 @@ use thrustc_entities::{GlobalConstant, GlobalStatic, LocalConstant, LocalStatic,
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_options::CompilerOptions;
 
-use crate::compiler_builtins::LLVMBuiltin;
 use crate::atomic_operations::LLVMAtomicModificators;
+use crate::compiler_builtins::LLVMBuiltin;
 use crate::context::{CodeGenLocation, LLVMCodeGenContext};
 use crate::expressions::unary_expr;
 use crate::memory::SymbolAllocated;
@@ -794,7 +794,11 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     function::emit_stack_protector_epilogue(self.context, *span);
                 }
 
-                if self.get_context().get_variatic_context().has_current_va_list() {
+                if self
+                    .get_context()
+                    .get_variatic_context()
+                    .has_current_va_list()
+                {
                     self.get_mut_context()
                         .get_mut_variatic_context()
                         .emit_va_end(*span);
@@ -829,7 +833,9 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     None
                 };
 
-                if has_abi {
+                let current_function: LLVMFunction = self.context.get_current_function(*span);
+
+                if has_abi && !current_function.is_variadic() {
                     let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
                         self.context.get_abi().unwrap_or_else(|| {
                             abort::abort_codegen(
@@ -841,7 +847,6 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             )
                         });
 
-                    let current_function: LLVMFunction = self.context.get_current_function(*span);
                     let function_value: inkwell::values::FunctionValue<'_> =
                         current_function.get_value();
 
@@ -1040,11 +1045,23 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             } => {
                 let llvm_builtin: LLVMBuiltin =
                     compiler_builtins::into_llvm_builtin(thrust_builtin);
+
                 compiler_builtins::compile(self.context, llvm_builtin, None);
             }
 
-            Ast::Unreachable { .. } => {
-                let _ = self.context.get_llvm_builder().build_unreachable();
+            Ast::Unreachable { span, .. } => {
+                self.context
+                    .get_llvm_builder()
+                    .build_unreachable()
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            self.context,
+                            "Failed to compile unreacheable instruction!",
+                            *span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
             }
 
             _ => (),

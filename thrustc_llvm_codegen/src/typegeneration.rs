@@ -54,7 +54,7 @@ pub fn compile_as_function_type<'ctx>(
     variant: CompilerFunctionVariant
 ) -> (FunctionType<'ctx>, Option<LLVMABIConfiguration<'ctx>>) {
     let llvm_context: &Context = context.get_llvm_context();
-    let has_abi: bool = context.has_abi();
+    let has_available_abi: bool = context.has_abi();
 
     let mut standard_type_generation = |parameters: &[Ast<'ctx>], return_kind: &Type| {
         let mut llvm_parameters_types: Vec<BasicMetadataTypeEnum<'ctx>> = 
@@ -89,7 +89,7 @@ pub fn compile_as_function_type<'ctx>(
         }
     };
 
-    if !has_abi {
+    if !has_available_abi {
         standard_type_generation(parameters, kind)
     } else {
 

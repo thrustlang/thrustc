@@ -19,6 +19,7 @@
 
 #![allow(clippy::result_unit_err)]
 
+use thrustc_builtins::BuiltinRegistry;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_token::Token;
 use thrustc_token_type::TokenType;
@@ -57,6 +58,7 @@ impl<'preprocessor> Preprocessor {
         tokens: &'preprocessor [Token],
         options: &'preprocessor CompilerOptions,
         file: &CompilationUnit,
+        builtins: &'preprocessor BuiltinRegistry,
     ) -> Result<&[Module], ()> {
         let file_path: std::path::PathBuf = file.get_path().to_path_buf();
 
@@ -67,7 +69,7 @@ impl<'preprocessor> Preprocessor {
             std::rc::Rc::new(std::cell::RefCell::new(crate::registry::ModuleRegistry::new()));
 
         let mut context: PreprocessorContext<'_> =
-            PreprocessorContext::new(tokens, options, file, visited, registry);
+            PreprocessorContext::new(tokens, options, file, visited, registry, builtins);
 
         let mut merged: ahash::AHashMap<std::path::PathBuf, usize> =
             ahash::AHashMap::with_capacity(u8::MAX as usize);

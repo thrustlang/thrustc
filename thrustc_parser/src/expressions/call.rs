@@ -21,9 +21,9 @@ use thrustc_ast::{
     Ast, NodeId,
     traits::{AstCodeLocation, AstGetType},
 };
+use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{FoundSymbolId, Function, Intrinsic};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, traits::FunctionReferenceExtensions};
@@ -35,6 +35,7 @@ use thrustc_parser_table::traits::{
 
 use crate::{ParserContext, expressions};
 
+#[derive(Debug)]
 pub struct ParsedCallArguments<'parser> {
     pub positional: Vec<Ast<'parser>>,
     pub named: Vec<(&'parser str, Span, Ast<'parser>)>,
@@ -133,20 +134,10 @@ pub fn reorder_call_arguments<'parser>(
         ));
     }
 
-    if positional.len() + named.len() != parameter_names.len() {
-        let mut combined: Vec<Ast> = positional;
-        for (_, _, expr) in named.into_iter() {
-            combined.push(expr);
-        }
+    let positional_count: usize = positional.len();
 
-        return Ok(combined);
-    }
-
-    let mut slots: Vec<Option<Ast>> = vec![None; parameter_names.len()];
-
-    for (index, expr) in positional.into_iter().enumerate() {
-        slots[index] = Some(expr);
-    }
+    let mut named_indexed: Vec<(usize, Ast)> = Vec::with_capacity(named.len());
+    let mut filled_by_named: Vec<bool> = vec![false; parameter_names.len()];
 
     for (parameter_name, parameter_span, expr) in named.into_iter() {
         let index: Option<usize> = parameter_names
@@ -166,7 +157,7 @@ pub fn reorder_call_arguments<'parser>(
             ));
         };
 
-        if slots[index].is_some() {
+        if index < positional_count || filled_by_named[index] {
             return Err(CompilationIssue::Error(
                 CompilationIssueCode::E0045,
                 format!(
@@ -179,6 +170,27 @@ pub fn reorder_call_arguments<'parser>(
             ));
         }
 
+        filled_by_named[index] = true;
+        named_indexed.push((index, expr));
+    }
+
+    if positional_count + named_indexed.len() != parameter_names.len() {
+        let mut combined: Vec<Ast> = positional;
+
+        for (_, expr) in named_indexed.into_iter() {
+            combined.push(expr);
+        }
+
+        return Ok(combined);
+    }
+
+    let mut slots: Vec<Option<Ast>> = vec![None; parameter_names.len()];
+
+    for (index, expr) in positional.into_iter().enumerate() {
+        slots[index] = Some(expr);
+    }
+
+    for (index, expr) in named_indexed.into_iter() {
         slots[index] = Some(expr);
     }
 
@@ -192,7 +204,7 @@ pub fn build_call<'parser>(
     name: &'parser str,
     span: Span,
 ) -> Result<Ast<'parser>, CompilationIssue> {
-    let arguments: ParsedCallArguments = parse_call_arguments(ctx)?;
+    let arguments: ParsedCallArguments = self::parse_call_arguments(ctx)?;
 
     let reference: Result<FoundSymbolId, CompilationIssue> =
         ctx.get_symbols().get_symbols_id(name, span);
@@ -256,7 +268,7 @@ pub fn build_call<'parser>(
                         let parameter_names: Vec<&str> =
                             FunctionExtensions::get_parameter_names(&function);
 
-                        let args: Vec<Ast> = match reorder_call_arguments(
+                        let args: Vec<Ast> = match self::reorder_call_arguments(
                             name,
                             span,
                             arguments,
@@ -315,7 +327,7 @@ pub fn build_anonymous_call<'parser>(
 
     let span: Span = expr.get_span();
 
-    let arguments: ParsedCallArguments = parse_call_arguments(ctx)?;
+    let arguments: ParsedCallArguments = self::parse_call_arguments(ctx)?;
 
     if !arguments.named.is_empty() {
         return Err(CompilationIssue::Error(
