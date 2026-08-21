@@ -794,6 +794,12 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     function::emit_stack_protector_epilogue(self.context, *span);
                 }
 
+                if self.get_context().get_variatic_context().has_current_va_list() {
+                    self.get_mut_context()
+                        .get_mut_variatic_context()
+                        .emit_va_end(*span);
+                }
+
                 self.get_mut_context().mark_dbg_location(*span);
 
                 let llvm_builder: &Builder = self.context.get_llvm_builder();

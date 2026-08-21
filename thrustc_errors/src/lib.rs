@@ -126,6 +126,7 @@ lazy_static::lazy_static! {
         explanations.insert(CompilationIssueCode::E0044, r#""#);
         explanations.insert(CompilationIssueCode::E0045, r#""#);
         explanations.insert(CompilationIssueCode::E0046, r#""#);
+        explanations.insert(CompilationIssueCode::E0047, r#""#);
 
         explanations
     };
@@ -178,6 +179,7 @@ pub enum CompilationIssueCode {
     E0044, // Unknown named argument.
     E0045, // Duplicated named argument.
     E0046, // Positional argument after a named argument.
+    E0047, // Variable arguments builtin outside of a variadic function.
 
     W0001, // Irrelevant Attribute
     W0002, // Unknown Call Convention
@@ -343,6 +345,12 @@ impl CompilationIssueCode {
             }
             CompilationIssueCode::E0046 => {
                 format!("POSITIONAL AFTER NAMED ARGUMENT - {}", "E0046".bright_red())
+            }
+            CompilationIssueCode::E0047 => {
+                format!(
+                    "VARIABLE ARGUMENTS BUILTIN OUTSIDE OF A VARIADIC FUNCTION - {}",
+                    "E0047".bright_red()
+                )
             }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())

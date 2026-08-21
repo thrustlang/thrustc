@@ -180,6 +180,8 @@ pub enum TokenType {
     MemCpy,
     MemMove,
     MemSet,
+    ArbitraryArg,
+    ArbitraryArgs,
 
     // --- Types ---
     S8,

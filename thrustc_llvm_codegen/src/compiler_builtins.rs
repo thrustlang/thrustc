@@ -68,6 +68,13 @@ pub enum LLVMBuiltin<'ctx> {
         ty: &'ctx Type,
         span: Span,
     },
+    ArbitraryArg {
+        ty: &'ctx Type,
+        span: Span,
+    },
+    ArbitraryArgs {
+        span: Span,
+    },
 }
 
 pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ctx> {
@@ -109,6 +116,8 @@ pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ct
         AstBuiltin::BitSizeOf { ty, span } => LLVMBuiltin::BitSizeOf { ty, span: *span },
         AstBuiltin::AbiSizeOf { ty, span } => LLVMBuiltin::AbiSizeOf { ty, span: *span },
         AstBuiltin::AbiAlignOf { ty, span } => LLVMBuiltin::AbiAlignOf { ty, span: *span },
+        AstBuiltin::ArbitraryArg { ty, span } => LLVMBuiltin::ArbitraryArg { ty, span: *span },
+        AstBuiltin::ArbitraryArgs { span } => LLVMBuiltin::ArbitraryArgs { span: *span },
     }
 }
 
@@ -327,6 +336,18 @@ pub fn compile<'ctx>(
                 .into();
 
             type_cast::try_smart_constant_cast(context, cast_type, &builtin_ty, align)
+        }
+        LLVMBuiltin::ArbitraryArg { ty, span } => {
+            let llvm_ty: BasicTypeEnum = typegeneration::generate_type(context, ty);
+
+            let value: BasicValueEnum = context
+                .get_mut_variatic_context()
+                .emit_va_arg(llvm_ty, span);
+
+            type_cast::try_smart_cast(context, cast_type, ty, value, span)
+        }
+        LLVMBuiltin::ArbitraryArgs { span } => {
+            context.get_mut_variatic_context().get_current_va_list(span).into()
         }
     }
 }

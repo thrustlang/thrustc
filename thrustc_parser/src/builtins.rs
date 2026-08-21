@@ -38,6 +38,8 @@ pub fn build_compiler_builtin<'parser>(
         TokenType::AbiSizeOf => self::build_abi_size_of(ctx),
         TokenType::BitSizeOf => self::build_bit_size_of(ctx),
         TokenType::AbiAlignOf => self::build_abi_align_of(ctx),
+        TokenType::ArbitraryArg => self::build_arbitrary_arg(ctx),
+        TokenType::ArbitraryArgs => self::build_arbitrary_args(ctx),
 
         _ => {
             let token: &Token = ctx.advance()?;
@@ -365,6 +367,74 @@ pub fn build_abi_align_of<'parser>(
     Ok(Ast::Builtin {
         builtin: AstBuiltin::AbiAlignOf { ty, span },
         kind: Type::U32 { span },
+        span,
+        id: NodeId::new(),
+    })
+}
+
+pub fn build_arbitrary_arg<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let arbitrary_tk: &Token = ctx.consume(
+        TokenType::ArbitraryArg,
+        CompilationIssueCode::E0001,
+        "Expected 'arbitraryArg' keyword.".into(),
+    )?;
+
+    let span: Span = arbitrary_tk.get_span();
+
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    let ty: Type = typegeneration::build_type(ctx, true)?;
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    Ok(Ast::Builtin {
+        builtin: AstBuiltin::ArbitraryArg { ty: ty.clone(), span },
+        kind: ty,
+        span,
+        id: NodeId::new(),
+    })
+}
+
+pub fn build_arbitrary_args<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let arbitrary_tk: &Token = ctx.consume(
+        TokenType::ArbitraryArgs,
+        CompilationIssueCode::E0001,
+        "Expected 'arbitraryArgs' keyword.".into(),
+    )?;
+
+    let span: Span = arbitrary_tk.get_span();
+
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    Ok(Ast::Builtin {
+        builtin: AstBuiltin::ArbitraryArgs { span },
+        kind: Type::Ptr {
+            subtype: None,
+            address_space: None,
+            span,
+        },
         span,
         id: NodeId::new(),
     })

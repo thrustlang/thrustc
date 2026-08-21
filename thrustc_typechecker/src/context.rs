@@ -95,6 +95,7 @@ impl TypeCheckerControlContext {
 #[derive(Debug)]
 pub struct TypeCheckerTypeContext<'type_checker> {
     current_function_type: Option<(&'type_checker Type, Span)>,
+    current_function_is_variadic: bool,
     call_depth: u64,
 }
 
@@ -103,6 +104,7 @@ impl<'type_checker> TypeCheckerTypeContext<'type_checker> {
     pub fn new() -> Self {
         Self {
             current_function_type: None,
+            current_function_is_variadic: false,
             call_depth: 0,
         }
     }
@@ -120,6 +122,16 @@ impl<'type_checker> TypeCheckerTypeContext<'type_checker> {
     }
 
     #[inline]
+    pub fn set_current_function_variadic(&mut self) {
+        self.current_function_is_variadic = true;
+    }
+
+    #[inline]
+    pub fn unset_current_function_variadic(&mut self) {
+        self.current_function_is_variadic = false;
+    }
+
+    #[inline]
     pub fn increase_call_depth(&mut self) {
         self.call_depth = self.call_depth.saturating_add(1)
     }
@@ -134,5 +146,10 @@ impl<'type_checker> TypeCheckerTypeContext<'type_checker> {
     #[inline]
     pub fn get_current_function_type(&self) -> Option<(&'type_checker Type, Span)> {
         self.current_function_type
+    }
+
+    #[inline]
+    pub fn is_current_function_variadic(&self) -> bool {
+        self.current_function_is_variadic
     }
 }

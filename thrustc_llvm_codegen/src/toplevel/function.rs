@@ -205,6 +205,8 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
     let return_type: &Type = prototype.get_return_type();
     let parameters_types: Vec<Type> = prototype.get_parameters_types().to_vec();
 
+    let is_variadic: bool = prototype.is_variadic();
+
     let abi_configuration: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
         prototype.get_abi_configuration().cloned();
 
@@ -232,8 +234,18 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
     }
 
     if let Some(function_body) = function_body {
+        
+        if is_variadic {
+            codegen
+                .get_mut_context()
+                .get_mut_variatic_context()
+                .emit_va_start(span);
+        }
+        
+
         {
-            if has_abi {                
+            // the abi doens't lower varitic functions.
+            if has_abi && !is_variadic {                
                 let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
                     codegen.get_context().get_abi().unwrap_or_else(|| {
                         abort::abort_codegen(
@@ -386,6 +398,13 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
             codegen.get_mut_context().finish_function_debug_data();
 
             if function_type.is_void_type() && !function_body.has_terminator() {
+                if codegen.get_context().get_variatic_context().has_current_va_list() {
+                    codegen
+                        .get_mut_context()
+                        .get_mut_variatic_context()
+                        .emit_va_end(span);
+                }
+
                 llvm_builder.build_return(None).unwrap_or_else(|_| {
                     abort::abort_codegen(
                         codegen.get_mut_context(),
@@ -400,9 +419,15 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
     }
 
     codegen.get_mut_context().unset_current_function();
+    
     codegen
         .get_mut_context()
         .unset_function_stackguard_protector_pointer();
+
+    codegen
+        .get_mut_context()
+        .get_mut_variatic_context()
+        .unset_current_va_list();
 }
 
 pub fn emit_stack_protector_prologue<'ctx>(

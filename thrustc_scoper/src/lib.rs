@@ -476,7 +476,9 @@ impl<'scoper> Scoper<'scoper> {
                 AstBuiltin::Halloc { .. }
                 | AstBuiltin::AbiSizeOf { .. }
                 | AstBuiltin::BitSizeOf { .. }
-                | AstBuiltin::AbiAlignOf { .. } => (),
+                | AstBuiltin::AbiAlignOf { .. }
+                | AstBuiltin::ArbitraryArg { .. }
+                | AstBuiltin::ArbitraryArgs { .. } => (),
             },
 
             // ---------------------------------------------------------

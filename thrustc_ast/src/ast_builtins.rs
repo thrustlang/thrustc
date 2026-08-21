@@ -63,4 +63,11 @@ pub enum AstBuiltin<'compiler_builtin> {
         ty: Type,
         span: Span,
     },
+    ArbitraryArg {
+        ty: Type,
+        span: Span,
+    },
+    ArbitraryArgs {
+        span: Span,
+    },
 }

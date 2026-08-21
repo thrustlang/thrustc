@@ -185,6 +185,14 @@ pub fn validate_node<'type_checker>(
                 .get_mut_type_context()
                 .set_current_function_type((return_type, *span));
 
+            let is_variadic_function: bool = attributes.has_ignore_attribute() && body.is_some();
+
+            if is_variadic_function {
+                typechecker
+                    .get_mut_type_context()
+                    .set_current_function_variadic();
+            }
+
             typechecker
                 .get_mut_table()
                 .new_function(name, (return_type, parameter_types, attributes));
@@ -258,6 +266,12 @@ pub fn validate_node<'type_checker>(
             typechecker
                 .get_mut_type_context()
                 .unset_current_function_type();
+
+            if is_variadic_function {
+                typechecker
+                    .get_mut_type_context()
+                    .unset_current_function_variadic();
+            }
 
             Ok(())
         }

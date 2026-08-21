@@ -29,13 +29,14 @@ use inkwell::targets::TargetTriple;
 use inkwell::values::BasicValueEnum;
 use inkwell::values::PointerValue;
 
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_llvm_abi::LLVMABICodeGenLocation;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
+use thrustc_llvm_codegen_variatic::context::LLVMVariaticContext;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
-use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::type_layout::TargetInfo;
 
@@ -80,6 +81,7 @@ pub struct LLVMCodeGenContext<'a, 'ctx> {
 
     current_function: Option<LLVMFunction<'ctx>>,
     function_stack_protector_ptr: Option<LLVMStackProtectorPointer<'ctx>>,
+    variatic_context: LLVMVariaticContext<'a, 'ctx>,
 
     expression_optimizations: LLVMExpressionOptimization,
 
@@ -112,8 +114,13 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
 
         let target_triple_formatted: String = target_triple.as_str().to_string_lossy().to_string();
 
-        let target_info: TargetInfo =
-            TargetInfo::new(LLVMTargetTriple::new(target_triple_formatted.clone()));
+        let llvm_target_triple: LLVMTargetTriple =
+            LLVMTargetTriple::new(target_triple_formatted.clone());
+
+        let target_info: TargetInfo = TargetInfo::new(llvm_target_triple.clone());
+
+        let variatic_context: LLVMVariaticContext =
+            LLVMVariaticContext::new(module, context, builder, &llvm_target_triple, file, options);
 
         Self {
             module,
@@ -140,6 +147,7 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
 
             current_function: None,
             function_stack_protector_ptr: None,
+            variatic_context,
 
             expression_optimizations: LLVMExpressionOptimization::new(),
 
@@ -260,7 +268,7 @@ impl LLVMCodeGenContext<'_, '_> {
     }
 }
 
-impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
+impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
     #[inline]
     pub fn set_pointer_anchor(&mut self, anchor: PointerAnchor<'ctx>) {
         self.ptr_anchor = Some(anchor);
@@ -296,6 +304,16 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     #[inline]
     pub fn unset_function_stackguard_protector_pointer(&mut self) {
         self.function_stack_protector_ptr = None;
+    }
+
+    #[inline]
+    pub fn get_variatic_context(&self) -> &LLVMVariaticContext<'a, 'ctx> {
+        &self.variatic_context
+    }
+
+    #[inline]
+    pub fn get_mut_variatic_context(&mut self) -> &mut LLVMVariaticContext<'a, 'ctx> {
+        &mut self.variatic_context
     }
 }
 

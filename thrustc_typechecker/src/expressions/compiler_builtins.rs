@@ -55,6 +55,36 @@ pub fn validate_node<'type_checker>(
         | AstBuiltin::AbiSizeOf { .. }
         | AstBuiltin::BitSizeOf { .. }
         | AstBuiltin::AbiAlignOf { .. } => Ok(()),
+
+        AstBuiltin::ArbitraryArg { span, .. }
+            if !typechecker.get_type_context().is_current_function_variadic() =>
+        {
+            typechecker.add_error_report(CompilationIssue::Error(
+                CompilationIssueCode::E0047,
+                "Variable arguments builtin outside of a variadic function.".into(),
+                "The 'arbitraryArg' builtin is only available inside a variadic function with a body. Add the '@arbitraryArgs' attribute to the function declaration.".into(),
+                None,
+                *span,
+            ));
+
+            Ok(())
+        }
+
+        AstBuiltin::ArbitraryArgs { span }
+            if !typechecker.get_type_context().is_current_function_variadic() =>
+        {
+            typechecker.add_error_report(CompilationIssue::Error(
+                CompilationIssueCode::E0047,
+                "Variable arguments builtin outside of a variadic function.".into(),
+                "The 'arbitraryArgs' builtin is only available inside a variadic function with a body. Add the '@arbitraryArgs' attribute to the function declaration.".into(),
+                None,
+                *span,
+            ));
+
+            Ok(())
+        }
+
+        AstBuiltin::ArbitraryArg { .. } | AstBuiltin::ArbitraryArgs { .. } => Ok(()),
     }
 }
 

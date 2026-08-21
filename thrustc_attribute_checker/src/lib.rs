@@ -137,7 +137,10 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 
                 self.analyze_attrs(
                     attributes,
-                    AttributeCheckerAttributeApplicant::Function { return_type },
+                    AttributeCheckerAttributeApplicant::Function {
+                        return_type,
+                        has_body: body.is_some(),
+                    },
                     *span,
                 );
             }
@@ -929,14 +932,23 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
         }
 
         if !attributes.has_extern_attribute() && attributes.has_ignore_attribute() {
-            if let Some(span) = attributes.match_attr(ThrustAttributeComparator::Ignore) {
-                self.add_error(CompilationIssue::Error(
-                    CompilationIssueCode::E0013,
-                    "Attribute conflict".into(),
-                    "The @arbitraryArgs attribute requires a FFI symbol. You should add the external FFI attribute '@extern(\"externalName\")'.".into(),
-                    None,
-                    span,
-                ));
+            let requires_ffi_symbol: bool = match applicant {
+                AttributeCheckerAttributeApplicant::Function { has_body, .. } => !has_body,
+                AttributeCheckerAttributeApplicant::Intrinsic => true,
+                AttributeCheckerAttributeApplicant::AssemblerFunction => true,
+                _ => true,
+            };
+
+            if requires_ffi_symbol {
+                if let Some(span) = attributes.match_attr(ThrustAttributeComparator::Ignore) {
+                    self.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0013,
+                        "Attribute conflict".into(),
+                        "The @arbitraryArgs attribute requires a FFI symbol. You should add the external FFI attribute '@extern(\"externalName\")'.".into(),
+                        None,
+                        span,
+                    ));
+                }
             }
         }
 

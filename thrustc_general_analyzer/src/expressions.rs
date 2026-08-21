@@ -205,7 +205,9 @@ pub fn validate_node<'analyzer>(
             AstBuiltin::Halloc { .. }
             | AstBuiltin::AbiSizeOf { .. }
             | AstBuiltin::BitSizeOf { .. }
-            | AstBuiltin::AbiAlignOf { .. } => Ok(()),
+            | AstBuiltin::AbiAlignOf { .. }
+            | AstBuiltin::ArbitraryArg { .. }
+            | AstBuiltin::ArbitraryArgs { .. } => Ok(()),
         },
 
         Ast::AsmValue { .. }

@@ -107,6 +107,8 @@ lazy_static! {
         builtins.insert("abiSizeOf", TokenType::AbiSizeOf);
         builtins.insert("bitSizeOf", TokenType::BitSizeOf);
         builtins.insert("abiAlignOf", TokenType::AbiAlignOf);
+        builtins.insert("arbitraryArg", TokenType::ArbitraryArg);
+        builtins.insert("arbitraryArgs", TokenType::ArbitraryArgs);
 
         builtins
     };

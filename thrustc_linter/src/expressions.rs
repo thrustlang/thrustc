@@ -251,7 +251,9 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
             AstBuiltin::Halloc { .. }
             | AstBuiltin::AbiSizeOf { .. }
             | AstBuiltin::BitSizeOf { .. }
-            | AstBuiltin::AbiAlignOf { .. } => (),
+            | AstBuiltin::AbiAlignOf { .. }
+            | AstBuiltin::ArbitraryArg { .. }
+            | AstBuiltin::ArbitraryArgs { .. } => (),
         },
 
         Ast::As { from, .. } => {

@@ -227,6 +227,8 @@ impl TokenTypeBuiltinExtensions for TokenType {
                 | TokenType::BitSizeOf
                 | TokenType::AbiSizeOf
                 | TokenType::AbiAlignOf
+                | TokenType::ArbitraryArg
+                | TokenType::ArbitraryArgs
         )
     }
 }
@@ -407,6 +409,8 @@ impl std::fmt::Display for TokenType {
             TokenType::AbiSizeOf => write!(f, "abiSizeOf"),
             TokenType::BitSizeOf => write!(f, "bitSizeOf"),
             TokenType::AbiAlignOf => write!(f, "abiAlignOf"),
+            TokenType::ArbitraryArg => write!(f, "arbitraryArg"),
+            TokenType::ArbitraryArgs => write!(f, "arbitraryArgs"),
 
             // Import
             TokenType::Import => write!(f, "import"),
