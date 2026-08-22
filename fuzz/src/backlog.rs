@@ -19,7 +19,7 @@
 
 use std::collections::HashSet;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use chrono::Local;
 use serde::{Deserialize, Serialize};
@@ -49,68 +49,143 @@ pub struct IssueFiles<'a> {
     pub ir_error: Option<&'a str>,
 }
 
-pub fn content_hash(data: &[u8]) -> String {
-    let mut hash: u64 = 0xcbf29ce484222325;
+pub fn record_issue(
+    target: &str,
+    mode: &str,
+    data: &[u8],
+    marker: Option<&str>,
+    files: IssueFiles,
+) -> Result<IssueMeta, String> {
+    self::ensure_dirs()?;
 
-    for byte in data {
-        hash ^= *byte as u64;
-        hash = hash.wrapping_mul(0x100000001b3);
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+
+    let hash = self::content_hash(data);
+
+    let id = format!("issue_{hash}");
+
+    let dir = cwd.join(BACKLOG_ROOT).join(target).join(&id);
+
+    fs::create_dir_all(&dir).map_err(|e| format!("failed to create issue directory: {e}"))?;
+
+    let input_path = dir.join("input.bin");
+
+    fs::write(&input_path, files.input).map_err(|e| format!("failed to write input.bin: {e}"))?;
+
+    let mut ast_path = String::from("-");
+
+    if let Some(ast) = files.ast {
+        let path = dir.join("ast.txt");
+
+        fs::write(&path, ast).map_err(|e| format!("failed to write ast.txt: {e}"))?;
+
+        ast_path = path.to_string_lossy().to_string();
     }
 
-    format!("{hash:016x}")
+    let mut ir_path = String::from("-");
+
+    if let Some(ir) = files.ir {
+        let path = dir.join("ir.ll");
+
+        fs::write(&path, ir).map_err(|e| format!("failed to write ir.ll: {e}"))?;
+
+        ir_path = path.to_string_lossy().to_string();
+    }
+
+    if let Some(ir_error) = files.ir_error {
+        let path = dir.join("ir_error.txt");
+
+        fs::write(&path, ir_error).map_err(|e| format!("failed to write ir_error.txt: {e}"))?;
+
+        if ir_path == "-" {
+            ir_path = path.to_string_lossy().to_string();
+        }
+    }
+
+    let meta = IssueMeta {
+        id,
+        target: target.to_string(),
+        mode: mode.to_string(),
+        hash,
+        size: data.len() as u64,
+        discovered_at: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        marker: marker.unwrap_or("").to_string(),
+        status: "open".to_string(),
+        input: input_path.to_string_lossy().to_string(),
+        ast: ast_path,
+        ir: ir_path,
+    };
+
+    let json = serde_json::to_string_pretty(&meta)
+        .map_err(|e| format!("failed to serialize metadata: {e}"))?;
+
+    let meta_path = cwd
+        .join(BACKLOG_ROOT)
+        .join(target)
+        .join(&meta.id)
+        .join("meta.json");
+
+    fs::write(meta_path, json).map_err(|e| format!("failed to write meta.json: {e}"))?;
+
+    self::regenerate_log(target)?;
+
+    Ok(meta)
 }
 
-pub fn issue_id_for(data: &[u8]) -> String {
-    format!("issue_{}", content_hash(data))
+pub fn set_status(target: &str, id: &str, status: &str) -> Result<IssueMeta, String> {
+    let mut meta = self::load_meta(target, id)
+        .ok_or_else(|| format!("issue '{id}' not found for target '{target}'"))?;
+
+    meta.status = status.to_string();
+
+    let json = serde_json::to_string_pretty(&meta)
+        .map_err(|e| format!("failed to serialize metadata: {e}"))?;
+
+    let meta_path = std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(BACKLOG_ROOT)
+        .join(target)
+        .join(id)
+        .join("meta.json");
+
+    fs::write(meta_path, json).map_err(|e| format!("failed to write meta.json: {e}"))?;
+
+    self::regenerate_log(target)?;
+
+    Ok(meta)
 }
 
-pub fn backlog_dir() -> PathBuf {
-    current_dir_or_default().join(BACKLOG_ROOT)
-}
+pub fn remove_issue(target: &str, id: &str) -> Result<(), String> {
+    let dir = std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(BACKLOG_ROOT)
+        .join(target)
+        .join(id);
 
-pub fn log_root() -> PathBuf {
-    current_dir_or_default().join(LOG_ROOT)
-}
+    if dir.exists() {
+        fs::remove_dir_all(&dir).map_err(|e| format!("failed to remove issue directory: {e}"))?;
+    }
 
-pub fn target_dir(target: &str) -> PathBuf {
-    backlog_dir().join(target)
-}
-
-pub fn issue_dir(target: &str, id: &str) -> PathBuf {
-    target_dir(target).join(id)
-}
-
-pub fn meta_path(target: &str, id: &str) -> PathBuf {
-    issue_dir(target, id).join("meta.json")
-}
-
-pub fn log_path(target: &str) -> PathBuf {
-    log_root().join(format!("{target}.log"))
-}
-
-fn current_dir_or_default() -> PathBuf {
-    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-}
-
-pub fn ensure_dirs() -> Result<(), String> {
-    fs::create_dir_all(backlog_dir())
-        .and_then(|_| fs::create_dir_all(log_root()))
-        .map_err(|e| format!("failed to create backlog directories: {e}"))
-}
-
-fn timestamp() -> String {
-    Local::now().format("%Y-%m-%d %H:%M:%S").to_string()
+    self::regenerate_log(target)
 }
 
 pub fn load_meta(target: &str, id: &str) -> Option<IssueMeta> {
-    let path = meta_path(target, id);
+    let path = std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(BACKLOG_ROOT)
+        .join(target)
+        .join(id)
+        .join("meta.json");
+
     let contents = fs::read_to_string(&path).ok()?;
 
     let mut meta: IssueMeta = serde_json::from_str(&contents).ok()?;
 
-    let input = absolutize(&meta.input);
-    let ast = absolutize(&meta.ast);
-    let ir = absolutize(&meta.ir);
+    let input = self::absolutize(&meta.input);
+
+    let ast = self::absolutize(&meta.ast);
+
+    let ir = self::absolutize(&meta.ir);
 
     if input != meta.input || ast != meta.ast || ir != meta.ir {
         meta.input = input;
@@ -125,25 +200,11 @@ pub fn load_meta(target: &str, id: &str) -> Option<IssueMeta> {
     Some(meta)
 }
 
-fn absolutize(path: &str) -> String {
-    if path == "-" {
-        return path.to_string();
-    }
-
-    let p = PathBuf::from(path);
-
-    if p.is_absolute() {
-        return p.to_string_lossy().to_string();
-    }
-
-    match std::env::current_dir() {
-        Ok(cwd) => cwd.join(p).to_string_lossy().to_string(),
-        Err(_) => path.to_string(),
-    }
-}
-
 pub fn all_issues(target: &str) -> Vec<IssueMeta> {
-    let dir = target_dir(target);
+    let dir = std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(BACKLOG_ROOT)
+        .join(target);
 
     let Ok(entries) = fs::read_dir(&dir) else {
         return Vec::new();
@@ -154,7 +215,8 @@ pub fn all_issues(target: &str) -> Vec<IssueMeta> {
         .filter(|entry| entry.path().is_dir())
         .filter_map(|entry| {
             let id = entry.file_name().to_string_lossy().to_string();
-            load_meta(target, &id)
+
+            self::load_meta(target, &id)
         })
         .collect();
 
@@ -166,117 +228,29 @@ pub fn all_issues(target: &str) -> Vec<IssueMeta> {
 }
 
 pub fn known_hashes(target: &str) -> HashSet<String> {
-    all_issues(target)
+    self::all_issues(target)
         .into_iter()
         .map(|meta| meta.hash)
         .collect()
 }
 
-pub fn status_of(target: &str, id: &str) -> Option<String> {
-    load_meta(target, id).map(|meta| meta.status)
-}
-
-pub fn record_issue(
-    target: &str,
-    mode: &str,
-    data: &[u8],
-    marker: Option<&str>,
-    files: IssueFiles,
-) -> Result<IssueMeta, String> {
-    ensure_dirs()?;
-
-    let id = issue_id_for(data);
-    let dir = issue_dir(target, &id);
-
-    fs::create_dir_all(&dir).map_err(|e| format!("failed to create issue directory: {e}"))?;
-
-    let input_path = dir.join("input.bin");
-    fs::write(&input_path, files.input).map_err(|e| format!("failed to write input.bin: {e}"))?;
-
-    let mut ast_path = String::from("-");
-    if let Some(ast) = files.ast {
-        let path = dir.join("ast.txt");
-        fs::write(&path, ast).map_err(|e| format!("failed to write ast.txt: {e}"))?;
-        ast_path = path.to_string_lossy().to_string();
-    }
-
-    let mut ir_path = String::from("-");
-    if let Some(ir) = files.ir {
-        let path = dir.join("ir.ll");
-        fs::write(&path, ir).map_err(|e| format!("failed to write ir.ll: {e}"))?;
-        ir_path = path.to_string_lossy().to_string();
-    }
-
-    if let Some(ir_error) = files.ir_error {
-        let path = dir.join("ir_error.txt");
-        fs::write(&path, ir_error).map_err(|e| format!("failed to write ir_error.txt: {e}"))?;
-        if ir_path == "-" {
-            ir_path = path.to_string_lossy().to_string();
-        }
-    }
-
-    let meta = IssueMeta {
-        id,
-        target: target.to_string(),
-        mode: mode.to_string(),
-        hash: content_hash(data),
-        size: data.len() as u64,
-        discovered_at: timestamp(),
-        marker: marker.unwrap_or("").to_string(),
-        status: "open".to_string(),
-        input: input_path.to_string_lossy().to_string(),
-        ast: ast_path,
-        ir: ir_path,
-    };
-
-    let json = serde_json::to_string_pretty(&meta)
-        .map_err(|e| format!("failed to serialize metadata: {e}"))?;
-
-    fs::write(meta_path(target, &meta.id), json)
-        .map_err(|e| format!("failed to write meta.json: {e}"))?;
-
-    regenerate_log(target)?;
-
-    Ok(meta)
-}
-
-pub fn set_status(target: &str, id: &str, status: &str) -> Result<IssueMeta, String> {
-    let mut meta = load_meta(target, id)
-        .ok_or_else(|| format!("issue '{id}' not found for target '{target}'"))?;
-
-    meta.status = status.to_string();
-
-    let json = serde_json::to_string_pretty(&meta)
-        .map_err(|e| format!("failed to serialize metadata: {e}"))?;
-
-    fs::write(meta_path(target, id), json)
-        .map_err(|e| format!("failed to write meta.json: {e}"))?;
-
-    regenerate_log(target)?;
-
-    Ok(meta)
-}
-
-pub fn remove_issue(target: &str, id: &str) -> Result<(), String> {
-    let dir = issue_dir(target, id);
-
-    if dir.exists() {
-        fs::remove_dir_all(&dir).map_err(|e| format!("failed to remove issue directory: {e}"))?;
-    }
-
-    regenerate_log(target)
-}
-
 pub fn regenerate_log(target: &str) -> Result<(), String> {
-    ensure_dirs()?;
+    self::ensure_dirs()?;
 
-    let issues = all_issues(target);
+    let issues = self::all_issues(target);
+
+    let log_path = std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(LOG_ROOT)
+        .join(format!("{target}.log"));
 
     let mut contents = String::new();
+
     contents.push_str(&format!(
         "# cascade log for target `{target}` ({})\n",
-        log_path(target).display()
+        log_path.display()
     ));
+
     contents.push_str(&format!("# {} issue(s)\n\n", issues.len()));
 
     for (index, issue) in issues.iter().enumerate() {
@@ -298,18 +272,7 @@ pub fn regenerate_log(target: &str) -> Result<(), String> {
         contents.push('\n');
     }
 
-    fs::write(log_path(target), contents).map_err(|e| format!("failed to write cascade log: {e}"))
-}
-
-pub fn print_log(target: &str) -> Result<(), String> {
-    let path = log_path(target);
-
-    let contents =
-        fs::read_to_string(&path).map_err(|e| format!("could not read {}: {e}", path.display()))?;
-
-    println!("{contents}");
-
-    Ok(())
+    fs::write(&log_path, contents).map_err(|e| format!("failed to write cascade log: {e}"))
 }
 
 pub fn print_history(targets: &[&str]) -> Result<(), String> {
@@ -320,11 +283,18 @@ pub fn print_history(targets: &[&str]) -> Result<(), String> {
     };
 
     for target in targets {
-        let path = log_path(target);
+        let path = std::env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join(LOG_ROOT)
+            .join(format!("{target}.log"));
 
         if path.exists() {
             println!("===== {target} ({}) =====", path.display());
-            print_log(target)?;
+
+            let contents = fs::read_to_string(&path)
+                .map_err(|e| format!("could not read {}: {e}", path.display()))?;
+
+            println!("{contents}");
             println!();
         }
     }
@@ -332,6 +302,53 @@ pub fn print_history(targets: &[&str]) -> Result<(), String> {
     Ok(())
 }
 
-pub fn delete_issue_directory(path: &Path) {
-    let _ = fs::remove_dir_all(path);
+pub fn ensure_dirs() -> Result<(), String> {
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+
+    fs::create_dir_all(cwd.join(BACKLOG_ROOT))
+        .and_then(|_| fs::create_dir_all(cwd.join(LOG_ROOT)))
+        .map_err(|e| format!("failed to create backlog directories: {e}"))
+}
+
+pub fn issue_dir(target: &str, id: &str) -> PathBuf {
+    std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(BACKLOG_ROOT)
+        .join(target)
+        .join(id)
+}
+
+pub fn log_path(target: &str) -> PathBuf {
+    std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(LOG_ROOT)
+        .join(format!("{target}.log"))
+}
+
+pub fn content_hash(data: &[u8]) -> String {
+    let mut hash: u64 = 0xcbf29ce484222325;
+
+    for byte in data {
+        hash ^= *byte as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+
+    format!("{hash:016x}")
+}
+
+fn absolutize(path: &str) -> String {
+    if path == "-" {
+        return path.to_string();
+    }
+
+    let p = PathBuf::from(path);
+
+    if p.is_absolute() {
+        return p.to_string_lossy().to_string();
+    }
+
+    match std::env::current_dir() {
+        Ok(cwd) => cwd.join(p).to_string_lossy().to_string(),
+        Err(_) => path.to_string(),
+    }
 }

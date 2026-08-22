@@ -55,10 +55,7 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
   Source span and location tracking used throughout the compiler.
 
 - **`thrustc_preprocessor`**  
-  Preprocessor for modules, imports, and early processing of source code. Handles high-level module parsing (`highmodule_parsing/`) and submodule parsing (`submodule_parsing/`).
-
-- **`thrustc_preprocessor_type_resolver`**  
-  Early type resolution during the preprocessing phase.
+  Preprocessor for modules, imports, and early processing of source code. Handles high-level module parsing (`highmodule_parsing/`), submodule parsing (`submodule_parsing/`), module tables, signatures, the standard library resolver (`std_library.rs`), and compile-time conditionals.
 
 - **`thrustc_parser`**  
   **Handwritten recursive descent parser** with layered precedence climbing. Parses expressions (`expressions/` with 14 precedence levels), statements (`statements/`), top-level declarations (`toplevel/`), attributes (`@...`), modificators, and imports.
@@ -82,6 +79,11 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 
 - **`thrustc_ast_modificators`**  
   Handling of language modifiers (visibility, mutability, etc.) with traits and implementations.
+
+### Builtins
+
+- **`thrustc_builtins`**  
+  Compile-time builtin system used by the parser and preprocessor. Provides a registry (`registry.rs`) with builtins for `sizeof`, `alignof`, `layout`, `target`, `predicates`, and `location`, plus compile-time conditionals (`builtins/compile_time.rs`), value/argument plumbing (`value.rs`), type info (`builtin_type.rs`), and traits (`traits.rs`).
 
 ### Semantic Analysis & Middle-end
 
@@ -123,6 +125,9 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_llvm_codegen`**  
   **Primary code generation backend**. Uses the LLVM C API directly with custom wrappers. Supports expressions (`expressions/` with binary operations, calls, structs, arrays, inline asm, literals), statements (`statements/` with conditionals and loops), top-level codegen (`toplevel/` with functions, intrinsics, asm functions), memory management (heap, stack, static), JIT, optimization, debug info, atomic operations, type generation, type casting, and attribute building.
 
+- **`thrustc_llvm_codegen_variatic`**  
+  Variadic function code generation used by `thrustc_llvm_codegen`. Handles variadic lowering, `va_list` kinds (`va_list_kind.rs`), context propagation (`context.rs`), and abort handling (`abort.rs`).
+
 - **`thrustc_llvm_target_triple`**  
   Intelligent wrapper around LLVM target triples with architecture queries (`supports_f80`, `supports_ppc128`, `is_64_bit`, etc.).
 
@@ -163,6 +168,14 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_heap_allocator`**  
   Custom heap allocation logic used by the compiler itself.
 
+### Standard Library
+
+- **`thrustc_std`**  
+  Standard library crate. Embeds the `std/` directory (Thrust source files and version metadata) via `include_dir!`, and manages installation into the user's home directory (`~/.thrustlang/std` on Unix, `%APPDATA%\.thrustlang\std` on Windows). Performs version-aware resolution (`resolve_target_version`, `ensure_std_present`, `validate_version`) and dumps the requested version's sources if missing.
+
+- **`std/`**  
+  Versioned standard library sources: `VERSION.txt` (current version history) and `v0.1.8/` with `debug.thrust`, `io.thrust`, and `math.thrust`. Consumed by `thrustc_std` and the preprocessor's standard library resolver.
+
 ---
 
 ## LLVM Vendor Crates (`crates/llvm/`)
@@ -183,10 +196,16 @@ These are patched via `[patch.crates-io]` in the workspace `Cargo.toml` and refe
 A comprehensive fuzzing infrastructure using `cargo-fuzz`:
 
 - **`fuzz_targets/`** — Fuzz targets for the lexer, LLVM codegen (local and top-level), and the full pipeline.
+- **`src/`** — Shared fuzzing helpers: corpus generation (`gen_local_common.rs`), AST/IR dumps (`dumps.rs`), backlog tracking (`backlog.rs`), and target-specific harnesses (lexer, LLVM codegen local/loops/top-level).
 - **`fuzz_pipeline/`** — 1984+ valid AST corpus files used for pipeline regression fuzzing.
+- **`fuzz_continuous/`** — Continuous fuzzing setup (see `COMPILER_CONTINUOUS_FUZZING.md`).
 - **`corpus_stable/`**, **`corpus_universal/`**, **`corpus_unstable/`** — Categorized fuzzing corpora.
 - **`fuzz_reproduce_logs/`** — Logs from reproduced fuzzing failures.
 - **`ast_dumps/`** — AST dumps generated during fuzzing.
+- **`llvm_ir_dumps/`** — LLVM IR dumps captured from crashing inputs.
+- **`artifacts/`** — Crashes found by each fuzz target.
+- **`backlog/`** — Pending fuzzing issues per target.
+- **`scripts/`** — Fuzzing directory setup scripts (`.sh`, `.bat`, `.ps1`, `.fish`).
 - Dictionary files (`thrust-stable.dict`, `thrust-unstable.dict`) for coverage-guided fuzzing.
 
 ---
@@ -222,6 +241,7 @@ Cross-platform automation scripts (available as `.sh`, `.bat`, `.ps1`, `.fish`):
 - **`cargo-dependencies.*`** — Setup cargo dependencies and LLVM.
 - **`deploy-code-docs.*`** — Deploy compiler documentation.
 - **`deploy-version.*`** — Version deployment automation.
+- **`license_updater.py`** — Automated license header updates across source files.
 - **`release-changelog.*`** — Generate and deploy changelogs for releases.
 - **`tag-manager.*`** — Git tag management helpers.
 
@@ -229,7 +249,7 @@ Cross-platform automation scripts (available as `.sh`, `.bat`, `.ps1`, `.fish`):
 
 ## Changelogs (`changelogs/`)
 
-Per-platform changelogs for each release version (v0.1.0 through v0.1.5):
+Per-platform changelogs for each release version (v0.1.0 through v0.1.8):
 
 - `thrustc-x86_64-linux-ubuntu-v*`
 - `thrustc-x86_64-macos-v*`
@@ -285,8 +305,9 @@ Source File (.thrust)
 ┌─────────────────────────────────────────────────┐
 │ 3. Preprocessor   (thrustc_preprocessor)        │
 │    - Module resolution and import handling      │
-│    - Early type resolution                      │
-│      (thrustc_preprocessor_type_resolver)       │
+│    - Standard library resolution (thrustc_std)  │
+│    - Compile-time conditionals                  │
+│      (thrustc_builtins)                         │
 │    - High-level and submodule parsing           │
 └─────────────────────────────────────────────────┘
     │
@@ -344,6 +365,8 @@ Source File (.thrust)
 ┌─────────────────────────────────────────────────┐
 │ 8. LLVM Codegen    (thrustc_llvm_codegen)       │
 │    + LLVM vendor crates (llvm-sys, inkwell)     │
+│    + Variadic codegen                           │
+│      (thrustc_llvm_codegen_variatic)            │
 │    - Expression, statement, toplevel codegen    │
 │    - Heap/stack/static memory management        │
 │    - JIT compilation & optimization             │

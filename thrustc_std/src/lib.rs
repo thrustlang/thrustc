@@ -35,12 +35,6 @@ pub enum StdError {
     Io(std::io::Error),
 }
 
-impl From<std::io::Error> for StdError {
-    fn from(error: std::io::Error) -> Self {
-        StdError::Io(error)
-    }
-}
-
 #[inline]
 pub fn resolve_std_root(custom: Option<&Path>) -> PathBuf {
     custom.map_or_else(self::default_std_root, |path| path.to_path_buf())
@@ -85,50 +79,30 @@ pub fn resolve_target_version(flag: Option<&str>) -> String {
 
 pub fn ensure_std_present(root: &Path, version: &str) -> Result<PathBuf, StdError> {
     let version_dir: PathBuf = root.join(format!("v{version}"));
-    let version_file: PathBuf = root.join("VERSION.txt");
+    let version_file: PathBuf = root.join(STD_VERSION_FILE_NAME);
 
-    if !version_file.exists() {
-        if let Some(version_file) = EMBEDDED_STD_DIR.get_file(STD_VERSION_FILE_NAME) {
-            let destination: PathBuf = root.join(STD_VERSION_FILE_NAME);
+    let embedded: Option<&Dir> = EMBEDDED_STD_DIR.get_dir(format!("v{version}"));
 
-            let needs_append = match std::fs::read(&destination) {
-                Ok(existing) => !existing
-                    .windows(version_file.contents().len())
-                    .any(|window| window == version_file.contents()),
-                Err(_) => true,
-            };
+    let dir_missing_or_empty: bool = !version_dir.is_dir()
+        || std::fs::read_dir(&version_dir)
+            .map(|mut entries| entries.next().is_none())
+            .unwrap_or(true);
 
-            if needs_append {
-                let mut file: std::fs::File = OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open(&destination)?;
+    let structure_incomplete: bool = embedded
+        .map(|directory| self::embedded_differs(&version_dir, directory))
+        .unwrap_or(false);
 
-                file.write_all(version_file.contents())?;
-            }
-        }
+    if (!version_file.is_file() || dir_missing_or_empty || structure_incomplete)
+        && embedded.is_some()
+    {
+        self::ensure_version_file(root)?;
+
+        self::dump_version_std(root, version, true)?;
 
         thrustc_logging::print_warning(
             thrustc_logging::LoggingType::Warning,
             &format!(
-                "The standard library version history was not found in '{}', so the included standard library was with the version history initialized into: '{}'.\n",
-                root.display(),
-                version_file.display()
-            ),
-        );
-    }
-
-    if version_dir.is_dir() && version_dir.exists() {
-        return Ok(version_dir);
-    }
-
-    if EMBEDDED_STD_DIR.get_dir(format!("v{version}")).is_some() {
-        self::dump_version_std(root, version)?;
-
-        thrustc_logging::print_warning(
-            thrustc_logging::LoggingType::Warning,
-            &format!(
-                "The standard library version '{version}' was not found in '{}', so the included standard library was installed into: '{}'.\n",
+                "The standard library version '{version}' was missing or incomplete in '{}', so the included standard library was reinstalled into: '{}'.\n",
                 root.display(),
                 version_dir.display()
             ),
@@ -164,48 +138,87 @@ pub fn validate_version(root: &Path, version: &str) -> Result<(), StdError> {
     }
 }
 
-fn dump_version_std(root: &Path, version: &str) -> Result<(), StdError> {
+fn ensure_version_file(root: &Path) -> Result<(), StdError> {
+    let Some(version_file) = EMBEDDED_STD_DIR.get_file(STD_VERSION_FILE_NAME) else {
+        return Ok(());
+    };
+
+    let destination: PathBuf = root.join(STD_VERSION_FILE_NAME);
+
+    let needs_append: bool = match std::fs::read(&destination) {
+        Ok(existing) => !existing
+            .windows(version_file.contents().len())
+            .any(|window| window == version_file.contents()),
+        Err(_) => true,
+    };
+
+    if !needs_append {
+        return Ok(());
+    }
+
     if !root.exists() {
         std::fs::create_dir_all(root)?;
     }
 
-    if let Some(version_file) = EMBEDDED_STD_DIR.get_file(STD_VERSION_FILE_NAME) {
-        let destination: PathBuf = root.join(STD_VERSION_FILE_NAME);
+    let mut file: std::fs::File = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&destination)?;
 
-        let needs_append = match std::fs::read(&destination) {
-            Ok(existing) => !existing
-                .windows(version_file.contents().len())
-                .any(|window| window == version_file.contents()),
-            Err(_) => true,
-        };
+    file.write_all(version_file.contents())?;
 
-        if needs_append {
-            let mut file: std::fs::File = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&destination)?;
+    Ok(())
+}
 
-            file.write_all(version_file.contents())?;
+fn embedded_differs(version_dir: &Path, directory: &Dir) -> bool {
+    for entry in directory.entries() {
+        match entry {
+            DirEntry::Dir(subdirectory) => {
+                if self::embedded_differs(version_dir, subdirectory) {
+                    return true;
+                }
+            }
+            DirEntry::File(file) => {
+                let destination: PathBuf = version_dir.join(file.path());
+
+                let Ok(on_disk) = std::fs::read(&destination) else {
+                    return true;
+                };
+
+                if on_disk != file.contents() {
+                    return true;
+                }
+            }
         }
     }
 
+    false
+}
+
+fn dump_version_std(root: &Path, version: &str, overwrite: bool) -> Result<(), StdError> {
+    if !root.exists() {
+        std::fs::create_dir_all(root)?;
+    }
+
+    self::ensure_version_file(root)?;
+
     if let Some(version_dir) = EMBEDDED_STD_DIR.get_dir(format!("v{version}")) {
-        self::dump_dir_files(root, version_dir)?;
+        self::dump_dir_files(root, version_dir, overwrite)?;
     }
 
     Ok(())
 }
 
-fn dump_dir_files(root: &Path, directory: &Dir) -> Result<(), StdError> {
+fn dump_dir_files(root: &Path, directory: &Dir, overwrite: bool) -> Result<(), StdError> {
     for entry in directory.entries() {
         match entry {
             DirEntry::Dir(subdirectory) => {
-                self::dump_dir_files(root, subdirectory)?;
+                self::dump_dir_files(root, subdirectory, overwrite)?;
             }
             DirEntry::File(file) => {
                 let destination: PathBuf = root.join(file.path());
 
-                if destination.exists() {
+                if !overwrite && destination.exists() {
                     continue;
                 }
 
@@ -221,4 +234,10 @@ fn dump_dir_files(root: &Path, directory: &Dir) -> Result<(), StdError> {
     }
 
     Ok(())
+}
+
+impl From<std::io::Error> for StdError {
+    fn from(error: std::io::Error) -> Self {
+        StdError::Io(error)
+    }
 }
