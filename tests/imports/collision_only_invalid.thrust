@@ -1,0 +1,6 @@
+import "../modules/module_col_a.thrust" only { collide };
+import "../modules/module_col_b.thrust" only { collide };
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return collide(1);
+}

@@ -16,7 +16,12 @@
 */
 
 mod alignof;
+mod compile_time;
+mod layout;
+mod location;
+mod predicates;
 mod sizeof;
+mod target;
 
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
@@ -28,6 +33,61 @@ use crate::registry::BuiltinRegistry;
 pub fn register_default_builtins(registry: &mut BuiltinRegistry) {
     registry.register_function(alignof::AlignOf);
     registry.register_function(sizeof::SizeOf);
+    registry.register_function(location::File);
+    registry.register_function(location::FileLine);
+    registry.register_function(location::CurrentFuncName);
+    registry.register_function(compile_time::StaticAssert);
+    registry.register_function(compile_time::CompileError);
+    registry.register_function(compile_time::CompileWarning);
+
+    registry.register_function(predicates::IsSigned);
+    registry.register_function(predicates::IsUnsigned);
+    registry.register_function(predicates::IsInteger);
+    registry.register_function(predicates::IsFloat);
+    registry.register_function(predicates::IsBool);
+    registry.register_function(predicates::IsChar);
+    registry.register_function(predicates::IsPointer);
+    registry.register_function(predicates::IsArray);
+    registry.register_function(predicates::IsFixedArray);
+    registry.register_function(predicates::IsStruct);
+    registry.register_function(predicates::IsVoid);
+    registry.register_function(predicates::IsConst);
+    registry.register_function(predicates::IsNumeric);
+    registry.register_function(predicates::IsFunction);
+
+    registry.register_function(layout::TypeWidth);
+    registry.register_function(layout::FieldCount);
+
+    registry.register_function(target::TargetOS);
+    registry.register_function(target::TargetArch);
+    registry.register_function(target::TargetVendor);
+    registry.register_function(target::TargetAbi);
+    registry.register_function(target::TargetTriple);
+    registry.register_function(target::IsLinux);
+    registry.register_function(target::IsWindows);
+    registry.register_function(target::IsDarwin);
+    registry.register_function(target::IsApple);
+    registry.register_function(target::IsAix);
+    registry.register_function(target::Is64Bit);
+    registry.register_function(target::Is32Bit);
+    registry.register_function(target::IsBigEndian);
+    registry.register_function(target::IsLittleEndian);
+    registry.register_function(target::IsX86);
+    registry.register_function(target::IsX8664);
+    registry.register_function(target::IsArm);
+    registry.register_function(target::IsAarch64);
+    registry.register_function(target::IsRiscv64);
+    registry.register_function(target::IsPpc);
+    registry.register_function(target::IsPpc64);
+    registry.register_function(target::IsMips64);
+    registry.register_function(target::IsSystemz);
+    registry.register_function(target::IsLoongarch64);
+    registry.register_function(target::IsWasm);
+    registry.register_function(target::IsElf);
+    registry.register_function(target::IsMachO);
+    registry.register_function(target::IsCoff);
+    registry.register_function(target::HasPosixThreads);
+    registry.register_function(target::HasSysvAbi);
 
     registry.register_type(BuiltinTypeInfo::new(
         "CString",

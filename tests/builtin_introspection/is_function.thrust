@@ -1,0 +1,14 @@
+/*
+ * Compile-time builtin: isFunction
+ *
+ * isFunction(T) is true when T is a function reference type (Fn[...] -> ret).
+ */
+
+fn main() s32 @public {
+    if isFunction(Fn[] -> s32) != true { return 1; }
+    if isFunction(Fn[s32, f64] -> void) != true { return 2; }
+    if isFunction(u32) != false { return 3; }
+    if isFunction(ptr) != false { return 4; }
+
+    return 0;
+}

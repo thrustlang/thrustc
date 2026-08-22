@@ -1,0 +1,30 @@
+/*
+ * Compile-time builtin: fieldCount
+ *
+ * fieldCount(T) returns the number of fields of a struct type.
+ */
+
+struct single_u8 {
+    value: u8,
+}
+
+struct pair_u32 {
+    first: u32,
+    second: u32,
+}
+
+struct mixed {
+    a: u8,
+    b: u16,
+    c: u32,
+    d: f64,
+}
+
+fn main() s32 @public {
+    if fieldCount(single_u8) != 1 { return 1; }
+    if fieldCount(pair_u32) != 2 { return 2; }
+    if fieldCount(mixed) != 4 { return 3; }
+    if fieldCount(const pair_u32) != 2 { return 4; }
+
+    return 0;
+}

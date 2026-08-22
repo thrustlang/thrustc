@@ -1,0 +1,11 @@
+/*
+ * Invalid: fieldCount with a non-struct type
+ *
+ * The fieldCount builtin expects a struct type argument. Passing a primitive
+ * type must be rejected at compile time.
+ */
+
+fn main() s32 @public {
+    var x: usize = fieldCount(u32);
+    return 0;
+}

@@ -1,0 +1,24 @@
+/*
+ * Compile-time builtin: staticAssert
+ *
+ * staticAssert(condition, "message") checks a compile-time constant and
+ * fails the compilation when the condition is not satisfied.
+ */
+
+struct pair_u32 {
+    first: u32,
+    second: u32,
+}
+
+const PAIR_FIELDS: usize = fieldCount(pair_u32);
+
+fn main() s32 @public {
+    staticAssert(true, "true should always hold");
+    staticAssert(isInteger(u32), "u32 is an integer");
+    staticAssert(isFloat(f64), "f64 is a float");
+    staticAssert(isStruct(pair_u32), "pair_u32 is a struct");
+    staticAssert(1 + 1 == 2, "arithmetic holds");
+    staticAssert(fieldCount(pair_u32) == 2, "pair_u32 has two fields");
+
+    return 0;
+}

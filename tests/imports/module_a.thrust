@@ -1,0 +1,6 @@
+import "../modules/module_b.thrust" as simd;
+import "../modules/module_shared.thrust";
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return simd::pepito as s32;
+}

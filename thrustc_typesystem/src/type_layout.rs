@@ -156,6 +156,8 @@ pub struct TargetInfo {
     ptr_width: u32,
     ptr_align: u32,
 
+    triple: LLVMTargetTriple,
+
     type_cached: HashMap<Type, Either<TypeLayout, StructTypeLayout>>,
 }
 
@@ -203,6 +205,8 @@ impl TargetInfo {
 
         target_info.ptr_width = if is_64_bit { 64 } else { 32 };
         target_info.ptr_align = if is_64_bit { 64 } else { 32 };
+
+        target_info.triple = triple_triple.clone();
 
         target_info.adjust(triple_triple);
 
@@ -777,5 +781,12 @@ impl TargetInfo {
         self.type_cached.insert(r#type.clone(), layout.clone());
 
         layout
+    }
+}
+
+impl TargetInfo {
+    #[inline]
+    pub fn get_triple(&self) -> &LLVMTargetTriple {
+        &self.triple
     }
 }

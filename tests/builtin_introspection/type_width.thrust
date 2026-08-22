@@ -1,0 +1,38 @@
+/*
+ * Compile-time builtin: typeWidth
+ *
+ * typeWidth(T) returns the bit width of a type as a compile-time constant.
+ * Values below assume a 64-bit target (x86_64).
+ */
+
+struct pair_u32 {
+    first: u32,
+    second: u32,
+}
+
+fn main() s32 @public {
+    if typeWidth(u8) != 8 { return 1; }
+    if typeWidth(u16) != 16 { return 2; }
+    if typeWidth(u32) != 32 { return 3; }
+    if typeWidth(u64) != 64 { return 4; }
+    if typeWidth(u128) != 128 { return 5; }
+
+    if typeWidth(s32) != 32 { return 6; }
+    if typeWidth(s64) != 64 { return 7; }
+
+    if typeWidth(f32) != 32 { return 8; }
+    if typeWidth(f64) != 64 { return 9; }
+
+    if typeWidth(bool) != 8 { return 10; }
+    if typeWidth(char) != 8 { return 11; }
+
+    if typeWidth(ptr) != 64 { return 12; }
+    if typeWidth(usize) != 64 { return 13; }
+    if typeWidth(ssize) != 64 { return 14; }
+
+    if typeWidth(array[u32; 3]) != 96 { return 15; }
+
+    if typeWidth(pair_u32) != 64 { return 16; }
+
+    return 0;
+}

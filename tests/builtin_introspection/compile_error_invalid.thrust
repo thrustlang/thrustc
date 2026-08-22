@@ -1,0 +1,10 @@
+/*
+ * Invalid: compileError
+ *
+ * The compileError builtin always aborts the compilation with a message.
+ */
+
+fn main() s32 @public {
+    compileError("intentional compile error");
+    return 0;
+}

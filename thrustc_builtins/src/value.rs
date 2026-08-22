@@ -30,6 +30,7 @@ pub enum BuiltinValue {
     CString(std::vec::Vec<u8>),
     CNString(std::vec::Vec<u8>),
     NullPtr,
+    Void,
 }
 
 #[derive(Debug, Clone)]
@@ -48,6 +49,7 @@ impl BuiltinValue {
             BuiltinValue::CString(bytes) => Ast::new_cstring(bytes.clone(), kind, span),
             BuiltinValue::CNString(bytes) => Ast::new_cnstring(bytes.clone(), kind, span),
             BuiltinValue::NullPtr => Ast::new_nullptr(span),
+            BuiltinValue::Void => Ast::new_nullptr(span),
         }
     }
 }
@@ -105,6 +107,13 @@ fn fold_binary(operator: TokenType, left: BuiltinValue, right: BuiltinValue) -> 
             TokenType::GreaterEq => Some(BuiltinValue::Bool(left >= right)),
             TokenType::And => Some(BuiltinValue::Bool(left != 0 && right != 0)),
             TokenType::Or => Some(BuiltinValue::Bool(left != 0 || right != 0)),
+            _ => None,
+        },
+        (BuiltinValue::Bool(left), BuiltinValue::Bool(right)) => match operator {
+            TokenType::EqEq => Some(BuiltinValue::Bool(left == right)),
+            TokenType::BangEq => Some(BuiltinValue::Bool(left != right)),
+            TokenType::And => Some(BuiltinValue::Bool(left && right)),
+            TokenType::Or => Some(BuiltinValue::Bool(left || right)),
             _ => None,
         },
         (BuiltinValue::Float(left), BuiltinValue::Float(right)) => match operator {

@@ -104,6 +104,11 @@ pub enum TokenType {
     Destructor,
     Promote,
 
+    // Compile-time conditional compilation
+    IfAttribute,
+    ElifAttribute,
+    ElseAttribute,
+
     // --- Special ---
     Unreachable,
 

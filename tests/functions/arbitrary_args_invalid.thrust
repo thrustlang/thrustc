@@ -1,0 +1,13 @@
+fn sum(count: s32) s32 @public {
+    var total: s32 = 0;
+    var i: s32 = 0;
+    while i < count {
+        total += arbitraryArg(s32);
+        i += 1;
+    }
+    return total;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return sum(3);
+}

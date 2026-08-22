@@ -1,0 +1,6 @@
+import std::io;
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var side: io::math::Square = 7;
+    return side as s32;
+}

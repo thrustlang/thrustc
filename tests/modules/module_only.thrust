@@ -1,0 +1,7 @@
+fn stack(value: s32) s32 @public { return value; }
+
+const base: u32 @public = 10;
+
+static mut counter: u32 @public @extern("counter") = 5;
+
+type StackType @public = u32;

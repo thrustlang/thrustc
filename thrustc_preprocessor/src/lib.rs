@@ -83,12 +83,96 @@ impl<'preprocessor> Preprocessor {
                 continue;
             }
 
+            if context.check(TokenType::IfAttribute) {
+                self.handle_conditional_imports(&mut context, &mut merged)?;
+
+                continue;
+            }
+
             let _ = context.only_advance();
         }
 
         context.check_status()?;
 
         Ok(self.modules.as_slice())
+    }
+
+    fn handle_conditional_imports(
+        &mut self,
+        context: &mut PreprocessorContext<'_>,
+        merged: &mut ahash::AHashMap<std::path::PathBuf, usize>,
+    ) -> Result<(), ()> {
+        let first_condition: bool =
+            highmodule_parsing::compiletime_conditional::evaluate_condition(context)?;
+
+        let mut active: bool = false;
+
+        if first_condition {
+            self.merge_active_import(context, merged)?;
+            active = true;
+        } else {
+            highmodule_parsing::compiletime_conditional::skip_import(context)?;
+        }
+
+        loop {
+            if context.check(TokenType::ElifAttribute) {
+                let condition: bool =
+                    highmodule_parsing::compiletime_conditional::evaluate_condition(context)?;
+
+                if !active && condition {
+                    self.merge_active_import(context, merged)?;
+                    active = true;
+                } else {
+                    highmodule_parsing::compiletime_conditional::skip_import(context)?;
+                }
+
+                continue;
+            }
+
+            if context.check(TokenType::ElseAttribute) && context.check_to(TokenType::If, 1) {
+                context.consume(TokenType::ElseAttribute)?;
+
+                let condition: bool =
+                    highmodule_parsing::compiletime_conditional::evaluate_condition(context)?;
+
+                if !active && condition {
+                    self.merge_active_import(context, merged)?;
+                    active = true;
+                } else {
+                    highmodule_parsing::compiletime_conditional::skip_import(context)?;
+                }
+
+                continue;
+            }
+
+            if context.check(TokenType::ElseAttribute) {
+                context.consume(TokenType::ElseAttribute)?;
+
+                if active {
+                    highmodule_parsing::compiletime_conditional::skip_import(context)?;
+                } else {
+                    self.merge_active_import(context, merged)?;
+                }
+
+                break;
+            }
+
+            break;
+        }
+
+        Ok(())
+    }
+
+    fn merge_active_import(
+        &mut self,
+        context: &mut PreprocessorContext<'_>,
+        merged: &mut ahash::AHashMap<std::path::PathBuf, usize>,
+    ) -> Result<(), ()> {
+        if let Ok(Some(module)) = highmodule_parsing::import::parse_import(context) {
+            self.merge_module(merged, module);
+        }
+
+        Ok(())
     }
 
     fn merge_module(&mut self, merged: &mut ahash::AHashMap<std::path::PathBuf, usize>, module: Module) {

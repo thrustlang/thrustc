@@ -1,0 +1,3 @@
+import "reexport_c.thrust" as inner;
+
+static mut depth: inner::Depth @public @extern("depth") = 3;

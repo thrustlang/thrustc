@@ -1,0 +1,11 @@
+fn sumar(a: s32, b: s32) s32 @public {
+    return a + b;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var x: s32 = sumar(b= 123, a= 10);
+    var y: s32 = sumar(1, b= 2);
+    var z: s32 = sumar(a= 1, b= 2);
+
+    return x + y + z;
+}

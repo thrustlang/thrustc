@@ -1,0 +1,16 @@
+/*
+ * Conditional user imports: @elif chain
+ *
+ * On x86_64-linux, isLinux() is true so the @elif branch imports mod_b
+ * and from_mod_b resolves.
+ */
+
+@if(isWindows()) import "mod_a.thrust" only { from_mod_a };
+@elif(isLinux()) import "mod_b.thrust" only { from_mod_b };
+@else import "mod_a.thrust" only { from_mod_a };
+
+fn main() s32 @public {
+    if from_mod_b() != 2 { return 1; }
+
+    return 0;
+}

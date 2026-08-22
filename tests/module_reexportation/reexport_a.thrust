@@ -1,0 +1,5 @@
+import "reexport_b.thrust" as dep;
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return dep::depth as s32;
+}

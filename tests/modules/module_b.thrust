@@ -1,0 +1,4 @@
+import "module_shared.thrust";
+
+static mut pepito: u8 @public @extern("pepito") = 123;
+type U8Int @public = u8;

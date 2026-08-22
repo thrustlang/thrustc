@@ -1,0 +1,12 @@
+/*
+ * Invalid: a false conditional skips the standard library import
+ *
+ * Since the import is discarded, std_val is not in scope and the
+ * reference must fail at compile time.
+ */
+
+@if(false) import std::testmod only { std_val };
+
+fn main() s32 @public {
+    return std_val();
+}

@@ -1,0 +1,48 @@
+/*
+ * Compile-time target builtins
+ *
+ * targetOS/targetArch/targetVendor/targetAbi/targetTriple return strings,
+ * the is-prefixed and has-prefixed predicates return booleans. All are
+ * resolved during parsing.
+ *
+ * The OS/arch-specific assertions below assume an x86_64-linux target.
+ */
+
+fn consume(s: const array[char]) void {
+    return;
+}
+
+fn main() s32 @public {
+    const os: const array[char] = targetOS();
+    const arch: const array[char] = targetArch();
+    const vendor: const array[char] = targetVendor();
+    const abi: const array[char] = targetAbi();
+    const triple: const array[char] = targetTriple();
+    consume(os);
+    consume(arch);
+    consume(vendor);
+    consume(abi);
+    consume(triple);
+
+    if is32Bit() == is64Bit() { return 1; }
+    if isBigEndian() == isLittleEndian() { return 2; }
+    if is64Bit() != true { return 10; }
+    if is32Bit() != false { return 11; }
+    if isLittleEndian() != true { return 12; }
+    if isBigEndian() != false { return 13; }
+    if isX8664() != true { return 14; }
+    if isLinux() != true { return 15; }
+    if isWindows() != false { return 16; }
+    if isDarwin() != false { return 17; }
+    if isElf() != true { return 18; }
+    if isMachO() != false { return 19; }
+    if isCoff() != false { return 20; }
+    if isAarch64() != false { return 21; }
+    if isArm() != false { return 22; }
+    if isApple() != false { return 23; }
+    if isAix() != false { return 24; }
+    if hasPosixThreads() != true { return 25; }
+    if hasSysvAbi() != true { return 26; }
+
+    return 0;
+}

@@ -15,6 +15,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use thrustc_code_location::Span;
+use thrustc_errors::CompilationIssue;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
 use thrustc_typesystem::type_layout::TargetInfo;
@@ -23,4 +25,7 @@ pub struct BuiltinContext<'builtin> {
     pub target_info: &'builtin mut TargetInfo,
     pub options: &'builtin CompilerOptions,
     pub file: &'builtin CompilationUnit,
+    pub call_span: Span,
+    pub current_function: Option<&'builtin str>,
+    pub warnings: &'builtin mut Vec<CompilationIssue>,
 }

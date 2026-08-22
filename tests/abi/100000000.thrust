@@ -1,0 +1,17 @@
+fn print(fmt: const array[char]) s32 @public @arbitraryArgs @extern("printf") @convention("C");
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+ 
+    var contador: u64 = 0;
+    var i: u64 = 0;
+
+    while i < 100000000 {
+        contador++;
+        i++;
+    }
+
+    print("%ld", contador);
+
+    return 0;
+    
+}

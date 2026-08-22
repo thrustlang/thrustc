@@ -1,0 +1,58 @@
+/*
+ * Compile-time builtin: sizeOf
+ *
+ * Verifies sizeOf on primitive types. sizeOf returns a compile-time
+ * constant of type usize.
+ */
+
+fn main() s32 @public {
+    if sizeOf(u8) != 1 {
+        return 1;
+    }
+
+    if sizeOf(u16) != 2 {
+        return 2;
+    }
+
+    if sizeOf(u32) != 4 {
+        return 3;
+    }
+
+    if sizeOf(u64) != 8 {
+        return 4;
+    }
+
+    if sizeOf(s8) != 1 {
+        return 5;
+    }
+
+    if sizeOf(s16) != 2 {
+        return 6;
+    }
+
+    if sizeOf(s32) != 4 {
+        return 7;
+    }
+
+    if sizeOf(s64) != 8 {
+        return 8;
+    }
+
+    if sizeOf(f32) != 4 {
+        return 9;
+    }
+
+    if sizeOf(f64) != 8 {
+        return 10;
+    }
+
+    if sizeOf(bool) != 1 {
+        return 11;
+    }
+
+    if sizeOf(char) != 1 {
+        return 12;
+    }
+
+    return 0;
+}

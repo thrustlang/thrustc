@@ -1,0 +1,27 @@
+/*
+ * Compile-time conditional with target builtins
+ *
+ * The condition folds to a constant at parse time using the builtin
+ * registry. The OS/arch-specific expectation below assumes an
+ * x86_64-linux target.
+ */
+
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(isLinux()) {
+        count += 100;
+    } @else {
+        count += 1000;
+    }
+
+    @if(isWindows()) {
+        count += 10000;
+    } @else {
+        count += 1;
+    }
+
+    if count != 101 { return 1; }
+
+    return 0;
+}

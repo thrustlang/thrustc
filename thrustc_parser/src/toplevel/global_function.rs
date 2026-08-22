@@ -175,7 +175,11 @@ pub fn build_function<'parser>(
 
         ctx.get_mut_symbols().new_parameters(&parameters)?;
 
+        ctx.set_current_function_name(name);
+
         let function_body: Ast = code_block::parse_code_block_stmt(ctx)?;
+
+        ctx.clear_current_function_name();
 
         ctx.get_mut_symbols().finish_parameters();
 

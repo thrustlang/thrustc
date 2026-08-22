@@ -1,0 +1,46 @@
+/*
+ * Compile-time builtin: alignOf
+ *
+ * Verifies alignOf on primitive types. alignOf returns a compile-time
+ * constant of type u32.
+ */
+
+fn main() s32 @public {
+    if alignOf(u8) != 1 {
+        return 1;
+    }
+
+    if alignOf(u16) != 2 {
+        return 2;
+    }
+
+    if alignOf(u32) != 4 {
+        return 3;
+    }
+
+    if alignOf(u64) != 8 {
+        return 4;
+    }
+
+    if alignOf(s32) != 4 {
+        return 5;
+    }
+
+    if alignOf(s64) != 8 {
+        return 6;
+    }
+
+    if alignOf(f32) != 4 {
+        return 7;
+    }
+
+    if alignOf(f64) != 8 {
+        return 8;
+    }
+
+    if alignOf(bool) != 1 {
+        return 9;
+    }
+
+    return 0;
+}

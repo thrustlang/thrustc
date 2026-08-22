@@ -1,0 +1,3 @@
+import "module_c.thrust" as ext::my;
+
+static mut counter: ext::my::MyU16 @public @extern("counter") = 7;

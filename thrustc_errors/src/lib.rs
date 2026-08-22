@@ -122,6 +122,7 @@ lazy_static::lazy_static! {
         explanations.insert(CompilationIssueCode::W0028, r#""#);
         explanations.insert(CompilationIssueCode::W0029, r#""#);
         explanations.insert(CompilationIssueCode::W0030, r#""#);
+        explanations.insert(CompilationIssueCode::W0031, r#""#);
         explanations.insert(CompilationIssueCode::E0043, r#""#);
         explanations.insert(CompilationIssueCode::E0044, r#""#);
         explanations.insert(CompilationIssueCode::E0045, r#""#);
@@ -210,6 +211,7 @@ pub enum CompilationIssueCode {
     W0028, // Statement with no effect
     W0029, // Condition always constant
     W0030, // Module signature without public may fail at linking
+    W0031, // Compilation warning
 }
 
 #[inline]
@@ -432,6 +434,9 @@ impl CompilationIssueCode {
                     "W0030".bright_yellow()
                 )
             }
+            CompilationIssueCode::W0031 => {
+                format!("COMPILATION WARNING - {}", "W0031".bright_yellow())
+            }
         }
     }
 
@@ -520,6 +525,7 @@ impl CompilationIssueCode {
             "W0028" => Ok(CompilationIssueCode::W0028),
             "W0029" => Ok(CompilationIssueCode::W0029),
             "W0030" => Ok(CompilationIssueCode::W0030),
+            "W0031" => Ok(CompilationIssueCode::W0031),
 
             _ => Err(()),
         }

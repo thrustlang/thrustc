@@ -1,0 +1,7 @@
+fn sumar(a: s32, b: s32) s32 @public {
+    return a + b;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return sumar(a = 1, a = 2);
+}

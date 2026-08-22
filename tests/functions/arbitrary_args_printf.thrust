@@ -1,0 +1,10 @@
+fn vprintf(fmt: const array[char], ap: ptr) s32 @public @extern("vprintf") @convention("C");
+
+fn my_printf(fmt: const array[char]) s32 @public @arbitraryArgs {
+    return vprintf(fmt, arbitraryArgs());
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    my_printf("%d\n", 69);
+    return 0;
+}

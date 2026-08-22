@@ -1,0 +1,11 @@
+/*
+ * Invalid: target builtins take no arguments
+ *
+ * Passing an argument to a zero-argument target builtin must be rejected
+ * at compile time.
+ */
+
+fn main() s32 @public {
+    var os: const array[char] = targetOS("linux");
+    return 0;
+}

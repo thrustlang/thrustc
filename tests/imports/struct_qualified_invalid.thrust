@@ -1,0 +1,6 @@
+import "../modules/module_struct.thrust" only { Vector };
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var v := new module_struct::Vector { a: 1, b: 2 };
+    return 0;
+}

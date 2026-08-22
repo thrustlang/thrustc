@@ -1,0 +1,8 @@
+import "../modules/module_col_a.thrust";
+import "../modules/module_col_b.thrust";
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    module_col_a::collide(1);
+    module_col_b::collide(2);
+    return 0;
+}

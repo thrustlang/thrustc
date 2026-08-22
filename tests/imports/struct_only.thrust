@@ -1,0 +1,6 @@
+import "../modules/module_struct.thrust" only { Vector };
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var v := new Vector { a: 1, b: 2 };
+    return (deref v.a) as s32 + (deref v.b) as s32;
+}

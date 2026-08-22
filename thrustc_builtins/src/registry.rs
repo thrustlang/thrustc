@@ -15,6 +15,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#![allow(clippy::borrowed_box)]
+
 use ahash::AHashMap as HashMap;
 
 use thrustc_ast::Ast;
@@ -49,18 +51,22 @@ impl BuiltinRegistry {
         }
     }
 
+    #[inline]
     pub fn register_function(&mut self, function: impl CompileTimeBuiltinFunction + 'static) {
         self.functions.insert(function.name(), Box::new(function));
     }
 
+    #[inline]
     pub fn register_type(&mut self, info: BuiltinTypeInfo) {
         self.types.insert(info.name, info);
     }
 
+    #[inline]
     pub fn get_function(&self, name: &str) -> Option<&dyn CompileTimeBuiltinFunction> {
         self.functions.get(name).map(|function| function.as_ref())
     }
 
+    #[inline]
     pub fn get_type(&self, name: &str) -> Option<&Type> {
         self.types.get(name).map(|info| &info.ty)
     }
@@ -69,35 +75,97 @@ impl BuiltinRegistry {
         &mut self,
         name: &str,
         args: &[BuiltinArgument],
-        span: Span,
+        call_span: Span,
+        current_function: Option<&'builtin str>,
+        options: &'builtin CompilerOptions,
+        file: &'builtin CompilationUnit,
+    ) -> Result<(Ast<'builtin>, Vec<CompilationIssue>), CompilationIssue> {
+        let signature: BuiltinFunctionSignature = {
+            let function: &Box<dyn CompileTimeBuiltinFunction> =
+                self.functions.get(name).ok_or_else(|| {
+                    CompilationIssue::Error(
+                        CompilationIssueCode::E0003,
+                        format!("Unknown compiler builtin '{}'.", name),
+                        "Compiler builtin doesn't exist on the compiler.".into(),
+                        None,
+                        call_span,
+                    )
+                })?;
+
+            function.signature()
+        };
+
+        let (value, warnings): (BuiltinValue, Vec<CompilationIssue>) = {
+            let function: &Box<dyn CompileTimeBuiltinFunction> =
+                self.functions.get(name).expect("function must exist");
+
+            let mut warnings: Vec<CompilationIssue> = Vec::new();
+
+            let mut context: BuiltinContext = BuiltinContext {
+                target_info: &mut self.target_info,
+                options,
+                file,
+                call_span,
+                current_function,
+                warnings: &mut warnings,
+            };
+
+            let value: BuiltinValue = function.evaluate(args, &mut context)?;
+
+            (value, warnings)
+        };
+
+        Ok((value.to_ast(signature.return_type, call_span), warnings))
+    }
+
+    pub fn evaluate_function(
+        &self,
+        name: &str,
+        args: &[BuiltinArgument],
+        call_span: Span,
+        current_function: Option<&str>,
         options: &CompilerOptions,
         file: &CompilationUnit,
-    ) -> Result<Ast<'builtin>, CompilationIssue> {
-        let signature: BuiltinFunctionSignature = {
-            let function = self.functions.get(name).ok_or_else(|| {
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        let function: &Box<dyn CompileTimeBuiltinFunction> =
+            self.functions.get(name).ok_or_else(|| {
                 CompilationIssue::Error(
                     CompilationIssueCode::E0003,
                     format!("Unknown compiler builtin '{}'.", name),
                     "Compiler builtin doesn't exist on the compiler.".into(),
                     None,
-                    span,
+                    call_span,
                 )
             })?;
 
-            function.signature()
+        let signature: BuiltinFunctionSignature = function.signature();
+
+        if signature.get_parameter_count() != args.len() {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                format!(
+                    "The '{}' builtin expects {} arguments.",
+                    name,
+                    signature.get_parameter_count()
+                ),
+                format!("You passed {} arguments.", args.len()),
+                None,
+                call_span,
+            ));
+        }
+
+        let mut target_info: TargetInfo = self.target_info.clone();
+        let mut warnings: Vec<CompilationIssue> = Vec::new();
+
+        let mut context: BuiltinContext = BuiltinContext {
+            target_info: &mut target_info,
+            options,
+            file,
+            call_span,
+            current_function,
+            warnings: &mut warnings,
         };
 
-        let value: BuiltinValue = {
-            let function = self.functions.get(name).expect("function must exist");
-            let mut context: BuiltinContext = BuiltinContext {
-                target_info: &mut self.target_info,
-                options,
-                file,
-            };
-
-            function.evaluate(args, &mut context)?
-        };
-
-        Ok(value.to_ast(signature.return_type, span))
+        function.evaluate(args, &mut context)
     }
 }

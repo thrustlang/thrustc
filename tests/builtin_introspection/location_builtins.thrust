@@ -1,0 +1,19 @@
+/*
+ * Location compile-time builtins
+ *
+ * file() returns the source file path, fileLine() the current line number
+ * and currentFuncName() the enclosing function name. They are resolved
+ * during parsing.
+ */
+
+fn main() s32 @public {
+    var source_file: const array[char] = file();
+    var source_line: u32 = fileLine();
+    var current_fn: const array[char] = currentFuncName();
+
+    if source_line < 1 {
+        return 1;
+    }
+
+    return 0;
+}

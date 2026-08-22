@@ -26,6 +26,7 @@ use thrustc_token_type::TokenType;
 use crate::ParserContext;
 
 pub mod compiler_intrinsic;
+pub mod compiletime_conditional;
 pub mod embedded_value;
 pub mod global_assembler;
 pub mod global_assembler_function;
@@ -49,6 +50,9 @@ pub fn parse<'parser>(ctx: &mut ParserContext<'parser>) -> Result<Ast<'parser>, 
         TokenType::Static => Ok(global_static::build_global_static(ctx, false)?),
         TokenType::Enum => Ok(global_enum::build_enum(ctx, false)?),
         TokenType::Fn => Ok(global_function::build_function(ctx, false)?),
+        TokenType::IfAttribute => Ok(compiletime_conditional::build_compiletime_declaration(
+            ctx,
+        )?),
         TokenType::AsmFn => Ok(global_assembler_function::build_assembler_function(
             ctx, false,
         )?),

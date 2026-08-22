@@ -1,0 +1,1 @@
+fn std_val() s32 @public { return 7; }

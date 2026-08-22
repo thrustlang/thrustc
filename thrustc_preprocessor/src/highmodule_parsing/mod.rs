@@ -17,4 +17,5 @@
 
 */
 
+pub mod compiletime_conditional;
 pub mod import;

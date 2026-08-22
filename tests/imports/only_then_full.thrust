@@ -1,0 +1,6 @@
+import "../modules/module_only.thrust" only { stack };
+import "../modules/module_only.thrust";
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return module_only::stack(3) + stack(2);
+}

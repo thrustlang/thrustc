@@ -1,0 +1,6 @@
+import "../modules/module_only.thrust" only { stack, base, counter, StackType };
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var x: StackType = base;
+    return stack(x as s32) + (counter as s32);
+}

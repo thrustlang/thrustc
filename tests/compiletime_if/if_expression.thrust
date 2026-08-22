@@ -1,0 +1,32 @@
+/*
+ * Compile-time conditional with constant expressions
+ *
+ * The conditions are folded using the same constant machinery as the
+ * compile-time builtins, including boolean logical operators.
+ */
+
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(1 + 1 == 2) {
+        count += 1;
+    } @else {
+        count += 100;
+    }
+
+    @if(isLinux() && is64Bit()) {
+        count += 10;
+    } @else {
+        count += 1000;
+    }
+
+    @if(isLinux() || isWindows()) {
+        count += 100;
+    } @else {
+        count += 10000;
+    }
+
+    if count != 111 { return 1; }
+
+    return 0;
+}

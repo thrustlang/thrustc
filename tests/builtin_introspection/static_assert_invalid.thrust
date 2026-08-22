@@ -1,0 +1,10 @@
+/*
+ * Invalid: staticAssert with a false condition
+ *
+ * A false condition must abort the compilation with the given message.
+ */
+
+fn main() s32 @public {
+    staticAssert(1 == 2, "one must never equal two");
+    return 0;
+}

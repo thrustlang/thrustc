@@ -1,0 +1,5 @@
+import "module_named_fn.thrust";
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return module_named_fn::add(b = 2, a = 1);
+}

@@ -1,0 +1,13 @@
+/*
+ * Compile-time conditional over single statements (no braces)
+ */
+
+fn main() s32 @public {
+    @if(true) var a: s32 = 5; @else var a: s32 = 9999;
+    @if(false) var b: s32 = 9999; @else var b: s32 = 6;
+
+    if a != 5 { return 1; }
+    if b != 6 { return 2; }
+
+    return 0;
+}

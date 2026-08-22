@@ -1,0 +1,5 @@
+fn variadic(a: s32) s32 @public @arbitraryArgs;
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return variadic(a = 1);
+}

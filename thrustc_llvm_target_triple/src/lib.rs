@@ -619,3 +619,74 @@ impl LLVMTargetTriple {
         windows_arch && (windows_os || windows_abi || windows_env)
     }
 }
+
+impl LLVMTargetTriple {
+    #[inline]
+    pub fn is_32_bit(&self) -> bool {
+        self.is_x86_arch()
+            || matches!(
+                self.arch.as_str(),
+                "arm"
+                    | "thumb"
+                    | "thumbv7a"
+                    | "armv7"
+                    | "armv7s"
+                    | "riscv32"
+                    | "mips"
+                    | "mipsel"
+                    | "ppc"
+                    | "powerpc"
+                    | "wasm32"
+                    | "loongarch32"
+                    | "m68k"
+                    | "avr"
+                    | "msp430"
+                    | "sparc"
+                    | "sparcel"
+            )
+    }
+}
+
+impl LLVMTargetTriple {
+    #[inline]
+    pub fn is_big_endian(&self) -> bool {
+        if self.arch.ends_with("be") || self.arch.ends_with("eb") {
+            return true;
+        }
+
+        if self.arch.ends_with("le") || self.arch.ends_with("el") {
+            return false;
+        }
+
+        matches!(
+            self.arch.as_str(),
+            "mips"
+                | "mips64"
+                | "powerpc"
+                | "powerpc64"
+                | "ppc"
+                | "ppc64"
+                | "s390x"
+                | "systemz"
+                | "sparc"
+                | "sparcv9"
+                | "m68k"
+        )
+    }
+}
+
+impl LLVMTargetTriple {
+    #[inline]
+    pub fn is_coff_object_format(&self) -> bool {
+        // ref: https://llvm.org/doxygen/Triple_8cpp_source.html
+        matches!(self.os.as_str(), "win32" | "windows" | "win64" | "uefi")
+            || self.os.eq_ignore_ascii_case("windows")
+            || self.os.contains("win32")
+    }
+}
+
+impl Default for LLVMTargetTriple {
+    fn default() -> Self {
+        Self::new("unknown-unknown-unknown-unknown".to_string())
+    }
+}

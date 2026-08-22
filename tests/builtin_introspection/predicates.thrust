@@ -1,0 +1,67 @@
+/*
+ * Compile-time type predicates
+ *
+ * isSigned/isUnsigned/isInteger/isFloat/isBool/isChar/isPointer/isArray/
+ * isFixedArray/isStruct/isVoid/isConst/isNumeric/isFunction are resolved
+ * during parsing. Each predicate takes a type argument and returns a bool.
+ */
+
+struct pair_u32 {
+    first: u32,
+    second: u32,
+}
+
+fn main() s32 @public {
+    if isSigned(s32) != true { return 1; }
+    if isSigned(s64) != true { return 2; }
+    if isSigned(u32) != false { return 3; }
+    if isSigned(const s32) != true { return 4; }
+
+    if isUnsigned(u8) != true { return 5; }
+    if isUnsigned(u64) != true { return 6; }
+    if isUnsigned(s32) != false { return 7; }
+
+    if isInteger(s32) != true { return 8; }
+    if isInteger(u64) != true { return 9; }
+    if isInteger(f32) != false { return 10; }
+    if isInteger(bool) != false { return 11; }
+    if isInteger(const u32) != true { return 12; }
+
+    if isFloat(f32) != true { return 13; }
+    if isFloat(f64) != true { return 14; }
+    if isFloat(s32) != false { return 15; }
+
+    if isBool(bool) != true { return 16; }
+    if isBool(s32) != false { return 17; }
+
+    if isChar(char) != true { return 18; }
+    if isChar(u8) != false { return 19; }
+
+    if isPointer(ptr) != true { return 20; }
+    if isPointer(ptr[u32]) != true { return 21; }
+    if isPointer(u32) != false { return 22; }
+
+    if isArray(array[char]) != true { return 23; }
+    if isArray(u32) != false { return 24; }
+
+    if isFixedArray(array[u32; 3]) != true { return 25; }
+    if isFixedArray(array[char]) != false { return 26; }
+
+    if isStruct(pair_u32) != true { return 27; }
+    if isStruct(u32) != false { return 28; }
+
+    if isVoid(void) != true { return 29; }
+    if isVoid(u32) != false { return 30; }
+
+    if isConst(const u32) != true { return 31; }
+    if isConst(u32) != false { return 32; }
+
+    if isNumeric(s32) != true { return 33; }
+    if isNumeric(f64) != true { return 34; }
+    if isNumeric(char) != true { return 35; }
+    if isNumeric(bool) != true { return 36; }
+    if isNumeric(ptr) != false { return 37; }
+    if isNumeric(pair_u32) != false { return 38; }
+
+    return 0;
+}

@@ -1,0 +1,18 @@
+/*
+ * Compile-time conditional wrapping local declarations
+ *
+ * Both branches declare the same names; only the active branch must be
+ * registered in the scope.
+ */
+
+fn main() s32 @public {
+    @if(true) const LOCAL_GOOD: u32 = 6; @else const LOCAL_BAD: u32 = 999;
+    @if(false) const DISCARDED: u32 = 12345; @else const KEPT: u32 = 7;
+    @if(true) static S_GOOD: u32 = 8; @else static S_BAD: u32 = 999;
+
+    if LOCAL_GOOD != 6 { return 1; }
+    if KEPT != 7 { return 2; }
+    if S_GOOD != 8 { return 3; }
+
+    return 0;
+}

@@ -1,0 +1,48 @@
+/*
+ * Runtime ABI builtins
+ *
+ * abiSizeOf/bitSizeOf/abiAlignOf are evaluated by the LLVM backend
+ * using the target data layout, and remain available as keywords.
+ */
+
+struct pair_u64 {
+    first: u64,
+    second: u64,
+}
+
+fn main() s32 @public {
+    var abi_size: u64 = abiSizeOf(pair_u64);
+    var bit_size: u64 = bitSizeOf(pair_u64);
+    var abi_align: u32 = abiAlignOf(pair_u64);
+
+    if abi_size != 16 {
+        return 1;
+    }
+
+    if bit_size != 16 {
+        return 2;
+    }
+
+    if abi_align != 8 {
+        return 3;
+    }
+
+    var u64_abi_size: u64 = abiSizeOf(u64);
+    
+    if u64_abi_size != 8 {
+        return 4;
+    }
+
+    var u64_bit_size: u64 = bitSizeOf(u64);
+
+    if u64_bit_size != 8 {
+        return 5;
+    }
+
+    var u64_abi_align: u32 = abiAlignOf(u64);
+    if u64_abi_align != 8 {
+        return 6;
+    }
+
+    return 0;
+}

@@ -24,7 +24,7 @@ use thrustc_token_type::TokenType;
 
 use crate::{ParserContext, statements::code_block};
 
-pub const SYNC_STATEMENTS: [TokenType; 16] = [
+pub const SYNC_STATEMENTS: [TokenType; 19] = [
     TokenType::Return,
     TokenType::Static,
     TokenType::Const,
@@ -33,6 +33,9 @@ pub const SYNC_STATEMENTS: [TokenType; 16] = [
     TokenType::Enum,
     TokenType::Var,
     TokenType::If,
+    TokenType::IfAttribute,
+    TokenType::ElifAttribute,
+    TokenType::ElseAttribute,
     TokenType::For,
     TokenType::While,
     TokenType::Loop,
@@ -43,13 +46,16 @@ pub const SYNC_STATEMENTS: [TokenType; 16] = [
     TokenType::Defer,
 ];
 
-pub const SYNC_DECLARATIONS: [TokenType; 11] = [
+pub const SYNC_DECLARATIONS: [TokenType; 14] = [
     TokenType::Type,
     TokenType::Struct,
     TokenType::Const,
     TokenType::Static,
     TokenType::Enum,
     TokenType::Fn,
+    TokenType::IfAttribute,
+    TokenType::ElifAttribute,
+    TokenType::ElseAttribute,
     TokenType::AsmFn,
     TokenType::Intrinsic,
     TokenType::GlobalAsm,
@@ -80,6 +86,7 @@ fn synchonize_top_level(ctx: &mut ParserContext) {
     ctx.get_mut_symbols().finish_scopes();
     ctx.get_mut_symbols().end_scope();
     ctx.reset_scope();
+    ctx.clear_current_function_name();
 
     loop {
         if ctx.is_eof() {

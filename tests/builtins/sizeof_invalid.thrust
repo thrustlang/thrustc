@@ -1,0 +1,12 @@
+/*
+ * Invalid: sizeOf with too many arguments
+ *
+ * The sizeOf builtin expects exactly one type argument. Passing more
+ * arguments than the builtin signature allows must produce a
+ * compilation error.
+ */
+
+fn main() s32 @public {
+    var x: u32 = sizeOf(u32, u32);
+    return 0;
+}

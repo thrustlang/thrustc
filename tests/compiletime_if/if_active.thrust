@@ -1,0 +1,30 @@
+/*
+ * Compile-time conditional: @if / @else
+ *
+ * The parser evaluates the conditions at compile time and only emits the
+ * active branch into the AST.
+ */
+
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(true) {
+        count += 1;
+    }
+
+    @if(false) {
+        count += 100;
+    } @else {
+        count += 2;
+    }
+
+    @if(true) {
+        count += 10;
+    } @else {
+        count += 1000;
+    }
+
+    if count != 13 { return 1; }
+
+    return 0;
+}

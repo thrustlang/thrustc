@@ -1,0 +1,37 @@
+/*
+ * Compile-time builtins inside constant declarations
+ *
+ * sizeOf/alignOf are resolved during parsing, so they can be used to
+ * build compile-time constants and constant expressions.
+ */
+
+const U32_SIZE: usize = sizeOf(u32);
+const U64_SIZE: usize = sizeOf(u64);
+const F64_ALIGN: u32 = alignOf(f64);
+
+const U32_IN_U64: usize = sizeOf(u64) / sizeOf(u32);
+const HALF_U64: usize = sizeOf(u64) * 2;
+
+fn main() s32 @public {
+    if U32_SIZE != 4 {
+        return 1;
+    }
+
+    if U64_SIZE != 8 {
+        return 2;
+    }
+
+    if F64_ALIGN != 8 {
+        return 3;
+    }
+
+    if U32_IN_U64 != 2 {
+        return 4;
+    }
+
+    if HALF_U64 != 16 {
+        return 5;
+    }
+
+    return 0;
+}

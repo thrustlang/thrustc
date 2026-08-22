@@ -1,0 +1,28 @@
+/*
+ * Inactive branches are discarded at parse time: they are not typechecked
+ * nor code generated, so platform-specific code that would not compile on
+ * the current target is allowed inside a false branch.
+ */
+
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(false) {
+        var x: u32 = "this is a type error but the branch is inactive";
+        var y: s32 = 1 / 0;
+    } @else {
+        count += 1;
+    }
+
+    @if(false) {
+        count += 100;
+    } @else if(false) {
+        count += 1000;
+    } @else {
+        count += 2;
+    }
+
+    if count != 3 { return 1; }
+
+    return 0;
+}

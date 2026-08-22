@@ -1,0 +1,43 @@
+/*
+ * --disable-default-optimization
+ *
+ * With this flag the backend must:
+ *   1. Skip every optimization pass (also -opt O1/O2/O3/Os/Oz).
+ *   2. Mark every defined function as `optnone noinline nounwind` so LLVM
+ *      is forced to leave them unoptimized even if the emitted IR is
+ *      processed later by opt/clang.
+ *
+ * Usage:
+ *   thrustc --disable-default-optimization -print llvm-ir disable_default_optimization.thrust
+ *
+ * The printed IR must show "optnone", "noinline" and "nounwind"
+ * attributes on `compute` and `main`, and the loop inside `compute`
+ * must remain intact.
+ *
+ * Without the flag (plain `thrustc -print llvm-ir ...`) those attributes
+ * must NOT appear.
+ *
+ * This test also exercises the compound-assignment codegen for mixed
+ * widths (`i += 1` is s32 += a u8 literal): it used to abort inside LLVM
+ * with "Cannot create binary operator with two operands of differing
+ * type!".
+ */
+
+fn compute() s32 {
+    var sum: s32 = 0;
+    var i: s32 = 0;
+
+    while i < 100 {
+        sum += i;
+        i += 1;
+    }
+
+    return sum;
+}
+
+fn main() s32 @public {
+    var result: s32 = compute();
+    result = result * 2 + 1;
+
+    return result;
+}

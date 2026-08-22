@@ -83,6 +83,10 @@ lazy_static! {
         attributes.insert("@constructor", TokenType::Constructor);
         attributes.insert("@destructor", TokenType::Destructor);
 
+        attributes.insert("@if", TokenType::IfAttribute);
+        attributes.insert("@elif", TokenType::ElifAttribute);
+        attributes.insert("@else", TokenType::ElseAttribute);
+
         if compiler_mode.is_unstable_mode() {
             attributes.insert("@promote", TokenType::Promote);
             attributes.insert("@asmAlignStack", TokenType::AsmAlignStack);

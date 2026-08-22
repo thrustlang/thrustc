@@ -1,0 +1,7 @@
+import "../modules/module_d.thrust" as dep;
+import "../modules/module_b.thrust" as simd::vec;
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var x: simd::vec::U8Int = simd::vec::pepito as u8;
+    return (x as s32) + (dep::counter as s32);
+}

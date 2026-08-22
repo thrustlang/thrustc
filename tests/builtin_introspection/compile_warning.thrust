@@ -1,0 +1,11 @@
+/*
+ * Compile-time builtin: compileWarning
+ *
+ * The compileWarning builtin emits a warning at compile time but does not
+ * stop the compilation.
+ */
+
+fn main() s32 @public {
+    compileWarning("this is just a warning");
+    return 0;
+}

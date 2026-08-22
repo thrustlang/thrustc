@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_ast::Ast;
+use thrustc_ast::{Ast, traits::AstStandardExtensions};
 use thrustc_builtins::BuiltinRegistry;
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
@@ -51,6 +51,7 @@ pub struct ParserContext<'parser> {
 
     errors: Vec<CompilationIssue>,
     bugs: Vec<CompilationIssue>,
+    warnings: Vec<CompilationIssue>,
 
     control_context: ControlContext,
     type_context: TypeContext,
@@ -58,6 +59,8 @@ pub struct ParserContext<'parser> {
     options: &'parser CompilerOptions,
     file: &'parser CompilationUnit,
     builtins: &'parser mut BuiltinRegistry,
+
+    current_function_name: Option<&'parser str>,
 
     diagnostician: Diagnostician,
     table: SymbolTable<'parser>,
@@ -101,7 +104,9 @@ impl<'parser> Parser<'parser> {
             let top_node: Result<Ast<'_>, CompilationIssue> = toplevel::parse(&mut ctx);
 
             if let Ok(ast) = top_node {
-                ctx.add_ast_node(ast);
+                if !ast.is_invalid_ast_node() {
+                    ctx.add_ast_node(ast);
+                }
                 continue;
             }
 
@@ -148,6 +153,7 @@ impl<'parser> ParserContext<'parser> {
 
             errors: Vec::with_capacity(u8::MAX as usize),
             bugs: Vec::with_capacity(u8::MAX as usize),
+            warnings: Vec::with_capacity(u8::MAX as usize),
 
             control_context,
             type_context,
@@ -155,6 +161,8 @@ impl<'parser> ParserContext<'parser> {
             options,
             file,
             builtins,
+
+            current_function_name: None,
 
             diagnostician: Diagnostician::new(file, options),
             table,
@@ -181,6 +189,18 @@ impl<'parser> ParserContext<'parser> {
             }
 
             return true;
+        }
+
+        if !self.warnings.is_empty() {
+            let warnings_to_disable: &[CompilationIssueCode] =
+                self.options.get_warnings_to_disable();
+
+            thrustc_errors::filter_warnings(warnings_to_disable, &mut self.warnings);
+
+            for warning in self.warnings.iter() {
+                self.diagnostician
+                    .dispatch_diagnostic(warning, LoggingType::Warning);
+            }
         }
 
         if !self.errors.is_empty() {
@@ -581,8 +601,34 @@ impl<'parser> ParserContext<'parser> {
         args: &[thrustc_builtins::BuiltinArgument],
         span: Span,
     ) -> Result<Ast<'parser>, CompilationIssue> {
-        self.builtins
-            .evaluate(name, args, span, self.options, self.file)
+        let result: Result<(Ast<'parser>, Vec<CompilationIssue>), CompilationIssue> =
+            self.builtins.evaluate(
+                name,
+                args,
+                span,
+                self.current_function_name,
+                self.options,
+                self.file,
+            );
+
+        match result {
+            Ok((ast, warnings)) => {
+                self.warnings.extend(warnings);
+
+                Ok(ast)
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    #[inline(always)]
+    pub fn set_current_function_name(&mut self, name: &'parser str) {
+        self.current_function_name = Some(name);
+    }
+
+    #[inline(always)]
+    pub fn clear_current_function_name(&mut self) {
+        self.current_function_name = None;
     }
 }
 

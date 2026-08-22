@@ -751,50 +751,40 @@ pub fn compile_constant_int_together_cast<'ctx>(
         .cmp(&rhs.get_type().get_bit_width())
     {
         std::cmp::Ordering::Greater => {
-            if signatures.0 || signatures.1 {
-                if let Some(lhs_number) = lhs.get_sign_extended_constant() {
-                    let lhs_new_value: u64 = unsafe { std::mem::transmute::<i64, u64>(lhs_number) };
-
-                    return (rhs.get_type().const_int(lhs_new_value, true), rhs);
-                } else if let Some(rhs_number) = rhs.get_sign_extended_constant() {
-                    let rhs_new_value: u64 = unsafe { std::mem::transmute::<i64, u64>(rhs_number) };
-
-                    return (lhs, lhs.get_type().const_int(rhs_new_value, true));
+            let new_right_value: IntValue = if signatures.1 {
+                match rhs.get_sign_extended_constant() {
+                    Some(rhs_number) => lhs.get_type().const_int(
+                        unsafe { std::mem::transmute::<i64, u64>(rhs_number) },
+                        true,
+                    ),
+                    None => lhs.get_type().const_zero(),
                 }
-            }
+            } else {
+                match rhs.get_zero_extended_constant() {
+                    Some(rhs_number) => lhs.get_type().const_int(rhs_number, true),
+                    None => lhs.get_type().const_zero(),
+                }
+            };
 
-            if let Some(lhs_number) = lhs.get_zero_extended_constant() {
-                return (rhs.get_type().const_int(lhs_number, true), rhs);
-            }
-
-            if let Some(rhs_number) = rhs.get_zero_extended_constant() {
-                return (lhs, lhs.get_type().const_int(rhs_number, true));
-            }
-
-            (rhs.get_type().const_zero(), rhs.get_type().const_zero())
+            (lhs, new_right_value)
         }
         std::cmp::Ordering::Less => {
-            if signatures.0 || signatures.1 {
-                if let Some(rhs_number) = rhs.get_sign_extended_constant() {
-                    let rhs_new_value: u64 = unsafe { std::mem::transmute::<i64, u64>(rhs_number) };
-
-                    return (lhs, lhs.get_type().const_int(rhs_new_value, true));
-                } else if let Some(lhs_number) = lhs.get_sign_extended_constant() {
-                    let lhs_new_value: u64 = unsafe { std::mem::transmute::<i64, u64>(lhs_number) };
-
-                    return (rhs.get_type().const_int(lhs_new_value, true), rhs);
+            let new_left_value: IntValue = if signatures.0 {
+                match lhs.get_sign_extended_constant() {
+                    Some(lhs_number) => rhs.get_type().const_int(
+                        unsafe { std::mem::transmute::<i64, u64>(lhs_number) },
+                        true,
+                    ),
+                    None => rhs.get_type().const_zero(),
                 }
-            }
+            } else {
+                match lhs.get_zero_extended_constant() {
+                    Some(lhs_number) => rhs.get_type().const_int(lhs_number, true),
+                    None => rhs.get_type().const_zero(),
+                }
+            };
 
-            if let Some(rhs_number) = rhs.get_zero_extended_constant() {
-                return (lhs, lhs.get_type().const_int(rhs_number, false));
-            }
-
-            if let Some(lhs_number) = lhs.get_zero_extended_constant() {
-                return (rhs.get_type().const_int(lhs_number, false), rhs);
-            }
-
-            (rhs.get_type().const_zero(), rhs.get_type().const_zero())
+            (new_left_value, rhs)
         }
 
         _ => (lhs, rhs),
@@ -816,7 +806,7 @@ pub fn compile_int_together_cast<'ctx>(
         .cmp(&right.get_type().get_bit_width())
     {
         std::cmp::Ordering::Greater => {
-            let new_right_value: IntValue = if signatures.0 || signatures.1 {
+            let new_right_value: IntValue = if signatures.1 {
                 llvm_builder
                     .build_int_cast_sign_flag(right, left.get_type(), true, "")
                     .unwrap_or_else(|_| {
@@ -830,7 +820,7 @@ pub fn compile_int_together_cast<'ctx>(
                     })
             } else {
                 llvm_builder
-                    .build_int_cast(right, left.get_type(), "")
+                    .build_int_cast_sign_flag(right, left.get_type(), false, "")
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
                             context,
@@ -845,7 +835,7 @@ pub fn compile_int_together_cast<'ctx>(
             (left, new_right_value)
         }
         std::cmp::Ordering::Less => {
-            let new_left_value: IntValue = if signatures.0 || signatures.1 {
+            let new_left_value: IntValue = if signatures.0 {
                 llvm_builder
                     .build_int_cast_sign_flag(left, right.get_type(), true, "")
                     .unwrap_or_else(|_| {
@@ -859,7 +849,7 @@ pub fn compile_int_together_cast<'ctx>(
                     })
             } else {
                 llvm_builder
-                    .build_int_cast(left, right.get_type(), "")
+                    .build_int_cast_sign_flag(left, right.get_type(), false, "")
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
                             context,

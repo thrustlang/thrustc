@@ -1,0 +1,16 @@
+/*
+ * Conditional standard library imports: @else if chain
+ *
+ * On x86_64-linux, isLinux() is true so the @else if branch imports
+ * std::testmod and std_val resolves.
+ */
+
+@if(isWindows()) import std::other only { std_val };
+@else if(isLinux()) import std::testmod only { std_val };
+@else import std::other only { std_val };
+
+fn main() s32 @public {
+    if std_val() != 7 { return 1; }
+
+    return 0;
+}

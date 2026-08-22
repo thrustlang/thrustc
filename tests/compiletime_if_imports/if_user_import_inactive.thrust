@@ -1,0 +1,12 @@
+/*
+ * Invalid: a false conditional skips the user import
+ *
+ * Since the import is discarded, from_mod_a is not in scope and the
+ * reference must fail at compile time.
+ */
+
+@if(false) import "mod_a.thrust" only { from_mod_a };
+
+fn main() s32 @public {
+    return from_mod_a();
+}

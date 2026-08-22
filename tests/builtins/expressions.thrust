@@ -1,0 +1,39 @@
+/*
+ * Compile-time builtins in expressions
+ *
+ * The result of sizeOf/alignOf is a literal, so it participates in
+ * normal constant arithmetic and can be stored in locals.
+ */
+
+fn main() s32 @public {
+    var bytes: usize = sizeOf(u32);
+    var alignment: u32 = alignOf(u32);
+
+    if bytes != 4 {
+        return 1;
+    }
+
+    if alignment != 4 {
+        return 2;
+    }
+
+    var total: usize = sizeOf(u32) + sizeOf(u64);
+    
+    if total != 12 {
+        return 3;
+    }
+
+    var fits: bool = sizeOf(u64) >= sizeOf(u32);
+    
+    if !fits {
+        return 4;
+    }
+
+    var size_of_ptr: usize = sizeOf(ptr);
+
+    if size_of_ptr != sizeOf(usize) {
+        return 5;
+    }
+
+    return 0;
+}
