@@ -1,0 +1,16 @@
+/*
+ * Fixed array size referencing a module-internal constant through a
+ * qualified type alias.
+ */
+
+import "mod_internal.thrust" as m;
+
+fn main() s32 @public {
+    if sizeOf(m::Arr) != 8 { return 1; }
+
+    var arr: m::Arr;
+
+    if sizeOf(m::Arr) != 8 { return 2; }
+
+    return 0;
+}

@@ -100,6 +100,9 @@ impl<'parser> Parser<'parser> {
 
         toplevel::parse_forward(&mut ctx);
 
+        // Clear forward-pass errors: it pre-registers symbols and re-reports ordering artifacts on the real pass below.
+        ctx.errors.clear();
+
         while !ctx.is_eof() {
             let top_node: Result<Ast<'_>, CompilationIssue> = toplevel::parse(&mut ctx);
 

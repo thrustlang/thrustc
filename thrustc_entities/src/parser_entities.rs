@@ -18,6 +18,7 @@
 */
 
 use thrustc_ast::{
+    Ast,
     ast_logic_data::EnumData,
     ast_metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 };
@@ -73,7 +74,7 @@ pub type FoundSymbolId<'parser> = (
 pub type CustomTypeSymbol<'ctx> = (Type, ThrustAttributes);
 pub type EnumSymbol<'ctx> = (EnumData<'ctx>, ThrustAttributes);
 pub type StaticSymbol<'parser> = (Type, StaticMetadata, ThrustAttributes);
-pub type ConstantSymbol<'parser> = (Type, ThrustAttributes);
+pub type ConstantSymbol<'parser> = (Type, ThrustAttributes, Option<Ast<'parser>>);
 
 pub type LLISymbol<'parser> = (Type, Span);
 pub type LocalSymbol<'parser> = (Type, LocalMetadata, Span);

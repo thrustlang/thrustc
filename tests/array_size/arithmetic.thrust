@@ -1,0 +1,11 @@
+/*
+ * Fixed array size from compile-time constant arithmetic.
+ */
+
+fn main() s32 @public {
+    if sizeOf(array[u8; 4 + 4]) != 8 { return 1; }
+    if sizeOf(array[u8; (6 * 4) / 2]) != 12 { return 2; }
+    if sizeOf(array[u8; 2 * 4 - 2]) != 6 { return 3; }
+
+    return 0;
+}

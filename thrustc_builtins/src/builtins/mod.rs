@@ -17,11 +17,14 @@
 
 mod alignof;
 mod compile_time;
+mod compiler;
 mod layout;
 mod location;
 mod predicates;
 mod sizeof;
+mod strings;
 mod target;
+mod typeinfo;
 
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
@@ -57,6 +60,16 @@ pub fn register_default_builtins(registry: &mut BuiltinRegistry) {
 
     registry.register_function(layout::TypeWidth);
     registry.register_function(layout::FieldCount);
+
+    registry.register_function(typeinfo::FixedArraySize);
+    registry.register_function(typeinfo::IsSameType);
+    registry.register_function(typeinfo::IsPtrLike);
+    registry.register_function(typeinfo::IsFixedArrayOfSize);
+
+    registry.register_function(compiler::CompilerVersion);
+    registry.register_function(compiler::DebugBuild);
+
+    registry.register_function(strings::StringLength);
 
     registry.register_function(target::TargetOS);
     registry.register_function(target::TargetArch);

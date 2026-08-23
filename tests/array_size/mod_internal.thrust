@@ -1,0 +1,7 @@
+/*
+ * Module using its own constant inside a type alias.
+ */
+
+const N: u32 @public = 8;
+
+type Arr @public = array[u8; N];

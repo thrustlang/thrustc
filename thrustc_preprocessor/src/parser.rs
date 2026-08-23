@@ -42,6 +42,7 @@ pub struct ModuleParser<'module_parser> {
     builtins: &'module_parser BuiltinRegistry,
 
     options: &'module_parser CompilerOptions,
+    file: &'module_parser CompilationUnit,
     diagnostician: Diagnostician,
 
     current: usize,
@@ -54,7 +55,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
         name: String,
         tokens: Vec<Token>,
         options: &'module_parser CompilerOptions,
-        file: &CompilationUnit,
+        file: &'module_parser CompilationUnit,
         visited: HashSet<PathBuf>,
         registry: crate::registry::SharedModuleRegistry,
         builtins: &'module_parser BuiltinRegistry,
@@ -71,6 +72,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
 
             diagnostician: Diagnostician::new(file, options),
             options,
+            file,
 
             current: 0,
             type_depth: 0,
@@ -166,8 +168,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
                 self.module.add_symbol(symbol);
             }
             TokenType::Const => {
-                let symbol: Symbol = submodule_parsing::constant::parse_constant(self)?;
-                self.module.add_symbol(symbol);
+                self.advance_until(TokenType::SemiColon)?;
             }
             _ => {
                 let _ = self.advance();
@@ -193,7 +194,11 @@ impl<'module_parser> ModuleParser<'module_parser> {
             TokenType::Fn => {
                 self.skip_signature_or_body()?;
             }
-            TokenType::Static | TokenType::Const => {
+            TokenType::Const => {
+                let symbol: Symbol = submodule_parsing::constant::parse_constant(self)?;
+                self.module.add_symbol(symbol);
+            }
+            TokenType::Static => {
                 self.advance_until(TokenType::SemiColon)?;
             }
             _ => {
@@ -456,6 +461,11 @@ impl<'module_parser> ModuleParser<'module_parser> {
     #[inline]
     pub fn get_options(&self) -> &'module_parser CompilerOptions {
         self.options
+    }
+
+    #[inline]
+    pub fn get_file(&self) -> &'module_parser CompilationUnit {
+        self.file
     }
 
     #[inline]

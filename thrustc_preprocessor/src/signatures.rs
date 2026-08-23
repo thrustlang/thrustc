@@ -19,6 +19,7 @@
 
 use thrustc_ast_modificators::Modificators;
 use thrustc_attributes::ThrustAttributes;
+use thrustc_builtins::BuiltinValue;
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
@@ -50,6 +51,7 @@ pub enum Signature {
     Constant {
         kind: Type,
         invalid_kind: Type,
+        value: Option<BuiltinValue>,
         attributes: ThrustAttributes,
         modificators: Modificators,
         span: Span,

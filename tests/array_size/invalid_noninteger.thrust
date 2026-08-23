@@ -1,0 +1,9 @@
+/*
+ * Invalid: the fixed array size must fold to an integer value.
+ */
+
+fn main() s32 @public {
+    var arr: array[u8; 2.5];
+
+    return 0;
+}

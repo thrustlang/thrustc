@@ -1,0 +1,15 @@
+/*
+ * Fixed array size referencing a global constant.
+ */
+
+const N: u32 = 8;
+
+fn main() s32 @public {
+    if sizeOf(array[u8; N]) != 8 { return 1; }
+
+    var arr: array[u8; N];
+
+    if sizeOf(array[u8; N]) != 8 { return 2; }
+
+    return 0;
+}

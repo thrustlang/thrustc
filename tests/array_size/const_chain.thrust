@@ -1,0 +1,14 @@
+/*
+ * Fixed array size referencing a constant that itself references
+ * another constant.
+ */
+
+const A: u32 = 4;
+const B: u32 = A + 4;
+
+fn main() s32 @public {
+    if sizeOf(array[u8; A]) != 4 { return 1; }
+    if sizeOf(array[u8; B]) != 8 { return 2; }
+
+    return 0;
+}

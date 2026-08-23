@@ -1,0 +1,10 @@
+/*
+ * Compile-time builtins: stringLength.
+ */
+
+fn main() s32 @public {
+    if stringLength("hello") != 5 { return 1; }
+    if stringLength("") != 0 { return 2; }
+
+    return 0;
+}

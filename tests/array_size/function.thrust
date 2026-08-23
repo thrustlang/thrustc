@@ -1,0 +1,15 @@
+/*
+ * Fixed array size in a function parameter type.
+ */
+
+const N: u32 = 4;
+
+fn len(arr: array[u8; N]) s32 @public {
+    return N as s32;
+}
+
+fn main() s32 @public {
+    if sizeOf(array[u8; N]) != 4 { return 1; }
+
+    return 0;
+}

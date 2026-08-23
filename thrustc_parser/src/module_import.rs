@@ -141,15 +141,21 @@ pub fn build_qualified_expression<'parser>(
         kind,
         attributes,
         modificators,
+        value,
         ..
     }) = self::resolve_signature(ctx, access, symbol, Variant::Constant)
     {
         if ctx.get_symbols().has_global_constant(symbol) {
             self::check_qualified_collision(ctx, symbol, access, origin.as_ref(), span)?;
         } else {
-            let _ = ctx
-                .get_mut_symbols()
-                .new_global_constant(symbol, (kind.clone(), attributes.clone()));
+            let _ = ctx.get_mut_symbols().new_global_constant(
+                symbol,
+                (
+                    kind.clone(),
+                    attributes.clone(),
+                    value.as_ref().map(|v| v.to_ast(kind.clone(), span)),
+                ),
+            );
 
             if let Some(path) = origin.as_ref() {
                 ctx.get_mut_symbols()
@@ -295,6 +301,7 @@ pub(crate) fn synthesize_only_import<'parser>(
                 kind,
                 attributes,
                 modificators,
+                value,
                 ..
             } => {
                 if ctx.get_symbols().has_global_constant(&symbol.name) {
@@ -302,9 +309,14 @@ pub(crate) fn synthesize_only_import<'parser>(
                     continue;
                 }
 
-                let _ = ctx
-                    .get_mut_symbols()
-                    .new_global_constant(&symbol.name, (kind.clone(), attributes.clone()));
+                let _ = ctx.get_mut_symbols().new_global_constant(
+                    &symbol.name,
+                    (
+                        kind.clone(),
+                        attributes.clone(),
+                        value.as_ref().map(|v| v.to_ast(kind.clone(), span)),
+                    ),
+                );
 
                 ctx.get_mut_symbols()
                     .record_import_origin(&symbol.name, origin.clone());

@@ -1,0 +1,12 @@
+/*
+ * Invalid: a module constant used before its declaration in the same
+ * module must be rejected.
+ */
+
+import "mod_forward_ref.thrust" as m;
+
+fn main() s32 @public {
+    var a: m::Arr;
+
+    return 0;
+}

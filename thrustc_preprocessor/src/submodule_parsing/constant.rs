@@ -18,6 +18,7 @@
 */
 
 use thrustc_attributes::ThrustAttributes;
+use thrustc_builtins::BuiltinValue;
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -27,7 +28,7 @@ use thrustc_typesystem::Type;
 use crate::{
     parser::ModuleParser,
     signatures::{Signature, Symbol, Variant},
-    submodule_parsing::{self, attributes, modificators, typegeneration},
+    submodule_parsing::{self, attributes, expressions, modificators, typegeneration},
 };
 
 pub fn parse_constant<'module_parser>(
@@ -62,13 +63,21 @@ pub fn parse_constant<'module_parser>(
 
     ctx.consume(TokenType::Eq)?;
 
-    ctx.advance_until(TokenType::SemiColon)?;
+    let value: Option<BuiltinValue> = match expressions::parse_expr(ctx) {
+        Ok(expression) => thrustc_builtins::value::fold(&expression),
+        Err(()) => {
+            ctx.advance_until(TokenType::SemiColon)?;
+
+            None
+        }
+    };
 
     let symbol: Symbol = Symbol {
         name,
         signature: Signature::Constant {
             kind: r#type,
             invalid_kind: Type::Void { span },
+            value,
             span,
             attributes,
             modificators,

@@ -55,6 +55,13 @@ impl BuiltinValue {
 }
 
 pub fn fold(ast: &Ast) -> Option<BuiltinValue> {
+    self::fold_resolving(ast, &mut |_, _| None)
+}
+
+pub fn fold_resolving(
+    ast: &Ast,
+    resolve: &mut dyn FnMut(&str, Span) -> Option<BuiltinValue>,
+) -> Option<BuiltinValue> {
     match ast {
         Ast::Integer { value, .. } => Some(BuiltinValue::Integer(*value)),
         Ast::Float { value, .. } => Some(BuiltinValue::Float(*value)),
@@ -63,25 +70,26 @@ pub fn fold(ast: &Ast) -> Option<BuiltinValue> {
         Ast::CString { bytes, .. } => Some(BuiltinValue::CString(bytes.clone())),
         Ast::CNString { bytes, .. } => Some(BuiltinValue::CNString(bytes.clone())),
         Ast::NullPtr { .. } => Some(BuiltinValue::NullPtr),
-        Ast::Group { node, .. } => fold(node),
+        Ast::Group { node, .. } => self::fold_resolving(node, resolve),
         Ast::BinaryOp {
             left,
             operator,
             right,
             ..
         } => {
-            let left: BuiltinValue = fold(left)?;
-            let right: BuiltinValue = fold(right)?;
+            let left: BuiltinValue = self::fold_resolving(left, resolve)?;
+            let right: BuiltinValue = self::fold_resolving(right, resolve)?;
 
             fold_binary(*operator, left, right)
         }
         Ast::UnaryOp {
             operator, node, before, ..
         } => {
-            let value: BuiltinValue = fold(node)?;
+            let value: BuiltinValue = self::fold_resolving(node, resolve)?;
 
             fold_unary(*operator, value, *before)
         }
+        Ast::Reference { name, span, .. } => resolve(name, *span),
         _ => None,
     }
 }
@@ -89,9 +97,9 @@ pub fn fold(ast: &Ast) -> Option<BuiltinValue> {
 fn fold_binary(operator: TokenType, left: BuiltinValue, right: BuiltinValue) -> Option<BuiltinValue> {
     match (left, right) {
         (BuiltinValue::Integer(left), BuiltinValue::Integer(right)) => match operator {
-            TokenType::Plus => Some(BuiltinValue::Integer(left.wrapping_add(right))),
-            TokenType::Minus => Some(BuiltinValue::Integer(left.wrapping_sub(right))),
-            TokenType::Star => Some(BuiltinValue::Integer(left.wrapping_mul(right))),
+            TokenType::Plus => Some(BuiltinValue::Integer(left.saturating_add(right))),
+            TokenType::Minus => Some(BuiltinValue::Integer(left.saturating_sub(right))),
+            TokenType::Star => Some(BuiltinValue::Integer(left.saturating_mul(right))),
             TokenType::Slash => Some(BuiltinValue::Integer(left.checked_div(right)?)),
             TokenType::Arith => Some(BuiltinValue::Integer(left.checked_rem(right)?)),
             TokenType::LShift => Some(BuiltinValue::Integer(left.wrapping_shl(right as u32))),

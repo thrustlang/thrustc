@@ -18,6 +18,7 @@
 */
 
 use thrustc_ast::{
+    Ast,
     ast_logic_data::{EnumData, EnumDataField, StructureData},
     ast_metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 };
@@ -86,6 +87,7 @@ pub trait FunctionParameterSymbolExtensions {
 
 pub trait ConstantSymbolExtensions {
     fn get_type(&self) -> Type;
+    fn get_value(&self) -> Option<Ast<'_>>;
 }
 
 pub trait LLISymbolExtensions {

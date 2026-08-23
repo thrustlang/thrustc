@@ -1,0 +1,13 @@
+/*
+ * Fixed array size inside a type alias.
+ */
+
+const N: u32 = 8;
+
+type Bytes = array[u8; N];
+
+fn main() s32 @public {
+    if sizeOf(Bytes) != 8 { return 1; }
+
+    return 0;
+}

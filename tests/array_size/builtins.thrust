@@ -1,0 +1,11 @@
+/*
+ * Fixed array size from compile-time builtins (sizeOf/alignOf).
+ */
+
+fn main() s32 @public {
+    if sizeOf(array[u8; sizeOf(u32)]) != 4 { return 1; }
+    if sizeOf(array[u8; sizeOf(u64) / sizeOf(u16)]) != 4 { return 2; }
+    if sizeOf(array[u8; alignOf(u64)]) != 8 { return 3; }
+
+    return 0;
+}

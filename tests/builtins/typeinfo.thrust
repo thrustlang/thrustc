@@ -1,0 +1,20 @@
+/*
+ * Compile-time builtins: fixedArraySize, isSameType, isPtrLike, isFixedArrayOfSize.
+ */
+
+fn main() s32 @public {
+    if fixedArraySize(array[u8; 4]) != 4 { return 1; }
+    if fixedArraySize(array[u32; 8]) != 8 { return 2; }
+
+    if isSameType(u32, u32) != true { return 3; }
+    if isSameType(u32, s32) != false { return 4; }
+
+    if isPtrLike(ptr[u32]) != true { return 5; }
+    if isPtrLike(u32) != false { return 6; }
+
+    if isFixedArrayOfSize(array[u8; 4], 4) != true { return 7; }
+    if isFixedArrayOfSize(array[u8; 4], 8) != false { return 8; }
+    if isFixedArrayOfSize(array[u8], 4) != false { return 9; }
+
+    return 0;
+}

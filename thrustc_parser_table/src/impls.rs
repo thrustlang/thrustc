@@ -20,6 +20,7 @@
 use std::path::PathBuf;
 
 use thrustc_ast::{
+    Ast,
     ast_logic_data::{ConstructorData, EnumData, StructureData},
     ast_metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 };
@@ -312,6 +313,11 @@ impl ConstantSymbolExtensions for ConstantSymbol<'_> {
     #[inline]
     fn get_type(&self) -> Type {
         self.0.clone()
+    }
+
+    #[inline]
+    fn get_value(&self) -> Option<Ast<'_>> {
+        self.2.clone()
     }
 }
 

@@ -1,0 +1,9 @@
+/*
+ * Invalid: the fixed array size must fit in an unsigned 32-bit integer.
+ */
+
+fn main() s32 @public {
+    var arr: array[u8; 4294967296];
+
+    return 0;
+}

@@ -1,0 +1,12 @@
+/*
+ * Invalid: the fixed array size must be a compile-time constant.
+ * A runtime variable is rejected.
+ */
+
+fn main() s32 @public {
+    var n: u32 = 4;
+
+    var arr: array[u8; n];
+
+    return 0;
+}

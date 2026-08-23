@@ -1,0 +1,9 @@
+/*
+ * Fixed array size from an integer literal.
+ */
+
+fn main() s32 @public {
+    if sizeOf(array[u8; 4]) != 4 { return 1; }
+
+    return 0;
+}

@@ -1,0 +1,5 @@
+/*
+ * Module exporting a constant used as a fixed array size.
+ */
+
+const N: u32 @public = 8;

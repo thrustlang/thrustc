@@ -1,0 +1,7 @@
+/*
+ * Module using a constant before its declaration.
+ */
+
+type Arr @public = array[u8; LATE];
+
+const LATE: u32 @public = 8;

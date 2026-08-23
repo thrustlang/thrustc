@@ -17,11 +17,9 @@
 
 */
 
-use thrustc_ast::{
-    Ast,
-    traits::{AstGetType, AstStandardExtensions},
-};
+use thrustc_ast::Ast;
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
+use thrustc_builtins::BuiltinValue;
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
@@ -30,7 +28,6 @@ use thrustc_token_type::TokenType;
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::{
     Type,
-    traits::TypeIsExtensions,
     type_metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
     type_modificators::{
         FunctionReferenceTypeModificator, GCCFunctionReferenceTypeModificator,
@@ -244,32 +241,20 @@ fn parse_array_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> 
         ctx.consume(TokenType::SemiColon)?;
 
         let size: Ast = expressions::parse_expr(ctx)?;
-        let size_type: &Type = size.get_value_type().map_err(|_| ())?;
 
-        if !size.is_integer() {
-            ctx.add_error(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "Expected literal integer value as a size indicator.".into(),
-                "You should pass an integer expression.".into(),
-                None,
-                span,
-            ));
-        }
+        let size: u64 = match thrustc_builtins::value::fold(&size) {
+            Some(BuiltinValue::Integer(value)) => value,
+            _ => {
+                ctx.add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0001,
+                    "Expected constant integer value as a size indicator.".into(),
+                    "You should pass a constant integer expression.".into(),
+                    None,
+                    span,
+                ));
 
-        if !size_type.is_unsigned_integer_type() || !size_type.is_lesseq_unsigned32bit_integer() {
-            ctx.add_error(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "Expected unsigned integer value less than or equal to 32 bits.".into(),
-                "You should pass an integer expression.".into(),
-                None,
-                span,
-            ));
-        }
-
-        let size: u64 = if let Ast::Integer { value, .. } = size {
-            value
-        } else {
-            0
+                0
+            }
         };
 
         let array_size: Result<u32, std::num::TryFromIntError> = u32::try_from(size);
@@ -281,54 +266,7 @@ fn parse_array_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> 
         if ctx.check(TokenType::Comma) {
             ctx.consume(TokenType::Comma)?;
 
-            let memory_address_expr: Ast<'_> = expressions::parse_expr(ctx)?;
-            let memory_address_type: &Type =
-                memory_address_expr.get_value_type().map_err(|_| ())?;
-
-            if !memory_address_expr.is_integer() {
-                ctx.add_error(CompilationIssue::Error(
-                    CompilationIssueCode::E0001,
-                    "Expected literal integer value".into(),
-                    "You should pass an integer expression.".into(),
-                    None,
-                    span,
-                ));
-            }
-
-            if !memory_address_type.is_unsigned_integer_type()
-                || !memory_address_type.is_lesseq_unsigned32bit_integer()
-            {
-                ctx.add_error(CompilationIssue::Error(
-                    CompilationIssueCode::E0001,
-                    "Expected unsigned integer value.".into(),
-                    "You should pass a unsigned integer value less than or equal to 32 bits."
-                        .into(),
-                    None,
-                    span,
-                ));
-            }
-
-            let memery_address_unprocessed: u64 =
-                if let Ast::Integer { value, .. } = memory_address_expr {
-                    value
-                } else {
-                    0
-                };
-
-            let memory_address_value: Result<u16, std::num::TryFromIntError> =
-                u16::try_from(memery_address_unprocessed);
-
-            if memory_address_value.is_err() {
-                ctx.add_error(CompilationIssue::Error(
-                    CompilationIssueCode::E0001,
-                    "Expected literal integer value".into(),
-                    "You should pass an integer expression.".into(),
-                    None,
-                    span,
-                ));
-            }
-
-            address_space = Some(memory_address_value.unwrap_or_default());
+            address_space = self::parse_memory_address(ctx, span)?;
         }
 
         ctx.consume(TokenType::RBracket)?;
@@ -344,52 +282,7 @@ fn parse_array_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> 
     if ctx.check(TokenType::Comma) {
         ctx.consume(TokenType::Comma)?;
 
-        let memory_address_expr: Ast<'_> = expressions::parse_expr(ctx)?;
-        let memory_address_type: &Type = memory_address_expr.get_value_type().map_err(|_| ())?;
-
-        if !memory_address_expr.is_integer() {
-            ctx.add_error(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "Expected literal integer value".into(),
-                "You should pass an integer expression.".into(),
-                None,
-                span,
-            ));
-        }
-
-        if !memory_address_type.is_unsigned_integer_type()
-            || !memory_address_type.is_lesseq_unsigned32bit_integer()
-        {
-            ctx.add_error(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "Expected unsigned integer value.".into(),
-                "You should pass a unsigned integer value less than or equal to 32 bits.".into(),
-                None,
-                span,
-            ));
-        }
-
-        let memery_address_unprocessed: u64 =
-            if let Ast::Integer { value, .. } = memory_address_expr {
-                value
-            } else {
-                0
-            };
-
-        let memory_address_value: Result<u16, std::num::TryFromIntError> =
-            u16::try_from(memery_address_unprocessed);
-
-        if memory_address_value.is_err() {
-            ctx.add_error(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "Expected literal integer value".into(),
-                "You should pass an integer expression.".into(),
-                None,
-                span,
-            ));
-        }
-
-        address_space = Some(memory_address_value.unwrap_or_default());
+        address_space = self::parse_memory_address(ctx, span)?;
     }
 
     ctx.consume(TokenType::RBracket)?;
@@ -423,55 +316,7 @@ fn parse_pointer_type(
         if ctx.check(TokenType::Comma) {
             ctx.consume(TokenType::Comma)?;
 
-            let memory_address_expr: Ast<'_> = expressions::parse_expr(ctx)?;
-
-            let memory_address_type: &Type =
-                memory_address_expr.get_value_type().map_err(|_| ())?;
-
-            if !memory_address_expr.is_integer() {
-                ctx.add_error(CompilationIssue::Error(
-                    CompilationIssueCode::E0001,
-                    "Expected literal integer value".into(),
-                    "You should pass an integer expression.".into(),
-                    None,
-                    span,
-                ));
-            }
-
-            if !memory_address_type.is_unsigned_integer_type()
-                || !memory_address_type.is_lesseq_unsigned32bit_integer()
-            {
-                ctx.add_error(CompilationIssue::Error(
-                    CompilationIssueCode::E0001,
-                    "Expected unsigned integer value.".into(),
-                    "You should pass a unsigned integer value less than or equal to 32 bits."
-                        .into(),
-                    None,
-                    span,
-                ));
-            }
-
-            let memery_address_unprocessed: u64 =
-                if let Ast::Integer { value, .. } = memory_address_expr {
-                    value
-                } else {
-                    0
-                };
-
-            let memory_address_value: Result<u16, std::num::TryFromIntError> =
-                u16::try_from(memery_address_unprocessed);
-
-            if memory_address_value.is_err() {
-                ctx.add_error(CompilationIssue::Error(
-                    CompilationIssueCode::E0001,
-                    "Expected literal integer value".into(),
-                    "You should pass an integer expression.".into(),
-                    None,
-                    span,
-                ));
-            }
-
-            address_space = Some(memory_address_value.unwrap_or_default());
+            address_space = self::parse_memory_address(ctx, span)?;
         }
 
         ctx.consume(TokenType::RBracket)?;
@@ -486,4 +331,37 @@ fn parse_pointer_type(
     } else {
         Err(())
     }
+}
+
+fn parse_memory_address(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Option<u16>, ()> {
+    let memory_address_expr: Ast<'_> = expressions::parse_expr(ctx)?;
+
+    let unprocessed: u64 = match thrustc_builtins::value::fold(&memory_address_expr) {
+        Some(BuiltinValue::Integer(value)) => value,
+        _ => {
+            ctx.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Expected constant integer value as a memory address.".into(),
+                "You should pass a constant integer expression.".into(),
+                None,
+                span,
+            ));
+
+            0
+        }
+    };
+
+    let value: Result<u16, std::num::TryFromIntError> = u16::try_from(unprocessed);
+
+    if value.is_err() {
+        ctx.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0001,
+            "Expected constant integer value as a memory address.".into(),
+            "You should pass a constant integer expression.".into(),
+            None,
+            span,
+        ));
+    }
+
+    Ok(Some(value.unwrap_or_default()))
 }

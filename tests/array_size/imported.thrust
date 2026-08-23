@@ -1,0 +1,11 @@
+/*
+ * Fixed array size referencing an imported (unqualified) module constant.
+ */
+
+import "mod_const.thrust" only { N };
+
+fn main() s32 @public {
+    if sizeOf(array[u8; N]) != 8 { return 1; }
+
+    return 0;
+}
