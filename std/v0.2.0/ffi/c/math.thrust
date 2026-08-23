@@ -1,0 +1,97 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+fn sin(x: f64)                                f64 @public @extern("sin")       @convention("C");
+fn cos(x: f64)                                f64 @public @extern("cos")       @convention("C");
+fn tan(x: f64)                                f64 @public @extern("tan")       @convention("C");
+fn asin(x: f64)                               f64 @public @extern("asin")      @convention("C");
+fn acos(x: f64)                               f64 @public @extern("acos")      @convention("C");
+fn atan(x: f64)                               f64 @public @extern("atan")      @convention("C");
+fn atan2(y: f64, x: f64)                      f64 @public @extern("atan2")     @convention("C");
+
+fn sinh(x: f64)                               f64 @public @extern("sinh")      @convention("C");
+fn cosh(x: f64)                               f64 @public @extern("cosh")      @convention("C");
+fn tanh(x: f64)                               f64 @public @extern("tanh")      @convention("C");
+fn asinh(x: f64)                              f64 @public @extern("asinh")     @convention("C");
+fn acosh(x: f64)                              f64 @public @extern("acosh")     @convention("C");
+fn atanh(x: f64)                              f64 @public @extern("atanh")     @convention("C");
+
+fn exp(x: f64)                                f64 @public @extern("exp")       @convention("C");
+fn exp2(x: f64)                               f64 @public @extern("exp2")      @convention("C");
+fn expm1(x: f64)                              f64 @public @extern("expm1")     @convention("C");
+fn log(x: f64)                                f64 @public @extern("log")       @convention("C");
+fn log2(x: f64)                               f64 @public @extern("log2")      @convention("C");
+fn log10(x: f64)                              f64 @public @extern("log10")     @convention("C");
+fn log1p(x: f64)                              f64 @public @extern("log1p")     @convention("C");
+fn logb(x: f64)                               f64 @public @extern("logb")      @convention("C");
+fn ldexp(x: f64, exponent: s32)               f64 @public @extern("ldexp")     @convention("C");
+fn frexp(x: f64, exponent: ptr[s32])          f64 @public @extern("frexp")     @convention("C");
+fn modf(x: f64, integer_part: ptr[f64])       f64 @public @extern("modf")      @convention("C");
+
+fn pow(x: f64, y: f64)                        f64 @public @extern("pow")       @convention("C");
+fn sqrt(x: f64)                               f64 @public @extern("sqrt")      @convention("C");
+fn cbrt(x: f64)                               f64 @public @extern("cbrt")      @convention("C");
+fn hypot(x: f64, y: f64)                      f64 @public @extern("hypot")     @convention("C");
+fn pown(x: f64, n: s64)                       f64 @public @extern("pown")      @convention("C");
+fn powr(x: f64, y: f64)                       f64 @public @extern("powr")      @convention("C");
+fn rootn(x: f64, n: s64)                      f64 @public @extern("rootn")     @convention("C");
+fn rsqrt(x: f64)                              f64 @public @extern("rsqrt")     @convention("C");
+fn compoundn(x: f64, n: s64)                  f64 @public @extern("compoundn") @convention("C");
+
+fn ceil(x: f64)                               f64 @public @extern("ceil")      @convention("C");
+fn floor(x: f64)                              f64 @public @extern("floor")     @convention("C");
+fn round(x: f64)                              f64 @public @extern("round")     @convention("C");
+fn trunc(x: f64)                              f64 @public @extern("trunc")     @convention("C");
+fn rint(x: f64)                               f64 @public @extern("rint")      @convention("C");
+fn nearbyint(x: f64)                          f64 @public @extern("nearbyint") @convention("C");
+fn fmod(x: f64, y: f64)                       f64 @public @extern("fmod")      @convention("C");
+fn remainder(x: f64, y: f64)                  f64 @public @extern("remainder") @convention("C");
+fn remquo(x: f64, y: f64, quotient: ptr[s32]) f64 @public @extern("remquo")    @convention("C");
+
+fn fabs(x: f64)                               f64 @public @extern("fabs")      @convention("C");
+fn fmin(x: f64, y: f64)                       f64 @public @extern("fmin")      @convention("C");
+fn fmax(x: f64, y: f64)                       f64 @public @extern("fmax")      @convention("C");
+fn fdim(x: f64, y: f64)                       f64 @public @extern("fdim")      @convention("C");
+fn copysign(x: f64, y: f64)                   f64 @public @extern("copysign")  @convention("C");
+fn fma(x: f64, y: f64, z: f64)                f64 @public @extern("fma")       @convention("C");
+
+fn nan(tag: CString)                          f64 @public @extern("nan")       @convention("C");
+fn nextafter(x: f64, y: f64)                  f64 @public @extern("nextafter") @convention("C");
+fn scalbn(x: f64, n: s32)                     f64 @public @extern("scalbn")    @convention("C");
+fn scalbln(x: f64, n: s64)                    f64 @public @extern("scalbln")   @convention("C");
+
+fn ilogb(x: f64)                              s32 @public @extern("ilogb")     @convention("C");
+fn llogb(x: f64)                              s64 @public @extern("llogb")     @convention("C");
+fn lrint(x: f64)                              s64 @public @extern("lrint")     @convention("C");
+fn llrint(x: f64)                             s64 @public @extern("llrint")    @convention("C");
+fn lround(x: f64)                             s64 @public @extern("lround")    @convention("C");
+fn llround(x: f64)                            s64 @public @extern("llround")   @convention("C");
+
+fn erf(x: f64)                                f64 @public @extern("erf")       @convention("C");
+fn erfc(x: f64)                               f64 @public @extern("erfc")      @convention("C");
+fn tgamma(x: f64)                             f64 @public @extern("tgamma")    @convention("C");
+fn lgamma(x: f64)                             f64 @public @extern("lgamma")    @convention("C");
+fn logGammaR(x: f64, sign: ptr[s32])          f64 @public @extern("lgamma_r")  @convention("C");
+
+fn j0(x: f64)                                 f64 @public @extern("j0")        @convention("C");
+fn j1(x: f64)                                 f64 @public @extern("j1")        @convention("C");
+fn jn(n: s32, x: f64)                         f64 @public @extern("jn")        @convention("C");
+fn y0(x: f64)                                 f64 @public @extern("y0")        @convention("C");
+fn y1(x: f64)                                 f64 @public @extern("y1")        @convention("C");
+fn yn(n: s32, x: f64)                         f64 @public @extern("yn")        @convention("C");

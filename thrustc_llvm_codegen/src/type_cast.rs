@@ -20,6 +20,7 @@
 #![allow(unnecessary_transmutes)]
 
 use inkwell::builder::Builder;
+use inkwell::context::Context;
 use inkwell::targets::TargetData;
 use inkwell::types::BasicTypeEnum;
 use inkwell::types::FloatType;
@@ -34,6 +35,7 @@ use thrustc_ast::traits::AstCodeLocation;
 use thrustc_typesystem::traits::ConstantTypeExtensions;
 use thrustc_typesystem::traits::TypeCodeLocation;
 use thrustc_typesystem::traits::TypePointerExtensions;
+use thrustc_typesystem::type_layout::TargetInfo;
 
 use crate::abort;
 use crate::codegen;
@@ -876,6 +878,7 @@ pub fn compile_int_together_cast<'ctx>(
 ########################################################################*/
 
 pub fn compile_constant_float_together_cast<'ctx>(
+    context: &LLVMCodeGenContext<'_, 'ctx>,
     left: FloatValue<'ctx>,
     right: FloatValue<'ctx>,
 ) -> (FloatValue<'ctx>, FloatValue<'ctx>) {
@@ -886,22 +889,23 @@ pub fn compile_constant_float_together_cast<'ctx>(
         return (left, right);
     }
 
-    let new_left_value: FloatValue = if left_type != right_type {
-        if let Some((value, ..)) = left.get_constant() {
-            right.get_type().const_float(value)
-        } else {
-            left
-        }
+    let target_type: FloatType = self::select_wider_float_type(
+        left_type,
+        right_type,
+        context.get_llvm_context(),
+        context.get_target_info(),
+    );
+
+    let new_left_value: FloatValue = if left_type != target_type {
+        left.get_constant()
+            .map_or(left, |(value, ..)| target_type.const_float(value))
     } else {
         left
     };
 
-    let new_right_value: FloatValue = if right_type != left_type {
-        if let Some((value, ..)) = right.get_constant() {
-            left.get_type().const_float(value)
-        } else {
-            right
-        }
+    let new_right_value: FloatValue = if right_type != target_type {
+        right.get_constant()
+            .map_or(right, |(value, ..)| target_type.const_float(value))
     } else {
         right
     };
@@ -924,9 +928,16 @@ pub fn compile_float_together_cast<'ctx>(
         return (left, right);
     }
 
-    let new_left_value: FloatValue = if left_type != right_type {
+    let target_type: FloatType = self::select_wider_float_type(
+        left_type,
+        right_type,
+        context.get_llvm_context(),
+        context.get_target_info(),
+    );
+
+    let new_left_value: FloatValue = if left_type != target_type {
         llvm_builder
-            .build_float_cast(left, right_type, "")
+            .build_float_cast(left, target_type, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
                     context,
@@ -940,9 +951,9 @@ pub fn compile_float_together_cast<'ctx>(
         left
     };
 
-    let new_right_value: FloatValue = if right_type != left_type {
+    let new_right_value: FloatValue = if right_type != target_type {
         llvm_builder
-            .build_float_cast(right, left_type, "")
+            .build_float_cast(right, target_type, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
                     context,
@@ -957,6 +968,41 @@ pub fn compile_float_together_cast<'ctx>(
     };
 
     (new_left_value, new_right_value)
+}
+
+fn select_wider_float_type<'ctx>(
+    left: FloatType<'ctx>,
+    right: FloatType<'ctx>,
+    llvm_context: &Context,
+    target_info: &TargetInfo,
+) -> FloatType<'ctx> {
+    if self::float_type_bit_width(left, llvm_context, target_info)
+        >= self::float_type_bit_width(right, llvm_context, target_info)
+    {
+        left
+    } else {
+        right
+    }
+}
+
+fn float_type_bit_width<'ctx>(
+    llvm_type: FloatType<'ctx>,
+    llvm_context: &Context,
+    target_info: &TargetInfo,
+) -> u32 {
+    if llvm_type == llvm_context.f16_type() {
+        target_info.f16_width()
+    } else if llvm_type == llvm_context.f32_type() {
+        target_info.f32_width()
+    } else if llvm_type == llvm_context.f64_type() {
+        target_info.f64_width()
+    } else if llvm_type == llvm_context.x86_f80_type() {
+        target_info.f16_width()
+    } else if llvm_type == llvm_context.f128_type() || llvm_type == llvm_context.ppc_f128_type() {
+        target_info.f128_width()
+    } else {
+        0
+    }
 }
 
 pub fn select_ssa_integer_type<'a>(cast_type: Option<&'a Type>, integer_ty: &'a Type) -> Type {

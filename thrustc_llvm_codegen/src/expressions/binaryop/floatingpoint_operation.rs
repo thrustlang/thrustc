@@ -415,7 +415,7 @@ fn compile_constant_float_value_operation<'ctx>(
     operator: &TokenType,
     span: Span,
 ) -> BasicValueEnum<'ctx> {
-    let (lhs, rhs) = type_cast::compile_constant_float_together_cast(lhs, rhs);
+    let (lhs, rhs) = type_cast::compile_constant_float_together_cast(context, lhs, rhs);
 
     match operator {
         TokenType::Plus | TokenType::PlusEq => {

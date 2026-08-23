@@ -1,0 +1,13 @@
+import std::ffi::c::io;
+import std::ffi::c::math;
+
+fn main() s32 @public {
+    if math::sqrt(16.0) != 4.0 { return 1; }
+    if math::pow(2.0, 8.0) != 256.0 { return 2; }
+    if io::puts("ffi: raw puts") <= 0 { return 3; }
+    if io::stdout == nullptr { return 4; }
+    if io::stdin == nullptr { return 5; }
+    if io::stderr == nullptr { return 6; }
+    if io::feof(io::stdout) != 0 { return 7; }
+    return 0;
+}

@@ -38,7 +38,7 @@
         {
           "comment": "Attributes with parenthesized argument",
           "name": "entity.other.attribute-name.thrust",
-          "match": "@(?:asmAlignStack|asmSyntax|asmThrowErrors|asmSideEffects|align|optFuzzing|noUnwind|packed|heap|public|linkage|extern|arbitraryArgs|hot|minSize|alwaysInline|noInline|inline|safeStack|weakStack|strongStack|preciseFloatingPoint|convention|pure|thunk|cuda|constructor|destructor)\\b"
+          "match": "@(?:asmAlignStack|asmSyntax|asmThrowErrors|asmSideEffects|align|optFuzzing|noUnwind|noReturn|packed|heap|public|linkage|extern|arbitraryArgs|hot|minSize|alwaysInline|noInline|inline|safeStack|weakStack|strongStack|preciseFloatingPoint|convention|pure|thunk|cuda|constructor|destructor|if|elif|else|promote)\\b"
         }
       ]
     },
@@ -89,7 +89,7 @@
         },
         {
           "name": "keyword.declaration.thrust",
-          "match": "\\b(fn|var|const|struct|enum|type|asmfn|intrinsic|embedded|import|importC|new)\\b"
+          "match": "\\b(fn|var|const|struct|enum|type|asmfn|intrinsic|embedded|import|importC|new|only)\\b"
         },
         {
           "name": "keyword.operator.thrust",
@@ -113,12 +113,12 @@
 
     "types": {
       "name": "storage.type.thrust",
-      "match": "\\b(s8|s16|s32|s64|ssize|u8|u16|u32|u64|u128|usize|f32|f64|f128|f80|fppc_128|bool|char|ptr|array|void|Fn)\\b"
+      "match": "\\b(s8|s16|s32|s64|ssize|u8|u16|u32|u64|u128|usize|f32|f64|f128|f80|fppc_128|bool|char|ptr|array|void|Fn|CString)\\b"
     },
 
     "builtins": {
       "name": "support.function.builtin.thrust",
-      "match": "\\b(halloc|sizeOf|memset|memmove|memcpy|alignOf|abiSizeOf|bitSizeOf|abiAlignOf)\\b"
+      "match": "\\b(halloc|sizeOf|memset|memmove|memcpy|alignOf|abiSizeOf|bitSizeOf|abiAlignOf|arbitraryArg|arbitraryArgs|staticAssert|compileError|compileWarning|file|fileLine|currentFuncName|isSigned|isUnsigned|isInteger|isFloat|isBool|isChar|isPointer|isArray|isFixedArray|isStruct|isVoid|isConst|isNumeric|isFunction|typeWidth|fieldCount|fixedArraySize|isSameType|isPtrLike|isFixedArrayOfSize|compilerVersion|debugBuild|stringLength|targetOS|targetArch|targetVendor|targetAbi|targetTriple|isLinux|isWindows|isDarwin|isApple|isAix|is64Bit|is32Bit|isBigEndian|isLittleEndian|isX86|isX8664|isArm|isAarch64|isRiscv64|isPpc|isPpc64|isMips64|isSystemz|isLoongarch64|isWasm|isElf|isMachO|isCoff|hasPosixThreads|hasSysvAbi)\\b\\s*(?=\\()"
     },
 
     "constants": {
@@ -145,6 +145,14 @@
 
     "operators": {
       "patterns": [
+        {
+          "name": "keyword.operator.assignment.compound.thrust",
+          "match": "\\+=|-=|\\*=|/=|%=|<<=|>>=|&=|\\|=|\\^="
+        },
+        {
+          "name": "keyword.operator.logical.gate.thrust",
+          "match": "&&|\\|\\|"
+        },
         {
           "name": "keyword.operator.comparison.thrust",
           "match": "==|!=|<=|>=|<|>"
@@ -180,7 +188,7 @@
         },
         {
           "name": "punctuation.accessor.thrust",
-          "match": "\\."
+          "match": "\\.|::"
         }
       ]
     }

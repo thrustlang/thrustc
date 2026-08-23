@@ -343,6 +343,7 @@ fn compile_constant_boolean_operation<'ctx>(
         };
     } else if lhs.is_float_value() && rhs.is_float_value() {
         let (lhs, rhs) = type_cast::compile_constant_float_together_cast(
+            context,
             lhs.into_float_value(),
             rhs.into_float_value(),
         );

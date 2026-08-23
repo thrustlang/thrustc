@@ -1,0 +1,55 @@
+import std::math;
+
+fn closeTo(actual: f64, expected: f64, epsilon: f64) bool {
+    return math::absolute(actual - expected) <= epsilon;
+}
+
+fn main() s32 @public {
+    if math::squareRoot(9.0) != 3.0 { return 1; }
+    if math::power(2.0, 10.0) != 1024.0 { return 2; }
+    if math::sine(0.0) != 0.0 { return 3; }
+    if math::cosine(0.0) != 1.0 { return 4; }
+    if math::exponential(0.0) != 1.0 { return 5; }
+    if math::naturalLogarithm(1.0) != 0.0 { return 6; }
+    if math::hypotenuse(3.0, 4.0) != 5.0 { return 7; }
+    if math::absolute(-3.5) != 3.5 { return 8; }
+    if math::floorValue(3.7) != 3.0 { return 9; }
+    if math::ceiling(3.2) != 4.0 { return 10; }
+    if math::truncate(3.7) != 3.0 { return 11; }
+    if math::minimum(3.0, 5.0) != 3.0 { return 12; }
+    if math::maximum(3.0, 5.0) != 5.0 { return 13; }
+    if math::modulo(7.0, 3.0) != 1.0 { return 14; }
+    if math::copySign(3.0, -1.0) != -3.0 { return 15; }
+    if math::fusedMultiplyAdd(2.0, 3.0, 1.0) != 7.0 { return 16; }
+    if math::compound(0.0, 5) != 1.0 { return 17; }
+
+    if !closeTo(math::PI, 3.141592653589793, 0.000000001) { return 18; }
+    if !closeTo(math::E, 2.718281828459045, 0.000000001) { return 19; }
+    if !closeTo(math::cubeRoot(27.0), 3.0, 0.000000001) { return 20; }
+    if !closeTo(math::reciprocalSquareRoot(4.0), 0.5, 0.000000001) { return 21; }
+    if !closeTo(math::logarithm10(100.0), 2.0, 0.000000001) { return 22; }
+    if !closeTo(math::SQRT2, 1.4142135623730951, 0.000000001) { return 23; }
+
+    if math::integerLogarithm(8.0) != 3 { return 24; }
+    if math::longLogarithm(8.0) != 3 { return 25; }
+    if math::roundToLong(2.6) != 3 { return 26; }
+    if math::roundToLongLong(2.6) != 3 { return 27; }
+    if math::nearestIntegerToLong(2.4) != 2 { return 28; }
+
+    if !closeTo(math::TAU, 6.283185307179586, 0.000000001) { return 29; }
+    if !closeTo(math::EULER_GAMMA, 0.5772156649015329, 0.000000001) { return 30; }
+    if !closeTo(math::GOLDEN_RATIO, 1.618033988749895, 0.000000001) { return 31; }
+    if !closeTo(math::RADIANS_PER_DEGREE, 0.017453292519943295, 0.000000001) { return 32; }
+    if !closeTo(math::DEGREES_PER_RADIAN, 57.29577951308232, 0.000000001) { return 33; }
+    if !closeTo(math::SQRT3, 1.7320508075688772, 0.000000001) { return 34; }
+    if !closeTo(math::PI_3, 1.0471975511965976, 0.000000001) { return 35; }
+    if !closeTo(math::PI_6, 0.5235987755982988, 0.000000001) { return 36; }
+    if !closeTo(math::PI_8, 0.39269908169872415, 0.000000001) { return 37; }
+    if !closeTo(math::LOG2_10, 3.321928094887362, 0.000000001) { return 38; }
+    if !closeTo(math::LOG10_2, 0.3010299956639812, 0.000000001) { return 39; }
+    if !closeTo(math::ONE_OVER_SQRT3, 0.5773502691896258, 0.000000001) { return 40; }
+    if !closeTo(math::CATALAN, 0.915965594177219, 0.000000001) { return 41; }
+    if !closeTo(math::APERY, 1.2020569031595943, 0.000000001) { return 42; }
+
+    return 0;
+}

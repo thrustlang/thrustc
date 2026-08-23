@@ -89,7 +89,7 @@ pub fn ensure_std_present(root: &Path, version: &str) -> Result<PathBuf, StdErro
             .unwrap_or(true);
 
     let structure_incomplete: bool = embedded
-        .map(|directory| self::embedded_differs(&version_dir, directory))
+        .map(|directory| self::embedded_differs(root, directory))
         .unwrap_or(false);
 
     if (!version_file.is_file() || dir_missing_or_empty || structure_incomplete)
@@ -170,16 +170,16 @@ fn ensure_version_file(root: &Path) -> Result<(), StdError> {
     Ok(())
 }
 
-fn embedded_differs(version_dir: &Path, directory: &Dir) -> bool {
+fn embedded_differs(root: &Path, directory: &Dir) -> bool {
     for entry in directory.entries() {
         match entry {
             DirEntry::Dir(subdirectory) => {
-                if self::embedded_differs(version_dir, subdirectory) {
+                if self::embedded_differs(root, subdirectory) {
                     return true;
                 }
             }
             DirEntry::File(file) => {
-                let destination: PathBuf = version_dir.join(file.path());
+                let destination: PathBuf = root.join(file.path());
 
                 let Ok(on_disk) = std::fs::read(&destination) else {
                     return true;

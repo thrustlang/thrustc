@@ -1,0 +1,52 @@
+import std::io;
+
+fn main() s32 @public {
+    io::println("std::io test: starting");
+
+    if io::print("print: %d\n", 42) <= 0 { return 1; }
+    if io::println("println: hello") <= 0 { return 2; }
+    if io::printTo(io::stderr, "printTo: stderr ok\n") <= 0 { return 3; }
+    if io::writeChar('A' as s32) != 'A' as s32 { return 4; }
+    if io::flush(io::stdout) != 0 { return 5; }
+    if io::streamFileDescriptor(io::stdout) != 1 { return 6; }
+
+    var number: s32 = 0;
+    if io::scanFromString("987", "%d", ref number) != 1 { return 7; }
+    if number != 987 { return 8; }
+
+    var file := io::openFile("thrust_io_test.txt", "w");
+    if file == nullptr { return 9; }
+
+    var payload: array[char] = "hello";
+    if io::writeBytes((deref payload) as ptr, 1, 5, file) != 5 { return 10; }
+    if io::closeFile(file) != 0 { return 11; }
+
+    file = io::openFile("thrust_io_test.txt", "r");
+    if file == nullptr { return 12; }
+
+    var buffer: array[char; 16];
+    if io::readBytes((ref buffer) as ptr, 1, 16, file) != 5 { return 13; }
+
+    if io::seek(file, 0, io::SEEK_SET) != 0 { return 14; }
+    if io::tell(file) != 0 { return 15; }
+    if io::readCharFrom(file) != 'h' as s32 { return 16; }
+
+    var index: s32 = 0;
+    while index < 4 {
+        io::readCharFrom(file);
+        index += 1;
+    }
+
+    if io::readCharFrom(file) != io::EOF { return 17; }
+    if io::atEndOfStream(file) == 0 { return 18; }
+
+    if io::closeFile(file) != 0 { return 19; }
+    if io::deleteFile("thrust_io_test.txt") != 0 { return 20; }
+
+    if io::EOF != -1 { return 21; }
+    if io::SEEK_SET != 0 { return 22; }
+    if io::BUFSIZ != 8192 { return 23; }
+
+    io::println("std::io test: passed");
+    return 0;
+}

@@ -101,7 +101,7 @@
 					<key>name</key>
 					<string>entity.other.attribute-name.thrust</string>
 					<key>match</key>
-					<string>@(?:asmAlignStack|asmSyntax|asmThrowErrors|asmSideEffects|align|optFuzzing|noUnwind|packed|heap|public|linkage|extern|arbitraryArgs|hot|minSize|alwaysInline|noInline|inline|safeStack|weakStack|strongStack|preciseFloatingPoint|convention|pure|thunk|cuda|constructor|destructor)\b</string>
+					<string>@(?:asmAlignStack|asmSyntax|asmThrowErrors|asmSideEffects|align|optFuzzing|noUnwind|noReturn|packed|heap|public|linkage|extern|arbitraryArgs|hot|minSize|alwaysInline|noInline|inline|safeStack|weakStack|strongStack|preciseFloatingPoint|convention|pure|thunk|cuda|constructor|destructor|if|elif|else|promote)\b</string>
 				</dict>
 			</array>
 		</dict>
@@ -174,7 +174,7 @@
 					<key>name</key>
 					<string>keyword.declaration.thrust</string>
 					<key>match</key>
-					<string>\b(fn|var|const|struct|enum|type|asmfn|intrinsic|embedded|import|importC|new)\b</string>
+					<string>\b(fn|var|const|struct|enum|type|asmfn|intrinsic|embedded|import|importC|new|only)\b</string>
 				</dict>
 				<dict>
 					<key>name</key>
@@ -207,15 +207,15 @@
 		<dict>
 			<key>name</key>
 			<string>storage.type.thrust</string>
-			<key>match</key>
-			<string>\b(s8|s16|s32|s64|ssize|u8|u16|u32|u64|u128|usize|f32|f64|f128|f80|fppc_128|bool|char|ptr|array|void|Fn)\b</string>
+<key>match</key>
+					<string>\b(s8|s16|s32|s64|ssize|u8|u16|u32|u64|u128|usize|f32|f64|f128|f80|fppc_128|bool|char|ptr|array|void|Fn|CString)\b</string>
 		</dict>
 		<key>builtins</key>
 		<dict>
 			<key>name</key>
 			<string>support.function.builtin.thrust</string>
 			<key>match</key>
-			<string>\b(halloc|sizeOf|memset|memmove|memcpy|alignOf|abiSizeOf|bitSizeOf|abiAlignOf)\b</string>
+			<string>\b(halloc|sizeOf|memset|memmove|memcpy|alignOf|abiSizeOf|bitSizeOf|abiAlignOf|arbitraryArg|arbitraryArgs|staticAssert|compileError|compileWarning|file|fileLine|currentFuncName|isSigned|isUnsigned|isInteger|isFloat|isBool|isChar|isPointer|isArray|isFixedArray|isStruct|isVoid|isConst|isNumeric|isFunction|typeWidth|fieldCount|fixedArraySize|isSameType|isPtrLike|isFixedArrayOfSize|compilerVersion|debugBuild|stringLength|targetOS|targetArch|targetVendor|targetAbi|targetTriple|isLinux|isWindows|isDarwin|isApple|isAix|is64Bit|is32Bit|isBigEndian|isLittleEndian|isX86|isX8664|isArm|isAarch64|isRiscv64|isPpc|isPpc64|isMips64|isSystemz|isLoongarch64|isWasm|isElf|isMachO|isCoff|hasPosixThreads|hasSysvAbi)\b\s*(?=\()</string>
 		</dict>
 		<key>constants</key>
 		<dict>
@@ -263,6 +263,18 @@
 		<dict>
 			<key>patterns</key>
 			<array>
+				<dict>
+					<key>name</key>
+					<string>keyword.operator.assignment.compound.thrust</string>
+					<key>match</key>
+					<string>\+=|-=|\*=|/=|%=|&lt;&lt;=|&gt;&gt;=|&amp;=|\|=|\^=</string>
+				</dict>
+				<dict>
+					<key>name</key>
+					<string>keyword.operator.logical.gate.thrust</string>
+					<key>match</key>
+					<string>&amp;&amp;|\|\|</string>
+				</dict>
 				<dict>
 					<key>name</key>
 					<string>keyword.operator.comparison.thrust</string>
@@ -315,7 +327,7 @@
 					<key>name</key>
 					<string>punctuation.accessor.thrust</string>
 					<key>match</key>
-					<string>\.</string>
+					<string>\.|::</string>
 				</dict>
 			</array>
 		</dict>

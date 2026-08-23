@@ -31,6 +31,7 @@ pub struct LinterSymbolsTable<'linter> {
 
     global_statics: LinterGlobalStatics<'linter>,
     global_constants: LinterGlobalConstants<'linter>,
+    extern_statics: LinterGlobalStatics<'linter>,
 
     local_statics: LinterLocalStatics<'linter>,
     local_constants: LinterLocalConstants<'linter>,
@@ -51,6 +52,7 @@ impl LinterSymbolsTable<'_> {
 
             global_statics: HashMap::with_capacity(u8::MAX as usize),
             global_constants: HashMap::with_capacity(u8::MAX as usize),
+            extern_statics: HashMap::with_capacity(u8::MAX as usize),
 
             local_statics: Vec::with_capacity(u8::MAX as usize),
             local_constants: Vec::with_capacity(u8::MAX as usize),
@@ -198,6 +200,11 @@ impl<'linter> LinterSymbolsTable<'linter> {
     }
 
     #[inline]
+    pub fn get_all_extern_statics(&self) -> &LinterGlobalStatics<'_> {
+        &self.extern_statics
+    }
+
+    #[inline]
     pub fn get_all_local_constants(&self) -> &LinterLocalConstants<'_> {
         &self.local_constants
     }
@@ -300,6 +307,11 @@ impl<'linter> LinterSymbolsTable<'linter> {
     #[inline]
     pub fn new_global_static(&mut self, name: &'linter str, info: LinterStaticInfo) {
         self.global_statics.insert(name, info);
+    }
+
+    #[inline]
+    pub fn new_extern_static(&mut self, name: &'linter str, info: LinterStaticInfo) {
+        self.extern_statics.insert(name, info);
     }
 
     #[inline]

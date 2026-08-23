@@ -501,19 +501,23 @@ impl Linter<'_> {
                     metadata,
                     span,
                     attributes,
+                    value,
                     ..
                 } => {
-                    self.symbols.new_global_static(
-                        name,
-                        (
-                            *span,
-                            false,
-                            metadata.is_mutable(),
-                            false,
-                            None,
-                            attributes.has_public_attribute(),
-                        ),
+                    let info: thrustc_entities::linter_entities::LinterStaticInfo = (
+                        *span,
+                        false,
+                        metadata.is_mutable(),
+                        false,
+                        None,
+                        attributes.has_public_attribute(),
                     );
+
+                    if value.is_none() && attributes.has_extern_attribute() {
+                        self.symbols.new_extern_static(name, info);
+                    } else {
+                        self.symbols.new_global_static(name, info);
+                    }
                 }
                 Ast::Const {
                     name,
