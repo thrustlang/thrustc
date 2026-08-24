@@ -22,15 +22,16 @@
 use thrustc_ast::{
     Ast,
     ast_builtins::AstBuiltin,
+    ast_metadata::ReferenceType,
     traits::{
-        AstCodeLocation, AstExpressionExtensions, AstGetType, AstStandardExtensions,
-        AstStatementExtensions,
+        AstCodeLocation, AstConstantExtensions, AstExpressionExtensions, AstGetType,
+        AstStandardExtensions, AstStatementExtensions,
     },
 };
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::CompilationIssue;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_typesystem::traits::{ConstantTypeExtensions, TypeIsExtensions};
+use thrustc_typesystem::traits::{ConstantTypeExtensions, TypeIsExtensions, TypePointerExtensions};
 
 #[derive(Debug)]
 pub struct AstVerifier<'ast_verifier> {
@@ -81,6 +82,8 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                                 node.get_span(),
                             ));
                         }
+
+                        self.check_metadata_parameter(parameter);
                     }
 
                     if let Some(body) = body {
@@ -100,6 +103,8 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                                 node.get_span(),
                             ));
                         }
+
+                        self.check_metadata_parameter(parameter);
                     }
                 }
 
@@ -114,6 +119,8 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                                 node.get_span(),
                             ));
                         }
+
+                        self.check_metadata_parameter(parameter);
                     }
                 }
 
@@ -177,7 +184,23 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 }
             }
 
-            Ast::Var { value, .. } => {
+            Ast::Var {
+                value, metadata, ..
+            } => {
+                let is_unitialized: bool = metadata.is_unitialized();
+                let has_value: bool = value.is_some();
+
+                if is_unitialized == has_value {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Invalid local variable metadata: uninitialized flag does not match its value."
+                            .into(),
+                        "An initialized variable must not be flagged as uninitialized.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
+
                 if let Some(node) = value {
                     self.expected_expression(node);
                     self.analyze_expression(node);
@@ -429,7 +452,23 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 self.analyze_expression(node);
             }
 
-            Ast::As { from: node, .. } => {
+            Ast::As {
+                from: node,
+                metadata,
+                ..
+            } => {
+                let is_constant: bool = metadata.is_constant();
+
+                if is_constant != node.is_constant_value() {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Invalid cast metadata: constant flag does not match its source.".into(),
+                        "The constant flag must reflect whether the source is constant.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
+
                 self.expected_expression(node);
                 self.analyze_expression(node);
             }
@@ -647,12 +686,65 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 _ => (),
             },
 
+            Ast::Reference { kind, metadata, .. } => {
+                let is_allocated: bool = metadata.is_allocated();
+
+                match metadata.get_type() {
+                    ReferenceType::Local | ReferenceType::Static | ReferenceType::Constant => {
+                        if !is_allocated {
+                            self.add_error(CompilationIssue::Error(
+                                thrustc_errors::CompilationIssueCode::E0001,
+                                "Invalid reference metadata: expected an allocated reference."
+                                    .into(),
+                                "Local, static and constant references are always allocated."
+                                    .into(),
+                                None,
+                                node.get_span(),
+                            ));
+                        }
+                    }
+
+                    ReferenceType::Parameter => {
+                        if is_allocated != kind.is_ptr_like_type() {
+                            self.add_error(CompilationIssue::Error(
+                                thrustc_errors::CompilationIssueCode::E0001,
+                                "Invalid reference metadata: allocation does not match a parameter kind."
+                                    .into(),
+                                "A parameter reference is allocated only when it is pointer-like."
+                                    .into(),
+                                None,
+                                node.get_span(),
+                            ));
+                        }
+                    }
+
+                    ReferenceType::None => {}
+                }
+            }
+
             _ => (),
         }
     }
 }
 
 impl<'ast_verifier> AstVerifier<'ast_verifier> {
+    fn check_metadata_parameter(&mut self, node: &Ast<'_>) {
+        if let Ast::FunctionParameter { kind, metadata, .. } = node {
+            let is_mutable: bool = metadata.is_mutable();
+
+            if is_mutable != kind.is_ptr_like_type() {
+                self.add_error(CompilationIssue::Error(
+                    thrustc_errors::CompilationIssueCode::E0001,
+                    "Invalid function parameter metadata: mutability does not match its kind."
+                        .into(),
+                    "Parameters are mutable only when they are pointer-like.".into(),
+                    None,
+                    node.get_span(),
+                ));
+            }
+        }
+    }
+
     pub fn expected_statement(&mut self, node: &Ast<'_>) {
         if !node.is_statement_keyword() {
             self.add_error(CompilationIssue::Error(

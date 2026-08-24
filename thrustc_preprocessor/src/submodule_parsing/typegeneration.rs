@@ -1,5 +1,4 @@
 /*
-
     Copyright (C) 2026  Stevens Benavides
 
     This program is free software: you can redistribute it and/or modify
@@ -14,7 +13,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 */
 
 use thrustc_ast::Ast;
@@ -36,12 +34,12 @@ use thrustc_typesystem::{
 };
 
 use crate::{
-    parser::ModuleParser,
-    signatures::{Signature, Variant},
-    submodule_parsing::{attributes, expressions},
+    module::Module,
+    shared::type_context::TypeParseContext,
+    signatures::{Signature, Symbol, Variant},
 };
 
-pub fn build_type(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
+pub fn build_type(ctx: &mut dyn TypeParseContext) -> Result<Type, ()> {
     ctx.enter_type()?;
 
     let ty: Result<Type, ()> = self::build_type_inner(ctx);
@@ -51,7 +49,7 @@ pub fn build_type(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
     ty
 }
 
-fn build_type_inner(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
+fn build_type_inner(ctx: &mut dyn TypeParseContext) -> Result<Type, ()> {
     match ctx.peek().kind {
         tk_kind if tk_kind.is_type() => {
             let tk: &Token = ctx.advance()?;
@@ -112,6 +110,7 @@ fn build_type_inner(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
             let identifier_tk: &Token = ctx.advance()?;
 
             let name: String = identifier_tk.get_lexeme().to_string();
+            let span: Span = identifier_tk.get_span();
 
             if ctx.check(TokenType::ColonColon) {
                 let mut access: Vec<String> = vec![name];
@@ -132,21 +131,8 @@ fn build_type_inner(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
                 return self::resolve_qualified_type(ctx, &access);
             }
 
-            if let Some(symbol) = ctx.get_module().search_symbol(name.clone(), Variant::CustomType)
-            {
-                if let Signature::CustomType { kind, .. } = &symbol.signature {
-                    return Ok(kind.clone());
-                }
-            }
-
-            if let Some(symbol) = ctx.get_module().search_symbol(name.clone(), Variant::Struct) {
-                if let Signature::Struct { kind, .. } = &symbol.signature {
-                    return Ok(kind.clone());
-                }
-            }
-
-            if let Some(builtin_type) = ctx.get_builtins().get_type(&name) {
-                return Ok(builtin_type.clone());
+            if let Some(ty) = ctx.resolve_named_type(&name, span) {
+                return Ok(ty);
             }
 
             Err(())
@@ -156,7 +142,7 @@ fn build_type_inner(ctx: &mut ModuleParser<'_>) -> Result<Type, ()> {
     }
 }
 
-fn resolve_qualified_type(ctx: &mut ModuleParser<'_>, access: &[String]) -> Result<Type, ()> {
+fn resolve_qualified_type(ctx: &mut dyn TypeParseContext, access: &[String]) -> Result<Type, ()> {
     let type_name: &String = access.last().ok_or(())?;
 
     let registry = ctx.get_registry();
@@ -164,24 +150,26 @@ fn resolve_qualified_type(ctx: &mut ModuleParser<'_>, access: &[String]) -> Resu
 
     let module_access: &[String] = &access[..access.len().saturating_sub(1)];
 
-    let module: std::rc::Rc<crate::module::Module> = registry.resolve(module_access).ok_or(())?;
+    let module: std::rc::Rc<Module> = registry.resolve(module_access).ok_or(())?;
 
-    if let Some(symbol) = module.search_symbol(type_name.clone(), Variant::CustomType) {
-        if let Signature::CustomType { kind, .. } = &symbol.signature {
-            return Ok(kind.clone());
-        }
+    let symbol: Option<&Symbol> = module.search_symbol(type_name.clone(), Variant::CustomType);
+
+    if let Some(crate::signatures::Signature::CustomType { kind, .. }) =
+        symbol.as_ref().map(|symbol| &symbol.signature)
+    {
+        return Ok(kind.clone());
     }
 
-    if let Some(symbol) = module.search_symbol(type_name.clone(), Variant::Struct) {
-        if let Signature::Struct { kind, .. } = &symbol.signature {
-            return Ok(kind.clone());
-        }
+    let symbol: Option<&Symbol> = module.search_symbol(type_name.clone(), Variant::Struct);
+
+    if let Some(Signature::Struct { kind, .. }) = symbol.as_ref().map(|symbol| &symbol.signature) {
+        return Ok(kind.clone());
     }
 
     Err(())
 }
 
-fn parse_anonymous_function_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> {
+fn parse_anonymous_function_type(ctx: &mut dyn TypeParseContext, span: Span) -> Result<Type, ()> {
     ctx.consume(TokenType::LBracket)?;
 
     let mut parameter_types: Vec<Type> = Vec::with_capacity(10);
@@ -204,7 +192,7 @@ fn parse_anonymous_function_type(ctx: &mut ModuleParser<'_>, span: Span) -> Resu
 
     ctx.consume(TokenType::RBracket)?;
 
-    let attributes: ThrustAttributes = attributes::build_attributes(ctx, &[TokenType::Arrow])?;
+    let attributes: ThrustAttributes = ctx.parse_attributes(&[TokenType::Arrow])?;
     let has_ignore: bool = attributes.has_ignore_attribute();
 
     ctx.consume(TokenType::Arrow)?;
@@ -224,13 +212,13 @@ fn parse_anonymous_function_type(ctx: &mut ModuleParser<'_>, span: Span) -> Resu
     Ok(function_ty)
 }
 
-fn parse_constant_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> {
+fn parse_constant_type(ctx: &mut dyn TypeParseContext, span: Span) -> Result<Type, ()> {
     let inner_type: Type = self::build_type(ctx)?;
 
     Ok(Type::Const(inner_type.into(), span))
 }
 
-fn parse_array_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> {
+fn parse_array_type(ctx: &mut dyn TypeParseContext, span: Span) -> Result<Type, ()> {
     ctx.consume(TokenType::LBracket)?;
 
     let array_type: Type = self::build_type(ctx)?;
@@ -240,7 +228,7 @@ fn parse_array_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> 
     if ctx.check(TokenType::SemiColon) {
         ctx.consume(TokenType::SemiColon)?;
 
-        let size: Ast = expressions::parse_expr(ctx)?;
+        let size: Ast = ctx.parse_constant_expr()?;
 
         let size: u64 = match thrustc_builtins::value::fold(&size) {
             Some(BuiltinValue::Integer(value)) => value,
@@ -298,7 +286,7 @@ fn parse_array_type(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Type, ()> 
 }
 
 fn parse_pointer_type(
-    ctx: &mut ModuleParser<'_>,
+    ctx: &mut dyn TypeParseContext,
     mut before_type: Type,
     span: Span,
 ) -> Result<Type, ()> {
@@ -333,8 +321,8 @@ fn parse_pointer_type(
     }
 }
 
-fn parse_memory_address(ctx: &mut ModuleParser<'_>, span: Span) -> Result<Option<u16>, ()> {
-    let memory_address_expr: Ast<'_> = expressions::parse_expr(ctx)?;
+fn parse_memory_address(ctx: &mut dyn TypeParseContext, span: Span) -> Result<Option<u16>, ()> {
+    let memory_address_expr: Ast<'_> = ctx.parse_constant_expr()?;
 
     let unprocessed: u64 = match thrustc_builtins::value::fold(&memory_address_expr) {
         Some(BuiltinValue::Integer(value)) => value,

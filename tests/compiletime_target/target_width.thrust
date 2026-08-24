@@ -1,0 +1,44 @@
+/*
+ * Compile-time target width builtins.
+ *
+ * Evaluates pointerWidth/isizeWidth/usizeWidth inside compile-time
+ * conditionals. The expectation assumes a 64-bit target.
+ */
+
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(pointerWidth() >= 64) {
+        count += 1;
+    } @else {
+        count += 100;
+    }
+
+    @if(pointerWidth() == 32) {
+        count += 1000;
+    } @else {
+        count += 2;
+    }
+
+    @if(isizeWidth() >= 64) {
+        count += 3;
+    } @else {
+        count += 10000;
+    }
+
+    @if(usizeWidth() >= 64) {
+        count += 4;
+    } @else {
+        count += 100000;
+    }
+
+    @if(is64Bit()) {
+        count += 5;
+    } @else {
+        count += 1000000;
+    }
+
+    if count != 15 { return 1; }
+
+    return 0;
+}

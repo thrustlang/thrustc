@@ -1,0 +1,36 @@
+/*
+ * Compile-time target architecture builtins.
+ *
+ * Uses targetArch and the isX* predicates inside @if/@elif/@else if/@else
+ * chains. The expectation assumes an x86_64 target.
+ */
+
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(targetArch() == "aarch64") {
+        count += 1000;
+    } @elif(targetArch() == "x86_64") {
+        count += 1;
+    } @else {
+        count += 100000;
+    }
+
+    @if(isAarch64()) {
+        count += 1000;
+    } @else if(isX8664()) {
+        count += 2;
+    } @else {
+        count += 100000;
+    }
+
+    @if(isX8664() && is64Bit()) {
+        count += 3;
+    } @else {
+        count += 100000;
+    }
+
+    if count != 6 { return 1; }
+
+    return 0;
+}

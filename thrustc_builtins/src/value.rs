@@ -137,6 +137,11 @@ fn fold_binary(operator: TokenType, left: BuiltinValue, right: BuiltinValue) -> 
             TokenType::GreaterEq => Some(BuiltinValue::Bool(left >= right)),
             _ => None,
         },
+        (BuiltinValue::CString(left), BuiltinValue::CString(right)) => match operator {
+            TokenType::EqEq => Some(BuiltinValue::Bool(left == right)),
+            TokenType::BangEq => Some(BuiltinValue::Bool(left != right)),
+            _ => None,
+        },
         _ => None,
     }
 }

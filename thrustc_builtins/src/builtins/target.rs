@@ -17,12 +17,14 @@
 
 use thrustc_code_location::Span;
 use thrustc_errors::CompilationIssue;
+use thrustc_errors::CompilationIssueCode;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_typesystem::Type;
 
 use crate::builtins::location;
 use crate::context::BuiltinContext;
 use crate::traits::BuiltinFunctionSignature;
+use crate::traits::BuiltinParameter;
 use crate::traits::CompileTimeBuiltinFunction;
 use crate::value::BuiltinArgument;
 use crate::value::BuiltinValue;
@@ -913,4 +915,280 @@ impl CompileTimeBuiltinFunction for HasSysvAbi {
 
 fn target_triple<'a>(context: &'a mut BuiltinContext<'_>) -> &'a LLVMTargetTriple {
     context.target_info.get_triple()
+}
+
+#[derive(Debug)]
+pub struct PointerWidth;
+
+impl CompileTimeBuiltinFunction for PointerWidth {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "pointerWidth"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::USize {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Integer(context.target_info.ptr_width() as u64))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsizeWidth;
+
+impl CompileTimeBuiltinFunction for IsizeWidth {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isizeWidth"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::USize {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Integer(context.target_info.isize_width() as u64))
+    }
+}
+
+#[derive(Debug)]
+pub struct UsizeWidth;
+
+impl CompileTimeBuiltinFunction for UsizeWidth {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "usizeWidth"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::USize {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Integer(context.target_info.usize_width() as u64))
+    }
+}
+
+#[derive(Debug)]
+pub struct PointerAlign;
+
+impl CompileTimeBuiltinFunction for PointerAlign {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "pointerAlign"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::USize {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Integer(context.target_info.ptr_align() as u64))
+    }
+}
+
+#[derive(Debug)]
+pub struct MaxAlignment;
+
+impl CompileTimeBuiltinFunction for MaxAlignment {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "maxAlignment"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::USize {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        let info: &thrustc_typesystem::type_layout::TargetInfo = context.target_info;
+
+        let max: u32 = [
+            info.bool_align(),
+            info.i8_align(),
+            info.i16_align(),
+            info.i32_align(),
+            info.i64_align(),
+            info.i128_align(),
+            info.f16_align(),
+            info.f32_align(),
+            info.f64_align(),
+            info.f128_align(),
+            info.isize_align(),
+            info.usize_align(),
+            info.ptr_align(),
+        ]
+        .into_iter()
+        .max()
+        .unwrap_or(0);
+
+        Ok(BuiltinValue::Integer(max as u64))
+    }
+}
+
+#[derive(Debug)]
+pub struct TargetCPU;
+
+impl CompileTimeBuiltinFunction for TargetCPU {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "targetCPU"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: location::cstring_type(),
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        let cpu: &str = context.options.get_llvm_backend().get_target_cpu().get_cpu_name();
+
+        Ok(BuiltinValue::CString(cpu.as_bytes().to_vec()))
+    }
+}
+
+#[derive(Debug)]
+pub struct TargetCpuFeatures;
+
+impl CompileTimeBuiltinFunction for TargetCpuFeatures {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "targetCpuFeatures"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: location::cstring_type(),
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        let features: &str = context
+            .options
+            .get_llvm_backend()
+            .get_target_cpu()
+            .get_cpu_features();
+
+        Ok(BuiltinValue::CString(features.as_bytes().to_vec()))
+    }
+}
+
+#[derive(Debug)]
+pub struct HasFeature;
+
+impl CompileTimeBuiltinFunction for HasFeature {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "hasFeature"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: vec![BuiltinParameter::Value(location::cstring_type())],
+        }
+    }
+
+    fn evaluate(
+        &self,
+        args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        let feature: String = match &args[0] {
+            BuiltinArgument::Value {
+                value: BuiltinValue::CString(bytes),
+                ..
+            } => String::from_utf8_lossy(bytes).to_string(),
+            _ => {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    "The 'hasFeature' compiler builtin expects a string argument.".into(),
+                    "You should pass a feature name, like hasFeature(\"sse2\").".into(),
+                    None,
+                    context.call_span,
+                ));
+            }
+        };
+
+        let features: &str = context
+            .options
+            .get_llvm_backend()
+            .get_target_cpu()
+            .get_cpu_features();
+
+        let enabled: bool = features.split(',').any(|entry| {
+            let entry: &str = entry.trim();
+            entry == format!("+{}", feature) || entry == feature
+        });
+
+        Ok(BuiltinValue::Bool(enabled))
+    }
 }

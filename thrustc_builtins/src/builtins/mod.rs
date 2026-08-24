@@ -18,6 +18,7 @@
 mod alignof;
 mod compile_time;
 mod compiler;
+mod host;
 mod layout;
 mod location;
 mod predicates;
@@ -101,6 +102,24 @@ pub fn register_default_builtins(registry: &mut BuiltinRegistry) {
     registry.register_function(target::IsCoff);
     registry.register_function(target::HasPosixThreads);
     registry.register_function(target::HasSysvAbi);
+
+    registry.register_function(target::PointerWidth);
+    registry.register_function(target::IsizeWidth);
+    registry.register_function(target::UsizeWidth);
+    registry.register_function(target::PointerAlign);
+    registry.register_function(target::MaxAlignment);
+    registry.register_function(target::TargetCPU);
+    registry.register_function(target::TargetCpuFeatures);
+    registry.register_function(target::HasFeature);
+
+    registry.register_function(host::HostName);
+    registry.register_function(host::ProcessorCount);
+    registry.register_function(host::PageSize);
+    registry.register_function(host::CpuCacheLineSize);
+    registry.register_function(host::HostOsName);
+    registry.register_function(host::HostArch);
+    registry.register_function(host::HostEndian);
+    registry.register_function(host::CurrentTimestamp);
 
     registry.register_type(BuiltinTypeInfo::new(
         "CString",

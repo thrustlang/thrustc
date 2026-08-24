@@ -1,0 +1,45 @@
+/*
+ * Compile-time host resource builtins.
+ *
+ * Uses processorCount, pageSize, cpuCacheLineSize, hostName and
+ * currentTimestamp inside compile-time conditionals. These are resolved
+ * from the host (POSIX) where the compiler runs.
+ */
+
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(processorCount() >= 1) {
+        count += 1;
+    } @else {
+        count += 100;
+    }
+
+    @if(pageSize() >= 512) {
+        count += 2;
+    } @else {
+        count += 1000;
+    }
+
+    @if(cpuCacheLineSize() >= 16) {
+        count += 3;
+    } @else {
+        count += 10000;
+    }
+
+    @if(hostName() != "") {
+        count += 4;
+    } @else {
+        count += 100000;
+    }
+
+    @if(currentTimestamp() > 0) {
+        count += 5;
+    } @else {
+        count += 1000000;
+    }
+
+    if count != 15 { return 1; }
+
+    return 0;
+}

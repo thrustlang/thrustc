@@ -1,0 +1,32 @@
+/*
+ * Compile-time target CPU and feature builtins.
+ *
+ * Uses targetCPU, targetCpuFeatures and hasFeature (string argument)
+ * inside compile-time conditionals.
+ */
+
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(targetCPU() != "none") {
+        count += 1;
+    } @else {
+        count += 100;
+    }
+
+    @if(hasFeature("sse2")) {
+        count += 2;
+    } @else {
+        count += 1000;
+    }
+
+    @if(targetCpuFeatures() != "") {
+        count += 3;
+    } @else {
+        count += 10000;
+    }
+
+    if count != 6 { return 1; }
+
+    return 0;
+}

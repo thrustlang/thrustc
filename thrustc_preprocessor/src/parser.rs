@@ -19,6 +19,8 @@
 
 use std::path::PathBuf;
 
+use thrustc_ast::Ast;
+use thrustc_attributes::ThrustAttributes;
 use thrustc_builtins::BuiltinRegistry;
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
@@ -26,8 +28,15 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
+use thrustc_typesystem::Type;
 
-use crate::{abort, module::Module, signatures::Symbol, submodule_parsing};
+use crate::{
+    abort,
+    module::Module,
+    shared::type_context::TypeParseContext,
+    signatures::{Signature, Symbol, Variant},
+    submodule_parsing,
+};
 
 use ahash::AHashSet as HashSet;
 
@@ -481,5 +490,114 @@ impl<'module_parser> ModuleParser<'module_parser> {
     #[inline]
     pub fn get_builtins(&self) -> &BuiltinRegistry {
         self.builtins
+    }
+}
+
+impl TypeParseContext for ModuleParser<'_> {
+    #[inline]
+    fn peek(&mut self) -> &Token {
+        self.peek()
+    }
+
+    #[inline]
+    fn previous(&mut self) -> &Token {
+        self.previous()
+    }
+
+    #[inline]
+    fn advance(&mut self) -> Result<&Token, ()> {
+        self.advance()
+    }
+
+    #[inline]
+    fn only_advance(&mut self) -> Result<(), ()> {
+        self.only_advance()
+    }
+
+    #[inline]
+    fn consume(&mut self, kind: TokenType) -> Result<&Token, ()> {
+        self.consume(kind)
+    }
+
+    #[inline]
+    fn consume_these(&mut self, these: &[TokenType]) -> Result<&Token, ()> {
+        self.consume_these(these)
+    }
+
+    #[inline]
+    fn check(&mut self, kind: TokenType) -> bool {
+        self.check(kind)
+    }
+
+    #[inline]
+    fn match_token(&mut self, kind: TokenType) -> Result<bool, ()> {
+        self.match_token(kind)
+    }
+
+    #[inline]
+    fn get_builtins(&self) -> &BuiltinRegistry {
+        self.get_builtins()
+    }
+
+    #[inline]
+    fn get_registry(&self) -> crate::registry::SharedModuleRegistry {
+        self.get_registry()
+    }
+
+    #[inline]
+    fn get_options(&self) -> &CompilerOptions {
+        self.get_options()
+    }
+
+    #[inline]
+    fn get_file(&self) -> &CompilationUnit {
+        self.get_file()
+    }
+
+    #[inline]
+    fn enter_type(&mut self) -> Result<(), ()> {
+        self.enter_type()
+    }
+
+    #[inline]
+    fn leave_type(&mut self) {
+        self.leave_type()
+    }
+
+    #[inline]
+    fn add_error(&mut self, error: CompilationIssue) {
+        self.add_error(error)
+    }
+
+    fn resolve_named_type(&self, name: &str, span: Span) -> Option<Type> {
+        if let Some(symbol) = self
+            .get_module()
+            .search_symbol(name.to_string(), Variant::CustomType)
+        {
+            if let Signature::CustomType { kind, .. } = &symbol.signature {
+                return Some(kind.clone());
+            }
+        }
+
+        if let Some(symbol) = self
+            .get_module()
+            .search_symbol(name.to_string(), Variant::Struct)
+        {
+            if let Signature::Struct { kind, .. } = &symbol.signature {
+                return Some(kind.clone());
+            }
+        }
+
+        let _ = span;
+
+        self.get_builtins().get_type(name).cloned()
+    }
+
+    fn parse_constant_expr(&mut self) -> Result<Ast<'static>, ()> {
+        submodule_parsing::expressions::parse_expr(self)
+    }
+
+    fn parse_attributes(&mut self, limits: &[TokenType]) -> Result<ThrustAttributes, ()> {
+        submodule_parsing::attributes::build_attributes(self, limits)
     }
 }

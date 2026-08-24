@@ -19,6 +19,12 @@
 use arbitrary::Unstructured;
 use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
+use thrustc_ast::ast_metadata::{
+    CastingMetadata, ConstantMetadata, DereferenceMetadata, FunctionParameterMetadata,
+    LocalMetadata, ReferenceMetadata, ReferenceType, StaticMetadata,
+};
+use thrustc_ast::traits::{AstConstantExtensions, AstMemoryExtensions};
+use thrustc_typesystem::traits::TypePointerExtensions;
 use thrustc_typesystem::Type;
 
 const MAX_DEPTH: usize = 8;
@@ -29,6 +35,7 @@ const MAX_EXPR_DEPTH: usize = 4;
 struct ScopedVar<'ast> {
     name: &'ast str,
     kind: Type,
+    reference_type: ReferenceType,
 }
 
 #[derive(Default)]
@@ -45,9 +52,13 @@ impl<'ast> ScopeStack<'ast> {
         self.frames.pop();
     }
 
-    fn declare(&mut self, name: &'ast str, kind: Type) {
+    fn declare(&mut self, name: &'ast str, kind: Type, reference_type: ReferenceType) {
         if let Some(frame) = self.frames.last_mut() {
-            frame.push(ScopedVar { name, kind });
+            frame.push(ScopedVar {
+                name,
+                kind,
+                reference_type,
+            });
         }
     }
 
@@ -57,6 +68,44 @@ impl<'ast> ScopeStack<'ast> {
 
     fn has_any(&self) -> bool {
         self.frames.iter().any(|f| !f.is_empty())
+    }
+
+    fn pick_mutable(&self, u: &mut Unstructured<'ast>) -> arbitrary::Result<Option<ScopedVar<'ast>>> {
+        let mutables: Vec<ScopedVar<'ast>> = self
+            .visible()
+            .into_iter()
+            .filter(|var| {
+                matches!(var.reference_type, ReferenceType::Local)
+                    || (matches!(var.reference_type, ReferenceType::Parameter)
+                        && var.kind.is_ptr_like_type())
+            })
+            .collect();
+
+        if mutables.is_empty() {
+            return Ok(None);
+        }
+
+        let idx = u.int_in_range(0..=(mutables.len() - 1))?;
+
+        Ok(Some(mutables[idx].clone()))
+    }
+}
+
+fn reference_metadata_for(var: &ScopedVar<'_>, is_mutable: bool) -> ReferenceMetadata {
+    match var.reference_type {
+        ReferenceType::Parameter => ReferenceMetadata::new(
+            var.kind.is_ptr_like_type(),
+            is_mutable,
+            ReferenceType::Parameter,
+            false,
+        ),
+        ReferenceType::Static => {
+            ReferenceMetadata::new(true, is_mutable, ReferenceType::Static, false)
+        }
+        ReferenceType::Constant => {
+            ReferenceMetadata::new(true, false, ReferenceType::Constant, false)
+        }
+        _ => ReferenceMetadata::new(true, is_mutable, ReferenceType::Local, false),
     }
 }
 
@@ -87,15 +136,15 @@ fn gen_function<'ast>(
         let name = gen_name(u)?;
         let kind: Type = u.arbitrary()?;
 
-        scope.declare(name, kind.clone());
+        scope.declare(name, kind.clone(), ReferenceType::Parameter);
         parameter_types.push(kind.clone());
 
         parameters.push(Ast::FunctionParameter {
             name,
             ascii_name: name,
-            kind,
+            kind: kind.clone(),
             position: i as u32,
-            metadata: u.arbitrary()?,
+            metadata: FunctionParameterMetadata::new(kind.is_ptr_like_type()),
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
@@ -267,7 +316,9 @@ fn gen_var<'ast>(
         None
     };
 
-    scope.declare(name, kind.clone());
+    scope.declare(name, kind.clone(), ReferenceType::Local);
+
+    let is_unitialized: bool = value.is_none();
 
     Ok(Ast::Var {
         name,
@@ -276,7 +327,7 @@ fn gen_var<'ast>(
         value,
         attributes: u.arbitrary()?,
         modificators: u.arbitrary()?,
-        metadata: u.arbitrary()?,
+        metadata: LocalMetadata::new(is_unitialized, true, false, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -290,7 +341,7 @@ fn gen_const<'ast>(
     let kind: Type = u.arbitrary()?;
     let value = Box::new(gen_expr(u, scope, MAX_EXPR_DEPTH)?);
 
-    scope.declare(name, kind.clone());
+    scope.declare(name, kind.clone(), ReferenceType::Constant);
 
     Ok(Ast::Const {
         name,
@@ -299,7 +350,7 @@ fn gen_const<'ast>(
         value,
         attributes: u.arbitrary()?,
         modificators: u.arbitrary()?,
-        metadata: u.arbitrary()?,
+        metadata: ConstantMetadata::new(false, false, false, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -318,7 +369,9 @@ fn gen_static<'ast>(
         None
     };
 
-    scope.declare(name, kind.clone());
+    scope.declare(name, kind.clone(), ReferenceType::Static);
+
+    let is_unitialized: bool = value.is_none();
 
     Ok(Ast::Static {
         name,
@@ -327,7 +380,16 @@ fn gen_static<'ast>(
         value,
         attributes: u.arbitrary()?,
         modificators: u.arbitrary()?,
-        metadata: u.arbitrary()?,
+        metadata: StaticMetadata::new(
+            false,
+            true,
+            is_unitialized,
+            false,
+            false,
+            false,
+            None,
+            None,
+        ),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -345,7 +407,7 @@ fn gen_condition<'ast>(
         let left = Ast::Reference {
             name: picked.name,
             kind: picked.kind.clone(),
-            metadata: u.arbitrary()?,
+            metadata: reference_metadata_for(&picked, false),
             span: u.arbitrary()?,
             id: NodeId::new(),
         };
@@ -376,13 +438,15 @@ fn gen_condition<'ast>(
 
 fn gen_increment<'ast>(
     u: &mut Unstructured<'ast>,
-    name: &'ast str,
-    kind: Type,
+    var: &ScopedVar<'ast>,
 ) -> arbitrary::Result<Ast<'ast>> {
+    let name: &'ast str = var.name;
+    let kind: Type = var.kind.clone();
+
     let current = Ast::Reference {
         name,
         kind: kind.clone(),
-        metadata: u.arbitrary()?,
+        metadata: reference_metadata_for(var, true),
         span: u.arbitrary()?,
         id: NodeId::new(),
     };
@@ -403,7 +467,7 @@ fn gen_increment<'ast>(
     let target = Ast::Reference {
         name,
         kind: kind.clone(),
-        metadata: u.arbitrary()?,
+        metadata: reference_metadata_for(var, true),
         span: u.arbitrary()?,
         id: NodeId::new(),
     };
@@ -485,18 +549,24 @@ fn gen_for<'ast>(
         value: Some(init_value),
         attributes: u.arbitrary()?,
         modificators: u.arbitrary()?,
-        metadata: u.arbitrary()?,
+        metadata: LocalMetadata::new(false, true, false, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     });
 
-    scope.declare(loop_var_name, loop_var_kind.clone());
+    let loop_var = ScopedVar {
+        name: loop_var_name,
+        kind: loop_var_kind.clone(),
+        reference_type: ReferenceType::Local,
+    };
+
+    scope.declare(loop_var_name, loop_var_kind.clone(), ReferenceType::Local);
 
     let condition = Box::new(Ast::BinaryOp {
         left: Box::new(Ast::Reference {
             name: loop_var_name,
             kind: loop_var_kind.clone(),
-            metadata: u.arbitrary()?,
+            metadata: reference_metadata_for(&loop_var, false),
             span: u.arbitrary()?,
             id: NodeId::new(),
         }),
@@ -512,7 +582,7 @@ fn gen_for<'ast>(
         id: NodeId::new(),
     });
 
-    let actions = Box::new(gen_increment(u, loop_var_name, loop_var_kind.clone())?);
+    let actions = Box::new(gen_increment(u, &loop_var)?);
     let block = Box::new(gen_block(u, scope, depth.saturating_sub(1))?);
 
     scope.pop();
@@ -635,13 +705,22 @@ fn gen_mutation<'ast>(
     scope: &mut ScopeStack<'ast>,
     depth: usize,
 ) -> arbitrary::Result<Ast<'ast>> {
-    if !scope.has_any() {
+    let Some(picked) = scope.pick_mutable(u)? else {
         return gen_var(u, scope, depth);
-    }
+    };
+
+    let kind: Type = picked.kind.clone();
+
     Ok(Ast::Mutation {
-        source: Box::new(gen_reference(u, scope)?),
+        source: Box::new(Ast::Reference {
+            name: picked.name,
+            kind: kind.clone(),
+            metadata: reference_metadata_for(&picked, true),
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }),
         value: Box::new(gen_expr(u, scope, depth.saturating_sub(1))?),
-        kind: u.arbitrary()?,
+        kind,
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -682,8 +761,8 @@ fn gen_reference<'ast>(
 
     Ok(Ast::Reference {
         name: picked.name,
-        kind: picked.kind,
-        metadata: u.arbitrary()?,
+        kind: picked.kind.clone(),
+        metadata: reference_metadata_for(&picked, false),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -769,18 +848,26 @@ fn gen_expr<'ast>(
             span: u.arbitrary()?,
             id: NodeId::new(),
         }),
-        5 => Ok(Ast::As {
-            from: Box::new(gen_expr(u, scope, depth - 1)?),
-            cast: u.arbitrary()?,
-            metadata: u.arbitrary()?,
-            span: u.arbitrary()?,
-            id: NodeId::new(),
-        }),
+        5 => {
+            let from = Box::new(gen_expr(u, scope, depth - 1)?);
+            let is_constant: bool = from.is_constant_value();
+            let is_allocated: bool = from
+                .is_memory_assigned_value()
+                .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+
+            Ok(Ast::As {
+                from,
+                cast: u.arbitrary()?,
+                metadata: CastingMetadata::new(is_constant, is_allocated),
+                span: u.arbitrary()?,
+                id: NodeId::new(),
+            })
+        }
         6 if has_vars => Ok(Ast::Deref {
             value: Box::new(gen_reference(u, scope)?),
             kind: u.arbitrary()?,
             modificators: u.arbitrary()?,
-            metadata: u.arbitrary()?,
+            metadata: DereferenceMetadata::new(false, None),
             span: u.arbitrary()?,
             id: NodeId::new(),
         }),

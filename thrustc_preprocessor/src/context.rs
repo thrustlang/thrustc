@@ -19,17 +19,20 @@
 
 use std::path::PathBuf;
 
+use thrustc_ast::Ast;
+use thrustc_attributes::ThrustAttributes;
 use thrustc_builtins::BuiltinRegistry;
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
+use thrustc_typesystem::Type;
 
 use ahash::AHashSet as HashSet;
 
-use crate::abort;
+use crate::{abort, highmodule_parsing, shared::type_context::TypeParseContext};
 
 #[derive(Debug)]
 pub struct PreprocessorContext<'preprocessor> {
@@ -43,6 +46,7 @@ pub struct PreprocessorContext<'preprocessor> {
     registry: crate::registry::SharedModuleRegistry,
     builtins: &'preprocessor BuiltinRegistry,
     current: usize,
+    type_depth: u32,
 }
 
 impl<'preprocessor> PreprocessorContext<'preprocessor> {
@@ -65,6 +69,7 @@ impl<'preprocessor> PreprocessorContext<'preprocessor> {
             registry,
             builtins,
             current: 0,
+            type_depth: 0,
         }
     }
 }
@@ -331,5 +336,114 @@ impl<'module_parser> PreprocessorContext<'module_parser> {
     #[inline]
     pub fn get_compilation_unit(&self) -> &CompilationUnit {
         self.file
+    }
+}
+
+impl PreprocessorContext<'_> {
+    #[inline]
+    pub fn enter_type(&mut self) -> Result<(), ()> {
+        self.type_depth = self.type_depth.saturating_add(1);
+
+        if self.type_depth > thrustc_constants::COMPILER_TOO_MANY_TYPE_DEPTH {
+            return Err(());
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    pub fn leave_type(&mut self) {
+        self.type_depth = self.type_depth.saturating_sub(1);
+    }
+}
+
+impl TypeParseContext for PreprocessorContext<'_> {
+    #[inline]
+    fn peek(&mut self) -> &Token {
+        self.peek()
+    }
+
+    #[inline]
+    fn previous(&mut self) -> &Token {
+        self.previous()
+    }
+
+    #[inline]
+    fn advance(&mut self) -> Result<&Token, ()> {
+        self.advance()
+    }
+
+    #[inline]
+    fn only_advance(&mut self) -> Result<(), ()> {
+        self.only_advance()
+    }
+
+    #[inline]
+    fn consume(&mut self, kind: TokenType) -> Result<&Token, ()> {
+        self.consume(kind)
+    }
+
+    #[inline]
+    fn consume_these(&mut self, these: &[TokenType]) -> Result<&Token, ()> {
+        self.consume_these(these)
+    }
+
+    #[inline]
+    fn check(&mut self, kind: TokenType) -> bool {
+        self.check(kind)
+    }
+
+    #[inline]
+    fn match_token(&mut self, kind: TokenType) -> Result<bool, ()> {
+        self.match_token(kind)
+    }
+
+    #[inline]
+    fn get_builtins(&self) -> &BuiltinRegistry {
+        self.get_builtins()
+    }
+
+    #[inline]
+    fn get_registry(&self) -> crate::registry::SharedModuleRegistry {
+        self.get_registry()
+    }
+
+    #[inline]
+    fn get_options(&self) -> &CompilerOptions {
+        self.get_options()
+    }
+
+    #[inline]
+    fn get_file(&self) -> &CompilationUnit {
+        self.get_compilation_unit()
+    }
+
+    #[inline]
+    fn enter_type(&mut self) -> Result<(), ()> {
+        self.enter_type()
+    }
+
+    #[inline]
+    fn leave_type(&mut self) {
+        self.leave_type()
+    }
+
+    #[inline]
+    fn add_error(&mut self, error: CompilationIssue) {
+        self.add_error(error)
+    }
+
+    fn resolve_named_type(&self, name: &str, span: Span) -> Option<Type> {
+        let _ = span;
+
+        self.get_builtins().get_type(name).cloned()
+    }
+
+    fn parse_constant_expr(&mut self) -> Result<Ast<'static>, ()> {
+        highmodule_parsing::compiletime_conditional::parse_expression(self)
+    }
+
+    fn parse_attributes(&mut self, _limits: &[TokenType]) -> Result<ThrustAttributes, ()> {
+        Ok(Vec::new())
     }
 }

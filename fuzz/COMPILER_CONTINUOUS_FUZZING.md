@@ -6,7 +6,7 @@
 
 # Continuous Fuzzing
 
-The regular fuzzers (`cargo fuzz-<target>-<mode>`) stop as soon as libFuzzer finds a crash. The **continuous supervisor** works the other way around: it runs a fuzzer in a loop, and each time a crash or panic surfaces it saves the input, records it, and goes straight back to fuzzing. By the end of a session you have every bug the target hit, not just the first one, and you never had to keep an eye on it.
+The regular fuzzers (`cargo fuzz-<target>-<mode>`) stop as soon as libFuzzer finds a crash. The **continuous supervisor** works the other way around: it runs a fuzzer in a loop, and each time a crash or panic surfaces it saves the input, records it, and goes back to fuzzing.
 
 > [!IMPORTANT]
 > You need a **nightly** toolchain and **`cargo-fuzz`** to use this (the full list of prerequisites is in [COMPILER_FUZZING.md](../COMPILER_FUZZING.md#prerequisites)). The supervisor and the `reproduce` binary pick up the channel declared in `fuzz/rust-toolchain.toml` automatically — they run `cargo +nightly fuzz run ...` — so you can launch them from the repository root even though it pins a stable toolchain.

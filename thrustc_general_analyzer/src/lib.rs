@@ -19,7 +19,6 @@
 
 use thrustc_ast::{
     Ast,
-    ast_metadata::ReferenceMetadata,
     traits::{
         AstCodeLocation, AstConstantExtensions, AstGetType, AstMemoryExtensions,
         AstStandardExtensions,
@@ -30,10 +29,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 
 use thrustc_code_location::Span;
-use thrustc_typesystem::{
-    Type,
-    traits::{TypeExtensions, TypePointerExtensions},
-};
+use thrustc_typesystem::{Type, traits::TypeExtensions};
 
 use crate::context::AnalyzerContext;
 

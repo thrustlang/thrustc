@@ -13,6 +13,8 @@
 "bitSizeOf" "abiAlignOf" "arbitraryArg" "arbitraryArgs"
 "staticAssert" "compileError" "compileWarning" "file" "fileLine" "currentFuncName"
 "typeWidth" "fieldCount"
+"fixedArraySize" "isSameType" "isPtrLike" "isFixedArrayOfSize"
+"compilerVersion" "debugBuild" "stringLength"
 "isSigned" "isUnsigned" "isInteger" "isFloat" "isBool" "isChar" "isPointer"
 "isArray" "isFixedArray" "isStruct" "isVoid" "isConst" "isNumeric" "isFunction"
 "targetOS" "targetArch" "targetVendor" "targetAbi" "targetTriple"
@@ -20,6 +22,10 @@
 "isBigEndian" "isLittleEndian" "isX86" "isX8664" "isArm" "isAarch64"
 "isRiscv64" "isPpc" "isPpc64" "isMips64" "isSystemz" "isLoongarch64" "isWasm"
 "isElf" "isMachO" "isCoff" "hasPosixThreads" "hasSysvAbi"
+
+"pointerWidth" "isizeWidth" "usizeWidth" "pointerAlign" "maxAlignment"
+"targetCPU" "targetCpuFeatures" "hasFeature"
+"hostName" "processorCount" "pageSize" "cpuCacheLineSize" "hostOsName" "hostArch" "hostEndian" "currentTimestamp"
 
 "volatile" "lazyThread" "atomicNone" "atomicFree" "atomicRelax"
 "atomicGrab" "atomicDrop" "atomicSync" "atomicStrict"

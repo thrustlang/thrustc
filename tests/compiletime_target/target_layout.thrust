@@ -1,0 +1,45 @@
+/*
+ * Compile-time target layout builtins.
+ *
+ * Uses pointerAlign, maxAlignment and the type-based builtins (sizeOf,
+ * alignOf, typeWidth) inside compile-time conditionals. The expectation
+ * assumes a 64-bit target.
+ */
+
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(pointerAlign() >= 4) {
+        count += 1;
+    } @else {
+        count += 100;
+    }
+
+    @if(maxAlignment() >= 1) {
+        count += 2;
+    } @else {
+        count += 1000;
+    }
+
+    @if(sizeOf(u32) == 4) {
+        count += 3;
+    } @else {
+        count += 10000;
+    }
+
+    @if(alignOf(u32) >= 4) {
+        count += 4;
+    } @else {
+        count += 100000;
+    }
+
+    @if(typeWidth(u32) >= 32) {
+        count += 5;
+    } @else {
+        count += 1000000;
+    }
+
+    if count != 15 { return 1; }
+
+    return 0;
+}

@@ -17,12 +17,14 @@
 
 use arbitrary::Unstructured;
 use thrustc_ast::ast_metadata::{
-    CastingMetadata, FunctionParameterMetadata, ReferenceMetadata, ReferenceType,
+    CastingMetadata, ConstantMetadata, DereferenceMetadata, FunctionParameterMetadata,
+    LocalMetadata, ReferenceMetadata, ReferenceType, StaticMetadata,
 };
+use thrustc_ast::traits::{AstConstantExtensions, AstMemoryExtensions};
 use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::traits::TypeIsExtensions;
+use thrustc_typesystem::traits::{TypeIsExtensions, TypePointerExtensions};
 use thrustc_typesystem::Type;
 
 pub struct Config {
@@ -74,6 +76,7 @@ impl Config {
 struct ScopedVar<'ast> {
     name: &'ast str,
     kind: Type,
+    reference_type: ReferenceType,
 }
 
 #[derive(Default)]
@@ -90,9 +93,13 @@ impl<'ast> ScopeStack<'ast> {
         self.frames.pop();
     }
 
-    fn declare(&mut self, name: &'ast str, kind: Type) {
+    fn declare(&mut self, name: &'ast str, kind: Type, reference_type: ReferenceType) {
         if let Some(frame) = self.frames.last_mut() {
-            frame.push(ScopedVar { name, kind });
+            frame.push(ScopedVar {
+                name,
+                kind,
+                reference_type,
+            });
         }
     }
 
@@ -118,6 +125,26 @@ impl<'ast> ScopeStack<'ast> {
 
     fn has_of_type(&self, target: &Type) -> bool {
         self.frames.iter().flatten().any(|var| var.kind == *target)
+    }
+
+    fn pick_mutable(&self, u: &mut Unstructured<'ast>) -> arbitrary::Result<Option<ScopedVar<'ast>>> {
+        let mutables: Vec<ScopedVar<'ast>> = self
+            .visible()
+            .into_iter()
+            .filter(|var| {
+                matches!(var.reference_type, ReferenceType::Local)
+                    || (matches!(var.reference_type, ReferenceType::Parameter)
+                        && var.kind.is_ptr_like_type())
+            })
+            .collect();
+
+        if mutables.is_empty() {
+            return Ok(None);
+        }
+
+        let idx = u.int_in_range(0..=(mutables.len() - 1))?;
+
+        Ok(Some(mutables[idx].clone()))
     }
 
     fn has_ptr_of(&self, pointee: &Type) -> Option<ScopedVar<'ast>> {
@@ -167,16 +194,16 @@ fn gen_function<'ast>(
 
         let kind: Type = self::gen_scalar_type(u)?;
 
-        scope.declare(name, kind.clone());
+        scope.declare(name, kind.clone(), ReferenceType::Parameter);
 
         parameter_types.push(kind.clone());
 
         parameters.push(Ast::FunctionParameter {
             name,
             ascii_name: name,
-            kind,
+            kind: kind.clone(),
             position: i as u32,
-            metadata: FunctionParameterMetadata::new(true),
+            metadata: FunctionParameterMetadata::new(kind.is_ptr_like_type()),
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
@@ -455,7 +482,9 @@ fn gen_var<'ast>(
         None
     };
 
-    scope.declare(name, kind.clone());
+    scope.declare(name, kind.clone(), ReferenceType::Local);
+
+    let is_unitialized: bool = value.is_none();
 
     Ok(Ast::Var {
         name,
@@ -464,7 +493,7 @@ fn gen_var<'ast>(
         value,
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: u.arbitrary()?,
+        metadata: LocalMetadata::new(is_unitialized, true, false, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -487,7 +516,7 @@ fn gen_const<'ast>(
         &kind,
     )?);
 
-    scope.declare(name, kind.clone());
+    scope.declare(name, kind.clone(), ReferenceType::Constant);
 
     Ok(Ast::Const {
         name,
@@ -496,7 +525,7 @@ fn gen_const<'ast>(
         value,
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: u.arbitrary()?,
+        metadata: ConstantMetadata::new(false, false, false, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -523,7 +552,9 @@ fn gen_static<'ast>(
         None
     };
 
-    scope.declare(name, kind.clone());
+    scope.declare(name, kind.clone(), ReferenceType::Static);
+
+    let is_unitialized: bool = value.is_none();
 
     Ok(Ast::Static {
         name,
@@ -532,7 +563,16 @@ fn gen_static<'ast>(
         value,
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: u.arbitrary()?,
+        metadata: StaticMetadata::new(
+            false,
+            true,
+            is_unitialized,
+            false,
+            false,
+            false,
+            None,
+            None,
+        ),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -673,7 +713,7 @@ fn gen_for<'ast>(
         value: Some(init_value),
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: u.arbitrary()?,
+        metadata: LocalMetadata::new(false, true, false, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     });
@@ -887,14 +927,20 @@ fn gen_mutation<'ast>(
     cfg: &Config,
     depth: usize,
 ) -> arbitrary::Result<Ast<'ast>> {
-    let Some(picked) = scope.pick_any(u)? else {
+    let Some(picked) = scope.pick_mutable(u)? else {
         return self::gen_var(u, scope, cfg, depth);
     };
 
     let kind: Type = picked.kind.clone();
 
     Ok(Ast::Mutation {
-        source: Box::new(self::reference(picked.name, kind.clone())),
+        source: Box::new(Ast::Reference {
+            name: picked.name,
+            kind: kind.clone(),
+            metadata: self::reference_metadata_for(&picked, true),
+            span: u.arbitrary()?,
+            id: NodeId::new(),
+        }),
         value: Box::new(self::gen_expr_of_type(u, scope, cfg, depth, &kind)?),
         kind: kind.clone(),
         span: u.arbitrary()?,
@@ -1246,10 +1292,15 @@ fn gen_cast_of_type<'ast>(
 
     let from = self::gen_expr_of_type(u, scope, cfg, depth, &source)?;
 
+    let is_constant: bool = from.is_constant_value();
+    let is_allocated: bool = from
+        .is_memory_assigned_value()
+        .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+
     Ok(Ast::As {
         from: Box::new(from),
         cast: target.clone(),
-        metadata: CastingMetadata::new(false, false),
+        metadata: CastingMetadata::new(is_constant, is_allocated),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -1267,14 +1318,14 @@ fn gen_deref_of_type<'ast>(
     Ok(Some(Ast::Deref {
         value: Box::new(Ast::Reference {
             name: ptr_var.name,
-            kind: ptr_var.kind,
-            metadata: ReferenceMetadata::new(true, true, ReferenceType::Local, false),
+            kind: ptr_var.kind.clone(),
+            metadata: self::reference_metadata_for(&ptr_var, true),
             span: u.arbitrary()?,
             id: NodeId::new(),
         }),
         kind: target.clone(),
         modificators: Vec::new(),
-        metadata: u.arbitrary()?,
+        metadata: DereferenceMetadata::new(false, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     }))
@@ -1302,11 +1353,27 @@ fn gen_reference_of_type<'ast>(
 
     Ok(Ast::Reference {
         name: picked.name,
-        kind: picked.kind,
-        metadata: ReferenceMetadata::new(true, true, ReferenceType::Local, false),
+        kind: picked.kind.clone(),
+        metadata: self::reference_metadata_for(&picked, true),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
+}
+
+fn reference_metadata_for(var: &ScopedVar<'_>, is_mutable: bool) -> ReferenceMetadata {
+    match var.reference_type {
+        ReferenceType::Parameter => ReferenceMetadata::new(
+            var.kind.is_ptr_like_type(),
+            is_mutable,
+            ReferenceType::Parameter,
+            false,
+        ),
+        ReferenceType::Static => ReferenceMetadata::new(true, is_mutable, ReferenceType::Static, false),
+        ReferenceType::Constant => {
+            ReferenceMetadata::new(true, false, ReferenceType::Constant, false)
+        }
+        _ => ReferenceMetadata::new(true, is_mutable, ReferenceType::Local, false),
+    }
 }
 
 fn gen_expr_leaf<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrary::Result<Ast<'ast>> {

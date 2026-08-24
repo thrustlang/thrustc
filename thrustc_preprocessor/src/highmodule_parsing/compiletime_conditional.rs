@@ -26,8 +26,10 @@ use thrustc_code_location::Span;
 use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::type_metadata::ArrayTypeMetadata;
 
 use crate::context::PreprocessorContext;
+use crate::submodule_parsing::typegeneration;
 
 pub fn evaluate_condition<'preprocessor>(
     parser: &mut PreprocessorContext<'preprocessor>,
@@ -52,7 +54,7 @@ pub fn skip_import(parser: &mut PreprocessorContext) -> Result<(), ()> {
     Ok(())
 }
 
-fn parse_expression(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
+pub(crate) fn parse_expression(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
     self::parse_or(parser)
 }
 
@@ -268,6 +270,19 @@ fn parse_primary(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
                 id: NodeId::new(),
             })
         }
+        TokenType::CString => {
+            let span: Span = parser.peek().get_span();
+            let content: &str = parser.advance()?.get_lexeme();
+
+            let kind: Type = Type::Array {
+                base_type: Type::Char { span }.into(),
+                infered_type: None,
+                metadata: ArrayTypeMetadata::new(None, None),
+                span,
+            };
+
+            Ok(Ast::new_cstring(content.as_bytes().to_vec(), kind, span))
+        }
         _ => Err(()),
     }
 }
@@ -277,21 +292,42 @@ fn parse_builtin_call(parser: &mut PreprocessorContext) -> Result<Ast<'static>, 
     let name: String = name_tk.get_lexeme().to_string();
     let span: Span = name_tk.get_span();
 
+    let signature: thrustc_builtins::BuiltinFunctionSignature = parser
+        .get_builtins()
+        .get_function(&name)
+        .ok_or(())?
+        .signature();
+
     parser.consume(TokenType::LParen)?;
 
     let mut args: Vec<BuiltinArgument> = Vec::new();
 
     if !parser.check(TokenType::RParen) {
+        let mut index: usize = 0;
+
         loop {
-            let argument: Ast<'static> = self::parse_expression(parser)?;
+            if signature.is_parameter_a_type(index) {
+                let ty: Type = typegeneration::build_type(parser)?;
 
-            let value: BuiltinValue = thrustc_builtins::value::fold(&argument).ok_or(())?;
-            let argument_span: Span = argument.get_span();
+                let type_span: Span = parser.previous().get_span();
 
-            args.push(BuiltinArgument::Value {
-                value,
-                span: argument_span,
-            });
+                args.push(BuiltinArgument::Type {
+                    ty,
+                    span: type_span,
+                });
+            } else {
+                let argument: Ast<'static> = self::parse_expression(parser)?;
+
+                let value: BuiltinValue = thrustc_builtins::value::fold(&argument).ok_or(())?;
+                let argument_span: Span = argument.get_span();
+
+                args.push(BuiltinArgument::Value {
+                    value,
+                    span: argument_span,
+                });
+            }
+
+            index = index.saturating_add(1);
 
             if parser.check(TokenType::RParen) {
                 break;
@@ -303,14 +339,11 @@ fn parse_builtin_call(parser: &mut PreprocessorContext) -> Result<Ast<'static>, 
 
     parser.consume(TokenType::RParen)?;
 
-    let builtins: &thrustc_builtins::BuiltinRegistry = parser.get_builtins();
-
-    let function = builtins.get_function(&name).ok_or(())?;
-    let signature: thrustc_builtins::BuiltinFunctionSignature = function.signature();
-
     if signature.get_parameter_count() != args.len() {
         return Err(());
     }
+
+    let builtins: &thrustc_builtins::BuiltinRegistry = parser.get_builtins();
 
     let value: BuiltinValue = builtins
         .evaluate_function(

@@ -128,6 +128,7 @@ lazy_static::lazy_static! {
         explanations.insert(CompilationIssueCode::E0045, r#""#);
         explanations.insert(CompilationIssueCode::E0046, r#""#);
         explanations.insert(CompilationIssueCode::E0047, r#""#);
+        explanations.insert(CompilationIssueCode::E0048, r#""#);
 
         explanations
     };
@@ -181,6 +182,7 @@ pub enum CompilationIssueCode {
     E0045, // Duplicated named argument.
     E0046, // Positional argument after a named argument.
     E0047, // Variable arguments builtin outside of a variadic function.
+    E0048, // Unsupported builtin for this platform.
 
     W0001, // Irrelevant Attribute
     W0002, // Unknown Call Convention
@@ -354,6 +356,12 @@ impl CompilationIssueCode {
                     "E0047".bright_red()
                 )
             }
+            CompilationIssueCode::E0048 => {
+                format!(
+                    "UNSUPPORTED BUILTIN FOR THIS PLATFORM - {}",
+                    "E0048".bright_red()
+                )
+            }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())
             }
@@ -402,7 +410,10 @@ impl CompilationIssueCode {
                 format!("MUTABLE BUT NEVER MUTATED - {}", "W0020".bright_yellow())
             }
             CompilationIssueCode::W0021 => {
-                format!("NAME SHADOWS OUTER DECLARATION - {}", "W0021".bright_yellow())
+                format!(
+                    "NAME SHADOWS OUTER DECLARATION - {}",
+                    "W0021".bright_yellow()
+                )
             }
             CompilationIssueCode::W0022 => {
                 format!("SELF ASSIGNMENT - {}", "W0022".bright_yellow())
@@ -497,6 +508,8 @@ impl CompilationIssueCode {
             "E0044" => Ok(CompilationIssueCode::E0044),
             "E0045" => Ok(CompilationIssueCode::E0045),
             "E0046" => Ok(CompilationIssueCode::E0046),
+            "E0047" => Ok(CompilationIssueCode::E0047),
+            "E0048" => Ok(CompilationIssueCode::E0048),
 
             "W0001" => Ok(CompilationIssueCode::W0001),
             "W0002" => Ok(CompilationIssueCode::W0002),

@@ -35,6 +35,7 @@ pub mod module;
 mod moduletable;
 mod parser;
 pub mod registry;
+mod shared;
 pub mod signatures;
 pub mod std_library;
 mod submodule_parsing;
