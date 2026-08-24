@@ -38,11 +38,17 @@ pub fn term_precedence<'parser>(
         || ctx.match_token(TokenType::PlusEq)?
         || ctx.match_token(TokenType::MinusEq)?
         || ctx.match_token(TokenType::Arith)?
+        || ctx.match_token(TokenType::ArithEq)?
         || ctx.match_token(TokenType::LShift)?
+        || ctx.match_token(TokenType::LShiftEq)?
         || ctx.match_token(TokenType::RShift)?
+        || ctx.match_token(TokenType::RShiftEq)?
         || ctx.match_token(TokenType::Xor)?
+        || ctx.match_token(TokenType::XorEq)?
         || ctx.match_token(TokenType::Bor)?
+        || ctx.match_token(TokenType::BorEq)?
         || ctx.match_token(TokenType::BAnd)?
+        || ctx.match_token(TokenType::BAndEq)?
     {
         let operator_tk: &Token = ctx.previous();
         let operator: TokenType = operator_tk.get_type();

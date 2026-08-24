@@ -32,24 +32,33 @@ pub fn validate_binary_node(
 ) -> Result<(), CompilationIssue> {
     match *operator {
         TokenType::Arith
+        | TokenType::ArithEq
         | TokenType::Star
+        | TokenType::StarEq
         | TokenType::Slash
+        | TokenType::SlashEq
         | TokenType::Minus
         | TokenType::MinusEq
         | TokenType::Plus
         | TokenType::PlusEq => {
             self::validate_binary_arithmetic_expression(operator, left, right, span)
         }
-        TokenType::Xor => self::validate_xor_expression(operator, left, right, span),
-        TokenType::Bor => self::validate_bor_expression(operator, left, right, span),
-        TokenType::BAnd => self::validate_band_expression(operator, left, right, span),
+        TokenType::Xor | TokenType::XorEq => {
+            self::validate_xor_expression(operator, left, right, span)
+        }
+        TokenType::Bor | TokenType::BorEq => {
+            self::validate_bor_expression(operator, left, right, span)
+        }
+        TokenType::BAnd | TokenType::BAndEq => {
+            self::validate_band_expression(operator, left, right, span)
+        }
         TokenType::BangEq | TokenType::EqEq => {
             self::validate_binary_equality_expression(operator, left, right, span)
         }
         TokenType::LessEq | TokenType::Less | TokenType::GreaterEq | TokenType::Greater => {
             self::validate_binary_comparasion_expression(operator, left, right, span)
         }
-        TokenType::LShift | TokenType::RShift => {
+        TokenType::LShift | TokenType::RShift | TokenType::LShiftEq | TokenType::RShiftEq => {
             self::validate_binary_shift_expression(operator, left, right, span)
         }
         TokenType::And | TokenType::Or => {

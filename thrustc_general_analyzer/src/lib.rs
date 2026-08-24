@@ -465,6 +465,18 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                                     source.get_span(),
                                 ));
                             }
+
+                            if metadata.is_constant_ref() {
+                                self.add_error(CompilationIssue::Error(
+                                    CompilationIssueCode::E0038,
+                                    "Cannot assign to a constant; constants are immutable."
+                                        .into(),
+                                    "You should remove the assignment or use a mutable variable instead."
+                                        .into(),
+                                    None,
+                                    source.get_span(),
+                                ));
+                            }
                         }
                     }
                 }

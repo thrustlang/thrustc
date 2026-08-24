@@ -24,6 +24,7 @@ use thrustc_ast::{
 };
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
+use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::{
     Type,
     traits::{TypeExtensions, TypePointerExtensions},
@@ -36,7 +37,25 @@ pub fn validate_node<'analyzer>(
     node: &'analyzer Ast,
 ) -> Result<(), CompilationIssue> {
     match node {
-        Ast::BinaryOp { left, right, .. } => {
+        Ast::BinaryOp {
+            left,
+            right,
+            operator,
+            ..
+        } => {
+            if let Ast::Reference { metadata, .. } = &**left {
+                if operator.is_compound_assignment_operator() && metadata.is_constant_ref() {
+                    analyzer.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0038,
+                        "Cannot assign to a constant; constants are immutable.".into(),
+                        "You should remove the compound assignment or use a mutable variable instead."
+                            .into(),
+                        None,
+                        left.get_span(),
+                    ));
+                }
+            }
+
             analyzer.analyze_expr(left)?;
             analyzer.analyze_expr(right)?;
 

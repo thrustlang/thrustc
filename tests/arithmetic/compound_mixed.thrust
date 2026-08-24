@@ -1,0 +1,82 @@
+/*
+ * Mixed compound-assignment tests.
+ * Verifies that '+=' and '-=' still work, that every new integer
+ * compound operator behaves correctly, and that floats accept
+ * '*=', '/=' and '%='.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+fn main() s32 @public {
+    var a: s32 = 10;
+
+    a += 5;
+    if a != 15 {
+        return 1;
+    }
+
+    a -= 3;
+    if a != 12 {
+        return 2;
+    }
+
+    a *= 2;
+    if a != 24 {
+        return 3;
+    }
+
+    a /= 4;
+    if a != 6 {
+        return 4;
+    }
+
+    a %= 4;
+    if a != 2 {
+        return 5;
+    }
+
+    var b: s32 = 12;
+
+    b &= 10;
+    if b != 8 {
+        return 6;
+    }
+
+    b |= 3;
+    if b != 11 {
+        return 7;
+    }
+
+    b ^= 5;
+    if b != 14 {
+        return 8;
+    }
+
+    b <<= 1;
+    if b != 28 {
+        return 9;
+    }
+
+    b >>= 2;
+    if b != 7 {
+        return 10;
+    }
+
+    var f: f64 = 2.0;
+
+    f *= 3.0;
+    if f != 6.0 {
+        return 11;
+    }
+
+    f /= 2.0;
+    if f != 3.0 {
+        return 12;
+    }
+
+    f %= 2.0;
+    if f != 1.0 {
+        return 13;
+    }
+
+    return 0;
+}

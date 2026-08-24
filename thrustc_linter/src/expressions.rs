@@ -38,6 +38,12 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
             span,
             ..
         } => {
+            if let Ast::Reference { name, .. } = &**left {
+                if operator.is_compound_assignment_operator() {
+                    crate::mark_as_mutated(linter, name, *span, true);
+                }
+            }
+
             if let (Ast::Reference { name: lname, .. }, Ast::Reference { name: rname, .. }) =
                 (&**left, &**right)
             {

@@ -1,0 +1,23 @@
+/*
+ * Tests the compound assignment operator '/=' on a direct reference.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+fn main() s32 @public {
+    var x: s32 = 20;
+
+    x /= 4;
+
+    if x != 5 {
+        return 1;
+    }
+
+    var u: u64 = 81;
+    u /= 9;
+
+    if u != 9 {
+        return 2;
+    }
+
+    return 0;
+}

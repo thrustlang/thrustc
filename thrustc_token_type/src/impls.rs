@@ -42,6 +42,23 @@ impl TokenTypeExtensions for TokenType {
     }
 
     #[inline]
+    fn is_compound_assignment_operator(&self) -> bool {
+        matches!(
+            self,
+            TokenType::PlusEq
+                | TokenType::MinusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
+        )
+    }
+
+    #[inline]
     fn is_minus_minus_operator(&self) -> bool {
         matches!(self, TokenType::MinusMinus)
     }
@@ -391,6 +408,14 @@ impl std::fmt::Display for TokenType {
             TokenType::Plus => write!(f, "+"),
             TokenType::PlusEq => write!(f, "+="),
             TokenType::PlusPlus => write!(f, "++"),
+            TokenType::StarEq => write!(f, "*="),
+            TokenType::SlashEq => write!(f, "/="),
+            TokenType::ArithEq => write!(f, "%="),
+            TokenType::BAndEq => write!(f, "&="),
+            TokenType::BorEq => write!(f, "|="),
+            TokenType::XorEq => write!(f, "^="),
+            TokenType::LShiftEq => write!(f, "<<="),
+            TokenType::RShiftEq => write!(f, ">>="),
             TokenType::Range => write!(f, ".."),
             TokenType::RBrace => write!(f, "}}"),
             TokenType::RBracket => write!(f, "]"),

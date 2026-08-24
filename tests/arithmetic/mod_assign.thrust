@@ -1,0 +1,23 @@
+/*
+ * Tests the compound assignment operator '%=' on a direct reference.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+fn main() s32 @public {
+    var x: s32 = 17;
+
+    x %= 5;
+
+    if x != 2 {
+        return 1;
+    }
+
+    var u: u64 = 100;
+    u %= 7;
+
+    if u != 2 {
+        return 2;
+    }
+
+    return 0;
+}

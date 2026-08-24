@@ -58,317 +58,19 @@ fn compile_int_operation<'ctx>(
     operator: &TokenType,
     span: Span,
 ) -> BasicValueEnum<'ctx> {
-    let llvm_builder: &Builder = context.get_llvm_builder();
-
     match operator {
-        TokenType::PlusEq => {
-            if lhs.is_memory_assigned_reference() {
-                context.add_codegen_location(CodeGenLocation::LValue);
-
-                let reference: BasicValueEnum<'_> =
-                    codegen::compile_as_ptr_value(context, lhs, cast_type);
-
-                context.pop_current_codegen_location();
-
-                let symbol: memory::SymbolAllocated<'_> = if let Ast::Reference { name, .. } = lhs {
-                    context.get_table().get_symbol(name)
-                } else {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '+' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                };
-
-                let atomic_config: Option<LLVMAtomicModificators> =
-                    symbol.determinate_atomic_configuration();
-
-                if let Some(config) = atomic_config {
-                    context.push_atomic_modificators(config);
-                }
-
-                if reference.is_pointer_value() {
-                    let ptr: PointerValue<'_> = reference.into_pointer_value();
-
-                    let old_value: IntValue<'_> =
-                        codegen::compile_as_value(context, lhs, cast_type).into_int_value();
-                    let value: IntValue<'_> =
-                        codegen::compile_as_value(context, rhs, cast_type).into_int_value();
-
-                    let (old_value, value) = type_cast::compile_int_together_cast(
-                        context,
-                        old_value,
-                        value,
-                        (signatures.0, signatures.1),
-                        span,
-                    );
-
-                    let new_value: BasicValueEnum<'_>;
-
-                    let options: &CompilerOptions = context.get_compiler_options();
-                    let llvm_backend: &LLVMBackend = options.get_llvm_backend();
-
-                    if llvm_backend.has_disable_safe_math() {
-                        new_value = llvm_builder
-                            .build_int_add(old_value, value, "")
-                            .unwrap_or_else(|_| {
-                                abort::abort_codegen(
-                                    context,
-                                    "Failed to compile '+' operation!",
-                                    span,
-                                    std::path::PathBuf::from(file!()),
-                                    line!(),
-                                );
-                            })
-                            .into()
-                    } else {
-                        if signatures.0 || signatures.1 {
-                            new_value = llvm_builder
-                                .build_int_nsw_add(old_value, value, "")
-                                .unwrap_or_else(|_| {
-                                    abort::abort_codegen(
-                                        context,
-                                        "Failed to compile '+' operation!",
-                                        span,
-                                        std::path::PathBuf::from(file!()),
-                                        line!(),
-                                    );
-                                })
-                                .into()
-                        } else {
-                            new_value = llvm_builder
-                                .build_int_nuw_add(old_value, value, "")
-                                .unwrap_or_else(|_| {
-                                    abort::abort_codegen(
-                                        context,
-                                        "Failed to compile '+' operation!",
-                                        span,
-                                        std::path::PathBuf::from(file!()),
-                                        line!(),
-                                    );
-                                })
-                                .into()
-                        }
-                    }
-
-                    memory::store(context, ptr, new_value, span);
-
-                    if atomic_config.is_some() {
-                        context.pop_atomic_modificators();
-                    }
-
-                    new_value
-                } else {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '+=' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    )
-                }
-            } else {
-                let lhs: BasicValueEnum = codegen::compile_as_value(context, lhs, cast_type);
-                let rhs: BasicValueEnum = codegen::compile_as_value(context, rhs, cast_type);
-
-                let old_value: IntValue<'_> = lhs.into_int_value();
-                let value: IntValue<'_> = rhs.into_int_value();
-
-                let (old_value, value) = type_cast::compile_int_together_cast(
-                    context,
-                    old_value,
-                    value,
-                    (signatures.0, signatures.1),
-                    span,
-                );
-
-                llvm_builder
-                    .build_int_nsw_add(old_value, value, "")
-                    .unwrap_or_else(|_| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to compile '+' operation!",
-                            span,
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        );
-                    })
-                    .into()
-            }
-        }
-
-        TokenType::MinusEq => {
-            if lhs.is_memory_assigned_reference() {
-                context.add_codegen_location(CodeGenLocation::LValue);
-
-                let reference: BasicValueEnum<'_> =
-                    codegen::compile_as_ptr_value(context, lhs, cast_type);
-
-                context.pop_current_codegen_location();
-
-                let symbol: memory::SymbolAllocated<'_> = if let Ast::Reference { name, .. } = lhs {
-                    context.get_table().get_symbol(name)
-                } else {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '+' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                };
-
-                let atomic_config: Option<LLVMAtomicModificators> =
-                    symbol.determinate_atomic_configuration();
-
-                if let Some(config) = atomic_config {
-                    context.push_atomic_modificators(config);
-                }
-
-                if reference.is_pointer_value() {
-                    let ptr: PointerValue<'_> = reference.into_pointer_value();
-
-                    let old_value: IntValue<'_> =
-                        codegen::compile_as_value(context, lhs, cast_type).into_int_value();
-                    let value: IntValue<'_> =
-                        codegen::compile_as_value(context, rhs, cast_type).into_int_value();
-
-                    let (old_value, value) = type_cast::compile_int_together_cast(
-                        context,
-                        old_value,
-                        value,
-                        (signatures.0, signatures.1),
-                        span,
-                    );
-
-                    let options: &CompilerOptions = context.get_compiler_options();
-                    let llvm_backend: &LLVMBackend = options.get_llvm_backend();
-
-                    let new_value: BasicValueEnum<'_>;
-
-                    if llvm_backend.has_disable_safe_math() {
-                        new_value = llvm_builder
-                            .build_int_sub(old_value, value, "")
-                            .unwrap_or_else(|_| {
-                                abort::abort_codegen(
-                                    context,
-                                    "Failed to compile '-' operation!",
-                                    span,
-                                    std::path::PathBuf::from(file!()),
-                                    line!(),
-                                );
-                            })
-                            .into();
-                    } else {
-                        if signatures.0 || signatures.1 {
-                            new_value = llvm_builder
-                                .build_int_nsw_sub(old_value, value, "")
-                                .unwrap_or_else(|_| {
-                                    abort::abort_codegen(
-                                        context,
-                                        "Failed to compile '-' operation!",
-                                        span,
-                                        std::path::PathBuf::from(file!()),
-                                        line!(),
-                                    );
-                                })
-                                .into();
-                        } else {
-                            new_value = llvm_builder
-                                .build_int_nuw_sub(old_value, value, "")
-                                .unwrap_or_else(|_| {
-                                    abort::abort_codegen(
-                                        context,
-                                        "Failed to compile '-' operation!",
-                                        span,
-                                        std::path::PathBuf::from(file!()),
-                                        line!(),
-                                    );
-                                })
-                                .into();
-                        }
-                    }
-
-                    memory::store(context, ptr, new_value, span);
-
-                    if atomic_config.is_some() {
-                        context.pop_atomic_modificators();
-                    }
-
-                    new_value
-                } else {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '-=' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    )
-                }
-            } else {
-                let lhs: BasicValueEnum = codegen::compile_as_value(context, lhs, cast_type);
-                let rhs: BasicValueEnum = codegen::compile_as_value(context, rhs, cast_type);
-
-                let old_value: IntValue<'_> = lhs.into_int_value();
-                let value: IntValue<'_> = rhs.into_int_value();
-
-                let (old_value, value) = type_cast::compile_int_together_cast(
-                    context,
-                    old_value,
-                    value,
-                    (signatures.0, signatures.1),
-                    span,
-                );
-
-                let options: &CompilerOptions = context.get_compiler_options();
-                let llvm_backend: &LLVMBackend = options.get_llvm_backend();
-
-                if llvm_backend.has_disable_safe_math() {
-                    llvm_builder
-                        .build_int_sub(old_value, value, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile '-' operation!",
-                                span,
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            );
-                        })
-                        .into()
-                } else {
-                    if signatures.0 || signatures.1 {
-                        llvm_builder
-                            .build_int_nsw_sub(old_value, value, "")
-                            .unwrap_or_else(|_| {
-                                abort::abort_codegen(
-                                    context,
-                                    "Failed to compile '-' operation!",
-                                    span,
-                                    std::path::PathBuf::from(file!()),
-                                    line!(),
-                                );
-                            })
-                            .into()
-                    } else {
-                        llvm_builder
-                            .build_int_nuw_sub(old_value, value, "")
-                            .unwrap_or_else(|_| {
-                                abort::abort_codegen(
-                                    context,
-                                    "Failed to compile '-' operation!",
-                                    span,
-                                    std::path::PathBuf::from(file!()),
-                                    line!(),
-                                );
-                            })
-                            .into()
-                    }
-                }
-            }
-        }
+        TokenType::PlusEq
+        | TokenType::MinusEq
+        | TokenType::StarEq
+        | TokenType::SlashEq
+        | TokenType::ArithEq
+        | TokenType::BAndEq
+        | TokenType::BorEq
+        | TokenType::XorEq
+        | TokenType::LShiftEq
+        | TokenType::RShiftEq => self::compile_compound_int_operation(
+            context, lhs, rhs, cast_type, signatures, operator, span,
+        ),
 
         _ => {
             if let TokenType::Plus
@@ -409,6 +111,90 @@ fn compile_int_operation<'ctx>(
     }
 }
 
+fn compile_compound_int_operation<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    lhs: &'ctx Ast,
+    rhs: &'ctx Ast,
+    cast_type: Option<&Type>,
+    signatures: (bool, bool, &Type, &Type),
+    operator: &TokenType,
+    span: Span,
+) -> BasicValueEnum<'ctx> {
+    if lhs.is_memory_assigned_reference() {
+        context.add_codegen_location(CodeGenLocation::LValue);
+
+        let reference: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, lhs, cast_type);
+
+        context.pop_current_codegen_location();
+
+        let symbol: memory::SymbolAllocated<'_> = if let Ast::Reference { name, .. } = lhs {
+            context.get_table().get_symbol(name)
+        } else {
+            abort::abort_codegen(
+                context,
+                "Failed to compile the compound operation!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        };
+
+        let atomic_config: Option<LLVMAtomicModificators> =
+            symbol.determinate_atomic_configuration();
+
+        if let Some(config) = atomic_config {
+            context.push_atomic_modificators(config);
+        }
+
+        if reference.is_pointer_value() {
+            let ptr: PointerValue<'_> = reference.into_pointer_value();
+
+            let old_value: IntValue<'_> =
+                codegen::compile_as_value(context, lhs, cast_type).into_int_value();
+            let value: IntValue<'_> =
+                codegen::compile_as_value(context, rhs, cast_type).into_int_value();
+
+            let (old_value, value) = type_cast::compile_int_together_cast(
+                context,
+                old_value,
+                value,
+                (signatures.0, signatures.1),
+                span,
+            );
+
+            let new_value: BasicValueEnum<'_> = self::compiler_int_binary_instruction(
+                context,
+                old_value,
+                value,
+                (signatures.0, signatures.1),
+                operator,
+                span,
+            );
+
+            memory::store(context, ptr, new_value, span);
+
+            if atomic_config.is_some() {
+                context.pop_atomic_modificators();
+            }
+
+            new_value
+        } else {
+            abort::abort_codegen(
+                context,
+                "Failed to compile the compound operation!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        }
+    } else {
+        let lhs: BasicValueEnum = codegen::compile_as_value(context, lhs, cast_type);
+        let rhs: BasicValueEnum = codegen::compile_as_value(context, rhs, cast_type);
+
+        self::compile_int_value_operation(context, lhs, rhs, signatures, operator, span)
+    }
+}
+
 fn compile_int_value_operation<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     lhs: BasicValueEnum<'ctx>,
@@ -427,325 +213,9 @@ fn compile_int_value_operation<'ctx>(
 
         let (lhs, rhs) = type_cast::compile_int_together_cast(context, lhs, rhs, signatures, span);
 
-        let options: &CompilerOptions = context.get_compiler_options();
-        let llvm_backend: &LLVMBackend = options.get_llvm_backend();
-
-        return match operator {
-            TokenType::Plus
-                if (signatures.0 || signatures.1) && !llvm_backend.has_disable_safe_math() =>
-            {
-                llvm_builder
-                    .build_int_nsw_add(lhs, rhs, "")
-                    .unwrap_or_else(|_| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to compile '+' operation!",
-                            span,
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        );
-                    })
-                    .into()
-            }
-            TokenType::Plus if !llvm_backend.has_disable_safe_math() => llvm_builder
-                .build_int_nuw_add(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '+' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::Plus if llvm_backend.has_disable_safe_math() => llvm_builder
-                .build_int_add(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '+' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::Minus
-                if (signatures.0 || signatures.1) && !llvm_backend.has_disable_safe_math() =>
-            {
-                llvm_builder
-                    .build_int_nsw_sub(lhs, rhs, "")
-                    .unwrap_or_else(|_| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to compile '-' operation!",
-                            span,
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        );
-                    })
-                    .into()
-            }
-            TokenType::Minus if !llvm_backend.has_disable_safe_math() => llvm_builder
-                .build_int_nuw_sub(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '-' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::Minus if llvm_backend.has_disable_safe_math() => llvm_builder
-                .build_int_sub(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '-' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::Star
-                if (signatures.0 || signatures.1) && !llvm_backend.has_disable_safe_math() =>
-            {
-                llvm_builder
-                    .build_int_nsw_mul(lhs, rhs, "")
-                    .unwrap_or_else(|_| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to compile '*' operation!",
-                            span,
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        );
-                    })
-                    .into()
-            }
-            TokenType::Star if !llvm_backend.has_disable_safe_math() => llvm_builder
-                .build_int_nuw_mul(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '*' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::Star if llvm_backend.has_disable_safe_math() => llvm_builder
-                .build_int_mul(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '*' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::Slash if signatures.0 || signatures.1 => llvm_builder
-                .build_int_signed_div(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '/' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::Slash if !signatures.0 && !signatures.1 => llvm_builder
-                .build_int_unsigned_div(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '/' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::Slash => llvm_builder
-                .build_int_signed_div(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '/' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::LShift => llvm_builder
-                .build_left_shift(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '<<' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::RShift => llvm_builder
-                .build_right_shift(lhs, rhs, signatures.0 || signatures.1, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '>>' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::Arith if signatures.0 || signatures.1 => llvm_builder
-                .build_int_signed_rem(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '%' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-
-            TokenType::Arith => llvm_builder
-                .build_int_unsigned_rem(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '%' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-
-            TokenType::Xor => llvm_builder
-                .build_xor(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '^' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::Bor => llvm_builder
-                .build_or(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '|' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-            TokenType::BAnd => llvm_builder
-                .build_and(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '&' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-
-            op if op.is_logical_operator() => llvm_builder
-                .build_int_compare(
-                    predicates::get_integer_predicate(
-                        context,
-                        operator,
-                        signatures.0,
-                        signatures.1,
-                        span,
-                    ),
-                    lhs,
-                    rhs,
-                    "",
-                )
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile comparison!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into(),
-
-            op if op.is_logical_gate() => {
-                if let TokenType::And = op {
-                    return llvm_builder
-                        .build_and(lhs, rhs, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile '&&' operation!",
-                                span,
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            );
-                        })
-                        .into();
-                }
-
-                if let TokenType::Or = op {
-                    return llvm_builder
-                        .build_or(lhs, rhs, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile '||' operation!",
-                                span,
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            );
-                        })
-                        .into();
-                }
-
-                abort::abort_codegen(
-                    context,
-                    "Failed to compile without a valid operator!",
-                    span,
-                    std::path::PathBuf::from(file!()),
-                    line!(),
-                )
-            }
-
-            _ => abort::abort_codegen(
-                context,
-                "Failed to compile without a valid operator!",
-                span,
-                std::path::PathBuf::from(file!()),
-                line!(),
-            ),
-        };
+        return self::compiler_int_binary_instruction(
+            context, lhs, rhs, signatures, operator, span,
+        );
     }
 
     if lhs.is_pointer_value() && rhs.is_pointer_value() {
@@ -791,6 +261,345 @@ fn compile_int_value_operation<'ctx>(
     );
 }
 
+fn compiler_int_binary_instruction<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    lhs: IntValue<'ctx>,
+    rhs: IntValue<'ctx>,
+    signatures: (bool, bool),
+    operator: &TokenType,
+    span: Span,
+) -> BasicValueEnum<'ctx> {
+    let llvm_builder: &Builder = context.get_llvm_builder();
+
+    let options: &CompilerOptions = context.get_compiler_options();
+    let llvm_backend: &LLVMBackend = options.get_llvm_backend();
+
+    match operator {
+        TokenType::Plus | TokenType::PlusEq
+            if (signatures.0 || signatures.1) && !llvm_backend.has_disable_safe_math() =>
+        {
+            llvm_builder
+                .build_int_nsw_add(lhs, rhs, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile '+' operation!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    );
+                })
+                .into()
+        }
+        TokenType::Plus | TokenType::PlusEq if !llvm_backend.has_disable_safe_math() => {
+            llvm_builder
+                .build_int_nuw_add(lhs, rhs, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile '+' operation!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    );
+                })
+                .into()
+        }
+        TokenType::Plus | TokenType::PlusEq if llvm_backend.has_disable_safe_math() => llvm_builder
+            .build_int_add(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '+' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::Minus | TokenType::MinusEq
+            if (signatures.0 || signatures.1) && !llvm_backend.has_disable_safe_math() =>
+        {
+            llvm_builder
+                .build_int_nsw_sub(lhs, rhs, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile '-' operation!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    );
+                })
+                .into()
+        }
+        TokenType::Minus | TokenType::MinusEq if !llvm_backend.has_disable_safe_math() => {
+            llvm_builder
+                .build_int_nuw_sub(lhs, rhs, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile '-' operation!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    );
+                })
+                .into()
+        }
+        TokenType::Minus | TokenType::MinusEq if llvm_backend.has_disable_safe_math() => {
+            llvm_builder
+                .build_int_sub(lhs, rhs, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile '-' operation!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    );
+                })
+                .into()
+        }
+        TokenType::Star | TokenType::StarEq
+            if (signatures.0 || signatures.1) && !llvm_backend.has_disable_safe_math() =>
+        {
+            llvm_builder
+                .build_int_nsw_mul(lhs, rhs, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile '*' operation!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    );
+                })
+                .into()
+        }
+        TokenType::Star | TokenType::StarEq if !llvm_backend.has_disable_safe_math() => {
+            llvm_builder
+                .build_int_nuw_mul(lhs, rhs, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile '*' operation!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    );
+                })
+                .into()
+        }
+        TokenType::Star | TokenType::StarEq if llvm_backend.has_disable_safe_math() => llvm_builder
+            .build_int_mul(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '*' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::Slash | TokenType::SlashEq if signatures.0 || signatures.1 => llvm_builder
+            .build_int_signed_div(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '/' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::Slash | TokenType::SlashEq if !signatures.0 && !signatures.1 => llvm_builder
+            .build_int_unsigned_div(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '/' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::Slash | TokenType::SlashEq => llvm_builder
+            .build_int_signed_div(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '/' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::LShift | TokenType::LShiftEq => llvm_builder
+            .build_left_shift(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '<<' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::RShift | TokenType::RShiftEq => llvm_builder
+            .build_right_shift(lhs, rhs, signatures.0 || signatures.1, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '>>' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::Arith | TokenType::ArithEq if signatures.0 || signatures.1 => llvm_builder
+            .build_int_signed_rem(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '%' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+
+        TokenType::Arith | TokenType::ArithEq => llvm_builder
+            .build_int_unsigned_rem(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '%' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+
+        TokenType::Xor | TokenType::XorEq => llvm_builder
+            .build_xor(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '^' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::Bor | TokenType::BorEq => llvm_builder
+            .build_or(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '|' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::BAnd | TokenType::BAndEq => llvm_builder
+            .build_and(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '&' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+
+        op if op.is_logical_operator() => llvm_builder
+            .build_int_compare(
+                predicates::get_integer_predicate(
+                    context,
+                    operator,
+                    signatures.0,
+                    signatures.1,
+                    span,
+                ),
+                lhs,
+                rhs,
+                "",
+            )
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile comparison!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+
+        op if op.is_logical_gate() => {
+            if let TokenType::And = op {
+                return llvm_builder
+                    .build_and(lhs, rhs, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile '&&' operation!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    })
+                    .into();
+            }
+
+            if let TokenType::Or = op {
+                return llvm_builder
+                    .build_or(lhs, rhs, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile '||' operation!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    })
+                    .into();
+            }
+
+            abort::abort_codegen(
+                context,
+                "Failed to compile without a valid operator!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        }
+
+        _ => abort::abort_codegen(
+            context,
+            "Failed to compile without a valid operator!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        ),
+    }
+}
+
 pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     binary: BinaryOperation<'ctx>,
@@ -807,6 +616,14 @@ pub fn compile<'ctx>(
         | TokenType::Arith
         | TokenType::PlusEq
         | TokenType::MinusEq
+        | TokenType::StarEq
+        | TokenType::SlashEq
+        | TokenType::ArithEq
+        | TokenType::BAndEq
+        | TokenType::BorEq
+        | TokenType::XorEq
+        | TokenType::LShiftEq
+        | TokenType::RShiftEq
         | TokenType::BangEq
         | TokenType::EqEq
         | TokenType::LessEq
@@ -871,8 +688,8 @@ fn compile_constant_int_value_operation<'ctx>(
         return match operator {
             TokenType::Plus | TokenType::PlusEq => lhs.const_nsw_add(rhs).into(),
             TokenType::Minus | TokenType::MinusEq => lhs.const_nsw_sub(rhs).into(),
-            TokenType::Star => lhs.const_nsw_mul(rhs).into(),
-            TokenType::Slash => {
+            TokenType::Star | TokenType::StarEq => lhs.const_nsw_mul(rhs).into(),
+            TokenType::Slash | TokenType::SlashEq => {
                 if signatures.0 || signatures.1 {
                     if let Some(lhs_number) = lhs.get_sign_extended_constant() {
                         if let Some(rhs_number) = rhs.get_sign_extended_constant() {
@@ -936,7 +753,7 @@ fn compile_constant_int_value_operation<'ctx>(
 
                 lhs.get_type().const_zero().into()
             }
-            TokenType::LShift => {
+            TokenType::LShift | TokenType::LShiftEq => {
                 if signatures.0 || signatures.1 {
                     if let Some(lhs_number) = lhs.get_sign_extended_constant() {
                         if let Some(rhs_number) = rhs.get_sign_extended_constant() {
@@ -998,7 +815,7 @@ fn compile_constant_int_value_operation<'ctx>(
 
                 lhs.get_type().const_zero().into()
             }
-            TokenType::RShift => {
+            TokenType::RShift | TokenType::RShiftEq => {
                 if signatures.0 || signatures.1 {
                     if let Some(lhs_number) = lhs.get_sign_extended_constant() {
                         if let Some(rhs_number) = rhs.get_sign_extended_constant() {
@@ -1060,7 +877,7 @@ fn compile_constant_int_value_operation<'ctx>(
 
                 lhs.get_type().const_zero().into()
             }
-            TokenType::Arith => {
+            TokenType::Arith | TokenType::ArithEq => {
                 if signatures.0 || signatures.1 {
                     if let Some(lhs_number) = lhs.get_sign_extended_constant() {
                         if let Some(rhs_number) = rhs.get_sign_extended_constant() {
@@ -1120,9 +937,9 @@ fn compile_constant_int_value_operation<'ctx>(
 
                 lhs.get_type().const_zero().into()
             }
-            TokenType::Xor => lhs.const_xor(rhs).into(),
+            TokenType::Xor | TokenType::XorEq => lhs.const_xor(rhs).into(),
 
-            TokenType::Bor => {
+            TokenType::Bor | TokenType::BorEq => {
                 if signatures.0 || signatures.1 {
                     if let Some(lhs_number) = lhs.get_sign_extended_constant() {
                         if let Some(rhs_number) = rhs.get_sign_extended_constant() {
@@ -1183,7 +1000,7 @@ fn compile_constant_int_value_operation<'ctx>(
                 lhs.get_type().const_zero().into()
             }
 
-            TokenType::BAnd => {
+            TokenType::BAnd | TokenType::BAndEq => {
                 if signatures.0 || signatures.1 {
                     if let Some(lhs_number) = lhs.get_sign_extended_constant() {
                         if let Some(rhs_number) = rhs.get_sign_extended_constant() {
@@ -1357,6 +1174,14 @@ pub fn compile_constant<'ctx>(
         | TokenType::Arith
         | TokenType::PlusEq
         | TokenType::MinusEq
+        | TokenType::StarEq
+        | TokenType::SlashEq
+        | TokenType::ArithEq
+        | TokenType::BAndEq
+        | TokenType::BorEq
+        | TokenType::XorEq
+        | TokenType::LShiftEq
+        | TokenType::RShiftEq
         | TokenType::BangEq
         | TokenType::EqEq
         | TokenType::LessEq

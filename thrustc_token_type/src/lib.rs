@@ -63,6 +63,14 @@ pub enum TokenType {
     MinusMinus, // ' -- '
     MinusEq,    // -=
     PlusEq,     // +=
+    StarEq,     // *=
+    SlashEq,    // /=
+    ArithEq,    // %=
+    BAndEq,     // &=
+    BorEq,      // |=
+    XorEq,      // ^=
+    LShiftEq,   // <<=
+    RShiftEq,   // >>=
     LShift,     // ' << '
     RShift,     // ' >> '
     Arrow,      // ->

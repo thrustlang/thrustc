@@ -35,10 +35,14 @@ pub fn analyze(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
         '.' if lexer.char_match('.') && lexer.char_match('.') => lexer.make(TokenType::Pass),
         '.' if lexer.char_match('.') => lexer.make(TokenType::Range),
         '.' => lexer.make(TokenType::Dot),
+        '%' if lexer.char_match('=') => lexer.make(TokenType::ArithEq),
         '%' => lexer.make(TokenType::Arith),
+        '*' if lexer.char_match('=') => lexer.make(TokenType::StarEq),
         '*' => lexer.make(TokenType::Star),
+        '^' if lexer.char_match('=') => lexer.make(TokenType::XorEq),
         '^' => lexer.make(TokenType::Xor),
         '~' => lexer.make(TokenType::Not),
+        '/' if lexer.char_match('=') => lexer.make(TokenType::SlashEq),
         '/' if lexer.char_match('/') => loop {
             if lexer.peek() == '\n' || lexer.is_eof() {
                 break;
@@ -84,16 +88,30 @@ pub fn analyze(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
         '!' => lexer.make(TokenType::Bang),
         '=' if lexer.char_match('=') => lexer.make(TokenType::EqEq),
         '=' => lexer.make(TokenType::Eq),
+        '<' if lexer.char_match('<') => {
+            if lexer.char_match('=') {
+                lexer.make(TokenType::LShiftEq);
+            } else {
+                lexer.make(TokenType::LShift);
+            }
+        }
         '<' if lexer.char_match('=') => lexer.make(TokenType::LessEq),
-        '<' if lexer.char_match('<') => lexer.make(TokenType::LShift),
         '<' => lexer.make(TokenType::Less),
+        '>' if lexer.char_match('>') => {
+            if lexer.char_match('=') {
+                lexer.make(TokenType::RShiftEq);
+            } else {
+                lexer.make(TokenType::RShift);
+            }
+        }
         '>' if lexer.char_match('=') => lexer.make(TokenType::GreaterEq),
-        '>' if lexer.char_match('>') => lexer.make(TokenType::RShift),
         '>' => lexer.make(TokenType::Greater),
 
         '|' if lexer.char_match('|') => lexer.make(TokenType::Or),
+        '|' if lexer.char_match('=') => lexer.make(TokenType::BorEq),
         '|' => lexer.make(TokenType::Bor),
         '&' if lexer.char_match('&') => lexer.make(TokenType::And),
+        '&' if lexer.char_match('=') => lexer.make(TokenType::BAndEq),
         '&' => lexer.make(TokenType::BAnd),
 
         '\r' | '\t' => {}

@@ -48,183 +48,13 @@ pub fn compile_float_operation<'ctx>(
     operator: &TokenType,
     span: Span,
 ) -> BasicValueEnum<'ctx> {
-    let llvm_builder: &Builder<'_> = context.get_llvm_builder();
-
     match operator {
-        TokenType::PlusEq => {
-            if lhs.is_memory_assigned_reference() {
-                context.add_codegen_location(CodeGenLocation::LValue);
-                let reference: BasicValueEnum<'_> =
-                    codegen::compile_as_ptr_value(context, lhs, cast);
-                context.pop_current_codegen_location();
-
-                let symbol: memory::SymbolAllocated<'_> = if let Ast::Reference { name, .. } = lhs {
-                    context.get_table().get_symbol(name)
-                } else {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '+' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                };
-
-                let atomic_config: Option<LLVMAtomicModificators> =
-                    symbol.determinate_atomic_configuration();
-
-                if let Some(config) = atomic_config {
-                    context.push_atomic_modificators(config);
-                }
-
-                if reference.is_pointer_value() {
-                    let ptr: PointerValue<'_> = reference.into_pointer_value();
-
-                    let old_value: FloatValue<'_> =
-                        codegen::compile_as_value(context, lhs, cast).into_float_value();
-                    let value: FloatValue<'_> =
-                        type_cast::compile_type_cast(context, rhs, lhs.get_type_for_llvm())
-                            .into_float_value();
-
-                    let new_value: BasicValueEnum<'_> = llvm_builder
-                        .build_float_add(old_value, value, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile '+' operation!",
-                                span,
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            );
-                        })
-                        .into();
-
-                    memory::store(context, ptr, new_value, span);
-
-                    if atomic_config.is_some() {
-                        context.pop_atomic_modificators();
-                    }
-
-                    new_value
-                } else {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '+=' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    )
-                }
-            } else {
-                let lhs_type: &Type = lhs.get_type_for_llvm();
-                let rhs_ast: &Ast<'_> = rhs;
-                let lhs: BasicValueEnum = codegen::compile_as_value(context, lhs, cast);
-
-                let old_value: FloatValue<'_> = lhs.into_float_value();
-                let value: FloatValue<'_> = type_cast::compile_type_cast(context, rhs_ast, lhs_type)
-                    .into_float_value();
-
-                llvm_builder
-                    .build_float_add(old_value, value, "")
-                    .unwrap_or_else(|_| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to compile '+' operation!",
-                            span,
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        );
-                    })
-                    .into()
-            }
-        }
-
-        TokenType::MinusEq => {
-            if lhs.is_memory_assigned_reference() {
-                context.add_codegen_location(CodeGenLocation::LValue);
-                let reference: BasicValueEnum<'_> =
-                    codegen::compile_as_ptr_value(context, lhs, cast);
-                context.pop_current_codegen_location();
-
-                let symbol: memory::SymbolAllocated<'_> = if let Ast::Reference { name, .. } = lhs {
-                    context.get_table().get_symbol(name)
-                } else {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '+' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                };
-
-                let atomic_config: Option<LLVMAtomicModificators> =
-                    symbol.determinate_atomic_configuration();
-
-                if let Some(config) = atomic_config {
-                    context.push_atomic_modificators(config);
-                }
-
-                if reference.is_pointer_value() {
-                    let ptr: PointerValue<'_> = reference.into_pointer_value();
-
-                    let old_value: FloatValue<'_> =
-                        codegen::compile_as_value(context, lhs, cast).into_float_value();
-                    let value: FloatValue<'_> =
-                        type_cast::compile_type_cast(context, rhs, lhs.get_type_for_llvm())
-                            .into_float_value();
-
-                    let new_value: BasicValueEnum<'_> = llvm_builder
-                        .build_float_sub(old_value, value, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile '-' operation!",
-                                span,
-                                std::path::PathBuf::from(file!()),
-                                line!(),
-                            );
-                        })
-                        .into();
-
-                    memory::store(context, ptr, new_value, span);
-
-                    if atomic_config.is_some() {
-                        context.pop_atomic_modificators();
-                    }
-
-                    new_value
-                } else {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '-=' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    )
-                }
-            } else {
-                let lhs_type: &Type = lhs.get_type_for_llvm();
-                let rhs_ast: &Ast<'_> = rhs;
-                let lhs: BasicValueEnum = codegen::compile_as_value(context, lhs, cast);
-
-                let old_value: FloatValue<'_> = lhs.into_float_value();
-                let value: FloatValue<'_> = type_cast::compile_type_cast(context, rhs_ast, lhs_type)
-                    .into_float_value();
-
-                llvm_builder
-                    .build_float_sub(old_value, value, "")
-                    .unwrap_or_else(|_| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to compile '-' operation!",
-                            span,
-                            std::path::PathBuf::from(file!()),
-                            line!(),
-                        );
-                    })
-                    .into()
-            }
+        TokenType::PlusEq
+        | TokenType::MinusEq
+        | TokenType::StarEq
+        | TokenType::SlashEq
+        | TokenType::ArithEq => {
+            self::compile_compound_float_operation(context, lhs, rhs, cast, operator, span)
         }
 
         _ => {
@@ -243,7 +73,7 @@ pub fn compile_float_operation<'ctx>(
                 let lhs: BasicValueEnum = codegen::compile_as_value(context, lhs, cast);
                 let rhs: BasicValueEnum = codegen::compile_as_value(context, rhs, cast);
 
-                return compile_float_value_operation(
+                return self::compile_float_binary_instruction(
                     context,
                     lhs.into_float_value(),
                     rhs.into_float_value(),
@@ -263,7 +93,79 @@ pub fn compile_float_operation<'ctx>(
     }
 }
 
-pub fn compile_float_value_operation<'ctx>(
+fn compile_compound_float_operation<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    lhs: &'ctx Ast,
+    rhs: &'ctx Ast,
+    cast: Option<&Type>,
+    operator: &TokenType,
+    span: Span,
+) -> BasicValueEnum<'ctx> {
+    if lhs.is_memory_assigned_reference() {
+        context.add_codegen_location(CodeGenLocation::LValue);
+        let reference: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, lhs, cast);
+        context.pop_current_codegen_location();
+
+        let symbol: memory::SymbolAllocated<'_> = if let Ast::Reference { name, .. } = lhs {
+            context.get_table().get_symbol(name)
+        } else {
+            abort::abort_codegen(
+                context,
+                "Failed to compile the compound float operation!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        };
+
+        let atomic_config: Option<LLVMAtomicModificators> =
+            symbol.determinate_atomic_configuration();
+
+        if let Some(config) = atomic_config {
+            context.push_atomic_modificators(config);
+        }
+
+        if reference.is_pointer_value() {
+            let ptr: PointerValue<'_> = reference.into_pointer_value();
+
+            let old_value: FloatValue<'_> =
+                codegen::compile_as_value(context, lhs, cast).into_float_value();
+            let value: FloatValue<'_> =
+                type_cast::compile_type_cast(context, rhs, lhs.get_type_for_llvm())
+                    .into_float_value();
+
+            let new_value: BasicValueEnum<'_> =
+                self::compile_float_binary_instruction(context, old_value, value, operator, span);
+
+            memory::store(context, ptr, new_value, span);
+
+            if atomic_config.is_some() {
+                context.pop_atomic_modificators();
+            }
+
+            new_value
+        } else {
+            abort::abort_codegen(
+                context,
+                "Failed to compile the compound float operation!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        }
+    } else {
+        let lhs_type: &Type = lhs.get_type_for_llvm();
+        let lhs: BasicValueEnum = codegen::compile_as_value(context, lhs, cast);
+
+        let old_value: FloatValue<'_> = lhs.into_float_value();
+        let value: FloatValue<'_> =
+            type_cast::compile_type_cast(context, rhs, lhs_type).into_float_value();
+
+        self::compile_float_binary_instruction(context, old_value, value, operator, span)
+    }
+}
+
+fn compile_float_binary_instruction<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     lhs: FloatValue<'ctx>,
     rhs: FloatValue<'ctx>,
@@ -275,7 +177,7 @@ pub fn compile_float_value_operation<'ctx>(
     let (lhs, rhs) = type_cast::compile_float_together_cast(context, lhs, rhs, span);
 
     match operator {
-        TokenType::Plus => llvm_builder
+        TokenType::Plus | TokenType::PlusEq => llvm_builder
             .build_float_add(lhs, rhs, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -287,7 +189,7 @@ pub fn compile_float_value_operation<'ctx>(
                 )
             })
             .into(),
-        TokenType::Minus => llvm_builder
+        TokenType::Minus | TokenType::MinusEq => llvm_builder
             .build_float_sub(lhs, rhs, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -299,7 +201,7 @@ pub fn compile_float_value_operation<'ctx>(
                 )
             })
             .into(),
-        TokenType::Star => llvm_builder
+        TokenType::Star | TokenType::StarEq => llvm_builder
             .build_float_mul(lhs, rhs, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -311,7 +213,7 @@ pub fn compile_float_value_operation<'ctx>(
                 )
             })
             .into(),
-        TokenType::Slash => llvm_builder
+        TokenType::Slash | TokenType::SlashEq => llvm_builder
             .build_float_div(lhs, rhs, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -324,7 +226,7 @@ pub fn compile_float_value_operation<'ctx>(
             })
             .into(),
 
-        TokenType::Arith => llvm_builder
+        TokenType::Arith | TokenType::ArithEq => llvm_builder
             .build_float_rem(lhs, rhs, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -381,6 +283,9 @@ pub fn compile<'ctx>(
         | TokenType::Arith
         | TokenType::PlusEq
         | TokenType::MinusEq
+        | TokenType::StarEq
+        | TokenType::SlashEq
+        | TokenType::ArithEq
         | TokenType::BangEq
         | TokenType::EqEq
         | TokenType::LessEq
@@ -444,7 +349,7 @@ fn compile_constant_float_value_operation<'ctx>(
             lhs.get_type().const_zero().into()
         }
 
-        TokenType::Star => {
+        TokenType::Star | TokenType::StarEq => {
             if let Some(lhs_constant) = lhs.get_constant() {
                 if let Some(rhs_constant) = rhs.get_constant() {
                     let lhs_number: f64 = lhs_constant.0;
@@ -457,7 +362,7 @@ fn compile_constant_float_value_operation<'ctx>(
             lhs.get_type().const_zero().into()
         }
 
-        TokenType::Slash => {
+        TokenType::Slash | TokenType::SlashEq => {
             if let Some(lhs_constant) = lhs.get_constant() {
                 if let Some(rhs_constant) = rhs.get_constant() {
                     let lhs_number: f64 = lhs_constant.0;
@@ -470,7 +375,7 @@ fn compile_constant_float_value_operation<'ctx>(
             lhs.get_type().const_zero().into()
         }
 
-        TokenType::Arith => {
+        TokenType::Arith | TokenType::ArithEq => {
             if let Some(lhs_constant) = lhs.get_constant() {
                 if let Some(rhs_constant) = rhs.get_constant() {
                     let lhs_number: f64 = lhs_constant.0;
@@ -517,6 +422,9 @@ pub fn compile_constant<'ctx>(
         | TokenType::Star
         | TokenType::PlusEq
         | TokenType::MinusEq
+        | TokenType::StarEq
+        | TokenType::SlashEq
+        | TokenType::ArithEq
         | TokenType::BangEq
         | TokenType::EqEq
         | TokenType::LessEq

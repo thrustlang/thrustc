@@ -353,6 +353,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -376,6 +384,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -399,6 +415,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -422,6 +446,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -449,6 +481,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -472,6 +512,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -495,6 +543,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -518,6 +574,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -541,6 +605,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -568,6 +640,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -595,6 +675,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -615,7 +703,10 @@ pub fn check_type_together(
                 | TokenType::PlusPlus
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
-                | TokenType::PlusEq,
+                | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq,
             )
             | None,
         ) => Ok(()),
@@ -632,7 +723,10 @@ pub fn check_type_together(
                 | TokenType::PlusPlus
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
-                | TokenType::PlusEq,
+                | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq,
             )
             | None,
         ) => Ok(()),
@@ -649,7 +743,10 @@ pub fn check_type_together(
                 | TokenType::PlusPlus
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
-                | TokenType::PlusEq,
+                | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq,
             )
             | None,
         ) => Ok(()),
@@ -668,7 +765,10 @@ pub fn check_type_together(
                 | TokenType::PlusPlus
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
-                | TokenType::PlusEq,
+                | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq,
             )
             | None,
         ) => Ok(()),
@@ -687,7 +787,10 @@ pub fn check_type_together(
                 | TokenType::PlusPlus
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
-                | TokenType::PlusEq,
+                | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq,
             )
             | None,
         ) => Ok(()),
@@ -707,6 +810,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -730,6 +841,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -753,6 +872,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not
@@ -776,6 +903,14 @@ pub fn check_type_together(
                 | TokenType::MinusMinus
                 | TokenType::MinusEq
                 | TokenType::PlusEq
+                | TokenType::StarEq
+                | TokenType::SlashEq
+                | TokenType::ArithEq
+                | TokenType::BAndEq
+                | TokenType::BorEq
+                | TokenType::XorEq
+                | TokenType::LShiftEq
+                | TokenType::RShiftEq
                 | TokenType::Xor
                 | TokenType::Bor
                 | TokenType::Not

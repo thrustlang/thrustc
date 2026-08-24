@@ -25,6 +25,7 @@ pub trait TokenTypeBuiltinExtensions {
 pub trait TokenTypeExtensions {
     fn is_logical_operator(&self) -> bool;
     fn is_logical_gate(&self) -> bool;
+    fn is_compound_assignment_operator(&self) -> bool;
     fn is_minus_minus_operator(&self) -> bool;
     fn is_plus_plus_operator(&self) -> bool;
     fn is_address(&self) -> bool;

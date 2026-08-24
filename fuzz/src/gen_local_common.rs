@@ -651,7 +651,7 @@ fn gen_for<'ast>(
 
     let actions = Box::new(Ast::BinaryOp {
         left: Box::new(self::reference(loop_var_name, loop_var_kind.clone())),
-        operator: TokenType::PlusEq,
+        operator: self::compound_integer_operator(u)?,
         right: Box::new(Ast::Integer {
             kind: loop_var_kind.clone(),
             value: u.arbitrary()?,
@@ -1510,7 +1510,7 @@ fn reference<'ast>(name: &'ast str, kind: Type) -> Ast<'ast> {
 }
 
 fn integer_operator<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<TokenType> {
-    const OPS: [TokenType; 11] = [
+    const OPS: [TokenType; 19] = [
         TokenType::Plus,
         TokenType::Minus,
         TokenType::Star,
@@ -1521,19 +1521,51 @@ fn integer_operator<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Token
         TokenType::BAnd,
         TokenType::LShift,
         TokenType::RShift,
-        TokenType::Plus,
+        TokenType::PlusEq,
+        TokenType::MinusEq,
+        TokenType::StarEq,
+        TokenType::SlashEq,
+        TokenType::ArithEq,
+        TokenType::BAndEq,
+        TokenType::BorEq,
+        TokenType::XorEq,
+        TokenType::LShiftEq,
     ];
     Ok(*u.choose(&OPS)?)
 }
 
 fn const_integer_operator<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<TokenType> {
-    const OPS: [TokenType; 6] = [
+    const OPS: [TokenType; 14] = [
         TokenType::Plus,
         TokenType::Minus,
         TokenType::Star,
         TokenType::Xor,
         TokenType::Bor,
         TokenType::BAnd,
+        TokenType::PlusEq,
+        TokenType::MinusEq,
+        TokenType::StarEq,
+        TokenType::SlashEq,
+        TokenType::ArithEq,
+        TokenType::BAndEq,
+        TokenType::BorEq,
+        TokenType::XorEq,
+    ];
+    Ok(*u.choose(&OPS)?)
+}
+
+fn compound_integer_operator<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<TokenType> {
+    const OPS: [TokenType; 10] = [
+        TokenType::PlusEq,
+        TokenType::MinusEq,
+        TokenType::StarEq,
+        TokenType::SlashEq,
+        TokenType::ArithEq,
+        TokenType::BAndEq,
+        TokenType::BorEq,
+        TokenType::XorEq,
+        TokenType::LShiftEq,
+        TokenType::RShiftEq,
     ];
     Ok(*u.choose(&OPS)?)
 }

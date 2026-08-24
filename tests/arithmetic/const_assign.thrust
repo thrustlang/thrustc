@@ -1,0 +1,15 @@
+/*
+ * Verifies the W0032 warning: assigning to a constant has no effect.
+ */
+
+const FIXED: s32 = 10;
+
+fn main() s32 @public {
+    const LOCAL: s32 = 5;
+
+    FIXED = 20;
+
+    LOCAL += 1;
+
+    return FIXED;
+}

@@ -1,0 +1,24 @@
+/*
+ * Tests the compound assignment operator '|=' on a direct reference.
+ * 12 = 0b1100, 3 = 0b0011, 12 | 3 = 0b1111 = 15.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+fn main() s32 @public {
+    var x: s32 = 12;
+
+    x |= 3;
+
+    if x != 15 {
+        return 1;
+    }
+
+    var u: u64 = 0x0F;
+    u |= 0xF0;
+
+    if u != 0xFF {
+        return 2;
+    }
+
+    return 0;
+}

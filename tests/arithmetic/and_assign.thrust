@@ -1,0 +1,24 @@
+/*
+ * Tests the compound assignment operator '&=' on a direct reference.
+ * 12 = 0b1100, 10 = 0b1010, 12 & 10 = 0b1000 = 8.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+fn main() s32 @public {
+    var x: s32 = 12;
+
+    x &= 10;
+
+    if x != 8 {
+        return 1;
+    }
+
+    var u: u64 = 0xFF;
+    u &= 0x0F;
+
+    if u != 0x0F {
+        return 2;
+    }
+
+    return 0;
+}
