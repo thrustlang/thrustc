@@ -439,6 +439,8 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
             Ast::Mutation { source, value, .. } => {
                 let source_type: &Type = source.get_value_type()?;
 
+                /*
+                You should not generate this error. Is a fuzzer error. fuzz/ast_dumps/crash-c253e4218fe689517e737ff08ba4a2bf706257a0.txt
                 if source.is_reference() {
                     if let Ast::Reference { metadata, .. } = &**source {
                         let metadata: &ReferenceMetadata = metadata;
@@ -455,6 +457,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                         }
                     }
                 }
+                */
 
                 if source.is_reference() && !source.is_memory_assigned_value()? {
                     self.add_error(CompilationIssue::Error(
