@@ -184,6 +184,11 @@ impl ReferenceMetadata {
     pub fn is_static_ref(&self) -> bool {
         matches!(self.reference_type, ReferenceType::Static)
     }
+
+    #[inline]
+    pub fn is_parameter_ref(&self) -> bool {
+        matches!(self.reference_type, ReferenceType::Parameter)
+    }
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]

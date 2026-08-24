@@ -178,10 +178,3 @@ Thrust Compiler is distributed under the terms of the GNU General Public License
 Regarding the concept of bootstrapping in compilers (For more information: https://www.bootstrappable.org/).
 
 The decision was made to fully implement all the programming language functions in the compiler written in Rust, because it proposes a development approach similar to what Gleam Team did for Gleam Programming Language, and also to lighten the workload, given that we are already using LLVM.
-
-#### > Agentic AI
-
-No, I don't use it and I never will. This compiler will always have code analyzed, processed, and studied by a human.
-
-I don't care. 
-You can't use agentic AI in this project.

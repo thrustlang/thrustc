@@ -6,33 +6,34 @@
 
 # Continuous Fuzzing
 
-The one-shot fuzzers (`cargo fuzz-<target>-<mode>`) stop as soon as libFuzzer finds a crash. The **continuous supervisor** instead runs a fuzzer in a loop: whenever a crash or panic is found it archives it, records it, and immediately starts fuzzing again. This lets it accumulate every bug a target hits over a session, not just the first one, without you having to restart anything.
+The regular fuzzers (`cargo fuzz-<target>-<mode>`) stop as soon as libFuzzer finds a crash. The **continuous supervisor** works the other way around: it runs a fuzzer in a loop, and each time a crash or panic surfaces it saves the input, records it, and goes straight back to fuzzing. By the end of a session you have every bug the target hit, not just the first one, and you never had to keep an eye on it.
 
 > [!IMPORTANT]
-> A **`rustc` nightly** toolchain is required to fuzz (cargo-fuzz/libFuzzer). The supervisor and the `reproduce` binary pick up the channel declared in `fuzz/rust-toolchain.toml` automatically — they run `cargo +nightly fuzz run ...` — so you can invoke them from the repository root even though it pins a stable toolchain.
+> You need a **nightly** toolchain and **`cargo-fuzz`** to use this (the full list of prerequisites is in [COMPILER_FUZZING.md](../COMPILER_FUZZING.md#prerequisites)). The supervisor and the `reproduce` binary pick up the channel declared in `fuzz/rust-toolchain.toml` automatically — they run `cargo +nightly fuzz run ...` — so you can launch them from the repository root even though it pins a stable toolchain.
 
 ## Requirements
 
 - A nightly toolchain installed (`rustup toolchain install nightly`).
-- The corpus directories created (run one of the `fuzz/scripts/create_fuzzing_dirs.{sh,fish,ps1,bat}` scripts if you are on a fresh clone). The scripts also create the `backlog/` and `fuzz_continuous/` directories used here.
+- `cargo-fuzz` installed (`cargo +nightly install cargo-fuzz --locked`). The supervisor shells out to `cargo +nightly fuzz run ...`, so nothing will start without it.
+- The corpus directories must exist (run one of the `fuzz/scripts/create_fuzzing_dirs.{sh,fish,ps1,bat}` scripts on a fresh clone). Those scripts also create the `backlog/` and `fuzz_continuous/` directories used here.
 
 ## How it works
 
-1. The supervisor spawns the fuzzer exactly like the one-shot aliases do: same corpus, dictionary, RSS limit and `--stable` flag for the chosen mode.
-2. A monitor thread polls `fuzz/artifacts/<target>/` while the fuzzer runs. When libFuzzer writes a crash artifact the supervisor:
-   - copies the input to the backlog,
-   - reconstructs and dumps the AST,
-   - runs LLVM codegen and dumps the IR (or the panic/error message when codegen failed),
-   - classifies the crash against known signatures,
-   - records it and regenerates the registry log,
+1. The supervisor starts the fuzzer exactly as the plain `fuzz-*` aliases do: same corpus, same dictionary, same RSS limit, and the `--stable` flag for the chosen mode.
+2. While the fuzzer runs, a monitor thread watches `fuzz/artifacts/<target>/`. When libFuzzer writes a crash artifact, the supervisor:
+   - copies the input into the backlog,
+   - rebuilds and dumps the AST,
+   - runs LLVM codegen and dumps the IR (or the panic/error message when codegen fails),
+   - matches the crash against known signatures,
+   - records it and rewrites the registry log,
    - restarts the fuzzer.
-3. Only real crashes are archived. An artifact whose AST is rejected by semantic analysis (an expected diagnostic) is discarded. The `marker` field shows which crash signature matched (e.g. `panicked at`, `ERROR: AddressSanitizer`, `index out of bounds`), or `-` when there is none.
+3. Only genuine crashes are kept. An artifact whose AST is rejected by semantic analysis (an expected diagnostic) is discarded. The `marker` field shows which signature matched (e.g. `panicked at`, `ERROR: AddressSanitizer`, `index out of bounds`), or `-` when none did.
 
 The default mode is **`stable`**. Pass `--mode unstable` explicitly to fuzz unstable features.
 
 ## Using the supervisor
 
-The supervisor is invoked through two cargo aliases: `cargo fuzz-continuous` for running fuzzers and `cargo fuzz-backlog` for managing the recorded errors. Both target the same binary.
+Two cargo aliases point at the same binary: `cargo fuzz-continuous` runs the fuzzers, and `cargo fuzz-backlog` manages the recorded errors.
 
 ### Running fuzzers
 
@@ -40,7 +41,7 @@ The supervisor is invoked through two cargo aliases: `cargo fuzz-continuous` for
 cargo fuzz-continuous run <target> [--mode stable|unstable] [--runs N] [--max-time S]
 ```
 
-Runs the target in an endless loop, archiving every crash and resuming fuzzing. The `--runs N` / `--max-time S` options turn it into a single bounded run (libFuzzer stops after `N` executions or `S` seconds).
+Runs the target in an endless loop, archiving every crash and carrying on. With `--runs N` or `--max-time S` the run becomes a single bounded one (libFuzzer stops after `N` executions or `S` seconds).
 
 ```
 cargo fuzz-continuous run-all [--mode stable|unstable]
@@ -72,7 +73,7 @@ Each shorthand alias is equivalent to `cargo fuzz-continuous run <target> --mode
 cargo fuzz-backlog list [--all]
 ```
 
-Shows the pending (`open`) errors per target. With `--all`, also shows `ignored` and `fixed` ones.
+Shows the pending (`open`) errors per target. With `--all`, it also shows the `ignored` and `fixed` ones.
 
 ```
 cargo fuzz-backlog history [<target>]
@@ -84,7 +85,7 @@ Prints the cascading registry log(s) to stdout. Without a target it prints every
 cargo fuzz-backlog import <target>
 ```
 
-Archives crash artifacts that already exist under `fuzz/artifacts/<target>/` without fuzzing. Useful to backfill a backlog from artifacts found before the supervisor existed.
+Archives crash artifacts that already sit under `fuzz/artifacts/<target>/` without fuzzing. Useful to backfill a backlog from artifacts found before the supervisor existed.
 
 ```
 cargo fuzz-backlog ignore <target> <issue-id>
@@ -122,7 +123,7 @@ The human-readable registry is written in a **cascading** format, one indented b
     └─ ir_path       : -
 ```
 
-- `hash` is an FNV-1a content hash of `input.bin`; the `issue-id` is derived from it and is what makes deduplication work — importing or fuzzing the same input twice never creates a second entry.
+- `hash` is an FNV-1a content hash of `input.bin`; the `issue-id` derives from it, and that is what makes deduplication work — importing or fuzzing the same input twice never creates a second entry.
 - `mode` is `stable` or `unstable`; `marker` is the crash signature that matched, or `-`.
 - `status` is `open`, `ignored` or `fixed`. Absolute paths point at the payload files inside the backlog.
 

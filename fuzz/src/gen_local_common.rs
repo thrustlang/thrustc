@@ -117,10 +117,7 @@ impl<'ast> ScopeStack<'ast> {
     }
 
     fn has_of_type(&self, target: &Type) -> bool {
-        self.frames
-            .iter()
-            .flatten()
-            .any(|var| var.kind == *target)
+        self.frames.iter().flatten().any(|var| var.kind == *target)
     }
 
     fn has_ptr_of(&self, pointee: &Type) -> Option<ScopedVar<'ast>> {
@@ -236,7 +233,15 @@ fn gen_function_body<'ast>(
     let mut nodes: Vec<Ast<'_>> = Vec::with_capacity(n_stmts + 1);
 
     for _ in 0..n_stmts {
-        nodes.push(self::gen_stmt(u, scope, cfg, depth, 0, fn_name, param_types)?);
+        nodes.push(self::gen_stmt(
+            u,
+            scope,
+            cfg,
+            depth,
+            0,
+            fn_name,
+            param_types,
+        )?);
     }
 
     let is_void: bool = return_type.is_void_type();
@@ -298,7 +303,13 @@ fn gen_block<'ast>(
 
     for _ in 0..n_stmts {
         nodes.push(self::gen_stmt(
-            u, scope, cfg, depth, loop_depth, fn_name, param_types,
+            u,
+            scope,
+            cfg,
+            depth,
+            loop_depth,
+            fn_name,
+            param_types,
         )?);
     }
 
@@ -371,7 +382,15 @@ fn gen_stmt<'ast>(
 
     match *u.choose(&options)? {
         0 => self::gen_var(u, scope, cfg, depth.saturating_sub(1)),
-        1 => self::gen_if(u, scope, cfg, depth.saturating_sub(1), loop_depth, fn_name, param_types),
+        1 => self::gen_if(
+            u,
+            scope,
+            cfg,
+            depth.saturating_sub(1),
+            loop_depth,
+            fn_name,
+            param_types,
+        ),
         2 => self::gen_mutation(u, scope, cfg, depth.saturating_sub(1)),
         3 => self::gen_block(
             u,
@@ -383,9 +402,33 @@ fn gen_stmt<'ast>(
             fn_name,
             param_types,
         ),
-        4 => self::gen_while(u, scope, cfg, depth.saturating_sub(1), loop_depth, fn_name, param_types),
-        5 => self::gen_for(u, scope, cfg, depth.saturating_sub(1), loop_depth, fn_name, param_types),
-        6 => self::gen_loop(u, scope, cfg, depth.saturating_sub(1), loop_depth, fn_name, param_types),
+        4 => self::gen_while(
+            u,
+            scope,
+            cfg,
+            depth.saturating_sub(1),
+            loop_depth,
+            fn_name,
+            param_types,
+        ),
+        5 => self::gen_for(
+            u,
+            scope,
+            cfg,
+            depth.saturating_sub(1),
+            loop_depth,
+            fn_name,
+            param_types,
+        ),
+        6 => self::gen_loop(
+            u,
+            scope,
+            cfg,
+            depth.saturating_sub(1),
+            loop_depth,
+            fn_name,
+            param_types,
+        ),
         7 => self::gen_static(u, scope, cfg),
         8 => self::gen_const(u, scope, cfg),
         9 => self::gen_defer(u, scope, cfg, depth.saturating_sub(1), fn_name, param_types),
@@ -405,7 +448,9 @@ fn gen_var<'ast>(
     let kind: Type = self::gen_decl_type(u, cfg)?;
 
     let value = if u.arbitrary()? {
-        Some(Box::new(self::gen_expr_of_type(u, scope, cfg, depth, &kind)?))
+        Some(Box::new(self::gen_expr_of_type(
+            u, scope, cfg, depth, &kind,
+        )?))
     } else {
         None
     };
@@ -820,7 +865,13 @@ fn gen_defer<'ast>(
 ) -> arbitrary::Result<Ast<'ast>> {
     Ok(Ast::Defer {
         node: Box::new(self::gen_stmt(
-            u, scope, cfg, depth, 0, fn_name, param_types,
+            u,
+            scope,
+            cfg,
+            depth,
+            0,
+            fn_name,
+            param_types,
         )?),
         kind: Type::Void {
             span: u.arbitrary()?,
@@ -1236,7 +1287,10 @@ fn gen_reference_of_type<'ast>(
 ) -> arbitrary::Result<Ast<'ast>> {
     let visible = scope.visible();
 
-    let matches: Vec<_> = visible.into_iter().filter(|var| var.kind == *target).collect();
+    let matches: Vec<_> = visible
+        .into_iter()
+        .filter(|var| var.kind == *target)
+        .collect();
 
     let picked = if matches.is_empty() {
         return Err(arbitrary::Error::IncorrectFormat);
@@ -1415,10 +1469,7 @@ fn gen_integer_type<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Type>
     }
 }
 
-fn gen_decl_type<'ast>(
-    u: &mut Unstructured<'ast>,
-    cfg: &Config,
-) -> arbitrary::Result<Type> {
+fn gen_decl_type<'ast>(u: &mut Unstructured<'ast>, cfg: &Config) -> arbitrary::Result<Type> {
     if cfg.allow_extras && u.arbitrary()? {
         return Ok(Type::Ptr {
             subtype: Some(Box::new(self::gen_scalar_type(u)?)),
@@ -1429,10 +1480,7 @@ fn gen_decl_type<'ast>(
     self::gen_scalar_type(u)
 }
 
-fn cast_source_type<'ast>(
-    u: &mut Unstructured<'ast>,
-    target: &Type,
-) -> arbitrary::Result<Type> {
+fn cast_source_type<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrary::Result<Type> {
     if target.is_char_type() {
         let r: Type = match u.int_in_range(0..=1)? {
             0 => self::gen_integer_type(u),

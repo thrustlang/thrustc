@@ -19,6 +19,7 @@
 
 use thrustc_ast::{
     Ast,
+    ast_metadata::ReferenceMetadata,
     traits::{
         AstCodeLocation, AstConstantExtensions, AstGetType, AstMemoryExtensions,
         AstStandardExtensions,
@@ -29,7 +30,10 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 
 use thrustc_code_location::Span;
-use thrustc_typesystem::{Type, traits::TypeExtensions};
+use thrustc_typesystem::{
+    Type,
+    traits::{TypeExtensions, TypePointerExtensions},
+};
 
 use crate::context::AnalyzerContext;
 
@@ -112,7 +116,9 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
     fn analyze_decl(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
         self.get_mut_context().enter_node();
 
-        if self.get_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+        if self.get_context().get_node_depth()
+            > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH
+        {
             self.get_mut_context().leave_node();
 
             self.add_error(CompilationIssue::Error(
@@ -260,7 +266,9 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
     fn analyze_stmt(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
         self.get_mut_context().enter_node();
 
-        if self.get_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+        if self.get_context().get_node_depth()
+            > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH
+        {
             self.get_mut_context().leave_node();
 
             self.add_error(CompilationIssue::Error(
@@ -431,6 +439,23 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
             Ast::Mutation { source, value, .. } => {
                 let source_type: &Type = source.get_value_type()?;
 
+                if source.is_reference() {
+                    if let Ast::Reference { metadata, .. } = &**source {
+                        let metadata: &ReferenceMetadata = metadata;
+
+                        if metadata.is_parameter_ref() && !source_type.is_ptr_like_type() {
+                            self.add_error(CompilationIssue::Error(
+                                CompilationIssueCode::E0007,
+                                "An reference with memory address was expected.".into(),
+                                "You should try to allocate it and pass it as a direct reference."
+                                    .into(),
+                                None,
+                                source.get_span(),
+                            ));
+                        }
+                    }
+                }
+
                 if source.is_reference() && !source.is_memory_assigned_value()? {
                     self.add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0007,
@@ -520,7 +545,9 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
     fn analyze_expr(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
         self.get_mut_context().enter_node();
 
-        if self.get_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+        if self.get_context().get_node_depth()
+            > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH
+        {
             self.get_mut_context().leave_node();
 
             self.add_error(CompilationIssue::Error(
