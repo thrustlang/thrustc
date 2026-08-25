@@ -18,11 +18,11 @@
 */
 
 use inkwell::values::{BasicValueEnum, IntValue, PointerValue};
-use thrustc_ast::{Ast, traits::AstCodeLocation};
+use thrustc_ast::{Ast, ast_metadata::IndexMetadata, traits::AstCodeLocation};
 use thrustc_code_location::Span;
 use thrustc_typesystem::{
     Type,
-    traits::{InfererTypeExtensions, TypePointerExtensions},
+    traits::{IndexExtensions, InfererTypeExtensions, TypePointerExtensions},
 };
 
 use crate::{
@@ -36,6 +36,7 @@ pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     source: &'ctx Ast<'ctx>,
     index: &'ctx Ast<'ctx>,
+    metadata: &IndexMetadata,
 ) -> BasicValueEnum<'ctx> {
     context.add_codegen_location(CodeGenLocation::RValue);
     let source_value: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, source, None);
@@ -102,12 +103,18 @@ pub fn compile<'ctx>(
         indexes
     };
 
-    memory::gep_anon(
+    let ptr: PointerValue<'_> = memory::gep_anon(
         context,
         ptr_value,
         ptr_type,
         &ordered_indexes,
         source.get_span(),
-    )
-    .into()
+    );
+
+    if metadata.is_deref() {
+        let element_type: Type = ptr_type.calculate_index_type(1).clone();
+        memory::dereference(context, ptr, &element_type, source.get_span())
+    } else {
+        ptr.into()
+    }
 }

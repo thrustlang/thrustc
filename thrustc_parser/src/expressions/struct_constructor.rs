@@ -99,6 +99,8 @@ pub fn build_constructor<'parser>(
             ));
         };
 
+        let struct_kind: Type = kind.clone();
+
         let metadata: StructTypeMetadata = match kind {
             Type::Struct { metadata, .. } => *metadata,
 
@@ -144,6 +146,15 @@ pub fn build_constructor<'parser>(
                     span,
                 ),
             );
+
+            ctx.add_ast_node(Ast::Struct {
+                name: symbol,
+                data: (symbol, data.clone(), metadata, span),
+                kind: struct_kind,
+                attributes: ThrustAttributes::new(),
+                span,
+                id: NodeId::new(),
+            });
 
             if let Some(path) = origin.as_ref() {
                 ctx.get_mut_symbols().record_import_origin(symbol, path.clone());

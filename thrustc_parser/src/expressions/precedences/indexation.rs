@@ -34,8 +34,15 @@ pub fn index_precedence<'parser>(
 
     let mut expr: Ast = precedences::property::property_precedence(ctx)?;
 
-    while ctx.match_token(TokenType::LBracket)? {
-        expr = expressions::index::build_index(ctx, expr)?;
+    loop {
+        if ctx.match_token(TokenType::LBracket)? {
+            expr = expressions::index::build_index(ctx, expr, false)?;
+        } else if ctx.match_token(TokenType::Arrow)? && ctx.check(TokenType::LBracket) {
+            ctx.advance()?;
+            expr = expressions::index::build_index(ctx, expr, true)?;
+        } else {
+            break;
+        }
     }
 
     ctx.leave_expression();

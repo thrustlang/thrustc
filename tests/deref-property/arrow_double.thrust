@@ -1,0 +1,20 @@
+/*
+ * Verifies property->name->[i] (doble arrow): cada '->' hace deref del resultado
+ * previo. a->[i] equivale a deref a[i] (index + deref automático), devolviendo el
+ * elemento por valor sin 'deref' externo.
+ */
+
+struct Wrapper {
+    data: ptr[array[s32; 4]]
+}
+
+fn main() s32 @public {
+    var arr: array[s32; 4] = fixed[10, 20, 30, 40];
+    var v := new Wrapper { data: ref arr };
+
+    var element: s32 = v->data->[2];
+
+    if element != 30 { return 1; }
+
+    return 0;
+}

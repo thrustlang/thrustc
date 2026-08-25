@@ -22,6 +22,7 @@ use inkwell::values::PointerValue;
 use inkwell::{builder::Builder, values::BasicValueEnum};
 use thrustc_ast::Ast;
 use thrustc_ast::ast_logic_data::PropertyData;
+use thrustc_ast::ast_metadata::PropertyMetadata;
 use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_ast::traits::{
     AstCodeLocation, AstPropertyDataExtensions, AstPropertyDataFieldExtensions,
@@ -39,6 +40,7 @@ pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     source: &'ctx Ast<'ctx>,
     data: &'ctx PropertyData,
+    metadata: &PropertyMetadata,
 ) -> BasicValueEnum<'ctx> {
     let source_type: &Type = source.get_type_for_llvm();
 
@@ -53,10 +55,46 @@ pub fn compile<'ctx>(
     });
 
     if (is_allocated && source_type.is_struct_type()) || source_type.is_ptr_composite_type() {
-        self::compile_gep_property(context, source, data)
+        let ptr: BasicValueEnum = self::compile_gep_property(context, source, data);
+
+        if metadata.is_deref() {
+            self::compile_deref_property(context, source, data, ptr)
+        } else {
+            ptr
+        }
     } else {
         self::compile_extract_property(context, source, data)
     }
+}
+
+fn compile_deref_property<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    source: &'ctx Ast<'ctx>,
+    data: &'ctx PropertyData,
+    ptr: BasicValueEnum<'ctx>,
+) -> BasicValueEnum<'ctx> {
+    let codegen_location: CodeGenLocation = context.get_codegen_location();
+
+    if matches!(codegen_location, CodeGenLocation::LValue) {
+        return ptr;
+    }
+
+    let span: Span = source.get_span();
+
+    let value_type: Type = data
+        .last()
+        .map(|field| field.get_property_type())
+        .unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to compile the dereferenced property!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+    memory::dereference(context, ptr.into_pointer_value(), &value_type, span)
 }
 
 fn compile_extract_property<'ctx>(

@@ -74,6 +74,7 @@ pub enum TokenType {
     LShift,     // ' << '
     RShift,     // ' >> '
     Arrow,      // ->
+    FatArrow,   // =>
 
     // --- Literals ---
     Identifier,

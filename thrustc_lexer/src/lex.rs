@@ -87,6 +87,7 @@ pub fn analyze(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
         '!' if lexer.char_match('=') => lexer.make(TokenType::BangEq),
         '!' => lexer.make(TokenType::Bang),
         '=' if lexer.char_match('=') => lexer.make(TokenType::EqEq),
+        '=' if lexer.char_match('>') => lexer.make(TokenType::FatArrow),
         '=' => lexer.make(TokenType::Eq),
         '<' if lexer.char_match('<') => {
             if lexer.char_match('=') {

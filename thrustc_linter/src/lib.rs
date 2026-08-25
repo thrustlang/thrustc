@@ -441,7 +441,7 @@ impl<'linter> Linter<'linter> {
 
                 self.analyze_expr(value);
 
-                if let Ast::Reference { name, .. } = &**source {
+                if let Some(name) = self::lvalue_base_reference(source) {
                     let compound: bool = self::expr_references(value, name);
                     self::mark_as_mutated(self, name, *span, compound);
                 }
@@ -1192,6 +1192,19 @@ fn expr_references(node: &Ast, name: &str) -> bool {
         }
         Ast::Call { args, .. } => args.iter().any(|arg| self::expr_references(arg, name)),
         _ => false,
+    }
+}
+
+fn lvalue_base_reference<'a>(source: &'a Ast<'a>) -> Option<&'a str> {
+    match source {
+        Ast::Reference { name, .. } => Some(name),
+        Ast::Group { node, .. } => self::lvalue_base_reference(node),
+        Ast::Property { source, .. } => self::lvalue_base_reference(source),
+        Ast::Deref { value, .. } => self::lvalue_base_reference(value),
+        Ast::Index { source, .. } => self::lvalue_base_reference(source),
+        Ast::Load { source, .. } => self::lvalue_base_reference(source),
+        Ast::GetLocation { expr, .. } => self::lvalue_base_reference(expr),
+        _ => None,
     }
 }
 

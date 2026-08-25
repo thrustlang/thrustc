@@ -465,9 +465,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                     ));
                 }
 
-                if (!source.is_memory_assigned_value()? || !source.is_reference())
-                    && source_type.is_value()
-                {
+                if !source.is_memory_assigned_value()? && source_type.is_value() {
                     self.add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0008,
                         "An value with memory address was expected.".into(),

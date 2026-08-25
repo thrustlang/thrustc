@@ -1,0 +1,21 @@
+/*
+ * Verifies property->name LValue: writes to the field through the pointer (no load),
+ * and that the write is visible when read back via RValue deref.
+ */
+
+struct Inner {
+    a: s32,
+    b: s32,
+}
+
+fn main() s32 @public {
+    var v := new Inner { a: 0, b: 0 };
+
+    v->a = 40;
+    v->b = 2;
+
+    if v->a != 40 { return 1; }
+    if v->b != 2 { return 2; }
+
+    return 0;
+}

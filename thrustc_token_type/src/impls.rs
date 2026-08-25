@@ -377,6 +377,7 @@ impl std::fmt::Display for TokenType {
             TokenType::Alloc => write!(f, "alloc"),
             TokenType::Arith => write!(f, "%"),
             TokenType::Arrow => write!(f, "->"),
+            TokenType::FatArrow => write!(f, "=>"),
             TokenType::AsmFn => write!(f, "asmfn"),
             TokenType::Bang => write!(f, "!"),
             TokenType::BangEq => write!(f, "!="),

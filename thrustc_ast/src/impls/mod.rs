@@ -435,8 +435,8 @@ impl AstMemoryExtensions for Ast<'_> {
     fn is_memory_assigned_value(&self) -> Result<bool, CompilationIssue> {
         match self {
             Ast::Reference { metadata, .. } => Ok(metadata.is_allocated()),
-            Ast::Property { metadata, .. } => Ok(metadata.is_allocated()),
-            Ast::Index { metadata, .. } => Ok(metadata.is_allocated()),
+            Ast::Property { metadata, .. } => Ok(metadata.is_allocated() || metadata.is_deref()),
+            Ast::Index { metadata, .. } => Ok(metadata.is_allocated() || metadata.is_deref()),
 
             _ => Ok(self.get_value_type()?.is_ptr_like_type()),
         }

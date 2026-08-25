@@ -22,8 +22,8 @@ use thrustc_ast::{
     ast_metadata::IndexMetadata,
     traits::{AstCodeLocation, AstGetType},
 };
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
@@ -35,6 +35,7 @@ use crate::{ParserContext, expressions};
 pub fn build_index<'parser>(
     ctx: &mut ParserContext<'parser>,
     source_expr: Ast<'parser>,
+    deref: bool,
 ) -> Result<Ast<'parser>, CompilationIssue> {
     let index_type: &Type = source_expr.get_value_type()?;
     let index_expr: Ast = expressions::parse_expr(ctx)?;
@@ -47,13 +48,17 @@ pub fn build_index<'parser>(
         "Expected ']'.".into(),
     )?;
 
-    let index_type: Type = Type::Ptr {
-        subtype: Some(index_type.calculate_index_type(1).clone().into()),
-        address_space: index_type.get_address_space(),
-        span,
+    let index_type: Type = if deref {
+        index_type.calculate_index_type(1).clone()
+    } else {
+        Type::Ptr {
+            subtype: Some(index_type.calculate_index_type(1).clone().into()),
+            address_space: index_type.get_address_space(),
+            span,
+        }
     };
 
-    let metadata: IndexMetadata = IndexMetadata::new(true);
+    let metadata: IndexMetadata = IndexMetadata::new(true, deref);
 
     Ok(Ast::Index {
         source: source_expr.into(),
@@ -63,31 +68,3 @@ pub fn build_index<'parser>(
         span,
     })
 }
-
-/*pub fn build_index_deref<'parser>(
-    ctx: &mut ParserContext<'parser>,
-    source: Ast<'parser>,
-    span: Span,
-) -> Result<Ast<'parser>, CompilationIssue> {
-    let index_type: &Type = source.get_value_type()?;
-    let index: Ast = expressions::parse_expr(ctx)?;
-
-    ctx.consume(
-        TokenType::RBracket,
-        CompilationIssueCode::E0001,
-        "Expected ']'.".into(),
-    )?;
-
-    let index_type: Type = Type::Ptr {
-        subtype: Some(index_type.calculate_index_type(1).clone().into()),
-        address_space: index_type.get_address_space(),
-        span,
-    };
-
-    Ok(Ast::Index {
-        source: source.into(),
-        index: index.into(),
-        kind: index_type,
-        span,
-    })
-}*/

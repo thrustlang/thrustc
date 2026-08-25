@@ -34,7 +34,12 @@ pub fn property_precedence<'parser>(
     let mut expr: Ast = precedences::unary::unary_precedence(ctx)?;
 
     if ctx.match_token(TokenType::Dot)? {
-        expr = expressions::property::build_property(ctx, expr)?;
+        expr = expressions::property::build_property(ctx, expr, false)?;
+    } else {
+        while ctx.check(TokenType::Arrow) && ctx.check_to(TokenType::Identifier, 1) {
+            ctx.advance()?;
+            expr = expressions::property::build_property(ctx, expr, true)?;
+        }
     }
 
     ctx.leave_expression();

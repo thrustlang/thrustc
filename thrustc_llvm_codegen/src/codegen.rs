@@ -1271,15 +1271,21 @@ pub fn compile_as_value<'ctx>(
         }
 
         // Compiles property access (e.g., struct field or array)
-        Ast::Property { source, data, .. } => {
-            expressions::struct_property_expr::compile(context, source, data)
-        }
+        Ast::Property {
+            source,
+            data,
+            metadata,
+            ..
+        } => expressions::struct_property_expr::compile(context, source, data, metadata),
 
         // Memory Access Operations
         // Compiles an indexing operation (e.g., array access)
-        Ast::Index { source, index, .. } => {
-            expressions::index_expr::compile(context, source, index)
-        }
+        Ast::Index {
+            source,
+            index,
+            metadata,
+            ..
+        } => expressions::index_expr::compile(context, source, index, metadata),
 
         // Compiles a dereference operation (e.g., *pointer)
         Ast::Deref {

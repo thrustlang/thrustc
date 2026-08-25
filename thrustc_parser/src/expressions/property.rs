@@ -40,6 +40,7 @@ use crate::{ParserContext, abort};
 pub fn build_property<'parser>(
     ctx: &mut ParserContext<'parser>,
     source: Ast<'parser>,
+    deref: bool,
 ) -> Result<Ast<'parser>, CompilationIssue> {
     let base_type: &Type = source.get_value_type()?;
 
@@ -68,14 +69,14 @@ pub fn build_property<'parser>(
     }
 
     let properties_result: Result<(Type, PropertyData), CompilationIssue> =
-        self::decompose_struct_property(ctx, 0, &source, property_names, base_type, span);
+        self::decompose_struct_property(ctx, 0, &source, property_names, base_type, span, deref);
 
     match properties_result {
         Ok(properties) => {
             let kind: Type = properties.0;
             let data: PropertyData = properties.1;
 
-            let metadata: PropertyMetadata = PropertyMetadata::new(kind.is_ptr_like_type());
+            let metadata: PropertyMetadata = PropertyMetadata::new(kind.is_ptr_like_type(), deref);
 
             Ok(Ast::Property {
                 source: source.into(),
@@ -100,6 +101,7 @@ fn decompose_struct_property<'parser>(
     property_names: Vec<&str>,
     base_type: &Type,
     span: Span,
+    deref: bool,
 ) -> Result<(Type, PropertyData), CompilationIssue> {
     let mut indices: PropertyData = PropertyData::with_capacity(u8::MAX as usize);
     let mut is_parent_ptr: bool = false;
@@ -157,7 +159,9 @@ fn decompose_struct_property<'parser>(
             ));
         };
 
-        let adjusted_inner_type: Type = if is_parent_ptr || source.is_memory_assigned_value()? {
+        let adjusted_inner_type: Type = if (is_parent_ptr || source.is_memory_assigned_value()?)
+            && !deref
+        {
             Type::Ptr {
                 subtype: Some(field_type.clone().into()),
                 address_space: field_type.get_address_space(),
@@ -184,11 +188,13 @@ fn decompose_struct_property<'parser>(
             property_names,
             field_type,
             span,
+            deref,
         )?;
 
         {
             for (base_subtype, ..) in nested_indices.iter_mut() {
-                *base_subtype = if is_parent_ptr || source.is_memory_assigned_value()? {
+                *base_subtype = if (is_parent_ptr || source.is_memory_assigned_value()?) && !deref
+                {
                     Type::Ptr {
                         subtype: Some(base_subtype.clone().into()),
                         address_space: base_subtype.get_address_space(),
@@ -202,15 +208,16 @@ fn decompose_struct_property<'parser>(
 
         indices.append(&mut nested_indices);
 
-        let adjusted_inner_type: Type = if is_parent_ptr || source.is_memory_assigned_value()? {
-            Type::Ptr {
-                subtype: Some(field_inner_type.clone().into()),
-                address_space: field_inner_type.get_address_space(),
-                span: field_inner_type.get_span(),
-            }
-        } else {
-            field_inner_type
-        };
+        let adjusted_inner_type: Type =
+            if (is_parent_ptr || source.is_memory_assigned_value()?) && !deref {
+                Type::Ptr {
+                    subtype: Some(field_inner_type.clone().into()),
+                    address_space: field_inner_type.get_address_space(),
+                    span: field_inner_type.get_span(),
+                }
+            } else {
+                field_inner_type
+            };
 
         return Ok((adjusted_inner_type, indices));
     }
