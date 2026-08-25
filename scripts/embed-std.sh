@@ -14,5 +14,3 @@ if ! test -e "$MARKER" \
 else
     echo "Standard library is up to date."
 fi
-
-exec cargo build --manifest-path "$ROOT_DIR/Cargo.toml" "$@"

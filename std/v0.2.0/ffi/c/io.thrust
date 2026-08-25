@@ -60,7 +60,7 @@ fn puts(text: CString)                                         s32   @public @ex
 fn perror(text: CString)                                       void  @public @extern("perror")    @convention("C");
 
 fn remove(filename: CString)                                   s32   @public @extern("remove")    @convention("C");
-fn rename(old: CString, newName: CString)                     s32   @public @extern("rename")    @convention("C");
+fn rename(old: CString, newName: CString)                      s32   @public @extern("rename")    @convention("C");
 fn setvbuf(stream: ptr, buffer: ptr, mode: s32, size: usize)   s32   @public @extern("setvbuf")   @convention("C");
 fn setbuf(stream: ptr, buffer: ptr)                            void  @public @extern("setbuf")    @convention("C");
 

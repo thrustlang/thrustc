@@ -10,5 +10,3 @@ REM touched. This forces cargo to recompile thrustc_std, re-embedding the
 REM standard library.
 echo Standard library changed. Touching "%MARKER%" to force re-embedding.
 powershell -NoProfile -Command "$m = Get-Item '%MARKER%'; $m.LastWriteTime = Get-Date"
-
-cargo build --manifest-path "%ROOT_DIR%\Cargo.toml" %*

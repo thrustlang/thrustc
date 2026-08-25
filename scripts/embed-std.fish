@@ -15,5 +15,3 @@ else if find "$STD_DIR" -type f -newer "$MARKER" -print -quit | string length -q
 else
     echo "Standard library is up to date."
 end
-
-cargo build --manifest-path "$ROOT_DIR/Cargo.toml" $argv

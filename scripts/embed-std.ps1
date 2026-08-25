@@ -18,5 +18,3 @@ if ($null -ne $stdChanged) {
 } else {
     Write-Host "Standard library is up to date."
 }
-
-& cargo build --manifest-path (Join-Path $ROOT_DIR "Cargo.toml") @args
