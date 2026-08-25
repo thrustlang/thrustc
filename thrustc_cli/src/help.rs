@@ -62,6 +62,17 @@ pub fn show_help() -> ! {
         ),
     );
 
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--explain".custom_color((141, 141, 142)).bold(),
+            "E0001|W0001",
+            "Show the explanation of a compiler error or warning code.",
+        ),
+    );
+
     thrustc_logging::write(thrustc_logging::OutputIn::Stderr, "\nLinkage flags:\n\n");
 
     thrustc_logging::write(

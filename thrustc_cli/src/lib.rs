@@ -227,6 +227,24 @@ impl CommandLine {
                 std::process::exit(0);
             }
 
+            "--explain" => {
+                self.advance();
+
+                let code: CompilationIssueCode =
+                    CompilationIssueCode::parse(self.peek()).unwrap_or_else(|_| {
+                        self.report_error(&format!("Unknown issue code: '{}'.", self.peek()));
+                    });
+
+                self.advance();
+
+                thrustc_logging::write(
+                    OutputIn::Stdout,
+                    &format!("{}\n\n{}\n", code.to_title(), code.get_explanation()),
+                );
+
+                std::process::exit(thrustc_constants::SUCCESFUL_CODE);
+            }
+
             "-build-dir" => {
                 self.advance();
 

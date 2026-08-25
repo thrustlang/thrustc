@@ -20,6 +20,7 @@ General Commands:
         denormal-floating-point-behavior|
         denormal-floating-point-32-bits-behavior] Show help message.
 • -v, --version Show the version.
+• --explain [E0001|W0001] Show the explanation of a compiler error or warning code.
 
 Linkage flags:
 
