@@ -1,0 +1,18 @@
+import std::math;
+
+fn closeTo(actual: f64, expected: f64, epsilon: f64) bool {
+    return math::absolute(actual - expected) <= epsilon;
+}
+
+fn main() s32 @public {
+    if math::squareRoot(9.0) != 3.0 { return 1; }
+    if math::power(2.0, 10.0) != 1024.0 { return 2; }
+    if math::hypotenuse(3.0, 4.0) != 5.0 { return 3; }
+    if !closeTo(math::cubeRoot(27.0), 3.0, 0.000000001) { return 4; }
+    if !closeTo(math::reciprocalSquareRoot(4.0), 0.5, 0.000000001) { return 5; }
+    if !closeTo(math::powerInteger(2.0, 10), 1024.0, 0.000000001) { return 6; }
+    if !closeTo(math::powerReal(2.0, 10.0), 1024.0, 0.000000001) { return 7; }
+    if !closeTo(math::integerRoot(27.0, 3), 3.0, 0.000000001) { return 8; }
+
+    return 0;
+}

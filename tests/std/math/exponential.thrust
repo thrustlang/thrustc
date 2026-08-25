@@ -1,0 +1,20 @@
+import std::math;
+
+fn closeTo(actual: f64, expected: f64, epsilon: f64) bool {
+    return math::absolute(actual - expected) <= epsilon;
+}
+
+fn main() s32 @public {
+    if math::exponential(0.0) != 1.0 { return 1; }
+    if math::compound(0.0, 5) != 1.0 { return 2; }
+    if !closeTo(math::exponential2(3.0), 8.0, 0.000000001) { return 3; }
+    if !closeTo(math::exponentialMinusOne(0.0), 0.0, 0.000000001) { return 4; }
+    if !closeTo(math::exponential10(0.0), 1.0, 0.000000001) { return 5; }
+    if !closeTo(math::exponential10(2.0), 100.0, 0.000000001) { return 6; }
+    if !closeTo(math::exponential10MinusOne(0.0), 0.0, 0.000000001) { return 7; }
+    if !closeTo(math::exponential10MinusOne(1.0), 9.0, 0.000000001) { return 8; }
+    if !closeTo(math::exponential2MinusOne(0.0), 0.0, 0.000000001) { return 9; }
+    if !closeTo(math::exponential2MinusOne(1.0), 1.0, 0.000000001) { return 10; }
+
+    return 0;
+}

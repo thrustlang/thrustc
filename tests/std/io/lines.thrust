@@ -1,0 +1,28 @@
+import std::io;
+
+fn main() s32 @public {
+    var file := io::openFile("thrust_io_lines_test.txt", "w");
+    if file == nullptr { return 1; }
+
+    if io::writeLineTo("line one", file) <= 0 { return 2; }
+    if io::writeCharTo('\n' as s32, file) <= 0 { return 3; }
+    if io::writeLineTo("line two", file) <= 0 { return 4; }
+    if io::writeCharTo('\n' as s32, file) <= 0 { return 5; }
+
+    if io::closeFile(file) != 0 { return 6; }
+
+    file = io::openFile("thrust_io_lines_test.txt", "r");
+    if file == nullptr { return 7; }
+
+    var buffer: array[char; 32];
+    if io::readLine(ref buffer, 32, file) == nullptr { return 8; }
+
+    var lineptr: ptr = nullptr;
+    var capacity: usize = 0;
+    if io::readLineAllocated(ref lineptr, ref capacity, file) != 9 { return 9; }
+
+    if io::closeFile(file) != 0 { return 10; }
+    if io::deleteFile("thrust_io_lines_test.txt") != 0 { return 11; }
+
+    return 0;
+}

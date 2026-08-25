@@ -1,0 +1,13 @@
+import std::math;
+
+fn main() s32 @public {
+    if math::modulo(7.0, 3.0) != 1.0 { return 1; }
+    if math::remainderValue(7.0, 3.0) != 1.0 { return 2; }
+    if math::legacyRemainder(7.0, 3.0) != 1.0 { return 3; }
+
+    var quotient: s32 = 0;
+    if math::remainderQuotient(7.0, 2.0, ref quotient) != -1.0 { return 4; }
+    if quotient != 4 { return 5; }
+
+    return 0;
+}

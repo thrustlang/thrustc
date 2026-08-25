@@ -1,0 +1,19 @@
+import std::math;
+
+fn closeTo(actual: f64, expected: f64, epsilon: f64) bool {
+    return math::absolute(actual - expected) <= epsilon;
+}
+
+fn main() s32 @public {
+    if !closeTo(math::errorFunction(1.0), 0.8427007929497149, 0.000000001) { return 1; }
+    if !closeTo(math::complementaryErrorFunction(1.0), 0.1572992070502851, 0.000000001) { return 2; }
+    if !closeTo(math::gammaFunction(4.0), 6.0, 0.000000001) { return 3; }
+    if !closeTo(math::logGamma(4.0), 1.791759469228055, 0.000000001) { return 4; }
+    if !closeTo(math::legacyGamma(4.0), 1.791759469228055, 0.000000001) { return 5; }
+
+    var sign: s32 = 0;
+    if !closeTo(math::logGammaSigned(4.0, ref sign), 1.791759469228055, 0.000000001) { return 6; }
+    if sign < 0 { return 7; }
+
+    return 0;
+}

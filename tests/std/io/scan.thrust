@@ -1,0 +1,15 @@
+import std::io;
+
+fn main() s32 @public {
+    var number: s32 = 0;
+    if io::scanFromString("987", "%d", ref number) != 1 { return 1; }
+    if number != 987 { return 2; }
+
+    var a: s32 = 0;
+    var b: s32 = 0;
+    if io::scanFromString("12 34", "%d %d", ref a, ref b) != 2 { return 3; }
+    if a != 12 { return 4; }
+    if b != 34 { return 5; }
+
+    return 0;
+}

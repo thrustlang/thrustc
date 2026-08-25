@@ -1,0 +1,50 @@
+import std::io;
+
+fn main() s32 @public {
+    var file := io::openFile("thrust_io_file_test.txt", "w");
+    if file == nullptr { return 1; }
+
+    var payload: array[char] = "hello";
+    if io::writeBytes((deref payload) as ptr, 1, 5, file) != 5 { return 2; }
+    if io::closeFile(file) != 0 { return 3; }
+
+    file = io::openFile("thrust_io_file_test.txt", "r");
+    if file == nullptr { return 4; }
+
+    var buffer: array[char; 16];
+    if io::readBytes((ref buffer) as ptr, 1, 16, file) != 5 { return 5; }
+
+    if io::seek(file, 0, io::SEEK_SET) != 0 { return 6; }
+    if io::tell(file) != 0 { return 7; }
+
+    if io::seekOffset(file, 0, io::SEEK_END) != 0 { return 8; }
+    if io::tellOffset(file) != 5 { return 9; }
+
+    if io::seek(file, 0, io::SEEK_SET) != 0 { return 10; }
+    if io::readCharFrom(file) != 'h' as s32 { return 11; }
+
+    var index: s32 = 0;
+    while index < 4 {
+        io::readCharFrom(file);
+        index += 1;
+    }
+
+    if io::readCharFrom(file) != io::EOF { return 12; }
+    if io::atEndOfStream(file) == 0 { return 13; }
+    if io::streamHasError(file) != 0 { return 14; }
+    if io::streamFileDescriptor(file) < 0 { return 15; }
+
+    if io::closeFile(file) != 0 { return 16; }
+
+    var temp := io::openTempFile();
+    if temp == nullptr { return 17; }
+    if io::closeFile(temp) != 0 { return 18; }
+
+    if io::deleteFile("thrust_io_file_test.txt") != 0 { return 19; }
+
+    if io::EOF != -1 { return 20; }
+    if io::SEEK_SET != 0 { return 21; }
+    if io::BUFSIZ != 8192 { return 22; }
+
+    return 0;
+}

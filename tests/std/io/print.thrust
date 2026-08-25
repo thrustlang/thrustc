@@ -1,0 +1,15 @@
+import std::io;
+
+fn main() s32 @public {
+    if io::print("print: %d\n", 42) <= 0 { return 1; }
+    if io::println("println: hello") <= 0 { return 2; }
+    if io::printTo(io::stderr, "printTo: stderr ok\n") <= 0 { return 3; }
+    if io::flush(io::stdout) != 0 { return 4; }
+
+    var buffer: array[char; 64];
+    if io::printToBuffer(ref buffer, 64, "buf: %d", 7) <= 0 { return 5; }
+    if io::printToBufferUnsafe(ref buffer, "unsafe: %d", 8) <= 0 { return 6; }
+    if io::printToFileDescriptor(1, "fd: %d\n", 9) <= 0 { return 7; }
+
+    return 0;
+}

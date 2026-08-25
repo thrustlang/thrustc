@@ -323,3 +323,291 @@ fn besselY1(x: f64) f64 @public {
 fn besselYn(n: s32, x: f64) f64 @public {
     return c::yn(n, x);
 }
+
+fn sinePi(x: f64) f64 @public {
+    return c::sinpi(x);
+}
+
+fn cosinePi(x: f64) f64 @public {
+    return c::cospi(x);
+}
+
+fn tangentPi(x: f64) f64 @public {
+    return c::tanpi(x);
+}
+
+fn arcSinePi(x: f64) f64 @public {
+    return c::asinpi(x);
+}
+
+fn arcCosinePi(x: f64) f64 @public {
+    return c::acospi(x);
+}
+
+fn arcTangentPi(x: f64) f64 @public {
+    return c::atanpi(x);
+}
+
+fn arcTangent2Pi(y: f64, x: f64) f64 @public {
+    return c::atan2pi(y, x);
+}
+
+fn exponential10(x: f64) f64 @public {
+    return c::exp10(x);
+}
+
+fn exponential10MinusOne(x: f64) f64 @public {
+    return c::exp10m1(x);
+}
+
+fn exponential2MinusOne(x: f64) f64 @public {
+    return c::exp2m1(x);
+}
+
+fn logarithmPlusOne(x: f64) f64 @public {
+    return c::logp1(x);
+}
+
+fn logarithm2PlusOne(x: f64) f64 @public {
+    return c::log2p1(x);
+}
+
+fn logarithm10PlusOne(x: f64) f64 @public {
+    return c::log10p1(x);
+}
+
+fn nextUp(x: f64) f64 @public {
+    return c::nextup(x);
+}
+
+fn nextDown(x: f64) f64 @public {
+    return c::nextdown(x);
+}
+
+fn getPayload(x: ptr[f64]) f64 @public {
+    return c::getpayload(x);
+}
+
+fn fromFixedPoint(x: f64, round: s32, width: u32) f64 @public {
+    return c::fromfp(x, round, width);
+}
+
+fn fromFixedPointExcept(x: f64, round: s32, width: u32) f64 @public {
+    return c::fromfpx(x, round, width);
+}
+
+fn unsignedFromFixedPoint(x: f64, round: s32, width: u32) u32 @public {
+    return c::ufromfp(x, round, width);
+}
+
+fn unsignedFromFixedPointExcept(x: f64, round: s32, width: u32) u32 @public {
+    return c::ufromfpx(x, round, width);
+}
+
+fn legacyRemainder(x: f64, y: f64) f64 @public {
+    return c::drem(x, y);
+}
+
+fn legacyGamma(x: f64) f64 @public {
+    return c::gamma(x);
+}
+
+fn scaleByBase(x: f64, n: f64) f64 @public {
+    return c::scalb(x, n);
+}
+
+fn mantissa(x: f64) f64 @public {
+    return c::significand(x);
+}
+
+fn sine32(x: f32) f32 @public {
+    return c::sinf(x);
+}
+
+fn cosine32(x: f32) f32 @public {
+    return c::cosf(x);
+}
+
+fn tangent32(x: f32) f32 @public {
+    return c::tanf(x);
+}
+
+fn arcSine32(x: f32) f32 @public {
+    return c::asinf(x);
+}
+
+fn arcCosine32(x: f32) f32 @public {
+    return c::acosf(x);
+}
+
+fn arcTangent32(x: f32) f32 @public {
+    return c::atanf(x);
+}
+
+fn arcTangent2F32(y: f32, x: f32) f32 @public {
+    return c::atan2f(y, x);
+}
+
+fn hyperbolicSine32(x: f32) f32 @public {
+    return c::sinhf(x);
+}
+
+fn hyperbolicCosine32(x: f32) f32 @public {
+    return c::coshf(x);
+}
+
+fn hyperbolicTangent32(x: f32) f32 @public {
+    return c::tanhf(x);
+}
+
+fn inverseHyperbolicSine32(x: f32) f32 @public {
+    return c::asinhf(x);
+}
+
+fn inverseHyperbolicCosine32(x: f32) f32 @public {
+    return c::acoshf(x);
+}
+
+fn inverseHyperbolicTangent32(x: f32) f32 @public {
+    return c::atanhf(x);
+}
+
+fn exponential32(x: f32) f32 @public {
+    return c::expf(x);
+}
+
+fn exponential2F32(x: f32) f32 @public {
+    return c::exp2f(x);
+}
+
+fn exponentialMinusOne32(x: f32) f32 @public {
+    return c::expm1f(x);
+}
+
+fn naturalLogarithm32(x: f32) f32 @public {
+    return c::logf(x);
+}
+
+fn logarithm2F32(x: f32) f32 @public {
+    return c::log2f(x);
+}
+
+fn logarithm10F32(x: f32) f32 @public {
+    return c::log10f(x);
+}
+
+fn naturalLogarithmPlusOne32(x: f32) f32 @public {
+    return c::log1pf(x);
+}
+
+fn logarithmExponent32(x: f32) f32 @public {
+    return c::logbf(x);
+}
+
+fn scaleByExponent32(x: f32, exponent: s32) f32 @public {
+    return c::ldexpf(x, exponent);
+}
+
+fn fractionAndExponent32(x: f32, exponent: ptr[s32]) f32 @public {
+    return c::frexpf(x, exponent);
+}
+
+fn splitFraction32(x: f32, integerPart: ptr[f32]) f32 @public {
+    return c::modff(x, integerPart);
+}
+
+fn power32(x: f32, y: f32) f32 @public {
+    return c::powf(x, y);
+}
+
+fn squareRoot32(x: f32) f32 @public {
+    return c::sqrtf(x);
+}
+
+fn cubeRoot32(x: f32) f32 @public {
+    return c::cbrtf(x);
+}
+
+fn hypotenuse32(x: f32, y: f32) f32 @public {
+    return c::hypotf(x, y);
+}
+
+fn ceiling32(x: f32) f32 @public {
+    return c::ceilf(x);
+}
+
+fn floorValue32(x: f32) f32 @public {
+    return c::floorf(x);
+}
+
+fn roundValue32(x: f32) f32 @public {
+    return c::roundf(x);
+}
+
+fn truncate32(x: f32) f32 @public {
+    return c::truncf(x);
+}
+
+fn nearestInteger32(x: f32) f32 @public {
+    return c::rintf(x);
+}
+
+fn nearbyInteger32(x: f32) f32 @public {
+    return c::nearbyintf(x);
+}
+
+fn modulo32(x: f32, y: f32) f32 @public {
+    return c::fmodf(x, y);
+}
+
+fn remainderValue32(x: f32, y: f32) f32 @public {
+    return c::remainderf(x, y);
+}
+
+fn remainderQuotient32(x: f32, y: f32, quotient: ptr[s32]) f32 @public {
+    return c::remquof(x, y, quotient);
+}
+
+fn absolute32(x: f32) f32 @public {
+    return c::fabsf(x);
+}
+
+fn minimum32(x: f32, y: f32) f32 @public {
+    return c::fminf(x, y);
+}
+
+fn maximum32(x: f32, y: f32) f32 @public {
+    return c::fmaxf(x, y);
+}
+
+fn positiveDifference32(x: f32, y: f32) f32 @public {
+    return c::fdimf(x, y);
+}
+
+fn copySign32(x: f32, y: f32) f32 @public {
+    return c::copysignf(x, y);
+}
+
+fn fusedMultiplyAdd32(x: f32, y: f32, z: f32) f32 @public {
+    return c::fmaf(x, y, z);
+}
+
+fn notANumber32(tag: CString) f32 @public {
+    return c::nanf(tag);
+}
+
+fn errorFunction32(x: f32) f32 @public {
+    return c::erff(x);
+}
+
+fn complementaryErrorFunction32(x: f32) f32 @public {
+    return c::erfcf(x);
+}
+
+fn gammaFunction32(x: f32) f32 @public {
+    return c::tgammaf(x);
+}
+
+fn logGamma32(x: f32) f32 @public {
+    return c::lgammaf(x);
+}

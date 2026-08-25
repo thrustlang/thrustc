@@ -441,9 +441,11 @@ impl<'linter> Linter<'linter> {
 
                 self.analyze_expr(value);
 
-                if let Some(name) = self::lvalue_base_reference(source) {
+                if let Ast::Reference { name, .. } = &**source {
                     let compound: bool = self::expr_references(value, name);
                     self::mark_as_mutated(self, name, *span, compound);
+                } else if let Some(name) = self::lvalue_base_reference(source) {
+                    self::mark_as_mutated_through(self, name);
                 }
             }
 
@@ -1395,6 +1397,17 @@ pub fn mark_as_mutated<'linter>(
     }
 
     self::mark_as_written(linter, name, write_span, compound);
+}
+
+#[inline]
+pub fn mark_as_mutated_through<'linter>(linter: &mut Linter<'linter>, name: &'linter str) {
+    if let Some(static_var) = linter.symbols.get_static_info(name) {
+        static_var.3 = true;
+    } else if let Some(local) = linter.symbols.get_local_info(name) {
+        local.3 = true;
+    } else if let Some(parameter) = linter.symbols.get_parameter_info(name) {
+        parameter.3 = true;
+    }
 }
 
 #[inline]

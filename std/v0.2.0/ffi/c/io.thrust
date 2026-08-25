@@ -63,3 +63,20 @@ fn remove(filename: CString)                                   s32   @public @ex
 fn rename(old: CString, newName: CString)                     s32   @public @extern("rename")    @convention("C");
 fn setvbuf(stream: ptr, buffer: ptr, mode: s32, size: usize)   s32   @public @extern("setvbuf")   @convention("C");
 fn setbuf(stream: ptr, buffer: ptr)                            void  @public @extern("setbuf")    @convention("C");
+
+fn tmpfile()                                                   ptr   @public @extern("tmpfile")   @convention("C");
+fn fseeko(stream: ptr, offset: s64, whence: s32)               s32   @public @extern("fseeko")    @convention("C");
+fn ftello(stream: ptr)                                         s64   @public @extern("ftello")    @convention("C");
+fn getline(lineptr: ptr, n: ptr[usize], stream: ptr)           s64   @public @extern("getline")   @convention("C");
+fn getdelim(lineptr: ptr, n: ptr[usize], delim: s32, stream: ptr) s64 @public @extern("getdelim") @convention("C");
+fn popen(command: CString, mode: CString)                      ptr   @public @extern("popen")     @convention("C");
+fn pclose(stream: ptr)                                         s32   @public @extern("pclose")    @convention("C");
+fn vdprintf(fd: s32, fmt: CString, ap: ptr)                    s32   @public @extern("vdprintf")  @convention("C");
+fn flockfile(stream: ptr)                                      void  @public @extern("flockfile") @convention("C");
+fn ftrylockfile(stream: ptr)                                   s32   @public @extern("ftrylockfile") @convention("C");
+fn funlockfile(stream: ptr)                                    void  @public @extern("funlockfile") @convention("C");
+fn renameat(old_dir_fd: s32, old_path: CString, new_dir_fd: s32, new_path: CString) s32 @public @extern("renameat") @convention("C");
+fn renameat2(old_dir_fd: s32, old_path: CString, new_dir_fd: s32, new_path: CString, flags: u32) s32 @public @extern("renameat2") @convention("C");
+fn fcloseall()                                                 s32   @public @extern("fcloseall") @convention("C");
+fn setbuffer(stream: ptr, buffer: ptr, size: usize)            void  @public @extern("setbuffer") @convention("C");
+fn setlinebuf(stream: ptr)                                     void  @public @extern("setlinebuf") @convention("C");

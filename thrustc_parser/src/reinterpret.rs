@@ -31,20 +31,26 @@ pub fn floating_point(lexeme: &str, span: Span) -> Result<(Type, f64), Compilati
             span,
         ))
     } else {
-        lexeme
-            .parse::<f32>()
-            .map(|f| (Type::F32 { span }, f as f64))
-            .or_else(|_| lexeme.parse::<f64>().map(|f| (Type::F64 { span }, f)))
-            .map_err(|_| {
-                CompilationIssue::Error(
-                    CompilationIssueCode::E0001,
-                    "Literal is too large to be represented in a standard floating-point type."
-                        .into(),
-                    "You can shorten it.".into(),
-                    None,
-                    span,
-                )
-            })
+        match lexeme.parse::<f64>() {
+            Ok(f64_value) => {
+                if let Ok(f32_value) = lexeme.parse::<f32>() {
+                    if (f32_value as f64) == f64_value {
+                        return Ok((Type::F32 { span }, f32_value as f64));
+                    }
+                }
+
+                Ok((Type::F64 { span }, f64_value))
+            }
+
+            Err(_) => Err(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Literal is too large to be represented in a standard floating-point type."
+                    .into(),
+                "You can shorten it.".into(),
+                None,
+                span,
+            )),
+        }
     }
 }
 

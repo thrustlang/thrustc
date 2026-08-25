@@ -1,0 +1,25 @@
+import std::math;
+
+fn main() s32 @public {
+    var exponent: s32 = 0;
+    if math::fractionAndExponent(8.0, ref exponent) != 0.5 { return 1; }
+    if exponent != 4 { return 2; }
+
+    var integerPart: f64 = 0.0;
+    if math::splitFraction(3.75, ref integerPart) != 0.75 { return 3; }
+    if integerPart != 3.0 { return 4; }
+
+    if math::scaleByExponent(1.5, 3) != 12.0 { return 5; }
+    if math::scaleByPowerOfTwo(1.5, 3) != 12.0 { return 6; }
+    if math::scaleByPowerOfTwoLong(1.5, 3) != 12.0 { return 7; }
+    if math::scaleByBase(2.0, 3.0) != 16.0 { return 8; }
+    if math::mantissa(8.0) != 1.0 { return 9; }
+
+    if math::nextUp(1.0) <= 1.0 { return 10; }
+    if math::nextDown(1.0) >= 1.0 { return 11; }
+
+    var nanValue: f64 = math::notANumber("123");
+    if math::getPayload(ref nanValue) != 123.0 { return 12; }
+
+    return 0;
+}

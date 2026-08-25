@@ -172,3 +172,79 @@ fn moveFile(from: CString, to: CString) s32 @public {
 fn setStreamBuffer(stream: File, buffer: ptr, mode: s32, size: usize) s32 @public {
     return c::setvbuf(stream, buffer, mode, size);
 }
+
+fn setBuffer(stream: File, buffer: ptr) void @public {
+    c::setbuf(stream, buffer);
+}
+
+fn setBufferSize(stream: File, buffer: ptr, size: usize) void @public {
+    c::setbuffer(stream, buffer, size);
+}
+
+fn setLineBuffer(stream: File) void @public {
+    c::setlinebuf(stream);
+}
+
+fn readCharFast(stream: File) s32 @public {
+    return c::getc(stream);
+}
+
+fn writeCharFast(character: s32, stream: File) s32 @public {
+    return c::putc(character, stream);
+}
+
+fn printToBufferUnsafe(buffer: ptr, fmt: CString) s32 @public @arbitraryArgs {
+    return c::vsprintf(buffer, fmt, arbitraryArgs());
+}
+
+fn openTempFile() File @public {
+    return c::tmpfile();
+}
+
+fn seekOffset(stream: File, offset: s64, whence: s32) s32 @public {
+    return c::fseeko(stream, offset, whence);
+}
+
+fn tellOffset(stream: File) s64 @public {
+    return c::ftello(stream);
+}
+
+fn readLineAllocated(lineptr: ptr, size: ptr[usize], stream: File) s64 @public {
+    return c::getline(lineptr, size, stream);
+}
+
+fn openPipe(command: CString, mode: CString) File @public {
+    return c::popen(command, mode);
+}
+
+fn closePipe(stream: File) s32 @public {
+    return c::pclose(stream);
+}
+
+fn printToFileDescriptor(fd: s32, fmt: CString) s32 @public @arbitraryArgs {
+    return c::vdprintf(fd, fmt, arbitraryArgs());
+}
+
+fn lockStream(stream: File) void @public {
+    c::flockfile(stream);
+}
+
+fn tryLockStream(stream: File) s32 @public {
+    return c::ftrylockfile(stream);
+}
+
+fn unlockStream(stream: File) void @public {
+    c::funlockfile(stream);
+}
+
+fn renameAt(oldDirFd: s32, oldPath: CString, newDirFd: s32, newPath: CString) s32 @public {
+    return c::renameat(oldDirFd, oldPath, newDirFd, newPath);
+}
+
+fn renameAt2(oldDirFd: s32, oldPath: CString, newDirFd: s32, newPath: CString, flags: u32) s32 @public {
+    return c::renameat2(oldDirFd, oldPath, newDirFd, newPath, flags);
+}
+
+fn closeAllFiles() s32 @public {
+    return c::fcloseall();
+}

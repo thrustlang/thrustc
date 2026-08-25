@@ -1,0 +1,16 @@
+import std::math;
+
+fn closeTo(actual: f64, expected: f64, epsilon: f64) bool {
+    return math::absolute(actual - expected) <= epsilon;
+}
+
+fn main() s32 @public {
+    if !closeTo(math::besselJ0(1.0), 0.7651976865579666, 0.000000001) { return 1; }
+    if !closeTo(math::besselJ1(1.0), 0.44005058574493355, 0.000000001) { return 2; }
+    if !closeTo(math::besselJn(2, 1.0), 0.11490348493190048, 0.000000001) { return 3; }
+    if !closeTo(math::besselY0(1.0), 0.08825696421567697, 0.000000001) { return 4; }
+    if !closeTo(math::besselY1(1.0), -0.7812128213002887, 0.000000001) { return 5; }
+    if !closeTo(math::besselYn(2, 1.0), -1.6506826068162546, 0.000000001) { return 6; }
+
+    return 0;
+}

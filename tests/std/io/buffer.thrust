@@ -1,0 +1,20 @@
+import std::io;
+
+fn main() s32 @public {
+    var file := io::openTempFile();
+    if file == nullptr { return 1; }
+
+    var buffer1: array[char; 256];
+    var buffer2: array[char; 128];
+
+    io::setBuffer(file, ref buffer1);
+    io::setBufferSize(file, ref buffer2, 128);
+    io::setLineBuffer(file);
+
+    if io::setStreamBuffer(file, ref buffer2, io::IOFBF, 128) != 0 { return 2; }
+
+    if io::writeCharTo('a' as s32, file) != 'a' as s32 { return 3; }
+    if io::closeFile(file) != 0 { return 4; }
+
+    return 0;
+}

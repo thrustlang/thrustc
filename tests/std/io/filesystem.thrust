@@ -1,0 +1,14 @@
+import std::io;
+
+fn main() s32 @public {
+    var file := io::openFile("thrust_io_fs_a.txt", "w");
+    if file == nullptr { return 1; }
+    if io::closeFile(file) != 0 { return 2; }
+
+    if io::moveFile("thrust_io_fs_a.txt", "thrust_io_fs_b.txt") != 0 { return 3; }
+    if io::renameAt(-100, "thrust_io_fs_b.txt", -100, "thrust_io_fs_c.txt") != 0 { return 4; }
+    if io::renameAt2(-100, "thrust_io_fs_c.txt", -100, "thrust_io_fs_d.txt", 0) != 0 { return 5; }
+    if io::deleteFile("thrust_io_fs_d.txt") != 0 { return 6; }
+
+    return 0;
+}

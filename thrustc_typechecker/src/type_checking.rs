@@ -693,7 +693,7 @@ pub fn check_type_together(
 
         (
             Type::F32 { .. },
-            Type::F32 { .. },
+            Type::F32 { .. } | Type::F64 { .. },
             Some(
                 TokenType::Plus
                 | TokenType::Minus

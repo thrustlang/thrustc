@@ -1,0 +1,13 @@
+import std::io;
+
+fn main() s32 @public {
+    var pipe := io::openPipe("echo hello", "r");
+    if pipe == nullptr { return 1; }
+
+    var buffer: array[char; 32];
+    if io::readLine(ref buffer, 32, pipe) == nullptr { return 2; }
+
+    if io::closePipe(pipe) != 0 { return 3; }
+
+    return 0;
+}

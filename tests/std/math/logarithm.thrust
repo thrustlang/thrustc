@@ -1,0 +1,23 @@
+import std::math;
+
+fn closeTo(actual: f64, expected: f64, epsilon: f64) bool {
+    return math::absolute(actual - expected) <= epsilon;
+}
+
+fn main() s32 @public {
+    if math::naturalLogarithm(1.0) != 0.0 { return 1; }
+    if !closeTo(math::logarithm2(8.0), 3.0, 0.000000001) { return 2; }
+    if !closeTo(math::logarithm10(100.0), 2.0, 0.000000001) { return 3; }
+    if !closeTo(math::naturalLogarithmPlusOne(0.0), 0.0, 0.000000001) { return 4; }
+    if !closeTo(math::logarithmPlusOne(0.0), 0.0, 0.000000001) { return 5; }
+    if !closeTo(math::logarithmPlusOne(math::E - 1.0), 1.0, 0.000000001) { return 6; }
+    if !closeTo(math::logarithm2PlusOne(0.0), 0.0, 0.000000001) { return 7; }
+    if !closeTo(math::logarithm2PlusOne(3.0), 2.0, 0.000000001) { return 8; }
+    if !closeTo(math::logarithm10PlusOne(0.0), 0.0, 0.000000001) { return 9; }
+    if !closeTo(math::logarithm10PlusOne(99.0), 2.0, 0.000000001) { return 10; }
+
+    if math::integerLogarithm(8.0) != 3 { return 11; }
+    if math::longLogarithm(8.0) != 3 { return 12; }
+
+    return 0;
+}

@@ -1,0 +1,32 @@
+import std::math;
+
+fn closeTo(actual: f64, expected: f64, epsilon: f64) bool {
+    return math::absolute(actual - expected) <= epsilon;
+}
+
+fn main() s32 @public {
+    if math::sine(0.0) != 0.0 { return 1; }
+    if math::cosine(0.0) != 1.0 { return 2; }
+    if !closeTo(math::tangent(math::PI / 4.0), 1.0, 0.000000001) { return 3; }
+    if !closeTo(math::arcSine(0.5), math::PI / 6.0, 0.000000001) { return 4; }
+    if !closeTo(math::arcCosine(0.5), math::PI / 3.0, 0.000000001) { return 5; }
+    if !closeTo(math::arcTangent(1.0), math::PI / 4.0, 0.000000001) { return 6; }
+    if !closeTo(math::arcTangent2(1.0, 1.0), math::PI / 4.0, 0.000000001) { return 7; }
+
+    if !closeTo(math::hyperbolicSine(0.0), 0.0, 0.000000001) { return 8; }
+    if !closeTo(math::hyperbolicCosine(0.0), 1.0, 0.000000001) { return 9; }
+    if !closeTo(math::hyperbolicTangent(0.0), 0.0, 0.000000001) { return 10; }
+    if !closeTo(math::inverseHyperbolicSine(0.0), 0.0, 0.000000001) { return 11; }
+    if !closeTo(math::inverseHyperbolicCosine(1.0), 0.0, 0.000000001) { return 12; }
+    if !closeTo(math::inverseHyperbolicTangent(0.0), 0.0, 0.000000001) { return 13; }
+
+    if !closeTo(math::sinePi(0.5), 1.0, 0.000000001) { return 14; }
+    if !closeTo(math::cosinePi(0.5), 0.0, 0.000000001) { return 15; }
+    if !closeTo(math::tangentPi(0.25), 1.0, 0.000000001) { return 16; }
+    if !closeTo(math::arcSinePi(1.0), 0.5, 0.000000001) { return 17; }
+    if !closeTo(math::arcCosinePi(1.0), 0.0, 0.000000001) { return 18; }
+    if !closeTo(math::arcTangentPi(1.0), 0.25, 0.000000001) { return 19; }
+    if !closeTo(math::arcTangent2Pi(1.0, 1.0), 0.25, 0.000000001) { return 20; }
+
+    return 0;
+}

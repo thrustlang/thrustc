@@ -1,0 +1,21 @@
+import std::io;
+
+fn main() s32 @public {
+    if io::writeChar('A' as s32) != 'A' as s32 { return 1; }
+    if io::writeCharTo('C' as s32, io::stdout) != 'C' as s32 { return 2; }
+
+    var file := io::openTempFile();
+    if file == nullptr { return 3; }
+
+    if io::writeCharFast('q' as s32, file) != 'q' as s32 { return 4; }
+    if io::seek(file, 0, io::SEEK_SET) != 0 { return 5; }
+    if io::readCharFast(file) != 'q' as s32 { return 6; }
+
+    if io::pushBackChar('z' as s32, file) != 'z' as s32 { return 7; }
+    if io::readCharFrom(file) != 'z' as s32 { return 8; }
+    if io::readCharFrom(file) != io::EOF { return 9; }
+
+    if io::closeFile(file) != 0 { return 10; }
+
+    return 0;
+}

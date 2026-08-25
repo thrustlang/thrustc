@@ -1,0 +1,24 @@
+import std::math;
+
+fn main() s32 @public {
+    if math::floorValue(3.7) != 3.0 { return 1; }
+    if math::ceiling(3.2) != 4.0 { return 2; }
+    if math::truncate(3.7) != 3.0 { return 3; }
+    if math::truncate(-3.7) != -3.0 { return 4; }
+    if math::roundValue(2.6) != 3.0 { return 5; }
+    if math::nearestInteger(2.4) != 2.0 { return 6; }
+    if math::nearbyInteger(2.4) != 2.0 { return 7; }
+
+    if math::roundToLong(2.6) != 3 { return 8; }
+    if math::roundToLongLong(2.6) != 3 { return 9; }
+    if math::nearestIntegerToLong(2.4) != 2 { return 10; }
+    if math::nearestIntegerToLongLong(2.4) != 2 { return 11; }
+
+    if math::fromFixedPoint(1.5, 0, 8) != 2.0 { return 12; }
+    if math::fromFixedPoint(1.5, 0x0C00, 8) != 1.0 { return 13; }
+    if math::fromFixedPointExcept(1.5, 0, 8) != 2.0 { return 14; }
+    if math::fromFixedPoint(2.5, 0, 8) != 3.0 { return 15; }
+    if math::fromFixedPoint(1.5, 0, 3) != 2.0 { return 16; }
+
+    return 0;
+}
