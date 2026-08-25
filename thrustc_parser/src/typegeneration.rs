@@ -577,6 +577,43 @@ fn parse_memory_address_space<'parser>(
     Ok(Some(value))
 }
 
+fn resolve_constant_value(
+    ctx: &ParserContext<'_>,
+    name: &str,
+    span: Span,
+    depth: &mut usize,
+) -> Option<BuiltinValue> {
+    if *depth >= COMPILER_TOO_MANY_EXPRESSION_DEPTH as usize {
+        return None;
+    }
+
+    let symbol: FoundSymbolId = ctx.get_symbols().get_symbols_id(name, span).ok()?;
+
+    if !symbol.is_constant() {
+        return None;
+    }
+
+    let (id, scope_idx) = symbol.expected_constant(span).ok()?;
+
+    let constant: ConstantSymbol = ctx
+        .get_symbols()
+        .get_const_by_id(id, scope_idx, span)
+        .ok()?;
+
+    let value: Ast = constant.get_value()?;
+
+    *depth = depth.saturating_add(1);
+
+    let result: Option<BuiltinValue> =
+        thrustc_builtins::value::fold_resolving(&value, &mut |name, span| {
+            self::resolve_constant_value(ctx, name, span, &mut *depth)
+        });
+
+    *depth = depth.saturating_sub(1);
+
+    result
+}
+
 fn check_fixed_array_size(size: Option<u64>, span: Span) -> Result<u32, CompilationIssue> {
     let size: u64 = size.ok_or_else(|| {
         CompilationIssue::Error(
@@ -597,39 +634,4 @@ fn check_fixed_array_size(size: Option<u64>, span: Span) -> Result<u32, Compilat
             span,
         )
     })
-}
-
-fn resolve_constant_value(
-    ctx: &ParserContext<'_>,
-    name: &str,
-    span: Span,
-    depth: &mut usize,
-) -> Option<BuiltinValue> {
-    if *depth >= COMPILER_TOO_MANY_EXPRESSION_DEPTH as usize {
-        return None;
-    }
-
-    let symbol: FoundSymbolId = ctx.get_symbols().get_symbols_id(name, span).ok()?;
-
-    if !symbol.is_constant() {
-        return None;
-    }
-
-    let (id, scope_idx) = symbol.expected_constant(span).ok()?;
-    let constant: ConstantSymbol = ctx
-        .get_symbols()
-        .get_const_by_id(id, scope_idx, span)
-        .ok()?;
-    let value: Ast = constant.get_value()?;
-
-    *depth = depth.saturating_add(1);
-
-    let result: Option<BuiltinValue> =
-        thrustc_builtins::value::fold_resolving(&value, &mut |name, span| {
-            self::resolve_constant_value(ctx, name, span, &mut *depth)
-        });
-
-    *depth = depth.saturating_sub(1);
-
-    result
 }

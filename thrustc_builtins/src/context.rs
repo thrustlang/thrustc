@@ -21,6 +21,7 @@ use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
 use thrustc_typesystem::type_layout::TargetInfo;
 
+#[derive(Debug)]
 pub struct BuiltinContext<'builtin> {
     pub target_info: &'builtin mut TargetInfo,
     pub options: &'builtin CompilerOptions,

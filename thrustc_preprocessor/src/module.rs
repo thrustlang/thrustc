@@ -48,21 +48,6 @@ impl Module {
     }
 
     #[inline]
-    pub fn set_alias(&mut self, alias: Vec<String>) {
-        self.alias = Some(alias);
-    }
-
-    #[inline]
-    pub fn set_only(&mut self, only: Vec<String>) {
-        self.only = Some(only);
-    }
-
-    #[inline]
-    pub fn get_only(&self) -> Option<&[String]> {
-        self.only.as_deref()
-    }
-
-    #[inline]
     pub fn merge_import(&mut self, other: Module) {
         if other.only.is_none() {
             self.only = None;
@@ -77,6 +62,21 @@ impl Module {
         if self.alias.is_none() && other.alias.is_some() {
             self.alias = other.alias;
         }
+    }
+
+    #[inline]
+    pub fn set_alias(&mut self, alias: Vec<String>) {
+        self.alias = Some(alias);
+    }
+
+    #[inline]
+    pub fn set_only(&mut self, only: Vec<String>) {
+        self.only = Some(only);
+    }
+
+    #[inline]
+    pub fn get_only(&self) -> Option<&[String]> {
+        self.only.as_deref()
     }
 
     #[inline]

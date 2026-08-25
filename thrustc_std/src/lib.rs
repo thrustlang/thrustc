@@ -35,11 +35,6 @@ pub enum StdError {
     Io(std::io::Error),
 }
 
-#[inline]
-pub fn resolve_std_root(custom: Option<&Path>) -> PathBuf {
-    custom.map_or_else(self::default_std_root, |path| path.to_path_buf())
-}
-
 pub fn default_std_root() -> PathBuf {
     match std::env::consts::FAMILY {
         "unix" => PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| {
@@ -69,14 +64,6 @@ pub fn default_std_root() -> PathBuf {
     }
 }
 
-#[inline]
-pub fn resolve_target_version(flag: Option<&str>) -> String {
-    flag.map_or_else(
-        || thrustc_constants::COMPILER_VERSION.to_string(),
-        |version| version.to_string(),
-    )
-}
-
 pub fn ensure_std_present(root: &Path, version: &str) -> Result<PathBuf, StdError> {
     let version_dir: PathBuf = root.join(format!("v{version}"));
     let version_file: PathBuf = root.join(STD_VERSION_FILE_NAME);
@@ -96,7 +83,6 @@ pub fn ensure_std_present(root: &Path, version: &str) -> Result<PathBuf, StdErro
         && embedded.is_some()
     {
         self::ensure_version_file(root)?;
-
         self::dump_version_std(root, version, true)?;
 
         thrustc_logging::print_warning(
@@ -234,6 +220,19 @@ fn dump_dir_files(root: &Path, directory: &Dir, overwrite: bool) -> Result<(), S
     }
 
     Ok(())
+}
+
+#[inline]
+pub fn resolve_std_root(custom: Option<&Path>) -> PathBuf {
+    custom.map_or_else(self::default_std_root, |path| path.to_path_buf())
+}
+
+#[inline]
+pub fn resolve_target_version(flag: Option<&str>) -> String {
+    flag.map_or_else(
+        || thrustc_constants::COMPILER_VERSION.to_string(),
+        |version| version.to_string(),
+    )
 }
 
 impl From<std::io::Error> for StdError {

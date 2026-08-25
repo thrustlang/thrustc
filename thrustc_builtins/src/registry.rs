@@ -155,6 +155,7 @@ impl BuiltinRegistry {
         }
 
         let mut target_info: TargetInfo = self.target_info.clone();
+
         let mut warnings: Vec<CompilationIssue> = Vec::new();
 
         let mut context: BuiltinContext = BuiltinContext {

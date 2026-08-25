@@ -48,13 +48,7 @@ pub fn evaluate_condition<'preprocessor>(
     }
 }
 
-pub fn skip_import(parser: &mut PreprocessorContext) -> Result<(), ()> {
-    parser.advance_until(TokenType::SemiColon)?;
-
-    Ok(())
-}
-
-pub(crate) fn parse_expression(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
+pub fn parse_expression(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
     self::parse_or(parser)
 }
 
@@ -357,4 +351,9 @@ fn parse_builtin_call(parser: &mut PreprocessorContext) -> Result<Ast<'static>, 
         .map_err(|_| ())?;
 
     Ok(value.to_ast(signature.return_type, span))
+}
+
+pub fn skip_import(parser: &mut PreprocessorContext) -> Result<(), ()> {
+    parser.advance_until(TokenType::SemiColon)?;
+    Ok(())
 }

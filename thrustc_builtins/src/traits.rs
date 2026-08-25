@@ -35,9 +35,7 @@ pub struct BuiltinFunctionSignature {
 
 pub trait CompileTimeBuiltinFunction: std::fmt::Debug {
     fn name(&self) -> &'static str;
-
     fn signature(&self) -> BuiltinFunctionSignature;
-
     fn evaluate(
         &self,
         args: &[BuiltinArgument],
@@ -46,10 +44,12 @@ pub trait CompileTimeBuiltinFunction: std::fmt::Debug {
 }
 
 impl BuiltinFunctionSignature {
+    #[inline]
     pub fn get_parameter_count(&self) -> usize {
         self.parameters.len()
     }
 
+    #[inline]
     pub fn is_parameter_a_type(&self, index: usize) -> bool {
         self.parameters
             .get(index)

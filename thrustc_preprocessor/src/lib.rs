@@ -32,7 +32,7 @@ mod abort;
 mod context;
 mod highmodule_parsing;
 pub mod module;
-mod moduletable;
+mod module_table;
 mod parser;
 pub mod registry;
 mod shared;
@@ -66,8 +66,9 @@ impl<'preprocessor> Preprocessor {
         let mut visited: HashSet<std::path::PathBuf> = HashSet::with_capacity(u8::MAX as usize);
         visited.insert(file_path);
 
-        let registry: crate::registry::SharedModuleRegistry =
-            std::rc::Rc::new(std::cell::RefCell::new(crate::registry::ModuleRegistry::new()));
+        let registry: crate::registry::SharedModuleRegistry = std::rc::Rc::new(
+            std::cell::RefCell::new(crate::registry::ModuleRegistry::new()),
+        );
 
         let mut context: PreprocessorContext<'_> =
             PreprocessorContext::new(tokens, options, file, visited, registry, builtins);
@@ -176,14 +177,20 @@ impl<'preprocessor> Preprocessor {
         Ok(())
     }
 
-    fn merge_module(&mut self, merged: &mut ahash::AHashMap<std::path::PathBuf, usize>, module: Module) {
+    fn merge_module(
+        &mut self,
+        merged: &mut ahash::AHashMap<std::path::PathBuf, usize>,
+        module: Module,
+    ) {
         let key: std::path::PathBuf = module.get_path().to_path_buf();
 
         if let Some(&index) = merged.get(&key) {
             self.modules[index].merge_import(module);
         } else {
             let index: usize = self.modules.len();
+
             self.modules.push(module);
+
             merged.insert(key, index);
         }
     }
