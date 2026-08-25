@@ -40,6 +40,7 @@ thrustc_llvm_codegen = { path = "../thrustc_llvm_codegen" }
 thrustc_logging = { path = "../thrustc_logging" }
 thrustc_utils = { path = "../thrustc_utils" }
 thrustc_reader = { path = "../thrustc_reader" }
+thrustc_generics = { path = "../thrustc_generics" }
 
 [features]
 default = ["llvm_backend_static"]

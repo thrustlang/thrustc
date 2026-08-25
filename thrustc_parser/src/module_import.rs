@@ -18,10 +18,12 @@
 */
 
 #![allow(clippy::explicit_counter_loop)]
+#![allow(clippy::too_many_arguments)]
 
 use thrustc_ast::{
     Ast, NodeId,
     ast_metadata::{FunctionParameterMetadata, ReferenceMetadata, ReferenceType, StaticMetadata},
+    traits::AstGetType,
 };
 use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
@@ -30,6 +32,7 @@ use thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParamete
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_mir::{atomicord::ThrustAtomicOrdering, threadmode::ThrustThreadMode};
 use thrustc_parser_external_table::ExternalSymbolTable;
+use thrustc_parser_table::{GenericCustomTypeEntry, GenericFunctionEntry, GenericStructEntry};
 use thrustc_preprocessor::signatures::{Signature, Variant};
 
 use thrustc_token_type::TokenType;
@@ -49,11 +52,12 @@ pub fn build_qualified_expression<'parser>(
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
-    if ctx.check(TokenType::LParen) {
+    if ctx.check(TokenType::LParen) || ctx.check(TokenType::LBracket) {
         let Some(Signature::Function {
             kind,
             parameters,
             attributes,
+            type_params,
             ..
         }) = self::resolve_signature(ctx, access, symbol, Variant::Function)
         else {
@@ -65,6 +69,19 @@ pub fn build_qualified_expression<'parser>(
                 span,
             ));
         };
+
+        if let Some(type_params) = type_params {
+            return self::build_qualified_generic_call(
+                ctx,
+                access,
+                symbol,
+                span,
+                type_params,
+                kind.clone(),
+                parameters,
+                attributes.clone(),
+            );
+        }
 
         ctx.consume(
             TokenType::LParen,
@@ -78,10 +95,8 @@ pub fn build_qualified_expression<'parser>(
         let return_type: Type = kind.clone();
 
         let parameter_types: Vec<Type> = parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
-        let parameter_names: Vec<&str> = parameters
-            .iter()
-            .map(|(name, _, _)| name.as_str())
-            .collect();
+        let parameter_names: Vec<&str> =
+            parameters.iter().map(|(name, ..)| name.as_str()).collect();
 
         let has_ignore: bool = attributes.has_ignore_attribute();
 
@@ -129,8 +144,9 @@ pub fn build_qualified_expression<'parser>(
         }
 
         return Ok(Ast::Call {
-            name: symbol,
+            name: symbol.to_string(),
             args,
+            generic_args: Vec::with_capacity(0),
             kind: return_type,
             span,
             id: NodeId::new(),
@@ -234,6 +250,136 @@ pub fn build_qualified_expression<'parser>(
     ))
 }
 
+fn build_qualified_generic_call<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    access: &[String],
+    symbol: &'parser str,
+    span: Span,
+    type_params: &[String],
+    kind: Type,
+    parameters: &[(String, Type, Span)],
+    attributes: ThrustAttributes,
+) -> Result<thrustc_ast::Ast<'parser>, CompilationIssue> {
+    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+        .resolve(access)
+        .map(|module| module.get_path().to_path_buf());
+
+    let parameter_types: Vec<Type> = parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
+    let parameter_names: Vec<String> = parameters.iter().map(|(name, ..)| name.clone()).collect();
+    let has_ignore: bool = attributes.has_ignore_attribute();
+
+    if !ctx.get_symbols().has_generic_function(symbol) {
+        ctx.get_mut_symbols().new_generic_function(
+            symbol,
+            GenericFunctionEntry {
+                name: symbol.to_string(),
+                type_params: type_params.to_vec(),
+                parameter_types: parameter_types.clone(),
+                parameter_names: parameter_names.clone(),
+                return_type: kind.clone(),
+                attributes: attributes.clone(),
+                has_local_template: false,
+                has_varargs: has_ignore,
+                span,
+            },
+        );
+
+        if let Some(path) = origin.as_ref() {
+            ctx.get_mut_symbols()
+                .record_import_origin(symbol, path.clone());
+        }
+    }
+
+    let mut generic_args: Vec<Type> = Vec::with_capacity(type_params.len());
+
+    if ctx.match_token(TokenType::LBracket)? {
+        loop {
+            if ctx.check(TokenType::RBracket) {
+                break;
+            }
+
+            let argument_type: Type = crate::typegeneration::build_type(ctx, false)?;
+
+            generic_args.push(argument_type);
+
+            if ctx.check(TokenType::RBracket) {
+                break;
+            }
+
+            ctx.consume(
+                TokenType::Comma,
+                CompilationIssueCode::E0001,
+                "Expected ','.".into(),
+            )?;
+        }
+
+        ctx.consume(
+            TokenType::RBracket,
+            CompilationIssueCode::E0001,
+            "Expected ']'.".into(),
+        )?;
+    }
+
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    let arguments: crate::expressions::call::ParsedCallArguments =
+        crate::expressions::call::parse_call_arguments(ctx)?;
+
+    let parameter_names_refs: Vec<&str> = parameter_names.iter().map(String::as_str).collect();
+
+    let args: Vec<Ast> = match crate::expressions::call::reorder_call_arguments(
+        symbol,
+        span,
+        arguments,
+        &parameter_names_refs,
+        has_ignore,
+    ) {
+        Ok(args) => args,
+        Err(error) => {
+            ctx.add_error_report(error);
+            return Ok(Ast::invalid_ast(span));
+        }
+    };
+
+    let argument_types: Vec<Type> = args
+        .iter()
+        .map(|argument| match argument.get_value_type() {
+            Ok(ty) => ty.clone(),
+            Err(_) => Type::Void { span },
+        })
+        .collect();
+
+    let kind: Type = match thrustc_generics::solve(
+        type_params,
+        &generic_args,
+        &parameter_types,
+        &argument_types,
+        &kind,
+        has_ignore,
+        span,
+    ) {
+        Ok(result) => result.return_type,
+        Err(error) => {
+            ctx.add_error_report(error);
+
+            Type::Void { span }
+        }
+    };
+
+    Ok(Ast::Call {
+        name: symbol.to_string(),
+        args,
+        generic_args,
+        kind,
+        span,
+        id: NodeId::new(),
+    })
+}
+
 pub(crate) fn synthesize_only_import<'parser>(
     ctx: &mut ParserContext<'parser>,
     access: &[String],
@@ -258,20 +404,50 @@ pub(crate) fn synthesize_only_import<'parser>(
                 kind,
                 parameters,
                 attributes,
+                type_params,
                 ..
             } => {
-                if ctx.get_symbols().has_function(&symbol.name) {
+                if ctx.get_symbols().has_generic_function(&symbol.name)
+                    || ctx.get_symbols().has_function(&symbol.name)
+                {
                     self::check_only_collision(ctx, &symbol.name, access, &origin, span)?;
+                    continue;
+                }
+
+                if let Some(type_params) = type_params {
+                    let return_type: Type = kind.clone();
+                    let parameter_types: Vec<Type> =
+                        parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
+                    let parameter_names: Vec<String> =
+                        parameters.iter().map(|(name, ..)| name.clone()).collect();
+                    let has_ignore: bool = attributes.has_ignore_attribute();
+
+                    ctx.get_mut_symbols().new_generic_function(
+                        &symbol.name,
+                        GenericFunctionEntry {
+                            name: symbol.name.clone(),
+                            type_params: type_params.clone(),
+                            parameter_types,
+                            parameter_names,
+                            return_type,
+                            attributes: attributes.clone(),
+                            has_local_template: false,
+                            has_varargs: has_ignore,
+                            span,
+                        },
+                    );
+
+                    ctx.get_mut_symbols()
+                        .record_import_origin(&symbol.name, origin.clone());
+
                     continue;
                 }
 
                 let return_type: Type = kind.clone();
                 let parameter_types: Vec<Type> =
                     parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
-                let parameter_names: Vec<&str> = parameters
-                    .iter()
-                    .map(|(name, _, _)| name.as_str())
-                    .collect();
+                let parameter_names: Vec<&str> =
+                    parameters.iter().map(|(name, ..)| name.as_str()).collect();
                 let has_ignore: bool = attributes.has_ignore_attribute();
 
                 let _ = ctx.get_mut_symbols().new_function(
@@ -364,10 +540,30 @@ pub(crate) fn synthesize_only_import<'parser>(
                 );
             }
             Signature::CustomType {
-                kind, attributes, ..
+                kind,
+                attributes,
+                type_params,
+                ..
             } => {
-                if ctx.get_symbols().has_global_custom_type(&symbol.name) {
+                if ctx.get_symbols().has_generic_custom_type(&symbol.name)
+                    || ctx.get_symbols().has_global_custom_type(&symbol.name)
+                {
                     self::check_only_collision(ctx, &symbol.name, access, &origin, span)?;
+                    continue;
+                }
+
+                if let Some(type_params) = type_params {
+                    ctx.get_mut_symbols().new_generic_custom_type(
+                        &symbol.name,
+                        GenericCustomTypeEntry {
+                            type_params: type_params.clone(),
+                            kind: kind.clone(),
+                        },
+                    );
+
+                    ctx.get_mut_symbols()
+                        .record_import_origin(&symbol.name, origin.clone());
+
                     continue;
                 }
 
@@ -379,13 +575,21 @@ pub(crate) fn synthesize_only_import<'parser>(
                     .record_import_origin(&symbol.name, origin.clone());
 
                 ctx.add_ast_node(Ast::CustomType {
+                    name: symbol.name.clone(),
                     kind: kind.clone(),
                     span,
                     id: NodeId::new(),
                 });
             }
-            Signature::Struct { kind, fields, .. } => {
-                if ctx.get_symbols().has_global_struct(&symbol.name) {
+            Signature::Struct {
+                kind,
+                fields,
+                type_params,
+                ..
+            } => {
+                if ctx.get_symbols().has_generic_struct(&symbol.name)
+                    || ctx.get_symbols().has_global_struct(&symbol.name)
+                {
                     self::check_only_collision(ctx, &symbol.name, access, &origin, span)?;
                     continue;
                 }
@@ -394,6 +598,23 @@ pub(crate) fn synthesize_only_import<'parser>(
                     Type::Struct { metadata, .. } => *metadata,
                     _ => continue,
                 };
+
+                if let Some(type_params) = type_params {
+                    ctx.get_mut_symbols().new_generic_struct(
+                        &symbol.name,
+                        GenericStructEntry {
+                            type_params: type_params.clone(),
+                            field_names: fields.iter().map(|(name, _, _)| name.as_str()).collect(),
+                            field_types: fields.iter().map(|(_, ty, _)| ty.clone()).collect(),
+                            metadata,
+                        },
+                    );
+
+                    ctx.get_mut_symbols()
+                        .record_import_origin(&symbol.name, origin.clone());
+
+                    continue;
+                }
 
                 let mut data: Vec<(&'parser str, Type, u32, Span)> =
                     Vec::with_capacity(fields.len());
@@ -494,16 +715,26 @@ pub fn resolve_qualified_type<'parser>(
     access: &[String],
     symbol: &str,
 ) -> Option<thrustc_typesystem::Type> {
-    if let Some(Signature::Struct { kind, .. }) =
-        self::resolve_signature(ctx, access, symbol, Variant::Struct)
+    self::resolve_qualified_generic(ctx, access, symbol).map(|(kind, _)| kind)
+}
+
+pub fn resolve_qualified_generic<'parser>(
+    ctx: &ParserContext<'parser>,
+    access: &[String],
+    symbol: &str,
+) -> Option<(thrustc_typesystem::Type, Option<Vec<String>>)> {
+    if let Some(Signature::Struct {
+        kind, type_params, ..
+    }) = self::resolve_signature(ctx, access, symbol, Variant::Struct)
     {
-        return Some(kind.clone());
+        return Some((kind.clone(), type_params.clone()));
     }
 
-    if let Some(Signature::CustomType { kind, .. }) =
-        self::resolve_signature(ctx, access, symbol, Variant::CustomType)
+    if let Some(Signature::CustomType {
+        kind, type_params, ..
+    }) = self::resolve_signature(ctx, access, symbol, Variant::CustomType)
     {
-        return Some(kind.clone());
+        return Some((kind.clone(), type_params.clone()));
     }
 
     None
@@ -523,8 +754,8 @@ fn synthesize_function<'parser>(
 
     for (kind, &name) in parameter_types.iter().zip(parameter_names.iter()) {
         parameters.push(Ast::FunctionParameter {
-            name,
-            ascii_name: name,
+            name: name.to_string(),
+            ascii_name: name.to_string(),
             kind: kind.clone(),
             position,
             metadata: FunctionParameterMetadata::new(kind.is_ptr_like_type()),
@@ -536,8 +767,8 @@ fn synthesize_function<'parser>(
     }
 
     let declaration: Ast = Ast::Function {
-        name: symbol,
-        ascii_name: symbol,
+        name: symbol.to_string(),
+        ascii_name: symbol.to_string(),
         parameters,
         parameter_types,
         body: None,
@@ -600,7 +831,7 @@ fn build_static_metadata(
     )
 }
 
-pub(crate) fn resolve_signature<'parser>(
+pub fn resolve_signature<'parser>(
     ctx: &ParserContext<'parser>,
     access: &[String],
     symbol: &str,

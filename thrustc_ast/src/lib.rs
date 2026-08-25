@@ -251,6 +251,7 @@ pub enum Ast<'ast> {
 
     // Custom Type
     CustomType {
+        name: String,
         kind: Type,
         span: Span,
         id: NodeId,
@@ -309,8 +310,8 @@ pub enum Ast<'ast> {
         id: NodeId,
     },
     Function {
-        name: &'ast str,
-        ascii_name: &'ast str,
+        name: String,
+        ascii_name: String,
         parameters: std::vec::Vec<Ast<'ast>>,
         parameter_types: std::vec::Vec<Type>,
         body: Option<std::boxed::Box<Ast<'ast>>>,
@@ -320,8 +321,8 @@ pub enum Ast<'ast> {
         id: NodeId,
     },
     FunctionParameter {
-        name: &'ast str,
-        ascii_name: &'ast str,
+        name: String,
+        ascii_name: String,
         kind: Type,
         position: u32,
         metadata: FunctionParameterMetadata,
@@ -449,8 +450,9 @@ pub enum Ast<'ast> {
     },
 
     Call {
-        name: &'ast str,
+        name: String,
         args: std::vec::Vec<Ast<'ast>>,
+        generic_args: std::vec::Vec<Type>,
         kind: Type,
         span: Span,
         id: NodeId,

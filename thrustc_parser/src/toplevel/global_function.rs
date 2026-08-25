@@ -22,6 +22,7 @@ use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParametersTypes};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_parser_table::GenericFunctionEntry;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{TokenType, traits::TokenTypeAttributesExtensions};
 use thrustc_typesystem::{Type, traits::TypePointerExtensions};
@@ -49,6 +50,14 @@ pub fn build_function<'parser>(
     let ascii_name: &str = function_name_tk.get_ascii_lexeme();
 
     let span: Span = function_name_tk.get_span();
+
+    let has_generics: bool = ctx.check(TokenType::LBracket);
+
+    if has_generics {
+        ctx.get_mut_symbols().begin_generic_scope();
+    }
+
+    let type_params: Vec<String> = crate::generics::parse_type_parameters(ctx)?;
 
     ctx.consume(
         TokenType::LParen,
@@ -90,8 +99,8 @@ pub fn build_function<'parser>(
         parameter_names.push(name);
 
         parameters.push(Ast::FunctionParameter {
-            name,
-            ascii_name,
+            name: name.to_string(),
+            ascii_name: ascii_name.to_string(),
             kind,
             position: parameter_position,
             metadata,
@@ -138,16 +147,41 @@ pub fn build_function<'parser>(
         attributes::build_compiler_attributes(ctx, &[TokenType::SemiColon, TokenType::LBrace])?;
     let function_has_ignore: bool = attributes.has_ignore_attribute();
 
-    if parse_forward {
-        ctx.get_mut_symbols().new_function(
+    let is_generic: bool = !type_params.is_empty();
+
+    if is_generic {
+        ctx.get_mut_symbols().new_generic_function(
             name,
-            (
-                return_type,
-                FunctionParametersTypes(parameters_types),
-                FunctionParameterNames(parameter_names),
-                function_has_ignore,
-            ),
-        )?;
+            GenericFunctionEntry {
+                name: name.to_string(),
+                type_params,
+                parameter_types: parameters_types.clone(),
+                parameter_names: parameter_names.iter().map(|name| name.to_string()).collect(),
+                return_type: return_type.clone(),
+                attributes: attributes.clone(),
+                has_local_template: true,
+                has_varargs: function_has_ignore,
+                span,
+            },
+        );
+    }
+
+    if parse_forward {
+        if !is_generic {
+            ctx.get_mut_symbols().new_function(
+                name,
+                (
+                    return_type,
+                    FunctionParametersTypes(parameters_types),
+                    FunctionParameterNames(parameter_names),
+                    function_has_ignore,
+                ),
+            )?;
+        }
+
+        if has_generics {
+            ctx.get_mut_symbols().end_generic_scope();
+        }
 
         Ok(Ast::new_nullptr(span))
     } else {
@@ -158,9 +192,13 @@ pub fn build_function<'parser>(
                 "Expected ';'.".into(),
             )?;
 
+            if has_generics {
+                ctx.get_mut_symbols().end_generic_scope();
+            }
+
             let prototype: Ast = Ast::Function {
-                name,
-                ascii_name,
+                name: name.to_string(),
+                ascii_name: ascii_name.to_string(),
                 parameters,
                 parameter_types: parameters_types,
                 body: None,
@@ -183,9 +221,13 @@ pub fn build_function<'parser>(
 
         ctx.get_mut_symbols().finish_parameters();
 
+        if has_generics {
+            ctx.get_mut_symbols().end_generic_scope();
+        }
+
         let mut prototype: Ast = Ast::Function {
-            name,
-            ascii_name,
+            name: name.to_string(),
+            ascii_name: ascii_name.to_string(),
             parameters,
             parameter_types: parameters_types,
             body: None,

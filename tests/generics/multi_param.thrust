@@ -1,0 +1,17 @@
+/*
+ * Generic function with two type parameters, explicit and inferred.
+ */
+
+fn first [T, G] (a: T, b: G) T {
+    return a;
+}
+
+fn main() s32 @public {
+    var a: s32 = 10;
+    var b: u64 = 20;
+
+    if first(a, b) != 10 { return 1; }
+    if first[s32, u64](30, 40) != 30 { return 2; }
+
+    return 0;
+}

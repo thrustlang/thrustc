@@ -1290,7 +1290,7 @@ fn node_has_escape(noreturn_functions: &ahash::AHashSet<&str>, node: &Ast, depth
     match node {
         Ast::Break { .. } | Ast::BreakAll { .. } => depth == 0,
         Ast::Return { .. } | Ast::Unreachable { .. } => true,
-        Ast::Call { name, .. } => noreturn_functions.contains(name),
+        Ast::Call { name, .. } => noreturn_functions.contains(name.as_str()),
 
         Ast::Loop { block, .. } => self::node_has_escape(noreturn_functions, block, depth + 1),
         Ast::While {

@@ -1,0 +1,17 @@
+/*
+ * Generic type parameters inferred from the argument types.
+ */
+
+fn identity [T] (value: T) T {
+    return value;
+}
+
+fn main() s32 @public {
+    var a: s32 = 42;
+    var b: u64 = 7;
+
+    if identity(a) != 42 { return 1; }
+    if identity(b) != 7 { return 2; }
+
+    return 0;
+}

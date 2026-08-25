@@ -44,6 +44,14 @@ pub fn parse_structure<'module_parser>(
     let name: String = name_tk.get_lexeme().to_string();
     let span: Span = name_tk.get_span();
 
+    let has_generics: bool = ctx.check(TokenType::LBracket);
+
+    if has_generics {
+        ctx.begin_generic_scope();
+    }
+
+    let type_params: Option<Vec<String>> = crate::submodule_parsing::parse_generic_parameters(ctx)?;
+
     let attributes: ThrustAttributes = attributes::build_attributes(ctx, &[TokenType::LBrace])?;
 
     ctx.consume(TokenType::LBrace)?;
@@ -71,6 +79,10 @@ pub fn parse_structure<'module_parser>(
 
     ctx.consume(TokenType::RBrace)?;
 
+    if has_generics {
+        ctx.end_generic_scope();
+    }
+
     if ctx.check(TokenType::SemiColon) {
         ctx.only_advance()?;
     }
@@ -96,6 +108,7 @@ pub fn parse_structure<'module_parser>(
         signature: Signature::Struct {
             kind: structure_type,
             invalid_kind: Type::Void { span },
+            type_params,
             fields,
             span,
         },

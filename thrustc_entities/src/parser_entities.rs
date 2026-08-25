@@ -95,7 +95,7 @@ pub type GlobalConstants<'parser> = HashMap<&'parser str, ConstantSymbol<'parser
 pub type GlobalEnums<'parser> = HashMap<&'parser str, EnumSymbol<'parser>>;
 pub type LocalEnums<'parser> = Vec<HashMap<&'parser str, EnumSymbol<'parser>>>;
 
-pub type Parameters<'parser> = HashMap<&'parser str, ParameterSymbol<'parser>>;
+pub type Parameters<'parser> = HashMap<String, ParameterSymbol<'parser>>;
 
 pub type Intrinsics<'parser> = HashMap<&'parser str, Intrinsic<'parser>>;
 

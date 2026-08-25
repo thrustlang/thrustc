@@ -36,11 +36,23 @@ pub fn parse_type<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> Res
     let name: String = identifier_tk.get_lexeme().to_string();
     let span: Span = identifier_tk.get_span();
 
+    let has_generics: bool = ctx.check(TokenType::LBracket);
+
+    if has_generics {
+        ctx.begin_generic_scope();
+    }
+
+    let type_params: Option<Vec<String>> = crate::submodule_parsing::parse_generic_parameters(ctx)?;
+
     let attributes: ThrustAttributes = attributes::build_attributes(ctx, &[TokenType::Eq])?;
 
     ctx.consume(TokenType::Eq)?;
 
     let r#type: Type = typegeneration::build_type(ctx)?;
+
+    if has_generics {
+        ctx.end_generic_scope();
+    }
 
     ctx.consume(TokenType::SemiColon)?;
 
@@ -49,6 +61,7 @@ pub fn parse_type<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> Res
         signature: Signature::CustomType {
             kind: r#type,
             invalid_kind: Type::Void { span },
+            type_params,
             attributes,
             span,
         },

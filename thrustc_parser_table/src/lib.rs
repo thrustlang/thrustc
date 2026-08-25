@@ -18,16 +18,19 @@
 */
 
 mod abort;
+mod generic;
 mod impls;
 pub mod traits;
+
+pub use self::generic::{GenericCustomTypeEntry, GenericFunctionEntry, GenericStructEntry};
 
 use std::path::PathBuf;
 
 use thrustc_ast::Ast;
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 
 use thrustc_entities::parser_entities::{
     AssemblerFunction, AssemblerFunctions, ConstantSymbol, CustomTypeSymbol, EnumSymbol,
@@ -36,6 +39,8 @@ use thrustc_entities::parser_entities::{
     LocalCustomTypes, LocalEnums, LocalStatics, LocalStructs, LocalSymbol, Locals, ParameterSymbol,
     Parameters, StaticSymbol, Struct,
 };
+
+use thrustc_generics::GenericScope;
 
 #[derive(Clone, Debug, Default)]
 pub struct SymbolTable<'parser> {
@@ -49,6 +54,10 @@ pub struct SymbolTable<'parser> {
     global_constants: GlobalConstants<'parser>,
     global_enums: GlobalEnums<'parser>,
 
+    generic_functions: ahash::AHashMap<&'parser str, GenericFunctionEntry>,
+    generic_structs: ahash::AHashMap<&'parser str, GenericStructEntry<'parser>>,
+    generic_custom_types: ahash::AHashMap<&'parser str, GenericCustomTypeEntry>,
+
     local_structs: LocalStructs<'parser>,
     local_statics: LocalStatics<'parser>,
     local_constants: LocalConstants<'parser>,
@@ -60,6 +69,8 @@ pub struct SymbolTable<'parser> {
     parameters: Parameters<'parser>,
 
     imported_symbols: ahash::AHashMap<&'parser str, PathBuf>,
+
+    type_parameter_scope: GenericScope,
 
     diagnostician: Diagnostician,
 }
@@ -83,6 +94,10 @@ impl<'parser> SymbolTable<'parser> {
             global_custom_types: ahash::AHashMap::with_capacity(u8::MAX as usize),
             global_enums: ahash::AHashMap::with_capacity(u8::MAX as usize),
 
+            generic_functions: ahash::AHashMap::with_capacity(u8::MAX as usize),
+            generic_structs: ahash::AHashMap::with_capacity(u8::MAX as usize),
+            generic_custom_types: ahash::AHashMap::with_capacity(u8::MAX as usize),
+
             local_structs: Vec::with_capacity(u8::MAX as usize),
             local_statics: Vec::with_capacity(u8::MAX as usize),
             local_constants: Vec::with_capacity(u8::MAX as usize),
@@ -93,6 +108,7 @@ impl<'parser> SymbolTable<'parser> {
 
             parameters: ahash::AHashMap::with_capacity(10),
             imported_symbols: ahash::AHashMap::with_capacity(u8::MAX as usize),
+            type_parameter_scope: GenericScope::new(),
             diagnostician: Diagnostician::new(file, options),
         }
     }
@@ -134,6 +150,91 @@ impl<'parser> SymbolTable<'parser> {
     #[inline]
     pub fn get_import_origin(&self, id: &str) -> Option<&PathBuf> {
         self.imported_symbols.get(id)
+    }
+}
+
+impl SymbolTable<'_> {
+    #[inline]
+    pub fn has_any_generic(&self) -> bool {
+        !self.generic_functions.is_empty()
+            || !self.generic_structs.is_empty()
+            || !self.generic_custom_types.is_empty()
+    }
+
+    #[inline]
+    pub fn begin_generic_scope(&mut self) {
+        self.type_parameter_scope.enter_scope();
+    }
+
+    #[inline]
+    pub fn end_generic_scope(&mut self) {
+        self.type_parameter_scope.exit_scope();
+    }
+
+    #[inline]
+    pub fn push_type_parameter(&mut self, name: String, span: Span) {
+        self.type_parameter_scope.push_parameter(name, span);
+    }
+
+    #[inline]
+    pub fn resolve_type_parameter(&self, name: &str) -> Option<Span> {
+        self.type_parameter_scope.resolve(name)
+    }
+
+    #[inline]
+    pub fn has_in_scope_type_parameters(&self) -> bool {
+        !self.type_parameter_scope.is_empty()
+    }
+}
+
+impl<'parser> SymbolTable<'parser> {
+    #[inline]
+    pub fn new_generic_function(&mut self, id: &'parser str, entry: GenericFunctionEntry) {
+        self.generic_functions.insert(id, entry);
+    }
+
+    #[inline]
+    pub fn new_generic_struct(&mut self, id: &'parser str, entry: GenericStructEntry<'parser>) {
+        self.generic_structs.insert(id, entry);
+    }
+
+    #[inline]
+    pub fn new_generic_custom_type(&mut self, id: &'parser str, entry: GenericCustomTypeEntry) {
+        self.generic_custom_types.insert(id, entry);
+    }
+}
+
+impl<'parser> SymbolTable<'parser> {
+    #[inline]
+    pub fn has_generic_function(&self, id: &str) -> bool {
+        self.generic_functions.contains_key(id)
+    }
+
+    #[inline]
+    pub fn has_generic_struct(&self, id: &str) -> bool {
+        self.generic_structs.contains_key(id)
+    }
+
+    #[inline]
+    pub fn has_generic_custom_type(&self, id: &str) -> bool {
+        self.generic_custom_types.contains_key(id)
+    }
+}
+
+impl<'parser> SymbolTable<'parser> {
+    #[inline]
+    pub fn get_generic_function(&self, id: &str) -> Option<&GenericFunctionEntry> {
+        self.generic_functions.get(id)
+    }
+
+    #[inline]
+    pub fn get_generic_struct(&self, id: &str) -> Option<&GenericStructEntry<'parser>> {
+        self.generic_structs.get(id)
+    }
+
+    #[inline]
+    pub fn get_generic_custom_type(&self, id: &str) -> Option<&GenericCustomTypeEntry> {
+        self.generic_custom_types.get(id)
     }
 }
 
@@ -189,28 +290,28 @@ impl SymbolTable<'_> {
 
 impl<'parser> SymbolTable<'parser> {
     pub fn new_parameters(&mut self, parameters: &[Ast<'parser>]) -> Result<(), CompilationIssue> {
-        {
-            for node in parameters.iter() {
-                if let Ast::FunctionParameter {
-                    name: id,
-                    kind,
-                    span,
-                    metadata,
-                    ..
-                } = node
-                {
-                    if self.parameters.contains_key(id) {
-                        return Err(CompilationIssue::Error(
-                            CompilationIssueCode::E0004,
-                            format!("'{}' parameter was declared before.", id),
-                            "You should rename it or remove the copy.".into(),
-                            None,
-                            *span,
-                        ));
-                    }
-
-                    self.parameters.insert(id, (kind.clone(), *metadata, *span));
+        for node in parameters.iter() {
+            if let Ast::FunctionParameter {
+                name: id,
+                kind,
+                span,
+                metadata,
+                ..
+            } = node
+            {
+                if self.parameters.contains_key(id.as_str()) {
+                    return Err(CompilationIssue::Error(
+                        CompilationIssueCode::E0004,
+                        format!("'{}' parameter was declared before.", id),
+                        "You should rename it or remove the copy.".into(),
+                        None,
+                        *span,
+                    ));
                 }
+
+                let parameter: ParameterSymbol = (kind.clone(), *metadata, *span);
+
+                self.parameters.insert(id.clone(), parameter);
             }
         }
 

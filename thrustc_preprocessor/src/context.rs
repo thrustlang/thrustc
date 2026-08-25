@@ -433,16 +433,27 @@ impl TypeParseContext for PreprocessorContext<'_> {
         self.add_error(error)
     }
 
-    fn resolve_named_type(&self, name: &str, span: Span) -> Option<Type> {
-        let _ = span;
-
+    #[inline]
+    fn resolve_named_type(&self, name: &str) -> Option<Type> {
         self.get_builtins().get_type(name).cloned()
     }
 
+    #[inline]
+    fn resolve_type_parameter(&self, _name: &str) -> Option<Span> {
+        None
+    }
+
+    #[inline]
+    fn resolve_named_generic(&self, _name: &str) -> Option<(Vec<String>, Type)> {
+        None
+    }
+
+    #[inline]
     fn parse_constant_expr(&mut self) -> Result<Ast<'static>, ()> {
         highmodule_parsing::compiletime_conditional::parse_expression(self)
     }
 
+    #[inline]
     fn parse_attributes(&mut self, _limits: &[TokenType]) -> Result<ThrustAttributes, ()> {
         Ok(Vec::new())
     }

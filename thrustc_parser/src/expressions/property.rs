@@ -19,13 +19,13 @@
 
 use thrustc_ast::{
     Ast, NodeId,
-    ast_logic_data::{PropertyData, StructDataField, StructureData},
+    ast_logic_data::{PropertyData, StructureData},
     ast_metadata::PropertyMetadata,
     traits::{AstGetType, AstMemoryExtensions, AstStructureDataExtensions},
 };
-use thrustc_entities::parser_entities::{FoundSymbolId, Struct};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_code_location::Span;
+use thrustc_entities::parser_entities::Struct;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
@@ -33,7 +33,9 @@ use thrustc_typesystem::{
     traits::{TypeCodeLocation, TypeExtensions, TypePointerExtensions},
 };
 
-use thrustc_parser_table::traits::{FoundSymbolEitherExtensions, StructSymbolExtensions};
+use thrustc_parser_table::traits::{
+    FoundSymbolEitherExtensions, FoundSymbolExtensions, StructSymbolExtensions,
+};
 
 use crate::{ParserContext, abort};
 
@@ -133,23 +135,46 @@ fn decompose_struct_property<'parser>(
         )
     });
 
-    if let Type::Struct { name, .. } = current_type {
-        let object: FoundSymbolId = ctx.get_symbols().get_symbols_id(name, span)?;
+    if let Type::Struct { name, fields, .. } = current_type {
+        let resolved: Option<(usize, Type)> = if let Ok(object) =
+            ctx.get_symbols().get_symbols_id(name, span)
+        {
+            if !object.is_structure() {
+                None
+            } else {
+                let struct_id: (&str, usize) = object.expected_struct(span)?;
+                let id: &str = struct_id.0;
+                let scope_idx: usize = struct_id.1;
 
-        let struct_id: (&str, usize) = object.expected_struct(span)?;
-        let id: &str = struct_id.0;
-        let scope_idx: usize = struct_id.1;
+                let structure: Struct = ctx.get_symbols().get_struct_by_id(id, scope_idx, span)?;
+                let data: StructureData = structure.get_data();
 
-        let structure: Struct = ctx.get_symbols().get_struct_by_id(id, scope_idx, span)?;
-        let data: StructureData = structure.get_data();
+                data.get_struct_fields()
+                    .iter()
+                    .enumerate()
+                    .find(|(_, (other_property_name, ..))| {
+                        *other_property_name == current_property_name
+                    })
+                    .map(|(index, (_, field_type, ..))| (index, field_type.clone()))
+            }
+        } else {
+            ctx.get_symbols()
+                .get_generic_struct(name)
+                .and_then(|generic| {
+                    generic
+                        .field_names
+                        .iter()
+                        .position(|other| *other == current_property_name)
+                        .and_then(|index| {
+                            fields
+                                .get(index)
+                                .cloned()
+                                .map(|field_type| (index, field_type))
+                        })
+                })
+        };
 
-        let field: Option<StructDataField> = data
-            .get_struct_fields()
-            .iter()
-            .enumerate()
-            .find(|(_, (other_property_name, ..))| *other_property_name == current_property_name);
-
-        let Some((index, (_, field_type, ..))) = field else {
+        let Some((index, field_type)) = resolved else {
             return Err(CompilationIssue::Error(
                 CompilationIssueCode::E0028,
                 "Unknown property".into(),
@@ -159,17 +184,16 @@ fn decompose_struct_property<'parser>(
             ));
         };
 
-        let adjusted_inner_type: Type = if (is_parent_ptr || source.is_memory_assigned_value()?)
-            && !deref
-        {
-            Type::Ptr {
-                subtype: Some(field_type.clone().into()),
-                address_space: field_type.get_address_space(),
-                span: field_type.get_span(),
-            }
-        } else {
-            field_type.clone()
-        };
+        let adjusted_inner_type: Type =
+            if (is_parent_ptr || source.is_memory_assigned_value()?) && !deref {
+                Type::Ptr {
+                    subtype: Some(field_type.clone().into()),
+                    address_space: field_type.get_address_space(),
+                    span: field_type.get_span(),
+                }
+            } else {
+                field_type.clone()
+            };
 
         indices.push((
             current_type.clone(),
@@ -186,15 +210,14 @@ fn decompose_struct_property<'parser>(
             position,
             source,
             property_names,
-            field_type,
+            &field_type,
             span,
             deref,
         )?;
 
         {
             for (base_subtype, ..) in nested_indices.iter_mut() {
-                *base_subtype = if (is_parent_ptr || source.is_memory_assigned_value()?) && !deref
-                {
+                *base_subtype = if (is_parent_ptr || source.is_memory_assigned_value()?) && !deref {
                     Type::Ptr {
                         subtype: Some(base_subtype.clone().into()),
                         address_space: base_subtype.get_address_space(),

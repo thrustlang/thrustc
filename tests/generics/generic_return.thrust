@@ -1,0 +1,47 @@
+/*
+ * Una función genérica que devuelve un struct genérico por valor.
+ *
+ * ESTE ARCHIVO ANTES HACÍA PANIC AL COMPILADOR:
+ *   BACKEND PANIC Function return type does not match operand type of return inst!
+ *   ret { i32 } %2 / i32
+ *
+ * Causa raíz (bug preexistente del ABI, NO de genéricos):
+ *   - thrustc_llvm_system_v_abi::generate_function_type clasificaba el RETORNO de
+ *     structs/arrays fijos pequeños como `Coerce`, así que la función LLVM retornaba
+ *     un entero (i32/i64) en vez del struct.
+ *   - Pero lower_function_terminator (System V) solo implementaba `ToMemory` (sret);
+ *     para `Coerce` devolvía false y el codegen del `return` hacía `ret <struct>`
+ *     contra un tipo de función entero -> assert de LLVM.
+ *   - El caller tampoco desempaquetaba el entero de vuelta al struct.
+ *
+ * Cambio aplicado (Opción B) en thrustc_llvm_system_v_abi/src/lib.rs:
+ *   - Función `generate_function_type`, bloque de clasificación del RETORNO
+ *     (líneas ~2418-2431).
+ *   - Para retornos de tipo `Type::Struct` o `Type::FixedArray` ahora se fuerza
+ *     `SystemVABIType::Same(return_type)` (el struct por valor) en vez de dejar que
+ *     `class_to_general_abi_strategy` lo convierta a `Coerce`/`ToMemory`/`Decompose`.
+ *   - Los PARÁMETROS siguen con la clasificación ABI completa (intacta).
+ *   - `lower_function_terminator`, las ramas Coerce/ToMemory/Decompose y el resto
+ *     del ABI NO se tocaron ni eliminaron.
+ *   - Resultado: el callee hace `ret <struct>` y el caller consume el struct, ambos
+ *     consistentes; LLVM baja el ABI System V real en el backend (registros para
+ *     structs pequeños, sret para grandes), por lo que también respeta el FFI.
+ */
+
+struct Box [T] {
+    item: T
+}
+
+fn make [T] (item: T) Box[T] {
+    return new Box { item: item };
+}
+
+fn main() s32 @public {
+    var a := make[s32](5);
+    var b := make[u64](7);
+
+    if a->item != 5 { return 1; }
+    if b->item != 7 { return 2; }
+
+    return 0;
+}

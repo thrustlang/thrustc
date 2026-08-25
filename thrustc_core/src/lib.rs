@@ -245,29 +245,51 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         for module in thrustc_preprocessor::std_library::get_imported_std_modules() {
             let path: std::path::PathBuf = module.get_path().to_path_buf();
 
-            if !path.is_file() {
+            if !path.is_file() || !compiled_paths.insert(path.clone()) {
                 continue;
             }
 
-            if !compiled_paths.insert(path.clone()) {
-                continue;
+            self.compile_imported_std_module(&path)?;
+        }
+
+        let mut reprocesses: usize = 0;
+
+        loop {
+            let mut reprocessed: bool = false;
+
+            for module in thrustc_preprocessor::std_library::get_imported_std_modules() {
+                let path: std::path::PathBuf = module.get_path().to_path_buf();
+
+                if thrustc_generics::has_pending_for(&path) {
+                    self.compile_imported_std_module(&path)?;
+
+                    reprocessed = true;
+                }
             }
 
-            let name: String = path
-                .file_name()
-                .map_or_else(String::new, |name| name.to_string_lossy().to_string());
+            reprocesses = reprocesses.saturating_add(1);
 
-            let base_name: String = path.file_stem().map_or_else(String::new, |base_name| {
-                base_name.to_string_lossy().to_string()
-            });
-
-            let content: String = thrustc_reader::get_file_source_code(&path);
-            let unit: CompilationUnit = CompilationUnit::new(name, path, content, base_name);
-
-            self.compile_file_with_llvm_aot(&unit)?;
+            if !reprocessed || reprocesses >= 1024 {
+                break;
+            }
         }
 
         Ok(())
+    }
+
+    fn compile_imported_std_module(&mut self, path: &std::path::Path) -> Result<(), ()> {
+        let name: String = path
+            .file_name()
+            .map_or_else(String::new, |name| name.to_string_lossy().to_string());
+
+        let base_name: String = path.file_stem().map_or_else(String::new, |base_name| {
+            base_name.to_string_lossy().to_string()
+        });
+
+        let content: String = thrustc_reader::get_file_source_code(path);
+        let unit: CompilationUnit = CompilationUnit::new(name, path.to_path_buf(), content, base_name);
+
+        self.compile_file_with_llvm_aot(&unit)
     }
 
     fn compile_imported_std_jit<'a>(

@@ -255,7 +255,9 @@ pub fn lower_precedence<'parser>(
             let name: &'parser str = tk.get_lexeme();
             let span: Span = tk.get_span();
 
-            if ctx.match_token(TokenType::FatArrow)? {
+            if ctx.get_symbols().has_generic_function(name) {
+                call::build_generic_call(ctx, name, span)?
+            } else if ctx.match_token(TokenType::FatArrow)? {
                 enum_value::build_enum_value(ctx, name, span)?
             } else if ctx.match_token(TokenType::LParen)? {
                 if ctx.get_builtins().get_function(name).is_some() {

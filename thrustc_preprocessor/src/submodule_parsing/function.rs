@@ -39,6 +39,14 @@ pub fn parse_function<'module_parser>(
     let name: String = name_tk.get_lexeme().to_string();
     let span: Span = name_tk.get_span();
 
+    let has_generics: bool = ctx.check(TokenType::LBracket);
+
+    if has_generics {
+        ctx.begin_generic_scope();
+    }
+
+    let type_params: Option<Vec<String>> = crate::submodule_parsing::parse_generic_parameters(ctx)?;
+
     ctx.consume(TokenType::LParen)?;
 
     let mut parameters: Vec<(String, Type, Span)> = Vec::with_capacity(u8::MAX as usize);
@@ -69,6 +77,10 @@ pub fn parse_function<'module_parser>(
         typegeneration::build_type(ctx)?
     };
 
+    if has_generics {
+        ctx.end_generic_scope();
+    }
+
     let mut attributes: ThrustAttributes =
         attributes::build_attributes(ctx, &[TokenType::SemiColon, TokenType::LBrace])?;
 
@@ -96,6 +108,7 @@ pub fn parse_function<'module_parser>(
         signature: Signature::Function {
             kind: return_type.clone(),
             invalid_kind: Type::Void { span },
+            type_params,
             parameters,
             attributes,
             span,

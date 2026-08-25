@@ -2416,14 +2416,19 @@ pub fn generate_function_type<'llvm_abi>(
     let mut abi_return_ty: SystemVABIType = SystemVABIType::Ignore;
 
     if !return_type.is_void_type() {
-        let return_ty_classes: [SystemVABITypeClass; 8] =
-            SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
+        let abi_return_ty_: SystemVABIType =
+            if return_type.is_struct_type() || return_type.is_fixed_array_type() {
+                SystemVABIType::Same(return_type)
+            } else {
+                let return_ty_classes: [SystemVABITypeClass; 8] =
+                    SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
 
-        let abi_return_ty_: SystemVABIType = SystemVABIType::class_to_general_abi_strategy(
-            abi_context,
-            &return_ty_classes,
-            return_type,
-        );
+                SystemVABIType::class_to_general_abi_strategy(
+                    abi_context,
+                    &return_ty_classes,
+                    return_type,
+                )
+            };
 
         abi_return_ty = abi_return_ty_;
 

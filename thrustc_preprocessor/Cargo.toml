@@ -32,3 +32,4 @@ thrustc_std = { path = "../thrustc_std" }
 thrustc_builtins = { path = "../thrustc_builtins" }
 thrustc_backends = { path = "../thrustc_backends" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
+thrustc_generics = { path = "../thrustc_generics" }

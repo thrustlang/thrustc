@@ -1,0 +1,14 @@
+/*
+ * Generic function with explicit type arguments.
+ */
+
+fn identity [T] (value: T) T {
+    return value;
+}
+
+fn main() s32 @public {
+    if identity[s32](10) != 10 { return 1; }
+    if identity[u64](10) != 10 { return 2; }
+
+    return 0;
+}

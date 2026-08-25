@@ -1,0 +1,16 @@
+/*
+ * Partial explicit type arguments: T is given, G is inferred.
+ */
+
+fn second [T, G] (a: T, b: G) G {
+    return b;
+}
+
+fn main() s32 @public {
+    var a: s32 = 1;
+    var b: u64 = 2;
+
+    if second[s32](a, b) != 2 { return 1; }
+
+    return 0;
+}

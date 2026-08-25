@@ -17,6 +17,7 @@
 
 */
 
+use thrustc_ast::traits::AstGetType;
 use thrustc_ast::{
     Ast, NodeId, ast_logic_data::ConstructorData, traits::AstStructureDataExtensions,
 };
@@ -80,15 +81,17 @@ pub fn build_constructor<'parser>(
         }
     }
 
-    ctx.consume(
-        TokenType::LBrace,
-        CompilationIssueCode::E0001,
-        "Expected '{'.".into(),
-    )?;
+    let mut type_params: Option<Vec<String>> = None;
+    let metadata: StructTypeMetadata;
+    let mut fields: Vec<(String, Type)> = Vec::with_capacity(u8::MAX as usize);
 
-    let object: Struct = if qualified {
-        let Some(Signature::Struct { kind, fields, .. }) =
-            crate::module_import::resolve_signature(ctx, &access, symbol, Variant::Struct)
+    if qualified {
+        let Some(Signature::Struct {
+            kind,
+            fields: signature_fields,
+            type_params: signature_type_params,
+            ..
+        }) = crate::module_import::resolve_signature(ctx, &access, symbol, Variant::Struct)
         else {
             return Err(CompilationIssue::Error(
                 CompilationIssueCode::E0028,
@@ -99,9 +102,7 @@ pub fn build_constructor<'parser>(
             ));
         };
 
-        let struct_kind: Type = kind.clone();
-
-        let metadata: StructTypeMetadata = match kind {
+        metadata = match &kind {
             Type::Struct { metadata, .. } => *metadata,
 
             _ => {
@@ -115,58 +116,80 @@ pub fn build_constructor<'parser>(
             }
         };
 
-        let mut data: Vec<(&str, Type, u32, Span)> = Vec::with_capacity(fields.len());
-        let mut position: u32 = 0;
+        fields = signature_fields
+            .iter()
+            .map(|(name, ty, _)| (name.clone(), ty.clone()))
+            .collect();
 
-        for (field_name, field_type, field_span) in fields.iter() {
-            data.push((field_name, field_type.clone(), position, *field_span));
-            position = position.saturating_add(1);
-        }
+        type_params = signature_type_params.clone();
 
         let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
             .resolve(&access)
             .map(|module| module.get_path().to_path_buf());
 
-        if ctx.get_symbols().has_global_struct(symbol) {
-            crate::module_import::check_qualified_collision(
-                ctx,
-                symbol,
-                &access,
-                origin.as_ref(),
-                span,
-            )?;
-        } else {
-            let _ = ctx.get_mut_symbols().new_global_struct(
-                symbol,
-                (
+        if type_params.is_none() {
+            if ctx.get_symbols().has_global_struct(symbol) {
+                crate::module_import::check_qualified_collision(
+                    ctx,
                     symbol,
-                    data.clone(),
-                    ThrustAttributes::new(),
-                    metadata,
+                    &access,
+                    origin.as_ref(),
                     span,
-                ),
-            );
+                )?;
+            } else {
+                let mut data: Vec<(&str, Type, u32, Span)> = Vec::with_capacity(fields.len());
+                let mut position: u32 = 0;
 
-            ctx.add_ast_node(Ast::Struct {
-                name: symbol,
-                data: (symbol, data.clone(), metadata, span),
-                kind: struct_kind,
-                attributes: ThrustAttributes::new(),
-                span,
-                id: NodeId::new(),
-            });
+                for (field_name, field_type, field_span) in signature_fields.iter() {
+                    data.push((
+                        field_name.as_str(),
+                        field_type.clone(),
+                        position,
+                        *field_span,
+                    ));
+                    position = position.saturating_add(1);
+                }
 
-            if let Some(path) = origin.as_ref() {
-                ctx.get_mut_symbols().record_import_origin(symbol, path.clone());
+                let _ = ctx.get_mut_symbols().new_global_struct(
+                    symbol,
+                    (
+                        symbol,
+                        data.clone(),
+                        ThrustAttributes::new(),
+                        metadata,
+                        span,
+                    ),
+                );
+
+                ctx.add_ast_node(Ast::Struct {
+                    name: symbol,
+                    data: (symbol, data.clone(), metadata, span),
+                    kind: kind.clone(),
+                    attributes: ThrustAttributes::new(),
+                    span,
+                    id: NodeId::new(),
+                });
+
+                if let Some(path) = origin.as_ref() {
+                    ctx.get_mut_symbols()
+                        .record_import_origin(symbol, path.clone());
+                }
             }
         }
-
-        (symbol, data, ThrustAttributes::new(), metadata, span)
+    } else if let Some(generic) = ctx.get_symbols().get_generic_struct(symbol).cloned() {
+        type_params = Some(generic.type_params);
+        metadata = generic.metadata;
+        fields = generic
+            .field_names
+            .iter()
+            .zip(generic.field_types.iter())
+            .map(|(name, ty)| ((*name).to_string(), ty.clone()))
+            .collect();
     } else {
         let reference: Result<FoundSymbolId, CompilationIssue> =
             ctx.get_symbols().get_symbols_id(symbol, span);
 
-        match reference {
+        let object: Struct = match reference {
             Ok(object) => {
                 let structure_id: (&str, usize) = object.expected_struct(span)?;
                 let id: &str = structure_id.0;
@@ -190,15 +213,64 @@ pub fn build_constructor<'parser>(
 
                 return Ok(Ast::invalid_ast(span));
             }
-        }
-    };
+        };
 
-    let metadata: StructTypeMetadata = object.get_metadata();
+        metadata = object.get_metadata();
+
+        let struct_data: thrustc_ast::ast_logic_data::StructureData<'parser> = object.get_data();
+
+        for (name, ty, ..) in struct_data.get_struct_fields().iter() {
+            fields.push((name.to_string(), ty.clone()));
+        }
+    }
+
+    let mut explicit_args: Vec<Type> =
+        Vec::with_capacity(type_params.as_ref().map_or(0, |params| params.len()));
+
+    if type_params.is_some() && ctx.check(TokenType::LBracket) {
+        ctx.consume(
+            TokenType::LBracket,
+            CompilationIssueCode::E0001,
+            "Expected '['.".into(),
+        )?;
+
+        loop {
+            if ctx.check(TokenType::RBracket) {
+                break;
+            }
+
+            let argument_type: Type = crate::typegeneration::build_type(ctx, false)?;
+
+            explicit_args.push(argument_type);
+
+            if ctx.check(TokenType::RBracket) {
+                break;
+            }
+
+            ctx.consume(
+                TokenType::Comma,
+                CompilationIssueCode::E0001,
+                "Expected ','.".into(),
+            )?;
+        }
+
+        ctx.consume(
+            TokenType::RBracket,
+            CompilationIssueCode::E0001,
+            "Expected ']'.".into(),
+        )?;
+    }
+
+    ctx.consume(
+        TokenType::LBrace,
+        CompilationIssueCode::E0001,
+        "Expected '{'.".into(),
+    )?;
 
     let mut data: ConstructorData = ConstructorData::with_capacity(u8::MAX as usize);
     let mut counter: usize = 0;
 
-    let required: usize = object.get_data().get_struct_fields().len();
+    let required: usize = fields.len();
 
     loop {
         if ctx.check(TokenType::RBrace) {
@@ -216,7 +288,11 @@ pub fn build_constructor<'parser>(
                 "Expected ':'.".into(),
             )?;
 
-            if !object.contains_field(field_name) {
+            let field_index: Option<usize> = fields
+                .iter()
+                .position(|(name, _)| name.as_str() == field_name);
+
+            let Some(field_index) = field_index else {
                 ctx.add_error_report(CompilationIssue::Error(
                     CompilationIssueCode::E0001,
                     "Unknown field.".into(),
@@ -226,7 +302,7 @@ pub fn build_constructor<'parser>(
                 ));
 
                 continue;
-            }
+            };
 
             if counter >= required {
                 ctx.add_error_report(CompilationIssue::Error(
@@ -242,9 +318,9 @@ pub fn build_constructor<'parser>(
 
             let expression: Ast = expressions::parse_expr(ctx)?;
 
-            if let Some(target_type) = object.get_field_type(field_name) {
-                data.push((field_name, expression, target_type, counter as u32));
-            }
+            let target_type: Type = fields[field_index].1.clone();
+
+            data.push((field_name, expression, target_type, counter as u32));
 
             counter += 1;
 
@@ -300,6 +376,51 @@ pub fn build_constructor<'parser>(
         CompilationIssueCode::E0001,
         "Expected '}'.".into(),
     )?;
+
+    if let Some(type_params) = type_params {
+        if !explicit_args.is_empty() && explicit_args.len() != type_params.len() {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "The generic structure does not receive that many type arguments.".into(),
+                "You should provide one type per generic parameter.".into(),
+                None,
+                span,
+            ));
+        }
+
+        let raw_field_types: Vec<Type> = data.iter().map(|entry| entry.2.clone()).collect();
+
+        let argument_types: Vec<Type> = data
+            .iter()
+            .map(|entry| match entry.1.get_value_type() {
+                Ok(ty) => ty.clone(),
+                Err(_) => Type::Void { span },
+            })
+            .collect();
+
+        let result: Result<thrustc_generics::SolveResult, CompilationIssue> =
+            thrustc_generics::solve(
+                &type_params,
+                &explicit_args,
+                &raw_field_types,
+                &argument_types,
+                &Type::Void { span },
+                false,
+                span,
+            );
+
+        match result {
+            Ok(result) => {
+                for entry in data.iter_mut() {
+                    entry.2 = thrustc_generics::substitute(&entry.2, &result.env);
+                }
+            }
+            Err(error) => {
+                ctx.add_error_report(error);
+                return Ok(Ast::invalid_ast(span));
+            }
+        }
+    }
 
     let constructor_type: Type = data.get_type(symbol, metadata, span);
 

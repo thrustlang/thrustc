@@ -1,0 +1,19 @@
+/*
+ * A generic function that calls another generic function (nested instantiation).
+ */
+
+fn id [T] (x: T) T {
+    return x;
+}
+
+fn twice [T] (x: T) T {
+    return id[T](id[T](x));
+}
+
+fn main() s32 @public {
+    var a: s32 = 3;
+
+    if twice(a) != 3 { return 1; }
+
+    return 0;
+}

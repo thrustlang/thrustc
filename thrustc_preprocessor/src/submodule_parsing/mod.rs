@@ -19,7 +19,7 @@
 
 pub mod attributes;
 pub mod constant;
-pub mod customtype;
+pub mod custom_type;
 pub mod expressions;
 pub mod function;
 pub mod import;
@@ -31,15 +31,41 @@ pub mod typegeneration;
 
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_code_location::Span;
+use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token_type::TokenType;
 
-/// Ensures a module symbol is exposed for cross-file reference.
-///
-/// It adds the missing visibility attributes without duplicating existing ones:
-/// `@public` is always ensured, and `@extern` is ensured when `needs_extern` is
-/// true (functions and statics, whose cross-file declarations are bodyless).
-///
-/// Returns `true` when `@public` had to be added because the original signature
-/// did not provide it.
+use crate::parser::ModuleParser;
+
+pub fn parse_generic_parameters(ctx: &mut ModuleParser) -> Result<Option<Vec<String>>, ()> {
+    if !ctx.check(TokenType::LBracket) {
+        return Ok(None);
+    }
+
+    ctx.only_advance()?;
+
+    let mut parameters: Vec<String> = Vec::with_capacity(4);
+
+    while !ctx.check(TokenType::RBracket) {
+        let parameter_tk: &Token = ctx.consume(TokenType::Identifier)?;
+        let name: String = parameter_tk.get_lexeme().to_string();
+        let span: Span = parameter_tk.get_span();
+
+        parameters.push(name.clone());
+
+        ctx.push_type_parameter(name, span);
+
+        if ctx.check(TokenType::RBracket) {
+            break;
+        }
+
+        ctx.consume(TokenType::Comma)?;
+    }
+
+    ctx.consume(TokenType::RBracket)?;
+
+    Ok(Some(parameters))
+}
+
 pub fn ensure_exposed(
     attributes: &mut ThrustAttributes,
     name: &str,

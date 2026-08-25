@@ -24,3 +24,5 @@ thrustc_constants = { path = "../thrustc_constants" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_logging = { path = "../thrustc_logging" }
+thrustc_generics = { path = "../thrustc_generics" }
+thrustc_attributes = { path = "../thrustc_attributes" }

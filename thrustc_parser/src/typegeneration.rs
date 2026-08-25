@@ -163,9 +163,18 @@ fn build_type_inner<'parser>(
                     }
                 };
 
-                if let Some(qualified_type) =
-                    crate::module_import::resolve_qualified_type(ctx, &access, symbol)
+                if let Some((qualified_type, type_params)) =
+                    crate::module_import::resolve_qualified_generic(ctx, &access, symbol)
                 {
+                    if let Some(type_params) = type_params {
+                        if ctx.check(TokenType::LBracket) {
+                            let env: thrustc_generics::TypeEnv =
+                                self::parse_generic_type_arguments(ctx, &type_params, symbol_span)?;
+
+                            return Ok(thrustc_generics::substitute(&qualified_type, &env));
+                        }
+                    }
+
                     return Ok(qualified_type);
                 }
 
@@ -180,6 +189,42 @@ fn build_type_inner<'parser>(
                     None,
                     symbol_span,
                 ));
+            }
+
+            if let Some(parameter_span) = ctx.get_symbols().resolve_type_parameter(name) {
+                return Ok(Type::Unresolved {
+                    hint: name.to_string(),
+                    span: parameter_span,
+                });
+            }
+
+            if ctx.check(TokenType::LBracket) {
+                if let Some(generic) = ctx.get_symbols().get_generic_struct(name).cloned() {
+                    let env: thrustc_generics::TypeEnv =
+                        self::parse_generic_type_arguments(ctx, &generic.type_params, span)?;
+
+                    let fields: Vec<Type> = generic
+                        .field_types
+                        .iter()
+                        .map(|field| thrustc_generics::substitute(field, &env))
+                        .collect();
+
+                    let ty = Type::Struct {
+                        name: name.to_string(),
+                        fields,
+                        metadata: generic.metadata,
+                        span,
+                    };
+
+                    return Ok(ty);
+                }
+
+                if let Some(generic) = ctx.get_symbols().get_generic_custom_type(name).cloned() {
+                    let env: thrustc_generics::TypeEnv =
+                        self::parse_generic_type_arguments(ctx, &generic.type_params, span)?;
+
+                    return Ok(thrustc_generics::substitute(&generic.kind, &env));
+                }
             }
 
             let object: Result<FoundSymbolId, CompilationIssue> =
@@ -335,6 +380,62 @@ fn resolve_builtin_type_or_unknown<'parser>(
         None,
         span,
     ))
+}
+
+fn parse_generic_type_arguments<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    type_params: &[String],
+    span: Span,
+) -> Result<thrustc_generics::TypeEnv, CompilationIssue> {
+    ctx.consume(
+        TokenType::LBracket,
+        CompilationIssueCode::E0001,
+        "Expected '['.".into(),
+    )?;
+
+    let mut type_args: Vec<Type> = Vec::with_capacity(type_params.len());
+
+    loop {
+        if ctx.check(TokenType::RBracket) {
+            break;
+        }
+
+        let argument_type: Type = self::build_type(ctx, false)?;
+
+        type_args.push(argument_type);
+
+        if ctx.check(TokenType::RBracket) {
+            break;
+        }
+
+        ctx.consume(
+            TokenType::Comma,
+            CompilationIssueCode::E0001,
+            "Expected ','.".into(),
+        )?;
+    }
+
+    ctx.consume(
+        TokenType::RBracket,
+        CompilationIssueCode::E0001,
+        "Expected ']'.".into(),
+    )?;
+
+    if type_args.len() != type_params.len() {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0001,
+            "The generic type does not receive that many type arguments.".into(),
+            "You should provide one type per generic parameter.".into(),
+            None,
+            span,
+        ));
+    }
+
+    Ok(type_params
+        .iter()
+        .zip(type_args)
+        .map(|(parameter, argument)| (parameter.clone(), argument))
+        .collect())
 }
 
 fn parse_anonymous_function_type(

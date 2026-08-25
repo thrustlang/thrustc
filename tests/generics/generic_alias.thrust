@@ -1,0 +1,11 @@
+/*
+ * Generic type alias.
+ */
+
+type Id [T] = T;
+
+fn main() s32 @public {
+    var x: Id[s32] = 5;
+
+    return x - 5;
+}

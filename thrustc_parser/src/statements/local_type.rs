@@ -67,6 +67,7 @@ pub fn parse_custom_type_stmt<'parser>(
             .new_custom_type(name, (custom_type.clone(), attributes), span)?;
 
         Ok(Ast::CustomType {
+            name: name.to_string(),
             kind: custom_type,
             span,
             id: NodeId::new(),

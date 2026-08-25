@@ -1,0 +1,14 @@
+/*
+ * Generic struct type inferred from the field values in a constructor.
+ */
+
+struct Wrapper [T] {
+    value: T
+}
+
+fn main() s32 @public {
+    var x: s32 = 10;
+    var w := new Wrapper { value: x };
+
+    return w->value - 10;
+}

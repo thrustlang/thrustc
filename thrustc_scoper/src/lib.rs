@@ -88,7 +88,7 @@ impl<'scoper> Scoper<'scoper> {
 }
 
 impl<'scoper> Scoper<'scoper> {
-    fn analyze_global_node(&mut self, node: &Ast<'scoper>) {
+    fn analyze_global_node(&mut self, node: &'scoper Ast<'scoper>) {
         if !node.is_declaration_keyword() {
             self.add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0016,
@@ -106,20 +106,18 @@ impl<'scoper> Scoper<'scoper> {
                 body,
                 ..
             } => {
-                self.get_mut_table().add_function(name);
+                self.get_mut_table().add_function(name.as_str());
 
                 let Some(body) = body else {
                     return;
                 };
 
-                {
-                    for parameter in parameters.iter() {
-                        let Ast::FunctionParameter { name, .. } = parameter else {
-                            continue;
-                        };
+                for parameter in parameters.iter() {
+                    let Ast::FunctionParameter { name, .. } = parameter else {
+                        continue;
+                    };
 
-                        self.get_mut_table().add_parameter(name);
-                    }
+                    self.get_mut_table().add_parameter(name);
                 }
 
                 self.get_mut_context().enter_function();

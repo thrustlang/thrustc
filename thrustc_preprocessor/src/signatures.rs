@@ -44,6 +44,7 @@ pub enum Signature {
     Function {
         kind: Type,
         invalid_kind: Type,
+        type_params: Option<Vec<String>>,
         parameters: Vec<(String, Type, Span)>,
         attributes: ThrustAttributes,
         span: Span,
@@ -67,12 +68,14 @@ pub enum Signature {
     Struct {
         kind: Type,
         invalid_kind: Type,
+        type_params: Option<Vec<String>>,
         fields: Vec<(String, Type, Span)>,
         span: Span,
     },
     CustomType {
         kind: Type,
         invalid_kind: Type,
+        type_params: Option<Vec<String>>,
         attributes: ThrustAttributes,
         span: Span,
     },

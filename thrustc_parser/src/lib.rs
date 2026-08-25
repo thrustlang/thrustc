@@ -36,6 +36,7 @@ mod abort;
 mod attributes;
 mod builtins;
 mod expressions;
+mod generics;
 mod modificators;
 mod module_import;
 mod reinterpret;
@@ -125,6 +126,8 @@ impl<'parser> Parser<'parser> {
             }
         }
 
+        crate::generics::resolve_generics(&mut ctx);
+
         let throwed_errors: bool = ctx.verify();
 
         (ctx, throwed_errors)
@@ -180,6 +183,10 @@ impl<'parser> ParserContext<'parser> {
     #[inline(always)]
     pub fn get_modules(&self) -> &'parser [Module] {
         self.modules
+    }
+
+    pub(crate) fn get_mut_ast(&mut self) -> &mut Vec<Ast<'parser>> {
+        &mut self.ast
     }
 }
 

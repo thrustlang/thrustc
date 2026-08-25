@@ -283,8 +283,9 @@ pub fn build_call<'parser>(
                         };
 
                         return Ok(Ast::Call {
-                            name,
+                            name: name.to_string(),
                             args,
+                            generic_args: Vec::with_capacity(0),
                             kind: FunctionExtensions::get_type(&function),
                             span,
                             id: NodeId::new(),
@@ -300,8 +301,9 @@ pub fn build_call<'parser>(
             let args: Vec<Ast> = arguments.positional;
 
             Ok(Ast::Call {
-                name,
+                name: name.to_string(),
                 args,
+                generic_args: Vec::with_capacity(0),
                 kind: function_type,
                 span,
                 id: NodeId::new(),
@@ -313,6 +315,105 @@ pub fn build_call<'parser>(
             Ok(Ast::invalid_ast(span))
         }
     }
+}
+
+pub fn build_generic_call<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    name: &'parser str,
+    span: Span,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let Some(generic) = ctx.get_symbols().get_generic_function(name).cloned() else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}' not found.", name),
+            "You should make sure that it exist at this scope.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let mut generic_args: Vec<Type> = Vec::with_capacity(generic.type_params.len());
+
+    if ctx.match_token(TokenType::LBracket)? {
+        loop {
+            if ctx.check(TokenType::RBracket) {
+                break;
+            }
+
+            let argument_type: Type = crate::typegeneration::build_type(ctx, false)?;
+
+            generic_args.push(argument_type);
+
+            if ctx.check(TokenType::RBracket) {
+                break;
+            }
+
+            ctx.consume(
+                TokenType::Comma,
+                CompilationIssueCode::E0001,
+                "Expected ','.".into(),
+            )?;
+        }
+
+        ctx.consume(
+            TokenType::RBracket,
+            CompilationIssueCode::E0001,
+            "Expected ']'.".into(),
+        )?;
+    }
+
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    let arguments: ParsedCallArguments = self::parse_call_arguments(ctx)?;
+
+    let parameter_names: Vec<&str> =
+        generic.parameter_names.iter().map(String::as_str).collect();
+
+    let args: Vec<Ast> = self::reorder_call_arguments(
+        name,
+        span,
+        arguments,
+        &parameter_names,
+        generic.has_varargs,
+    )?;
+
+    let argument_types: Vec<Type> = args
+        .iter()
+        .map(|argument| match argument.get_value_type() {
+            Ok(ty) => ty.clone(),
+            Err(_) => Type::Void { span },
+        })
+        .collect();
+
+    let kind: Type = match thrustc_generics::solve(
+        &generic.type_params,
+        &generic_args,
+        &generic.parameter_types,
+        &argument_types,
+        &generic.return_type,
+        generic.has_varargs,
+        span,
+    ) {
+        Ok(result) => result.return_type,
+        Err(error) => {
+            ctx.add_error_report(error);
+
+            Type::Void { span }
+        }
+    };
+
+    Ok(Ast::Call {
+        name: name.to_string(),
+        args,
+        generic_args,
+        kind,
+        span,
+        id: NodeId::new(),
+    })
 }
 
 pub fn build_anonymous_call<'parser>(

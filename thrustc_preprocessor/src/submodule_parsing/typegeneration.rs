@@ -114,12 +114,15 @@ fn build_type_inner(ctx: &mut dyn TypeParseContext) -> Result<Type, ()> {
 
             if ctx.check(TokenType::ColonColon) {
                 let mut access: Vec<String> = vec![name];
+                let mut symbol_span: Span;
 
                 loop {
                     ctx.consume(TokenType::ColonColon)?;
 
                     let part_tk: &Token = ctx.consume(TokenType::Identifier)?;
                     let part: String = part_tk.get_lexeme().to_string();
+
+                    symbol_span = part_tk.get_span();
 
                     access.push(part);
 
@@ -128,10 +131,23 @@ fn build_type_inner(ctx: &mut dyn TypeParseContext) -> Result<Type, ()> {
                     }
                 }
 
-                return self::resolve_qualified_type(ctx, &access);
+                return self::resolve_qualified_type(ctx, &access, symbol_span);
             }
 
-            if let Some(ty) = ctx.resolve_named_type(&name, span) {
+            if let Some(parameter_span) = ctx.resolve_type_parameter(&name) {
+                return Ok(Type::Unresolved {
+                    hint: name,
+                    span: parameter_span,
+                });
+            }
+
+            if ctx.check(TokenType::LBracket) {
+                if let Some((type_params, base)) = ctx.resolve_named_generic(&name) {
+                    return self::parse_generic_instantiation(ctx, &type_params, base, span);
+                }
+            }
+
+            if let Some(ty) = ctx.resolve_named_type(&name) {
                 return Ok(ty);
             }
 
@@ -142,7 +158,11 @@ fn build_type_inner(ctx: &mut dyn TypeParseContext) -> Result<Type, ()> {
     }
 }
 
-fn resolve_qualified_type(ctx: &mut dyn TypeParseContext, access: &[String]) -> Result<Type, ()> {
+fn resolve_qualified_type(
+    ctx: &mut dyn TypeParseContext,
+    access: &[String],
+    span: Span,
+) -> Result<Type, ()> {
     let type_name: &String = access.last().ok_or(())?;
 
     let registry = ctx.get_registry();
@@ -154,19 +174,87 @@ fn resolve_qualified_type(ctx: &mut dyn TypeParseContext, access: &[String]) -> 
 
     let symbol: Option<&Symbol> = module.search_symbol(type_name.clone(), Variant::CustomType);
 
-    if let Some(crate::signatures::Signature::CustomType { kind, .. }) =
-        symbol.as_ref().map(|symbol| &symbol.signature)
+    if let Some(Signature::CustomType {
+        kind, type_params, ..
+    }) = symbol.as_ref().map(|symbol| &symbol.signature)
     {
-        return Ok(kind.clone());
+        return self::finish_resolved_type(ctx, type_params.as_deref(), kind.clone(), span);
     }
 
     let symbol: Option<&Symbol> = module.search_symbol(type_name.clone(), Variant::Struct);
 
-    if let Some(Signature::Struct { kind, .. }) = symbol.as_ref().map(|symbol| &symbol.signature) {
-        return Ok(kind.clone());
+    if let Some(Signature::Struct {
+        kind, type_params, ..
+    }) = symbol.as_ref().map(|symbol| &symbol.signature)
+    {
+        return self::finish_resolved_type(ctx, type_params.as_deref(), kind.clone(), span);
     }
 
     Err(())
+}
+
+fn finish_resolved_type(
+    ctx: &mut dyn TypeParseContext,
+    type_params: Option<&[String]>,
+    base: Type,
+    span: Span,
+) -> Result<Type, ()> {
+    if let Some(type_params) = type_params {
+        if ctx.check(TokenType::LBracket) {
+            return self::parse_generic_instantiation(ctx, type_params, base, span);
+        }
+    }
+
+    Ok(base)
+}
+
+fn parse_generic_instantiation(
+    ctx: &mut dyn TypeParseContext,
+    type_params: &[String],
+    base: Type,
+    span: Span,
+) -> Result<Type, ()> {
+    ctx.consume(TokenType::LBracket)?;
+
+    let mut type_args: Vec<Type> = Vec::with_capacity(type_params.len());
+
+    loop {
+        if ctx.check(TokenType::RBracket) {
+            break;
+        }
+
+        let argument_type: Type = self::build_type(ctx)?;
+
+        type_args.push(argument_type);
+
+        if ctx.check(TokenType::RBracket) {
+            break;
+        }
+
+        ctx.consume(TokenType::Comma)?;
+    }
+
+    ctx.consume(TokenType::RBracket)?;
+
+    if type_args.len() != type_params.len() {
+        ctx.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0001,
+            "The generic type does not receive that many type arguments.".into(),
+            "You should provide one type per generic parameter.".into(),
+            None,
+            span,
+        ));
+
+        return Err(());
+    }
+
+    let env: thrustc_generics::TypeEnv = type_params
+        .iter()
+        .zip(type_args)
+        .map(|(parameter, argument)| (parameter.clone(), argument))
+        .collect();
+
+    Ok(thrustc_generics::substitute(&base, &env))
 }
 
 fn parse_anonymous_function_type(ctx: &mut dyn TypeParseContext, span: Span) -> Result<Type, ()> {

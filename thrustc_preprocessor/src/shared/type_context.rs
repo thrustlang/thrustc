@@ -42,11 +42,15 @@ pub trait TypeParseContext {
     fn get_options(&self) -> &CompilerOptions;
     fn get_file(&self) -> &CompilationUnit;
 
+    fn resolve_named_type(&self, name: &str) -> Option<Type>;
+    fn resolve_type_parameter(&self, name: &str) -> Option<Span>;
+    fn resolve_named_generic(&self, name: &str) -> Option<(Vec<String>, Type)>;
+
     fn enter_type(&mut self) -> Result<(), ()>;
     fn leave_type(&mut self);
-    fn add_error(&mut self, error: CompilationIssue);
-    fn resolve_named_type(&self, name: &str, span: Span) -> Option<Type>;
-    fn parse_constant_expr(&mut self) -> Result<Ast<'static>, ()>;
 
+    fn add_error(&mut self, error: CompilationIssue);
+
+    fn parse_constant_expr(&mut self) -> Result<Ast<'static>, ()>;
     fn parse_attributes(&mut self, limits: &[TokenType]) -> Result<ThrustAttributes, ()>;
 }

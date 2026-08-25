@@ -140,8 +140,8 @@ fn gen_function<'ast>(
         parameter_types.push(kind.clone());
 
         parameters.push(Ast::FunctionParameter {
-            name,
-            ascii_name: name,
+            name: name.to_string(),
+            ascii_name: name.to_string(),
             kind: kind.clone(),
             position: i as u32,
             metadata: FunctionParameterMetadata::new(kind.is_ptr_like_type()),
@@ -164,8 +164,8 @@ fn gen_function<'ast>(
     let name = gen_name(u)?;
 
     Ok(Ast::Function {
-        name,
-        ascii_name: name,
+        name: name.to_string(),
+        ascii_name: name.to_string(),
         parameters,
         parameter_types,
         body,
@@ -742,8 +742,9 @@ fn gen_call_stmt<'ast>(
     }
 
     Ok(Ast::Call {
-        name: gen_name(u)?,
+        name: gen_name(u)?.to_string(),
         args,
+        generic_args: Vec::with_capacity(0),
         kind: u.arbitrary()?,
         span: u.arbitrary()?,
         id: NodeId::new(),

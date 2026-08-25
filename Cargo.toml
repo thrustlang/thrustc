@@ -51,6 +51,7 @@ members = [
     "thrustc_llvm_linker_driver", 
     "thrustc_utils", 
     "thrustc_std", 
+    "thrustc_generics",
 ]
 
 exclude = [

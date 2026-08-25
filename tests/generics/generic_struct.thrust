@@ -1,0 +1,19 @@
+/*
+ * Generic struct with explicit type arguments in construction and in type position.
+ */
+
+struct Vec [T] @public {
+    data: ptr[T],
+    count: usize,
+    capacity: usize
+}
+
+fn main() s32 @public {
+    var v: Vec[s32] = new Vec[s32] {
+        data: nullptr,
+        count: 0,
+        capacity: 4
+    };
+
+    return v->count as s32;
+}

@@ -38,6 +38,8 @@ use crate::{
     submodule_parsing,
 };
 
+use thrustc_generics::GenericScope;
+
 use ahash::AHashSet as HashSet;
 
 #[derive(Debug)]
@@ -57,6 +59,7 @@ pub struct ModuleParser<'module_parser> {
     current: usize,
     type_depth: u32,
     block_depth: u32,
+    type_parameter_scope: GenericScope,
 }
 
 impl<'module_parser> ModuleParser<'module_parser> {
@@ -86,6 +89,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
             current: 0,
             type_depth: 0,
             block_depth: 0,
+            type_parameter_scope: GenericScope::new(),
         }
     }
 }
@@ -193,7 +197,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
                 submodule_parsing::import::parse_import(self)?;
             }
             TokenType::Type => {
-                let symbol: Symbol = submodule_parsing::customtype::parse_type(self)?;
+                let symbol: Symbol = submodule_parsing::custom_type::parse_type(self)?;
                 self.module.add_symbol(symbol);
             }
             TokenType::Struct => {
@@ -493,6 +497,23 @@ impl<'module_parser> ModuleParser<'module_parser> {
     }
 }
 
+impl ModuleParser<'_> {
+    #[inline]
+    pub fn begin_generic_scope(&mut self) {
+        self.type_parameter_scope.enter_scope();
+    }
+
+    #[inline]
+    pub fn end_generic_scope(&mut self) {
+        self.type_parameter_scope.exit_scope();
+    }
+
+    #[inline]
+    pub fn push_type_parameter(&mut self, name: String, span: Span) {
+        self.type_parameter_scope.push_parameter(name, span);
+    }
+}
+
 impl TypeParseContext for ModuleParser<'_> {
     #[inline]
     fn peek(&mut self) -> &Token {
@@ -569,7 +590,11 @@ impl TypeParseContext for ModuleParser<'_> {
         self.add_error(error)
     }
 
-    fn resolve_named_type(&self, name: &str, span: Span) -> Option<Type> {
+    fn resolve_type_parameter(&self, name: &str) -> Option<Span> {
+        self.type_parameter_scope.resolve(name)
+    }
+
+    fn resolve_named_type(&self, name: &str) -> Option<Type> {
         if let Some(symbol) = self
             .get_module()
             .search_symbol(name.to_string(), Variant::CustomType)
@@ -588,9 +613,39 @@ impl TypeParseContext for ModuleParser<'_> {
             }
         }
 
-        let _ = span;
-
         self.get_builtins().get_type(name).cloned()
+    }
+
+    fn resolve_named_generic(&self, name: &str) -> Option<(Vec<String>, Type)> {
+        if let Some(symbol) = self
+            .get_module()
+            .search_symbol(name.to_string(), Variant::CustomType)
+        {
+            if let Signature::CustomType {
+                kind,
+                type_params: Some(type_params),
+                ..
+            } = &symbol.signature
+            {
+                return Some((type_params.clone(), kind.clone()));
+            }
+        }
+
+        if let Some(symbol) = self
+            .get_module()
+            .search_symbol(name.to_string(), Variant::Struct)
+        {
+            if let Signature::Struct {
+                kind,
+                type_params: Some(type_params),
+                ..
+            } = &symbol.signature
+            {
+                return Some((type_params.clone(), kind.clone()));
+            }
+        }
+
+        None
     }
 
     fn parse_constant_expr(&mut self) -> Result<Ast<'static>, ()> {
