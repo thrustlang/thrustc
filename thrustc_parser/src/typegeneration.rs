@@ -431,11 +431,13 @@ fn parse_generic_type_arguments<'parser>(
         ));
     }
 
-    Ok(type_params
+    let generics: thrustc_generics::TypeEnv = type_params
         .iter()
         .zip(type_args)
         .map(|(parameter, argument)| (parameter.clone(), argument))
-        .collect())
+        .collect();
+
+    Ok(generics)
 }
 
 fn parse_anonymous_function_type(

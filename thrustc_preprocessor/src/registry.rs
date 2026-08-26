@@ -36,7 +36,9 @@ impl ModuleRegistry {
     pub fn new() -> Self {
         Self::default()
     }
+}
 
+impl ModuleRegistry {
     #[inline]
     pub fn register(&mut self, module: &Module) {
         let name: String = module.get_name().to_string();
@@ -48,7 +50,9 @@ impl ModuleRegistry {
     pub fn find(&self, name: &str) -> Option<Rc<Module>> {
         self.modules.get(name).cloned()
     }
+}
 
+impl ModuleRegistry {
     pub fn resolve(&self, access: &[String]) -> Option<Rc<Module>> {
         for module in self.modules.values() {
             if let Some(length) = module.alias_prefix_len(access) {

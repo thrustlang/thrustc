@@ -20,7 +20,7 @@
 use std::collections::{HashMap, HashSet};
 
 use thrustc_ast::{
-    Ast, NodeId, ModuleExpressionValues,
+    Ast, ModuleExpressionValues, NodeId,
     ast_builtins::AstBuiltin,
     ast_logic_data::{ConstructorData, EnumData},
     ast_metadata::FunctionParameterMetadata,
@@ -65,7 +65,8 @@ pub fn parse_type_parameters<'parser>(
         let name: String = parameter_tk.get_lexeme().to_string();
         let span: Span = parameter_tk.get_span();
 
-        ctx.get_mut_symbols().push_type_parameter(name.clone(), span);
+        ctx.get_mut_symbols()
+            .push_type_parameter(name.clone(), span);
 
         parameters.push(name);
 
@@ -103,11 +104,19 @@ pub fn resolve_generics<'parser>(ctx: &mut ParserContext<'parser>) {
     let mut output: Vec<Ast<'parser>> = Vec::with_capacity(existing.len() + 8);
 
     for node in existing {
-        if self::is_generic_template(ctx, &node) {
+        let is_generic_template: bool = match &node {
+            Ast::Function { name, .. } => ctx.get_symbols().has_generic_function(name),
+            Ast::Struct { name, .. } => ctx.get_symbols().has_generic_struct(name),
+            Ast::CustomType { name, .. } => ctx.get_symbols().has_generic_custom_type(name),
+            _ => false,
+        };
+
+        if is_generic_template {
             continue;
         }
 
-        let resolved: Ast<'parser> = self::resolve_ast(ctx, node, &templates, &mut memo, &mut output);
+        let resolved: Ast<'parser> =
+            self::resolve_ast(ctx, node, &templates, &mut memo, &mut output);
 
         output.push(resolved);
     }
@@ -132,11 +141,8 @@ pub fn resolve_generics<'parser>(ctx: &mut ParserContext<'parser>) {
 
         let module_str: String = pending.module.to_string_lossy().to_string();
 
-        let key: String = thrustc_generics::instantiation_key(
-            Some(&module_str),
-            &entry.name,
-            &pending.env,
-        );
+        let key: String =
+            thrustc_generics::instantiation_key(Some(&module_str), &entry.name, &pending.env);
 
         if !memo.insert(key.clone()) {
             continue;
@@ -157,44 +163,17 @@ pub fn resolve_generics<'parser>(ctx: &mut ParserContext<'parser>) {
             *ascii_name = key.clone();
         }
 
-        let resolved: Ast<'parser> = self::resolve_ast(ctx, concrete, &templates, &mut memo, &mut output);
+        if let Ast::Function { original_name, .. } = &mut concrete {
+            *original_name = Some(entry.name.clone());
+        }
+
+        let resolved: Ast<'parser> =
+            self::resolve_ast(ctx, concrete, &templates, &mut memo, &mut output);
 
         output.push(resolved);
     }
 
     *ctx.get_mut_ast() = output;
-}
-
-fn collect_local_templates<'parser>(
-    ctx: &mut ParserContext<'parser>,
-) -> HashMap<String, Ast<'parser>> {
-    let mut templates: HashMap<String, Ast<'parser>> = HashMap::new();
-
-    let ast: Vec<Ast<'parser>> = ctx.get_mut_ast().clone();
-
-    for node in ast.iter() {
-        if let Ast::Function {
-            name,
-            body: Some(_),
-            ..
-        } = node
-        {
-            if ctx.get_symbols().has_generic_function(name) {
-                templates.insert(name.clone(), node.clone());
-            }
-        }
-    }
-
-    templates
-}
-
-fn is_generic_template(ctx: &ParserContext<'_>, node: &Ast<'_>) -> bool {
-    match node {
-        Ast::Function { name, .. } => ctx.get_symbols().has_generic_function(name),
-        Ast::Struct { name, .. } => ctx.get_symbols().has_generic_struct(name),
-        Ast::CustomType { name, .. } => ctx.get_symbols().has_generic_custom_type(name),
-        _ => false,
-    }
 }
 
 fn resolve_ast<'parser>(
@@ -226,11 +205,9 @@ fn resolve_ast<'parser>(
 
             let argument_types: Vec<Type> = args
                 .iter()
-                .map(|argument| {
-                    match argument.get_value_type() {
-                        Ok(ty) => ty.clone(),
-                        Err(_) => Type::Void { span },
-                    }
+                .map(|argument| match argument.get_value_type() {
+                    Ok(ty) => ty.clone(),
+                    Err(_) => Type::Void { span },
                 })
                 .collect();
 
@@ -258,7 +235,15 @@ fn resolve_ast<'parser>(
                         &result.env,
                     );
 
-                    self::ensure_instantiation(ctx, &entry, &result.env, &key, templates, memo, output);
+                    self::ensure_instantiation(
+                        ctx,
+                        &entry,
+                        &result.env,
+                        &key,
+                        templates,
+                        memo,
+                        output,
+                    );
 
                     Ast::Call {
                         name: key,
@@ -312,6 +297,10 @@ fn ensure_instantiation<'parser>(
             *ascii_name = key.to_string();
         }
 
+        if let Ast::Function { original_name, .. } = &mut concrete {
+            *original_name = Some(entry.name.clone());
+        }
+
         let resolved: Ast<'parser> = self::resolve_ast(ctx, concrete, templates, memo, output);
 
         output.push(resolved);
@@ -320,31 +309,40 @@ fn ensure_instantiation<'parser>(
     }
 
     let return_type: Type = thrustc_generics::substitute(&entry.return_type, env);
+
     let parameter_types: Vec<Type> = entry
         .parameter_types
         .iter()
         .map(|parameter| thrustc_generics::substitute(parameter, env))
         .collect();
+
     let parameters: Vec<Ast<'parser>> = entry
         .parameter_names
         .iter()
         .zip(parameter_types.iter())
         .enumerate()
-        .map(|(position, (parameter_name, parameter_type))| Ast::FunctionParameter {
-            name: parameter_name.clone(),
-            ascii_name: parameter_name.clone(),
-            kind: parameter_type.clone(),
-            position: position as u32,
-            metadata: FunctionParameterMetadata::new(parameter_type.is_ptr_like_type()),
-            span: entry.span,
-            id: NodeId::new(),
-        })
+        .map(
+            |(position, (parameter_name, parameter_type))| Ast::FunctionParameter {
+                name: parameter_name.clone(),
+                ascii_name: parameter_name.clone(),
+                kind: parameter_type.clone(),
+                position: position as u32,
+                metadata: FunctionParameterMetadata::new(parameter_type.is_ptr_like_type()),
+                span: entry.span,
+                id: NodeId::new(),
+            },
+        )
         .collect();
-    let attributes: ThrustAttributes = self::filter_template_attributes(&entry.attributes);
+
+    let mut attributes: ThrustAttributes = self::filter_template_attributes(&entry.attributes);
+
+    attributes.push(ThrustAttribute::Public(entry.span));
+    attributes.push(ThrustAttribute::Extern(key.to_string(), entry.span));
 
     output.push(Ast::Function {
         name: key.to_string(),
         ascii_name: key.to_string(),
+        original_name: Some(entry.name.clone()),
         parameters,
         parameter_types,
         body: None,
@@ -361,32 +359,6 @@ fn ensure_instantiation<'parser>(
     {
         thrustc_generics::record_pending(origin, entry.name.clone(), env.clone());
     }
-}
-
-fn filter_template_attributes(attributes: &ThrustAttributes) -> ThrustAttributes {
-    attributes
-        .iter()
-        .filter(|attribute| {
-            !matches!(
-                attribute,
-                ThrustAttribute::Public(_) | ThrustAttribute::Extern(..)
-            )
-        })
-        .cloned()
-        .collect()
-}
-
-fn resolve_ast_list<'parser>(
-    ctx: &mut ParserContext<'parser>,
-    nodes: Vec<Ast<'parser>>,
-    templates: &HashMap<String, Ast<'parser>>,
-    memo: &mut HashSet<String>,
-    output: &mut Vec<Ast<'parser>>,
-) -> Vec<Ast<'parser>> {
-    nodes
-        .into_iter()
-        .map(|node| self::resolve_ast(ctx, node, templates, memo, output))
-        .collect()
 }
 
 fn resolve_children<'parser>(
@@ -434,20 +406,57 @@ fn resolve_children<'parser>(
             span,
             id,
         },
-        Ast::Char { kind, byte, span, id } => Ast::Char {
-            kind, byte, span, id,
+        Ast::Char {
+            kind,
+            byte,
+            span,
+            id,
+        } => Ast::Char {
+            kind,
+            byte,
+            span,
+            id,
         },
-        Ast::Boolean { kind, value, span, id } => Ast::Boolean {
-            kind, value, span, id,
+        Ast::Boolean {
+            kind,
+            value,
+            span,
+            id,
+        } => Ast::Boolean {
+            kind,
+            value,
+            span,
+            id,
         },
-        Ast::Integer { kind, value, span, id } => Ast::Integer {
-            kind, value, span, id,
+        Ast::Integer {
+            kind,
+            value,
+            span,
+            id,
+        } => Ast::Integer {
+            kind,
+            value,
+            span,
+            id,
         },
-        Ast::Float { kind, value, span, id } => Ast::Float {
-            kind, value, span, id,
+        Ast::Float {
+            kind,
+            value,
+            span,
+            id,
+        } => Ast::Float {
+            kind,
+            value,
+            span,
+            id,
         },
         Ast::NullPtr { span, kind } => Ast::NullPtr { span, kind },
-        Ast::GlobalAssembler { asm, span, kind, id } => Ast::GlobalAssembler {
+        Ast::GlobalAssembler {
+            asm,
+            span,
+            kind,
+            id,
+        } => Ast::GlobalAssembler {
             asm,
             span,
             kind,
@@ -464,7 +473,12 @@ fn resolve_children<'parser>(
             span,
             id,
         },
-        Ast::Array { items, kind, span, id } => Ast::Array {
+        Ast::Array {
+            items,
+            kind,
+            span,
+            id,
+        } => Ast::Array {
             items: self::resolve_ast_list(ctx, items, templates, memo, output),
             kind,
             span,
@@ -477,9 +491,7 @@ fn resolve_children<'parser>(
             kind,
             span,
         } => Ast::Index {
-            source: std::boxed::Box::new(self::resolve_ast(
-                ctx, *source, templates, memo, output,
-            )),
+            source: std::boxed::Box::new(self::resolve_ast(ctx, *source, templates, memo, output)),
             index: std::boxed::Box::new(self::resolve_ast(ctx, *index, templates, memo, output)),
             metadata,
             kind,
@@ -536,9 +548,7 @@ fn resolve_children<'parser>(
             span,
             id,
         } => Ast::Property {
-            source: std::boxed::Box::new(self::resolve_ast(
-                ctx, *source, templates, memo, output,
-            )),
+            source: std::boxed::Box::new(self::resolve_ast(ctx, *source, templates, memo, output)),
             data,
             metadata,
             kind,
@@ -558,11 +568,16 @@ fn resolve_children<'parser>(
                 ctx, *condition, templates, memo, output,
             )),
             then_branch: std::boxed::Box::new(self::resolve_ast(
-                ctx, *then_branch, templates, memo, output,
+                ctx,
+                *then_branch,
+                templates,
+                memo,
+                output,
             )),
             else_if_branch: self::resolve_ast_list(ctx, else_if_branch, templates, memo, output),
-            else_branch: else_branch
-                .map(|branch| std::boxed::Box::new(self::resolve_ast(ctx, *branch, templates, memo, output))),
+            else_branch: else_branch.map(|branch| {
+                std::boxed::Box::new(self::resolve_ast(ctx, *branch, templates, memo, output))
+            }),
             kind,
             span,
             id,
@@ -582,7 +597,12 @@ fn resolve_children<'parser>(
             span,
             id,
         },
-        Ast::Else { block, kind, span, id } => Ast::Else {
+        Ast::Else {
+            block,
+            kind,
+            span,
+            id,
+        } => Ast::Else {
             block: std::boxed::Box::new(self::resolve_ast(ctx, *block, templates, memo, output)),
             kind,
             span,
@@ -617,8 +637,9 @@ fn resolve_children<'parser>(
             span,
             id,
         } => Ast::While {
-            variable: variable
-                .map(|local| std::boxed::Box::new(self::resolve_ast(ctx, *local, templates, memo, output))),
+            variable: variable.map(|local| {
+                std::boxed::Box::new(self::resolve_ast(ctx, *local, templates, memo, output))
+            }),
             condition: std::boxed::Box::new(self::resolve_ast(
                 ctx, *condition, templates, memo, output,
             )),
@@ -627,7 +648,12 @@ fn resolve_children<'parser>(
             span,
             id,
         },
-        Ast::Loop { block, kind, span, id } => Ast::Loop {
+        Ast::Loop {
+            block,
+            kind,
+            span,
+            id,
+        } => Ast::Loop {
             block: std::boxed::Box::new(self::resolve_ast(ctx, *block, templates, memo, output)),
             kind,
             span,
@@ -650,7 +676,12 @@ fn resolve_children<'parser>(
             span,
             id,
         },
-        Ast::Defer { node, kind, span, id } => Ast::Defer {
+        Ast::Defer {
+            node,
+            kind,
+            span,
+            id,
+        } => Ast::Defer {
             node: std::boxed::Box::new(self::resolve_ast(ctx, *node, templates, memo, output)),
             kind,
             span,
@@ -714,11 +745,9 @@ fn resolve_children<'parser>(
             span,
             id,
         },
-        Ast::CompilerIntrinsicParameter { kind, span, id } => Ast::CompilerIntrinsicParameter {
-            kind,
-            span,
-            id,
-        },
+        Ast::CompilerIntrinsicParameter { kind, span, id } => {
+            Ast::CompilerIntrinsicParameter { kind, span, id }
+        }
         Ast::AssemblerFunction {
             name,
             ascii_name,
@@ -758,6 +787,7 @@ fn resolve_children<'parser>(
         Ast::Function {
             name,
             ascii_name,
+            original_name,
             parameters,
             parameter_types,
             body,
@@ -768,6 +798,7 @@ fn resolve_children<'parser>(
         } => Ast::Function {
             name,
             ascii_name,
+            original_name,
             parameters: self::resolve_ast_list(ctx, parameters, templates, memo, output),
             parameter_types,
             body: body.map(|block| {
@@ -823,7 +854,13 @@ fn resolve_children<'parser>(
             ascii_name,
             kind,
             value: value.map(|initializer| {
-                std::boxed::Box::new(self::resolve_ast(ctx, *initializer, templates, memo, output))
+                std::boxed::Box::new(self::resolve_ast(
+                    ctx,
+                    *initializer,
+                    templates,
+                    memo,
+                    output,
+                ))
             }),
             attributes,
             modificators,
@@ -867,7 +904,13 @@ fn resolve_children<'parser>(
             ascii_name,
             kind,
             value: value.map(|initializer| {
-                std::boxed::Box::new(self::resolve_ast(ctx, *initializer, templates, memo, output))
+                std::boxed::Box::new(self::resolve_ast(
+                    ctx,
+                    *initializer,
+                    templates,
+                    memo,
+                    output,
+                ))
             }),
             attributes,
             modificators,
@@ -895,9 +938,7 @@ fn resolve_children<'parser>(
             span,
             id,
         } => Ast::Mutation {
-            source: std::boxed::Box::new(self::resolve_ast(
-                ctx, *source, templates, memo, output,
-            )),
+            source: std::boxed::Box::new(self::resolve_ast(ctx, *source, templates, memo, output)),
             value: std::boxed::Box::new(self::resolve_ast(ctx, *value, templates, memo, output)),
             kind,
             span,
@@ -910,9 +951,7 @@ fn resolve_children<'parser>(
             span,
             id,
         } => Ast::Address {
-            source: std::boxed::Box::new(self::resolve_ast(
-                ctx, *source, templates, memo, output,
-            )),
+            source: std::boxed::Box::new(self::resolve_ast(ctx, *source, templates, memo, output)),
             indexes: self::resolve_ast_list(ctx, indexes, templates, memo, output),
             kind,
             span,
@@ -925,17 +964,24 @@ fn resolve_children<'parser>(
             span,
             id,
         } => Ast::Write {
-            source: std::boxed::Box::new(self::resolve_ast(
-                ctx, *source, templates, memo, output,
-            )),
+            source: std::boxed::Box::new(self::resolve_ast(ctx, *source, templates, memo, output)),
             write_value: std::boxed::Box::new(self::resolve_ast(
-                ctx, *write_value, templates, memo, output,
+                ctx,
+                *write_value,
+                templates,
+                memo,
+                output,
             )),
             write_type,
             span,
             id,
         },
-        Ast::Load { source, kind, span, id } => Ast::Load {
+        Ast::Load {
+            source,
+            kind,
+            span,
+            id,
+        } => Ast::Load {
             source: std::boxed::Box::new(self::resolve_ast(ctx, *source, templates, memo, output)),
             kind,
             span,
@@ -969,13 +1015,23 @@ fn resolve_children<'parser>(
             span,
             id,
         },
-        Ast::GetLocation { expr, kind, span, id } => Ast::GetLocation {
+        Ast::GetLocation {
+            expr,
+            kind,
+            span,
+            id,
+        } => Ast::GetLocation {
             expr: std::boxed::Box::new(self::resolve_ast(ctx, *expr, templates, memo, output)),
             kind,
             span,
             id,
         },
-        Ast::ModuleExpression { data, values, span, id } => Ast::ModuleExpression {
+        Ast::ModuleExpression {
+            data,
+            values,
+            span,
+            id,
+        } => Ast::ModuleExpression {
             data,
             values: self::resolve_module_expression_values(ctx, values, templates, memo, output),
             span,
@@ -1045,7 +1101,12 @@ fn resolve_children<'parser>(
             span,
             id,
         },
-        Ast::Group { node, kind, span, id } => Ast::Group {
+        Ast::Group {
+            node,
+            kind,
+            span,
+            id,
+        } => Ast::Group {
             node: std::boxed::Box::new(self::resolve_ast(ctx, *node, templates, memo, output)),
             kind,
             span,
@@ -1118,10 +1179,9 @@ fn resolve_module_expression_values<'parser>(
             arguments: self::resolve_ast_list(ctx, arguments, templates, memo, output),
             span,
         },
-        ModuleExpressionValues::Reference { name, span } => ModuleExpressionValues::Reference {
-            name,
-            span,
-        },
+        ModuleExpressionValues::Reference { name, span } => {
+            ModuleExpressionValues::Reference { name, span }
+        }
     }
 }
 
@@ -1134,21 +1194,38 @@ fn resolve_builtin<'parser>(
 ) -> AstBuiltin<'parser> {
     match builtin {
         AstBuiltin::Halloc { of, span } => AstBuiltin::Halloc { of, span },
-        AstBuiltin::MemCpy { src, dst, size, span } => AstBuiltin::MemCpy {
+        AstBuiltin::MemCpy {
+            src,
+            dst,
+            size,
+            span,
+        } => AstBuiltin::MemCpy {
             src: std::boxed::Box::new(self::resolve_ast(ctx, *src, templates, memo, output)),
             dst: std::boxed::Box::new(self::resolve_ast(ctx, *dst, templates, memo, output)),
             size: std::boxed::Box::new(self::resolve_ast(ctx, *size, templates, memo, output)),
             span,
         },
-        AstBuiltin::MemMove { src, dst, size, span } => AstBuiltin::MemMove {
+        AstBuiltin::MemMove {
+            src,
+            dst,
+            size,
+            span,
+        } => AstBuiltin::MemMove {
             src: std::boxed::Box::new(self::resolve_ast(ctx, *src, templates, memo, output)),
             dst: std::boxed::Box::new(self::resolve_ast(ctx, *dst, templates, memo, output)),
             size: std::boxed::Box::new(self::resolve_ast(ctx, *size, templates, memo, output)),
             span,
         },
-        AstBuiltin::MemSet { dst, new_size, size, span } => AstBuiltin::MemSet {
+        AstBuiltin::MemSet {
+            dst,
+            new_size,
+            size,
+            span,
+        } => AstBuiltin::MemSet {
             dst: std::boxed::Box::new(self::resolve_ast(ctx, *dst, templates, memo, output)),
-            new_size: std::boxed::Box::new(self::resolve_ast(ctx, *new_size, templates, memo, output)),
+            new_size: std::boxed::Box::new(self::resolve_ast(
+                ctx, *new_size, templates, memo, output,
+            )),
             size: std::boxed::Box::new(self::resolve_ast(ctx, *size, templates, memo, output)),
             span,
         },
@@ -1158,4 +1235,53 @@ fn resolve_builtin<'parser>(
         AstBuiltin::ArbitraryArg { ty, span } => AstBuiltin::ArbitraryArg { ty, span },
         AstBuiltin::ArbitraryArgs { span } => AstBuiltin::ArbitraryArgs { span },
     }
+}
+
+fn collect_local_templates<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> HashMap<String, Ast<'parser>> {
+    let mut templates: HashMap<String, Ast<'parser>> = HashMap::new();
+
+    let ast: Vec<Ast<'parser>> = ctx.get_mut_ast().clone();
+
+    for node in ast.iter() {
+        if let Ast::Function {
+            name,
+            body: Some(_),
+            ..
+        } = node
+        {
+            if ctx.get_symbols().has_generic_function(name) {
+                templates.insert(name.clone(), node.clone());
+            }
+        }
+    }
+
+    templates
+}
+
+fn resolve_ast_list<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    nodes: Vec<Ast<'parser>>,
+    templates: &HashMap<String, Ast<'parser>>,
+    memo: &mut HashSet<String>,
+    output: &mut Vec<Ast<'parser>>,
+) -> Vec<Ast<'parser>> {
+    nodes
+        .into_iter()
+        .map(|node| self::resolve_ast(ctx, node, templates, memo, output))
+        .collect()
+}
+
+fn filter_template_attributes(attributes: &ThrustAttributes) -> ThrustAttributes {
+    attributes
+        .iter()
+        .filter(|attribute| {
+            !matches!(
+                attribute,
+                ThrustAttribute::Public(_) | ThrustAttribute::Extern(..)
+            )
+        })
+        .cloned()
+        .collect()
 }

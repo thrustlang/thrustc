@@ -17,17 +17,17 @@
 
 */
 
-mod fingerprint;
+mod hashing;
 mod pending;
 mod scope;
 mod solve;
 mod substitution;
 
-pub use self::fingerprint::{instantiation_key, type_env_fingerprint, type_fingerprint};
+pub use self::hashing::instantiation_key;
 pub use self::pending::{
-    drain_pending, has_pending_for, has_pending_instantiations, record_pending,
-    PendingInstantiation,
+    PendingInstantiation, drain_pending, has_pending_for, has_pending_instantiations,
+    record_pending,
 };
 pub use self::scope::GenericScope;
-pub use self::solve::{solve, SolveResult, TypeEnv};
+pub use self::solve::{SolveResult, TypeEnv, solve};
 pub use self::substitution::{substitute, substitute_ast};

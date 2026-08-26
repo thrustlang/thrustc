@@ -21,7 +21,7 @@ use thrustc_typesystem::Type;
 
 use crate::solve::TypeEnv;
 
-pub fn type_fingerprint(ty: &Type, output: &mut String) {
+fn type_fingerprint(ty: &Type, output: &mut String) {
     match ty {
         Type::S8 { .. } => output.push_str("s8"),
         Type::S16 { .. } => output.push_str("s16"),
@@ -48,7 +48,9 @@ pub fn type_fingerprint(ty: &Type, output: &mut String) {
         }
         Type::Const(inner, _) => {
             output.push_str("const(");
+
             self::type_fingerprint(inner, output);
+
             output.push(')');
         }
         Type::Ptr {
@@ -57,15 +59,18 @@ pub fn type_fingerprint(ty: &Type, output: &mut String) {
             ..
         } => {
             output.push_str("ptr[");
+
             if let Some(inner) = subtype {
                 self::type_fingerprint(inner, output);
             } else {
                 output.push('_');
             }
+
             if let Some(space) = address_space {
                 output.push(',');
                 output.push_str(&space.to_string());
             }
+
             output.push(']');
         }
         Type::Struct {
@@ -77,18 +82,23 @@ pub fn type_fingerprint(ty: &Type, output: &mut String) {
             output.push_str("struct(");
             output.push_str(name);
             output.push(':');
+
             for (index, field) in fields.iter().enumerate() {
                 if index != 0 {
                     output.push(',');
                 }
+
                 self::type_fingerprint(field, output);
             }
+
             output.push(':');
+
             if metadata.get_struct_type_modificator().llvm().is_packed() {
                 output.push('p');
             } else {
                 output.push('u');
             }
+
             output.push(')');
         }
         Type::FixedArray {
@@ -98,13 +108,17 @@ pub fn type_fingerprint(ty: &Type, output: &mut String) {
             ..
         } => {
             output.push_str("fixedarray[");
+
             self::type_fingerprint(base_type, output);
+
             output.push(';');
             output.push_str(&size.to_string());
+
             if let Some(space) = metadata.get_address_space() {
                 output.push(',');
                 output.push_str(&space.to_string());
             }
+
             output.push(']');
         }
         Type::Array {
@@ -114,15 +128,19 @@ pub fn type_fingerprint(ty: &Type, output: &mut String) {
             ..
         } => {
             output.push_str("array[");
+
             self::type_fingerprint(base_type, output);
+
             if let Some((_, count)) = infered_type {
                 output.push(';');
                 output.push_str(&count.to_string());
             }
+
             if let Some(space) = metadata.get_address_space() {
                 output.push(',');
                 output.push_str(&space.to_string());
             }
+
             output.push(']');
         }
         Type::Fn {
@@ -130,14 +148,18 @@ pub fn type_fingerprint(ty: &Type, output: &mut String) {
             parameter_types,
             ..
         } => {
-            output.push_str("fn[");
+            output.push_str("Fn[");
+
             for (index, parameter) in parameter_types.iter().enumerate() {
                 if index != 0 {
                     output.push(',');
                 }
+
                 self::type_fingerprint(parameter, output);
             }
+
             output.push_str("]->");
+
             self::type_fingerprint(return_type, output);
         }
     }
@@ -148,6 +170,7 @@ pub fn type_env_fingerprint(env: &TypeEnv) -> String {
         .iter()
         .map(|(hint, ty)| {
             let mut fingerprint: String = String::with_capacity(16);
+
             self::type_fingerprint(ty, &mut fingerprint);
 
             (hint.clone(), fingerprint)
@@ -182,6 +205,7 @@ fn fnv1a(bytes: &[u8]) -> u64 {
 
     for byte in bytes.iter() {
         hash ^= u64::from(*byte);
+        //                       1099511628211
         hash = hash.wrapping_mul(0x100000001b3);
     }
 

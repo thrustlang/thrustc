@@ -46,7 +46,9 @@ impl Module {
             unique_id: Uuid::new_v4(),
         }
     }
+}
 
+impl Module {
     #[inline]
     pub fn merge_import(&mut self, other: Module) {
         if other.only.is_none() {
@@ -63,7 +65,9 @@ impl Module {
             self.alias = other.alias;
         }
     }
+}
 
+impl Module {
     #[inline]
     pub fn set_alias(&mut self, alias: Vec<String>) {
         self.alias = Some(alias);

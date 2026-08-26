@@ -36,7 +36,7 @@ pub type LinterAssemblerFunctionInfo<'linter> = (Span, bool, bool);
 pub type LinterAssemblerFunctions<'linter> =
     HashMap<&'linter str, LinterAssemblerFunctionInfo<'linter>>;
 
-pub type LinterFunctionInfo<'linter> = (Span, bool, bool);
+pub type LinterFunctionInfo<'linter> = (Span, bool, bool, &'linter str);
 pub type LinterFunctions<'linter> = HashMap<&'linter str, LinterFunctionInfo<'linter>>;
 
 pub type LinterIntrinsicInfo<'linter> = (Span, bool, bool);

@@ -31,6 +31,7 @@ use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 use thrustc_parser_external_table::ExternalSymbolTable;
+use thrustc_parser_table::GenericStructEntry;
 use thrustc_parser_table::traits::{
     ConstructorExtensions, FoundSymbolEitherExtensions, StructSymbolExtensions,
 };
@@ -127,8 +128,8 @@ pub fn build_constructor<'parser>(
             .resolve(&access)
             .map(|module| module.get_path().to_path_buf());
 
-        if type_params.is_none() {
-            if ctx.get_symbols().has_global_struct(symbol) {
+        if let Some(generic_type_params) = type_params.as_ref() {
+            if ctx.get_symbols().has_generic_struct(symbol) {
                 crate::module_import::check_qualified_collision(
                     ctx,
                     symbol,
@@ -137,43 +138,69 @@ pub fn build_constructor<'parser>(
                     span,
                 )?;
             } else {
-                let mut data: Vec<(&str, Type, u32, Span)> = Vec::with_capacity(fields.len());
-                let mut position: u32 = 0;
-
-                for (field_name, field_type, field_span) in signature_fields.iter() {
-                    data.push((
-                        field_name.as_str(),
-                        field_type.clone(),
-                        position,
-                        *field_span,
-                    ));
-                    position = position.saturating_add(1);
-                }
-
-                let _ = ctx.get_mut_symbols().new_global_struct(
+                ctx.get_mut_symbols().new_generic_struct(
                     symbol,
-                    (
-                        symbol,
-                        data.clone(),
-                        ThrustAttributes::new(),
+                    GenericStructEntry {
+                        type_params: generic_type_params.clone(),
+                        field_names: signature_fields
+                            .iter()
+                            .map(|(name, ..)| name.as_str())
+                            .collect(),
+                        field_types: signature_fields.iter().map(|(_, ty, _)| ty.clone()).collect(),
                         metadata,
-                        span,
-                    ),
+                    },
                 );
-
-                ctx.add_ast_node(Ast::Struct {
-                    name: symbol,
-                    data: (symbol, data.clone(), metadata, span),
-                    kind: kind.clone(),
-                    attributes: ThrustAttributes::new(),
-                    span,
-                    id: NodeId::new(),
-                });
 
                 if let Some(path) = origin.as_ref() {
                     ctx.get_mut_symbols()
                         .record_import_origin(symbol, path.clone());
                 }
+            }
+        } else if ctx.get_symbols().has_global_struct(symbol) {
+            crate::module_import::check_qualified_collision(
+                ctx,
+                symbol,
+                &access,
+                origin.as_ref(),
+                span,
+            )?;
+        } else {
+            let mut data: Vec<(&str, Type, u32, Span)> = Vec::with_capacity(fields.len());
+            let mut position: u32 = 0;
+
+            for (field_name, field_type, field_span) in signature_fields.iter() {
+                data.push((
+                    field_name.as_str(),
+                    field_type.clone(),
+                    position,
+                    *field_span,
+                ));
+                position = position.saturating_add(1);
+            }
+
+            let _ = ctx.get_mut_symbols().new_global_struct(
+                symbol,
+                (
+                    symbol,
+                    data.clone(),
+                    ThrustAttributes::new(),
+                    metadata,
+                    span,
+                ),
+            );
+
+            ctx.add_ast_node(Ast::Struct {
+                name: symbol,
+                data: (symbol, data.clone(), metadata, span),
+                kind: kind.clone(),
+                attributes: ThrustAttributes::new(),
+                span,
+                id: NodeId::new(),
+            });
+
+            if let Some(path) = origin.as_ref() {
+                ctx.get_mut_symbols()
+                    .record_import_origin(symbol, path.clone());
             }
         }
     } else if let Some(generic) = ctx.get_symbols().get_generic_struct(symbol).cloned() {

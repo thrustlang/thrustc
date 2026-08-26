@@ -17,8 +17,8 @@
 
 */
 
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::Type;
 
 pub fn floating_point(lexeme: &str, span: Span) -> Result<(Type, f64), CompilationIssue> {
@@ -44,8 +44,7 @@ pub fn floating_point(lexeme: &str, span: Span) -> Result<(Type, f64), Compilati
 
             Err(_) => Err(CompilationIssue::Error(
                 CompilationIssueCode::E0001,
-                "Literal is too large to be represented in a standard floating-point type."
-                    .into(),
+                "Literal is too large to be represented in a standard floating-point type.".into(),
                 "You can shorten it.".into(),
                 None,
                 span,
@@ -161,6 +160,7 @@ pub fn integer(lexeme: &str, span: Span) -> Result<(Type, u64), CompilationIssue
         if let Ok(n) = lexeme.parse::<usize>() {
             return match_unsigned(n, span);
         }
+
         if let Ok(n) = lexeme.parse::<isize>() {
             return match_signed(n, span);
         }

@@ -72,8 +72,15 @@ use thrustc_typesystem::type_layout::TargetInfo;
 
 #[derive(Debug)]
 pub struct ThrustCompiler<'thrustc> {
-    ready: Vec<std::path::PathBuf>,
+    /// Archivos objeto listos para ser enlazados, en orden de compilación.
+    linked_objects: Vec<std::path::PathBuf>,
     unready: &'thrustc [CompilationUnit],
+
+    /// Ruta del archivo fuente -> ruta del archivo objeto generado.
+    /// Índice de deduplicación: cuando se reprocesa una unidad (p. ej., un módulo
+    /// recompilado tras quedar pendientes instanciaciones genéricas), su archivo
+    /// objeto anterior se reemplaza para que el enlazador no encuentre símbolos duplicados.
+    source_to_object: std::collections::HashMap<std::path::PathBuf, std::path::PathBuf>,
 
     options: &'thrustc CompilerOptions,
 
@@ -94,8 +101,10 @@ pub type CompileTime = (
 impl<'thrustc> ThrustCompiler<'thrustc> {
     pub fn new(units: &'thrustc [CompilationUnit], options: &'thrustc CompilerOptions) -> Self {
         Self {
-            ready: Vec::with_capacity(units.len()),
+            linked_objects: Vec::with_capacity(units.len()),
             unready: units,
+
+            source_to_object: std::collections::HashMap::with_capacity(units.len()),
 
             options,
 
@@ -104,19 +113,6 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             thrustc_backend_time: std::time::Duration::default(),
             thrustc_time: std::time::Duration::default(),
         }
-    }
-
-    fn create_builtins_registry(&self) -> BuiltinRegistry {
-        let llvm_backend: &LLVMBackend = self.options.get_llvm_backend();
-        let target: &LLVMTarget = llvm_backend.get_target();
-        let llvm_triple: &TargetTriple = target.get_target_triple();
-
-        let target_triple_formatted: String = llvm_triple.as_str().to_string_lossy().to_string();
-
-        let target_info: TargetInfo =
-            TargetInfo::new(LLVMTargetTriple::new(target_triple_formatted));
-
-        thrustc_builtins::default_registry(target_info)
     }
 }
 
@@ -162,7 +158,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_aot_llvm(&mut self) -> CompileTime {
         cleaner::auto_clean(self.get_compilation_options());
 
-        self.discover_std_usage();
+        self.discover_std();
 
         if self.compile_imported_std().is_err() {
             return (
@@ -179,6 +175,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         for file in self.unready.iter() {
             it_failed = self.compile_file_with_llvm_aot(file).is_err();
         }
+
+        it_failed = it_failed || self.reprocess_pending_instantiations().is_err();
 
         it_failed = it_failed
             || self.get_compilation_options().was_printed()
@@ -220,7 +218,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         )
     }
 
-    fn discover_std_usage(&mut self) {
+    fn discover_std(&mut self) {
         for file in self.unready.iter() {
             let Ok(tokens) = Lexer::lex(file, self.options) else {
                 continue;
@@ -252,28 +250,6 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             self.compile_imported_std_module(&path)?;
         }
 
-        let mut reprocesses: usize = 0;
-
-        loop {
-            let mut reprocessed: bool = false;
-
-            for module in thrustc_preprocessor::std_library::get_imported_std_modules() {
-                let path: std::path::PathBuf = module.get_path().to_path_buf();
-
-                if thrustc_generics::has_pending_for(&path) {
-                    self.compile_imported_std_module(&path)?;
-
-                    reprocessed = true;
-                }
-            }
-
-            reprocesses = reprocesses.saturating_add(1);
-
-            if !reprocessed || reprocesses >= 1024 {
-                break;
-            }
-        }
-
         Ok(())
     }
 
@@ -287,7 +263,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         });
 
         let content: String = thrustc_reader::get_file_source_code(path);
-        let unit: CompilationUnit = CompilationUnit::new(name, path.to_path_buf(), content, base_name);
+        let unit: CompilationUnit =
+            CompilationUnit::new(name, path.to_path_buf(), content, base_name);
 
         self.compile_file_with_llvm_aot(&unit)
     }
@@ -654,7 +631,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             file.get_name(),
         );
 
-        self.add_compiled_unit(obj_file);
+        self.register_compiled_unit(file.get_path().to_path_buf(), obj_file);
 
         self.update_thrustc_backend_time(backend_time.elapsed());
 
@@ -668,7 +645,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_jit_llvm(&mut self) -> CompileTime {
         cleaner::auto_clean(self.get_compilation_options());
 
-        self.discover_std_usage();
+        self.discover_std();
 
         let context: Context = Context::create();
 
@@ -1072,6 +1049,74 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     }
 }
 
+impl<'thrustc> ThrustCompiler<'thrustc> {
+    fn reprocess_pending_instantiations(&mut self) -> Result<(), ()> {
+        let mut reprocesses: usize = 0;
+
+        loop {
+            let mut reprocessed: bool = false;
+
+            for path in self.pending_candidate_paths() {
+                if thrustc_generics::has_pending_for(&path) {
+                    self.compile_imported_std_module(&path)?;
+
+                    reprocessed = true;
+                }
+            }
+
+            reprocesses = reprocesses.saturating_add(1);
+
+            if !reprocessed || reprocesses >= 1024 {
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn pending_candidate_paths(&self) -> Vec<std::path::PathBuf> {
+        let mut paths: Vec<std::path::PathBuf> = Vec::with_capacity(u8::MAX as usize);
+
+        for module in thrustc_preprocessor::std_library::get_imported_std_modules() {
+            paths.push(module.get_path().to_path_buf());
+        }
+
+        for file in self.unready.iter() {
+            paths.push(file.get_path().to_path_buf());
+        }
+
+        paths
+    }
+}
+
+impl<'thrustc> ThrustCompiler<'thrustc> {
+    fn create_builtins_registry(&self) -> BuiltinRegistry {
+        let llvm_backend: &LLVMBackend = self.options.get_llvm_backend();
+        let target: &LLVMTarget = llvm_backend.get_target();
+        let llvm_triple: &TargetTriple = target.get_target_triple();
+
+        let target_triple_formatted: String = llvm_triple.as_str().to_string_lossy().to_string();
+
+        let target_info: TargetInfo =
+            TargetInfo::new(LLVMTargetTriple::new(target_triple_formatted));
+
+        thrustc_builtins::default_registry(target_info)
+    }
+}
+
+impl ThrustCompiler<'_> {
+    fn register_compiled_unit(&mut self, source: std::path::PathBuf, object: std::path::PathBuf) {
+        if let Some(previous) = self.source_to_object.insert(source, object.clone()) {
+            self.linked_objects
+                .retain(|candidate| candidate != &previous);
+
+            let _ = std::fs::remove_file(&previous);
+        }
+
+        self.linked_objects.push(object);
+    }
+}
+
 impl ThrustCompiler<'_> {
     #[inline]
     pub fn update_thrustc_time(&mut self, elapsed: std::time::Duration) {
@@ -1092,18 +1137,11 @@ impl ThrustCompiler<'_> {
 impl ThrustCompiler<'_> {
     #[inline]
     pub fn get_compiled_files(&self) -> &[std::path::PathBuf] {
-        &self.ready
+        &self.linked_objects
     }
 
     #[inline]
     pub fn get_compilation_options(&self) -> &CompilerOptions {
         self.options
-    }
-}
-
-impl ThrustCompiler<'_> {
-    #[inline]
-    pub fn add_compiled_unit(&mut self, path: std::path::PathBuf) {
-        self.ready.push(path);
     }
 }

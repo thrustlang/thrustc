@@ -513,6 +513,7 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
         Ast::Function {
             name,
             ascii_name,
+            original_name,
             parameters,
             parameter_types,
             body,
@@ -523,6 +524,7 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
         } => Ast::Function {
             name,
             ascii_name,
+            original_name,
             parameters: self::substitute_ast_list(parameters, env),
             parameter_types: self::substitute_type_list(parameter_types, env),
             body: body.map(|block| std::boxed::Box::new(self::substitute_ast(*block, env))),
@@ -860,20 +862,6 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
     }
 }
 
-fn substitute_ast_list<'ast>(nodes: Vec<Ast<'ast>>, env: &TypeEnv) -> Vec<Ast<'ast>> {
-    nodes
-        .into_iter()
-        .map(|node| self::substitute_ast(node, env))
-        .collect()
-}
-
-fn substitute_type_list(types: Vec<Type>, env: &TypeEnv) -> Vec<Type> {
-    types
-        .into_iter()
-        .map(|ty| self::substitute(&ty, env))
-        .collect()
-}
-
 fn substitute_structure_data<'ast>(
     data: StructureData<'ast>,
     env: &TypeEnv,
@@ -1006,4 +994,18 @@ fn substitute_builtin<'ast>(builtin: AstBuiltin<'ast>, env: &TypeEnv) -> AstBuil
         },
         AstBuiltin::ArbitraryArgs { span } => AstBuiltin::ArbitraryArgs { span },
     }
+}
+
+fn substitute_ast_list<'ast>(nodes: Vec<Ast<'ast>>, env: &TypeEnv) -> Vec<Ast<'ast>> {
+    nodes
+        .into_iter()
+        .map(|node| self::substitute_ast(node, env))
+        .collect()
+}
+
+fn substitute_type_list(types: Vec<Type>, env: &TypeEnv) -> Vec<Type> {
+    types
+        .into_iter()
+        .map(|ty| self::substitute(&ty, env))
+        .collect()
 }

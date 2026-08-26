@@ -769,6 +769,7 @@ fn synthesize_function<'parser>(
     let declaration: Ast = Ast::Function {
         name: symbol.to_string(),
         ascii_name: symbol.to_string(),
+        original_name: Some(symbol.to_string()),
         parameters,
         parameter_types,
         body: None,

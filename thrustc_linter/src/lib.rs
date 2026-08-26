@@ -582,12 +582,20 @@ impl Linter<'_> {
 
                 Ast::Function {
                     name,
+                    original_name,
                     span,
                     attributes,
                     ..
                 } => {
-                    self.symbols
-                        .new_function(name, (*span, false, attributes.has_public_attribute()));
+                    self.symbols.new_function(
+                        name,
+                        (
+                            *span,
+                            false,
+                            attributes.has_public_attribute(),
+                            original_name.as_deref().unwrap_or(name),
+                        ),
+                    );
 
                     if attributes.has_noreturn_attribute() {
                         self.noreturn_functions.insert(name);
@@ -898,19 +906,20 @@ impl Linter<'_> {
             }
         }
 
-        for (name, info) in self.symbols.get_all_functions().iter() {
+        for (_, info) in self.symbols.get_all_functions().iter() {
             let span: Span = info.0;
             let used: bool = info.1;
+            let display_name: &str = info.3;
 
             if !used && !info.2 {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0017,
-                    format!("'{}' not used.", name),
+                    format!("'{}' not used.", display_name),
                     span,
                 ));
             }
 
-            if let Some(warning) = bad_name_warning(name, span, NameKind::Value) {
+            if let Some(warning) = bad_name_warning(display_name, span, NameKind::Value) {
                 warnings.push(warning);
             }
         }

@@ -21,7 +21,7 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use crate::fingerprint::type_env_fingerprint;
+use crate::hashing;
 use crate::solve::TypeEnv;
 
 #[derive(Debug, Clone)]
@@ -39,12 +39,12 @@ pub fn record_pending(module: PathBuf, function: String, env: TypeEnv) {
     PENDING_INSTANTIATIONS.with(|cell| {
         let mut pending: std::cell::RefMut<'_, Vec<PendingInstantiation>> = cell.borrow_mut();
 
-        let key: String = type_env_fingerprint(&env);
+        let key: String = hashing::type_env_fingerprint(&env);
 
         if !pending.iter().any(|entry| {
             entry.module == module
                 && entry.function == function
-                && type_env_fingerprint(&entry.env) == key
+                && hashing::type_env_fingerprint(&entry.env) == key
         }) {
             pending.push(PendingInstantiation {
                 module,
@@ -59,8 +59,8 @@ pub fn drain_pending(module: &Path) -> Vec<PendingInstantiation> {
     PENDING_INSTANTIATIONS.with(|cell| {
         let mut pending: std::cell::RefMut<'_, Vec<PendingInstantiation>> = cell.borrow_mut();
 
-        let mut drained: Vec<PendingInstantiation> = Vec::new();
-        let mut seen: HashSet<(PathBuf, String, String)> = HashSet::new();
+        let mut drained: Vec<PendingInstantiation> = Vec::with_capacity(u8::MAX as usize);
+        let mut seen: HashSet<(PathBuf, String, String)> = HashSet::with_capacity(u8::MAX as usize);
 
         let mut index: usize = 0;
 
@@ -68,7 +68,7 @@ pub fn drain_pending(module: &Path) -> Vec<PendingInstantiation> {
             if pending[index].module == module {
                 let entry: PendingInstantiation = pending.remove(index);
 
-                let key: String = type_env_fingerprint(&entry.env);
+                let key: String = hashing::type_env_fingerprint(&entry.env);
 
                 if seen.insert((entry.module.clone(), entry.function.clone(), key)) {
                     drained.push(entry);

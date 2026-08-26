@@ -107,7 +107,7 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
         }
 
         Ast::Constructor {
-            name, data, span, ..
+            name, data, ..
         } => {
             for (_, expr, ..) in data.iter() {
                 linter.analyze_expr(expr);
@@ -115,15 +115,6 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
 
             if let Some(structure) = linter.symbols.get_struct_info(name) {
                 structure.3 = true;
-            } else {
-                linter.add_bug(CompilationIssue::FrontendBug(
-                    String::from("Structure not caught"),
-                    format!("Could not get named struct with name '{}'.", name),
-                    *span,
-                    CompilationPosition::Linter,
-                    std::path::PathBuf::from(file!()),
-                    line!(),
-                ));
             }
         }
 

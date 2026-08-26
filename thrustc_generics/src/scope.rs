@@ -27,24 +27,42 @@ pub struct GenericScope {
 }
 
 impl GenericScope {
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
+}
 
+impl GenericScope {
+    #[inline]
     pub fn enter_scope(&mut self) {
         self.scopes.push(HashMap::with_capacity(4));
     }
 
+    #[inline]
     pub fn exit_scope(&mut self) {
         self.scopes.pop();
     }
+}
 
+impl GenericScope {
+    #[inline]
     pub fn push_parameter(&mut self, name: String, span: Span) {
         if let Some(scope) = self.scopes.last_mut() {
             scope.insert(name, span);
         }
     }
+}
 
+impl GenericScope {
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.scopes.is_empty() || self.scopes.iter().all(|scope| scope.is_empty())
+    }
+}
+
+impl GenericScope {
+    #[inline]
     pub fn resolve(&self, name: &str) -> Option<Span> {
         for scope in self.scopes.iter().rev() {
             if let Some(span) = scope.get(name) {
@@ -53,9 +71,5 @@ impl GenericScope {
         }
 
         None
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.scopes.is_empty() || self.scopes.iter().all(|scope| scope.is_empty())
     }
 }
