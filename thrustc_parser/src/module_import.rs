@@ -37,7 +37,7 @@ use thrustc_preprocessor::signatures::{Signature, Variant};
 
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
-use thrustc_typesystem::traits::TypePointerExtensions;
+use thrustc_typesystem::traits::{TypeCodeLocation, TypePointerExtensions};
 use thrustc_typesystem::type_metadata::StructTypeMetadata;
 
 use crate::ParserContext;
@@ -607,6 +607,7 @@ pub(crate) fn synthesize_only_import<'parser>(
                             field_names: fields.iter().map(|(name, _, _)| name.as_str()).collect(),
                             field_types: fields.iter().map(|(_, ty, _)| ty.clone()).collect(),
                             metadata,
+                            span: kind.get_span(),
                         },
                     );
 
@@ -661,7 +662,7 @@ pub(crate) fn synthesize_only_import<'parser>(
     Ok(())
 }
 
-pub(crate) fn check_qualified_collision<'parser>(
+pub fn check_qualified_collision<'parser>(
     ctx: &mut ParserContext<'parser>,
     symbol: &'parser str,
     access: &[String],
@@ -685,29 +686,6 @@ pub(crate) fn check_qualified_collision<'parser>(
     }
 
     Ok(())
-}
-
-fn check_only_collision<'parser>(
-    ctx: &mut ParserContext<'parser>,
-    symbol: &'parser str,
-    access: &[String],
-    origin: &std::path::PathBuf,
-    span: Span,
-) -> Result<(), CompilationIssue> {
-    match ctx.get_symbols().get_import_origin(symbol) {
-        Some(imported) if imported == origin => Ok(()),
-        _ => Err(CompilationIssue::Error(
-            CompilationIssueCode::E0043,
-            format!(
-                "The symbol '{}' is exported by more than one imported module (e.g. '{}').",
-                symbol,
-                access.join("::")
-            ),
-            "Rename or disambiguate one of the imports to avoid an ambiguous name.".into(),
-            None,
-            span,
-        )),
-    }
 }
 
 pub fn resolve_qualified_type<'parser>(
@@ -830,6 +808,29 @@ fn build_static_metadata(
         atomic_ord,
         thread_mode,
     )
+}
+
+fn check_only_collision<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    symbol: &'parser str,
+    access: &[String],
+    origin: &std::path::PathBuf,
+    span: Span,
+) -> Result<(), CompilationIssue> {
+    match ctx.get_symbols().get_import_origin(symbol) {
+        Some(imported) if imported == origin => Ok(()),
+        _ => Err(CompilationIssue::Error(
+            CompilationIssueCode::E0043,
+            format!(
+                "The symbol '{}' is exported by more than one imported module (e.g. '{}').",
+                symbol,
+                access.join("::")
+            ),
+            "Rename or disambiguate one of the imports to avoid an ambiguous name.".into(),
+            None,
+            span,
+        )),
+    }
 }
 
 pub fn resolve_signature<'parser>(

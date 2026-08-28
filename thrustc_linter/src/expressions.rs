@@ -40,7 +40,7 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
         } => {
             if let Ast::Reference { name, .. } = &**left {
                 if operator.is_compound_assignment_operator() {
-                    crate::mark_as_mutated(linter, name, *span, true);
+                    crate::mark_as_mutated(linter, name);
                 }
             }
 
@@ -69,14 +69,12 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
             linter.analyze_expr(right);
         }
 
-        Ast::UnaryOp { operator, node, span, .. } => {
+        Ast::UnaryOp { operator, node, .. } => {
             if let Ast::Reference { name, .. } = &**node {
                 crate::mark_as_used(linter, name);
 
                 if operator.is_minus_minus_operator() || operator.is_plus_plus_operator() {
-                    crate::mark_as_mutated(linter, name, *span, true);
-                } else {
-                    crate::mark_as_read(linter, name);
+                    crate::mark_as_mutated(linter, name);
                 }
             }
 
@@ -179,7 +177,6 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
 
         Ast::Reference { name, .. } => {
             crate::mark_as_used(linter, name);
-            crate::mark_as_read(linter, name);
         }
 
         Ast::FixedArray { items, .. } | Ast::Array { items, .. } => {

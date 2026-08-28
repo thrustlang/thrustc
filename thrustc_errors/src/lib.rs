@@ -1021,6 +1021,154 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
+        explanations.insert(CompilationIssueCode::E0049, r##"A generic call or type provides more explicit type arguments than the generic declares. Each generic parameter accepts exactly one type, so passing more arguments than there are parameters is rejected. Remove the extra type arguments or declare the missing parameters.
+
+Incorrect:
+"""
+fn identity[T](value: T) T @public {
+    return value;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return identity[s32, s32](1);   // here the error
+           ^
+}
+"""
+
+Correct:
+"""
+fn identity[T](value: T) T @public {
+    return value;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return identity[s32](1);
+}
+"""##);
+
+        explanations.insert(CompilationIssueCode::E0050, r##"A call to a generic function provides a number of arguments that does not match the number of parameters the signature declares. The compiler compares the received count with the expected count and stops when they differ. A variadic function declared with @arbitraryArgs is exempt from this rule. Fill the call with the missing arguments or remove the extras.
+
+Incorrect:
+"""
+fn sumar[T](a: T, b: T) T @public {
+    return a + b;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return sumar[s32](1);   // here the error
+           ^
+}
+"""
+
+Correct:
+"""
+fn sumar[T](a: T, b: T) T @public {
+    return a + b;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return sumar[s32](1, 2);
+}
+"""##);
+
+        explanations.insert(CompilationIssueCode::E0051, r##"A generic type parameter could not be inferred. The compiler needs to know the concrete type of every generic parameter, either from an explicit type argument or from the types of the arguments. When neither provides the type, the parameter stays unresolved. Provide the type explicitly between brackets or make it appear in the arguments.
+
+Incorrect:
+"""
+fn identity[T](value: T) T @public {
+    return value;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return identity();   // here the error
+           ^
+}
+"""
+
+Correct:
+"""
+fn identity[T](value: T) T @public {
+    return value;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    return identity[s32](1);
+}
+"""##);
+
+        explanations.insert(CompilationIssueCode::E0052, r##"A generic structure constructor provides a number of type arguments that does not match the number of type parameters the structure declares. Each generic parameter accepts exactly one type. Provide one type per generic parameter of the structure.
+
+Incorrect:
+"""
+struct Pair[A, B] @public {
+    first: A,
+    second: B
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var pair := new Pair[s32] { first: 1, second: 2 };   // here the error
+                 ^
+    return 0;
+}
+"""
+
+Correct:
+"""
+struct Pair[A, B] @public {
+    first: A,
+    second: B
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var pair := new Pair[s32, s32] { first: 1, second: 2 };
+    return 0;
+}
+"""##);
+
+        explanations.insert(CompilationIssueCode::E0053, r##"A generic type is used with a number of type arguments that does not match the number of type parameters it declares. This applies to generic structures and generic custom types referenced by name. Each generic parameter accepts exactly one type. Provide one type per generic parameter.
+
+Incorrect:
+"""
+struct Box[T] @public {
+    value: T
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var box: Box[s32, s32];   // here the error
+             ^
+    return 0;
+}
+"""
+
+Correct:
+"""
+struct Box[T] @public {
+    value: T
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var box: Box[s32];
+    return 0;
+}
+"""##);
+
+        explanations.insert(CompilationIssueCode::E0055, r##"A generic declaration lists the same type parameter more than once. Each type parameter needs a distinct name so the compiler can tell them apart. Rename the duplicate so every generic parameter is unique.
+
+Incorrect:
+"""
+fn pair[T, T](a: T, b: T) T @public {   // here the error
+             ^
+    return a;
+}
+"""
+
+Correct:
+"""
+fn pair[A, B](a: A, b: B) A @public {
+    return a;
+}
+"""##);
+
         explanations.insert(CompilationIssueCode::W0001, r##"An attribute was attached to a declaration kind it does not apply to. Each kind of declaration accepts a fixed set of attributes. An attribute outside that set has no meaning there and is reported as irrelevant. Remove the attribute.
 
 Incorrect:
@@ -1622,6 +1770,23 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
+        explanations.insert(CompilationIssueCode::W0032, r##"A generic declaration lists a type parameter that is never used. The parameter appears in the brackets but never in the signature, the fields, or the body, so it has no effect on the code. Remove the parameter from the brackets or use it in the declaration.
+
+Incorrect:
+"""
+fn size[T](value: s32) s32 @public {   // here the warning
+        ^
+    return value;
+}
+"""
+
+Correct:
+"""
+fn size[T](value: T) s32 @public {
+    return sizeOf(T);
+}
+"""##);
+
         explanations
     };
 }
@@ -1675,6 +1840,12 @@ pub enum CompilationIssueCode {
     E0046, // Positional argument after a named argument.
     E0047, // Variable arguments builtin outside of a variadic function.
     E0048, // Unsupported builtin for this platform.
+    E0049, // Too many generic type arguments.
+    E0050, // Mismatched generic arity.
+    E0051, // Uninferred generic type parameter.
+    E0052, // Generic struct argument count.
+    E0053, // Generic type argument count.
+    E0055, // Duplicate type parameter.
 
     W0001, // Irrelevant Attribute
     W0002, // Unknown Call Convention
@@ -1706,6 +1877,7 @@ pub enum CompilationIssueCode {
     W0029, // Condition always constant
     W0030, // Module signature without public may fail at linking
     W0031, // Compilation warning
+    W0032, // Unused type parameter
 }
 
 #[inline]
@@ -1854,6 +2026,36 @@ impl CompilationIssueCode {
                     "E0048".bright_red()
                 )
             }
+            CompilationIssueCode::E0049 => {
+                format!(
+                    "TOO MANY GENERIC TYPE ARGUMENTS - {}",
+                    "E0049".bright_red()
+                )
+            }
+            CompilationIssueCode::E0050 => {
+                format!("MISMATCHED GENERIC ARITY - {}", "E0050".bright_red())
+            }
+            CompilationIssueCode::E0051 => {
+                format!(
+                    "UNINFERRED GENERIC TYPE PARAMETER - {}",
+                    "E0051".bright_red()
+                )
+            }
+            CompilationIssueCode::E0052 => {
+                format!(
+                    "GENERIC STRUCT ARGUMENT COUNT - {}",
+                    "E0052".bright_red()
+                )
+            }
+            CompilationIssueCode::E0053 => {
+                format!(
+                    "GENERIC TYPE ARGUMENT COUNT - {}",
+                    "E0053".bright_red()
+                )
+            }
+            CompilationIssueCode::E0055 => {
+                format!("DUPLICATE TYPE PARAMETER - {}", "E0055".bright_red())
+            }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())
             }
@@ -1940,6 +2142,9 @@ impl CompilationIssueCode {
             CompilationIssueCode::W0031 => {
                 format!("COMPILATION WARNING - {}", "W0031".bright_yellow())
             }
+            CompilationIssueCode::W0032 => {
+                format!("UNUSED TYPE PARAMETER - {}", "W0032".bright_yellow())
+            }
         }
     }
 
@@ -2011,6 +2216,13 @@ impl CompilationIssueCode {
             "E0047" => Ok(CompilationIssueCode::E0047),
             "E0048" => Ok(CompilationIssueCode::E0048),
 
+            "E0049" => Ok(CompilationIssueCode::E0049),
+            "E0050" => Ok(CompilationIssueCode::E0050),
+            "E0051" => Ok(CompilationIssueCode::E0051),
+            "E0052" => Ok(CompilationIssueCode::E0052),
+            "E0053" => Ok(CompilationIssueCode::E0053),
+            "E0055" => Ok(CompilationIssueCode::E0055),
+
             "W0001" => Ok(CompilationIssueCode::W0001),
             "W0002" => Ok(CompilationIssueCode::W0002),
             "W0003" => Ok(CompilationIssueCode::W0003),
@@ -2041,6 +2253,7 @@ impl CompilationIssueCode {
             "W0029" => Ok(CompilationIssueCode::W0029),
             "W0030" => Ok(CompilationIssueCode::W0030),
             "W0031" => Ok(CompilationIssueCode::W0031),
+            "W0032" => Ok(CompilationIssueCode::W0032),
 
             _ => Err(()),
         }

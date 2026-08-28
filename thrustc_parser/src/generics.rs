@@ -32,7 +32,10 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_table::GenericFunctionEntry;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, traits::TypePointerExtensions};
+use thrustc_typesystem::{
+    Type,
+    traits::{TypeCodeLocation, TypePointerExtensions},
+};
 
 use crate::ParserContext;
 
@@ -64,6 +67,16 @@ pub fn parse_type_parameters<'parser>(
 
         let name: String = parameter_tk.get_lexeme().to_string();
         let span: Span = parameter_tk.get_span();
+
+        if parameters.contains(&name) {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0055,
+                format!("Type parameter '{}' is already declared.", name),
+                "Use a distinct name for each generic parameter.".into(),
+                None,
+                span,
+            ));
+        }
 
         ctx.get_mut_symbols()
             .push_type_parameter(name.clone(), span);
@@ -173,7 +186,79 @@ pub fn resolve_generics<'parser>(ctx: &mut ParserContext<'parser>) {
         output.push(resolved);
     }
 
+    self::emit_unused_type_parameter_warnings(ctx, &templates);
+
     *ctx.get_mut_ast() = output;
+}
+
+fn emit_unused_type_parameter_warnings<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    templates: &HashMap<String, Ast<'parser>>,
+) {
+    let mut warnings: Vec<CompilationIssue> = Vec::new();
+    let mut hints: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    for (_id, entry) in ctx.get_symbols().iter_generic_functions() {
+        hints.clear();
+
+        for ty in entry.parameter_types.iter() {
+            thrustc_generics::collect_unresolved_type_hints(ty, &mut hints);
+        }
+
+        thrustc_generics::collect_unresolved_type_hints(&entry.return_type, &mut hints);
+
+        if let Some(template) = templates.get(&entry.name) {
+            thrustc_generics::collect_unresolved_hints(template, &mut hints);
+        }
+
+        for parameter in entry.type_params.iter() {
+            if !hints.contains(parameter) {
+                warnings.push(CompilationIssue::Warning(
+                    CompilationIssueCode::W0032,
+                    format!("Type parameter '{}' is never used.", parameter),
+                    entry.span,
+                ));
+            }
+        }
+    }
+
+    for (_id, entry) in ctx.get_symbols().iter_generic_structs() {
+        hints.clear();
+
+        for ty in entry.field_types.iter() {
+            thrustc_generics::collect_unresolved_type_hints(ty, &mut hints);
+        }
+
+        for parameter in entry.type_params.iter() {
+            if !hints.contains(parameter) {
+                warnings.push(CompilationIssue::Warning(
+                    CompilationIssueCode::W0032,
+                    format!("Type parameter '{}' is never used.", parameter),
+                    entry.span,
+                ));
+            }
+        }
+    }
+
+    for (_id, entry) in ctx.get_symbols().iter_generic_custom_types() {
+        hints.clear();
+
+        thrustc_generics::collect_unresolved_type_hints(&entry.kind, &mut hints);
+
+        for parameter in entry.type_params.iter() {
+            if !hints.contains(parameter) {
+                warnings.push(CompilationIssue::Warning(
+                    CompilationIssueCode::W0032,
+                    format!("Type parameter '{}' is never used.", parameter),
+                    entry.kind.get_span(),
+                ));
+            }
+        }
+    }
+
+    for warning in warnings {
+        ctx.add_warning_report(warning);
+    }
 }
 
 fn resolve_ast<'parser>(

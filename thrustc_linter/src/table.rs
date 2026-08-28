@@ -335,20 +335,6 @@ impl<'linter> LinterSymbolsTable<'linter> {
     pub fn new_struct(&mut self, name: &'linter str, info: LinterStructFieldsInfo<'linter>) {
         self.structs.insert(name, info);
     }
-
-    pub fn mark_struct_field_used_by_index(&mut self, struct_name: &str, index: u32) {
-        let Some(raw_struct) = self.structs.get_mut(struct_name) else {
-            return;
-        };
-
-        let Some(field_name) = raw_struct.1.get(index as usize).copied() else {
-            return;
-        };
-
-        if let Some(field) = raw_struct.0.get_mut(field_name) {
-            field.1 = true;
-        }
-    }
 }
 
 impl LinterSymbolsTable<'_> {
@@ -394,12 +380,28 @@ impl<'linter> LinterSymbolsTable<'linter> {
             let metadata: FunctionParameterMetadata = parameter.5;
             let span: Span = parameter.4;
 
-            self.new_parameter(name, (span, false, metadata.is_mutable(), false, None));
+            self.new_parameter(name, (span, false, metadata.is_mutable(), false));
         });
     }
 
     #[inline]
     pub fn finish_parameters(&mut self) {
         self.parameters.clear();
+    }
+}
+
+impl<'linter> LinterSymbolsTable<'linter> {
+    pub fn mark_struct_field_used_by_index(&mut self, struct_name: &str, index: u32) {
+        let Some(raw_struct) = self.structs.get_mut(struct_name) else {
+            return;
+        };
+
+        let Some(field_name) = raw_struct.1.get(index as usize).copied() else {
+            return;
+        };
+
+        if let Some(field) = raw_struct.0.get_mut(field_name) {
+            field.1 = true;
+        }
     }
 }

@@ -223,6 +223,33 @@ impl<'parser> SymbolTable<'parser> {
 
 impl<'parser> SymbolTable<'parser> {
     #[inline]
+    pub fn iter_generic_functions(
+        &self,
+    ) -> impl Iterator<Item = (&'parser str, &GenericFunctionEntry)> {
+        self.generic_functions
+            .iter()
+            .map(|(id, entry)| (*id, entry))
+    }
+
+    #[inline]
+    pub fn iter_generic_structs(
+        &self,
+    ) -> impl Iterator<Item = (&'parser str, &GenericStructEntry<'parser>)> {
+        self.generic_structs.iter().map(|(id, entry)| (*id, entry))
+    }
+
+    #[inline]
+    pub fn iter_generic_custom_types(
+        &self,
+    ) -> impl Iterator<Item = (&'parser str, &GenericCustomTypeEntry)> {
+        self.generic_custom_types
+            .iter()
+            .map(|(id, entry)| (*id, entry))
+    }
+}
+
+impl<'parser> SymbolTable<'parser> {
+    #[inline]
     pub fn get_generic_function(&self, id: &str) -> Option<&GenericFunctionEntry> {
         self.generic_functions.get(id)
     }

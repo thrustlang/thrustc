@@ -423,7 +423,7 @@ fn parse_generic_type_arguments<'parser>(
 
     if type_args.len() != type_params.len() {
         return Err(CompilationIssue::Error(
-            CompilationIssueCode::E0001,
+            CompilationIssueCode::E0053,
             "The generic type does not receive that many type arguments.".into(),
             "You should provide one type per generic parameter.".into(),
             None,

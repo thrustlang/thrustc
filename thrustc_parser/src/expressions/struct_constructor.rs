@@ -146,8 +146,12 @@ pub fn build_constructor<'parser>(
                             .iter()
                             .map(|(name, ..)| name.as_str())
                             .collect(),
-                        field_types: signature_fields.iter().map(|(_, ty, _)| ty.clone()).collect(),
+                        field_types: signature_fields
+                            .iter()
+                            .map(|(_, ty, _)| ty.clone())
+                            .collect(),
                         metadata,
+                        span,
                     },
                 );
 
@@ -205,7 +209,9 @@ pub fn build_constructor<'parser>(
         }
     } else if let Some(generic) = ctx.get_symbols().get_generic_struct(symbol).cloned() {
         type_params = Some(generic.type_params);
+
         metadata = generic.metadata;
+
         fields = generic
             .field_names
             .iter()
@@ -407,7 +413,7 @@ pub fn build_constructor<'parser>(
     if let Some(type_params) = type_params {
         if !explicit_args.is_empty() && explicit_args.len() != type_params.len() {
             return Err(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
+                CompilationIssueCode::E0052,
                 "The generic structure does not receive that many type arguments.".into(),
                 "You should provide one type per generic parameter.".into(),
                 None,

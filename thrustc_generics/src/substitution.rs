@@ -17,10 +17,13 @@
 
 */
 
+#![allow(clippy::collapsible_match)]
+
 use thrustc_ast::{
     Ast, ModuleExpressionValues,
     ast_builtins::AstBuiltin,
     ast_logic_data::{ConstructorData, EnumData, PropertyData, StructureData},
+    traits::AstGetType,
 };
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
@@ -1008,4 +1011,365 @@ fn substitute_type_list(types: Vec<Type>, env: &TypeEnv) -> Vec<Type> {
         .into_iter()
         .map(|ty| self::substitute(&ty, env))
         .collect()
+}
+
+pub fn collect_unresolved_hints(node: &Ast<'_>, out: &mut std::collections::HashSet<String>) {
+    self::collect_unresolved_type_hints(node.get_any_type(), out);
+
+    match node {
+        Ast::Builtin { builtin, .. } => self::collect_unresolved_builtin_hints(builtin, out),
+        Ast::Call { generic_args, .. } => {
+            for ty in generic_args.iter() {
+                self::collect_unresolved_type_hints(ty, out);
+            }
+        }
+        Ast::Function {
+            parameters,
+            parameter_types,
+            body,
+            return_type,
+            ..
+        } => {
+            for ty in parameter_types.iter() {
+                self::collect_unresolved_type_hints(ty, out);
+            }
+
+            self::collect_unresolved_type_hints(return_type, out);
+
+            for parameter in parameters.iter() {
+                self::collect_unresolved_ast_hints(parameter, out);
+            }
+
+            if let Some(body) = body {
+                self::collect_unresolved_ast_hints(body, out);
+            }
+        }
+        _ => (),
+    }
+}
+
+fn collect_unresolved_ast_hints(node: &Ast<'_>, out: &mut std::collections::HashSet<String>) {
+    self::collect_unresolved_type_hints(node.get_any_type(), out);
+
+    match node {
+        Ast::Builtin { builtin, .. } => self::collect_unresolved_builtin_hints(builtin, out),
+        Ast::Call {
+            args, generic_args, ..
+        } => {
+            for ty in generic_args.iter() {
+                self::collect_unresolved_type_hints(ty, out);
+            }
+            for arg in args.iter() {
+                self::collect_unresolved_ast_hints(arg, out);
+            }
+        }
+        Ast::FixedArray { items, .. } | Ast::Array { items, .. } => {
+            for item in items.iter() {
+                self::collect_unresolved_ast_hints(item, out);
+            }
+        }
+        Ast::Index { source, index, .. } => {
+            self::collect_unresolved_ast_hints(source, out);
+            self::collect_unresolved_ast_hints(index, out);
+        }
+        Ast::Struct { data, .. } => {
+            for (_, ty, _, _) in data.1.iter() {
+                self::collect_unresolved_type_hints(ty, out);
+            }
+        }
+        Ast::Constructor { data, .. } => {
+            for (_, expression, target_type, _) in data.iter() {
+                self::collect_unresolved_ast_hints(expression, out);
+                self::collect_unresolved_type_hints(target_type, out);
+            }
+        }
+        Ast::Property { source, data, .. } => {
+            self::collect_unresolved_ast_hints(source, out);
+
+            for (ty, (inner_ty, _)) in data.iter() {
+                self::collect_unresolved_type_hints(ty, out);
+                self::collect_unresolved_type_hints(inner_ty, out);
+            }
+        }
+        Ast::If {
+            condition,
+            then_branch,
+            else_if_branch,
+            else_branch,
+            ..
+        } => {
+            self::collect_unresolved_ast_hints(condition, out);
+            self::collect_unresolved_ast_hints(then_branch, out);
+            for branch in else_if_branch.iter() {
+                self::collect_unresolved_ast_hints(branch, out);
+            }
+            if let Some(else_branch) = else_branch {
+                self::collect_unresolved_ast_hints(else_branch, out);
+            }
+        }
+        Ast::Elif {
+            condition, block, ..
+        } => {
+            self::collect_unresolved_ast_hints(condition, out);
+            self::collect_unresolved_ast_hints(block, out);
+        }
+        Ast::Else { block, .. } => self::collect_unresolved_ast_hints(block, out),
+        Ast::For {
+            local,
+            condition,
+            actions,
+            block,
+            ..
+        } => {
+            self::collect_unresolved_ast_hints(local, out);
+            self::collect_unresolved_ast_hints(condition, out);
+            self::collect_unresolved_ast_hints(actions, out);
+            self::collect_unresolved_ast_hints(block, out);
+        }
+        Ast::While {
+            variable,
+            condition,
+            block,
+            ..
+        } => {
+            if let Some(variable) = variable {
+                self::collect_unresolved_ast_hints(variable, out);
+            }
+            self::collect_unresolved_ast_hints(condition, out);
+            self::collect_unresolved_ast_hints(block, out);
+        }
+        Ast::Loop { block, .. } => self::collect_unresolved_ast_hints(block, out),
+        Ast::Block { nodes, post, .. } => {
+            for node in nodes.iter() {
+                self::collect_unresolved_ast_hints(node, out);
+            }
+            for node in post.iter() {
+                self::collect_unresolved_ast_hints(node, out);
+            }
+        }
+        Ast::Defer { node, .. } => self::collect_unresolved_ast_hints(node, out),
+        Ast::Enum { data, .. } => {
+            for (_, ty, expression) in data.iter() {
+                self::collect_unresolved_type_hints(ty, out);
+                self::collect_unresolved_ast_hints(expression, out);
+            }
+        }
+        Ast::EnumValue { value, .. } => self::collect_unresolved_ast_hints(value, out),
+        Ast::CompilerIntrinsic {
+            parameters,
+            parameters_types,
+            return_type,
+            ..
+        } => {
+            for parameter in parameters.iter() {
+                self::collect_unresolved_ast_hints(parameter, out);
+            }
+            for ty in parameters_types.iter() {
+                self::collect_unresolved_type_hints(ty, out);
+            }
+            self::collect_unresolved_type_hints(return_type, out);
+        }
+        Ast::CompilerIntrinsicParameter { .. } => (),
+        Ast::AssemblerFunction {
+            parameters,
+            parameters_types,
+            return_type,
+            ..
+        } => {
+            for parameter in parameters.iter() {
+                self::collect_unresolved_ast_hints(parameter, out);
+            }
+            for ty in parameters_types.iter() {
+                self::collect_unresolved_type_hints(ty, out);
+            }
+            self::collect_unresolved_type_hints(return_type, out);
+        }
+        Ast::AssemblerFunctionParameter { .. } => (),
+        Ast::Function {
+            parameters,
+            parameter_types,
+            body,
+            return_type,
+            ..
+        } => {
+            for ty in parameter_types.iter() {
+                self::collect_unresolved_type_hints(ty, out);
+            }
+
+            self::collect_unresolved_type_hints(return_type, out);
+
+            for parameter in parameters.iter() {
+                self::collect_unresolved_ast_hints(parameter, out);
+            }
+
+            if let Some(body) = body {
+                self::collect_unresolved_ast_hints(body, out);
+            }
+        }
+        Ast::FunctionParameter { .. } => (),
+        Ast::Return { expression, .. } => {
+            if let Some(expression) = expression {
+                self::collect_unresolved_ast_hints(expression, out);
+            }
+        }
+        Ast::Static { value, .. } => {
+            if let Some(value) = value {
+                self::collect_unresolved_ast_hints(value, out);
+            }
+        }
+        Ast::Const { value, .. } => self::collect_unresolved_ast_hints(value, out),
+        Ast::Var { value, .. } => {
+            if let Some(value) = value {
+                self::collect_unresolved_ast_hints(value, out);
+            }
+        }
+        Ast::Reference { .. } => (),
+        Ast::Mutation { source, value, .. } => {
+            self::collect_unresolved_ast_hints(source, out);
+
+            self::collect_unresolved_ast_hints(value, out);
+        }
+        Ast::Address {
+            source, indexes, ..
+        } => {
+            self::collect_unresolved_ast_hints(source, out);
+            for index in indexes.iter() {
+                self::collect_unresolved_ast_hints(index, out);
+            }
+        }
+        Ast::Write {
+            source,
+            write_value,
+            write_type,
+            ..
+        } => {
+            self::collect_unresolved_ast_hints(source, out);
+            self::collect_unresolved_ast_hints(write_value, out);
+            self::collect_unresolved_type_hints(write_type, out);
+        }
+        Ast::Load { source, .. } => self::collect_unresolved_ast_hints(source, out),
+        Ast::Deref { value, .. } => self::collect_unresolved_ast_hints(value, out),
+        Ast::As { from, cast, .. } => {
+            self::collect_unresolved_ast_hints(from, out);
+            self::collect_unresolved_type_hints(cast, out);
+        }
+        Ast::GetLocation { expr, .. } => self::collect_unresolved_ast_hints(expr, out),
+        Ast::ModuleExpression { values, .. } => match values {
+            ModuleExpressionValues::Call { arguments, .. } => {
+                for argument in arguments.iter() {
+                    self::collect_unresolved_ast_hints(argument, out);
+                }
+            }
+            ModuleExpressionValues::Reference { .. } => (),
+        },
+        Ast::IndirectCall {
+            function,
+            function_type,
+            args,
+            ..
+        } => {
+            self::collect_unresolved_ast_hints(function, out);
+            self::collect_unresolved_type_hints(function_type, out);
+
+            for arg in args.iter() {
+                self::collect_unresolved_ast_hints(arg, out);
+            }
+        }
+        Ast::AsmValue { args, .. } => {
+            for arg in args.iter() {
+                self::collect_unresolved_ast_hints(arg, out);
+            }
+        }
+        Ast::BinaryOp { left, right, .. } => {
+            self::collect_unresolved_ast_hints(left, out);
+            self::collect_unresolved_ast_hints(right, out);
+        }
+        Ast::UnaryOp { node, .. } => self::collect_unresolved_ast_hints(node, out),
+        Ast::Group { node, .. } => self::collect_unresolved_ast_hints(node, out),
+        Ast::Import { .. }
+        | Ast::ImportC { .. }
+        | Ast::Unreachable { .. }
+        | Ast::Invalid { .. }
+        | Ast::CString { .. }
+        | Ast::CNString { .. }
+        | Ast::Char { .. }
+        | Ast::Boolean { .. }
+        | Ast::Integer { .. }
+        | Ast::Float { .. }
+        | Ast::NullPtr { .. }
+        | Ast::GlobalAssembler { .. }
+        | Ast::Embedded { .. }
+        | Ast::Continue { .. }
+        | Ast::Break { .. }
+        | Ast::ContinueAll { .. }
+        | Ast::BreakAll { .. }
+        | Ast::CustomType { .. } => (),
+    }
+}
+
+fn collect_unresolved_builtin_hints(
+    builtin: &AstBuiltin<'_>,
+    out: &mut std::collections::HashSet<String>,
+) {
+    match builtin {
+        AstBuiltin::Halloc { of, .. }
+        | AstBuiltin::BitSizeOf { ty: of, .. }
+        | AstBuiltin::AbiSizeOf { ty: of, .. }
+        | AstBuiltin::AbiAlignOf { ty: of, .. }
+        | AstBuiltin::ArbitraryArg { ty: of, .. } => self::collect_unresolved_type_hints(of, out),
+        AstBuiltin::MemCpy { src, dst, size, .. }
+        | AstBuiltin::MemMove { src, dst, size, .. }
+        | AstBuiltin::MemSet {
+            dst: src,
+            new_size: dst,
+            size,
+            ..
+        } => {
+            self::collect_unresolved_ast_hints(src, out);
+            self::collect_unresolved_ast_hints(dst, out);
+            self::collect_unresolved_ast_hints(size, out);
+        }
+        AstBuiltin::ArbitraryArgs { .. } => (),
+    }
+}
+
+pub fn collect_unresolved_type_hints(ty: &Type, out: &mut std::collections::HashSet<String>) {
+    match ty {
+        Type::Unresolved { hint, .. } => {
+            out.insert(hint.clone());
+        }
+        Type::Const(inner, _) => self::collect_unresolved_type_hints(inner, out),
+        Type::Ptr { subtype, .. } => {
+            if let Some(inner) = subtype {
+                self::collect_unresolved_type_hints(inner, out);
+            }
+        }
+        Type::Struct { fields, .. } => {
+            for field in fields.iter() {
+                self::collect_unresolved_type_hints(field, out);
+            }
+        }
+        Type::FixedArray { base_type, .. } => self::collect_unresolved_type_hints(base_type, out),
+        Type::Array {
+            base_type,
+            infered_type,
+            ..
+        } => {
+            self::collect_unresolved_type_hints(base_type, out);
+            if let Some((inner, _)) = infered_type {
+                self::collect_unresolved_type_hints(inner, out);
+            }
+        }
+        Type::Fn {
+            return_type,
+            parameter_types,
+            ..
+        } => {
+            self::collect_unresolved_type_hints(return_type, out);
+            for parameter in parameter_types.iter() {
+                self::collect_unresolved_type_hints(parameter, out);
+            }
+        }
+        _ => (),
+    }
 }

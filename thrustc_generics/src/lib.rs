@@ -30,4 +30,6 @@ pub use self::pending::{
 };
 pub use self::scope::GenericScope;
 pub use self::solve::{SolveResult, TypeEnv, solve};
-pub use self::substitution::{substitute, substitute_ast};
+pub use self::substitution::{
+    collect_unresolved_hints, collect_unresolved_type_hints, substitute, substitute_ast,
+};

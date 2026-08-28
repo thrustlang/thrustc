@@ -21,7 +21,7 @@
 use ahash::AHashMap as HashMap;
 use thrustc_code_location::Span;
 
-pub type LinterStaticInfo = (Span, bool, bool, bool, Option<Span>, bool);
+pub type LinterStaticInfo = (Span, bool, bool, bool, bool);
 pub type LinterGlobalStatics<'linter> = HashMap<&'linter str, LinterStaticInfo>;
 pub type LinterLocalStatics<'linter> = Vec<HashMap<&'linter str, LinterStaticInfo>>;
 
@@ -42,7 +42,7 @@ pub type LinterFunctions<'linter> = HashMap<&'linter str, LinterFunctionInfo<'li
 pub type LinterIntrinsicInfo<'linter> = (Span, bool, bool);
 pub type LinterIntrinsics<'linter> = HashMap<&'linter str, LinterIntrinsicInfo<'linter>>;
 
-pub type LinterLocalInfo = (Span, bool, bool, bool, Option<Span>);
+pub type LinterLocalInfo = (Span, bool, bool, bool);
 pub type LinterLocals<'linter> = Vec<HashMap<&'linter str, LinterLocalInfo>>;
 
 pub type LinterEnumFieldInfo = (Span, bool);
@@ -61,5 +61,5 @@ pub type LinterStructFieldsInfo<'linter> = (
 );
 pub type LinterStructs<'linter> = HashMap<&'linter str, LinterStructFieldsInfo<'linter>>;
 
-pub type LinterFunctionParameterInfo = (Span, bool, bool, bool, Option<Span>);
+pub type LinterFunctionParameterInfo = (Span, bool, bool, bool);
 pub type LinterFunctionParameters<'linter> = HashMap<&'linter str, LinterFunctionParameterInfo>;

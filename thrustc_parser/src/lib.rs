@@ -599,6 +599,11 @@ impl<'parser> ParserContext<'parser> {
     }
 
     #[inline(always)]
+    pub fn add_warning_report(&mut self, warning: CompilationIssue) {
+        self.warnings.push(warning);
+    }
+
+    #[inline(always)]
     pub fn add_bug_report(&mut self, error: CompilationIssue) {
         self.bugs.push(error);
     }

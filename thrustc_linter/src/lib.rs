@@ -129,14 +129,10 @@ impl<'linter> Linter<'linter> {
                 ..
             } => {
                 self.symbols
-                    .new_local_static(name, (*span, false, metadata.is_mutable(), false, None, false));
+                    .new_local_static(name, (*span, false, metadata.is_mutable(), false, false));
 
                 if let Some(value) = value {
                     self.analyze_expr(value);
-                }
-
-                if value.is_some() {
-                    self::mark_as_written(self, name, *span, false);
                 }
             }
             Ast::Const {
@@ -146,10 +142,8 @@ impl<'linter> Linter<'linter> {
                 attributes,
                 ..
             } => {
-                self.symbols.new_global_constant(
-                    name,
-                    (*span, false, attributes.has_public_attribute()),
-                );
+                self.symbols
+                    .new_global_constant(name, (*span, false, attributes.has_public_attribute()));
                 self.analyze_expr(value);
             }
             Ast::Function {
@@ -219,14 +213,10 @@ impl<'linter> Linter<'linter> {
                 }
 
                 self.symbols
-                    .new_local(name, (*span, false, metadata.is_mutable(), false, None));
+                    .new_local(name, (*span, false, metadata.is_mutable(), false));
 
                 if let Some(value) = value {
                     self.analyze_expr(value);
-                }
-
-                if value.is_some() {
-                    self::mark_as_written(self, name, *span, false);
                 }
             }
             Ast::Enum { data, .. } => {
@@ -242,14 +232,10 @@ impl<'linter> Linter<'linter> {
                 ..
             } => {
                 self.symbols
-                    .new_local_static(name, (*span, false, metadata.is_mutable(), false, None, false));
+                    .new_local_static(name, (*span, false, metadata.is_mutable(), false, false));
 
                 if let Some(value) = value {
                     self.analyze_expr(value);
-                }
-
-                if value.is_some() {
-                    self::mark_as_written(self, name, *span, false);
                 }
             }
             Ast::Const {
@@ -388,10 +374,8 @@ impl<'linter> Linter<'linter> {
                 self.analyze_expr(condition);
                 self.analyze_stmt(then_branch);
 
-                {
-                    for node in else_if_branch.iter() {
-                        self.analyze_stmt(node);
-                    }
+                for node in else_if_branch.iter() {
+                    self.analyze_stmt(node);
                 }
 
                 if let Some(node) = else_branch {
@@ -442,8 +426,7 @@ impl<'linter> Linter<'linter> {
                 self.analyze_expr(value);
 
                 if let Ast::Reference { name, .. } = &**source {
-                    let compound: bool = self::expr_references(value, name);
-                    self::mark_as_mutated(self, name, *span, compound);
+                    self::mark_as_mutated(self, name);
                 } else if let Some(name) = self::lvalue_base_reference(source) {
                     self::mark_as_mutated_through(self, name);
                 }
@@ -511,7 +494,6 @@ impl Linter<'_> {
                         false,
                         metadata.is_mutable(),
                         false,
-                        None,
                         attributes.has_public_attribute(),
                     );
 
@@ -527,8 +509,10 @@ impl Linter<'_> {
                     attributes,
                     ..
                 } => {
-                    self.symbols
-                        .new_global_constant(name, (*span, false, attributes.has_public_attribute()));
+                    self.symbols.new_global_constant(
+                        name,
+                        (*span, false, attributes.has_public_attribute()),
+                    );
                 }
                 Ast::Struct {
                     name,
@@ -576,7 +560,12 @@ impl Linter<'_> {
 
                     self.symbols.new_enum(
                         name,
-                        (converted_fields, *span, false, attributes.has_public_attribute()),
+                        (
+                            converted_fields,
+                            *span,
+                            false,
+                            attributes.has_public_attribute(),
+                        ),
                     );
                 }
 
@@ -729,16 +718,6 @@ impl Linter<'_> {
                 if let Some(warning) = bad_name_warning(name, span, NameKind::Value) {
                     warnings.push(warning);
                 }
-
-                if used {
-                    if let Some(dead_span) = info.4 {
-                        warnings.push(CompilationIssue::Warning(
-                            CompilationIssueCode::W0027,
-                            format!("'{}' is assigned a value that is never read.", name),
-                            dead_span,
-                        ));
-                    }
-                }
             }
         }
 
@@ -788,16 +767,6 @@ impl Linter<'_> {
                 if let Some(warning) = bad_name_warning(name, span, NameKind::Value) {
                     warnings.push(warning);
                 }
-
-                if used {
-                    if let Some(dead_span) = info.4 {
-                        warnings.push(CompilationIssue::Warning(
-                            CompilationIssueCode::W0027,
-                            format!("'{}' is assigned a value that is never read.", name),
-                            dead_span,
-                        ));
-                    }
-                }
             }
         }
 
@@ -833,16 +802,6 @@ impl Linter<'_> {
             if let Some(warning) = bad_name_warning(name, span, NameKind::Value) {
                 warnings.push(warning);
             }
-
-            if used {
-                if let Some(dead_span) = info.4 {
-                    warnings.push(CompilationIssue::Warning(
-                        CompilationIssueCode::W0027,
-                        format!("'{}' is assigned a value that is never read.", name),
-                        dead_span,
-                    ));
-                }
-            }
         }
 
         self.add_bulk_warnings(warnings);
@@ -855,7 +814,7 @@ impl Linter<'_> {
             let span: Span = info.0;
             let used: bool = info.1;
 
-            if !used && !info.5 {
+            if !used && !info.4 {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0009,
                     format!("'{}' not used.", name),
@@ -877,16 +836,6 @@ impl Linter<'_> {
             if let Some(warning) = bad_name_warning(name, span, NameKind::Value) {
                 warnings.push(warning);
             }
-
-            if used {
-                if let Some(dead_span) = info.4 {
-                    warnings.push(CompilationIssue::Warning(
-                        CompilationIssueCode::W0027,
-                        format!("'{}' is assigned a value that is never read.", name),
-                        dead_span,
-                    ));
-                }
-            }
         }
 
         for (name, info) in self.symbols.get_all_global_constants().iter() {
@@ -906,7 +855,7 @@ impl Linter<'_> {
             }
         }
 
-        for (_, info) in self.symbols.get_all_functions().iter() {
+        for info in self.symbols.get_all_functions().values() {
             let span: Span = info.0;
             let used: bool = info.1;
             let display_name: &str = info.3;
@@ -1187,25 +1136,6 @@ fn expr_has_no_effect(node: &Ast) -> bool {
     }
 }
 
-fn expr_references(node: &Ast, name: &str) -> bool {
-    match node {
-        Ast::Reference { name: n, .. } => *n == name,
-        Ast::Group { node, .. } => self::expr_references(node, name),
-        Ast::As { from, .. } => self::expr_references(from, name),
-        Ast::Deref { value, .. } => self::expr_references(value, name),
-        Ast::BinaryOp { left, right, .. } => {
-            self::expr_references(left, name) || self::expr_references(right, name)
-        }
-        Ast::UnaryOp { node, .. } => self::expr_references(node, name),
-        Ast::Property { source, .. } => self::expr_references(source, name),
-        Ast::Index { source, index, .. } => {
-            self::expr_references(source, name) || self::expr_references(index, name)
-        }
-        Ast::Call { args, .. } => args.iter().any(|arg| self::expr_references(arg, name)),
-        _ => false,
-    }
-}
-
 fn lvalue_base_reference<'a>(source: &'a Ast<'a>) -> Option<&'a str> {
     match source {
         Ast::Reference { name, .. } => Some(name),
@@ -1285,16 +1215,6 @@ fn constant_truth_value(node: &Ast) -> Option<bool> {
     }
 }
 
-fn body_has_escape(
-    noreturn_functions: &ahash::AHashSet<&str>,
-    nodes: &[Ast],
-    depth: usize,
-) -> bool {
-    nodes
-        .iter()
-        .any(|node| self::node_has_escape(noreturn_functions, node, depth))
-}
-
 fn node_has_escape(noreturn_functions: &ahash::AHashSet<&str>, node: &Ast, depth: usize) -> bool {
     match node {
         Ast::Break { .. } | Ast::BreakAll { .. } => depth == 0,
@@ -1324,8 +1244,12 @@ fn node_has_escape(noreturn_functions: &ahash::AHashSet<&str>, node: &Ast, depth
         }
 
         Ast::Block { nodes, post, .. } => {
-            self::body_has_escape(noreturn_functions, nodes, depth)
-                || self::body_has_escape(noreturn_functions, post, depth)
+            nodes
+                .iter()
+                .any(|node| self::node_has_escape(noreturn_functions, node, depth))
+                || post
+                    .iter()
+                    .any(|node| self::node_has_escape(noreturn_functions, node, depth))
         }
         Ast::If {
             then_branch,
@@ -1349,54 +1273,8 @@ fn node_has_escape(noreturn_functions: &ahash::AHashSet<&str>, node: &Ast, depth
     }
 }
 
-pub fn mark_as_written<'linter>(
-    linter: &mut Linter<'linter>,
-    name: &'linter str,
-    write_span: Span,
-    compound: bool,
-) {
-    let dead_store_span: Option<Span> = {
-        let pending: Option<&mut Option<Span>> =
-            if let Some(static_var) = linter.symbols.get_static_info(name) {
-                Some(&mut static_var.4)
-            } else if let Some(local) = linter.symbols.get_local_info(name) {
-                Some(&mut local.4)
-            } else if let Some(parameter) = linter.symbols.get_parameter_info(name) {
-                Some(&mut parameter.4)
-            } else {
-                None
-            };
-
-        let Some(pending) = pending else {
-            return;
-        };
-
-        if compound {
-            *pending = Some(write_span);
-            return;
-        }
-
-        let old: Option<Span> = pending.take();
-        *pending = Some(write_span);
-        old
-    };
-
-    if let Some(dead_span) = dead_store_span {
-        linter.add_warning(CompilationIssue::Warning(
-            CompilationIssueCode::W0027,
-            "Value assigned but never read before being overwritten.".into(),
-            dead_span,
-        ));
-    }
-}
-
 #[inline]
-pub fn mark_as_mutated<'linter>(
-    linter: &mut Linter<'linter>,
-    name: &'linter str,
-    write_span: Span,
-    compound: bool,
-) {
+pub fn mark_as_mutated<'linter>(linter: &mut Linter<'linter>, name: &'linter str) {
     if let Some(static_var) = linter.symbols.get_static_info(name) {
         static_var.3 = true;
     } else if let Some(local) = linter.symbols.get_local_info(name) {
@@ -1404,8 +1282,6 @@ pub fn mark_as_mutated<'linter>(
     } else if let Some(parameter) = linter.symbols.get_parameter_info(name) {
         parameter.3 = true;
     }
-
-    self::mark_as_written(linter, name, write_span, compound);
 }
 
 #[inline]
@@ -1416,17 +1292,6 @@ pub fn mark_as_mutated_through<'linter>(linter: &mut Linter<'linter>, name: &'li
         local.3 = true;
     } else if let Some(parameter) = linter.symbols.get_parameter_info(name) {
         parameter.3 = true;
-    }
-}
-
-#[inline]
-pub fn mark_as_read<'linter>(linter: &mut Linter<'linter>, name: &'linter str) {
-    if let Some(static_var) = linter.symbols.get_static_info(name) {
-        static_var.4 = None;
-    } else if let Some(local) = linter.symbols.get_local_info(name) {
-        local.4 = None;
-    } else if let Some(parameter) = linter.symbols.get_parameter_info(name) {
-        parameter.4 = None;
     }
 }
 

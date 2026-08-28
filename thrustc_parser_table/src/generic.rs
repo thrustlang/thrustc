@@ -40,6 +40,7 @@ pub struct GenericStructEntry<'parser> {
     pub field_names: Vec<&'parser str>,
     pub field_types: Vec<Type>,
     pub metadata: StructTypeMetadata,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone)]

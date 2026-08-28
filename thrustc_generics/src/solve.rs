@@ -44,7 +44,7 @@ pub fn solve(
 ) -> Result<SolveResult, CompilationIssue> {
     if explicit_args.len() > type_params.len() {
         return Err(CompilationIssue::Error(
-            CompilationIssueCode::E0001,
+            CompilationIssueCode::E0049,
             "Too many generic type arguments.".into(),
             "You should provide at most one type per generic parameter.".into(),
             None,
@@ -54,7 +54,7 @@ pub fn solve(
 
     if !has_varargs && parameter_types.len() != argument_types.len() {
         return Err(CompilationIssue::Error(
-            CompilationIssueCode::E0001,
+            CompilationIssueCode::E0050,
             "The call does not match the generic signature.".into(),
             "The number of arguments must match the number of parameters.".into(),
             None,
@@ -75,7 +75,7 @@ pub fn solve(
     for parameter in type_params.iter() {
         if !env.contains_key(parameter) {
             return Err(CompilationIssue::Error(
-                CompilationIssueCode::E0041,
+                CompilationIssueCode::E0051,
                 format!("Could not infer the generic type parameter '{}'.", parameter),
                 "Provide it explicitly between brackets or make it appear in the arguments.".into(),
                 None,

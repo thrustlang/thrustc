@@ -155,6 +155,7 @@ pub fn build_structure<'parser>(
                     field_names: data.1.iter().map(|(field_name, ..)| *field_name).collect(),
                     field_types: data.1.iter().map(|(_, ty, ..)| ty.clone()).collect(),
                     metadata,
+                    span,
                 },
             );
         } else {
@@ -173,6 +174,7 @@ pub fn build_structure<'parser>(
                     field_names: data.1.iter().map(|(field_name, ..)| *field_name).collect(),
                     field_types: data.1.iter().map(|(_, ty, ..)| ty.clone()).collect(),
                     metadata,
+                    span,
                 },
             );
         }
