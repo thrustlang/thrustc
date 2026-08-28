@@ -419,7 +419,17 @@ fn ensure_instantiation<'parser>(
         )
         .collect();
 
-    let mut attributes: ThrustAttributes = self::filter_template_attributes(&entry.attributes);
+    let mut attributes: ThrustAttributes = entry
+        .attributes
+        .iter()
+        .filter(|attribute| {
+            !matches!(
+                attribute,
+                ThrustAttribute::Public(_) | ThrustAttribute::Extern(..)
+            )
+        })
+        .cloned()
+        .collect();
 
     attributes.push(ThrustAttribute::Public(entry.span));
     attributes.push(ThrustAttribute::Extern(key.to_string(), entry.span));
@@ -1355,18 +1365,5 @@ fn resolve_ast_list<'parser>(
     nodes
         .into_iter()
         .map(|node| self::resolve_ast(ctx, node, templates, memo, output))
-        .collect()
-}
-
-fn filter_template_attributes(attributes: &ThrustAttributes) -> ThrustAttributes {
-    attributes
-        .iter()
-        .filter(|attribute| {
-            !matches!(
-                attribute,
-                ThrustAttribute::Public(_) | ThrustAttribute::Extern(..)
-            )
-        })
-        .cloned()
         .collect()
 }

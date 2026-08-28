@@ -1,0 +1,13 @@
+/*
+ * E0055: duplicate type parameter error.
+ * The generic parameter T is declared twice in the bracket list,
+ * which must be rejected by the compiler.
+ */
+
+fn duplicate_param [T, T] (a: T) T {
+    return a;
+}
+
+fn main() s32 @public {
+    return duplicate_param[s32](1);
+}

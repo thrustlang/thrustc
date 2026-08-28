@@ -1,0 +1,16 @@
+/*
+ * W0032: unused type parameter warning in a generic struct.
+ * T is declared but never used in any field type, so W0032 is emitted.
+ */
+
+struct UnusedField [T] {
+    value: s32
+}
+
+fn main() s32 @public {
+    var u: UnusedField[s32] = new UnusedField[s32] {
+        value: 42
+    };
+
+    return u->value - 42;
+}

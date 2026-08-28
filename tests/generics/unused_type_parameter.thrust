@@ -1,0 +1,14 @@
+/*
+ * W0032: unused type parameter warning.
+ * The generic parameter T is declared but never used in the signature,
+ * fields, or body. This should emit W0032 but still compile and run.
+ */
+
+fn unused_param [T] (value: s32) s32 {
+    return value;
+}
+
+fn main() s32 @public {
+    if unused_param[s32](1) != 1 { return 1; }
+    return 0;
+}

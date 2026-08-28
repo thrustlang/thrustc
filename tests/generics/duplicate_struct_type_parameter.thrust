@@ -1,0 +1,12 @@
+/*
+ * E0055: duplicate type parameter error in a generic struct.
+ * The generic parameter T is declared twice in the bracket list.
+ */
+
+struct DuplicateStruct [T, T] {
+    value: T
+}
+
+fn main() s32 @public {
+    return 0;
+}

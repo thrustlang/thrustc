@@ -1,0 +1,14 @@
+/*
+ * W0032: unused type parameter warning - parameter used in the body.
+ * T is used as the type of a local variable, so no warning should be emitted.
+ */
+
+fn used_in_body [T] (value: s32) s32 {
+    var typed: T = value as T;
+    return typed as s32;
+}
+
+fn main() s32 @public {
+    if used_in_body[s32](10) != 10 { return 1; }
+    return 0;
+}

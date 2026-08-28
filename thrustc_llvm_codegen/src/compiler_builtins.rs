@@ -312,12 +312,11 @@ pub fn compile<'ctx>(
             let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, ty);
 
             let bit_size_bits: u64 = context.get_target_data().get_bit_size(&llvm_type);
-            let bit_size_bytes: u64 = bit_size_bits.saturating_div(8);
 
             let size: BasicValueEnum = context
                 .get_llvm_context()
                 .i64_type()
-                .const_int(bit_size_bytes, false)
+                .const_int(bit_size_bits, false)
                 .into();
 
             type_cast::try_smart_constant_cast(context, cast_type, &builtin_ty, size)
@@ -346,8 +345,9 @@ pub fn compile<'ctx>(
 
             type_cast::try_smart_cast(context, cast_type, ty, value, span)
         }
-        LLVMBuiltin::ArbitraryArgs { span } => {
-            context.get_mut_variatic_context().get_current_va_list(span).into()
-        }
+        LLVMBuiltin::ArbitraryArgs { span } => context
+            .get_mut_variatic_context()
+            .get_current_va_list(span)
+            .into(),
     }
 }
