@@ -272,7 +272,9 @@ fn parse_primary(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
                 (tk.get_lexeme().to_string(), tk.get_span())
             };
 
-            if ctx.check(TokenType::LParen) {
+            if ctx.check(TokenType::ColonColon) {
+                self::parse_qualified_constant_reference(ctx, &name, span)
+            } else if ctx.check(TokenType::LParen) {
                 self::parse_builtin_call(ctx, &name, span)
             } else {
                 self::parse_constant_reference(ctx, &name, span)
@@ -360,6 +362,34 @@ fn parse_constant_reference(
     let symbol: &Symbol = ctx
         .get_module()
         .search_symbol(name.to_string(), Variant::Constant)
+        .ok_or(())?;
+
+    let Signature::Constant {
+        kind,
+        value: Some(value),
+        ..
+    } = &symbol.signature
+    else {
+        return Err(());
+    };
+
+    Ok(value.to_ast(kind.clone(), span))
+}
+
+fn parse_qualified_constant_reference(
+    ctx: &mut ModuleParser<'_>,
+    module_name: &str,
+    span: Span,
+) -> Result<Ast<'static>, ()> {
+    ctx.consume(TokenType::ColonColon)?;
+
+    let name_tk: &Token = ctx.consume(TokenType::Identifier)?;
+    let name: String = name_tk.get_lexeme().to_string();
+
+    let symbol: &Symbol = ctx
+        .get_module()
+        .find_submodule(vec![module_name.to_string()])
+        .and_then(|module| module.search_symbol(name.clone(), Variant::Constant))
         .ok_or(())?;
 
     let Signature::Constant {

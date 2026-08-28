@@ -141,7 +141,7 @@ pub fn print_compiler_backend_bug(diagnostic: &Diagnostic, error: BackendError<'
     thrustc_logging::write(
         OutputIn::Stderr,
         &format!(
-            "{} - {}:{}\n",
+            "{}:{}:{}\n",
             format_args!(
                 "{}",
                 logging_type

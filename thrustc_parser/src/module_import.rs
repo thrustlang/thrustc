@@ -22,7 +22,10 @@
 
 use thrustc_ast::{
     Ast, NodeId,
-    ast_metadata::{FunctionParameterMetadata, ReferenceMetadata, ReferenceType, StaticMetadata},
+    ast_metadata::{
+        ConstantMetadata, FunctionParameterMetadata, ReferenceMetadata, ReferenceType,
+        StaticMetadata,
+    },
     traits::AstGetType,
 };
 use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
@@ -164,13 +167,11 @@ pub fn build_qualified_expression<'parser>(
         if ctx.get_symbols().has_global_constant(symbol) {
             self::check_qualified_collision(ctx, symbol, access, origin.as_ref(), span)?;
         } else {
+            let folded_value: Option<Ast> = value.as_ref().map(|v| v.to_ast(kind.clone(), span));
+
             let _ = ctx.get_mut_symbols().new_global_constant(
                 symbol,
-                (
-                    kind.clone(),
-                    attributes.clone(),
-                    value.as_ref().map(|v| v.to_ast(kind.clone(), span)),
-                ),
+                (kind.clone(), attributes.clone(), folded_value.clone()),
             );
 
             if let Some(path) = origin.as_ref() {
@@ -178,12 +179,27 @@ pub fn build_qualified_expression<'parser>(
                     .record_import_origin(symbol, path.clone());
             }
 
-            self::synthesize_global(
+            let Some(value_ast) = folded_value else {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0028,
+                    format!(
+                        "'{}::{}' cannot be resolved to a compile-time value.",
+                        access.join("::"),
+                        symbol
+                    ),
+                    "The referenced constant cannot be resolved to a compile-time value; it must be resolvable to a literal."
+                        .into(),
+                    None,
+                    span,
+                ));
+            };
+
+            self::synthesize_constant(
                 ctx,
                 symbol,
                 kind.clone(),
+                &value_ast,
                 attributes,
-                true,
                 modificators,
                 span,
             );
@@ -380,7 +396,7 @@ fn build_qualified_generic_call<'parser>(
     })
 }
 
-pub(crate) fn synthesize_only_import<'parser>(
+pub fn synthesize_only_import<'parser>(
     ctx: &mut ParserContext<'parser>,
     access: &[String],
     names: &[String],
@@ -485,24 +501,38 @@ pub(crate) fn synthesize_only_import<'parser>(
                     continue;
                 }
 
+                let folded_value: Option<Ast> =
+                    value.as_ref().map(|v| v.to_ast(kind.clone(), span));
+
                 let _ = ctx.get_mut_symbols().new_global_constant(
                     &symbol.name,
-                    (
-                        kind.clone(),
-                        attributes.clone(),
-                        value.as_ref().map(|v| v.to_ast(kind.clone(), span)),
-                    ),
+                    (kind.clone(), attributes.clone(), folded_value.clone()),
                 );
 
                 ctx.get_mut_symbols()
                     .record_import_origin(&symbol.name, origin.clone());
 
-                self::synthesize_global(
+                let Some(value_ast) = folded_value else {
+                    return Err(CompilationIssue::Error(
+                        CompilationIssueCode::E0028,
+                        format!(
+                            "'{}::{}' cannot be resolved to a compile-time value.",
+                            access.join("::"),
+                            symbol.name
+                        ),
+                        "The referenced constant cannot be resolved to a compile-time value; it must be resolvable to a literal."
+                            .into(),
+                        None,
+                        span,
+                    ));
+                };
+
+                self::synthesize_constant(
                     ctx,
                     &symbol.name,
                     kind.clone(),
+                    &value_ast,
                     attributes,
-                    true,
                     modificators,
                     span,
                 );
@@ -688,14 +718,6 @@ pub fn check_qualified_collision<'parser>(
     Ok(())
 }
 
-pub fn resolve_qualified_type<'parser>(
-    ctx: &ParserContext<'parser>,
-    access: &[String],
-    symbol: &str,
-) -> Option<thrustc_typesystem::Type> {
-    self::resolve_qualified_generic(ctx, access, symbol).map(|(kind, _)| kind)
-}
-
 pub fn resolve_qualified_generic<'parser>(
     ctx: &ParserContext<'parser>,
     access: &[String],
@@ -778,6 +800,43 @@ fn synthesize_global<'parser>(
         kind,
         value: None,
         attributes: attributes.clone(),
+        modificators: modificators.clone(),
+        metadata,
+        span,
+        id: NodeId::new(),
+    };
+
+    ctx.add_ast_node(declaration);
+}
+
+fn synthesize_constant<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    symbol: &'parser str,
+    kind: thrustc_typesystem::Type,
+    value: &Ast<'parser>,
+    attributes: &ThrustAttributes,
+    modificators: &Modificators,
+    span: Span,
+) {
+    let thread_local: bool = modificators.has_lazythread_modificator();
+    let is_volatile: bool = modificators.has_volatile_modificator();
+    let atomic_ord: Option<ThrustAtomicOrdering> = modificators.get_atomic_ordering_modificator();
+
+    let metadata: ConstantMetadata =
+        ConstantMetadata::new(true, thread_local, is_volatile, atomic_ord);
+
+    let private_attributes: ThrustAttributes = attributes
+        .iter()
+        .filter(|attribute| !attribute.is_public_attribute() && !attribute.is_extern_attribute())
+        .cloned()
+        .collect();
+
+    let declaration: Ast = Ast::Const {
+        name: symbol,
+        ascii_name: symbol,
+        kind,
+        value: Box::new(value.clone()),
+        attributes: private_attributes,
         modificators: modificators.clone(),
         metadata,
         span,

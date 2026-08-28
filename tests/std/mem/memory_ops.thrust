@@ -1,0 +1,35 @@
+/*
+ * Tests the memory manipulation functions of std::mem.
+ * Exercises setMemory, copyMemory, compareMemory, findByteInMemory
+ * and moveMemory on allocated blocks.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+
+fn main() s32 @public {
+    var src := mem::allocateMemory(16);
+    if src == nullptr { return 1; }
+
+    var dest := mem::allocateMemory(16);
+    if dest == nullptr { return 2; }
+
+    var written := mem::setMemory(src, 65, 8);
+    if written == nullptr { return 3; }
+
+    var copied := mem::copyMemory(dest, src, 8);
+    if copied == nullptr { return 4; }
+
+    if mem::compareMemory(dest, src, 8) != 0 { return 5; }
+
+    var found := mem::findByteInMemory(dest, 65, 8);
+    if found == nullptr { return 6; }
+
+    var moved := mem::moveMemory(dest, src, 8);
+    if moved == nullptr { return 7; }
+
+    mem::freeMemory(src);
+    mem::freeMemory(dest);
+
+    return 0;
+}

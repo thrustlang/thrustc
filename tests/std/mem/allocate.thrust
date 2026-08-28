@@ -1,0 +1,35 @@
+/*
+ * Tests the allocation-related functions of std::mem.
+ * Exercises allocateMemory, freeMemory, getUsableSize,
+ * allocateZeroedMemory, allocateAlignedMemory and reallocateMemory.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+
+fn main() s32 @public {
+    var block := mem::allocateMemory(64);
+    if block == nullptr { return 1; }
+
+    var usable := mem::getUsableSize(block);
+    if usable < 64 { return 2; }
+
+    mem::freeMemory(block);
+
+    var zeroed := mem::allocateZeroedMemory(4, 4);
+    if zeroed == nullptr { return 3; }
+    mem::freeMemory(zeroed);
+
+    var aligned := mem::allocateAlignedMemory(16, 32);
+    if aligned == nullptr { return 4; }
+    mem::freeMemory(aligned);
+
+    var grown := mem::allocateMemory(16);
+    if grown == nullptr { return 5; }
+
+    grown = mem::reallocateMemory(grown, 32);
+    if grown == nullptr { return 6; }
+    mem::freeMemory(grown);
+
+    return 0;
+}

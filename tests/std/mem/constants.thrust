@@ -1,0 +1,32 @@
+/*
+ * Tests the constants exported by std::mem, including negative values.
+ * Verifies that cross-module constant references resolve to their
+ * folded values at compile time.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+
+fn main() s32 @public {
+    if mem::PROT_READ != 0x1 { return 1; }
+    if mem::PROT_WRITE != 0x2 { return 2; }
+    if mem::PROT_EXEC != 0x4 { return 3; }
+    if mem::PROT_NONE != 0x0 { return 4; }
+
+    if mem::MAP_SHARED != 0x01 { return 5; }
+    if mem::MAP_PRIVATE != 0x02 { return 6; }
+    if mem::MAP_ANONYMOUS != 0x20 { return 7; }
+
+    if mem::MS_ASYNC != 1 { return 8; }
+
+    if mem::MADV_NORMAL != 0 { return 9; }
+    if mem::MADV_DONTNEED != 4 { return 10; }
+
+    if mem::MCL_CURRENT != 1 { return 11; }
+
+    if mem::M_TRIM_THRESHOLD != -1 { return 12; }
+    if mem::M_MMAP_MAX != -4 { return 13; }
+    if mem::M_PERTURB != -6 { return 14; }
+
+    return 0;
+}

@@ -1,9 +1,9 @@
-import std::io;
+import std::mem;
 
 fn main(argc: s32, argv: ptr[array[char]]) s32 @public
 {
 
-    io::print("Hello World!");
+    var wa: ptr = mem::allocateMemory(4);
     return 0;
     
 }

@@ -1,0 +1,29 @@
+/*
+ * Tests the page/mapping related functions of std::mem.
+ * Exercises getPageSize, mapMemory, protectMemory, adviseMemory
+ * and unmapMemory. Also references several constants of std::mem.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+
+fn main() s32 @public {
+    var pageSize := mem::getPageSize();
+    if pageSize <= 0 { return 1; }
+
+    var region := mem::mapMemory(
+        nullptr,
+        4096,
+        mem::PROT_READ | mem::PROT_WRITE,
+        mem::MAP_PRIVATE | mem::MAP_ANONYMOUS,
+        -1,
+        0
+    );
+    if region == nullptr { return 2; }
+
+    if mem::protectMemory(region, 4096, mem::PROT_READ) != 0 { return 3; }
+    if mem::adviseMemory(region, 4096, mem::MADV_DONTNEED) != 0 { return 4; }
+    if mem::unmapMemory(region, 4096) != 0 { return 5; }
+
+    return 0;
+}

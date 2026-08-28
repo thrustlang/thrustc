@@ -733,10 +733,6 @@ impl Linter<'_> {
                         span,
                     ));
                 }
-
-                if let Some(warning) = bad_name_warning(name, span, NameKind::Constant) {
-                    warnings.push(warning);
-                }
             }
         }
 
@@ -848,10 +844,6 @@ impl Linter<'_> {
                     format!("'{}' not used.", name),
                     span,
                 ));
-            }
-
-            if let Some(warning) = bad_name_warning(name, span, NameKind::Constant) {
-                warnings.push(warning);
             }
         }
 
