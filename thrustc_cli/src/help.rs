@@ -100,20 +100,11 @@ pub fn show_help() -> ! {
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stderr,
         &format!(
-            "{} {} {}\n",
+            "{} {} [{}] {}\n",
             "•".bold(),
-            "-start".custom_color((141, 141, 142)).bold(),
-            "Marks the start of arguments to the active external or built-in linking compiler.",
-        ),
-    );
-
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{} {} {}\n",
-            "•".bold(),
-            "-end".custom_color((141, 141, 142)).bold(),
-            "Marks the end of arguments to the active external or built-in linker compiler.",
+            "-cc-args".custom_color((141, 141, 142)).bold(),
+            "\"-lm;-lz\"",
+            "Specifies arguments to forward to the active external linking compiler (Clang or GCC). Arguments are separated by spaces or semicolons.",
         ),
     );
 
@@ -344,6 +335,17 @@ pub fn show_help() -> ! {
             "-jit-entry".custom_color((141, 141, 142)).bold(),
             "main",
             "Specify the entry point name for the JIT compiler.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "-jit-args".custom_color((141, 141, 142)).bold(),
+            "\"--foo;bar\"",
+            "Specifies the arguments passed to the program executed via the JIT compiler. Arguments are separated by spaces or semicolons.",
         ),
     );
 

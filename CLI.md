@@ -26,8 +26,7 @@ Linkage flags:
 
 • -link-with-clang [path/to/clang] Specifies the path for use of an external Clang for linking purpose.
 • -link-with-gcc [path/to/gcc] Specifies GNU Compiler Collection (GCC) for linking purpose.
-• -start Marks the start of arguments to the active external or built-in linking compiler.
-• -end Marks the end of arguments to the active external or built-in linker compiler.
+• -cc-args ["-lm;-lz"] Specifies arguments to forward to the active external linking compiler (Clang or GCC). Arguments are separated by spaces or semicolons.
 
 Compiler flags:
 
@@ -52,6 +51,7 @@ Compiler flags:
 • -jit-libc [path/to/libc.so] Specify the C runtime to link for code execution via the JIT compiler.
 • -jit-link [path/to/raylib.so] Specify, add, and link an external dynamic library for code execution via the JIT compiler.
 • -jit-entry [main] Specify the entry point name for the JIT compiler.
+• -jit-args ["--foo;bar"] Specifies the arguments passed to the program executed via the JIT compiler. Arguments are separated by spaces or semicolons.
 • -abi [system-v|nvidia-cuda] Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.
 • -mode [stable|unstable] Enable or disable compiler features to limit to stable features only or add support to unstable features.
 • -dbg Enable generation of debug information (DWARF).

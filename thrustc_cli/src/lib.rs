@@ -57,7 +57,6 @@ pub struct CommandLine {
     options: CompilerOptions,
     args: Vec<String>,
     current: usize,
-    position: CommandLinePosition,
     validation_cache: HashMap<String, bool>,
 }
 
@@ -94,20 +93,6 @@ impl ParsedArg {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub enum CommandLinePosition {
-    #[default]
-    ThrustCompiler,
-    External,
-}
-
-impl CommandLinePosition {
-    #[inline]
-    pub fn at_external(&self) -> bool {
-        matches!(self, CommandLinePosition::External)
-    }
-}
-
 impl CommandLine {
     pub fn parse(mut args: Vec<String>) -> CommandLine {
         let processed_args: Vec<String> = Self::preprocess_args(&mut args);
@@ -116,7 +101,6 @@ impl CommandLine {
             options: CompilerOptions::new(),
             args: processed_args,
             current: 0,
-            position: CommandLinePosition::default(),
             validation_cache: HashMap::with_capacity(u8::MAX as usize),
         };
 
@@ -131,13 +115,28 @@ impl CommandLine {
             args.remove(0);
         }
 
+        let mut preserve_next_as_raw: bool = false;
+
         for arg in args.iter() {
+            if preserve_next_as_raw {
+                processed.push(arg.clone());
+                preserve_next_as_raw = false;
+
+                continue;
+            }
+
             let parsed: ParsedArg = ParsedArg::new(arg);
+            let preserve_raw: bool =
+                parsed.value.is_none() && matches!(parsed.key.as_str(), "-cc-args" | "-jit-args");
 
             processed.push(parsed.key);
 
             if let Some(value) = parsed.value {
                 processed.push(value);
+            }
+
+            if preserve_raw {
+                preserve_next_as_raw = true;
             }
         }
 
@@ -230,8 +229,8 @@ impl CommandLine {
             "--explain" => {
                 self.advance();
 
-                let code: CompilationIssueCode =
-                    CompilationIssueCode::parse(self.peek()).unwrap_or_else(|_| {
+                let code: CompilationIssueCode = CompilationIssueCode::parse(self.peek())
+                    .unwrap_or_else(|_| {
                         self.report_error(&format!("Unknown issue code: '{}'.", self.peek()));
                     });
 
@@ -331,14 +330,21 @@ impl CommandLine {
                 self.advance();
             }
 
-            "-start" => {
+            "-jit-args" => {
                 self.advance();
-                self.position = CommandLinePosition::External;
-            }
+                self.validate_llvm_required(arg);
+                self.validate_jit_required(arg);
 
-            "-end" => {
+                let raw_args: String = self.peek().to_string();
+
                 self.advance();
-                self.position = CommandLinePosition::ThrustCompiler;
+
+                for argument in self.parse_cc_link_args(&raw_args) {
+                    self.options
+                        .get_mut_llvm_backend()
+                        .get_mut_jit_config()
+                        .add_argument(argument);
+                }
             }
 
             "-link-with-clang" => {
@@ -382,6 +388,21 @@ impl CommandLine {
                 compiler_config.set_use_gcc(true);
 
                 self.advance();
+            }
+
+            "-cc-args" => {
+                self.advance();
+                self.validate_aot_is_enable(arg);
+
+                let raw_args: String = self.peek().to_string();
+
+                self.advance();
+
+                for argument in self.parse_cc_link_args(&raw_args) {
+                    self.options
+                        .get_mut_linking_compilers_configuration()
+                        .add_argument(argument);
+                }
             }
 
             "-target" => {
@@ -690,12 +711,6 @@ impl CommandLine {
             }
 
             "-L" => {
-                if self.position.at_external() {
-                    self.advance();
-                    self.handle_unknown_argument(arg);
-                    return;
-                }
-
                 self.advance();
                 self.validate_llvm_required(arg);
 
@@ -710,12 +725,6 @@ impl CommandLine {
             }
 
             "-l" => {
-                if self.position.at_external() {
-                    self.advance();
-                    self.handle_unknown_argument(arg);
-                    return;
-                }
-
                 self.advance();
                 self.validate_llvm_required(arg);
 
@@ -740,12 +749,6 @@ impl CommandLine {
             }
 
             "-o" | "-output" => {
-                if self.position.at_external() {
-                    self.advance();
-                    self.handle_unknown_argument(arg);
-                    return;
-                }
-
                 self.advance();
                 self.validate_llvm_required(arg);
 
@@ -1265,24 +1268,7 @@ impl CommandLine {
             .add_compilation_unit(name, path, content, base_name);
     }
 
-    fn handle_unknown_argument(&mut self, arg: &str) {
-        if self.position.at_external() {
-            if self.options.get_llvm_backend().is_execution_in_jit() {
-                self.options
-                    .get_mut_llvm_backend()
-                    .get_mut_jit_config()
-                    .add_argument(arg.to_string());
-
-                return;
-            } else {
-                self.options
-                    .get_mut_linking_compilers_configuration()
-                    .add_argument(arg.to_string());
-
-                return;
-            }
-        }
-
+    fn handle_unknown_argument(&self, arg: &str) {
         thrustc_logging::print_critical_error(
             LoggingType::Error,
             &format!("Unknown argument: \"{}\".", arg),
@@ -1291,6 +1277,50 @@ impl CommandLine {
 }
 
 impl CommandLine {
+    fn parse_cc_link_args(&self, raw: &str) -> Vec<String> {
+        let mut args: Vec<String> = Vec::new();
+        let mut current_arg: String = String::new();
+        let mut chars = raw.chars().peekable();
+        let mut active_quote: Option<char> = None;
+
+        while let Some(ch) = chars.next() {
+            if let Some(quote) = active_quote {
+                if ch == quote {
+                    active_quote = None;
+                } else if ch == '\\' && quote == '"' {
+                    if let Some(escaped) = chars.next() {
+                        current_arg.push(escaped);
+                    }
+                } else {
+                    current_arg.push(ch);
+                }
+
+                continue;
+            }
+
+            match ch {
+                '\'' | '"' => active_quote = Some(ch),
+                '\\' => {
+                    if let Some(escaped) = chars.next() {
+                        current_arg.push(escaped);
+                    }
+                }
+                ch if ch.is_whitespace() || ch == ';' => {
+                    if !current_arg.is_empty() {
+                        args.push(std::mem::take(&mut current_arg));
+                    }
+                }
+                _ => current_arg.push(ch),
+            }
+        }
+
+        if !current_arg.is_empty() {
+            args.push(current_arg);
+        }
+
+        args
+    }
+
     fn parse_warnings_to_disable(&self, raw: &str) -> Vec<CompilationIssueCode> {
         let splitted: std::str::Split<'_, &str> = raw.split(";");
         let mut warnings: Vec<CompilationIssueCode> = Vec::new();
