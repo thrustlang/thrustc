@@ -1,0 +1,16 @@
+/*
+ * load s.field loads the pointer stored in a pointer-typed struct field.
+ */
+
+struct Box {
+    val: ptr[s32],
+}
+
+fn main() s32 @public {
+    var a: s32 = 7;
+    var b := new Box { val: ref a };
+
+    if (deref (load b.val as ptr[s32])) != 7 { return 1; }
+
+    return 0;
+}

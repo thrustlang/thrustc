@@ -32,7 +32,8 @@ use crate::{
     ast_logic_data::{ConstructorData, EnumData, PropertyData, StructureData},
     ast_metadata::{
         CastingMetadata, ConstantMetadata, DereferenceMetadata, FunctionParameterMetadata,
-        IndexMetadata, LocalMetadata, PropertyMetadata, ReferenceMetadata, StaticMetadata,
+        IndexMetadata, LoadMetadata, LocalMetadata, PropertyMetadata, ReferenceMetadata,
+        StaticMetadata,
     },
 };
 
@@ -412,6 +413,8 @@ pub enum Ast<'ast> {
     Load {
         source: std::boxed::Box<Ast<'ast>>,
         kind: Type,
+        modificators: Modificators,
+        metadata: LoadMetadata,
         span: Span,
         id: NodeId,
     },

@@ -258,6 +258,10 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
             linter.analyze_expr(value);
         }
 
+        Ast::Load { source, .. } => {
+            linter.analyze_expr(source);
+        }
+
         Ast::GetLocation { expr, .. } => {
             if let Some(name) = crate::lvalue_base_reference(expr) {
                 crate::mark_as_mutated_through(linter, name);

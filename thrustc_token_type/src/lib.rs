@@ -141,7 +141,6 @@ pub enum TokenType {
     // --- LLI ---
     Alloc,
     Address,
-    Load,
     Write,
 
     // --- Keywords ---
@@ -150,6 +149,7 @@ pub enum TokenType {
     Intrinsic,
     GlobalAsm,
     Deref,
+    Load,
     As,
     Static,
     New,

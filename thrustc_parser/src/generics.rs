@@ -1074,11 +1074,15 @@ fn resolve_children<'parser>(
         Ast::Load {
             source,
             kind,
+            modificators,
+            metadata,
             span,
             id,
         } => Ast::Load {
             source: std::boxed::Box::new(self::resolve_ast(ctx, *source, templates, memo, output)),
             kind,
+            modificators,
+            metadata,
             span,
             id,
         },

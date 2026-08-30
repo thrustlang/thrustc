@@ -1,0 +1,15 @@
+/*
+ * load p loads the pointer value stored in a pointer variable.
+ * load p -> ptr[s32] (the pointer stored in p), unlike deref p -> s32.
+ */
+
+fn main() s32 @public {
+    var a: s32 = 42;
+    var p: ptr[s32] = ref a;
+    var q: ptr[s32] = load p;
+
+    if q != ref a { return 1; }
+    if (deref (load p)) != 42 { return 2; }
+
+    return 0;
+}

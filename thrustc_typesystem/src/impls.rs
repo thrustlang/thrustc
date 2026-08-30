@@ -313,6 +313,19 @@ impl TypeExtensions for Type {
             }
         }
     }
+
+    #[inline]
+    fn get_type_pointer_load(&self) -> Type {
+        if self.is_ptr_like_type() {
+            self.clone()
+        } else {
+            Type::Ptr {
+                subtype: Some(self.clone().into()),
+                address_space: self.get_address_space(),
+                span: self.get_span(),
+            }
+        }
+    }
 }
 
 impl Hash for Type {

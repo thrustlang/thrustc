@@ -35,7 +35,7 @@ use thrustc_typesystem::{
 use crate::{
     ParserContext, builtins,
     expressions::{
-        self, array, asm, builtin_call, call, deref, enum_value, fixed_array, reference,
+        self, array, asm, builtin_call, call, deref, enum_value, fixed_array, load, reference,
         struct_constructor,
     },
     reinterpret,
@@ -52,6 +52,7 @@ pub fn lower_precedence<'parser>(
         TokenType::Fixed => fixed_array::build_fixed_array(ctx)?,
         TokenType::LBracket => array::build_array(ctx)?,
         TokenType::Deref => deref::build_dereference(ctx)?,
+        TokenType::Load => load::build_load(ctx)?,
 
         TokenType::Asm => asm::build_asm_code_block(ctx)?,
 

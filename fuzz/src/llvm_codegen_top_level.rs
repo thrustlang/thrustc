@@ -21,7 +21,7 @@ use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
 use thrustc_ast::ast_metadata::{
     CastingMetadata, ConstantMetadata, DereferenceMetadata, FunctionParameterMetadata,
-    LocalMetadata, ReferenceMetadata, ReferenceType, StaticMetadata,
+    LoadMetadata, LocalMetadata, ReferenceMetadata, ReferenceType, StaticMetadata,
 };
 use thrustc_ast::traits::{AstConstantExtensions, AstMemoryExtensions};
 use thrustc_typesystem::traits::TypePointerExtensions;
@@ -876,6 +876,8 @@ fn gen_expr<'ast>(
         7 if has_vars => Ok(Ast::Load {
             source: Box::new(gen_reference(u, scope)?),
             kind: u.arbitrary()?,
+            modificators: u.arbitrary()?,
+            metadata: LoadMetadata::new(false, None),
             span: u.arbitrary()?,
             id: NodeId::new(),
         }),

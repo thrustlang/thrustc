@@ -25,6 +25,7 @@ pub mod deref;
 pub mod enum_value;
 pub mod fixed_array;
 pub mod index;
+pub mod load;
 pub mod precedences;
 pub mod property;
 pub mod reference;

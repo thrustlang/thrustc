@@ -52,6 +52,7 @@ use crate::{
 
 use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeLocation;
+use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::{
     ConstantTypeExtensions, DereferenceExtensions, TypeIsExtensions, TypePointerExtensions,
@@ -1328,6 +1329,57 @@ pub fn compile_as_value<'ctx>(
 
                 type_cast::try_smart_cast(context, cast_type, kind, value, *span)
             }
+        }
+
+        // Compiles a pointer load operation (e.g., load p), which loads the
+        // pointer value stored at the memory location of the operand.
+        Ast::Load {
+            source,
+            kind,
+            metadata,
+            span,
+            ..
+        } => {
+            let is_in_memory: bool = source.is_memory_assigned_value().unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to determine whether the load operand is in memory!",
+                    source.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+            let loaded_value: BasicValueEnum = if is_in_memory {
+                context.add_codegen_location(CodeGenLocation::LValue);
+                let address: BasicValueEnum = self::compile_as_ptr_value(context, source, None);
+                context.pop_current_codegen_location();
+
+                if address.is_pointer_value() {
+                    let load_metadata: thrustc_ast::ast_metadata::LLVMLoadMetadata =
+                        metadata.get_llvm_metadata();
+
+                    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
+                        atomic_volatile: load_metadata.volatile,
+                        atomic_ord: load_metadata.atomic_ord.map(|ord| ord.to_llvm()),
+                    };
+
+                    context.push_atomic_modificators(atomic_config);
+
+                    let loaded: BasicValueEnum =
+                        memory::load_pointer(context, address.into_pointer_value(), *span);
+
+                    context.pop_atomic_modificators();
+
+                    loaded
+                } else {
+                    address
+                }
+            } else {
+                self::compile_as_value(context, source, Some(kind))
+            };
+
+            type_cast::try_smart_cast(context, cast_type, kind, loaded_value, *span)
         }
 
         // Array Operations

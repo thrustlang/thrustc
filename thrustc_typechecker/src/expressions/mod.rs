@@ -607,6 +607,33 @@ pub fn validate_node<'type_checker>(
 
             Ok(())
         }
+        Ast::Load { source, kind, .. } => {
+            let source_type: &Type = source.get_value_type()?;
+
+            typechecker.analyze_expr(source)?;
+
+            if source_type.contains_void_type() || source_type.is_void_type() {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    "Cannot use 'void' as a value.".into(),
+                    "You should remove whatever type or value where void type belongs.".into(),
+                    None,
+                    source_type.get_span(),
+                ));
+            }
+
+            if kind.contains_void_type() || kind.is_void_type() {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    "Cannot use 'void' as a value.".into(),
+                    "You should remove whatever type or value where void type belongs.".into(),
+                    None,
+                    kind.get_span(),
+                ));
+            }
+
+            Ok(())
+        }
         Ast::As {
             from,
             cast: cast_type,

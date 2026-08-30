@@ -398,6 +398,9 @@ impl<'scoper> Scoper<'scoper> {
             Ast::Deref { value, .. } => {
                 self.analyze_local_node(value);
             }
+            Ast::Load { source, .. } => {
+                self.analyze_local_node(source);
+            }
             Ast::GetLocation { expr, .. } => {
                 self.analyze_local_node(expr);
             }

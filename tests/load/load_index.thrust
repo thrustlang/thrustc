@@ -1,0 +1,17 @@
+/*
+ * load arr[i] loads the pointer stored at the indexed slot. Under the current
+ * type rule (kind = get_type_ref) the loaded value keeps the GEP pointer type.
+ */
+
+fn main() s32 @public {
+    var a: s32 = 10;
+    var b: s32 = 20;
+    var c: s32 = 30;
+
+    var arr: array[ptr[s32]; 3] = fixed[ref a, ref b, ref c];
+    var p: ptr[ptr[s32]] = load arr[1];
+
+    if p != ref b { return 1; }
+
+    return 0;
+}

@@ -685,11 +685,15 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
         Ast::Load {
             source,
             kind,
+            modificators,
+            metadata,
             span,
             id,
         } => Ast::Load {
             source: std::boxed::Box::new(self::substitute_ast(*source, env)),
             kind: self::substitute(&kind, env),
+            modificators,
+            metadata,
             span,
             id,
         },

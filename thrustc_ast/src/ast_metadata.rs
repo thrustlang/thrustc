@@ -290,6 +290,38 @@ impl DereferenceMetadata {
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
+#[derive(Debug, Clone, Copy, Default, Serialize)]
+pub struct LoadMetadata {
+    llvm_metadata: LLVMLoadMetadata,
+}
+
+#[cfg_attr(feature = "fuzz", derive(Arbitrary))]
+#[derive(Debug, Clone, Copy, Default, Serialize)]
+pub struct LLVMLoadMetadata {
+    pub volatile: bool,
+    pub atomic_ord: Option<ThrustAtomicOrdering>,
+}
+
+impl LoadMetadata {
+    #[inline]
+    pub fn new(is_volatile: bool, atomic_ord: Option<ThrustAtomicOrdering>) -> Self {
+        Self {
+            llvm_metadata: LLVMLoadMetadata {
+                volatile: is_volatile,
+                atomic_ord,
+            },
+        }
+    }
+}
+
+impl LoadMetadata {
+    #[inline]
+    pub fn get_llvm_metadata(&self) -> LLVMLoadMetadata {
+        self.llvm_metadata
+    }
+}
+
+#[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct LocalMetadata {
     is_unitialized: bool,

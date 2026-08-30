@@ -1114,6 +1114,7 @@ fn expr_has_no_effect(node: &Ast) -> bool {
         Ast::Group { node, .. } => self::expr_has_no_effect(node),
         Ast::As { from, .. } => self::expr_has_no_effect(from),
         Ast::Deref { value, .. } => self::expr_has_no_effect(value),
+        Ast::Load { source, .. } => self::expr_has_no_effect(source),
 
         Ast::BinaryOp { left, right, .. } => {
             self::expr_has_no_effect(left) && self::expr_has_no_effect(right)

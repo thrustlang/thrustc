@@ -56,6 +56,7 @@ pub trait IndexExtensions {
 pub trait TypeExtensions {
     fn get_type_with_depth(&self, base_depth: u64) -> &Type;
     fn get_type_ref(&self) -> Type;
+    fn get_type_pointer_load(&self) -> Type;
 
     fn get_address_space(&self) -> Option<u16>;
 

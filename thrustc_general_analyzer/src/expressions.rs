@@ -120,6 +120,36 @@ pub fn validate_node<'analyzer>(
             Ok(())
         }
 
+        Ast::Load { source, .. } => {
+            let source_type: &Type = source.get_any_type();
+
+            if source.is_reference() && !source.is_memory_assigned_value()? {
+                analyzer.add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0007,
+                    "An reference with memory address was expected.".into(),
+                    "You should try to allocate it and pass it as a direct reference.".into(),
+                    None,
+                    source.get_span(),
+                ));
+            }
+
+            if (!source.is_memory_assigned_value()? || !source.is_reference())
+                && source_type.is_value()
+            {
+                analyzer.add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0008,
+                    "An value with memory address was expected.".into(),
+                    "You should try to allocate it and pass it as a direct reference.".into(),
+                    None,
+                    source.get_span(),
+                ));
+            }
+
+            analyzer.analyze_expr(source)?;
+
+            Ok(())
+        }
+
         Ast::Property { source, .. } => {
             analyzer.analyze_expr(source)?;
             Ok(())
