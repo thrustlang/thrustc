@@ -16,11 +16,8 @@
 */
 
 use arbitrary::Unstructured;
-use thrustc_ast::ast_metadata::{
-    CastingMetadata, ConstantMetadata, DereferenceMetadata, FunctionParameterMetadata,
-    LocalMetadata, ReferenceMetadata, ReferenceType, StaticMetadata,
-};
-use thrustc_ast::traits::{AstConstantExtensions, AstMemoryExtensions};
+use thrustc_ast::ast_metadata::{CastingMetadata, DereferenceMetadata, ReferenceMetadata, ReferenceType};
+use thrustc_ast::traits::{AstConstantExtensions, AstGetType, AstMemoryExtensions};
 use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
 use thrustc_token_type::TokenType;
@@ -77,6 +74,7 @@ struct ScopedVar<'ast> {
     name: &'ast str,
     kind: Type,
     reference_type: ReferenceType,
+    is_unitialized: bool,
 }
 
 #[derive(Default)]
@@ -93,12 +91,19 @@ impl<'ast> ScopeStack<'ast> {
         self.frames.pop();
     }
 
-    fn declare(&mut self, name: &'ast str, kind: Type, reference_type: ReferenceType) {
+    fn declare(
+        &mut self,
+        name: &'ast str,
+        kind: Type,
+        reference_type: ReferenceType,
+        is_unitialized: bool,
+    ) {
         if let Some(frame) = self.frames.last_mut() {
             frame.push(ScopedVar {
                 name,
                 kind,
                 reference_type,
+                is_unitialized,
             });
         }
     }
@@ -194,7 +199,7 @@ fn gen_function<'ast>(
 
         let kind: Type = self::gen_scalar_type(u)?;
 
-        scope.declare(name, kind.clone(), ReferenceType::Parameter);
+        scope.declare(name, kind.clone(), ReferenceType::Parameter, false);
 
         parameter_types.push(kind.clone());
 
@@ -203,7 +208,7 @@ fn gen_function<'ast>(
             ascii_name: name.to_string(),
             kind: kind.clone(),
             position: i as u32,
-            metadata: FunctionParameterMetadata::new(kind.is_ptr_like_type()),
+            metadata: crate::parser_decisions::function_parameter_metadata(&kind),
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
@@ -269,6 +274,7 @@ fn gen_function_body<'ast>(
             0,
             fn_name,
             param_types,
+            return_type,
         )?);
     }
 
@@ -299,7 +305,7 @@ fn gen_function_body<'ast>(
     let mut post: Vec<Ast<'_>> = Vec::new();
 
     if cfg.allow_defer && u.arbitrary()? {
-        post.push(self::gen_defer(u, scope, cfg, depth, fn_name, param_types)?);
+        post.push(self::gen_defer(u, scope, cfg, depth, fn_name, param_types, return_type)?);
     }
 
     scope.pop();
@@ -307,7 +313,9 @@ fn gen_function_body<'ast>(
     Ok(Ast::Block {
         nodes,
         post,
-        kind: return_type.clone(),
+        kind: Type::Void {
+            span: u.arbitrary()?,
+        },
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -322,6 +330,7 @@ fn gen_block<'ast>(
     is_loop_body: bool,
     fn_name: &'ast str,
     param_types: &[Type],
+    return_type: &Type,
 ) -> arbitrary::Result<Ast<'ast>> {
     scope.push();
 
@@ -338,6 +347,7 @@ fn gen_block<'ast>(
             loop_depth,
             fn_name,
             param_types,
+            return_type,
         )?);
     }
 
@@ -366,6 +376,7 @@ fn gen_stmt<'ast>(
     loop_depth: usize,
     fn_name: &'ast str,
     param_types: &[Type],
+    return_type: &Type,
 ) -> arbitrary::Result<Ast<'ast>> {
     if depth == 0 {
         return if u.arbitrary()? {
@@ -418,6 +429,7 @@ fn gen_stmt<'ast>(
             loop_depth,
             fn_name,
             param_types,
+            return_type,
         ),
         2 => self::gen_mutation(u, scope, cfg, depth.saturating_sub(1)),
         3 => self::gen_block(
@@ -429,6 +441,7 @@ fn gen_stmt<'ast>(
             false,
             fn_name,
             param_types,
+            return_type,
         ),
         4 => self::gen_while(
             u,
@@ -438,6 +451,7 @@ fn gen_stmt<'ast>(
             loop_depth,
             fn_name,
             param_types,
+            return_type,
         ),
         5 => self::gen_for(
             u,
@@ -447,6 +461,7 @@ fn gen_stmt<'ast>(
             loop_depth,
             fn_name,
             param_types,
+            return_type,
         ),
         6 => self::gen_loop(
             u,
@@ -456,11 +471,12 @@ fn gen_stmt<'ast>(
             loop_depth,
             fn_name,
             param_types,
+            return_type,
         ),
         7 => self::gen_static(u, scope, cfg),
         8 => self::gen_const(u, scope, cfg),
-        9 => self::gen_defer(u, scope, cfg, depth.saturating_sub(1), fn_name, param_types),
-        10 => self::gen_self_call(u, scope, cfg, depth.saturating_sub(1), fn_name, param_types),
+        9 => self::gen_defer(u, scope, cfg, depth.saturating_sub(1), fn_name, param_types, return_type),
+        10 => self::gen_self_call(u, scope, cfg, depth.saturating_sub(1), fn_name, param_types, return_type),
         _ => self::gen_expr_stmt(u, scope, cfg, depth.saturating_sub(1)),
     }
 }
@@ -483,9 +499,9 @@ fn gen_var<'ast>(
         None
     };
 
-    scope.declare(name, kind.clone(), ReferenceType::Local);
-
     let is_unitialized: bool = value.is_none();
+
+    scope.declare(name, kind.clone(), ReferenceType::Local, is_unitialized);
 
     Ok(Ast::Var {
         name,
@@ -494,7 +510,7 @@ fn gen_var<'ast>(
         value,
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: LocalMetadata::new(is_unitialized, true, false, None),
+        metadata: crate::parser_decisions::local_metadata(is_unitialized),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -517,7 +533,7 @@ fn gen_const<'ast>(
         &kind,
     )?);
 
-    scope.declare(name, kind.clone(), ReferenceType::Constant);
+    scope.declare(name, kind.clone(), ReferenceType::Constant, false);
 
     Ok(Ast::Const {
         name,
@@ -526,7 +542,7 @@ fn gen_const<'ast>(
         value,
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: ConstantMetadata::new(false, false, false, None),
+        metadata: crate::parser_decisions::constant_metadata(),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -553,9 +569,9 @@ fn gen_static<'ast>(
         None
     };
 
-    scope.declare(name, kind.clone(), ReferenceType::Static);
-
     let is_unitialized: bool = value.is_none();
+
+    scope.declare(name, kind.clone(), ReferenceType::Static, is_unitialized);
 
     Ok(Ast::Static {
         name,
@@ -564,16 +580,7 @@ fn gen_static<'ast>(
         value,
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: StaticMetadata::new(
-            false,
-            true,
-            is_unitialized,
-            false,
-            false,
-            false,
-            None,
-            None,
-        ),
+        metadata: crate::parser_decisions::static_metadata(is_unitialized),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -587,6 +594,7 @@ fn gen_if<'ast>(
     loop_depth: usize,
     fn_name: &'ast str,
     param_types: &[Type],
+    return_type: &Type,
 ) -> arbitrary::Result<Ast<'ast>> {
     let bool_kind: Type = Type::Bool {
         span: u.arbitrary()?,
@@ -609,6 +617,7 @@ fn gen_if<'ast>(
         false,
         fn_name,
         param_types,
+        return_type,
     )?);
 
     let n_elif = u.int_in_range(0..=2usize)?;
@@ -637,6 +646,7 @@ fn gen_if<'ast>(
             false,
             fn_name,
             param_types,
+            return_type,
         )?);
 
         else_if_branch.push(Ast::Elif {
@@ -661,6 +671,7 @@ fn gen_if<'ast>(
                 false,
                 fn_name,
                 param_types,
+                return_type,
             )?),
             kind: Type::Void {
                 span: u.arbitrary()?,
@@ -693,6 +704,7 @@ fn gen_for<'ast>(
     loop_depth: usize,
     fn_name: &'ast str,
     param_types: &[Type],
+    return_type: &Type,
 ) -> arbitrary::Result<Ast<'ast>> {
     scope.push();
 
@@ -700,9 +712,11 @@ fn gen_for<'ast>(
 
     let loop_var_kind: Type = self::gen_integer_type(u)?;
 
+    let (init_kind, init_value) = crate::parser_decisions::literal::integer(u)?;
+
     let init_value = Box::new(Ast::Integer {
-        kind: loop_var_kind.clone(),
-        value: u.arbitrary()?,
+        kind: init_kind,
+        value: init_value,
         span: u.arbitrary()?,
         id: NodeId::new(),
     });
@@ -714,37 +728,57 @@ fn gen_for<'ast>(
         value: Some(init_value),
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: LocalMetadata::new(false, true, false, None),
+        metadata: crate::parser_decisions::local_metadata(false),
         span: u.arbitrary()?,
         id: NodeId::new(),
     });
+
+    let operator = self::relational_operator(u)?;
+
+    let (cond_kind, cond_value) = crate::parser_decisions::literal::integer(u)?;
+
+    let condition_kind = crate::parser_decisions::binary_op_kind(
+        u,
+        &loop_var_kind,
+        &cond_kind,
+        operator,
+    )?;
 
     let condition = Box::new(Ast::BinaryOp {
         left: Box::new(self::reference(loop_var_name, loop_var_kind.clone())),
-        operator: self::relational_operator(u)?,
+        operator,
         right: Box::new(Ast::Integer {
-            kind: loop_var_kind.clone(),
-            value: u.arbitrary()?,
+            kind: cond_kind,
+            value: cond_value,
             span: u.arbitrary()?,
             id: NodeId::new(),
         }),
-        kind: Type::Bool {
-            span: u.arbitrary()?,
-        },
+        kind: condition_kind,
         span: u.arbitrary()?,
         id: NodeId::new(),
     });
 
+    let action_operator = self::compound_integer_operator(u)?;
+
+    let (act_kind, act_value) = crate::parser_decisions::literal::integer(u)?;
+
+    let actions_kind = crate::parser_decisions::binary_op_kind(
+        u,
+        &loop_var_kind,
+        &act_kind,
+        action_operator,
+    )?;
+
     let actions = Box::new(Ast::BinaryOp {
         left: Box::new(self::reference(loop_var_name, loop_var_kind.clone())),
-        operator: self::compound_integer_operator(u)?,
+        operator: action_operator,
         right: Box::new(Ast::Integer {
-            kind: loop_var_kind.clone(),
-            value: u.arbitrary()?,
+            kind: act_kind,
+            value: act_value,
             span: u.arbitrary()?,
             id: NodeId::new(),
         }),
-        kind: loop_var_kind.clone(),
+        kind: actions_kind,
         span: u.arbitrary()?,
         id: NodeId::new(),
     });
@@ -758,6 +792,7 @@ fn gen_for<'ast>(
         true,
         fn_name,
         param_types,
+        return_type,
     )?);
 
     scope.pop();
@@ -783,6 +818,7 @@ fn gen_while<'ast>(
     loop_depth: usize,
     fn_name: &'ast str,
     param_types: &[Type],
+    return_type: &Type,
 ) -> arbitrary::Result<Ast<'ast>> {
     scope.push();
 
@@ -813,6 +849,7 @@ fn gen_while<'ast>(
         true,
         fn_name,
         param_types,
+        return_type,
     )?;
 
     if let Some(var_node) = variable_node {
@@ -843,6 +880,7 @@ fn gen_loop<'ast>(
     loop_depth: usize,
     fn_name: &'ast str,
     param_types: &[Type],
+    return_type: &Type,
 ) -> arbitrary::Result<Ast<'ast>> {
     Ok(Ast::Loop {
         block: Box::new(self::gen_block(
@@ -854,6 +892,7 @@ fn gen_loop<'ast>(
             true,
             fn_name,
             param_types,
+            return_type,
         )?),
         kind: Type::Void {
             span: u.arbitrary()?,
@@ -903,6 +942,7 @@ fn gen_defer<'ast>(
     depth: usize,
     fn_name: &'ast str,
     param_types: &[Type],
+    return_type: &Type,
 ) -> arbitrary::Result<Ast<'ast>> {
     Ok(Ast::Defer {
         node: Box::new(self::gen_stmt(
@@ -913,6 +953,7 @@ fn gen_defer<'ast>(
             0,
             fn_name,
             param_types,
+            return_type,
         )?),
         kind: Type::Void {
             span: u.arbitrary()?,
@@ -938,12 +979,14 @@ fn gen_mutation<'ast>(
         source: Box::new(Ast::Reference {
             name: picked.name,
             kind: kind.clone(),
-            metadata: self::reference_metadata_for(&picked, true),
+            metadata: self::reference_metadata_for(&picked),
             span: u.arbitrary()?,
             id: NodeId::new(),
         }),
         value: Box::new(self::gen_expr_of_type(u, scope, cfg, depth, &kind)?),
-        kind: kind.clone(),
+        kind: Type::Void {
+            span: u.arbitrary()?,
+        },
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -956,6 +999,7 @@ fn gen_self_call<'ast>(
     depth: usize,
     fn_name: &'ast str,
     param_types: &[Type],
+    return_type: &Type,
 ) -> arbitrary::Result<Ast<'ast>> {
     let mut args: Vec<Ast<'_>> = Vec::with_capacity(param_types.len());
 
@@ -967,7 +1011,7 @@ fn gen_self_call<'ast>(
         name: fn_name.to_string(),
         args,
         generic_args: Vec::with_capacity(0),
-        kind: self::gen_scalar_type(u)?,
+        kind: return_type.clone(),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -1027,12 +1071,20 @@ fn gen_expr_of_type<'ast>(
         3 => self::gen_unary_of_type(u, scope, cfg, depth - 1, target)
             .map(|opt| opt.unwrap_or_else(|| self::gen_expr_leaf(u, target).unwrap())),
         4 => self::gen_cast_of_type(u, scope, cfg, depth - 1, target),
-        5 => Ok(Ast::Group {
-            node: Box::new(self::gen_expr_of_type(u, scope, cfg, depth - 1, target)?),
-            kind: target.clone(),
-            span: u.arbitrary()?,
-            id: NodeId::new(),
-        }),
+        5 => {
+            let node = self::gen_expr_of_type(u, scope, cfg, depth - 1, target)?;
+            let kind = node
+                .get_value_type()
+                .map_err(|_| arbitrary::Error::IncorrectFormat)?
+                .clone();
+
+            Ok(Ast::Group {
+                node: Box::new(node),
+                kind,
+                span: u.arbitrary()?,
+                id: NodeId::new(),
+            })
+        }
         6 if has_ptr => self::gen_deref_of_type(u, scope, target)
             .map(|opt| opt.unwrap_or_else(|| self::gen_expr_leaf(u, target).unwrap())),
         7 if has_matching_ref => self::gen_reference_of_type(u, scope, target),
@@ -1066,7 +1118,7 @@ fn gen_const_expr_of_type<'ast>(
         if u.arbitrary()? {
             return Ok(Ast::Boolean {
                 kind: target.clone(),
-                value: u.arbitrary()?,
+                value: crate::parser_decisions::literal::boolean(u)?,
                 span: u.arbitrary()?,
                 id: NodeId::new(),
             });
@@ -1074,23 +1126,35 @@ fn gen_const_expr_of_type<'ast>(
 
         let operator = self::logical_operator(u)?;
 
+        let left = self::gen_const_expr_of_type(
+            u,
+            scope,
+            cfg,
+            depth.saturating_sub(1),
+            &bool_kind,
+        )?;
+        let right = self::gen_const_expr_of_type(
+            u,
+            scope,
+            cfg,
+            depth.saturating_sub(1),
+            &bool_kind,
+        )?;
+
+        let left_type = left
+            .get_value_type()
+            .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+        let right_type = right
+            .get_value_type()
+            .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+
+        let kind = crate::parser_decisions::binary_op_kind(u, left_type, right_type, operator)?;
+
         return Ok(Ast::BinaryOp {
-            left: Box::new(self::gen_const_expr_of_type(
-                u,
-                scope,
-                cfg,
-                depth.saturating_sub(1),
-                &bool_kind,
-            )?),
+            left: Box::new(left),
             operator,
-            right: Box::new(self::gen_const_expr_of_type(
-                u,
-                scope,
-                cfg,
-                depth.saturating_sub(1),
-                &bool_kind,
-            )?),
-            kind: target.clone(),
+            right: Box::new(right),
+            kind,
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
@@ -1109,23 +1173,35 @@ fn gen_const_expr_of_type<'ast>(
                 self::const_integer_operator(u)?
             };
 
+            let left = self::gen_const_expr_of_type(
+                u,
+                scope,
+                cfg,
+                depth.saturating_sub(1),
+                target,
+            )?;
+            let right = self::gen_const_expr_of_type(
+                u,
+                scope,
+                cfg,
+                depth.saturating_sub(1),
+                target,
+            )?;
+
+            let left_type = left
+                .get_value_type()
+                .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+            let right_type = right
+                .get_value_type()
+                .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+
+            let kind = crate::parser_decisions::binary_op_kind(u, left_type, right_type, operator)?;
+
             Ok(Ast::BinaryOp {
-                left: Box::new(self::gen_const_expr_of_type(
-                    u,
-                    scope,
-                    cfg,
-                    depth.saturating_sub(1),
-                    target,
-                )?),
+                left: Box::new(left),
                 operator,
-                right: Box::new(self::gen_const_expr_of_type(
-                    u,
-                    scope,
-                    cfg,
-                    depth.saturating_sub(1),
-                    target,
-                )?),
-                kind: target.clone(),
+                right: Box::new(right),
+                kind,
                 span: u.arbitrary()?,
                 id: NodeId::new(),
             })
@@ -1143,33 +1219,48 @@ fn gen_const_expr_of_type<'ast>(
                 TokenType::Minus
             };
 
-            Ok(Ast::UnaryOp {
-                operator,
-                kind: target.clone(),
-                node: Box::new(self::gen_const_expr_of_type(
-                    u,
-                    scope,
-                    cfg,
-                    depth.saturating_sub(1),
-                    target,
-                )?),
-                before: false,
-                span: u.arbitrary()?,
-                id: NodeId::new(),
-            })
-        }
-        3 => Ok(Ast::Group {
-            node: Box::new(self::gen_const_expr_of_type(
+            let node = self::gen_const_expr_of_type(
                 u,
                 scope,
                 cfg,
                 depth.saturating_sub(1),
                 target,
-            )?),
-            kind: target.clone(),
-            span: u.arbitrary()?,
-            id: NodeId::new(),
-        }),
+            )?;
+            let operand_type = node
+                .get_value_type()
+                .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+
+            let kind = crate::parser_decisions::unary_op_kind(u, operator, operand_type)?;
+
+            Ok(Ast::UnaryOp {
+                operator,
+                kind,
+                node: Box::new(node),
+                before: false,
+                span: u.arbitrary()?,
+                id: NodeId::new(),
+            })
+        }
+        3 => {
+            let node = self::gen_const_expr_of_type(
+                u,
+                scope,
+                cfg,
+                depth.saturating_sub(1),
+                target,
+            )?;
+            let kind = node
+                .get_value_type()
+                .map_err(|_| arbitrary::Error::IncorrectFormat)?
+                .clone();
+
+            Ok(Ast::Group {
+                node: Box::new(node),
+                kind,
+                span: u.arbitrary()?,
+                id: NodeId::new(),
+            })
+        }
         4 => {
             let source: Type = self::cast_source_type(u, target)?;
 
@@ -1210,11 +1301,23 @@ fn gen_binary_of_type<'ast>(
         if u.arbitrary()? {
             let operator = self::logical_operator(u)?;
 
+            let left = self::gen_expr_of_type(u, scope, cfg, depth, &bool_kind)?;
+            let right = self::gen_expr_of_type(u, scope, cfg, depth, &bool_kind)?;
+
+            let left_type = left
+                .get_value_type()
+                .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+            let right_type = right
+                .get_value_type()
+                .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+
+            let kind = crate::parser_decisions::binary_op_kind(u, left_type, right_type, operator)?;
+
             return Ok(Ast::BinaryOp {
-                left: Box::new(self::gen_expr_of_type(u, scope, cfg, depth, &bool_kind)?),
+                left: Box::new(left),
                 operator,
-                right: Box::new(self::gen_expr_of_type(u, scope, cfg, depth, &bool_kind)?),
-                kind: target.clone(),
+                right: Box::new(right),
+                kind,
                 span: u.arbitrary()?,
                 id: NodeId::new(),
             });
@@ -1224,11 +1327,23 @@ fn gen_binary_of_type<'ast>(
 
         let operator = self::relational_operator(u)?;
 
+        let left = self::gen_expr_of_type(u, scope, cfg, depth, &operand_type)?;
+        let right = self::gen_expr_of_type(u, scope, cfg, depth, &operand_type)?;
+
+        let left_type = left
+            .get_value_type()
+            .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+        let right_type = right
+            .get_value_type()
+            .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+
+        let kind = crate::parser_decisions::binary_op_kind(u, left_type, right_type, operator)?;
+
         return Ok(Ast::BinaryOp {
-            left: Box::new(self::gen_expr_of_type(u, scope, cfg, depth, &operand_type)?),
+            left: Box::new(left),
             operator,
-            right: Box::new(self::gen_expr_of_type(u, scope, cfg, depth, &operand_type)?),
-            kind: target.clone(),
+            right: Box::new(right),
+            kind,
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
@@ -1240,11 +1355,23 @@ fn gen_binary_of_type<'ast>(
         self::integer_operator(u)?
     };
 
+    let left = self::gen_expr_of_type(u, scope, cfg, depth, target)?;
+    let right = self::gen_expr_of_type(u, scope, cfg, depth, target)?;
+
+    let left_type = left
+        .get_value_type()
+        .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+    let right_type = right
+        .get_value_type()
+        .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+
+    let kind = crate::parser_decisions::binary_op_kind(u, left_type, right_type, operator)?;
+
     Ok(Ast::BinaryOp {
-        left: Box::new(self::gen_expr_of_type(u, scope, cfg, depth, target)?),
+        left: Box::new(left),
         operator,
-        right: Box::new(self::gen_expr_of_type(u, scope, cfg, depth, target)?),
-        kind: target.clone(),
+        right: Box::new(right),
+        kind,
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -1273,10 +1400,17 @@ fn gen_unary_of_type<'ast>(
         return Ok(None);
     };
 
+    let node = self::gen_expr_of_type(u, scope, cfg, depth, target)?;
+    let operand_type = node
+        .get_value_type()
+        .map_err(|_| arbitrary::Error::IncorrectFormat)?;
+
+    let kind = crate::parser_decisions::unary_op_kind(u, operator, operand_type)?;
+
     Ok(Some(Ast::UnaryOp {
         operator,
-        kind: target.clone(),
-        node: Box::new(self::gen_expr_of_type(u, scope, cfg, depth, target)?),
+        kind,
+        node: Box::new(node),
         before: false,
         span: u.arbitrary()?,
         id: NodeId::new(),
@@ -1321,7 +1455,7 @@ fn gen_deref_of_type<'ast>(
         value: Box::new(Ast::Reference {
             name: ptr_var.name,
             kind: ptr_var.kind.clone(),
-            metadata: self::reference_metadata_for(&ptr_var, true),
+            metadata: self::reference_metadata_for(&ptr_var),
             span: u.arbitrary()?,
             id: NodeId::new(),
         }),
@@ -1356,41 +1490,33 @@ fn gen_reference_of_type<'ast>(
     Ok(Ast::Reference {
         name: picked.name,
         kind: picked.kind.clone(),
-        metadata: self::reference_metadata_for(&picked, true),
+        metadata: self::reference_metadata_for(&picked),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
 }
 
-fn reference_metadata_for(var: &ScopedVar<'_>, is_mutable: bool) -> ReferenceMetadata {
-    match var.reference_type {
-        ReferenceType::Parameter => ReferenceMetadata::new(
-            var.kind.is_ptr_like_type(),
-            is_mutable,
-            ReferenceType::Parameter,
-            false,
-        ),
-        ReferenceType::Static => ReferenceMetadata::new(true, is_mutable, ReferenceType::Static, false),
-        ReferenceType::Constant => {
-            ReferenceMetadata::new(true, false, ReferenceType::Constant, false)
-        }
-        _ => ReferenceMetadata::new(true, is_mutable, ReferenceType::Local, false),
-    }
+fn reference_metadata_for(var: &ScopedVar<'_>) -> ReferenceMetadata {
+    crate::parser_decisions::reference_metadata(&var.kind, var.reference_type, var.is_unitialized)
 }
 
 fn gen_expr_leaf<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrary::Result<Ast<'ast>> {
     if target.is_integer_type() {
+        let (kind, value) = crate::parser_decisions::literal::integer(u)?;
+
         return Ok(Ast::Integer {
-            kind: target.clone(),
-            value: u.arbitrary()?,
+            kind,
+            value,
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
     }
     if target.is_float_type() {
+        let (kind, value) = crate::parser_decisions::literal::floating_point(u)?;
+
         return Ok(Ast::Float {
-            kind: target.clone(),
-            value: u.arbitrary()?,
+            kind,
+            value,
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
@@ -1398,7 +1524,7 @@ fn gen_expr_leaf<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrary::
     if target.is_bool_type() {
         return Ok(Ast::Boolean {
             kind: target.clone(),
-            value: u.arbitrary()?,
+            value: crate::parser_decisions::literal::boolean(u)?,
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
@@ -1422,17 +1548,21 @@ fn gen_expr_leaf<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrary::
 
 fn gen_const_leaf<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrary::Result<Ast<'ast>> {
     if target.is_integer_type() {
+        let (kind, value) = crate::parser_decisions::literal::integer(u)?;
+
         return Ok(Ast::Integer {
-            kind: target.clone(),
-            value: u.arbitrary()?,
+            kind,
+            value,
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
     }
     if target.is_float_type() {
+        let (kind, value) = crate::parser_decisions::literal::floating_point(u)?;
+
         return Ok(Ast::Float {
-            kind: target.clone(),
-            value: u.arbitrary()?,
+            kind,
+            value,
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
@@ -1440,7 +1570,7 @@ fn gen_const_leaf<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrary:
     if target.is_bool_type() {
         return Ok(Ast::Boolean {
             kind: target.clone(),
-            value: u.arbitrary()?,
+            value: crate::parser_decisions::literal::boolean(u)?,
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
@@ -1619,8 +1749,8 @@ fn cast_source_type<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrar
 fn reference<'ast>(name: &'ast str, kind: Type) -> Ast<'ast> {
     Ast::Reference {
         name,
-        kind,
-        metadata: ReferenceMetadata::new(true, true, ReferenceType::Local, false),
+        kind: kind.clone(),
+        metadata: crate::parser_decisions::reference_metadata(&kind, ReferenceType::Local, false),
         span: thrustc_code_location::Span::nothing(),
         id: NodeId::new(),
     }

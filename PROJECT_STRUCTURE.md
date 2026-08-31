@@ -96,6 +96,9 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_typechecker`**  
   Main type checker with type inference for expressions (`expressions/`), operations (`operations/`), top-level declarations (`toplevel/`), metadata, and support utilities.
 
+- **`thrustc_generics`**  
+  Generic type resolution and substitution: parameter solving (`solve.rs`), type and AST substitution (`substitution.rs`), generic scope (`scope.rs`), pending instantiations (`pending.rs`).
+
 - **`thrustc_general_analyzer`**  
   General static analysis with context and expression visitors.
 
