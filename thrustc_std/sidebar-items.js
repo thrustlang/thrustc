@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["STD_ROOT_DIR_NAME","STD_VERSION_FILE_NAME"],"enum":["StdError"],"fn":["default_std_root","dump_dir_files","dump_version_std","embedded_differs","ensure_std_present","ensure_version_file","resolve_std_root","resolve_target_version","validate_version"],"static":["EMBEDDED_STD_DIR"]};

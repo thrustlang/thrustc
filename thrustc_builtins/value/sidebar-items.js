@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["BuiltinArgument","BuiltinValue"],"fn":["fold","fold_binary","fold_resolving","fold_unary"]};

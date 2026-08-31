@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["collect_unresolved_hints","collect_unresolved_type_hints","drain_pending","has_pending_for","has_pending_instantiations","instantiation_key","record_pending","solve","substitute","substitute_ast"],"mod":["hashing","pending","scope","solve","substitution"],"struct":["GenericScope","PendingInstantiation","SolveResult"],"type":["TypeEnv"]};

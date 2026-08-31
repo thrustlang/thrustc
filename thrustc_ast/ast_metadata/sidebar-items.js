@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ReferenceType"],"struct":["CastingMetadata","ConstantMetadata","DereferenceMetadata","FunctionParameterMetadata","IndexMetadata","LLVMConstantMetadata","LLVMDereferenceMetadata","LLVMLoadMetadata","LLVMLocalMetadata","LLVMStaticMetadata","LoadMetadata","LocalMetadata","PropertyMetadata","ReferenceMetadata","StaticMetadata"]};

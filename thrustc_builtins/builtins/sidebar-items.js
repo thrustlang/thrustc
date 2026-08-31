@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["register_default_builtins"],"mod":["alignof","compile_time","compiler","host","layout","location","predicates","sizeof","strings","target","typeinfo"]};

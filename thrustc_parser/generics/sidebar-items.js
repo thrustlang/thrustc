@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["collect_local_templates","emit_unused_type_parameter_warnings","ensure_instantiation","parse_type_parameters","resolve_ast","resolve_ast_list","resolve_builtin","resolve_children","resolve_constructor_data","resolve_enum_data","resolve_generics","resolve_module_expression_values"]};

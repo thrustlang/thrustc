@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Modificator"],"mod":["impls","traits"],"type":["Modificators"]};

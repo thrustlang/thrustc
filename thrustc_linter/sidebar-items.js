@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["NameKind"],"fn":["bad_name_warning","constant_condition_warning","constant_truth_value","expr_has_no_effect","is_lower_camel_case","is_upper_camel_case","is_upper_snake_case","lvalue_base_reference","mark_as_mutated","mark_as_mutated_through","mark_as_used","node_has_escape"],"mod":["expressions","table"],"struct":["Linter"]};

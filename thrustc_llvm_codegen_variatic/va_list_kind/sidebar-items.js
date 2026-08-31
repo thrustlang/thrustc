@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["VaListKind"],"fn":["build_va_list_llvm_type","resolve_va_list_kind"]};

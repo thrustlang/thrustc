@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CompilerFunctionVariant"],"fn":["compile_body","compile_top","emit_stack_protector_epilogue","emit_stack_protector_prologue"]};

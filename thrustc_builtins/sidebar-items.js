@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["default_registry"],"mod":["builtin_type","builtins","context","registry","traits","value"]};

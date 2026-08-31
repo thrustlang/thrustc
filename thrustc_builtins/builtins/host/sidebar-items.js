@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["host_endian","host_name","sysconf_value","unsupported"],"struct":["CpuCacheLineSize","CurrentTimestamp","HostArch","HostEndian","HostName","HostOsName","PageSize","ProcessorCount"]};

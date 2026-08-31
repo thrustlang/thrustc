@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["build_qualified_expression","build_qualified_generic_call","build_static_metadata","check_only_collision","check_qualified_collision","resolve_qualified_generic","resolve_signature","synthesize_constant","synthesize_function","synthesize_global","synthesize_only_import"]};

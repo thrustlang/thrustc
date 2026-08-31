@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":[["define_predicate_builtin",1]],"struct":["IsArray","IsBool","IsChar","IsConst","IsFixedArray","IsFloat","IsFunction","IsInteger","IsNumeric","IsPointer","IsSigned","IsStruct","IsUnsigned","IsVoid"]};

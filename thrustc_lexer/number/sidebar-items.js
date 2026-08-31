@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["I16_MAX","I16_MIN","I32_MAX","I32_MIN","I8_MAX","I8_MIN","U16_MAX","U32_MAX","U8_MAX"],"fn":["check_integer_format","check_integer_radix_format","lex"]};

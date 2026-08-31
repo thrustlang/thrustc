@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["ensure_exposed","parse_generic_parameters"],"mod":["attributes","constant","custom_type","expressions","function","import","modificators","reinterpret","static","structure","typegeneration"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["compile","compile_null_ptr"]};

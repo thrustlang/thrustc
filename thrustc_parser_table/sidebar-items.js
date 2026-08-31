@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["abort","generic","impls","traits"],"struct":["GenericCustomTypeEntry","GenericFunctionEntry","GenericStructEntry","SymbolTable"]};

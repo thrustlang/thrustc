@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["solve","unify"],"struct":["SolveResult"],"type":["TypeEnv"]};

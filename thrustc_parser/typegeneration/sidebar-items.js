@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["build_type","build_type_inner","check_fixed_array_size","parse_anonymous_function_type","parse_array_type","parse_constant_type","parse_generic_type_arguments","parse_memory_address_space","parse_pointer_type","resolve_builtin_type_or_unknown","resolve_constant_value"]};
