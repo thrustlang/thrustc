@@ -31,6 +31,7 @@ use inkwell::types::FunctionType;
 use thrustc_ast::Ast;
 use thrustc_llvm_abi::LLVMABIConfiguration;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::traits::DereferenceExtensions;
 use thrustc_typesystem::traits::TypeCodeLocation;
 use thrustc_typesystem::traits::TypeExtensions;
 use thrustc_typesystem::traits::TypeIsExtensions;
@@ -366,6 +367,38 @@ pub fn generate_dereference_type<'ctx>(
     }
 }
 
+#[inline]
+pub fn generate_pointer_arithmetic_type<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    kind: &Type,
+) -> BasicTypeEnum<'ctx> {
+    match kind {
+        Type::Const(subtype, ..) => self::generate_pointer_arithmetic_type(context, subtype),
+        Type::Array {
+            infered_type: Some((infered_type, _)),
+            ..
+        } => self::generate_type(context, infered_type),
+        Type::Array {
+            base_type: subtype, ..
+        } => self::generate_type(context, subtype),
+        Type::Ptr { subtype: Some(subtype), .. } => self::generate_type(context, subtype),
+
+        _ => self::generate_type(context, kind),
+    }
+}
+
+
+pub fn determinate_mutation_target_type(source: &Ast<'_>, source_type: &Type) -> Type {
+    if let Ast::Index { metadata, .. } = source {
+        if !metadata.is_deref() {
+            return source_type.dereference();
+        }
+    }
+
+    source_type.clone()
+}
+
+
 pub fn compile_as_dbg_type<'ctx>(
     context: &mut LLVMDebugContext<'_, 'ctx>,
     from_type: &Type,
@@ -411,7 +444,7 @@ pub fn compile_as_dbg_type<'ctx>(
             .create_basic_type(
                 format!("{}", from_type).trim(),
                 target_data.get_bit_size(&fp_ty),
-                0x00,
+                0x04,
                 DIFlagsConstants::PUBLIC,
             )
             .unwrap_or_else(|_| {
@@ -425,33 +458,49 @@ pub fn compile_as_dbg_type<'ctx>(
             })
             .as_type(),
 
-        BasicTypeEnum::IntType(int_ty) => context
-            .get_debug_builder()
-            .create_basic_type(
-                format!("{}", from_type).trim(),
-                target_data.get_bit_size(&int_ty),
-                0x00,
-                DIFlagsConstants::PUBLIC,
-            )
-            .unwrap_or_else(|_| {
-                abort::abort_codegen_dbg(
-                    context,
-                    &format!("Failed to compile '{}' as a debuggable type!", from_type),
-                    from_type.get_span(),
-                    PathBuf::from(file!()),
-                    line!(),
+        BasicTypeEnum::IntType(int_ty) => {
+            let encoding: u32 = self::dbg_type_encoding(from_type);
+
+            context
+                .get_debug_builder()
+                .create_basic_type(
+                    format!("{}", from_type).trim(),
+                    target_data.get_bit_size(&int_ty),
+                    encoding,
+                    DIFlagsConstants::PUBLIC,
                 )
-            })
-            .as_type(),
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen_dbg(
+                        context,
+                        &format!("Failed to compile '{}' as a debuggable type!", from_type),
+                        from_type.get_span(),
+                        PathBuf::from(file!()),
+                        line!(),
+                    )
+                })
+                .as_type()
+        }
 
         BasicTypeEnum::PointerType(pt_ty) => {
-            let inner_type: DIType = self::compile_as_dbg_type(context, from_type, pt_ty.into());
-            
+            let void_type: DIType = context
+                .get_debug_builder()
+                .create_basic_type("void", 8, 0x00, DIFlagsConstants::PUBLIC)
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen_dbg(
+                        context,
+                        &format!("Failed to compile '{}' as a debuggable type!", from_type),
+                        from_type.get_span(),
+                        PathBuf::from(file!()),
+                        line!(),
+                    )
+                })
+                .as_type();
+
             context
                 .get_debug_builder()
                 .create_pointer_type(
                     format!("{}", from_type).trim(),
-                    inner_type,
+                    void_type,
                     target_data.get_bit_size(&pt_ty),
                     target_data.get_abi_alignment(&pt_ty),
                     pt_ty.get_address_space(),
@@ -496,22 +545,18 @@ pub fn compile_as_dbg_type<'ctx>(
     }
 }
 
-#[inline]
-pub fn generate_pointer_arithmetic_type<'ctx>(
-    context: &mut LLVMCodeGenContext<'_, 'ctx>,
-    kind: &Type,
-) -> BasicTypeEnum<'ctx> {
-    match kind {
-        Type::Const(subtype, ..) => self::generate_pointer_arithmetic_type(context, subtype),
-        Type::Array {
-            infered_type: Some((infered_type, _)),
-            ..
-        } => self::generate_type(context, infered_type),
-        Type::Array {
-            base_type: subtype, ..
-        } => self::generate_type(context, subtype),
-        Type::Ptr { subtype: Some(subtype), .. } => self::generate_type(context, subtype),
 
-        _ => self::generate_type(context, kind),
+fn dbg_type_encoding(ty: &Type) -> u32 {
+    if ty.is_bool_type() {
+        0x02
+    } else if ty.is_char_type() {
+        0x08
+    } else if ty.is_unsigned_integer_type() {
+        0x07
+    } else if ty.is_signed_integer_type() {
+        0x05
+    } else {
+        0x07
     }
 }
+

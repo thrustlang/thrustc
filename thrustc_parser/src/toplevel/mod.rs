@@ -27,6 +27,7 @@ use crate::ParserContext;
 
 pub mod compiler_intrinsic;
 pub mod compiletime_conditional;
+pub mod directive;
 pub mod embedded_value;
 pub mod global_assembler;
 pub mod global_assembler_function;
@@ -60,6 +61,7 @@ pub fn parse<'parser>(ctx: &mut ParserContext<'parser>) -> Result<Ast<'parser>, 
         TokenType::GlobalAsm => Ok(global_assembler::build_global_assembler(ctx)?),
         TokenType::Import => Ok(import::build_import(ctx)?),
         TokenType::Embedded => Ok(embedded_value::build_embedded(ctx)?),
+        TokenType::Directive => Ok(directive::build_directive(ctx)?),
 
         _ => {
             let any: &Token = ctx.advance()?;

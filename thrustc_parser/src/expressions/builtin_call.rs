@@ -17,7 +17,8 @@
 
 */
 
-use thrustc_ast::Ast;
+use thrustc_ast::{Ast, NodeId};
+use thrustc_ast::ast_builtins::{AstBuiltin, DeferredBuiltinArgument};
 use thrustc_ast::traits::AstCodeLocation;
 use thrustc_builtins::BuiltinArgument;
 use thrustc_builtins::BuiltinFunctionSignature;
@@ -52,6 +53,9 @@ pub fn build_builtin_call<'parser>(
     let expected_parameters: usize = signature.get_parameter_count();
 
     let mut args: Vec<BuiltinArgument> = Vec::with_capacity(expected_parameters);
+    let mut deferred_arguments: Vec<DeferredBuiltinArgument<'parser>> =
+        Vec::with_capacity(expected_parameters);
+    let mut should_defer: bool = false;
     let mut index: usize = 0;
 
     loop {
@@ -59,35 +63,68 @@ pub fn build_builtin_call<'parser>(
             break;
         }
 
-        let argument: BuiltinArgument =
+        let (argument, deferred_argument): (BuiltinArgument, DeferredBuiltinArgument<'parser>) =
             if index < expected_parameters && signature.is_parameter_a_type(index) {
                 let ty: Type = typegeneration::build_type(ctx, true)?;
                 let argument_span: Span = ctx.previous().get_span();
 
-                BuiltinArgument::Type {
-                    ty,
-                    span: argument_span,
+                let mut hints: std::collections::HashSet<String> =
+                    std::collections::HashSet::with_capacity(u8::MAX as usize);
+                thrustc_generics::collect_unresolved_type_hints(&ty, &mut hints);
+
+                if !hints.is_empty() {
+                    should_defer = true;
                 }
+
+                (
+                    BuiltinArgument::Type {
+                        ty: ty.clone(),
+                        span: argument_span,
+                    },
+                    DeferredBuiltinArgument::Type {
+                        ty,
+                        span: argument_span,
+                    },
+                )
             } else {
                 let expr: Ast<'_> = expressions::parse_expr(ctx)?;
-                let value: thrustc_builtins::BuiltinValue = thrustc_builtins::value::fold(&expr)
-                    .ok_or_else(|| {
-                        CompilationIssue::Error(
+                let argument_span: Span = expr.get_span();
+
+                let argument: BuiltinArgument = match thrustc_builtins::value::fold(&expr) {
+                    Some(value) => BuiltinArgument::Value {
+                        value,
+                        span: argument_span,
+                    },
+                    None if self::contains_deferred_builtin(&expr) => {
+                        should_defer = true;
+
+                        BuiltinArgument::Value {
+                            value: thrustc_builtins::BuiltinValue::Void,
+                            span: argument_span,
+                        }
+                    }
+                    None => {
+                        return Err(CompilationIssue::Error(
                             CompilationIssueCode::E0006,
                             "The compiler builtin expects a constant argument.".into(),
                             "You should pass a constant value.".into(),
                             None,
-                            expr.get_span(),
-                        )
-                    })?;
+                            argument_span,
+                        ));
+                    }
+                };
 
-                BuiltinArgument::Value {
-                    value,
-                    span: expr.get_span(),
-                }
+                let deferred_argument = DeferredBuiltinArgument::Value {
+                    expression: std::boxed::Box::new(expr),
+                    span: argument_span,
+                };
+
+                (argument, deferred_argument)
             };
 
         args.push(argument);
+        deferred_arguments.push(deferred_argument);
+
         index = index.saturating_add(1);
 
         if ctx.check(TokenType::RParen) {
@@ -122,5 +159,34 @@ pub fn build_builtin_call<'parser>(
         return Ok(Ast::invalid_ast(span));
     }
 
+    if should_defer {
+        return Ok(Ast::Builtin {
+            builtin: AstBuiltin::DeferredCompileTime {
+                name,
+                arguments: deferred_arguments,
+                span,
+            },
+            kind: signature.return_type,
+            span,
+            id: NodeId::new(),
+        });
+    }
+
     ctx.evaluate_builtin(name, &args, span)
+}
+
+fn contains_deferred_builtin(node: &Ast<'_>) -> bool {
+    match node {
+        Ast::Builtin {
+            builtin: AstBuiltin::DeferredCompileTime { .. },
+            ..
+        } => true,
+        Ast::Group { node, .. } => self::contains_deferred_builtin(node),
+        Ast::BinaryOp { left, right, .. } => {
+            self::contains_deferred_builtin(left) || self::contains_deferred_builtin(right)
+        }
+        Ast::UnaryOp { node, .. } => self::contains_deferred_builtin(node),
+        Ast::As { from, .. } => self::contains_deferred_builtin(from),
+        _ => false,
+    }
 }

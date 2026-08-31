@@ -1,0 +1,12 @@
+/*
+ * File WITHOUT the directive: W0020 (mutable but never mutated) MUST appear.
+ * Returns 0 on success.
+ */
+
+fn main() s32 @public {
+    var x: s32 = 5;
+
+    if x != 5 { return 1; }
+
+    return 0;
+}

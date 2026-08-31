@@ -21,7 +21,7 @@
 
 use thrustc_ast::{
     Ast, ModuleExpressionValues,
-    ast_builtins::AstBuiltin,
+    ast_builtins::{AstBuiltin, DeferredBuiltinArgument},
     ast_logic_data::{ConstructorData, EnumData, PropertyData, StructureData},
     traits::AstGetType,
 };
@@ -1000,6 +1000,34 @@ fn substitute_builtin<'ast>(builtin: AstBuiltin<'ast>, env: &TypeEnv) -> AstBuil
             span,
         },
         AstBuiltin::ArbitraryArgs { span } => AstBuiltin::ArbitraryArgs { span },
+        AstBuiltin::DeferredCompileTime {
+            name,
+            arguments,
+            span,
+        } => AstBuiltin::DeferredCompileTime {
+            name,
+            arguments: arguments
+                .into_iter()
+                .map(|argument| match argument {
+                    DeferredBuiltinArgument::Type { ty, span } => {
+                        DeferredBuiltinArgument::Type {
+                            ty: self::substitute(&ty, env),
+                            span,
+                        }
+                    }
+                    DeferredBuiltinArgument::Value { expression, span } => {
+                        DeferredBuiltinArgument::Value {
+                            expression: std::boxed::Box::new(self::substitute_ast(
+                                *expression,
+                                env,
+                            )),
+                            span,
+                        }
+                    }
+                })
+                .collect(),
+            span,
+        },
     }
 }
 
@@ -1334,6 +1362,18 @@ fn collect_unresolved_builtin_hints(
             self::collect_unresolved_ast_hints(size, out);
         }
         AstBuiltin::ArbitraryArgs { .. } => (),
+        AstBuiltin::DeferredCompileTime { arguments, .. } => {
+            for argument in arguments {
+                match argument {
+                    DeferredBuiltinArgument::Type { ty, .. } => {
+                        self::collect_unresolved_type_hints(ty, out);
+                    }
+                    DeferredBuiltinArgument::Value { expression, .. } => {
+                        self::collect_unresolved_ast_hints(expression, out);
+                    }
+                }
+            }
+        }
     }
 }
 

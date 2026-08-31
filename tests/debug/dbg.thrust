@@ -1,0 +1,31 @@
+/*
+ * Debug info verification program: parameters, locals and a global static,
+ * compiled with -dbg. Returns 0 on success.
+ */
+
+import std::io;
+
+static mut counter: s32 = 0;
+
+fn add(a: s32, b: s32) s32 {
+    var sum: s32 = a + b;
+    var doubled: s32 = sum * 2;
+
+    counter = counter + 1;
+
+    return doubled;
+}
+
+fn main() s32 @public {
+    var x: s32 = 5;
+    var y: s32 = 7;
+
+    var result: s32 = add(x, y);
+
+    if result != 24 { return 1; }
+    if counter != 1 { return 2; }
+
+    io::print("result=%d counter=%d\n", result, counter);
+
+    return 0;
+}

@@ -21,6 +21,7 @@ use inkwell::AddressSpace;
 use inkwell::IntPredicate;
 use inkwell::context::Context;
 use inkwell::targets::TargetData;
+use inkwell::types::BasicTypeEnum;
 use inkwell::values::BasicValue;
 use inkwell::values::BasicValueEnum;
 use inkwell::values::IntValue;
@@ -219,6 +220,8 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
 
     llvm_builder.position_at_end(llvm_function_block);
 
+    llvm_builder.unset_current_debug_location();
+
     if codegen
         .get_context()
         .get_compiler_options()
@@ -395,6 +398,34 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
 
         {
             codegen.codegen_block(function_body);
+
+            for parameter in function_parameters
+                .iter()
+                .rev()
+                .map(|node| thrustc_entities::function_parameter_from_ast(node))
+            {
+                let name: &str = parameter.0;
+                let kind: &Type = parameter.2;
+                let position: u32 = parameter.3;
+                let span: Span = parameter.4;
+
+                let Some(parameter_value) = function_value.get_nth_param(position) else {
+                    continue;
+                };
+
+                let llvm_type: BasicTypeEnum =
+                    typegeneration::generate_type(codegen.get_mut_context(), kind);
+
+                codegen.get_mut_context().emit_parameter_debug(
+                    name,
+                    position.saturating_add(1),
+                    kind,
+                    llvm_type,
+                    parameter_value,
+                    span,
+                );
+            }
+
             codegen.get_mut_context().finish_function_debug_data();
 
             if function_type.is_void_type() && !function_body.has_terminator() {

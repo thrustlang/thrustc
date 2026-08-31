@@ -43,6 +43,7 @@ pub struct Linter<'linter> {
     bugs: Vec<CompilationIssue>,
     errors: Vec<CompilationIssue>,
 
+    file: &'linter CompilationUnit,
     options: &'linter CompilerOptions,
     diagnostician: Diagnostician,
 
@@ -66,6 +67,7 @@ impl<'linter> Linter<'linter> {
             bugs: Vec::with_capacity(u8::MAX as usize),
             errors: Vec::with_capacity(u8::MAX as usize),
 
+            file,
             options,
             diagnostician: Diagnostician::new(file, options),
 
@@ -100,9 +102,10 @@ impl<'linter> Linter<'linter> {
                 .dispatch_diagnostic(bug, thrustc_logging::LoggingType::Bug);
         }
 
-        let warnings_to_disable: &[CompilationIssueCode] = self.options.get_warnings_to_disable();
+        let warnings_to_disable: Vec<CompilationIssueCode> =
+            thrustc_directive::combined_warnings_to_disable(self.options, self.file.get_path());
 
-        thrustc_errors::filter_warnings(warnings_to_disable, &mut self.warnings);
+        thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 
         for warning in self.warnings.iter() {
             self.diagnostician

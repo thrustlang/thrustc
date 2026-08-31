@@ -1,0 +1,82 @@
+/*
+ * Exercises std::collections::vector: construction, growth, element access,
+ * insertion/removal, capacity management, swapping and destruction, with both
+ * a primitive element type and a struct element type.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+import std::collections::vector;
+
+struct Pair {
+    first: s32,
+    second: s32
+}
+
+fn main() s32 @public {
+    var v := vector::newVector[s32]();
+
+    if !vector::isEmpty(ref v) { return 1; }
+    if vector::getLength(ref v) != 0 { return 2; }
+    if vector::getCapacity(ref v) != 0 { return 3; }
+
+    vector::pushBack[s32](ref v, 10);
+    vector::pushBack[s32](ref v, 20);
+    vector::pushBack[s32](ref v, 30);
+    vector::pushBack[s32](ref v, 40);
+    vector::pushBack[s32](ref v, 50);
+
+    if vector::isEmpty(ref v) { return 4; }
+    if vector::getLength(ref v) != 5 { return 5; }
+    if vector::getCapacity(ref v) < 5 { return 6; }
+    if vector::at(ref v, 0) != 10 { return 7; }
+    if vector::at(ref v, 4) != 50 { return 8; }
+    if vector::front(ref v) != 10 { return 9; }
+    if vector::back(ref v) != 50 { return 10; }
+
+    if vector::popBack(ref v) != 50 { return 11; }
+    if vector::getLength(ref v) != 4 { return 12; }
+    if vector::back(ref v) != 40 { return 13; }
+
+    vector::insertAt(ref v, 1, 15);
+    if vector::getLength(ref v) != 5 { return 14; }
+    if vector::at(ref v, 0) != 10 { return 15; }
+    if vector::at(ref v, 1) != 15 { return 16; }
+    if vector::at(ref v, 2) != 20 { return 17; }
+
+    if vector::removeAt(ref v, 1) != 15 { return 18; }
+    if vector::getLength(ref v) != 4 { return 19; }
+    if vector::at(ref v, 1) != 20 { return 20; }
+
+    vector::swapElements(ref v, 0, 3);
+    if vector::at(ref v, 0) != 40 { return 21; }
+    if vector::at(ref v, 3) != 10 { return 22; }
+
+    vector::reserveCapacity(ref v, 32);
+    if vector::getCapacity(ref v) < 32 { return 23; }
+
+    vector::shrinkToFit(ref v);
+    if vector::getCapacity(ref v) != 4 { return 24; }
+
+    vector::clear(ref v);
+    if !vector::isEmpty(ref v) { return 25; }
+    if vector::getLength(ref v) != 0 { return 26; }
+
+    vector::destroyVector(ref v);
+
+    var pv := vector::withCapacity[Pair](2);
+    if vector::getCapacity(ref pv) < 2 { return 27; }
+
+    vector::pushBack(ref pv, new Pair { first: 1, second: 2 });
+    vector::pushBack(ref pv, new Pair { first: 3, second: 4 });
+
+    if vector::at(ref pv, 0)->first != 1 { return 28; }
+    if vector::at(ref pv, 0)->second != 2 { return 29; }
+
+    if vector::at(ref pv, 1)->first != 3 { return 30; }
+    if vector::at(ref pv, 1)->second != 4 { return 31; }
+
+    vector::destroyVector(ref pv);
+
+    return 0;
+}

@@ -26,6 +26,18 @@ use crate::Ast;
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
 
+#[derive(Debug, Clone, Serialize)]
+pub enum DeferredBuiltinArgument<'compiler_builtin> {
+    Type {
+        ty: Type,
+        span: Span,
+    },
+    Value {
+        expression: std::boxed::Box<Ast<'compiler_builtin>>,
+        span: Span,
+    },
+}
+
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[derive(Debug, Clone, Serialize)]
 pub enum AstBuiltin<'compiler_builtin> {
@@ -68,6 +80,11 @@ pub enum AstBuiltin<'compiler_builtin> {
         span: Span,
     },
     ArbitraryArgs {
+        span: Span,
+    },
+    DeferredCompileTime {
+        name: &'compiler_builtin str,
+        arguments: Vec<DeferredBuiltinArgument<'compiler_builtin>>,
         span: Span,
     },
 }

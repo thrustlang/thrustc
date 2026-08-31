@@ -26,7 +26,9 @@ use inkwell::module::Module;
 use inkwell::targets::TargetData;
 use inkwell::targets::TargetMachine;
 use inkwell::targets::TargetTriple;
+use inkwell::types::BasicTypeEnum;
 use inkwell::values::BasicValueEnum;
+use inkwell::values::GlobalValue;
 use inkwell::values::PointerValue;
 
 use thrustc_code_location::Span;
@@ -265,6 +267,8 @@ impl LLVMCodeGenContext<'_, '_> {
     #[inline]
     pub fn end_scope(&mut self) {
         self.table.end_scope();
+
+        self.pop_dbg_block_data();
     }
 }
 
@@ -553,6 +557,17 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     }
 
     #[inline]
+    pub fn pop_dbg_block_data(&mut self) {
+        let mut dbg_opt: Option<LLVMDebugContext<'_, '_>> = self.dbg_context.take();
+
+        if let Some(ref mut dbg) = dbg_opt {
+            dbg.pop_dbg_block();
+        }
+
+        self.dbg_context = dbg_opt;
+    }
+
+    #[inline]
     pub fn mark_dbg_location(&mut self, span: Span) {
         let mut dbg_opt: Option<LLVMDebugContext<'_, '_>> = self.dbg_context.take();
 
@@ -561,6 +576,84 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
         }
 
         self.dbg_context = dbg_opt;
+    }
+}
+
+impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
+    pub fn emit_local_debug_declare(
+        &mut self,
+        name: &str,
+        kind: &Type,
+        llvm_type: BasicTypeEnum<'ctx>,
+        storage: PointerValue<'ctx>,
+        span: Span,
+    ) {
+        let mut dbg_opt: Option<LLVMDebugContext<'_, '_>> = self.dbg_context.take();
+
+        if let Some(ref mut dbg) = dbg_opt {
+            if let Some(ty) = self::compile_supported_dbg_type(dbg, kind, llvm_type) {
+                dbg.emit_auto_variable(self, name, span, ty, storage);
+            }
+        }
+
+        self.dbg_context = dbg_opt;
+    }
+
+    pub fn emit_parameter_debug(
+        &mut self,
+        name: &str,
+        position: u32,
+        kind: &Type,
+        llvm_type: BasicTypeEnum<'ctx>,
+        value: BasicValueEnum<'ctx>,
+        span: Span,
+    ) {
+        let mut dbg_opt: Option<LLVMDebugContext<'_, '_>> = self.dbg_context.take();
+
+        if let Some(ref mut dbg) = dbg_opt {
+            if let Some(ty) = self::compile_supported_dbg_type(dbg, kind, llvm_type) {
+                dbg.emit_parameter_variable(self, name, position, span, ty, value);
+            }
+        }
+
+        self.dbg_context = dbg_opt;
+    }
+
+    pub fn emit_global_debug(
+        &mut self,
+        global: GlobalValue<'ctx>,
+        name: &str,
+        linkage: &str,
+        kind: &Type,
+        llvm_type: BasicTypeEnum<'ctx>,
+        span: Span,
+    ) {
+        let mut dbg_opt: Option<LLVMDebugContext<'_, '_>> = self.dbg_context.take();
+
+        if let Some(ref mut dbg) = dbg_opt {
+            if let Some(ty) = self::compile_supported_dbg_type(dbg, kind, llvm_type) {
+                dbg.emit_global_variable(self, global, name, linkage, span, ty);
+            }
+        }
+
+        self.dbg_context = dbg_opt;
+    }
+}
+
+fn compile_supported_dbg_type<'ctx>(
+    dbg: &mut LLVMDebugContext<'_, 'ctx>,
+    kind: &Type,
+    llvm_type: BasicTypeEnum<'ctx>,
+) -> Option<inkwell::debug_info::DIType<'ctx>> {
+    match llvm_type {
+        BasicTypeEnum::IntType(_)
+        | BasicTypeEnum::FloatType(_)
+        | BasicTypeEnum::PointerType(_)
+        | BasicTypeEnum::ArrayType(_)
+        | BasicTypeEnum::StructType(_) => Some(crate::typegeneration::compile_as_dbg_type(
+            dbg, kind, llvm_type,
+        )),
+        _ => None,
     }
 }
 

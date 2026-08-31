@@ -999,6 +999,10 @@ impl<'a, 'ctx> LLVMMachineSpecificFunctionOptimizer<'a, 'ctx> {
                 return true;
             }
 
+            if self::is_llvm_intrinsic_call(*instruction) {
+                return false;
+            }
+
             for i in 0..instruction.get_num_operands() {
                 if let Some(op) = instruction.get_operand(i) {
                     if let Some(value) = op.left() {
@@ -1788,6 +1792,10 @@ impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
                     true
                 }
                 InstructionOpcode::Call => {
+                    if is_llvm_intrinsic_call(inst) {
+                        return true;
+                    }
+
                     {
                         for operand in inst.get_operands() {
                             if operand.and_then(|res| res.left()) == Some(parameter) {
@@ -1816,6 +1824,10 @@ impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
                     true
                 }
                 InstructionOpcode::Call => {
+                    if self::is_llvm_intrinsic_call(inst) {
+                        return true;
+                    }
+
                     {
                         for operand in inst.get_operands() {
                             if operand.and_then(|res| res.left()) == Some(parameter) {
@@ -1835,6 +1847,10 @@ impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
             .iter()
             .flat_map(|bb| bb.get_instructions())
             .all(|inst| {
+                if is_llvm_intrinsic_call(inst) {
+                    return true;
+                }
+
                 {
                     for operand in inst.get_operands() {
                         if let Some(operand) = operand.and_then(|res| res.left()) {
@@ -2197,4 +2213,15 @@ impl LLVMOptimizationBlocker<'_, '_> {
             function.add_attribute(AttributeLoc::Function, nounwind);
         }
     }
+}
+
+fn is_llvm_intrinsic_call(instruction: InstructionValue<'_>) -> bool {
+    if instruction.get_opcode() != InstructionOpcode::Call {
+        return false;
+    }
+
+    let callsite: CallSiteValue = unsafe { CallSiteValue::new(instruction.as_value_ref()) };
+    let called: FunctionValue = callsite.get_called_fn_value();
+
+    called.get_name().to_str().is_ok_and(|name| name.starts_with("llvm."))
 }

@@ -44,6 +44,9 @@ pub struct GeneralAnalyzer<'analyzer> {
     errors: Vec<CompilationIssue>,
     warnings: Vec<CompilationIssue>,
 
+    file: &'analyzer CompilationUnit,
+    options: &'analyzer CompilerOptions,
+
     diagnostician: Diagnostician,
 
     context: AnalyzerContext,
@@ -54,7 +57,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
     pub fn new(
         ast: &'analyzer [Ast<'analyzer>],
         file: &'analyzer CompilationUnit,
-        options: &CompilerOptions,
+        options: &'analyzer CompilerOptions,
     ) -> Self {
         Self {
             ast,
@@ -62,6 +65,9 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
             bugs: Vec::with_capacity(u8::MAX as usize),
             errors: Vec::with_capacity(u8::MAX as usize),
             warnings: Vec::with_capacity(u8::MAX as usize),
+
+            file,
+            options,
 
             diagnostician: Diagnostician::new(file, options),
             context: AnalyzerContext::new(),
@@ -85,6 +91,11 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
 
 impl<'analyzer> GeneralAnalyzer<'analyzer> {
     fn check(&mut self) -> bool {
+        let warnings_to_disable: Vec<CompilationIssueCode> =
+            thrustc_directive::combined_warnings_to_disable(self.options, self.file.get_path());
+
+        thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
+
         self.warnings.iter().for_each(|warn| {
             self.diagnostician
                 .dispatch_diagnostic(warn, thrustc_logging::LoggingType::Warning);

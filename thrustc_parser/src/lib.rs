@@ -202,10 +202,13 @@ impl<'parser> ParserContext<'parser> {
         }
 
         if !self.warnings.is_empty() {
-            let warnings_to_disable: &[CompilationIssueCode] =
-                self.options.get_warnings_to_disable();
+            let warnings_to_disable: Vec<CompilationIssueCode> =
+                thrustc_directive::combined_warnings_to_disable(
+                    self.options,
+                    self.file.get_path(),
+                );
 
-            thrustc_errors::filter_warnings(warnings_to_disable, &mut self.warnings);
+            thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 
             for warning in self.warnings.iter() {
                 self.diagnostician

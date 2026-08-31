@@ -75,6 +75,9 @@ pub enum LLVMBuiltin<'ctx> {
     ArbitraryArgs {
         span: Span,
     },
+    DeferredCompileTime {
+        span: Span,
+    },
 }
 
 pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ctx> {
@@ -118,6 +121,9 @@ pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ct
         AstBuiltin::AbiAlignOf { ty, span } => LLVMBuiltin::AbiAlignOf { ty, span: *span },
         AstBuiltin::ArbitraryArg { ty, span } => LLVMBuiltin::ArbitraryArg { ty, span: *span },
         AstBuiltin::ArbitraryArgs { span } => LLVMBuiltin::ArbitraryArgs { span: *span },
+        AstBuiltin::DeferredCompileTime { span, .. } => {
+            LLVMBuiltin::DeferredCompileTime { span: *span }
+        }
     }
 }
 
@@ -349,5 +355,12 @@ pub fn compile<'ctx>(
             .get_mut_variatic_context()
             .get_current_va_list(span)
             .into(),
+        LLVMBuiltin::DeferredCompileTime { span } => abort::abort_codegen(
+            context,
+            "Deferred compile-time builtin must be resolved before codegen",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        ),
     }
 }

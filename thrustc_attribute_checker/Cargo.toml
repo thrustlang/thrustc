@@ -15,6 +15,7 @@ thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_token = { path = "../thrustc_token" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_attributes = { path = "../thrustc_attributes" }
+thrustc_directive = { path = "../thrustc_directive" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_logging = { path = "../thrustc_logging" }
 thrustc_options = { path = "../thrustc_options" }

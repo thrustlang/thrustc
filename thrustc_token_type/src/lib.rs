@@ -158,6 +158,7 @@ pub enum TokenType {
     ImportC,
     Only,
     Embedded,
+    Directive,
     Mut,
     Type,
     Enum,

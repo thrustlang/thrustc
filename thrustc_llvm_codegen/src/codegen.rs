@@ -55,8 +55,7 @@ use thrustc_ast::traits::AstCodeLocation;
 use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::{
-    ConstantTypeExtensions, DereferenceExtensions, TypeIsExtensions, TypePointerExtensions,
-    TypeStructExtensions,
+    ConstantTypeExtensions, TypeIsExtensions, TypePointerExtensions, TypeStructExtensions,
 };
 
 #[derive(Debug)]
@@ -150,6 +149,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             value,
                             attributes,
                             metadata,
+                            span,
                         );
 
                         let symbol: SymbolAllocated = SymbolAllocated::new_constant(
@@ -210,6 +210,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                                 Some(value),
                                 attributes,
                                 metadata,
+                                span,
                             );
 
                             let symbol: SymbolAllocated = SymbolAllocated::new_static(
@@ -233,6 +234,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                                 None,
                                 attributes,
                                 metadata,
+                                span,
                             );
 
                             let symbol: SymbolAllocated = SymbolAllocated::new_static(
@@ -419,6 +421,8 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
     }
 
     fn codegen_statement(&mut self, node: &'ctx Ast) {
+        self.get_mut_context().mark_dbg_location(node.get_span());
+
         self.codegen_post_executation(node);
     }
 
@@ -568,6 +572,12 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     );
 
                     self.context.add_local_variable(name, symbol);
+
+                    let llvm_type: BasicTypeEnum =
+                        typegeneration::generate_type(self.get_mut_context(), kind);
+
+                    self.get_mut_context()
+                        .emit_local_debug_declare(name, kind, llvm_type, ptr, span);
                 } else {
                     let var: LocalVariable = thrustc_entities::local_variable_from_ast(node);
 
@@ -604,6 +614,12 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     );
 
                     self.context.add_local_variable(name, symbol);
+
+                    let llvm_type: BasicTypeEnum =
+                        typegeneration::generate_type(self.get_mut_context(), kind);
+
+                    self.get_mut_context()
+                        .emit_local_debug_declare(name, kind, llvm_type, ptr, span);
 
                     let Some(expr) = value else {
                         return;
@@ -995,7 +1011,8 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     .denegate_all_expression_optimizations();
 
                 let source_type: &Type = source.get_type_for_llvm();
-                let cast_type: Type = source_type.dereference_until_value();
+                let cast_type: Type =
+                    typegeneration::determinate_mutation_target_type(source, source_type);
 
                 self.context.add_codegen_location(CodeGenLocation::LValue);
                 let ptr: BasicValueEnum = self::compile_as_ptr_value(self.context, source, None);

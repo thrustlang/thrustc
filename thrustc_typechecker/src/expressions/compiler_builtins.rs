@@ -54,7 +54,8 @@ pub fn validate_node<'type_checker>(
         AstBuiltin::Halloc { .. }
         | AstBuiltin::AbiSizeOf { .. }
         | AstBuiltin::BitSizeOf { .. }
-        | AstBuiltin::AbiAlignOf { .. } => Ok(()),
+        | AstBuiltin::AbiAlignOf { .. }
+        | AstBuiltin::DeferredCompileTime { .. } => Ok(()),
 
         AstBuiltin::ArbitraryArg { span, .. }
             if !typechecker.get_type_context().is_current_function_variadic() =>

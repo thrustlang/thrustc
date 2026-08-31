@@ -256,7 +256,8 @@ pub fn validate_node<'analyzer>(
             | AstBuiltin::BitSizeOf { .. }
             | AstBuiltin::AbiAlignOf { .. }
             | AstBuiltin::ArbitraryArg { .. }
-            | AstBuiltin::ArbitraryArgs { .. } => Ok(()),
+            | AstBuiltin::ArbitraryArgs { .. }
+            | AstBuiltin::DeferredCompileTime { .. } => Ok(()),
         },
 
         Ast::AsmValue { .. }

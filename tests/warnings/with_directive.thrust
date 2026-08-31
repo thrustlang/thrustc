@@ -1,0 +1,14 @@
+/*
+ * File WITH the directive: W0020 (mutable but never mutated) must NOT appear.
+ * Returns 0 on success.
+ */
+
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var x: s32 = 5;
+
+    if x != 5 { return 1; }
+
+    return 0;
+}

@@ -13,4 +13,5 @@ repository.workspace = true
 ahash = "0.8.11"
 lazy_static = "1.5.0"
 
-thrustc_backends = { path = "../thrustc_backends" }
+thrustc_errors = { path = "../thrustc_errors" }
+thrustc_options = { path = "../thrustc_options" }

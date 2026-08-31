@@ -35,7 +35,7 @@ use inkwell::module::Module;
 use inkwell::targets::TargetData;
 use inkwell::targets::TargetMachine;
 use inkwell::types::BasicTypeEnum;
-use inkwell::values::FunctionValue;
+use inkwell::values::{FunctionValue, GlobalValue, PointerValue};
 
 use thrustc_diagnostician::Diagnostician;
 use thrustc_options::CompilationUnit;
@@ -46,7 +46,7 @@ use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::context::LLVMCodeGenContext;
 use crate::optimizer::LLVMOptimizer;
-use crate::traits::LLVMDBGFunctionExtensions;
+use crate::traits::{LLVMFunctionExtensions, LLVMDBGFunctionExtensions};
 use crate::typegeneration;
 use crate::types::LLVMDBGFunction;
 
@@ -59,6 +59,7 @@ pub struct LLVMDebugContext<'a, 'ctx> {
     subprograms: Vec<DISubprogram<'ctx>>,
     lexical_blocks: Vec<DILexicalBlock<'ctx>>,
     debug_locations: Vec<DILocation<'ctx>>,
+    source: String,
 }
 
 impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
@@ -80,11 +81,25 @@ impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
             .get_debug_config()
             .need_debug_info_for_profiling();
 
+        let directory: String = unit
+            .get_path()
+            .parent()
+            .map(|parent| {
+                if parent.is_absolute() {
+                    parent.to_string_lossy().to_string()
+                } else {
+                    std::env::current_dir()
+                        .map(|cwd| cwd.join(parent).to_string_lossy().to_string())
+                        .unwrap_or_else(|_| parent.to_string_lossy().to_string())
+                }
+            })
+            .unwrap_or_default();
+
         let (builder, dicompileunit) = llvm_module.create_debug_info_builder(
             true,
             inkwell::debug_info::DWARFSourceLanguage::C,
             unit.get_name(),
-            &format!("{}", unit.get_path().display()),
+            &directory,
             thrustc_constants::COMPILER_ID,
             is_optimized,
             "",
@@ -106,6 +121,7 @@ impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
             subprograms: Vec::with_capacity(u8::MAX as usize),
             lexical_blocks: Vec::with_capacity(u8::MAX as usize),
             debug_locations: Vec::with_capacity(u8::MAX as usize),
+            source: unit.get_unit_content().to_string(),
         }
     }
 }
@@ -197,7 +213,7 @@ impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
         llvm_builder.unset_current_debug_location();
 
         let line: u32 = span.get_line();
-        let column: u32 = span.get_span_start();
+        let column: u32 = self.compute_column(line, span.get_span_start());
 
         let debug_loc: DILocation<'_> = self.get_debug_builder().create_debug_location(
             llvm_context,
@@ -213,7 +229,7 @@ impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
 
     pub fn add_dbg_block(&mut self, span: Span) {
         let line: u32 = span.get_line();
-        let column: u32 = span.get_span_start();
+        let column: u32 = self.compute_column(line, span.get_span_start());
 
         let parent_scope: DIScope = self.get_scope();
 
@@ -228,13 +244,18 @@ impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
     }
 
     #[inline]
+    pub fn pop_dbg_block(&mut self) {
+        self.lexical_blocks.pop();
+    }
+
+    #[inline]
     pub fn reset_blocks(&mut self) {
         self.lexical_blocks.clear();
     }
 
     #[inline]
     pub fn reset_debug_locations(&mut self) {
-        self.lexical_blocks.clear();
+        self.debug_locations.clear();
     }
 
     #[inline]
@@ -295,5 +316,139 @@ impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
     #[inline]
     pub fn get_mut_diagnostician(&mut self) -> &mut Diagnostician {
         &mut self.diagnostician
+    }
+}
+
+impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
+    pub fn emit_auto_variable(
+        &mut self,
+        context: &mut LLVMCodeGenContext<'_, 'ctx>,
+        name: &str,
+        span: Span,
+        ty: DIType<'ctx>,
+        storage: PointerValue<'ctx>,
+    ) {
+        let line: u32 = span.get_line();
+        let column: u32 = self.compute_column(line, span.get_span_start());
+
+        let local_var = self.get_debug_builder().create_auto_variable(
+            self.get_scope(),
+            name,
+            self.get_debug_unit().get_file(),
+            line,
+            ty,
+            true,
+            DIFlagsConstants::PUBLIC,
+            0,
+        );
+
+        let debug_loc = self.get_debug_builder().create_debug_location(
+            context.get_llvm_context(),
+            line,
+            column,
+            self.get_scope(),
+            None,
+        );
+
+        if let Some(block) = context.get_llvm_builder().get_insert_block() {
+            self.get_debug_builder().insert_declare_at_end(
+                storage,
+                Some(local_var),
+                None,
+                debug_loc,
+                block,
+            );
+        }
+    }
+
+    pub fn emit_parameter_variable(
+        &mut self,
+        context: &mut LLVMCodeGenContext<'_, 'ctx>,
+        name: &str,
+        position: u32,
+        span: Span,
+        ty: DIType<'ctx>,
+        value: inkwell::values::BasicValueEnum<'ctx>,
+    ) {
+        let line: u32 = span.get_line();
+        let column: u32 = self.compute_column(line, span.get_span_start());
+
+        let local_var = self.get_debug_builder().create_parameter_variable(
+            self.get_scope(),
+            name,
+            position,
+            self.get_debug_unit().get_file(),
+            line,
+            ty,
+            true,
+            DIFlagsConstants::PUBLIC,
+        );
+
+        let debug_loc = self.get_debug_builder().create_debug_location(
+            context.get_llvm_context(),
+            line,
+            column,
+            self.get_scope(),
+            None,
+        );
+
+        let function = context.get_current_function(span);
+
+        if let Some(entry_block) = function.get_value().get_first_basic_block() {
+            if let Some(first_instruction) = entry_block.get_first_instruction() {
+                self.get_debug_builder().insert_dbg_value_before(
+                    value,
+                    local_var,
+                    None,
+                    debug_loc,
+                    first_instruction,
+                );
+            }
+        }
+    }
+
+    pub fn emit_global_variable(
+        &mut self,
+        context: &mut LLVMCodeGenContext<'_, 'ctx>,
+        global: GlobalValue<'ctx>,
+        name: &str,
+        linkage: &str,
+        span: Span,
+        ty: DIType<'ctx>,
+    ) {
+        let line: u32 = span.get_line();
+
+        let gv_expr = self.get_debug_builder().create_global_variable_expression(
+            self.get_debug_unit().get_file().as_debug_info_scope(),
+            name,
+            linkage,
+            self.get_debug_unit().get_file(),
+            line,
+            ty,
+            true,
+            Some(self.get_debug_builder().create_expression(vec![])),
+            None,
+            0,
+        );
+
+        let meta = gv_expr.as_metadata_value(context.get_llvm_context());
+
+        // LLVMDIGlobalVariableExpressionMetadataKind from llvm-c/DebugInfo.h.
+        global.set_metadata(meta, 7);
+    }
+
+    fn compute_column(&self, line: u32, offset: u32) -> u32 {
+        let Some(line_text) = self.source.lines().nth(line.saturating_sub(1) as usize) else {
+            return offset;
+        };
+
+        let bytes: &[u8] = line_text.as_bytes();
+        let up_to: usize = (offset as usize).min(bytes.len());
+        let chars: usize = bytes[..up_to]
+            .iter()
+            .filter(|byte| **byte & 0xC0 != 0x80)
+            .count();
+
+        (chars as u32).saturating_add(1)
     }
 }

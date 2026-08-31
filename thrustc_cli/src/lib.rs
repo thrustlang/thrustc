@@ -1322,19 +1322,10 @@ impl CommandLine {
     }
 
     fn parse_warnings_to_disable(&self, raw: &str) -> Vec<CompilationIssueCode> {
-        let splitted: std::str::Split<'_, &str> = raw.split(";");
-        let mut warnings: Vec<CompilationIssueCode> = Vec::new();
-
-        for warning in splitted {
-            let code: CompilationIssueCode =
-                CompilationIssueCode::parse(warning).unwrap_or_else(|_| {
-                    self.report_error(&format!("Invalid warning to disable: '{}'.", warning));
-                });
-
-            warnings.push(code);
+        match thrustc_directive::parse_warning_codes(raw) {
+            Ok(warnings) => warnings,
+            Err(message) => self.report_error(&message),
         }
-
-        warnings
     }
 
     fn parse_sanitizer_config(&self, spec: &str) -> (bool, bool) {

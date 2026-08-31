@@ -28,6 +28,7 @@ thrustc_preprocessor = { path = "../thrustc_preprocessor" }
 thrustc_llvm_call_conventions_checker = { path = "../thrustc_llvm_call_conventions_checker" }
 thrustc_llvm_compiler_intrinsic_checker = { path = "../thrustc_llvm_compiler_intrinsic_checker" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
+thrustc_directive = { path = "../thrustc_directive" }
 thrustc_constants = { path = "../thrustc_constants" }
 thrustc_token = { path = "../thrustc_token" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }

@@ -1,0 +1,130 @@
+/*
+ * Printing variant of the vector tests: shows how the vector and its state
+ * change after every operation, using std::io.
+ * Also demonstrates that compile-time type builtins (sizeOf/alignOf) work
+ * inside generic functions. Returns 0 on success, non-zero on failure.
+ */
+
+import std::io;
+import std::mem;
+import std::collections::vector;
+
+struct Pair {
+    first: s32,
+    second: s32
+}
+
+struct Big {
+    a: u64,
+    b: u64,
+    c: u64
+}
+
+fn printVector (v: ptr[vector::Vector[s32]]) void {
+    io::print("len=%d cap=%d [", vector::getLength(v) as s32, vector::getCapacity(v) as s32);
+
+    var i: s32 = 0;
+
+    while i < vector::getLength(v) as s32 {
+        io::print("%d ", vector::at(v, i as usize) as s32);
+        i = i + 1;
+    }
+
+    io::println("]");
+}
+
+fn printTypeInfo [T] (name: CString) void {
+    io::print("%s: size=%zu align=%u\n", name, sizeOf(T), alignOf(T));
+}
+
+fn main() s32 @public {
+    io::println("=== generic type builtins ===");
+    printTypeInfo[u8]("u8");
+    printTypeInfo[u32]("u32");
+    printTypeInfo[u64]("u64");
+    printTypeInfo[Big]("Big");
+
+    io::println("=== vector<s32> ===");
+    var v := vector::newVector[s32]();
+
+    printVector(ref v);
+
+    vector::pushBack[s32](ref v, 10);
+    printVector(ref v);
+
+    vector::pushBack[s32](ref v, 20);
+    printVector(ref v);
+
+    vector::pushBack[s32](ref v, 30);
+    printVector(ref v);
+
+    vector::pushBack[s32](ref v, 40);
+    printVector(ref v);
+
+    vector::pushBack[s32](ref v, 50);
+    printVector(ref v);
+
+    if vector::getLength(ref v) != 5 { return 1; }
+
+    io::println("-- popBack --");
+    var popped: s32 = vector::popBack(ref v);
+    io::print("popped=%d\n", popped);
+    printVector(ref v);
+    if popped != 50 { return 2; }
+
+    io::println("-- insertAt(1, 15) --");
+    vector::insertAt(ref v, 1, 15);
+    printVector(ref v);
+    if vector::at(ref v, 1) != 15 { return 3; }
+
+    io::println("-- removeAt(1) --");
+    var removed: s32 = vector::removeAt(ref v, 1);
+    io::print("removed=%d\n", removed);
+    printVector(ref v);
+    if removed != 15 { return 4; }
+
+    io::println("-- swapElements(0, 3) --");
+    vector::swapElements(ref v, 0, 3);
+    printVector(ref v);
+    if vector::at(ref v, 0) != 40 { return 5; }
+
+    io::println("-- reserveCapacity(32) --");
+    vector::reserveCapacity(ref v, 32);
+    printVector(ref v);
+    if vector::getCapacity(ref v) < 32 { return 6; }
+
+    io::println("-- shrinkToFit --");
+    vector::shrinkToFit(ref v);
+    printVector(ref v);
+    if vector::getCapacity(ref v) != 4 { return 7; }
+
+    io::println("-- clear --");
+    vector::clear(ref v);
+    printVector(ref v);
+    if !vector::isEmpty(ref v) { return 8; }
+
+    vector::destroyVector(ref v);
+
+    io::println("=== vector<Pair> ===");
+    var pv := vector::withCapacity[Pair](2);
+
+    vector::pushBack(ref pv, new Pair { first: 1, second: 2 });
+    vector::pushBack(ref pv, new Pair { first: 3, second: 4 });
+
+    io::print(
+        "pair[0]=(%d,%d) pair[1]=(%d,%d)\n",
+        vector::at(ref pv, 0)->first,
+        vector::at(ref pv, 0)->second,
+        vector::at(ref pv, 1)->first,
+        vector::at(ref pv, 1)->second
+    );
+
+    if vector::at(ref pv, 0)->first != 1 { return 9; }
+    if vector::at(ref pv, 1)->second != 4 { return 10; }
+
+    vector::destroyVector(ref pv);
+
+    io::println("=== done ===");
+
+    return 0;
+}

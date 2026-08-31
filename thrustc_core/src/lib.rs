@@ -158,6 +158,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_aot_llvm(&mut self) -> CompileTime {
         cleaner::auto_clean(self.get_compilation_options());
 
+        thrustc_directive::clear_directives();
+
         self.discover_std();
 
         if self.compile_imported_std().is_err() {
@@ -644,6 +646,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_jit_llvm(&mut self) -> CompileTime {
         cleaner::auto_clean(self.get_compilation_options());
+
+        thrustc_directive::clear_directives();
 
         self.discover_std();
 

@@ -21,12 +21,13 @@ use std::collections::{HashMap, HashSet};
 
 use thrustc_ast::{
     Ast, ModuleExpressionValues, NodeId,
-    ast_builtins::AstBuiltin,
+    ast_builtins::{AstBuiltin, DeferredBuiltinArgument},
     ast_logic_data::{ConstructorData, EnumData},
     ast_metadata::FunctionParameterMetadata,
     traits::AstGetType,
 };
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
+use thrustc_builtins::BuiltinArgument;
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_table::GenericFunctionEntry;
@@ -347,6 +348,52 @@ fn resolve_ast<'parser>(
                     span,
                     id,
                 },
+            }
+        }
+
+        Ast::Builtin {
+            builtin: AstBuiltin::DeferredCompileTime {
+                name,
+                arguments,
+                span,
+            },
+            ..
+        } => {
+            let mut builtin_arguments: Vec<BuiltinArgument> = Vec::with_capacity(arguments.len());
+
+            for argument in arguments {
+                match argument {
+                    DeferredBuiltinArgument::Type { ty, span } => {
+                        builtin_arguments.push(BuiltinArgument::Type { ty, span });
+                    }
+                    DeferredBuiltinArgument::Value { expression, span } => {
+                        let resolved: Ast<'parser> =
+                            self::resolve_ast(ctx, *expression, templates, memo, output);
+
+                        let Some(value) = thrustc_builtins::value::fold(&resolved) else {
+                            ctx.add_error_report(CompilationIssue::Error(
+                                CompilationIssueCode::E0006,
+                                "The compiler builtin expects a constant argument.".into(),
+                                "You should pass a constant value.".into(),
+                                None,
+                                span,
+                            ));
+
+                            return Ast::invalid_ast(span);
+                        };
+
+                        builtin_arguments.push(BuiltinArgument::Value { value, span });
+                    }
+                }
+            }
+
+            match ctx.evaluate_builtin(name, &builtin_arguments, span) {
+                Ok(ast) => ast,
+                Err(error) => {
+                    ctx.add_error_report(error);
+
+                    Ast::invalid_ast(span)
+                }
             }
         }
 
@@ -1333,6 +1380,15 @@ fn resolve_builtin<'parser>(
         AstBuiltin::AbiAlignOf { ty, span } => AstBuiltin::AbiAlignOf { ty, span },
         AstBuiltin::ArbitraryArg { ty, span } => AstBuiltin::ArbitraryArg { ty, span },
         AstBuiltin::ArbitraryArgs { span } => AstBuiltin::ArbitraryArgs { span },
+        AstBuiltin::DeferredCompileTime {
+            name,
+            arguments,
+            span,
+        } => AstBuiltin::DeferredCompileTime {
+            name,
+            arguments,
+            span,
+        },
     }
 }
 

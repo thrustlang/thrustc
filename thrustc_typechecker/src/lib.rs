@@ -53,6 +53,8 @@ pub struct TypeChecker<'type_checker> {
     position: usize,
     options: &'type_checker CompilerOptions,
 
+    file: &'type_checker CompilationUnit,
+
     bugs: Vec<CompilationIssue>,
     errors: Vec<CompilationIssue>,
     warnings: Vec<CompilationIssue>,
@@ -79,10 +81,11 @@ impl<'type_checker> TypeChecker<'type_checker> {
             errors: Vec::with_capacity(u8::MAX as usize),
             warnings: Vec::with_capacity(u8::MAX as usize),
 
+            file,
+            options,
+
             control_context: TypeCheckerControlContext::new(),
             type_context: TypeCheckerTypeContext::new(),
-
-            options,
 
             table: TypeCheckerSymbolsTable::new(),
 
@@ -119,6 +122,11 @@ impl<'type_checker> TypeChecker<'type_checker> {
         }
 
         {
+            let warnings_to_disable: Vec<CompilationIssueCode> =
+                thrustc_directive::combined_warnings_to_disable(self.options, self.file.get_path());
+
+            thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
+
             for warning in self.warnings.iter() {
                 self.diagnostician
                     .dispatch_diagnostic(warning, thrustc_logging::LoggingType::Warning);
@@ -339,7 +347,9 @@ impl<'type_checker> TypeChecker<'type_checker> {
     fn analyze_stmt(&mut self, node: &'type_checker Ast) -> Result<(), CompilationIssue> {
         self.get_mut_control_context().enter_node();
 
-        if self.get_control_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+        if self.get_control_context().get_node_depth()
+            > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH
+        {
             self.get_mut_control_context().leave_node();
 
             self.add_error_report(CompilationIssue::Error(
@@ -792,33 +802,42 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 span,
                 ..
             } => {
+                fn determinate_mutation_target_type(
+                    node: &Ast<'_>,
+                ) -> Result<Type, CompilationIssue> {
+                    if let Ast::Index { metadata, kind, .. } = node {
+                        return if metadata.is_deref() {
+                            Ok(kind.clone())
+                        } else {
+                            Ok(kind.dereference())
+                        };
+                    }
+
+                    Ok(node.get_value_type()?.clone())
+                }
+
                 let metadata: TypeCheckerNodeMetadata =
                     TypeCheckerNodeMetadata::new(value.is_totaly_literal_value());
 
-                let source_type: &Type = source.get_value_type()?;
-                let value_type: &Type = value.get_value_type()?;
+                let source_type: Type = determinate_mutation_target_type(source)?;
+                let value_type: Type = determinate_mutation_target_type(value)?;
 
                 {
-                    let source_type: Type = source_type.dereference_until_value();
-                    let value_type: Type = value_type.dereference_until_value();
+                    let control_context: &mut TypeCheckerControlContext =
+                        self.get_mut_control_context();
 
-                    {
-                        let control_context: &mut TypeCheckerControlContext =
-                            self.get_mut_control_context();
+                    control_context.reset_checking_depth();
 
-                        control_context.reset_checking_depth();
-
-                        if let Err(error) = type_checking::check_type_together(
-                            &source_type,
-                            &value_type,
-                            Some(value),
-                            None,
-                            metadata,
-                            *span,
-                            control_context,
-                        ) {
-                            self.add_error_report(error);
-                        }
+                    if let Err(error) = type_checking::check_type_together(
+                        &source_type,
+                        &value_type,
+                        Some(value),
+                        None,
+                        metadata,
+                        *span,
+                        control_context,
+                    ) {
+                        self.add_error_report(error);
                     }
                 }
 
@@ -835,7 +854,9 @@ impl<'type_checker> TypeChecker<'type_checker> {
     fn analyze_expr(&mut self, node: &'type_checker Ast) -> Result<(), CompilationIssue> {
         self.get_mut_control_context().enter_node();
 
-        if self.get_control_context().get_node_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
+        if self.get_control_context().get_node_depth()
+            > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH
+        {
             self.get_mut_control_context().leave_node();
 
             self.add_error_report(CompilationIssue::Error(

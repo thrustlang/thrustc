@@ -15,6 +15,7 @@ thrustc_ast = { path = "../thrustc_ast" }
 thrustc_entities = { path = "../thrustc_entities" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_options = { path = "../thrustc_options" }
+thrustc_directive = { path = "../thrustc_directive" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_logging = { path = "../thrustc_logging" }
 thrustc_attributes = { path = "../thrustc_attributes" }

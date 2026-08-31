@@ -33,6 +33,7 @@ use thrustc_ast::ast_metadata::ConstantMetadata;
 use thrustc_ast::ast_metadata::LLVMConstantMetadata;
 use thrustc_ast::ast_metadata::LLVMStaticMetadata;
 use thrustc_ast::ast_metadata::StaticMetadata;
+use thrustc_code_location::Span;
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributeComparator;
 use thrustc_llvm_attributes::LLVMAttributes;
@@ -81,18 +82,21 @@ pub fn allocate_local_constant<'ctx>(
 }
 
 pub fn allocate_global_constant<'ctx>(
-    context: &LLVMCodeGenContext<'_, 'ctx>,
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
     name: &str,
     ty: &Type,
     llvm_type: BasicTypeEnum<'ctx>,
     value: BasicValueEnum<'ctx>,
     attributes: LLVMAttributes<'ctx>,
     metadata: ConstantMetadata,
+    span: Span,
 ) -> PointerValue<'ctx> {
     let llvm_module: &Module = context.get_llvm_module();
 
     let target_data: &TargetData = context.get_target_data();
     let llvm_metadata: LLVMConstantMetadata = metadata.get_llvm_metadata();
+
+    let original_name: &str = name;
 
     let name: String =
         self::generate_llvm_name(context, name, "global.constant", Some(&attributes));
@@ -120,6 +124,8 @@ pub fn allocate_global_constant<'ctx>(
         Some(target_data.get_preferred_alignment_of_global(&global)),
         linkage,
     );
+
+    context.emit_global_debug(global, original_name, name.as_str(), ty, llvm_type, span);
 
     global.as_pointer_value()
 }
@@ -167,18 +173,21 @@ pub fn allocate_local_static<'ctx>(
 }
 
 pub fn allocate_global_static<'ctx>(
-    context: &LLVMCodeGenContext<'_, 'ctx>,
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
     name: &str,
     ty: &Type,
     llvm_type: BasicTypeEnum<'ctx>,
     value: Option<BasicValueEnum<'ctx>>,
     attributes: LLVMAttributes<'ctx>,
     metadata: StaticMetadata,
+    span: Span,
 ) -> PointerValue<'ctx> {
     let llvm_module: &Module = context.get_llvm_module();
 
     let target_data: &TargetData = context.get_target_data();
     let llvm_metadata: LLVMStaticMetadata = metadata.get_llvm_metadata();
+
+    let original_name: &str = name;
 
     let name: String = self::generate_llvm_name(context, name, "global.static", Some(&attributes));
 
@@ -213,6 +222,8 @@ pub fn allocate_global_static<'ctx>(
         Some(target_data.get_preferred_alignment_of_global(&global)),
         linkage,
     );
+
+    context.emit_global_debug(global, original_name, name.as_str(), ty, llvm_type, span);
 
     global.as_pointer_value()
 }

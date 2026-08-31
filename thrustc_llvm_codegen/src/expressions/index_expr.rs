@@ -56,8 +56,10 @@ pub fn compile<'ctx>(
             ptr_type = &infered_inner_type;
         }
 
-        let is_ptr_aggv_type: bool = ptr_type.is_ptr_aggregate_value_like_type();
+        let is_ptr_aggv_type: bool = ptr_type.is_ptr_fixed_array_type();
         let is_ptr_like_type: bool = ptr_type.is_ptr_like_type();
+
+        context.add_codegen_location(CodeGenLocation::RValue);
 
         let indexes: Vec<IntValue> = if is_ptr_aggv_type {
             let base_type: Type = Type::U32 { span };
@@ -99,6 +101,8 @@ pub fn compile<'ctx>(
 
             vec![base, depth]
         };
+
+        context.pop_current_codegen_location();
 
         indexes
     };

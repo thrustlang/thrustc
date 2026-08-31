@@ -493,7 +493,8 @@ impl<'scoper> Scoper<'scoper> {
                 | AstBuiltin::BitSizeOf { .. }
                 | AstBuiltin::AbiAlignOf { .. }
                 | AstBuiltin::ArbitraryArg { .. }
-                | AstBuiltin::ArbitraryArgs { .. } => (),
+                | AstBuiltin::ArbitraryArgs { .. }
+                | AstBuiltin::DeferredCompileTime { .. } => (),
             },
 
             // ---------------------------------------------------------

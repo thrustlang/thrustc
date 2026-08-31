@@ -439,7 +439,7 @@ impl AstMemoryExtensions for Ast<'_> {
             }
 
             Ast::Property { metadata, kind, .. } => {
-                Ok(metadata.is_allocated() || kind.is_ptr_like_type())
+                Ok(metadata.is_allocated() || metadata.is_deref() || kind.is_ptr_like_type())
             }
 
             Ast::Index { metadata, kind, .. } => {
