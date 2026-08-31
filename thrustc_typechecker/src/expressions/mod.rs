@@ -278,6 +278,24 @@ pub fn validate_node<'type_checker>(
                 ));
             }
 
+            if !source_type.is_ptr_like_type()
+                && !source_type.is_fixed_array_type()
+                && !source_type.is_struct_type()
+                && !source_type.is_ptr_struct_type()
+            {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    format!(
+                        "The '{}' type cannot be indexed or dereferenced with an indexation.",
+                        source_type
+                    ),
+                    "It should be an indexable type such as an array, fixed array, pointer, or structure."
+                        .into(),
+                    None,
+                    source.get_span(),
+                ));
+            }
+
             typechecker.analyze_expr(index)?;
             typechecker.analyze_expr(source)?;
 

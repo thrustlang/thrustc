@@ -25,7 +25,7 @@ use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeStructExtensions;
 
-use crate::context::LLVMCodeGenContext;
+use crate::context::{CodeGenLocation, LLVMCodeGenContext};
 use crate::memory::LLVMAllocationSite;
 use crate::pointer_anchor::PointerAnchor;
 use crate::{abort, codegen, memory, typegeneration};
@@ -70,7 +70,12 @@ fn compile_with_anchor<'ctx>(
         .iter()
         .zip(fields_types)
         .map(|((_, field, ..), field_target_type)| {
-            codegen::compile_as_value(context, field, Some(field_target_type))
+            context.add_codegen_location(CodeGenLocation::RValue);
+            let value: BasicValueEnum<'_> =
+                codegen::compile_as_value(context, field, Some(field_target_type));
+            context.pop_current_codegen_location();
+
+            value
         })
         .collect();
 
@@ -132,7 +137,12 @@ fn compile_without_anchor<'ctx>(
         .iter()
         .zip(fields_types)
         .map(|((_, field, _, _), field_target_type)| {
-            codegen::compile_as_value(context, field, Some(field_target_type))
+            context.add_codegen_location(CodeGenLocation::RValue);
+            let value: BasicValueEnum<'_> =
+                codegen::compile_as_value(context, field, Some(field_target_type));
+            context.pop_current_codegen_location();
+
+            value
         })
         .collect();
 

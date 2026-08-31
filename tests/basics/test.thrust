@@ -1,6 +1,21 @@
 import std::io;
 
+fn malloc(size: usize) ptr  @public @extern("malloc") @convention("C");
+
+struct Test {
+    a: ptr[u64]
+}
+
 fn main(argc: s32, argv: array[char]) s32 @public
 {    
+    var c: Test = new Test {
+        a: malloc(sizeOf(u64) * 8)
+    };
+    
+    c->a[0] = 12;
+    c->a[1] = 10;
+
+    io::print("%ld", c->a->[0]);
+
     return 0;   
 }

@@ -55,7 +55,15 @@ pub fn compile<'ctx>(
     });
 
     if (is_allocated && source_type.is_struct_type()) || source_type.is_ptr_composite_type() {
-        let ptr: BasicValueEnum = self::compile_gep_property(context, source, data);
+        let ptr: BasicValueEnum = if metadata.is_deref() {
+            context.add_codegen_location(CodeGenLocation::LValue);
+            let ptr: BasicValueEnum = self::compile_gep_property(context, source, data);
+            context.pop_current_codegen_location();
+
+            ptr
+        } else {
+            self::compile_gep_property(context, source, data)
+        };
 
         if metadata.is_deref() {
             self::compile_deref_property(context, source, data, ptr)
