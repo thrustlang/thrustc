@@ -219,6 +219,7 @@ pub fn try_smart_constant_cast<'ctx>(
         return self::compile_constant_numeric_cast(
             context,
             from_value,
+            &from_type,
             &target_type,
             from_type.is_signed_integer_type(),
         );
@@ -520,6 +521,7 @@ pub fn compile_constant_type_cast<'ctx>(
         return self::compile_constant_numeric_cast(
             context,
             value,
+            &from_type,
             &target_type,
             from_type.is_signed_integer_type(),
         );
@@ -624,12 +626,18 @@ pub fn compile_constant_type_cast<'ctx>(
 pub fn compile_constant_numeric_cast<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     value: BasicValueEnum<'ctx>,
-    target: &Type,
+    from_type: &Type,
+    target_type: &Type,
     is_signed: bool,
 ) -> BasicValueEnum<'ctx> {
-    let cast_type: BasicTypeEnum = typegeneration::generate_type(context, target);
+    let cast_type: BasicTypeEnum = typegeneration::generate_type(context, target_type);
+    let is_target_integer_ty: bool = target_type.is_integer_type() || target_type.is_bool_type();
 
-    if value.is_int_value() && target.is_integer_type() {
+    if target_type == from_type {
+        return value;
+    }
+
+    if value.is_int_value() && is_target_integer_ty {
         let int_value: IntValue = value.into_int_value();
 
         if is_signed {
@@ -646,20 +654,20 @@ pub fn compile_constant_numeric_cast<'ctx>(
         abort::abort_codegen(
             context,
             "Failed to extract constant value from a supposed constant value!",
-            target.get_span(),
+            target_type.get_span(),
             std::path::PathBuf::from(file!()),
             line!(),
         );
     }
 
-    if value.is_float_value() && target.is_float_type() {
+    if value.is_float_value() && target_type.is_float_type() {
         let float_value: FloatValue = value.into_float_value();
 
         let (constant_value, ..) = float_value.get_constant().unwrap_or_else(|| {
             abort::abort_codegen(
                 context,
                 "Failed to extract constant value from a supposed constant value!",
-                target.get_span(),
+                target_type.get_span(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -671,7 +679,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
             .into();
     }
 
-    if value.is_int_value() && target.is_float_type() {
+    if value.is_int_value() && target_type.is_float_type() {
         let int_value: IntValue<'_> = value.into_int_value();
         let float_type: FloatType<'_> = cast_type.into_float_type();
 
@@ -690,13 +698,13 @@ pub fn compile_constant_numeric_cast<'ctx>(
         abort::abort_codegen(
             context,
             "Failed to extract constant value from a supposed constant value!",
-            target.get_span(),
+            target_type.get_span(),
             std::path::PathBuf::from(file!()),
             line!(),
         );
     }
 
-    if value.is_float_value() && target.is_integer_type() {
+    if value.is_float_value() && is_target_integer_ty {
         let float_value: FloatValue<'_> = value.into_float_value();
         let int_type: IntType<'_> = cast_type.into_int_type();
 
@@ -704,7 +712,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
             abort::abort_codegen(
                 context,
                 "Failed to extract constant value from a supposed constant value!",
-                target.get_span(),
+                target_type.get_span(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -718,7 +726,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
     abort::abort_codegen(
         context,
         "Failed to cast a constant numeric value!",
-        target.get_span(),
+        target_type.get_span(),
         std::path::PathBuf::from(file!()),
         line!(),
     );
@@ -755,10 +763,9 @@ pub fn compile_constant_int_together_cast<'ctx>(
         std::cmp::Ordering::Greater => {
             let new_right_value: IntValue = if signatures.1 {
                 match rhs.get_sign_extended_constant() {
-                    Some(rhs_number) => lhs.get_type().const_int(
-                        unsafe { std::mem::transmute::<i64, u64>(rhs_number) },
-                        true,
-                    ),
+                    Some(rhs_number) => lhs
+                        .get_type()
+                        .const_int(unsafe { std::mem::transmute::<i64, u64>(rhs_number) }, true),
                     None => lhs.get_type().const_zero(),
                 }
             } else {
@@ -773,10 +780,9 @@ pub fn compile_constant_int_together_cast<'ctx>(
         std::cmp::Ordering::Less => {
             let new_left_value: IntValue = if signatures.0 {
                 match lhs.get_sign_extended_constant() {
-                    Some(lhs_number) => rhs.get_type().const_int(
-                        unsafe { std::mem::transmute::<i64, u64>(lhs_number) },
-                        true,
-                    ),
+                    Some(lhs_number) => rhs
+                        .get_type()
+                        .const_int(unsafe { std::mem::transmute::<i64, u64>(lhs_number) }, true),
                     None => rhs.get_type().const_zero(),
                 }
             } else {
@@ -904,7 +910,8 @@ pub fn compile_constant_float_together_cast<'ctx>(
     };
 
     let new_right_value: FloatValue = if right_type != target_type {
-        right.get_constant()
+        right
+            .get_constant()
             .map_or(right, |(value, ..)| target_type.const_float(value))
     } else {
         right

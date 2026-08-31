@@ -1,9 +1,6 @@
-import std::mem;
+import std::io;
 
-fn main(argc: s32, argv: ptr[array[char]]) s32 @public
-{
-
-    var wa: ptr = mem::allocateMemory(4);
-    return 0;
-    
+fn main(argc: s32, argv: array[char]) s32 @public
+{    
+    return 0;   
 }

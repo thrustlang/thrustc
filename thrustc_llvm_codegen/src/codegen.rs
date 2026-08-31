@@ -1682,10 +1682,10 @@ pub fn compile_as_ptr_value<'ctx>(
             let ptr_type: &Type = &ty.remove_all_constant_type();
             let nested_ptr_count: usize = ty.get_nested_ptr_type_count(0);
 
-            let is_ptr_like_type: bool =
-                ptr_type.is_ptr_like_type() && !ptr_type.is_array_type_with_inference();
+            let is_ptr_like_type: bool = ptr_type.is_ptr_like_type();
+            let is_pointer_array: bool = !ptr_type.is_array_type_with_inference();
 
-            if matches!(codegen_location, CodeGenLocation::LValue) {
+            if codegen_location.is_direct_behavior() {
                 return base_ptr.into();
             }
 
@@ -1693,12 +1693,7 @@ pub fn compile_as_ptr_value<'ctx>(
                 return base_ptr.into();
             }
 
-            // On the next update:
-            if matches!(
-                codegen_location,
-                CodeGenLocation::RValue | CodeGenLocation::CallArgExpr
-            ) && is_ptr_like_type
-            {
+            if codegen_location.is_load_behavior() && is_ptr_like_type && is_pointer_array {
                 let atomic_config: Option<LLVMAtomicModificators> =
                     symbol.determinate_atomic_configuration();
 
@@ -1726,22 +1721,6 @@ pub fn compile_as_ptr_value<'ctx>(
             } else {
                 base_ptr.into()
             }
-
-            /*if is_ptr_like_type {
-                if nested_ptr_count <= 1 {
-                    memory::load_pointer(context, base_ptr, *span)
-                } else {
-                    memory::auto_deference_a_nested_pointer(
-                        context,
-                        base_ptr,
-                        ptr_type,
-                        nested_ptr_count,
-                        *span,
-                    )
-                }
-            } else {
-                base_ptr.into()
-            }*/
         }
         _ => codegen::compile_as_value(context, expr, cast_type),
     }

@@ -122,9 +122,7 @@ fn compile_compound_int_operation<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     if lhs.is_memory_assigned_reference() {
         context.add_codegen_location(CodeGenLocation::LValue);
-
         let reference: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, lhs, cast_type);
-
         context.pop_current_codegen_location();
 
         let symbol: memory::SymbolAllocated<'_> = if let Ast::Reference { name, .. } = lhs {

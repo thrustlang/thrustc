@@ -75,6 +75,21 @@ pub enum SystemVCodeGenLocation {
     None,
 }
 
+impl SystemVCodeGenLocation {
+    #[inline]
+    pub fn is_direct_behavior(&self) -> bool {
+        matches!(self, SystemVCodeGenLocation::LValue)
+    }
+
+    #[inline]
+    pub fn is_load_behavior(&self) -> bool {
+        matches!(
+            self,
+            SystemVCodeGenLocation::CallArgExpr | SystemVCodeGenLocation::RValue
+        )
+    }
+}
+
 impl<'system_v_abi> SystemVABIContext<'system_v_abi> {
     pub fn new(
         file: &CompilationUnit,
@@ -2103,7 +2118,7 @@ pub fn lower_system_v_call_epilogue<'llvm_abi>(
 
         let codegen_location: SystemVCodeGenLocation = abi_context.get_codegen_location();
 
-        if matches!(codegen_location, SystemVCodeGenLocation::LValue) {
+        if codegen_location.is_direct_behavior() {
             return ptr.into();
         }
 

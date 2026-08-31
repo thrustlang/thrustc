@@ -319,11 +319,19 @@ impl<'scoper> Scoper<'scoper> {
             } => {
                 self.get_mut_context().enter_loop();
 
+                let mut extra_scope: bool = false;
+
                 if let Some(node) = variable {
+                    extra_scope = true;
+                    self.get_mut_table().add_scope();
                     self.analyze_local_node(node);
                 }
 
                 self.analyze_local_node(block);
+
+                if extra_scope {
+                    self.get_mut_table().pop_scope();
+                }
 
                 self.get_mut_context().leave_loop();
             }
@@ -332,9 +340,15 @@ impl<'scoper> Scoper<'scoper> {
                 self.analyze_local_node(block);
                 self.get_mut_context().leave_loop();
             }
-            Ast::For { block, .. } => {
+            Ast::For { local, block, .. } => {
                 self.get_mut_context().enter_loop();
+                self.get_mut_table().add_scope();
+
+                self.analyze_local_node(local);
                 self.analyze_local_node(block);
+
+                self.get_mut_table().pop_scope();
+
                 self.get_mut_context().leave_loop();
             }
 

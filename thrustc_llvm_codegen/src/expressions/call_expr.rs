@@ -89,6 +89,8 @@ pub fn compile<'ctx>(
                         value.into()
                     }
                 } else {
+                    // it is variatic at this point..
+
                     let value: BasicValueEnum<'_> = codegen::compile_as_value(context, expr, cast);
 
                     context.pop_current_codegen_location();

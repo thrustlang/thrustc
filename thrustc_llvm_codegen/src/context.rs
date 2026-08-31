@@ -596,4 +596,14 @@ impl CodeGenLocation {
             CodeGenLocation::None => LLVMABICodeGenLocation::None,
         }
     }
+
+    #[inline]
+    pub fn is_direct_behavior(&self) -> bool {
+        matches!(self, CodeGenLocation::LValue)
+    }
+
+    #[inline]
+    pub fn is_load_behavior(&self) -> bool {
+        matches!(self, CodeGenLocation::CallArgExpr | CodeGenLocation::RValue)
+    }
 }

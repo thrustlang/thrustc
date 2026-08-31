@@ -57,6 +57,21 @@ pub enum CudaCodeGenLocation {
     None,
 }
 
+impl CudaCodeGenLocation {
+    #[inline]
+    pub fn is_direct_behavior(&self) -> bool {
+        matches!(self, CudaCodeGenLocation::LValue)
+    }
+
+    #[inline]
+    pub fn is_load_behavior(&self) -> bool {
+        matches!(
+            self,
+            CudaCodeGenLocation::CallArgExpr | CudaCodeGenLocation::RValue
+        )
+    }
+}
+
 impl<'system_v_abi> CudaABIContext<'system_v_abi> {
     pub fn new(
         file: &CompilationUnit,

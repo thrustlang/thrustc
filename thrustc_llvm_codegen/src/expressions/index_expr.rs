@@ -103,18 +103,19 @@ pub fn compile<'ctx>(
         indexes
     };
 
-    let ptr: PointerValue<'_> = memory::gep_anon(
-        context,
-        ptr_value,
-        ptr_type,
-        &ordered_indexes,
-        source.get_span(),
-    );
+    let span: Span = source.get_span();
+
+    let ptr: PointerValue<'_> =
+        memory::gep_anon(context, ptr_value, ptr_type, &ordered_indexes, span);
 
     if metadata.is_deref() {
         let element_type: Type = ptr_type.calculate_index_type(1).clone();
-        memory::dereference(context, ptr, &element_type, source.get_span())
-    } else {
-        ptr.into()
+        return memory::dereference(context, ptr, &element_type, span);
     }
+
+    if context.get_codegen_location().is_load_behavior() {
+        return memory::load_pointer(context, ptr, span);
+    }
+
+    ptr.into()
 }

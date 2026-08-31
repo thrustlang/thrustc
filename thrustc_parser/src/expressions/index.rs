@@ -27,7 +27,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
-    traits::{IndexExtensions, TypeExtensions},
+    traits::{IndexExtensions, TypeExtensions, TypePointerExtensions},
 };
 
 use crate::{ParserContext, expressions};
@@ -51,10 +51,16 @@ pub fn build_index<'parser>(
     let index_type: Type = if deref {
         index_type.calculate_index_type(1).clone()
     } else {
-        Type::Ptr {
-            subtype: Some(index_type.calculate_index_type(1).clone().into()),
-            address_space: index_type.get_address_space(),
-            span,
+        let inner_index_type: Type = index_type.calculate_index_type(1).clone();
+
+        if !inner_index_type.is_ptr_like_type() {
+            Type::Ptr {
+                subtype: Some(inner_index_type.into()),
+                address_space: index_type.get_address_space(),
+                span,
+            }
+        } else {
+            index_type.calculate_index_type(1).clone()
         }
     };
 

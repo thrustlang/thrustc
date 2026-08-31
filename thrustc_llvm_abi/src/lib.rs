@@ -30,6 +30,7 @@ use inkwell::{
 };
 use thrustc_abi::SpecificABI;
 use thrustc_ast::Ast;
+use thrustc_code_location::Span;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
 use thrustc_llvm_nvidia_cuda_abi::{CudaABIFunctionTypeConfiguration, CudaCodeGenLocation};
 use thrustc_llvm_system_v_abi::{
@@ -38,7 +39,6 @@ use thrustc_llvm_system_v_abi::{
 };
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 use thrustc_typesystem::{Type, type_layout::TargetInfo};
 
 mod abort;
@@ -88,6 +88,19 @@ impl LLVMABICodeGenLocation {
             LLVMABICodeGenLocation::RValue => CudaCodeGenLocation::RValue,
             LLVMABICodeGenLocation::None => CudaCodeGenLocation::None,
         }
+    }
+
+    #[inline]
+    pub fn is_direct_behavior(&self) -> bool {
+        matches!(self, LLVMABICodeGenLocation::LValue)
+    }
+
+    #[inline]
+    pub fn is_load_behavior(&self) -> bool {
+        matches!(
+            self,
+            LLVMABICodeGenLocation::CallArgExpr | LLVMABICodeGenLocation::RValue
+        )
     }
 }
 

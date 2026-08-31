@@ -75,7 +75,7 @@ fn compile_deref_property<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let codegen_location: CodeGenLocation = context.get_codegen_location();
 
-    if matches!(codegen_location, CodeGenLocation::LValue) {
+    if codegen_location.is_direct_behavior() {
         return ptr;
     }
 
@@ -183,7 +183,7 @@ fn compile_gep_property<'ctx>(
         })
         .get_index();
 
-    let mut property_value: PointerValue =
+    let mut address: PointerValue =
         memory::gep_struct_anon(context, ptr_value, ptr_type, index, span);
 
     for field in data.iter().skip(1) {
@@ -193,8 +193,8 @@ fn compile_gep_property<'ctx>(
         let property_type: BasicTypeEnum =
             typegeneration::generate_pointer_arithmetic_type(context, &base_type);
 
-        property_value = llvm_builder
-            .build_struct_gep(property_type, property_value, index, "")
+        address = llvm_builder
+            .build_struct_gep(property_type, address, index, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
                     context,
@@ -206,5 +206,9 @@ fn compile_gep_property<'ctx>(
             });
     }
 
-    property_value.into()
+    if context.get_codegen_location().is_load_behavior() {
+        return memory::load_pointer(context, address, span);
+    }
+
+    address.into()
 }

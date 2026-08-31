@@ -204,7 +204,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
             ptr, attributes, ..
         } = self
         {
-            let loaded_value = llvm_builder
+            let loaded_value: BasicValueEnum<'_> = llvm_builder
                 .build_load(llvm_type, *ptr, "")
                 .unwrap_or_else(|_| {
                     abort::abort_codegen(
