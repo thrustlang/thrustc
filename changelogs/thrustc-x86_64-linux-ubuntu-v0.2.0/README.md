@@ -6,15 +6,6 @@ All notable changes to the Thrust Compiler (thrustc) are documented here.
 
 ### Bug Fixes
 - **frontend**: (fix(frontend),fix(llvm_backend)) Fixing a issue found using arrow dereference shorthand in indexation. (Duplicated load). ([`65f9290`](https://github.com/thrustlang/thrustc/commit/65f92903003883721d70d492a592f0f32dd1bbdc))
-
-
-### Features
-- **std**: (feat(std),fix(llvm_backend)) Implementing std vector as an experimental API., and fixing gdb debug info generation on the llvm backend with actual few limitations. ([`ae01c31`](https://github.com/thrustlang/thrustc/commit/ae01c31eca98c467d97a3e07122445d6ec511594))
-
-
-## [thrustc-x86_64-linux-ubuntu-v0.2.0] - 2026-08-31
-
-### Bug Fixes
 - Fix(fuzz) Making the fuzz more accurate regarding metadata and type generation to not generate masked/non-issue codegen issues. ([`0eeeff3`](https://github.com/thrustlang/thrustc/commit/0eeeff3f54ec3c381eea6aa2fa9451a72be62b02))
 - **frontend**: (fix(llvm_backend),fix(frontend)) Fixing the behavior for index and property access with have relation with memory operations through LValue and RValue. Also fixing issues found on the scoper when analyzes while and for loops intermediate variables. ([`ca6e6ee`](https://github.com/thrustlang/thrustc/commit/ca6e6eefdf3ade5401bf191f2842ebf3df7fa2a1))
 - **frontend**: Fix(frontend) Changing the external linker args flag for a better one, which, is more accurate and descriptive for "C/C++ Compiler linker flag". ([`5c891a3`](https://github.com/thrustlang/thrustc/commit/5c891a3ac1b7163ba66eb61ad46dd265d6941943))
@@ -33,6 +24,7 @@ All notable changes to the Thrust Compiler (thrustc) are documented here.
 
 
 ### Features
+- **std**: (feat(std),fix(llvm_backend)) Implementing std vector as an experimental API., and fixing gdb debug info generation on the llvm backend with actual few limitations. ([`ae01c31`](https://github.com/thrustlang/thrustc/commit/ae01c31eca98c467d97a3e07122445d6ec511594))
 - **frontend**: (feat(llvm_backend),feat(frontend)) Load keyword to disable ambiguity found when you need to load a pointer type from a raw address access calculation (gep). ([`da69be0`](https://github.com/thrustlang/thrustc/commit/da69be039817e17c242bb181ccbd044dcc50f182))
 - **std**: (fix(frontend),feat(std)) Fixing duplicated static signatures generaion the reference is qualified. And also implementing a memory standard library module. ([`b6e282b`](https://github.com/thrustlang/thrustc/commit/b6e282b412847773bbf261d69ea9c8bbb4d9de1e))
 - **frontend**: Feat(frontend) Introducing experimental generatics. (Stable until v0.2.1 approx) ([`047150d`](https://github.com/thrustlang/thrustc/commit/047150d71deade198c381d366a3333c22042ec91))
