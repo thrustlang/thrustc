@@ -2,6 +2,12 @@
 
 All notable changes to the Thrust Compiler (thrustc) are documented here.
 
+## [Unreleased]
+
+### Project
+- **project**: Feat(project) Adding the 'syntax' or spec reference to the compiler. ([`dfb9034`](https://github.com/thrustlang/thrustc/commit/dfb9034ed495ac8bef32a231c33de7b06d33ed44))
+
+
 ## [thrustc-x86_64-linux-ubuntu-v0.2.0] - 2026-08-31
 
 ### Bug Fixes
