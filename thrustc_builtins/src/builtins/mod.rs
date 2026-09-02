@@ -112,10 +112,6 @@ pub fn register_default_builtins(registry: &mut BuiltinRegistry) {
     registry.register_function(target::TargetCpuFeatures);
     registry.register_function(target::HasFeature);
 
-    registry.register_function(host::HostName);
-    registry.register_function(host::ProcessorCount);
-    registry.register_function(host::PageSize);
-    registry.register_function(host::CpuCacheLineSize);
     registry.register_function(host::HostOsName);
     registry.register_function(host::HostArch);
     registry.register_function(host::HostEndian);
