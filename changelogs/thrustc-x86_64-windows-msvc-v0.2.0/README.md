@@ -4,6 +4,10 @@ All notable changes to the Thrust Compiler (thrustc) are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+- **frontend**: Fix(frontend) Fixing a issue on compile time related to libc, when the compiler is tried to be compiled on windows or macos. ([`819de26`](https://github.com/thrustlang/thrustc/commit/819de2667bbe69f4eb6f5add1268f194d8668ff0))
+
+
 ### Project
 - **project**: Feat(project) Adding the 'syntax' or spec reference to the compiler. ([`dfb9034`](https://github.com/thrustlang/thrustc/commit/dfb9034ed495ac8bef32a231c33de7b06d33ed44))
 
