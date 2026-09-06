@@ -19,13 +19,14 @@
 
 mod abort;
 
+use either::Either;
 use inkwell::{
     AddressSpace,
     attributes::{Attribute, AttributeLoc},
     context::Context,
     targets::TargetData,
     types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum, FunctionType},
-    values::{BasicValueEnum, FunctionValue},
+    values::{BasicMetadataValueEnum, BasicValue, BasicValueEnum, CallSiteValue, FunctionValue},
 };
 use thrustc_ast::Ast;
 use thrustc_diagnostician::Diagnostician;
@@ -169,6 +170,7 @@ pub struct CudaABIFunctionTypeConfiguration<'llvm_abi> {
 }
 
 impl<'llvm_abi> CudaABIFunctionTypeConfiguration<'llvm_abi> {
+    #[inline]
     pub fn new(
         return_type_config: CudaABIFunctionTypeReturnConfiguration<'llvm_abi>,
         is_variatic: bool,
@@ -182,11 +184,37 @@ impl<'llvm_abi> CudaABIFunctionTypeConfiguration<'llvm_abi> {
 }
 
 impl<'llvm_abi> CudaABIFunctionTypeConfiguration<'llvm_abi> {
+    #[inline]
     pub fn set_parameter_types_configuration_configuration(
         &mut self,
         configuration: Vec<CudaABIFunctionTypeArgumentConfiguration<'llvm_abi>>,
     ) {
         self.parameter_types_config = configuration;
+    }
+}
+
+#[derive(Debug)]
+pub struct CudaABIAnonymousCallType<'llvm_abi> {
+    ty: &'llvm_abi Type,
+    args_type: &'llvm_abi [Type],
+}
+
+impl<'llvm_abi> CudaABIAnonymousCallType<'llvm_abi> {
+    #[inline]
+    pub fn new(ty: &'llvm_abi Type, args_type: &'llvm_abi [Type]) -> Self {
+        Self { ty, args_type }
+    }
+}
+
+impl<'llvm_abi> CudaABIAnonymousCallType<'llvm_abi> {
+    #[inline]
+    pub fn get_type(&self) -> &Type {
+        self.ty
+    }
+
+    #[inline]
+    pub fn get_args_type(&self) -> &[Type] {
+        self.args_type
     }
 }
 
@@ -324,9 +352,98 @@ pub fn generate_function_type<'llvm_abi>(
     }
 }
 
+pub fn lower_anonymous_call_epilogue<'llvm_abi>(
+    abi_context: &mut CudaABIContext,
+    llvm_context: &'llvm_abi Context,
+    callsite: CallSiteValue<'llvm_abi>,
+    configuration: &CudaABIAnonymousCallType,
+) -> bool {
+    let ret_ty: &Type = configuration.get_type();
+    let args_tys: &[Type] = configuration.get_args_type();
+
+    let mut non_natural_entries: Vec<(u32, u32)> = Vec::with_capacity(8);
+
+    {
+        let type_layout: Either<
+            thrustc_typesystem::type_layout::TypeLayout,
+            thrustc_typesystem::type_layout::StructTypeLayout,
+        > = abi_context.get_mut_target_info().get_type_layout(ret_ty);
+
+        let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
+            either::Either::Left(ty) => ty.into_layout(),
+            either::Either::Right(ty) => ty.into_layout(),
+        };
+
+        if layout.non_natural_align {
+            non_natural_entries.push((0, layout.align));
+        }
+    }
+
+    {
+        for (idx, arg_ty) in args_tys.iter().enumerate() {
+            let type_layout: Either<
+                thrustc_typesystem::type_layout::TypeLayout,
+                thrustc_typesystem::type_layout::StructTypeLayout,
+            > = abi_context.get_mut_target_info().get_type_layout(arg_ty);
+
+            let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
+                either::Either::Left(ty) => ty.into_layout(),
+                either::Either::Right(ty) => ty.into_layout(),
+            };
+
+            if layout.non_natural_align {
+                non_natural_entries.push(((idx as u32) + 1, layout.align));
+            }
+        }
+    }
+
+    if non_natural_entries.is_empty() {
+        return true;
+    }
+
+    non_natural_entries.sort_by_key(|(pos, _)| *pos);
+
+    let mut md_values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(non_natural_entries.len());
+
+    for (position, alignment) in non_natural_entries {
+        let upper16bits: u64 = ((position as u64) << 16) | (alignment as u64);
+
+        md_values.push(llvm_context.i32_type().const_int(upper16bits, false).into());
+    }
+
+    let md_node: inkwell::values::MetadataValue<'_> = llvm_context.metadata_node(&md_values);
+    let kind_id: u32 = llvm_context.get_kind_id("callalign");
+
+    let call_instr: inkwell::values::InstructionValue<'_> = match callsite.try_as_basic_value() {
+        Either::Left(val) => val.as_instruction_value().unwrap_or_else(|| {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to lower an anonymous function call epilogue!",
+                ret_ty.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        }),
+        Either::Right(instr) => instr,
+    };
+
+    call_instr
+        .set_metadata(md_node, kind_id)
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to attach !callalign metadata",
+                ret_ty.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        });
+
+    true
+}
+
 pub fn lower_terminator_conventions<'llvm_abi>(
     llvm_context: &'llvm_abi Context,
-    _: &mut CudaABIContext,
     function_value: FunctionValue<'llvm_abi>,
     configuration: &CudaABIFunctionTypeConfiguration,
 ) {

@@ -17,6 +17,7 @@
 
 */
 
+use inkwell::context::Context;
 use thrustc_ast::Ast;
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
@@ -40,6 +41,7 @@ pub fn compile<'ctx>(
     cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder<'_> = context.get_llvm_builder();
+    let llvm_context: &Context = context.get_llvm_context();
 
     context.add_codegen_location(CodeGenLocation::RValue);
 
@@ -67,6 +69,7 @@ pub fn compile<'ctx>(
     };
 
     let is_var_args: bool = modificator.llvm().has_ignore();
+    let has_abi: bool = context.has_abi();
 
     let function_type: FunctionType<'_> =
         typegeneration::generate_type_function_type_to_function_type(
@@ -115,9 +118,43 @@ pub fn compile<'ctx>(
         &compiled_args,
         "",
     ) {
-        Ok(call) => {
+        Ok(callsite) => {
+            if has_abi {
+                let args_types: &Vec<Type> = parameter_types;
+
+                let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
+                    context.get_abi().unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile the function anonymous call, expected an ABI!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let lowered: bool = thrustc_llvm_abi::lower_anonymous_call_epilogue(
+                    llvm_context,
+                    abi,
+                    callsite,
+                    return_type,
+                    args_types,
+                    context.get_codegen_location().to_abi_representation(),
+                );
+
+                if !lowered {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile the function anonymous call!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                }
+            }
+
             if !return_type.is_void_type() {
-                call.try_as_basic_value().left().unwrap_or_else(|| {
+                callsite.try_as_basic_value().left().unwrap_or_else(|| {
                     abort::abort_codegen(
                         context,
                         "Failed to compile indirect function call!",

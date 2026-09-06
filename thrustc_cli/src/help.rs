@@ -636,7 +636,7 @@ pub fn show_help() -> ! {
         &format!(
             "{} {} {}\n",
             "•".bold(),
-            "--disable-default-optimization"
+            "--disable-default-optimizations"
                 .custom_color((141, 141, 142))
                 .bold(),
             "It omits default optimization that occurs even without specified optimization.",

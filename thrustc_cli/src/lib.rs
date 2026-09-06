@@ -1000,7 +1000,7 @@ impl CommandLine {
                     .set_disable_safe_math();
             }
 
-            "--disable-default-optimization" => {
+            "--disable-default-optimizations" => {
                 self.advance();
                 self.validate_llvm_required(arg);
 

@@ -687,7 +687,7 @@ impl<'a, 'ctx> LLVMFunctionOptimizer<'a, 'ctx> {
 
             if optimizations.has_uwtable() {
                 let kind_id: u32 = Attribute::get_named_enum_kind_id("uwtable");
-                let attribute: Attribute = self.context.create_enum_attribute(kind_id, 1);
+                let attribute: Attribute = self.context.create_enum_attribute(kind_id, 2);
 
                 if let Some(function) = self.function {
                     function.add_attribute(AttributeLoc::Function, attribute);
@@ -1294,6 +1294,7 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
                     self.module
                         .get_functions()
                         .find(|func| {
+                            let is_llvm_intrinsic_function: bool = self::is_llvm_intrinsic_function(*func);
                             let function_name: Cow<'_, str> = utils::clean_llvm_name(func.get_name());
     
                             let function_is_linkage_external: bool = matches!(
@@ -1308,7 +1309,7 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
     
                             global_name == function_name
                                 && global_is_linkage_external
-                                && function_is_linkage_external
+                                && function_is_linkage_external && !is_llvm_intrinsic_function
                         })
                         .map(|func| (global, func))
                 })
@@ -1418,6 +1419,10 @@ impl<'a, 'ctx> LLVMSanitizer<'a, 'ctx> {
 
         {
             for function in self.module.get_functions() {
+                if self::is_llvm_intrinsic_function(function) {
+                    continue;
+                }
+
                 self.visit_function_once(function);
             }
         }
@@ -1734,8 +1739,6 @@ impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
 
 impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
     fn visit_function_once(&mut self, function: FunctionValue<'ctx>) {
-
-
         if function.get_first_basic_block().is_none() {
             return;
         }
@@ -1792,7 +1795,7 @@ impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
                     true
                 }
                 InstructionOpcode::Call => {
-                    if is_llvm_intrinsic_call(inst) {
+                    if self::is_llvm_intrinsic_call(inst) {
                         return true;
                     }
 
@@ -1847,7 +1850,7 @@ impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
             .iter()
             .flat_map(|bb| bb.get_instructions())
             .all(|inst| {
-                if is_llvm_intrinsic_call(inst) {
+                if self::is_llvm_intrinsic_call(inst) {
                     return true;
                 }
 
@@ -2202,15 +2205,28 @@ impl LLVMOptimizationBlocker<'_, '_> {
 
             let optnone_id: u32 = Attribute::get_named_enum_kind_id("optnone");
             let optnone: Attribute = self.context.create_enum_attribute(optnone_id, 0);
+            
             function.add_attribute(AttributeLoc::Function, optnone);
 
             let noinline_id: u32 = Attribute::get_named_enum_kind_id("noinline");
             let noinline: Attribute = self.context.create_enum_attribute(noinline_id, 0);
+            
             function.add_attribute(AttributeLoc::Function, noinline);
 
             let nounwind_id: u32 = Attribute::get_named_enum_kind_id("nounwind");
             let nounwind: Attribute = self.context.create_enum_attribute(nounwind_id, 0);
+            
             function.add_attribute(AttributeLoc::Function, nounwind);
+
+            let sspstrong_id: u32 = Attribute::get_named_enum_kind_id("sspstrong");
+            let sspstrong: Attribute = self.context.create_enum_attribute(sspstrong_id, 0);
+            
+            function.add_attribute(AttributeLoc::Function, sspstrong);
+
+            let uwtable_id: u32 = Attribute::get_named_enum_kind_id("uwtable");
+            let uwtable: Attribute = self.context.create_enum_attribute(uwtable_id, 2);
+            
+            function.add_attribute(AttributeLoc::Function, uwtable);
         }
     }
 }
@@ -2225,3 +2241,9 @@ fn is_llvm_intrinsic_call(instruction: InstructionValue<'_>) -> bool {
 
     called.get_name().to_str().is_ok_and(|name| name.starts_with("llvm."))
 }
+
+#[inline]
+fn is_llvm_intrinsic_function(function: FunctionValue<'_>) -> bool {
+    function.get_name().to_str().is_ok_and(|name| name.starts_with("llvm."))
+}
+

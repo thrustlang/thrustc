@@ -148,7 +148,7 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
                 )
             }
 
-            let lowered_return_type_conventions: bool = thrustc_llvm_abi::lower_terminator_conventions(llvm_context, abi, configuration, llvm_function,  codegen_location);
+            let lowered_return_type_conventions: bool = thrustc_llvm_abi::lower_terminator_conventions(llvm_context, abi, configuration, llvm_function);
 
             if !lowered_return_type_conventions {
                 abort::abort_codegen(

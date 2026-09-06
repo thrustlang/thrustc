@@ -28,7 +28,7 @@ pub fn archive_compilation_unit(file: &CompilationUnit) {
         &format!(
             "{} {} {}\n",
             "Compilation".custom_color((141, 141, 142)).bold(),
-            "STARTING".bright_green().bold(),
+            "STARTED".bright_green().bold(),
             file.get_path().display()
         ),
     );

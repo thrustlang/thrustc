@@ -19,6 +19,8 @@ pub struct Layout {
 
     pub abi_size: u32,
     pub abi_align: u32,
+
+    pub non_natural_align: bool,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -32,6 +34,8 @@ pub struct TypeLayout {
 
     pub abi_size: u32,
     pub abi_align: u32,
+
+    pub non_natural_align: bool,
 }
 
 impl TypeLayout {
@@ -44,6 +48,7 @@ impl TypeLayout {
             field_offsets: self.field_offsets,
             abi_size: self.abi_size.max(1),
             abi_align: self.abi_align.max(1),
+            non_natural_align: self.non_natural_align,
         }
     }
 }
@@ -71,6 +76,8 @@ pub struct StructTypeLayout {
 
     pub abi_size: u32,
     pub abi_align: u32,
+
+    pub non_natural_align: bool,
 }
 
 impl StructTypeLayout {
@@ -80,6 +87,7 @@ impl StructTypeLayout {
         alignof: u32,
         sizeof: u32,
         fields_offsets: Vec<u32>,
+        non_natural_align: bool,
     ) -> Self {
         Self {
             width,
@@ -89,6 +97,7 @@ impl StructTypeLayout {
             field_offsets: fields_offsets,
             abi_size: 0,
             abi_align: 0,
+            non_natural_align,
         }
     }
 }
@@ -116,6 +125,7 @@ impl StructTypeLayout {
             field_offsets: self.field_offsets,
             abi_size: self.abi_size.max(1),
             abi_align: self.abi_align.max(1),
+            non_natural_align: self.non_natural_align,
         }
     }
 }
@@ -725,10 +735,10 @@ impl TargetInfo {
                 let modifications: &StructureTypeModificator =
                     struct_metadata.get_struct_type_modificator();
 
-                let packed: bool = modifications.llvm().is_packed();
+                let is_packed: bool = modifications.llvm().is_packed();
 
                 let mut current_offset_bits: u32 = 0;
-                let mut max_align_bits: u32 = if packed { 1 } else { 8 };
+                let mut max_align_bits: u32 = if is_packed { 1 } else { 8 };
 
                 let mut field_offsets_bits: Vec<u32> = Vec::with_capacity(fields.len());
 
@@ -740,7 +750,7 @@ impl TargetInfo {
                         Either::Right(r) => (r.width, r.align),
                     };
 
-                    if !packed && f_align > 0 {
+                    if !is_packed && f_align > 0 {
                         current_offset_bits = current_offset_bits
                             .div_ceil(f_align)
                             .saturating_mul(f_align);
@@ -750,12 +760,12 @@ impl TargetInfo {
 
                     current_offset_bits = current_offset_bits.saturating_add(f_width);
 
-                    if !packed && f_align > max_align_bits {
+                    if !is_packed && f_align > max_align_bits {
                         max_align_bits = f_align;
                     }
                 }
 
-                let total_width_bits: u32 = if packed {
+                let total_width_bits: u32 = if is_packed {
                     current_offset_bits
                 } else {
                     current_offset_bits
@@ -769,6 +779,7 @@ impl TargetInfo {
                     max_align_bits / self.i8_width,
                     total_width_bits / self.i8_width,
                     field_offsets_bits,
+                    is_packed,
                 );
 
                 struct_type_layout.compute_abi_size();
