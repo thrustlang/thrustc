@@ -136,7 +136,7 @@ The lexer always appends a final `Eof` token after the last real token.
 ```
 var fn if elif else for while loop const struct return break continue
 breakall continueall defer pass as deref type enum fixed ref mut static
-unreachable intrinsic new
+unreachable intrinsic new alloc address addr load write import only directive
 ```
 
 The literal keywords `true`, `false` and `nullptr` and the logical gates `and` /
@@ -150,7 +150,7 @@ Recognized only when the compiler runs in `CompilerFeaturesMode::Unstable`
 `Identifier` tokens:
 
 ```
-asmfn asm global_asm embedded import importC
+asmfn asm global_asm embedded importC
 ```
 
 ## Types
@@ -169,16 +169,16 @@ as attribute tokens; any other `@`-prefixed word falls back to an `Identifier`.
 ### Stable attributes
 
 ```
-@align @optFuzzing @noUnwind @packed @heap @public @linkage @extern
+@align @optFuzzing @noUnwind @noReturn @packed @heap @public @linkage @extern
 @arbitraryArgs @hot @minSize @alwaysInline @noInline @inline @safeStack
 @weakStack @strongStack @preciseFloatingPoint @convention @pure @thunk
-@cuda @constructor @destructor @promote
+@cuda @constructor @destructor @if @elif @else
 ```
 
 ### Unstable-only attributes
 
 ```
-@asmAlignStack @asmSyntax @asmThrowErrors @asmSideEffects
+@promote @asmAlignStack @asmSyntax @asmThrowErrors @asmSideEffects
 ```
 
 ## Atomics & thread modificators
@@ -191,9 +191,15 @@ threadInit threadDyn threadExec threadLDyn
 
 ## Builtins
 
+The following names have dedicated tokens in the lexer:
+
 ```
-halloc sizeOf memset memmove memcpy alignOf abiSizeOf bitSizeOf abiAlignOf
+halloc memset memmove memcpy abiSizeOf bitSizeOf abiAlignOf
+arbitraryArg arbitraryArgs
 ```
+
+Other compiler builtins, including `sizeOf` and `alignOf`, lex as identifiers and
+are resolved later through the builtin registry.
 
 ## LLI
 
@@ -309,7 +315,7 @@ Valid escapes, shared by characters and strings:
 
 Keyword and attribute tables are built according to the active compiler features
 mode (`thrustc_backends::get_compiler_features`). In **stable** mode, unstable-only
-keywords (`asmfn`, `asm`, `global_asm`, `embedded`, `import`, `importC`) and
-unstable-only attributes (`@asm*`) are not recognized, so those words lex as plain
+keywords (`asmfn`, `asm`, `global_asm`, `embedded`, `importC`) and unstable-only
+attributes (`@promote`, `@asm*`) are not recognized, so those words lex as plain
 `Identifier` tokens. In **unstable** mode they are recognized as their dedicated
 token types.
