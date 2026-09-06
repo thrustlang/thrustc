@@ -375,7 +375,7 @@ pub fn lower_anonymous_call_epilogue<'llvm_abi>(
         };
 
         if layout.non_natural_align {
-            non_natural_entries.push((0, layout.align));
+            non_natural_entries.push((0, layout.alignof));
         }
     }
 
@@ -392,7 +392,7 @@ pub fn lower_anonymous_call_epilogue<'llvm_abi>(
             };
 
             if layout.non_natural_align {
-                non_natural_entries.push(((idx as u32) + 1, layout.align));
+                non_natural_entries.push(((idx as u32) + 1, layout.alignof));
             }
         }
     }
@@ -406,9 +406,14 @@ pub fn lower_anonymous_call_epilogue<'llvm_abi>(
     let mut md_values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(non_natural_entries.len());
 
     for (position, alignment) in non_natural_entries {
-        let upper16bits: u64 = ((position as u64) << 16) | (alignment as u64);
+        let recalculated_alignment: u64 = ((position as u64) << 16) | (alignment as u64);
 
-        md_values.push(llvm_context.i32_type().const_int(upper16bits, false).into());
+        md_values.push(
+            llvm_context
+                .i32_type()
+                .const_int(recalculated_alignment, false)
+                .into(),
+        );
     }
 
     let md_node: inkwell::values::MetadataValue<'_> = llvm_context.metadata_node(&md_values);
