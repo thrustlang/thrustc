@@ -17,12 +17,12 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId};
 use thrustc_ast::ast_builtins::{AstBuiltin, DeferredBuiltinArgument};
 use thrustc_ast::traits::AstCodeLocation;
-use thrustc_builtins::BuiltinArgument;
+use thrustc_ast::{Ast, NodeId};
 use thrustc_builtins::BuiltinFunctionSignature;
 use thrustc_code_location::Span;
+use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 use thrustc_errors::CompilationIssue;
 use thrustc_errors::CompilationIssueCode;
 use thrustc_token::traits::TokenExtensions;
@@ -90,7 +90,7 @@ pub fn build_builtin_call<'parser>(
                 let expr: Ast<'_> = expressions::parse_expr(ctx)?;
                 let argument_span: Span = expr.get_span();
 
-                let argument: BuiltinArgument = match thrustc_builtins::value::fold(&expr) {
+                let argument: BuiltinArgument = match thrustc_compile_time::fold(&expr) {
                     Some(value) => BuiltinArgument::Value {
                         value,
                         span: argument_span,
@@ -99,7 +99,7 @@ pub fn build_builtin_call<'parser>(
                         should_defer = true;
 
                         BuiltinArgument::Value {
-                            value: thrustc_builtins::BuiltinValue::Void,
+                            value: BuiltinValue::Void,
                             span: argument_span,
                         }
                     }

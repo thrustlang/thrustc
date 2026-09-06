@@ -23,11 +23,11 @@ use thrustc_ast::{
         FunctionParameterMetadata, LocalMetadata, ReferenceMetadata, ReferenceType, StaticMetadata,
     },
 };
+use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{
     ConstantSymbol, FoundSymbolId, Function, LLISymbol, LocalSymbol, ParameterSymbol, StaticSymbol,
 };
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{

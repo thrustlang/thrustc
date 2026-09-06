@@ -20,9 +20,8 @@
 use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
 use thrustc_ast::traits::AstCodeLocation;
-use thrustc_builtins::BuiltinArgument;
-use thrustc_builtins::BuiltinValue;
 use thrustc_code_location::Span;
+use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -42,7 +41,7 @@ pub fn evaluate_condition<'preprocessor>(
 
     parser.consume(TokenType::RParen)?;
 
-    match thrustc_builtins::value::fold(&expression) {
+    match thrustc_compile_time::fold(&expression) {
         Some(BuiltinValue::Bool(condition)) => Ok(condition),
         _ => Err(()),
     }
@@ -312,7 +311,7 @@ fn parse_builtin_call(parser: &mut PreprocessorContext) -> Result<Ast<'static>, 
             } else {
                 let argument: Ast<'static> = self::parse_expression(parser)?;
 
-                let value: BuiltinValue = thrustc_builtins::value::fold(&argument).ok_or(())?;
+                let value: BuiltinValue = thrustc_compile_time::fold(&argument).ok_or(())?;
                 let argument_span: Span = argument.get_span();
 
                 args.push(BuiltinArgument::Value {

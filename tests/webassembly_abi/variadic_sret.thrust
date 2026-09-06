@@ -1,0 +1,26 @@
+/*
+ * The hidden sret pointer stays first when fixed empty parameters are omitted
+ * and variadic arguments follow the remaining fixed parameters.
+ */
+
+struct Empty {}
+
+struct Pair {
+    left: u32,
+    right: u32
+}
+
+fn build(empty: Empty, value: u32) Pair @public @convention("C") @arbitraryArgs {
+    return new Pair {
+        left: value,
+        right: arbitraryArg(u32)
+    };
+}
+
+fn callBuild(empty: Empty, value: u32) Pair @public @convention("C") {
+    return build(empty, value, 20 as u16);
+}
+
+fn main() s32 @public {
+    return 0;
+}

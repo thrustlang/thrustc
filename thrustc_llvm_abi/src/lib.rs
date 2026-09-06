@@ -40,6 +40,9 @@ use thrustc_llvm_system_v_abi::{
     SystemVCodeGenLocation,
 };
 use thrustc_llvm_target_triple::LLVMTargetTriple;
+use thrustc_llvm_webassembly_abi::{
+    WebAssemblyABIFunctionTypeConfiguration, WebAssemblyCodeGenLocation,
+};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::{Type, type_layout::TargetInfo};
 
@@ -55,12 +58,12 @@ pub enum LLVMABIType<'llvm_abi> {
 #[derive(Debug, Clone)]
 pub enum LLVMABIConfiguration<'llvm_abi> {
     SystemVFunctionTypeConfiguration(SystemVABIFunctionTypeConfiguration<'llvm_abi>),
-    SystemVFunctionParameterConfiguration(SystemVABIFunctionParameterConfiguration),
     CudaFunctionTypeConfiguration(CudaABIFunctionTypeConfiguration<'llvm_abi>),
     CudaABIAnonymousCallType {
         ty: &'llvm_abi Type,
         args_type: &'llvm_abi [Type],
     },
+    WebAssemblyFunctionTypeConfiguration(WebAssemblyABIFunctionTypeConfiguration<'llvm_abi>),
 
     None,
 }
@@ -97,6 +100,16 @@ impl LLVMABICodeGenLocation {
     }
 
     #[inline]
+    pub fn to_webassembly(&self) -> WebAssemblyCodeGenLocation {
+        match self {
+            LLVMABICodeGenLocation::CallArgExpr => WebAssemblyCodeGenLocation::CallArgExpr,
+            LLVMABICodeGenLocation::LValue => WebAssemblyCodeGenLocation::LValue,
+            LLVMABICodeGenLocation::RValue => WebAssemblyCodeGenLocation::RValue,
+            LLVMABICodeGenLocation::None => WebAssemblyCodeGenLocation::None,
+        }
+    }
+
+    #[inline]
     pub fn is_direct_behavior(&self) -> bool {
         matches!(self, LLVMABICodeGenLocation::LValue)
     }
@@ -116,7 +129,13 @@ pub struct LLVMABIFunctionLoweredParameter<'llvm_abi> {
     ascii_name: &'llvm_abi str,
     ty: &'llvm_abi Type,
     value: BasicValueEnum<'llvm_abi>,
-    abi_configuration: LLVMABIConfiguration<'llvm_abi>,
+    storage: LLVMABIFunctionParameterStorage,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum LLVMABIFunctionParameterStorage {
+    Value,
+    Address,
 }
 
 pub fn get_abi<'llvm_abi>(
@@ -144,6 +163,18 @@ pub fn get_abi<'llvm_abi>(
             target_data,
         }),
 
+        SpecificABI::WebAssembly if target_triple.is_wasm32_arch() => {
+            Some(LLVMABIRepresentation::WebAssemblyABI {
+                file,
+                options,
+                target_triple,
+                target_info,
+                target_data,
+            })
+        }
+
+        SpecificABI::WebAssembly => None,
+
         SpecificABI::None => {
             self::get_abi_automatic(file, options, target_triple, target_info, target_data)
         }
@@ -169,6 +200,16 @@ fn get_abi_automatic<'llvm_abi>(
 
     if target_triple.is_nvptx_arch() {
         return Some(LLVMABIRepresentation::CudaABI {
+            file,
+            options,
+            target_triple,
+            target_info,
+            target_data,
+        });
+    }
+
+    if target_triple.is_wasm32_arch() {
+        return Some(LLVMABIRepresentation::WebAssemblyABI {
             file,
             options,
             target_triple,
@@ -296,6 +337,36 @@ pub fn create_function_type<'llvm_abi>(
             ))
         }
 
+        LLVMABIRepresentation::WebAssemblyABI {
+            file,
+            options,
+            target_info,
+            target_data,
+            ..
+        } => {
+            let mut abi_context = thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
+                file,
+                options,
+                (*target_info).clone(),
+                target_data,
+                codegen_location.to_webassembly(),
+            );
+
+            let (function_type, configuration) =
+                thrustc_llvm_webassembly_abi::generate_function_type(
+                    llvm_context,
+                    &mut abi_context,
+                    kind,
+                    parameters,
+                    is_var_args,
+                );
+
+            Some((
+                function_type,
+                LLVMABIConfiguration::WebAssemblyFunctionTypeConfiguration(configuration),
+            ))
+        }
+
         _ => None,
     }
 }
@@ -305,8 +376,9 @@ pub fn lower_call_prologue<'llvm_abi>(
     llvm_builder: &'llvm_abi Builder<'llvm_abi>,
     abi: &LLVMABIRepresentation<'llvm_abi>,
     function_value: FunctionValue<'llvm_abi>,
-    configuration: &LLVMABIConfiguration,
+    configuration: &LLVMABIConfiguration<'llvm_abi>,
     args: Vec<BasicValueEnum<'llvm_abi>>,
+    argument_types: &[Type],
     codegen_location: LLVMABICodeGenLocation,
     span: Span,
 ) -> Option<Vec<BasicMetadataValueEnum<'llvm_abi>>> {
@@ -354,6 +426,39 @@ pub fn lower_call_prologue<'llvm_abi>(
             Some(lowered_args)
         }
 
+        LLVMABIRepresentation::WebAssemblyABI {
+            file,
+            options,
+            target_info,
+            target_data,
+            ..
+        } => {
+            let mut abi_context = thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
+                file,
+                options,
+                (*target_info).clone(),
+                target_data,
+                codegen_location.to_webassembly(),
+            );
+
+            let configuration = match configuration {
+                LLVMABIConfiguration::WebAssemblyFunctionTypeConfiguration(configuration) => {
+                    configuration
+                }
+                _ => unreachable!(),
+            };
+
+            Some(thrustc_llvm_webassembly_abi::lower_call_prologue(
+                llvm_builder,
+                llvm_context,
+                &mut abi_context,
+                configuration,
+                args,
+                argument_types,
+                span,
+            ))
+        }
+
         _ => None,
     }
 }
@@ -368,12 +473,6 @@ pub fn lower_call_epilogue<'llvm_abi>(
     codegen_location: LLVMABICodeGenLocation,
     span: Span,
 ) -> Option<BasicValueEnum<'llvm_abi>> {
-    let is_void_type: bool = callsite
-        .get_called_fn_value()
-        .get_type()
-        .get_return_type()
-        .is_none();
-
     match abi {
         LLVMABIRepresentation::SystemVABI {
             file,
@@ -382,6 +481,11 @@ pub fn lower_call_epilogue<'llvm_abi>(
             target_info,
             target_triple,
         } => {
+            let is_void_type: bool = callsite
+                .get_called_fn_value()
+                .get_type()
+                .get_return_type()
+                .is_none();
             let mut abi_context: thrustc_llvm_system_v_abi::SystemVABIContext =
                 thrustc_llvm_system_v_abi::SystemVABIContext::new(
                     file,
@@ -434,6 +538,11 @@ pub fn lower_call_epilogue<'llvm_abi>(
             target_info,
             target_data,
         } => {
+            let is_void_type: bool = callsite
+                .get_called_fn_value()
+                .get_type()
+                .get_return_type()
+                .is_none();
             let mut abi_context: thrustc_llvm_nvidia_cuda_abi::CudaABIContext<'_> =
                 thrustc_llvm_nvidia_cuda_abi::CudaABIContext::new(
                     file,
@@ -459,7 +568,173 @@ pub fn lower_call_epilogue<'llvm_abi>(
             }
         }
 
+        LLVMABIRepresentation::WebAssemblyABI {
+            file,
+            options,
+            target_info,
+            target_data,
+            ..
+        } => {
+            let mut abi_context = thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
+                file,
+                options,
+                (*target_info).clone(),
+                target_data,
+                codegen_location.to_webassembly(),
+            );
+
+            let configuration = match configuration {
+                LLVMABIConfiguration::WebAssemblyFunctionTypeConfiguration(configuration) => {
+                    configuration
+                }
+                _ => unreachable!(),
+            };
+
+            thrustc_llvm_webassembly_abi::lower_call_epilogue(
+                llvm_builder,
+                llvm_context,
+                &mut abi_context,
+                callsite,
+                lowered_args,
+                configuration,
+                span,
+            )
+        }
+
         _ => None,
+    }
+}
+
+pub fn lower_call_conventions<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    abi: &LLVMABIRepresentation<'llvm_abi>,
+    configuration: &LLVMABIConfiguration<'llvm_abi>,
+    callsite: CallSiteValue<'llvm_abi>,
+    argument_types: &[Type],
+    codegen_location: LLVMABICodeGenLocation,
+) {
+    if let LLVMABIRepresentation::WebAssemblyABI {
+        file,
+        options,
+        target_info,
+        target_data,
+        ..
+    } = abi
+    {
+        let mut abi_context: thrustc_llvm_webassembly_abi::WebAssemblyABIContext<'_> =
+            thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
+                file,
+                options,
+                (*target_info).clone(),
+                target_data,
+                codegen_location.to_webassembly(),
+            );
+
+        let configuration = match configuration {
+            LLVMABIConfiguration::WebAssemblyFunctionTypeConfiguration(configuration) => {
+                configuration
+            }
+            _ => unreachable!(),
+        };
+
+        thrustc_llvm_webassembly_abi::lower_call_conventions(
+            llvm_context,
+            &mut abi_context,
+            callsite,
+            configuration,
+            argument_types,
+        );
+    }
+}
+
+pub fn create_anonymous_function_type<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    abi: &'llvm_abi LLVMABIRepresentation<'llvm_abi>,
+    return_type: &'llvm_abi Type,
+    parameter_types: &'llvm_abi [Type],
+    is_var_args: bool,
+    codegen_location: LLVMABICodeGenLocation,
+) -> Option<(FunctionType<'llvm_abi>, LLVMABIConfiguration<'llvm_abi>)> {
+    if let LLVMABIRepresentation::WebAssemblyABI {
+        file,
+        options,
+        target_info,
+        target_data,
+        ..
+    } = abi
+    {
+        let mut abi_context: thrustc_llvm_webassembly_abi::WebAssemblyABIContext<'_> =
+            thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
+                file,
+                options,
+                (*target_info).clone(),
+                target_data,
+                codegen_location.to_webassembly(),
+            );
+
+        let (function_type, configuration) =
+            thrustc_llvm_webassembly_abi::generate_anonymous_function_type(
+                llvm_context,
+                &mut abi_context,
+                return_type,
+                parameter_types,
+                is_var_args,
+            );
+
+        Some((
+            function_type,
+            LLVMABIConfiguration::WebAssemblyFunctionTypeConfiguration(configuration),
+        ))
+    } else {
+        None
+    }
+}
+
+pub fn lower_anonymous_call_prologue<'llvm_abi>(
+    llvm_context: &'llvm_abi Context,
+    llvm_builder: &'llvm_abi Builder<'llvm_abi>,
+    abi: &LLVMABIRepresentation<'llvm_abi>,
+    configuration: &LLVMABIConfiguration<'llvm_abi>,
+    args: Vec<BasicValueEnum<'llvm_abi>>,
+    argument_types: &[Type],
+    codegen_location: LLVMABICodeGenLocation,
+    span: Span,
+) -> Option<Vec<BasicMetadataValueEnum<'llvm_abi>>> {
+    if let LLVMABIRepresentation::WebAssemblyABI {
+        file,
+        options,
+        target_info,
+        target_data,
+        ..
+    } = abi
+    {
+        let mut abi_context: thrustc_llvm_webassembly_abi::WebAssemblyABIContext<'_> =
+            thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
+                file,
+                options,
+                (*target_info).clone(),
+                target_data,
+                codegen_location.to_webassembly(),
+            );
+
+        let configuration = match configuration {
+            LLVMABIConfiguration::WebAssemblyFunctionTypeConfiguration(configuration) => {
+                configuration
+            }
+            _ => unreachable!(),
+        };
+
+        Some(thrustc_llvm_webassembly_abi::lower_call_prologue(
+            llvm_builder,
+            llvm_context,
+            &mut abi_context,
+            configuration,
+            args,
+            argument_types,
+            span,
+        ))
+    } else {
+        None
     }
 }
 
@@ -557,22 +832,67 @@ pub fn lower_function_parameters<'llvm_abi>(
                         let (name, ascii_name, ty, parameter_configuration, value) =
                             lowered_parameter;
 
-                        let abi_parameter_configuration: LLVMABIConfiguration =
-                            LLVMABIConfiguration::SystemVFunctionParameterConfiguration(
-                                parameter_configuration.clone(),
-                            );
+                        let storage = match parameter_configuration {
+                            SystemVABIFunctionParameterConfiguration::Normal => {
+                                LLVMABIFunctionParameterStorage::Value
+                            }
+                            SystemVABIFunctionParameterConfiguration::FromMemory => {
+                                LLVMABIFunctionParameterStorage::Address
+                            }
+                        };
 
-                        LLVMABIFunctionLoweredParameter::new(
-                            name,
-                            ascii_name,
-                            ty,
-                            *value,
-                            abi_parameter_configuration,
-                        )
+                        LLVMABIFunctionLoweredParameter::new(name, ascii_name, ty, *value, storage)
                     })
                     .collect();
 
             Some(transformed_lowered_parameters)
+        }
+
+        LLVMABIRepresentation::WebAssemblyABI {
+            file,
+            options,
+            target_info,
+            target_data,
+            ..
+        } => {
+            let mut abi_context: thrustc_llvm_webassembly_abi::WebAssemblyABIContext<'_> =
+                thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
+                    file,
+                    options,
+                    (*target_info).clone(),
+                    target_data,
+                    codegen_location.to_webassembly(),
+                );
+
+            let configuration = match configuration {
+                LLVMABIConfiguration::WebAssemblyFunctionTypeConfiguration(configuration) => {
+                    configuration
+                }
+                _ => unreachable!(),
+            };
+            let lowered = thrustc_llvm_webassembly_abi::lower_function_parameters(
+                llvm_builder,
+                llvm_context,
+                &mut abi_context,
+                function_value,
+                configuration,
+            );
+
+            Some(
+                lowered
+                    .into_iter()
+                    .map(|(name, ascii_name, ty, parameter_configuration, value)| {
+                        let storage = match parameter_configuration {
+                            thrustc_llvm_webassembly_abi::WebAssemblyABIFunctionParameterConfiguration::Value => LLVMABIFunctionParameterStorage::Value,
+                            thrustc_llvm_webassembly_abi::WebAssemblyABIFunctionParameterConfiguration::Address => LLVMABIFunctionParameterStorage::Address,
+                        };
+
+                        LLVMABIFunctionLoweredParameter::new(
+                            name, ascii_name, ty, value, storage,
+                        )
+                    })
+                    .collect(),
+            )
         }
 
         _ => None,
@@ -625,6 +945,40 @@ pub fn lower_terminator<'llvm_abi>(
 
         LLVMABIRepresentation::CudaABI { .. } => false,
 
+        LLVMABIRepresentation::WebAssemblyABI {
+            file,
+            options,
+            target_info,
+            target_data,
+            ..
+        } => {
+            let mut abi_context: thrustc_llvm_webassembly_abi::WebAssemblyABIContext<'_> =
+                thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
+                    file,
+                    options,
+                    (*target_info).clone(),
+                    target_data,
+                    codegen_location.to_webassembly(),
+                );
+
+            let configuration = match configuration {
+                LLVMABIConfiguration::WebAssemblyFunctionTypeConfiguration(configuration) => {
+                    configuration
+                }
+                _ => unreachable!(),
+            };
+
+            thrustc_llvm_webassembly_abi::lower_function_terminator(
+                llvm_context,
+                llvm_builder,
+                &mut abi_context,
+                configuration,
+                function_value,
+                return_value,
+                span,
+            )
+        }
+
         _ => false,
     }
 }
@@ -652,6 +1006,8 @@ pub fn lower_terminator_conventions<'llvm_abi>(
 
             true
         }
+
+        LLVMABIRepresentation::WebAssemblyABI { .. } => true,
 
         _ => false,
     }
@@ -729,6 +1085,38 @@ pub fn lower_parameter_conventions<'llvm_abi>(
             true
         }
 
+        LLVMABIRepresentation::WebAssemblyABI {
+            file,
+            options,
+            target_info,
+            target_data,
+            ..
+        } => {
+            let mut abi_context: thrustc_llvm_webassembly_abi::WebAssemblyABIContext<'_> =
+                thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
+                    file,
+                    options,
+                    (*target_info).clone(),
+                    target_data,
+                    codegen_location.to_webassembly(),
+                );
+
+            let configuration = match configuration {
+                LLVMABIConfiguration::WebAssemblyFunctionTypeConfiguration(configuration) => {
+                    configuration
+                }
+                _ => unreachable!(),
+            };
+
+            thrustc_llvm_webassembly_abi::lower_function_conventions(
+                llvm_context,
+                &mut abi_context,
+                function_value,
+                configuration,
+            );
+            true
+        }
+
         _ => false,
     }
 }
@@ -739,14 +1127,14 @@ impl<'llvm_abi> LLVMABIFunctionLoweredParameter<'llvm_abi> {
         ascii_name: &'llvm_abi str,
         ty: &'llvm_abi Type,
         value: BasicValueEnum<'llvm_abi>,
-        abi_configuration: LLVMABIConfiguration<'llvm_abi>,
+        storage: LLVMABIFunctionParameterStorage,
     ) -> Self {
         Self {
             name,
             ascii_name,
             ty,
             value,
-            abi_configuration,
+            storage,
         }
     }
 }
@@ -773,7 +1161,7 @@ impl<'lowered_parameter> LLVMABIFunctionLoweredParameter<'lowered_parameter> {
     }
 
     #[inline]
-    pub fn get_abi_configuration(&self) -> &LLVMABIConfiguration<'lowered_parameter> {
-        &self.abi_configuration
+    pub fn get_storage(&self) -> LLVMABIFunctionParameterStorage {
+        self.storage
     }
 }

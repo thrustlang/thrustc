@@ -43,5 +43,13 @@ pub enum LLVMABIRepresentation<'llvm_abi> {
         target_data: &'llvm_abi TargetData,
     },
 
+    WebAssemblyABI {
+        file: &'llvm_abi CompilationUnit,
+        options: &'llvm_abi CompilerOptions,
+        target_triple: &'llvm_abi LLVMTargetTriple,
+        target_info: &'llvm_abi TargetInfo,
+        target_data: &'llvm_abi TargetData,
+    },
+
     None,
 }

@@ -1,0 +1,30 @@
+/*
+ * Non-singleton structs use byval parameters and sret return buffers.
+ */
+
+struct Pair {
+    left: u32,
+    right: u32
+}
+
+struct Mixed {
+    integer: u64,
+    floating: f64,
+    flag: bool
+}
+
+fn pair(value: Pair) Pair @public @convention("C") {
+    return value;
+}
+
+fn mixed(value: Mixed) Mixed @public @convention("C") {
+    return value;
+}
+
+fn callPair(value: Pair) Pair @public @convention("C") {
+    return pair(value);
+}
+
+fn main() s32 @public {
+    return 0;
+}

@@ -33,10 +33,8 @@ use crate::typegeneration;
 
 use thrustc_ast::Ast;
 use thrustc_ast::traits::AstMemoryExtensions;
-use thrustc_backends::llvm::LLVMBackend;
 use thrustc_code_location::Span;
 use thrustc_entities::BinaryOperation;
-use thrustc_options::CompilerOptions;
 use thrustc_token_type::TokenType;
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::Type;
@@ -269,12 +267,11 @@ fn compiler_int_binary_instruction<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder = context.get_llvm_builder();
 
-    let options: &CompilerOptions = context.get_compiler_options();
-    let llvm_backend: &LLVMBackend = options.get_llvm_backend();
+    let disable_safe_math: bool = context.get_file_options().disable_safe_math();
 
     match operator {
         TokenType::Plus | TokenType::PlusEq
-            if (signatures.0 || signatures.1) && !llvm_backend.has_disable_safe_math() =>
+            if (signatures.0 || signatures.1) && !disable_safe_math =>
         {
             llvm_builder
                 .build_int_nsw_add(lhs, rhs, "")
@@ -289,21 +286,19 @@ fn compiler_int_binary_instruction<'ctx>(
                 })
                 .into()
         }
-        TokenType::Plus | TokenType::PlusEq if !llvm_backend.has_disable_safe_math() => {
-            llvm_builder
-                .build_int_nuw_add(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '+' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into()
-        }
-        TokenType::Plus | TokenType::PlusEq if llvm_backend.has_disable_safe_math() => llvm_builder
+        TokenType::Plus | TokenType::PlusEq if !disable_safe_math => llvm_builder
+            .build_int_nuw_add(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '+' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::Plus | TokenType::PlusEq if disable_safe_math => llvm_builder
             .build_int_add(lhs, rhs, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -316,7 +311,7 @@ fn compiler_int_binary_instruction<'ctx>(
             })
             .into(),
         TokenType::Minus | TokenType::MinusEq
-            if (signatures.0 || signatures.1) && !llvm_backend.has_disable_safe_math() =>
+            if (signatures.0 || signatures.1) && !disable_safe_math =>
         {
             llvm_builder
                 .build_int_nsw_sub(lhs, rhs, "")
@@ -331,36 +326,32 @@ fn compiler_int_binary_instruction<'ctx>(
                 })
                 .into()
         }
-        TokenType::Minus | TokenType::MinusEq if !llvm_backend.has_disable_safe_math() => {
-            llvm_builder
-                .build_int_nuw_sub(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '-' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into()
-        }
-        TokenType::Minus | TokenType::MinusEq if llvm_backend.has_disable_safe_math() => {
-            llvm_builder
-                .build_int_sub(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '-' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into()
-        }
+        TokenType::Minus | TokenType::MinusEq if !disable_safe_math => llvm_builder
+            .build_int_nuw_sub(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '-' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::Minus | TokenType::MinusEq if disable_safe_math => llvm_builder
+            .build_int_sub(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '-' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
         TokenType::Star | TokenType::StarEq
-            if (signatures.0 || signatures.1) && !llvm_backend.has_disable_safe_math() =>
+            if (signatures.0 || signatures.1) && !disable_safe_math =>
         {
             llvm_builder
                 .build_int_nsw_mul(lhs, rhs, "")
@@ -375,21 +366,19 @@ fn compiler_int_binary_instruction<'ctx>(
                 })
                 .into()
         }
-        TokenType::Star | TokenType::StarEq if !llvm_backend.has_disable_safe_math() => {
-            llvm_builder
-                .build_int_nuw_mul(lhs, rhs, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile '*' operation!",
-                        span,
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                })
-                .into()
-        }
-        TokenType::Star | TokenType::StarEq if llvm_backend.has_disable_safe_math() => llvm_builder
+        TokenType::Star | TokenType::StarEq if !disable_safe_math => llvm_builder
+            .build_int_nuw_mul(lhs, rhs, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile '*' operation!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            })
+            .into(),
+        TokenType::Star | TokenType::StarEq if disable_safe_math => llvm_builder
             .build_int_mul(lhs, rhs, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(

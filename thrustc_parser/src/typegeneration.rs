@@ -25,8 +25,8 @@ use thrustc_ast::{
     traits::{AstGetType, AstStructFieldsDataExtensions},
 };
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
-use thrustc_builtins::BuiltinValue;
 use thrustc_code_location::Span;
+use thrustc_compile_time::BuiltinValue;
 use thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
@@ -533,7 +533,7 @@ fn parse_array_type(ctx: &mut ParserContext<'_>, span: Span) -> Result<Type, Com
             let ctx_ref: &ParserContext<'_> = &*ctx;
             let mut depth: usize = 0;
 
-            match thrustc_builtins::value::fold_resolving(&size, &mut |name, span| {
+            match thrustc_compile_time::fold_resolving(&size, &mut |name, span| {
                 self::resolve_constant_value(ctx_ref, name, span, &mut depth)
             }) {
                 Some(BuiltinValue::Integer(value)) => Some(value),
@@ -657,7 +657,7 @@ fn parse_memory_address_space<'parser>(
         let ctx_ref: &ParserContext<'parser> = &*ctx;
         let mut depth: usize = 0;
 
-        match thrustc_builtins::value::fold_resolving(&memory_address_expr, &mut |name, span| {
+        match thrustc_compile_time::fold_resolving(&memory_address_expr, &mut |name, span| {
             self::resolve_constant_value(ctx_ref, name, span, &mut depth)
         }) {
             Some(BuiltinValue::Integer(value)) => Some(value),
@@ -708,7 +708,7 @@ fn resolve_constant_value(
     *depth = depth.saturating_add(1);
 
     let result: Option<BuiltinValue> =
-        thrustc_builtins::value::fold_resolving(&value, &mut |name, span| {
+        thrustc_compile_time::fold_resolving(&value, &mut |name, span| {
             self::resolve_constant_value(ctx, name, span, &mut *depth)
         });
 

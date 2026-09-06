@@ -1,0 +1,18 @@
+/*
+ * Function references are direct pointer-like WebAssembly ABI values.
+ * The frontend currently has no working source syntax for invoking a local
+ * Fn parameter, so this test is intentionally limited to its ABI signature.
+ */
+
+struct Pair {
+    left: u32,
+    right: u32
+}
+
+fn accept(callback: Fn[Pair] -> Pair) void @public @convention("C") {
+    return;
+}
+
+fn main() s32 @public {
+    return 0;
+}

@@ -19,10 +19,8 @@
 
 use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeLocation;
-use thrustc_backends::llvm::LLVMBackend;
-use thrustc_entities::UnaryOperation;
-use thrustc_options::CompilerOptions;
 use thrustc_code_location::Span;
+use thrustc_entities::UnaryOperation;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
@@ -129,40 +127,35 @@ fn compile_increment_decrement_ref<'ctx>(
             let modifier: IntValue = old_value.get_type().const_int(1, false);
             let is_signed: bool = kind.is_signed_integer_type();
 
-            let options: &CompilerOptions = context.get_compiler_options();
-            let llvm_backend: &LLVMBackend = options.get_llvm_backend();
+            let disable_safe_math: bool = context.get_file_options().disable_safe_math();
 
             let result: BasicValueEnum = match operator {
-                TokenType::PlusPlus if is_signed && !llvm_backend.has_disable_safe_math() => {
-                    llvm_builder
-                        .build_int_nsw_add(old_value, modifier, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile the operation!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            )
-                        })
-                        .into()
-                }
-                TokenType::PlusPlus if !is_signed && !llvm_backend.has_disable_safe_math() => {
-                    llvm_builder
-                        .build_int_nuw_add(old_value, modifier, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile the operation!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            )
-                        })
-                        .into()
-                }
+                TokenType::PlusPlus if is_signed && !disable_safe_math => llvm_builder
+                    .build_int_nsw_add(old_value, modifier, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile the operation!",
+                            span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                    .into(),
+                TokenType::PlusPlus if !is_signed && !disable_safe_math => llvm_builder
+                    .build_int_nuw_add(old_value, modifier, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile the operation!",
+                            span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                    .into(),
 
-                TokenType::PlusPlus if !llvm_backend.has_disable_safe_math() => llvm_builder
+                TokenType::PlusPlus if !disable_safe_math => llvm_builder
                     .build_int_add(old_value, modifier, "")
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
@@ -175,35 +168,31 @@ fn compile_increment_decrement_ref<'ctx>(
                     })
                     .into(),
 
-                TokenType::MinusMinus if is_signed && !llvm_backend.has_disable_safe_math() => {
-                    llvm_builder
-                        .build_int_nsw_sub(old_value, modifier, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile the operation!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            )
-                        })
-                        .into()
-                }
-                TokenType::MinusMinus if !is_signed && !llvm_backend.has_disable_safe_math() => {
-                    llvm_builder
-                        .build_int_nuw_sub(old_value, modifier, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile the operation!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            )
-                        })
-                        .into()
-                }
-                TokenType::MinusMinus if llvm_backend.has_disable_safe_math() => llvm_builder
+                TokenType::MinusMinus if is_signed && !disable_safe_math => llvm_builder
+                    .build_int_nsw_sub(old_value, modifier, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile the operation!",
+                            span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                    .into(),
+                TokenType::MinusMinus if !is_signed && !disable_safe_math => llvm_builder
+                    .build_int_nuw_sub(old_value, modifier, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile the operation!",
+                            span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                    .into(),
+                TokenType::MinusMinus if disable_safe_math => llvm_builder
                     .build_int_sub(old_value, modifier, "")
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
@@ -310,39 +299,34 @@ fn compile_increment_decrement<'ctx>(
             let modifier: IntValue = old_value.get_type().const_int(1, false);
             let is_signed: bool = kind.is_signed_integer_type();
 
-            let options: &CompilerOptions = context.get_compiler_options();
-            let llvm_backend: &LLVMBackend = options.get_llvm_backend();
+            let disable_safe_math: bool = context.get_file_options().disable_safe_math();
 
             let result: BasicValueEnum = match operator {
-                TokenType::PlusPlus if is_signed && !llvm_backend.has_disable_safe_math() => {
-                    llvm_builder
-                        .build_int_nsw_add(old_value, modifier, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile the operation!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            )
-                        })
-                        .into()
-                }
-                TokenType::PlusPlus if !is_signed && !llvm_backend.has_disable_safe_math() => {
-                    llvm_builder
-                        .build_int_nuw_add(old_value, modifier, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile the operation!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            )
-                        })
-                        .into()
-                }
-                TokenType::PlusPlus if llvm_backend.has_disable_safe_math() => llvm_builder
+                TokenType::PlusPlus if is_signed && !disable_safe_math => llvm_builder
+                    .build_int_nsw_add(old_value, modifier, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile the operation!",
+                            span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                    .into(),
+                TokenType::PlusPlus if !is_signed && !disable_safe_math => llvm_builder
+                    .build_int_nuw_add(old_value, modifier, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile the operation!",
+                            span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                    .into(),
+                TokenType::PlusPlus if disable_safe_math => llvm_builder
                     .build_int_add(old_value, modifier, "")
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
@@ -355,35 +339,31 @@ fn compile_increment_decrement<'ctx>(
                     })
                     .into(),
 
-                TokenType::MinusMinus if is_signed && !llvm_backend.has_disable_safe_math() => {
-                    llvm_builder
-                        .build_int_nsw_sub(old_value, modifier, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile the operation!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            )
-                        })
-                        .into()
-                }
-                TokenType::MinusMinus if !is_signed && !llvm_backend.has_disable_safe_math() => {
-                    llvm_builder
-                        .build_int_nuw_sub(old_value, modifier, "")
-                        .unwrap_or_else(|_| {
-                            abort::abort_codegen(
-                                context,
-                                "Failed to compile the operation!",
-                                span,
-                                PathBuf::from(file!()),
-                                line!(),
-                            )
-                        })
-                        .into()
-                }
-                TokenType::MinusMinus if llvm_backend.has_disable_safe_math() => llvm_builder
+                TokenType::MinusMinus if is_signed && !disable_safe_math => llvm_builder
+                    .build_int_nsw_sub(old_value, modifier, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile the operation!",
+                            span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                    .into(),
+                TokenType::MinusMinus if !is_signed && !disable_safe_math => llvm_builder
+                    .build_int_nuw_sub(old_value, modifier, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile the operation!",
+                            span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                    .into(),
+                TokenType::MinusMinus if disable_safe_math => llvm_builder
                     .build_int_sub(old_value, modifier, "")
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(

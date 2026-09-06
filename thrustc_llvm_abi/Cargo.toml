@@ -18,6 +18,7 @@ thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_llvm_system_v_abi = { path = "../thrustc_llvm_system_v_abi" }
 thrustc_llvm_nvidia_cuda_abi = { path = "../thrustc_llvm_nvidia_cuda_abi" }
+thrustc_llvm_webassembly_abi = { path = "../thrustc_llvm_webassembly_abi" }
 thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
 thrustc_errors = { path = "../thrustc_errors" }

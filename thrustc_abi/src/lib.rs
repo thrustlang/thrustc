@@ -2,6 +2,7 @@
 pub enum SpecificABI {
     SystemV,
     NvidiaCuda,
+    WebAssembly,
 
     None,
 }

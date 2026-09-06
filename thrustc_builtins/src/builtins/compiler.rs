@@ -25,8 +25,7 @@ use crate::builtins::location::cstring_type;
 use crate::context::BuiltinContext;
 use crate::traits::BuiltinFunctionSignature;
 use crate::traits::CompileTimeBuiltinFunction;
-use crate::value::BuiltinArgument;
-use crate::value::BuiltinValue;
+use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 
 #[derive(Debug)]
 pub struct CompilerVersion;

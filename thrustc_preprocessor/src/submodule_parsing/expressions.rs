@@ -18,8 +18,9 @@
 */
 
 use thrustc_ast::{Ast, NodeId, traits::AstCodeLocation};
-use thrustc_builtins::{BuiltinArgument, BuiltinFunctionSignature, BuiltinValue};
+use thrustc_builtins::BuiltinFunctionSignature;
 use thrustc_code_location::Span;
+use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -291,11 +292,8 @@ fn parse_builtin_call(
 ) -> Result<Ast<'static>, ()> {
     ctx.consume(TokenType::LParen)?;
 
-    let signature: BuiltinFunctionSignature = ctx
-        .get_builtins()
-        .get_function(name)
-        .ok_or(())?
-        .signature();
+    let signature: BuiltinFunctionSignature =
+        ctx.get_builtins().get_function(name).ok_or(())?.signature();
 
     let expected_parameters: usize = signature.get_parameter_count();
 
@@ -314,7 +312,7 @@ fn parse_builtin_call(
                 }
             } else {
                 let expr: Ast<'static> = self::parse_expr(ctx)?;
-                let value: BuiltinValue = thrustc_builtins::value::fold(&expr).ok_or(())?;
+                let value: BuiltinValue = thrustc_compile_time::fold(&expr).ok_or(())?;
                 let argument_span: Span = expr.get_span();
 
                 BuiltinArgument::Value {
@@ -341,14 +339,7 @@ fn parse_builtin_call(
 
     let value: BuiltinValue = ctx
         .get_builtins()
-        .evaluate_function(
-            name,
-            &args,
-            span,
-            None,
-            ctx.get_options(),
-            ctx.get_file(),
-        )
+        .evaluate_function(name, &args, span, None, ctx.get_options(), ctx.get_file())
         .map_err(|_| ())?;
 
     Ok(value.to_ast(signature.return_type, span))

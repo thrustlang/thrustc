@@ -13,3 +13,4 @@ ahash = "0.8.12"
 
 thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_logging = { path = "../thrustc_logging" }
+thrustc_errors_macros = { path = "../thrustc_errors_macros" }

@@ -18,8 +18,8 @@
 */
 
 use thrustc_ast::{Ast, NodeId, traits::AstGetType};
-use thrustc_errors::CompilationIssue;
 use thrustc_code_location::Span;
+use thrustc_errors::CompilationIssue;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, traits::CastTypeExtensions};

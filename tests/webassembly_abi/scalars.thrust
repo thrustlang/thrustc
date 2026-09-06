@@ -1,0 +1,50 @@
+/*
+ * WebAssembly ABI scalar arguments and return values.
+ *
+ * The LLVM IR must use signext for s8/s16 and zeroext for u8/u16,
+ * bool and char. Wider scalar types remain direct.
+ */
+
+fn signed8(value: s8) s8 @public @convention("C") {
+    return value;
+}
+
+fn signed16(value: s16) s16 @public @convention("C") {
+    return value;
+}
+
+fn unsigned8(value: u8) u8 @public @convention("C") {
+    return value;
+}
+
+fn unsigned16(value: u16) u16 @public @convention("C") {
+    return value;
+}
+
+fn boolean(value: bool) bool @public @convention("C") {
+    return value;
+}
+
+fn character(value: char) char @public @convention("C") {
+    return value;
+}
+
+fn integer64(value: u64) u64 @public @convention("C") {
+    return value;
+}
+
+fn floating64(value: f64) f64 @public @convention("C") {
+    return value;
+}
+
+fn pointer(value: ptr) ptr @public @convention("C") {
+    return value;
+}
+
+fn callSigned8(value: s8) s8 @public @convention("C") {
+    return signed8(value);
+}
+
+fn main() s32 @public {
+    return 0;
+}

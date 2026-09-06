@@ -1,0 +1,19 @@
+/*
+ * Fixed arrays are indirect arguments and use Thrust's sret return extension.
+ */
+
+fn identity(value: array[u32; 4]) array[u32; 4] @public @convention("C") {
+    return value;
+}
+
+fn consume(value: array[u8; 16]) u32 @public @convention("C") {
+    return 0;
+}
+
+fn callIdentity(value: array[u32; 4]) array[u32; 4] @public @convention("C") {
+    return identity(value);
+}
+
+fn main() s32 @public {
+    return 0;
+}

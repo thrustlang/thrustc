@@ -10,6 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+thrustc_directive = { path = "../thrustc_directive" }
 ahash = "0.8.11"
 uuid = { version = "1.19.0", features = ["v4"] }
 
@@ -30,6 +31,7 @@ thrustc_token_type = { path = "../thrustc_token_type" }
 thrustc_lexer = { path = "../thrustc_lexer" }
 thrustc_std = { path = "../thrustc_std" }
 thrustc_builtins = { path = "../thrustc_builtins" }
+thrustc_compile_time = { path = "../thrustc_compile_time" }
 thrustc_backends = { path = "../thrustc_backends" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_generics = { path = "../thrustc_generics" }

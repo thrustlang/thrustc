@@ -27,8 +27,8 @@ use thrustc_ast::{
     traits::AstGetType,
 };
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
-use thrustc_builtins::BuiltinArgument;
 use thrustc_code_location::Span;
+use thrustc_compile_time::BuiltinArgument;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_table::GenericFunctionEntry;
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -352,11 +352,12 @@ fn resolve_ast<'parser>(
         }
 
         Ast::Builtin {
-            builtin: AstBuiltin::DeferredCompileTime {
-                name,
-                arguments,
-                span,
-            },
+            builtin:
+                AstBuiltin::DeferredCompileTime {
+                    name,
+                    arguments,
+                    span,
+                },
             ..
         } => {
             let mut builtin_arguments: Vec<BuiltinArgument> = Vec::with_capacity(arguments.len());
@@ -370,7 +371,7 @@ fn resolve_ast<'parser>(
                         let resolved: Ast<'parser> =
                             self::resolve_ast(ctx, *expression, templates, memo, output);
 
-                        let Some(value) = thrustc_builtins::value::fold(&resolved) else {
+                        let Some(value) = thrustc_compile_time::fold(&resolved) else {
                             ctx.add_error_report(CompilationIssue::Error(
                                 CompilationIssueCode::E0006,
                                 "The compiler builtin expects a constant argument.".into(),

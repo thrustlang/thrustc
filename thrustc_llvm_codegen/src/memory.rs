@@ -351,6 +351,7 @@ impl<'ctx> SymbolAllocated<'ctx> {
         }
 
         if let Self::AllocatedParameter { ptr, span, .. } = self {
+            let alignment: u32 = context.get_target_data().get_abi_alignment(&llvm_type);
             let loaded_value: BasicValueEnum<'_> = llvm_builder
                 .build_load(llvm_type, *ptr, "")
                 .unwrap_or_else(|_| {

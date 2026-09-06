@@ -1368,6 +1368,7 @@ impl CommandLine {
         match abi.to_lowercase().as_str() {
             "system-v" => thrustc_abi::SpecificABI::SystemV,
             "nvidia-cuda" => thrustc_abi::SpecificABI::NvidiaCuda,
+            "webassembly" => thrustc_abi::SpecificABI::WebAssembly,
 
             any => {
                 self.report_error(&format!("Unknown specific ABI: '{}'.", any));

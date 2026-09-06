@@ -52,11 +52,15 @@ pub fn build_statement_modificator(
         match tk_type {
             TokenType::ThreadInit => {
                 ctx.consume(TokenType::ThreadInit)?;
-                modificators.push(Modificator::ThreadMode(ThrustThreadMode::InitialExecTLSModel));
+                modificators.push(Modificator::ThreadMode(
+                    ThrustThreadMode::InitialExecTLSModel,
+                ));
             }
             TokenType::ThreadDynamic => {
                 ctx.consume(TokenType::ThreadDynamic)?;
-                modificators.push(Modificator::ThreadMode(ThrustThreadMode::GeneralDynamicTLSModel));
+                modificators.push(Modificator::ThreadMode(
+                    ThrustThreadMode::GeneralDynamicTLSModel,
+                ));
             }
             TokenType::ThreadExec => {
                 ctx.consume(TokenType::ThreadExec)?;
@@ -64,35 +68,51 @@ pub fn build_statement_modificator(
             }
             TokenType::ThreadLDynamic => {
                 ctx.consume(TokenType::ThreadLDynamic)?;
-                modificators.push(Modificator::ThreadMode(ThrustThreadMode::LocalDynamicTLSModel));
+                modificators.push(Modificator::ThreadMode(
+                    ThrustThreadMode::LocalDynamicTLSModel,
+                ));
             }
             TokenType::AtomNone => {
                 ctx.consume(TokenType::AtomNone)?;
-                modificators.push(Modificator::AtomicOrdering(ThrustAtomicOrdering::AtomicNone));
+                modificators.push(Modificator::AtomicOrdering(
+                    ThrustAtomicOrdering::AtomicNone,
+                ));
             }
             TokenType::AtomFree => {
                 ctx.consume(TokenType::AtomFree)?;
-                modificators.push(Modificator::AtomicOrdering(ThrustAtomicOrdering::AtomicFree));
+                modificators.push(Modificator::AtomicOrdering(
+                    ThrustAtomicOrdering::AtomicFree,
+                ));
             }
             TokenType::AtomRelax => {
                 ctx.consume(TokenType::AtomRelax)?;
-                modificators.push(Modificator::AtomicOrdering(ThrustAtomicOrdering::AtomicRelax));
+                modificators.push(Modificator::AtomicOrdering(
+                    ThrustAtomicOrdering::AtomicRelax,
+                ));
             }
             TokenType::AtomGrab => {
                 ctx.consume(TokenType::AtomGrab)?;
-                modificators.push(Modificator::AtomicOrdering(ThrustAtomicOrdering::AtomicGrab));
+                modificators.push(Modificator::AtomicOrdering(
+                    ThrustAtomicOrdering::AtomicGrab,
+                ));
             }
             TokenType::AtomDrop => {
                 ctx.consume(TokenType::AtomDrop)?;
-                modificators.push(Modificator::AtomicOrdering(ThrustAtomicOrdering::AtomicDrop));
+                modificators.push(Modificator::AtomicOrdering(
+                    ThrustAtomicOrdering::AtomicDrop,
+                ));
             }
             TokenType::AtomSync => {
                 ctx.consume(TokenType::AtomSync)?;
-                modificators.push(Modificator::AtomicOrdering(ThrustAtomicOrdering::AtomicSync));
+                modificators.push(Modificator::AtomicOrdering(
+                    ThrustAtomicOrdering::AtomicSync,
+                ));
             }
             TokenType::AtomStrict => {
                 ctx.consume(TokenType::AtomStrict)?;
-                modificators.push(Modificator::AtomicOrdering(ThrustAtomicOrdering::AtomicStrict));
+                modificators.push(Modificator::AtomicOrdering(
+                    ThrustAtomicOrdering::AtomicStrict,
+                ));
             }
             TokenType::LazyThread => {
                 ctx.consume(TokenType::LazyThread)?;

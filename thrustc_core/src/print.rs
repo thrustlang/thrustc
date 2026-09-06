@@ -22,22 +22,28 @@
 use inkwell::module::Module;
 use inkwell::targets::TargetMachine;
 
-use thrustc_options::{CompilationUnit, CompilerOptions, Emited, PrintableUnit};
+use thrustc_directive::FileOptions;
+use thrustc_options::{CompilationUnit, Emited, PrintableUnit};
 
 use crate::{ThrustCompiler, interrupt, printers};
 
 #[inline]
 pub fn llvm_before_optimization(
     compiler: &mut ThrustCompiler,
+    compiler_options: &FileOptions<'_, '_>,
     llvm_module: &Module,
     target_machine: &TargetMachine,
     file: &CompilationUnit,
     file_time: std::time::Instant,
 ) -> Result<bool, ()> {
-    let compiler_options: &CompilerOptions = compiler.get_compilation_options();
-
     if compiler_options.contains_printable(PrintableUnit::UnOptLLVMIR) {
-        printers::llvmir::print_llvm_ir(compiler, llvm_module, file.get_name(), true);
+        printers::llvmir::print_llvm_ir(
+            compiler,
+            llvm_module,
+            file.get_name(),
+            true,
+            compiler_options.obfuscate_archive_names(),
+        );
         return Ok(true);
     }
 
@@ -48,6 +54,7 @@ pub fn llvm_before_optimization(
             llvm_module,
             file.get_name(),
             true,
+            compiler_options.obfuscate_archive_names(),
         ) {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, &error.to_string());
             interrupt::archive_compilation_module(compiler, file, file_time)?;
@@ -62,15 +69,20 @@ pub fn llvm_before_optimization(
 #[inline]
 pub fn llvm_after_optimization(
     compiler: &mut ThrustCompiler,
+    compiler_options: &FileOptions<'_, '_>,
     llvm_module: &Module,
     target_machine: &TargetMachine,
     file: &CompilationUnit,
     file_time: std::time::Instant,
 ) -> Result<bool, ()> {
-    let compiler_options: &CompilerOptions = compiler.get_compilation_options();
-
     if compiler_options.contains_printable(PrintableUnit::LLVMIR) {
-        printers::llvmir::print_llvm_ir(compiler, llvm_module, file.get_name(), false);
+        printers::llvmir::print_llvm_ir(
+            compiler,
+            llvm_module,
+            file.get_name(),
+            false,
+            compiler_options.obfuscate_archive_names(),
+        );
         return Ok(true);
     }
 
@@ -81,6 +93,7 @@ pub fn llvm_after_optimization(
             llvm_module,
             file.get_name(),
             false,
+            compiler_options.obfuscate_archive_names(),
         ) {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, &error.to_string());
             interrupt::archive_compilation_module(compiler, file, file_time)?;
@@ -94,15 +107,16 @@ pub fn llvm_after_optimization(
 
 #[inline]
 pub fn before_frontend(
-    compiler: &mut ThrustCompiler,
+    _compiler: &mut ThrustCompiler,
+    options: &FileOptions<'_, '_>,
     file: &CompilationUnit,
     emited: Emited,
 ) -> bool {
-    let options: &CompilerOptions = compiler.get_compilation_options();
-
     if options.contains_printable(PrintableUnit::TokensPretty) {
         if let Emited::Tokens(tokens) = emited {
-            if printers::tokens::print_to_stdout_pretty(options, tokens, file.get_name()).is_err() {
+            if printers::tokens::print_to_stdout_pretty(options.global(), tokens, file.get_name())
+                .is_err()
+            {
                 return false;
             }
 
@@ -112,7 +126,8 @@ pub fn before_frontend(
 
     if options.contains_printable(PrintableUnit::Tokens) {
         if let Emited::Tokens(tokens) = emited {
-            if printers::tokens::print_to_stdout(options, tokens, file.get_name()).is_err() {
+            if printers::tokens::print_to_stdout(options.global(), tokens, file.get_name()).is_err()
+            {
                 return false;
             }
 
@@ -122,7 +137,9 @@ pub fn before_frontend(
 
     if options.contains_printable(PrintableUnit::UnCheckedAstPretty) {
         if let Emited::Ast(ast) = emited {
-            if printers::ast::print_to_stdout_pretty(options, ast, file.get_name()).is_err() {
+            if printers::ast::print_to_stdout_pretty(options.global(), ast, file.get_name())
+                .is_err()
+            {
                 return false;
             }
 
@@ -132,7 +149,7 @@ pub fn before_frontend(
 
     if options.contains_printable(PrintableUnit::UnCheckedAst) {
         if let Emited::Ast(ast) = emited {
-            if printers::ast::print_to_stdout(options, ast, file.get_name()).is_err() {
+            if printers::ast::print_to_stdout(options.global(), ast, file.get_name()).is_err() {
                 return false;
             }
 
@@ -145,15 +162,16 @@ pub fn before_frontend(
 
 #[inline]
 pub fn after_frontend(
-    compiler: &mut ThrustCompiler,
+    _compiler: &mut ThrustCompiler,
+    options: &FileOptions<'_, '_>,
     file: &CompilationUnit,
     emited: Emited,
 ) -> bool {
-    let options: &CompilerOptions = compiler.get_compilation_options();
-
     if options.contains_printable(PrintableUnit::TokensPretty) {
         if let Emited::Tokens(tokens) = emited {
-            if printers::tokens::print_to_stdout_pretty(options, tokens, file.get_name()).is_err() {
+            if printers::tokens::print_to_stdout_pretty(options.global(), tokens, file.get_name())
+                .is_err()
+            {
                 return false;
             }
 
@@ -163,7 +181,8 @@ pub fn after_frontend(
 
     if options.contains_printable(PrintableUnit::Tokens) {
         if let Emited::Tokens(tokens) = emited {
-            if printers::tokens::print_to_stdout(options, tokens, file.get_name()).is_err() {
+            if printers::tokens::print_to_stdout(options.global(), tokens, file.get_name()).is_err()
+            {
                 return false;
             }
 
@@ -173,7 +192,9 @@ pub fn after_frontend(
 
     if options.contains_printable(PrintableUnit::AstPretty) {
         if let Emited::Ast(ast) = emited {
-            if printers::ast::print_to_stdout_pretty(options, ast, file.get_name()).is_err() {
+            if printers::ast::print_to_stdout_pretty(options.global(), ast, file.get_name())
+                .is_err()
+            {
                 return false;
             }
 
@@ -183,7 +204,7 @@ pub fn after_frontend(
 
     if options.contains_printable(PrintableUnit::Ast) {
         if let Emited::Ast(ast) = emited {
-            if printers::ast::print_to_stdout(options, ast, file.get_name()).is_err() {
+            if printers::ast::print_to_stdout(options.global(), ast, file.get_name()).is_err() {
                 return false;
             }
 

@@ -19,8 +19,8 @@
 
 use thrustc_ast_modificators::Modificators;
 use thrustc_attributes::ThrustAttributes;
-use thrustc_builtins::BuiltinValue;
 use thrustc_code_location::Span;
+use thrustc_compile_time::BuiltinValue;
 use thrustc_typesystem::Type;
 
 #[derive(Debug, Clone)]

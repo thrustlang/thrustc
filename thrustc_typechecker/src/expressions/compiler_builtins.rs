@@ -22,8 +22,8 @@ use thrustc_ast::{
     ast_builtins::AstBuiltin,
     traits::{AstCodeLocation, AstGetType},
 };
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::{
     Type,
     traits::{TypeCodeLocation, TypeIsExtensions, VoidTypeExtensions},
@@ -58,7 +58,9 @@ pub fn validate_node<'type_checker>(
         | AstBuiltin::DeferredCompileTime { .. } => Ok(()),
 
         AstBuiltin::ArbitraryArg { span, .. }
-            if !typechecker.get_type_context().is_current_function_variadic() =>
+            if !typechecker
+                .get_type_context()
+                .is_current_function_variadic() =>
         {
             typechecker.add_error_report(CompilationIssue::Error(
                 CompilationIssueCode::E0047,
@@ -72,7 +74,9 @@ pub fn validate_node<'type_checker>(
         }
 
         AstBuiltin::ArbitraryArgs { span }
-            if !typechecker.get_type_context().is_current_function_variadic() =>
+            if !typechecker
+                .get_type_context()
+                .is_current_function_variadic() =>
         {
             typechecker.add_error_report(CompilationIssue::Error(
                 CompilationIssueCode::E0047,

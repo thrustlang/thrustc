@@ -21,6 +21,7 @@ use ahash::AHashMap as HashMap;
 
 use thrustc_ast::Ast;
 use thrustc_code_location::Span;
+use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 use thrustc_errors::CompilationIssue;
 use thrustc_errors::CompilationIssueCode;
 use thrustc_options::CompilationUnit;
@@ -32,8 +33,6 @@ use crate::builtin_type::BuiltinTypeInfo;
 use crate::context::BuiltinContext;
 use crate::traits::BuiltinFunctionSignature;
 use crate::traits::CompileTimeBuiltinFunction;
-use crate::value::BuiltinArgument;
-use crate::value::BuiltinValue;
 
 #[derive(Debug)]
 pub struct BuiltinRegistry {

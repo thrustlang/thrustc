@@ -28,7 +28,9 @@ use inkwell::basic_block::BasicBlock;
 use inkwell::comdat::Comdat;
 use inkwell::comdat::ComdatSelectionKind;
 use inkwell::context::Context;
+use inkwell::llvm_sys::LLVMValue;
 use inkwell::llvm_sys::comdat::LLVMGetOrInsertComdat;
+use inkwell::llvm_sys::core::{LLVMGetCalledValue, LLVMIsAFunction};
 use inkwell::module::Linkage;
 use inkwell::module::Module;
 use inkwell::passes::PassBuilderOptions;
@@ -1906,9 +1908,14 @@ impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
     ) {
         if instruction.get_opcode() == InstructionOpcode::Call {
             let callsite: CallSiteValue = unsafe { CallSiteValue::new(instruction.as_value_ref()) };
-            let called: FunctionValue = callsite.get_called_fn_value();
+            let called_value: *mut LLVMValue = unsafe { LLVMGetCalledValue(callsite.as_value_ref()) };
 
-            if !callsite.is_tail_call() && self.function.is_some_and(|current| current == called) {
+            if !unsafe { LLVMIsAFunction(called_value) }.is_null()
+                && !callsite.is_tail_call()
+                && self
+                    .function
+                    .is_some_and(|current| current.as_value_ref() == called_value)
+            {
                 callsite.set_tail_call(true);
             }
         }
@@ -2013,7 +2020,11 @@ impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
 
             if let Some(function) = self.function {
                 if let Some(target_pos) = self.target_position {
-                    function.add_attribute(AttributeLoc::Param(target_pos), attribute);
+                    let location: AttributeLoc = AttributeLoc::Param(target_pos);
+
+                    if function.get_enum_attribute(location, kind_id).is_none() {
+                        function.add_attribute(location, attribute);
+                    }
                 }
             }
         }
@@ -2237,6 +2248,12 @@ fn is_llvm_intrinsic_call(instruction: InstructionValue<'_>) -> bool {
     }
 
     let callsite: CallSiteValue = unsafe { CallSiteValue::new(instruction.as_value_ref()) };
+    let called_value: *mut LLVMValue = unsafe { LLVMGetCalledValue(callsite.as_value_ref()) };
+
+    if unsafe { LLVMIsAFunction(called_value) }.is_null() {
+        return false;
+    }
+
     let called: FunctionValue = callsite.get_called_fn_value();
 
     called.get_name().to_str().is_ok_and(|name| name.starts_with("llvm."))
@@ -2246,4 +2263,3 @@ fn is_llvm_intrinsic_call(instruction: InstructionValue<'_>) -> bool {
 fn is_llvm_intrinsic_function(function: FunctionValue<'_>) -> bool {
     function.get_name().to_str().is_ok_and(|name| name.starts_with("llvm."))
 }
-

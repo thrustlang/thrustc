@@ -52,7 +52,7 @@ Compiler flags:
 • -jit-link [path/to/raylib.so] Specify, add, and link an external dynamic library for code execution via the JIT compiler.
 • -jit-entry [main] Specify the entry point name for the JIT compiler.
 • -jit-args ["--foo;bar"] Specifies the arguments passed to the program executed via the JIT compiler. Arguments are separated by spaces or semicolons.
-• -abi [system-v|nvidia-cuda] Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.
+• -abi [system-v|nvidia-cuda|webassembly] Configure the use of a specific ABI (Application Binary Interface) for code generation. This can affect how functions are called, how data is passed, and how the generated code interacts with other libraries and system components.
 • -mode [stable|unstable] Enable or disable compiler features to limit to stable features only or add support to unstable features.
 • -dbg Enable generation of debug information (DWARF).
 • -dbg-for-inlining Enable debug information specifically optimized for inlined functions.

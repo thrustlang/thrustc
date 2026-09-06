@@ -18,8 +18,8 @@
 */
 
 use thrustc_ast::Ast;
-use thrustc_builtins::BuiltinValue;
 use thrustc_code_location::Span;
+use thrustc_compile_time::BuiltinValue;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
@@ -150,7 +150,7 @@ pub(crate) fn evaluate_condition<'parser>(
         "Expected ')'.".into(),
     )?;
 
-    match thrustc_builtins::value::fold(&expression) {
+    match thrustc_compile_time::fold(&expression) {
         Some(BuiltinValue::Bool(condition)) => Ok(condition),
         _ => Err(CompilationIssue::Error(
             CompilationIssueCode::E0019,

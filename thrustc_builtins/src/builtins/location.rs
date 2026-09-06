@@ -23,7 +23,7 @@ use thrustc_typesystem::type_metadata::ArrayTypeMetadata;
 use crate::context::BuiltinContext;
 use crate::traits::BuiltinFunctionSignature;
 use crate::traits::CompileTimeBuiltinFunction;
-use crate::value::BuiltinValue;
+use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 
 #[derive(Debug)]
 pub struct File;
@@ -44,7 +44,7 @@ impl CompileTimeBuiltinFunction for File {
 
     fn evaluate(
         &self,
-        _args: &[crate::value::BuiltinArgument],
+        _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
         let path: std::path::PathBuf = context.file.get_path().to_path_buf();
@@ -76,7 +76,7 @@ impl CompileTimeBuiltinFunction for FileLine {
 
     fn evaluate(
         &self,
-        _args: &[crate::value::BuiltinArgument],
+        _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
         Ok(BuiltinValue::Integer(context.call_span.get_line() as u64))
@@ -102,7 +102,7 @@ impl CompileTimeBuiltinFunction for CurrentFuncName {
 
     fn evaluate(
         &self,
-        _args: &[crate::value::BuiltinArgument],
+        _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
         let name: &str = context.current_function.unwrap_or("");

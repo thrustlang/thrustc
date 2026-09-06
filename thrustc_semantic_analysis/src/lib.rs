@@ -20,6 +20,7 @@
 use thrustc_ast::Ast;
 use thrustc_ast_verifier::AstVerifier;
 use thrustc_attribute_checker::AttributeChecker;
+use thrustc_directive::FileOptions;
 use thrustc_general_analyzer::GeneralAnalyzer;
 use thrustc_linter::Linter;
 use thrustc_options::{CompilationPhase, CompilationUnit, CompilerOptions};
@@ -35,7 +36,7 @@ pub struct SemanticAnalysis<'semantic_analyzer> {
     verifier: AstVerifier<'semantic_analyzer>,
     linter: Linter<'semantic_analyzer>,
 
-    options: &'semantic_analyzer CompilerOptions,
+    options: &'semantic_analyzer FileOptions<'semantic_analyzer, 'semantic_analyzer>,
 }
 
 impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
@@ -43,14 +44,16 @@ impl<'semantic_analyzer> SemanticAnalysis<'semantic_analyzer> {
     pub fn new(
         ast: &'semantic_analyzer [Ast<'semantic_analyzer>],
         file: &'semantic_analyzer CompilationUnit,
-        options: &'semantic_analyzer CompilerOptions,
+        options: &'semantic_analyzer FileOptions<'semantic_analyzer, 'semantic_analyzer>,
     ) -> Self {
-        let type_checker: TypeChecker<'_> = TypeChecker::new(ast, file, options);
-        let general_analyzer: GeneralAnalyzer<'_> = GeneralAnalyzer::new(ast, file, options);
-        let attr_checker: AttributeChecker<'_> = AttributeChecker::new(ast, file, options);
-        let scoper: Scoper<'_> = Scoper::new(ast, file, options);
-        let verifier: AstVerifier<'_> = AstVerifier::new(ast, file, options);
-        let linter: Linter<'_> = Linter::new(ast, file, options);
+        let global: &CompilerOptions = options.global();
+        let type_checker: TypeChecker<'_> = TypeChecker::new(ast, file, global, options);
+        let general_analyzer: GeneralAnalyzer<'_> =
+            GeneralAnalyzer::new(ast, file, global, options);
+        let attr_checker: AttributeChecker<'_> = AttributeChecker::new(ast, file, global, options);
+        let scoper: Scoper<'_> = Scoper::new(ast, file, global);
+        let verifier: AstVerifier<'_> = AstVerifier::new(ast, file, global);
+        let linter: Linter<'_> = Linter::new(ast, file, global, options);
 
         Self {
             type_checker,

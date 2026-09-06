@@ -20,7 +20,6 @@ pub mod builtins;
 pub mod context;
 pub mod registry;
 pub mod traits;
-pub mod value;
 
 pub use crate::builtin_type::BuiltinTypeInfo;
 pub use crate::context::BuiltinContext;
@@ -28,8 +27,6 @@ pub use crate::registry::BuiltinRegistry;
 pub use crate::traits::BuiltinFunctionSignature;
 pub use crate::traits::BuiltinParameter;
 pub use crate::traits::CompileTimeBuiltinFunction;
-pub use crate::value::BuiltinArgument;
-pub use crate::value::BuiltinValue;
 
 use thrustc_typesystem::type_layout::TargetInfo;
 

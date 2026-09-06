@@ -17,8 +17,8 @@
 
 use thrustc_ast::Ast;
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
-use thrustc_builtins::BuiltinValue;
 use thrustc_code_location::Span;
+use thrustc_compile_time::BuiltinValue;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -318,7 +318,7 @@ fn parse_array_type(ctx: &mut dyn TypeParseContext, span: Span) -> Result<Type, 
 
         let size: Ast = ctx.parse_constant_expr()?;
 
-        let size: u64 = match thrustc_builtins::value::fold(&size) {
+        let size: u64 = match thrustc_compile_time::fold(&size) {
             Some(BuiltinValue::Integer(value)) => value,
             _ => {
                 ctx.add_error(CompilationIssue::Error(
@@ -412,7 +412,7 @@ fn parse_pointer_type(
 fn parse_memory_address(ctx: &mut dyn TypeParseContext, span: Span) -> Result<Option<u16>, ()> {
     let memory_address_expr: Ast<'_> = ctx.parse_constant_expr()?;
 
-    let unprocessed: u64 = match thrustc_builtins::value::fold(&memory_address_expr) {
+    let unprocessed: u64 = match thrustc_compile_time::fold(&memory_address_expr) {
         Some(BuiltinValue::Integer(value)) => value,
         _ => {
             ctx.add_error(CompilationIssue::Error(

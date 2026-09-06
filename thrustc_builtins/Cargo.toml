@@ -12,8 +12,8 @@ either = "1.15.0"
 
 thrustc_ast = { path = "../thrustc_ast" }
 thrustc_code_location = { path = "../thrustc_code_location" }
+thrustc_compile_time = { path = "../thrustc_compile_time" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_options = { path = "../thrustc_options" }
-thrustc_token_type = { path = "../thrustc_token_type" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }

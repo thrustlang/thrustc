@@ -20,8 +20,8 @@
 use ahash::{HashMap, HashMapExt};
 use thrustc_ast::{Ast, traits::AstCodeLocation};
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes, linkage::ThrustLinkage};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{

@@ -1,0 +1,21 @@
+/*
+ * Empty WebAssembly ABI aggregates are omitted from parameters and returns.
+ */
+
+struct Empty {}
+
+fn consume(value: Empty) void @public @convention("C") {
+    return;
+}
+
+fn produce() Empty @public @convention("C") {
+    return new Empty {};
+}
+
+fn identity(value: Empty) Empty @public @convention("C") {
+    return value;
+}
+
+fn main() s32 @public {
+    return 0;
+}

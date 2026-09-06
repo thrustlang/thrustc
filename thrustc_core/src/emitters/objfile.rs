@@ -21,21 +21,18 @@ use inkwell::{
     module::Module,
     targets::{FileType, TargetMachine},
 };
-use thrustc_options::CompilerOptions;
 
 use crate::{ThrustCompiler, utils};
 
 pub fn emit_llvm_object(
-    compiler: &ThrustCompiler,
+    _compiler: &ThrustCompiler,
     llvm_module: &Module,
     target_machine: &TargetMachine,
     build_dir: &std::path::Path,
     file_name: &str,
     unoptimized: bool,
+    need_obfuscation: bool,
 ) -> Result<(), &'static str> {
-    let compiler_options: &CompilerOptions = compiler.get_compilation_options();
-    let need_obfuscation: bool = compiler_options.need_obfuscate_archive_names();
-
     let objects_base_path: std::path::PathBuf = build_dir.join("emit").join("obj");
 
     if !objects_base_path.exists() {

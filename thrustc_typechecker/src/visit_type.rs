@@ -17,16 +17,16 @@
 
 */
 
-use thrustc_ast::{
-    ModuleExpressionValues,
-    traits::AstCodeLocation,
-};
+use thrustc_ast::{ModuleExpressionValues, traits::AstCodeLocation};
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 use crate::Ast;
 
-pub fn visit_all_types<'ast>(ast: &Ast<'ast>, on_type: &mut impl FnMut(&Type, Span)) -> Option<Span> {
+pub fn visit_all_types<'ast>(
+    ast: &Ast<'ast>,
+    on_type: &mut impl FnMut(&Type, Span),
+) -> Option<Span> {
     self::visit_all_types_inner(ast, on_type, 0)
 }
 

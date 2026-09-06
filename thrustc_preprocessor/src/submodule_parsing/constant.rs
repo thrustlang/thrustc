@@ -18,8 +18,8 @@
 */
 
 use thrustc_attributes::ThrustAttributes;
-use thrustc_builtins::BuiltinValue;
 use thrustc_code_location::Span;
+use thrustc_compile_time::BuiltinValue;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
@@ -64,7 +64,7 @@ pub fn parse_constant<'module_parser>(
     ctx.consume(TokenType::Eq)?;
 
     let value: Option<BuiltinValue> = match expressions::parse_expr(ctx) {
-        Ok(expression) => thrustc_builtins::value::fold(&expression),
+        Ok(expression) => thrustc_compile_time::fold(&expression),
         Err(()) => {
             ctx.advance_until(TokenType::SemiColon)?;
 

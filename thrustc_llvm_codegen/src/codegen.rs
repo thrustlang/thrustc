@@ -28,11 +28,9 @@ use inkwell::values::{GlobalValue, PointerValue, StructValue};
 use inkwell::{builder::Builder, values::BasicValueEnum};
 use thrustc_ast::ast_metadata::{ConstantMetadata, LocalMetadata, ReferenceType, StaticMetadata};
 use thrustc_attributes::ThrustAttributes;
-use thrustc_backends::llvm::LLVMBackend;
 use thrustc_code_location::Span;
 use thrustc_entities::{GlobalConstant, GlobalStatic, LocalConstant, LocalStatic, LocalVariable};
 use thrustc_llvm_attributes::LLVMAttributes;
-use thrustc_options::CompilerOptions;
 
 use crate::atomic_operations::LLVMAtomicModificators;
 use crate::compiler_builtins::LLVMBuiltin;
@@ -803,11 +801,9 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             Ast::Return {
                 expression, span, ..
             } => {
-                let compiler_options: &CompilerOptions = self.get_context().get_compiler_options();
-                let llvm_backend: &LLVMBackend = compiler_options.get_llvm_backend();
                 let has_abi: bool = self.get_context().has_abi();
 
-                if llvm_backend.needs_stack_protector() {
+                if self.get_context().get_file_options().stack_protector() {
                     function::emit_stack_protector_epilogue(self.context, *span);
                 }
 
@@ -852,7 +848,14 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
                 let current_function: LLVMFunction = self.context.get_current_function(*span);
 
-                if has_abi && !current_function.is_variadic() {
+                let lowers_variadic_functions: bool = matches!(
+                    self.context.get_abi(),
+                    Some(
+                        thrustc_llvm_abi_representation::LLVMABIRepresentation::WebAssemblyABI { .. }
+                    )
+                );
+
+                if has_abi && (!current_function.is_variadic() || lowers_variadic_functions) {
                     let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
                         self.context.get_abi().unwrap_or_else(|| {
                             abort::abort_codegen(

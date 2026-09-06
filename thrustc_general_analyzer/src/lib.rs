@@ -25,6 +25,7 @@ use thrustc_ast::{
     },
 };
 use thrustc_diagnostician::Diagnostician;
+use thrustc_directive::FileOptions;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 
@@ -46,6 +47,7 @@ pub struct GeneralAnalyzer<'analyzer> {
 
     file: &'analyzer CompilationUnit,
     options: &'analyzer CompilerOptions,
+    file_options: &'analyzer FileOptions<'analyzer, 'analyzer>,
 
     diagnostician: Diagnostician,
 
@@ -58,6 +60,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
         ast: &'analyzer [Ast<'analyzer>],
         file: &'analyzer CompilationUnit,
         options: &'analyzer CompilerOptions,
+        file_options: &'analyzer FileOptions<'analyzer, 'analyzer>,
     ) -> Self {
         Self {
             ast,
@@ -68,6 +71,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
 
             file,
             options,
+            file_options,
 
             diagnostician: Diagnostician::new(file, options),
             context: AnalyzerContext::new(),
@@ -91,8 +95,8 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
 
 impl<'analyzer> GeneralAnalyzer<'analyzer> {
     fn check(&mut self) -> bool {
-        let warnings_to_disable: Vec<CompilationIssueCode> =
-            thrustc_directive::combined_warnings_to_disable(self.options, self.file.get_path());
+        let warnings_to_disable =
+            thrustc_directive::combine_warnings_to_disable(self.file_options);
 
         thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 

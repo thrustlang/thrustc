@@ -202,11 +202,20 @@ pub fn parse_import<'preprocessor>(
         CompilationUnit::new(name, module_path.clone(), content, base_name.clone());
 
     let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&file, options)?;
+    let directives = match thrustc_directive::apply_file_directives(&tokens) {
+        Ok(directives) => directives,
+        Err(error) => {
+            parser.add_error(error);
+            return Err(());
+        }
+    };
+    let file_options = thrustc_directive::FileOptions::new(options, &directives);
 
     let subparser: ModuleParser = ModuleParser::new(
         base_name,
         tokens,
         options,
+        &file_options,
         &file,
         parser.get_global_visited_modules(),
         parser.get_registry(),

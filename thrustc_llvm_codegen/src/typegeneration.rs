@@ -52,15 +52,22 @@ pub fn compile_as_function_type<'ctx>(
     kind: &'ctx Type,
     parameters: &'ctx [Ast<'ctx>],
     is_variatic: bool,
-    variant: CompilerFunctionVariant
+    variant: CompilerFunctionVariant,
 ) -> (FunctionType<'ctx>, Option<LLVMABIConfiguration<'ctx>>) {
     let llvm_context: &Context = context.get_llvm_context();
+
     let has_available_abi: bool = context.has_abi();
+    let lowers_variadic_functions: bool = matches!(
+        context.get_abi(),
+        Some(
+            thrustc_llvm_abi_representation::LLVMABIRepresentation::WebAssemblyABI { .. }
+        )
+    );
 
     let mut standard_type_generation = |parameters: &[Ast<'ctx>], return_kind: &Type| {
-        let mut llvm_parameters_types: Vec<BasicMetadataTypeEnum<'ctx>> = 
+        let mut llvm_parameters_types: Vec<BasicMetadataTypeEnum<'ctx>> =
             Vec::with_capacity(parameters.len());
-    
+
         for parameter in parameters {
             match parameter {
                 Ast::FunctionParameter { kind, .. }
@@ -69,11 +76,11 @@ pub fn compile_as_function_type<'ctx>(
                     let generated_type: BasicTypeEnum<'ctx> = self::generate_type(context, kind);
                     llvm_parameters_types.push(generated_type.into());
                 }
-                
-                _ => ()
+
+                _ => (),
             }
         }
-    
+
         if return_kind.is_void_type() {
             (
                 llvm_context
@@ -93,7 +100,6 @@ pub fn compile_as_function_type<'ctx>(
     if !has_available_abi {
         standard_type_generation(parameters, kind)
     } else {
-
         if variant.is_assembler_function() {
             return standard_type_generation(parameters, kind);
         }
@@ -102,30 +108,36 @@ pub fn compile_as_function_type<'ctx>(
             return standard_type_generation(parameters, kind);
         }
 
-        if is_variatic {
+        if is_variatic && !lowers_variadic_functions {
             return standard_type_generation(parameters, kind);
         }
-        
-        let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> = context.get_abi().unwrap_or_else(|| {
-            abort::abort_codegen(
-                context,
-                "Failed to compile as a function type, expected an ABI!",
-                kind.get_span(),
-                PathBuf::from(file!()),
-                line!(),
+
+        let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> = context
+            .get_abi()
+            .unwrap_or_else(|| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile as a function type, expected an ABI!",
+                    kind.get_span(),
+                    PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation = context
+            .get_codegen_location()
+            .to_abi_representation();
+
+        let function_type: (FunctionType<'_>, LLVMABIConfiguration<'_>) =
+            thrustc_llvm_abi::create_function_type(
+                llvm_context,
+                abi,
+                kind,
+                parameters,
+                is_variatic,
+                codegen_location,
             )
-        });
-
-        let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation = context.get_codegen_location().to_abi_representation();
-
-        let function_type: (FunctionType<'_>, LLVMABIConfiguration<'_>) = thrustc_llvm_abi::create_function_type(
-            llvm_context,
-            abi,
-            kind,
-            parameters,
-            is_variatic,
-            codegen_location
-        ).unwrap_or_else(|| {
+            .unwrap_or_else(|| {
                 abort::abort_codegen(
                     context,
                     "Failed to compile as a function type, failed to decompose function type using the ABI!",
@@ -133,12 +145,9 @@ pub fn compile_as_function_type<'ctx>(
                     PathBuf::from(file!()),
                     line!(),
                 )
-            }  
-        );
-
+            });
 
         (function_type.0, Some(function_type.1))
-  
     }
 }
 
@@ -559,4 +568,3 @@ fn dbg_type_encoding(ty: &Type) -> u32 {
         0x07
     }
 }
-

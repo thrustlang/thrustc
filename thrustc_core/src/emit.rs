@@ -21,20 +21,20 @@
 
 use inkwell::module::Module;
 use inkwell::targets::TargetMachine;
-use thrustc_options::{CompilationUnit, CompilerOptions, EmitableUnit, Emited};
+use thrustc_directive::FileOptions;
+use thrustc_options::{CompilationUnit, EmitableUnit, Emited};
 
 use crate::{ThrustCompiler, emitters, interrupt};
 
 pub fn llvm_after_optimization(
     compiler: &mut ThrustCompiler,
+    compiler_options: &FileOptions<'_, '_>,
     llvm_module: &Module,
     target_machine: &TargetMachine,
     build_dir: &std::path::Path,
     file: &CompilationUnit,
     file_time: std::time::Instant,
 ) -> Result<bool, ()> {
-    let compiler_options: &CompilerOptions = compiler.get_compilation_options();
-
     if compiler_options.contains_emitable(EmitableUnit::LLVMBitcode) {
         if !emitters::llvmbitcode::emit_llvm_bitcode(
             compiler,
@@ -42,6 +42,7 @@ pub fn llvm_after_optimization(
             build_dir,
             file.get_name(),
             false,
+            compiler_options.obfuscate_archive_names(),
         ) {
             thrustc_logging::print_error(
                 thrustc_logging::LoggingType::Error,
@@ -58,9 +59,14 @@ pub fn llvm_after_optimization(
     }
 
     if compiler_options.contains_emitable(EmitableUnit::LLVMIR) {
-        if let Err(error) =
-            emitters::llvmir::emit_llvm_ir(compiler, llvm_module, build_dir, file.get_name(), false)
-        {
+        if let Err(error) = emitters::llvmir::emit_llvm_ir(
+            compiler,
+            llvm_module,
+            build_dir,
+            file.get_name(),
+            false,
+            compiler_options.obfuscate_archive_names(),
+        ) {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, &error.to_string());
             interrupt::archive_compilation_module(compiler, file, file_time)?;
         }
@@ -76,6 +82,7 @@ pub fn llvm_after_optimization(
             build_dir,
             file.get_name(),
             false,
+            compiler_options.obfuscate_archive_names(),
         ) {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, error);
             interrupt::archive_compilation_module(compiler, file, file_time)?;
@@ -92,6 +99,7 @@ pub fn llvm_after_optimization(
             build_dir,
             file.get_name(),
             false,
+            compiler_options.obfuscate_archive_names(),
         ) {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, error);
             interrupt::archive_compilation_module(compiler, file, file_time)?;
@@ -105,18 +113,22 @@ pub fn llvm_after_optimization(
 
 pub fn llvm_before_optimization(
     compiler: &mut ThrustCompiler,
+    compiler_options: &FileOptions<'_, '_>,
     llvm_module: &Module,
     target_machine: &TargetMachine,
     build_dir: &std::path::Path,
     file: &CompilationUnit,
     file_time: std::time::Instant,
 ) -> Result<bool, ()> {
-    let compiler_options: &CompilerOptions = compiler.get_compilation_options();
-
     if compiler_options.contains_emitable(EmitableUnit::UnOptLLVMIR) {
-        if let Err(error) =
-            emitters::llvmir::emit_llvm_ir(compiler, llvm_module, build_dir, file.get_name(), true)
-        {
+        if let Err(error) = emitters::llvmir::emit_llvm_ir(
+            compiler,
+            llvm_module,
+            build_dir,
+            file.get_name(),
+            true,
+            compiler_options.obfuscate_archive_names(),
+        ) {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, &error.to_string());
             interrupt::archive_compilation_module(compiler, file, file_time)?;
         }
@@ -131,6 +143,7 @@ pub fn llvm_before_optimization(
             build_dir,
             file.get_name(),
             true,
+            compiler_options.obfuscate_archive_names(),
         ) {
             thrustc_logging::print_error(
                 thrustc_logging::LoggingType::Error,
@@ -153,6 +166,7 @@ pub fn llvm_before_optimization(
             build_dir,
             file.get_name(),
             true,
+            compiler_options.obfuscate_archive_names(),
         ) {
             thrustc_logging::print_error(thrustc_logging::LoggingType::Error, error);
             interrupt::archive_compilation_module(compiler, file, file_time)?;
@@ -165,13 +179,12 @@ pub fn llvm_before_optimization(
 }
 
 pub fn before_frontend(
-    compiler: &mut ThrustCompiler,
+    _compiler: &mut ThrustCompiler,
+    compiler_options: &FileOptions<'_, '_>,
     build_dir: &std::path::Path,
     file: &CompilationUnit,
     emited: Emited,
 ) -> bool {
-    let compiler_options: &CompilerOptions = compiler.get_compilation_options();
-
     if compiler_options.contains_emitable(EmitableUnit::TokensPretty) {
         if let Emited::Tokens(tokens) = emited {
             if emitters::tokens::to_file_pretty(tokens, build_dir, file.get_name()).is_err() {
@@ -216,13 +229,12 @@ pub fn before_frontend(
 }
 
 pub fn after_frontend(
-    compiler: &mut ThrustCompiler,
+    _compiler: &mut ThrustCompiler,
+    compiler_options: &FileOptions<'_, '_>,
     build_dir: &std::path::Path,
     file: &CompilationUnit,
     emited: Emited,
 ) -> bool {
-    let compiler_options: &CompilerOptions = compiler.get_compilation_options();
-
     if compiler_options.contains_emitable(EmitableUnit::TokensPretty) {
         if let Emited::Tokens(tokens) = emited {
             if emitters::tokens::to_file_pretty(tokens, build_dir, file.get_name()).is_err() {

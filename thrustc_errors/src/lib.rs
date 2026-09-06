@@ -22,6 +22,7 @@
 use colored::Colorize;
 
 use thrustc_code_location::Span;
+use thrustc_errors_macros::CompilationIssueCodes;
 use thrustc_logging::{self, LoggingType};
 
 #[derive(Debug, Clone)]
@@ -1152,6 +1153,20 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
+        explanations.insert(CompilationIssueCode::E0054, r##"A compiler directive contains an unknown flag, an invalid value, or a command-line option that cannot be applied to a single source file. Directives use command-line spelling inside a string and only file-scoped compilation options are accepted.
+
+Use the value format shown by the command-line help. Build, target, standard-library, JIT, linker, cleanup, and process-control options must remain on the command line because they affect the complete compilation rather than one file.
+
+Incorrect:
+"""
+directive "-target-triple=x86_64-unknown-linux-gnu";
+"""
+
+Correct:
+"""
+directive "-opt=O2";
+""""##);
+
         explanations.insert(CompilationIssueCode::E0055, r##"A generic declaration lists the same type parameter more than once. Each type parameter needs a distinct name so the compiler can tell them apart. Rename the duplicate so every generic parameter is unique.
 
 Incorrect:
@@ -1791,93 +1806,94 @@ fn size[T](value: T) s32 @public {
     };
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, CompilationIssueCodes)]
 pub enum CompilationIssueCode {
-    E0001, // Syntax Error.
-    E0002, // EOF.
-    E0003, // Unknown compiler built-in.
-    E0004, // Duplicated.
-    E0005, // Duplicated global assembler.
-    E0006, // Non-constant value
-    E0007, // Reference without an address
-    E0008, // Value without an address
-    E0010, // Possible undefined behavior.
-    E0011, // Missing Attribute Error.
-    E0012, // Attribute Syntax Error.
-    E0013, // Attribute Situation Error.
-    E0014, // Unreaceable instruction.
-    E0015, // Terminator declared before.
-    E0016, // Invalid Scope Position.
-    E0017, // Loop Control Flow outside of a loop
-    E0018, // NoSense Statement
-    E0019, // Type Error
-    E0020, // Mismatched Types
-    E0021, // Mismatched attributes
-    E0022, // Missing call arguments,
-    E0023, // Mismatched call arguments
-    E0024, // Unsopported call convention.
-    E0025, // Unknown Compiler intrinsic.
-    E0026, // Too many fields.
-    E0027, // Missing fields.
-    E0028, // Unknown reference.
-    E0029, // Import Error.
-    E0030, // Incompatible Operation
-    E0031, // Unknown Operation
-    E0032, // Incompatible Type Cast
-    E0033, // Attribute Conflict
-    E0034, // Invalid Intrinsic compiler syntax
-    E0035, // Import Error
-    E0036, // Too many parameters
-    E0037, // Too many depth,
-    E0038, // Not Mutable
-    E0039, // Unsupported Native Type
-    E0040, // Not Found
-    E0041, // Unresolved Type
-    E0042, // Type could not be determined
-    E0043, // Ambiguous imported name
-    E0044, // Unknown named argument.
-    E0045, // Duplicated named argument.
-    E0046, // Positional argument after a named argument.
-    E0047, // Variable arguments builtin outside of a variadic function.
-    E0048, // Unsupported builtin for this platform.
-    E0049, // Too many generic type arguments.
-    E0050, // Mismatched generic arity.
-    E0051, // Uninferred generic type parameter.
-    E0052, // Generic struct argument count.
-    E0053, // Generic type argument count.
-    E0055, // Duplicate type parameter.
+    E0001,
+    E0002,
+    E0003,
+    E0004,
+    E0005,
+    E0006,
+    E0007,
+    E0008,
+    E0010,
+    E0011,
+    E0012,
+    E0013,
+    E0014,
+    E0015,
+    E0016,
+    E0017,
+    E0018,
+    E0019,
+    E0020,
+    E0021,
+    E0022,
+    E0023,
+    E0024,
+    E0025,
+    E0026,
+    E0027,
+    E0028,
+    E0029,
+    E0030,
+    E0031,
+    E0032,
+    E0033,
+    E0034,
+    E0035,
+    E0036,
+    E0037,
+    E0038,
+    E0039,
+    E0040,
+    E0041,
+    E0042,
+    E0043,
+    E0044,
+    E0045,
+    E0046,
+    E0047,
+    E0048,
+    E0049,
+    E0050,
+    E0051,
+    E0052,
+    E0053,
+    E0054,
+    E0055,
 
-    W0001, // Irrelevant Attribute
-    W0002, // Unknown Call Convention
-    W0003, // Unknown Linkage
-    W0004, // Attribute Conflict,
-    W0005, // Local not used
-    W0007, // LLI not used
-    W0008, // Parameter not used,
-    W0009, // Static not used,
-    W0010, // Constant no used,
-    W0011, // Assembler Function not used
-    W0012, // Enum not used,
-    W0013, // Enum field not used,
-    W0014, // Intrinsic not Used
-    W0015, // Strucuture not Used,
-    W0016, // Structure Field not Used,
-    W0017, // Function not used
-    W0018, // Circular Import
-    W0019, // Unstable Feature
-    W0020, // Mutable but never mutated
-    W0021, // Name shadows an outer declaration
-    W0022, // Self assignment
-    W0023, // Empty block
-    W0024, // Non-standard naming
-    W0025, // Possible infinite loop
-    W0026, // Tautological comparison
-    W0027, // Dead store
-    W0028, // Statement with no effect
-    W0029, // Condition always constant
-    W0030, // Module signature without public may fail at linking
-    W0031, // Compilation warning
-    W0032, // Unused type parameter
+    W0001,
+    W0002,
+    W0003,
+    W0004,
+    W0005,
+    W0007,
+    W0008,
+    W0009,
+    W0010,
+    W0011,
+    W0012,
+    W0013,
+    W0014,
+    W0015,
+    W0016,
+    W0017,
+    W0018,
+    W0019,
+    W0020,
+    W0021,
+    W0022,
+    W0023,
+    W0024,
+    W0025,
+    W0026,
+    W0027,
+    W0028,
+    W0029,
+    W0030,
+    W0031,
+    W0032,
 }
 
 #[inline]
@@ -2027,10 +2043,7 @@ impl CompilationIssueCode {
                 )
             }
             CompilationIssueCode::E0049 => {
-                format!(
-                    "TOO MANY GENERIC TYPE ARGUMENTS - {}",
-                    "E0049".bright_red()
-                )
+                format!("TOO MANY GENERIC TYPE ARGUMENTS - {}", "E0049".bright_red())
             }
             CompilationIssueCode::E0050 => {
                 format!("MISMATCHED GENERIC ARITY - {}", "E0050".bright_red())
@@ -2042,16 +2055,13 @@ impl CompilationIssueCode {
                 )
             }
             CompilationIssueCode::E0052 => {
-                format!(
-                    "GENERIC STRUCT ARGUMENT COUNT - {}",
-                    "E0052".bright_red()
-                )
+                format!("GENERIC STRUCT ARGUMENT COUNT - {}", "E0052".bright_red())
             }
             CompilationIssueCode::E0053 => {
-                format!(
-                    "GENERIC TYPE ARGUMENT COUNT - {}",
-                    "E0053".bright_red()
-                )
+                format!("GENERIC TYPE ARGUMENT COUNT - {}", "E0053".bright_red())
+            }
+            CompilationIssueCode::E0054 => {
+                format!("INVALID COMPILER DIRECTIVE - {}", "E0054".bright_red())
             }
             CompilationIssueCode::E0055 => {
                 format!("DUPLICATE TYPE PARAMETER - {}", "E0055".bright_red())
@@ -2221,6 +2231,7 @@ impl CompilationIssueCode {
             "E0051" => Ok(CompilationIssueCode::E0051),
             "E0052" => Ok(CompilationIssueCode::E0052),
             "E0053" => Ok(CompilationIssueCode::E0053),
+            "E0054" => Ok(CompilationIssueCode::E0054),
             "E0055" => Ok(CompilationIssueCode::E0055),
 
             "W0001" => Ok(CompilationIssueCode::W0001),

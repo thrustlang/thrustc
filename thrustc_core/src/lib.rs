@@ -49,6 +49,7 @@ use thrustc_backends::llvm::jit::JITConfiguration;
 use thrustc_backends::llvm::target::LLVMTarget;
 use thrustc_builtins::BuiltinRegistry;
 use thrustc_diagnostician::Diagnostician;
+use thrustc_directive::{FileDirectives, FileOptions};
 use thrustc_lexer::Lexer;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
 use thrustc_llvm_call_conventions_checker::LLVMCallConventionsChecker;
@@ -81,6 +82,7 @@ pub struct ThrustCompiler<'thrustc> {
     /// recompilado tras quedar pendientes instanciaciones genéricas), su archivo
     /// objeto anterior se reemplaza para que el enlazador no encuentre símbolos duplicados.
     source_to_object: std::collections::HashMap<std::path::PathBuf, std::path::PathBuf>,
+    file_output_requested: bool,
 
     options: &'thrustc CompilerOptions,
 
@@ -105,6 +107,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             unready: units,
 
             source_to_object: std::collections::HashMap::with_capacity(units.len()),
+            file_output_requested: false,
 
             options,
 
@@ -158,8 +161,6 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_aot_llvm(&mut self) -> CompileTime {
         cleaner::auto_clean(self.get_compilation_options());
 
-        thrustc_directive::clear_directives();
-
         self.discover_std();
 
         if self.compile_imported_std().is_err() {
@@ -175,7 +176,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let mut it_failed: bool = false;
 
         for file in self.unready.iter() {
-            it_failed = self.compile_file_with_llvm_aot(file).is_err();
+            it_failed |= self.compile_file_with_llvm_aot(file).is_err();
         }
 
         it_failed = it_failed || self.reprocess_pending_instantiations().is_err();
@@ -183,6 +184,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         it_failed = it_failed
             || self.get_compilation_options().was_printed()
             || self.get_compilation_options().was_emited()
+            || self.file_output_requested
             || self.get_compiled_files().is_empty();
 
         if it_failed {
@@ -226,11 +228,16 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 continue;
             };
 
+            let Ok(directives) = thrustc_directive::apply_file_directives(&tokens) else {
+                continue;
+            };
+            let file_options: FileOptions<'_, '_> = FileOptions::new(self.options, &directives);
+
             let mut preprocessor: Preprocessor = Preprocessor::new();
 
             let builtins: BuiltinRegistry = self.create_builtins_registry();
 
-            let _ = preprocessor.generate_modules(&tokens, self.options, file, &builtins);
+            let _ = preprocessor.generate_modules(&tokens, &file_options, file, &builtins);
         }
     }
 
@@ -333,17 +340,34 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return interrupt::archive_compilation_module(self, file, file_time);
         };
 
+        let directives: FileDirectives = match thrustc_directive::apply_file_directives(&tokens) {
+            Ok(directives) => directives,
+            Err(error) => {
+                let mut diagnostician: Diagnostician = Diagnostician::new(file, self.options);
+                diagnostician.dispatch_diagnostic(&error, thrustc_logging::LoggingType::Error);
+                return interrupt::archive_compilation_module(self, file, file_time);
+            }
+        };
+        let file_options: FileOptions<'_, '_> = FileOptions::new(self.options, &directives);
+        self.file_output_requested |= !directives.emit.is_empty() || !directives.print.is_empty();
+
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-        if print::before_frontend(self, file, Emited::Tokens(&tokens)) {
+        if print::before_frontend(self, &file_options, file, Emited::Tokens(&tokens)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if emit::before_frontend(self, build_dir, file, Emited::Tokens(&tokens)) {
+        if emit::before_frontend(
+            self,
+            &file_options,
+            build_dir,
+            file,
+            Emited::Tokens(&tokens),
+        ) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if self.options.stop_compilation_at(CompilationPhase::Lexer) {
+        if file_options.stop_compilation_at(CompilationPhase::Lexer) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -352,7 +376,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let mut preprocessor: Preprocessor = Preprocessor::new();
 
         let modules: Result<&[thrustc_preprocessor::module::Module], ()> =
-            preprocessor.generate_modules(&tokens, self.options, file, &builtins);
+            preprocessor.generate_modules(&tokens, &file_options, file, &builtins);
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
@@ -370,8 +394,14 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             );
         })?;
 
-        let parser: (ParserContext, bool) =
-            Parser::parse(&tokens, modules, file, self.options, &mut builtins);
+        let parser: (ParserContext, bool) = Parser::parse(
+            &tokens,
+            modules,
+            file,
+            self.options,
+            &file_options,
+            &mut builtins,
+        );
 
         let parser_result: (ParserContext, bool) = parser;
         let parser_failed: bool = parser_result.1;
@@ -380,21 +410,21 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let ast: &[Ast] = parser_context.get_ast();
 
-        if emit::before_frontend(self, build_dir, file, Emited::Ast(ast)) {
+        if emit::before_frontend(self, &file_options, build_dir, file, Emited::Ast(ast)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if print::before_frontend(self, file, Emited::Ast(ast)) {
+        if print::before_frontend(self, &file_options, file, Emited::Ast(ast)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if self.options.stop_compilation_at(CompilationPhase::Parser) {
+        if file_options.stop_compilation_at(CompilationPhase::Parser) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
         {
             let mut semantic_analysis: SemanticAnalysis<'_> =
-                SemanticAnalysis::new(ast, file, self.options);
+                SemanticAnalysis::new(ast, file, &file_options);
 
             let semantic_analysis_failed: either::Either<bool, ()> =
                 semantic_analysis.execute(parser_failed);
@@ -424,10 +454,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
             self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-            if self
-                .options
-                .stop_compilation_at(CompilationPhase::LLVMIntrinsicChecker)
-            {
+            if file_options.stop_compilation_at(CompilationPhase::LLVMIntrinsicChecker) {
                 return finisher::archive_compilation(self, file_time, file);
             }
 
@@ -435,10 +462,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
             self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-            if self
-                .options
-                .stop_compilation_at(CompilationPhase::LLVMCallConventionChecker)
-            {
+            if file_options.stop_compilation_at(CompilationPhase::LLVMCallConventionChecker) {
                 return finisher::archive_compilation(self, file_time, file);
             }
 
@@ -447,11 +471,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             }
         }
 
-        if print::after_frontend(self, file, Emited::Ast(ast)) {
+        if print::after_frontend(self, &file_options, file, Emited::Ast(ast)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if emit::after_frontend(self, build_dir, file, Emited::Ast(ast)) {
+        if emit::after_frontend(self, &file_options, build_dir, file, Emited::Ast(ast)) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -469,7 +493,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let llvm_cpu_name: &str = llvm_backend.get_target_cpu().get_cpu_name();
         let llvm_cpu_features: &str = llvm_backend.get_target_cpu().get_cpu_features();
 
-        let compiler_optimization: ThrustOptimization = llvm_backend.get_optimization();
+        let compiler_optimization: ThrustOptimization = file_options.optimization();
         let llvm_opt: OptimizationLevel = compiler_optimization.to_llvm_opt();
 
         let target: Target = Target::from_triple(llvm_triple).map_err(|_| {
@@ -498,8 +522,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 llvm_cpu_name,
                 llvm_cpu_features,
                 llvm_opt,
-                llvm_backend.get_reloc_mode(),
-                llvm_backend.get_code_model(),
+                file_options.reloc_model(),
+                file_options.code_model(),
             )
             .ok_or_else(|| {
                 let _ = interrupt::archive_compilation_unit_with_message(
@@ -547,6 +571,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             target_abi.as_ref(),
             Diagnostician::new(file, self.options),
             self.options,
+            &file_options,
             file,
         );
 
@@ -556,12 +581,20 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         self.update_thrustc_backend_time(backend_time.elapsed());
 
-        if print::llvm_before_optimization(self, &llvm_module, &target_machine, file, file_time)? {
+        if print::llvm_before_optimization(
+            self,
+            &file_options,
+            &llvm_module,
+            &target_machine,
+            file,
+            file_time,
+        )? {
             return finisher::archive_compilation(self, file_time, file);
         }
 
         if emit::llvm_before_optimization(
             self,
+            &file_options,
             &llvm_module,
             &target_machine,
             build_dir,
@@ -571,10 +604,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if self
-            .options
-            .stop_compilation_at(CompilationPhase::LLVMCodegen)
-        {
+        if file_options.stop_compilation_at(CompilationPhase::LLVMCodegen) {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -582,20 +612,20 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let llvm_optimizer_config: LLVMOptimizationConfig = LLVMOptimizationConfig::new(
             compiler_optimization,
-            *llvm_backend.get_sanitizer(),
-            *llvm_backend.get_symbol_linkage_strategy(),
-            *llvm_backend.get_denormal_fp_behavior(),
-            *llvm_backend.get_denormal_fp_32_bits_behavior(),
+            file_options.sanitizer(),
+            file_options.symbol_linkage_strategy(),
+            file_options.denormal_fp(),
+            file_options.denormal_fp_32(),
         );
 
         let llvm_optimizer_passes: LLVMOptimizerPasses<'_> = LLVMOptimizerPasses::new(
-            llvm_backend.get_opt_passes(),
-            llvm_backend.get_modificator_passes(),
+            file_options.opt_passes(),
+            file_options.modificator_opt_passes(),
         );
 
         let llvm_optimizer_flags: LLVMOptimizerFlags = LLVMOptimizerFlags::new(
-            self.options.omit_default_optimizations(),
-            llvm_backend.get_disable_all_sanitizers(),
+            file_options.omit_default_optimizations(),
+            file_options.disable_all_sanitizers(),
         );
 
         thrustc_llvm_codegen::optimizer::LLVMOptimizer::new(
@@ -610,12 +640,20 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         self.update_thrustc_backend_time(backend_time.elapsed());
 
-        if print::llvm_after_optimization(self, &llvm_module, &target_machine, file, file_time)? {
+        if print::llvm_after_optimization(
+            self,
+            &file_options,
+            &llvm_module,
+            &target_machine,
+            file,
+            file_time,
+        )? {
             return finisher::archive_compilation(self, file_time, file);
         }
 
         if emit::llvm_after_optimization(
             self,
+            &file_options,
             &llvm_module,
             &target_machine,
             build_dir,
@@ -647,8 +685,6 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_jit_llvm(&mut self) -> CompileTime {
         cleaner::auto_clean(self.get_compilation_options());
 
-        thrustc_directive::clear_directives();
-
         self.discover_std();
 
         let context: Context = Context::create();
@@ -677,7 +713,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             let compiled_file: Result<either::Either<MemoryBuffer, ()>, ()> =
                 self.compile_file_with_llvm_jit(file);
 
-            it_failed = compiled_file.is_err();
+            it_failed |= compiled_file.is_err();
 
             if let Some(module) = compiled_file
                 .ok()
@@ -691,6 +727,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         it_failed = it_failed
             || self.get_compilation_options().was_printed()
             || self.get_compilation_options().was_emited()
+            || self.file_output_requested
             || modules.is_empty();
 
         if it_failed {
@@ -766,17 +803,34 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return interrupt::archive_compilation_module_jit(self, file, file_time);
         };
 
+        let directives: FileDirectives = match thrustc_directive::apply_file_directives(&tokens) {
+            Ok(directives) => directives,
+            Err(error) => {
+                let mut diagnostician: Diagnostician = Diagnostician::new(file, self.options);
+                diagnostician.dispatch_diagnostic(&error, thrustc_logging::LoggingType::Error);
+                return interrupt::archive_compilation_module_jit(self, file, file_time);
+            }
+        };
+        let file_options: FileOptions<'_, '_> = FileOptions::new(self.options, &directives);
+        self.file_output_requested |= !directives.emit.is_empty() || !directives.print.is_empty();
+
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-        if print::before_frontend(self, file, Emited::Tokens(&tokens)) {
+        if print::before_frontend(self, &file_options, file, Emited::Tokens(&tokens)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if emit::before_frontend(self, build_dir, file, Emited::Tokens(&tokens)) {
+        if emit::before_frontend(
+            self,
+            &file_options,
+            build_dir,
+            file,
+            Emited::Tokens(&tokens),
+        ) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if self.options.stop_compilation_at(CompilationPhase::Lexer) {
+        if file_options.stop_compilation_at(CompilationPhase::Lexer) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
@@ -784,7 +838,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let mut preprocessor: Preprocessor = Preprocessor::new();
         let modules: Result<&[thrustc_preprocessor::module::Module], ()> =
-            preprocessor.generate_modules(&tokens, self.options, file, &builtins);
+            preprocessor.generate_modules(&tokens, &file_options, file, &builtins);
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
@@ -802,8 +856,14 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             );
         })?;
 
-        let parser: (ParserContext, bool) =
-            Parser::parse(&tokens, modules, file, self.options, &mut builtins);
+        let parser: (ParserContext, bool) = Parser::parse(
+            &tokens,
+            modules,
+            file,
+            self.options,
+            &file_options,
+            &mut builtins,
+        );
 
         let parser_result: (ParserContext, bool) = parser;
         let parser_failed: bool = parser_result.1;
@@ -812,21 +872,21 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let ast: &[Ast] = parser_context.get_ast();
 
-        if print::before_frontend(self, file, Emited::Ast(ast)) {
+        if print::before_frontend(self, &file_options, file, Emited::Ast(ast)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if emit::before_frontend(self, build_dir, file, Emited::Ast(ast)) {
+        if emit::before_frontend(self, &file_options, build_dir, file, Emited::Ast(ast)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if self.options.stop_compilation_at(CompilationPhase::Parser) {
+        if file_options.stop_compilation_at(CompilationPhase::Parser) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
         {
             let mut semantic_analysis: SemanticAnalysis<'_> =
-                SemanticAnalysis::new(ast, file, self.options);
+                SemanticAnalysis::new(ast, file, &file_options);
 
             let semantic_analysis_failed: either::Either<bool, ()> =
                 semantic_analysis.execute(parser_failed);
@@ -854,19 +914,13 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
             let intrinsic_checker_fail: bool = intrinsic_checker.analyze();
 
-            if self
-                .options
-                .stop_compilation_at(CompilationPhase::LLVMIntrinsicChecker)
-            {
+            if file_options.stop_compilation_at(CompilationPhase::LLVMIntrinsicChecker) {
                 return finisher::archive_compilation_module_jit(self, file_time, file);
             }
 
             let call_convention_fail: bool = call_conv_checker.analyze();
 
-            if self
-                .options
-                .stop_compilation_at(CompilationPhase::LLVMCallConventionChecker)
-            {
+            if file_options.stop_compilation_at(CompilationPhase::LLVMCallConventionChecker) {
                 return finisher::archive_compilation_module_jit(self, file_time, file);
             }
 
@@ -877,11 +931,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             }
         }
 
-        if print::after_frontend(self, file, Emited::Ast(ast)) {
+        if print::after_frontend(self, &file_options, file, Emited::Ast(ast)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if emit::after_frontend(self, build_dir, file, Emited::Ast(ast)) {
+        if emit::after_frontend(self, &file_options, build_dir, file, Emited::Ast(ast)) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
@@ -899,7 +953,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let llvm_cpu_name: &str = llvm_backend.get_target_cpu().get_cpu_name();
         let llvm_cpu_features: &str = llvm_backend.get_target_cpu().get_cpu_features();
 
-        let compiler_optimization: ThrustOptimization = llvm_backend.get_optimization();
+        let compiler_optimization: ThrustOptimization = file_options.optimization();
         let llvm_opt: OptimizationLevel = compiler_optimization.to_llvm_opt();
 
         let target: Target = Target::from_triple(llvm_triple).map_err(|_| {
@@ -918,8 +972,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 llvm_cpu_name,
                 llvm_cpu_features,
                 llvm_opt,
-                llvm_backend.get_reloc_mode(),
-                llvm_backend.get_code_model(),
+                file_options.reloc_model(),
+                file_options.code_model(),
             )
             .ok_or_else(|| {
                 let _ = interrupt::archive_compilation_unit_with_message(
@@ -969,6 +1023,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             target_abi.as_ref(),
             Diagnostician::new(file, self.options),
             self.options,
+            &file_options,
             file,
         );
 
@@ -978,12 +1033,20 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         self.update_thrustc_backend_time(backend_time.elapsed());
 
-        if print::llvm_before_optimization(self, &llvm_module, &target_machine, file, file_time)? {
+        if print::llvm_before_optimization(
+            self,
+            &file_options,
+            &llvm_module,
+            &target_machine,
+            file,
+            file_time,
+        )? {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
         if emit::llvm_before_optimization(
             self,
+            &file_options,
             &llvm_module,
             &target_machine,
             build_dir,
@@ -993,29 +1056,26 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if self
-            .options
-            .stop_compilation_at(CompilationPhase::LLVMCodegen)
-        {
+        if file_options.stop_compilation_at(CompilationPhase::LLVMCodegen) {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
         let llvm_optimizer_config: LLVMOptimizationConfig = LLVMOptimizationConfig::new(
             compiler_optimization,
-            *llvm_backend.get_sanitizer(),
-            *llvm_backend.get_symbol_linkage_strategy(),
-            *llvm_backend.get_denormal_fp_behavior(),
-            *llvm_backend.get_denormal_fp_32_bits_behavior(),
+            file_options.sanitizer(),
+            file_options.symbol_linkage_strategy(),
+            file_options.denormal_fp(),
+            file_options.denormal_fp_32(),
         );
 
         let llvm_optimizer_passes: LLVMOptimizerPasses<'_> = LLVMOptimizerPasses::new(
-            llvm_backend.get_opt_passes(),
-            llvm_backend.get_modificator_passes(),
+            file_options.opt_passes(),
+            file_options.modificator_opt_passes(),
         );
 
         let llvm_optimizer_flags: LLVMOptimizerFlags = LLVMOptimizerFlags::new(
-            self.options.omit_default_optimizations(),
-            llvm_backend.get_disable_all_sanitizers(),
+            file_options.omit_default_optimizations(),
+            file_options.disable_all_sanitizers(),
         );
 
         thrustc_llvm_codegen::optimizer::LLVMOptimizer::new(
@@ -1030,12 +1090,20 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         self.update_thrustc_backend_time(backend_time.elapsed());
 
-        if print::llvm_after_optimization(self, &llvm_module, &target_machine, file, file_time)? {
+        if print::llvm_after_optimization(
+            self,
+            &file_options,
+            &llvm_module,
+            &target_machine,
+            file,
+            file_time,
+        )? {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
         if emit::llvm_after_optimization(
             self,
+            &file_options,
             &llvm_module,
             &target_machine,
             build_dir,

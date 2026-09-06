@@ -30,13 +30,14 @@ use inkwell::types::FunctionType;
 use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum, PointerValue};
 
 use crate::context::{CodeGenLocation, LLVMCodeGenContext};
+use crate::traits::AstLLVMGetType;
 use crate::{abort, codegen, type_cast, typegeneration};
 
 pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     pointer: &'ctx Ast,
     args: &'ctx [Ast],
-    function_type: &Type,
+    function_type: &'ctx Type,
     span: Span,
     cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
@@ -71,15 +72,17 @@ pub fn compile<'ctx>(
     let is_var_args: bool = modificator.llvm().has_ignore();
     let has_abi: bool = context.has_abi();
 
-    let function_type: FunctionType<'_> =
-        typegeneration::generate_type_function_type_to_function_type(
-            context,
-            return_type,
-            parameter_types,
-            is_var_args,
-        );
+    let uses_webassembly_abi: bool = matches!(
+        context.get_abi(),
+        Some(thrustc_llvm_abi_representation::LLVMABIRepresentation::WebAssemblyABI { .. })
+    );
 
-    let compiled_args: Vec<BasicMetadataValueEnum> = args
+    let argument_types: Vec<Type> = args
+        .iter()
+        .map(|argument| argument.get_type_for_llvm().clone())
+        .collect();
+
+    let compiled_args: Vec<BasicValueEnum> = args
         .iter()
         .enumerate()
         .map(|(index, expr)| {
@@ -94,32 +97,169 @@ pub fn compile<'ctx>(
 
                     context.pop_current_codegen_location();
 
-                    value.into()
+                    value
                 } else {
                     let value: BasicValueEnum<'_> = codegen::compile_as_value(context, expr, cast);
 
                     context.pop_current_codegen_location();
 
-                    value.into()
+                    value
                 }
             } else {
                 let value: BasicValueEnum<'_> = codegen::compile_as_value(context, expr, cast);
 
                 context.pop_current_codegen_location();
 
-                value.into()
+                value
             }
         })
         .collect();
 
+    let (function_type, abi_configuration): (
+        FunctionType<'_>,
+        Option<thrustc_llvm_abi::LLVMABIConfiguration<'_>>,
+    ) = if uses_webassembly_abi {
+        let abi = context.get_abi().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to compile a WebAssembly indirect call without an ABI.",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+        let (function_type, configuration) =
+            thrustc_llvm_abi::create_anonymous_function_type(
+                llvm_context,
+                abi,
+                return_type,
+                parameter_types,
+                is_var_args,
+                context.get_codegen_location().to_abi_representation(),
+            )
+            .unwrap_or_else(|| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to create a WebAssembly indirect call type.",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        (function_type, Some(configuration))
+    } else {
+        (
+            typegeneration::generate_type_function_type_to_function_type(
+                context,
+                return_type,
+                parameter_types,
+                is_var_args,
+            ),
+            None,
+        )
+    };
+
+    let lowered_args: Vec<BasicMetadataValueEnum> = if uses_webassembly_abi {
+        let abi = context.get_abi().unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to lower a WebAssembly indirect call without an ABI.",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+        thrustc_llvm_abi::lower_anonymous_call_prologue(
+            llvm_context,
+            llvm_builder,
+            abi,
+            abi_configuration.as_ref().unwrap_or_else(|| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to get a WebAssembly indirect call configuration.",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            }),
+            compiled_args,
+            &argument_types,
+            context.get_codegen_location().to_abi_representation(),
+            span,
+        )
+        .unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to lower WebAssembly indirect call arguments.",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        })
+    } else {
+        compiled_args.into_iter().map(Into::into).collect()
+    };
+
     let function_value: BasicValueEnum<'_> = match llvm_builder.build_indirect_call(
         function_type,
         function_ptr_value,
-        &compiled_args,
+        &lowered_args,
         "",
     ) {
         Ok(callsite) => {
-            if has_abi {
+            if uses_webassembly_abi {
+                let abi = context.get_abi().unwrap_or_else(|| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to finish a WebAssembly indirect call without an ABI.",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+
+                let configuration = abi_configuration.as_ref().unwrap_or_else(|| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to finish a WebAssembly indirect call without configuration.",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+
+                let codegen_location = context.get_codegen_location().to_abi_representation();
+
+                thrustc_llvm_abi::lower_call_conventions(
+                    llvm_context,
+                    abi,
+                    configuration,
+                    callsite,
+                    &argument_types,
+                    codegen_location,
+                );
+
+                thrustc_llvm_abi::lower_call_epilogue(
+                    llvm_context,
+                    llvm_builder,
+                    abi,
+                    configuration,
+                    callsite,
+                    &lowered_args,
+                    codegen_location,
+                    span,
+                )
+                .unwrap_or_else(|| {
+                    context
+                        .get_llvm_context()
+                        .ptr_type(AddressSpace::default())
+                        .const_null()
+                        .into()
+                })
+            } else if has_abi {
                 let args_types: &Vec<Type> = parameter_types;
 
                 let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
@@ -151,9 +291,25 @@ pub fn compile<'ctx>(
                         line!(),
                     )
                 }
-            }
 
-            if !return_type.is_void_type() {
+                if !return_type.is_void_type() {
+                    callsite.try_as_basic_value().left().unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile indirect function call!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                } else {
+                    context
+                        .get_llvm_context()
+                        .ptr_type(AddressSpace::default())
+                        .const_null()
+                        .into()
+                }
+            } else if !return_type.is_void_type() {
                 callsite.try_as_basic_value().left().unwrap_or_else(|| {
                     abort::abort_codegen(
                         context,

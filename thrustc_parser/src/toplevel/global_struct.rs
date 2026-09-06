@@ -21,9 +21,9 @@ use thrustc_ast::{
     Ast, NodeId, ast_logic_data::StructureData, traits::AstStructFieldsDataExtensions,
 };
 use thrustc_attributes::ThrustAttributes;
+use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::Struct;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{

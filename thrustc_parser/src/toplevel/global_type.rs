@@ -19,8 +19,8 @@
 
 use thrustc_ast::{Ast, NodeId};
 use thrustc_attributes::ThrustAttributes;
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_table::GenericCustomTypeEntry;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;

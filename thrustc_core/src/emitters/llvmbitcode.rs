@@ -18,20 +18,17 @@
 */
 
 use inkwell::module::Module;
-use thrustc_options::CompilerOptions;
 
 use crate::{ThrustCompiler, utils};
 
 pub fn emit_llvm_bitcode(
-    compiler: &ThrustCompiler,
+    _compiler: &ThrustCompiler,
     llvm_module: &Module,
     build_dir: &std::path::Path,
     file_name: &str,
     unoptimized: bool,
+    need_obfuscation: bool,
 ) -> bool {
-    let compiler_options: &CompilerOptions = compiler.get_compilation_options();
-    let need_obfuscation: bool = compiler_options.need_obfuscate_archive_names();
-
     let bitcode_base_path: std::path::PathBuf = build_dir.join("emit").join("llvm-bitcode");
 
     if !bitcode_base_path.exists() {

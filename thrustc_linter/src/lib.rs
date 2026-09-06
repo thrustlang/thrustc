@@ -24,6 +24,7 @@ use thrustc_ast::{
 use thrustc_attributes::{ThrustAttributeComparator, traits::ThrustAttributesExtensions};
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
+use thrustc_directive::FileOptions;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_token_type::{TokenType, traits::TokenTypeExtensions};
@@ -45,6 +46,7 @@ pub struct Linter<'linter> {
 
     file: &'linter CompilationUnit,
     options: &'linter CompilerOptions,
+    file_options: &'linter FileOptions<'linter, 'linter>,
     diagnostician: Diagnostician,
 
     symbols: LinterSymbolsTable<'linter>,
@@ -60,6 +62,7 @@ impl<'linter> Linter<'linter> {
         file: &'linter CompilationUnit,
 
         options: &'linter CompilerOptions,
+        file_options: &'linter FileOptions<'linter, 'linter>,
     ) -> Self {
         Self {
             ast,
@@ -69,6 +72,7 @@ impl<'linter> Linter<'linter> {
 
             file,
             options,
+            file_options,
             diagnostician: Diagnostician::new(file, options),
 
             symbols: LinterSymbolsTable::new(),
@@ -102,8 +106,7 @@ impl<'linter> Linter<'linter> {
                 .dispatch_diagnostic(bug, thrustc_logging::LoggingType::Bug);
         }
 
-        let warnings_to_disable: Vec<CompilationIssueCode> =
-            thrustc_directive::combined_warnings_to_disable(self.options, self.file.get_path());
+        let warnings_to_disable = thrustc_directive::combine_warnings_to_disable(self.file_options);
 
         thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 

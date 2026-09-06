@@ -97,9 +97,10 @@ impl LLVMTargetTriple {
 impl LLVMTargetTriple {
     #[inline]
     pub fn is_valid_llvm_target_triple_format(raw: &str) -> bool {
-        let dash_count: usize = raw.chars().filter(|&c| c == '-').count();
+        let components: Vec<&str> = raw.split('-').collect();
 
-        matches!(dash_count, 3 | 4)
+        matches!(components.len(), 3..=5)
+            && components.iter().all(|component| !component.is_empty())
     }
 }
 
@@ -176,6 +177,11 @@ impl LLVMTargetTriple {
 }
 
 impl LLVMTargetTriple {
+    #[inline]
+    pub fn is_wasm32_arch(&self) -> bool {
+        matches!(self.arch.as_str(), "wasm32")
+    }
+
     #[inline]
     pub fn is_x86_64_arch(&self) -> bool {
         matches!(self.arch.as_str(), "x86_64" | "amd64")

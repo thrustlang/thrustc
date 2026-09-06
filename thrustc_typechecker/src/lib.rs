@@ -24,6 +24,7 @@ use thrustc_ast::{
 
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
+use thrustc_directive::FileOptions;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::{
@@ -52,6 +53,7 @@ pub struct TypeChecker<'type_checker> {
     ast: &'type_checker [Ast<'type_checker>],
     position: usize,
     options: &'type_checker CompilerOptions,
+    file_options: &'type_checker FileOptions<'type_checker, 'type_checker>,
 
     file: &'type_checker CompilationUnit,
 
@@ -72,6 +74,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
         ast: &'type_checker [Ast<'type_checker>],
         file: &'type_checker CompilationUnit,
         options: &'type_checker CompilerOptions,
+        file_options: &'type_checker FileOptions<'type_checker, 'type_checker>,
     ) -> Self {
         Self {
             ast,
@@ -83,6 +86,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
 
             file,
             options,
+            file_options,
 
             control_context: TypeCheckerControlContext::new(),
             type_context: TypeCheckerTypeContext::new(),
@@ -122,8 +126,8 @@ impl<'type_checker> TypeChecker<'type_checker> {
         }
 
         {
-            let warnings_to_disable: Vec<CompilationIssueCode> =
-                thrustc_directive::combined_warnings_to_disable(self.options, self.file.get_path());
+            let warnings_to_disable =
+                thrustc_directive::combine_warnings_to_disable(self.file_options);
 
             thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 

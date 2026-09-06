@@ -138,9 +138,11 @@ pub fn build_import<'parser>(
         } else if let Some(last) = path_segments.last() {
             vec![last.clone()]
         } else if let Some(path) = &string_path {
-            vec![Path::new(path)
-                .file_stem()
-                .map_or_else(String::new, |stem| stem.to_string_lossy().to_string())]
+            vec![
+                Path::new(path)
+                    .file_stem()
+                    .map_or_else(String::new, |stem| stem.to_string_lossy().to_string()),
+            ]
         } else {
             Vec::new()
         };

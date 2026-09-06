@@ -21,6 +21,7 @@ use thrustc_ast::{Ast, traits::AstStandardExtensions};
 use thrustc_builtins::BuiltinRegistry;
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
+use thrustc_directive::FileOptions;
 use thrustc_entities::parser_entities::{AssemblerFunctions, Functions};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_logging::LoggingType;
@@ -58,6 +59,7 @@ pub struct ParserContext<'parser> {
     type_context: TypeContext,
 
     options: &'parser CompilerOptions,
+    file_options: &'parser FileOptions<'parser, 'parser>,
     file: &'parser CompilationUnit,
     builtins: &'parser mut BuiltinRegistry,
 
@@ -83,9 +85,10 @@ impl<'parser> Parser<'parser> {
         modules: &'parser [Module],
         file: &'parser CompilationUnit,
         options: &'parser CompilerOptions,
+        file_options: &'parser FileOptions<'parser, 'parser>,
         builtins: &'parser mut BuiltinRegistry,
     ) -> (ParserContext<'parser>, bool) {
-        Self { tokens, file }.start_parsing_nodes(modules, options, builtins)
+        Self { tokens, file }.start_parsing_nodes(modules, options, file_options, builtins)
     }
 }
 
@@ -94,10 +97,17 @@ impl<'parser> Parser<'parser> {
         &mut self,
         modules: &'parser [Module],
         options: &'parser CompilerOptions,
+        file_options: &'parser FileOptions<'parser, 'parser>,
         builtins: &'parser mut BuiltinRegistry,
     ) -> (ParserContext<'parser>, bool) {
-        let mut ctx: ParserContext =
-            ParserContext::new(self.tokens, modules, self.file, options, builtins);
+        let mut ctx: ParserContext = ParserContext::new(
+            self.tokens,
+            modules,
+            self.file,
+            options,
+            file_options,
+            builtins,
+        );
 
         toplevel::parse_forward(&mut ctx);
 
@@ -140,6 +150,7 @@ impl<'parser> ParserContext<'parser> {
         modules: &'parser [Module],
         file: &'parser CompilationUnit,
         options: &'parser CompilerOptions,
+        file_options: &'parser FileOptions<'parser, 'parser>,
         builtins: &'parser mut BuiltinRegistry,
     ) -> Self {
         let functions: Functions = Functions::with_capacity(u8::MAX as usize);
@@ -165,6 +176,7 @@ impl<'parser> ParserContext<'parser> {
             type_context,
 
             options,
+            file_options,
             file,
             builtins,
 
@@ -202,11 +214,8 @@ impl<'parser> ParserContext<'parser> {
         }
 
         if !self.warnings.is_empty() {
-            let warnings_to_disable: Vec<CompilationIssueCode> =
-                thrustc_directive::combined_warnings_to_disable(
-                    self.options,
-                    self.file.get_path(),
-                );
+            let warnings_to_disable =
+                thrustc_directive::combine_warnings_to_disable(self.file_options);
 
             thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 
@@ -616,7 +625,7 @@ impl<'parser> ParserContext<'parser> {
     pub fn evaluate_builtin(
         &mut self,
         name: &str,
-        args: &[thrustc_builtins::BuiltinArgument],
+        args: &[thrustc_compile_time::BuiltinArgument],
         span: Span,
     ) -> Result<Ast<'parser>, CompilationIssue> {
         let result: Result<(Ast<'parser>, Vec<CompilationIssue>), CompilationIssue> =

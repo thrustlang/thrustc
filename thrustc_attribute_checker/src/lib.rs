@@ -24,6 +24,7 @@ use thrustc_attributes::{
 };
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
+use thrustc_directive::FileOptions;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::traits::TypeIsExtensions;
@@ -43,6 +44,7 @@ pub struct AttributeChecker<'attr_checker> {
 
     file: &'attr_checker CompilationUnit,
     options: &'attr_checker CompilerOptions,
+    file_options: &'attr_checker FileOptions<'attr_checker, 'attr_checker>,
     diagnostician: Diagnostician,
 }
 
@@ -52,6 +54,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
         ast: &'attr_checker [Ast<'attr_checker>],
         file: &'attr_checker CompilationUnit,
         options: &'attr_checker CompilerOptions,
+        file_options: &'attr_checker FileOptions<'attr_checker, 'attr_checker>,
     ) -> Self {
         Self {
             ast,
@@ -60,6 +63,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 
             file,
             options,
+            file_options,
             diagnostician: Diagnostician::new(file, options),
         }
     }
@@ -77,8 +81,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 
 impl<'attr_checker> AttributeChecker<'attr_checker> {
     fn check(&mut self) -> bool {
-        let warnings_to_disable: Vec<CompilationIssueCode> =
-            thrustc_directive::combined_warnings_to_disable(self.options, self.file.get_path());
+        let warnings_to_disable = thrustc_directive::combine_warnings_to_disable(self.file_options);
 
         thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 

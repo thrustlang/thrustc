@@ -33,6 +33,7 @@ use inkwell::values::PointerValue;
 
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
+use thrustc_directive::FileOptions;
 use thrustc_llvm_abi::LLVMABICodeGenLocation;
 use thrustc_llvm_abi_representation::LLVMABIRepresentation;
 use thrustc_llvm_codegen_variatic::context::LLVMVariaticContext;
@@ -89,6 +90,7 @@ pub struct LLVMCodeGenContext<'a, 'ctx> {
 
     diagnostician: Diagnostician,
     options: &'ctx CompilerOptions,
+    file_options: &'ctx FileOptions<'ctx, 'ctx>,
 }
 
 impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
@@ -102,14 +104,16 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
         target_abi: Option<&'ctx LLVMABIRepresentation<'ctx>>,
         diagnostician: Diagnostician,
         options: &'ctx CompilerOptions,
+        file_options: &'ctx FileOptions<'ctx, 'ctx>,
         file: &'ctx CompilationUnit,
     ) -> Self {
-        let dbg_context: Option<LLVMDebugContext> = if options
-            .get_llvm_backend()
-            .get_debug_config()
-            .is_debug_mode()
-        {
-            Some(LLVMDebugContext::new(module, target_machine, options, file))
+        let dbg_context: Option<LLVMDebugContext> = if file_options.debug_mode() {
+            Some(LLVMDebugContext::new(
+                module,
+                target_machine,
+                file_options,
+                file,
+            ))
         } else {
             None
         };
@@ -155,6 +159,7 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
 
             diagnostician,
             options,
+            file_options,
         }
     }
 }
@@ -422,6 +427,11 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
     #[inline]
     pub fn get_compiler_options(&self) -> &CompilerOptions {
         self.options
+    }
+
+    #[inline]
+    pub fn get_file_options(&self) -> &FileOptions<'ctx, 'ctx> {
+        self.file_options
     }
 
     #[inline]

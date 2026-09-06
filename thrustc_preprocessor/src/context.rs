@@ -24,7 +24,8 @@ use thrustc_attributes::ThrustAttributes;
 use thrustc_builtins::BuiltinRegistry;
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
-use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
+use thrustc_directive::FileOptions;
+use thrustc_errors::{CompilationIssue, CompilationPosition};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
@@ -38,6 +39,7 @@ use crate::{abort, highmodule_parsing, shared::type_context::TypeParseContext};
 pub struct PreprocessorContext<'preprocessor> {
     tokens: &'preprocessor [Token],
     options: &'preprocessor CompilerOptions,
+    file_options: &'preprocessor FileOptions<'preprocessor, 'preprocessor>,
     visited: HashSet<PathBuf>,
     file: &'preprocessor CompilationUnit,
     diagnostician: Diagnostician,
@@ -52,7 +54,7 @@ pub struct PreprocessorContext<'preprocessor> {
 impl<'preprocessor> PreprocessorContext<'preprocessor> {
     pub fn new(
         tokens: &'preprocessor [Token],
-        options: &'preprocessor CompilerOptions,
+        file_options: &'preprocessor FileOptions<'preprocessor, 'preprocessor>,
         file: &'preprocessor CompilationUnit,
         visited: HashSet<PathBuf>,
         registry: crate::registry::SharedModuleRegistry,
@@ -60,10 +62,11 @@ impl<'preprocessor> PreprocessorContext<'preprocessor> {
     ) -> Self {
         Self {
             tokens,
-            options,
+            options: file_options.global(),
+            file_options,
             visited,
             file,
-            diagnostician: Diagnostician::new(file, options),
+            diagnostician: Diagnostician::new(file, file_options.global()),
             errors: Vec::with_capacity(u8::MAX as usize),
             warnings: Vec::with_capacity(u8::MAX as usize),
             registry,
@@ -77,10 +80,10 @@ impl<'preprocessor> PreprocessorContext<'preprocessor> {
 impl PreprocessorContext<'_> {
     pub fn check_status(&mut self) -> Result<(), ()> {
         if !self.warnings.is_empty() {
-            let warnings_to_disable: &[CompilationIssueCode] =
-                self.options.get_warnings_to_disable();
+            let warnings_to_disable =
+                thrustc_directive::combine_warnings_to_disable(self.file_options);
 
-            thrustc_errors::filter_warnings(warnings_to_disable, &mut self.warnings);
+            thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 
             for warning in self.warnings.iter() {
                 self.diagnostician

@@ -35,9 +35,9 @@ pub fn print_llvm_assembler(
     llvm_module: &Module,
     file_name: &str,
     unoptimized: bool,
+    obfuscate: bool,
 ) -> Result<(), LLVMString> {
-    let compiler_options: &CompilerOptions = compiler.get_compilation_options();
-    let obfuscate: bool = compiler_options.need_obfuscate_archive_names();
+    let _compiler_options: &CompilerOptions = compiler.get_compilation_options();
 
     let optimization_name_modifier: &str = if unoptimized { "unopt_" } else { "" };
 
@@ -60,7 +60,7 @@ pub fn print_llvm_assembler(
 
     #[cfg(feature = "extra_utilities")]
     {
-        if compiler_options.need_copy_output_to_clipboard() {
+        if _compiler_options.need_copy_output_to_clipboard() {
             use clipboard::*;
 
             let ctx: Result<ClipboardContext, Box<dyn std::error::Error>> =

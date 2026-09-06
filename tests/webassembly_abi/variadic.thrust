@@ -1,0 +1,16 @@
+/*
+ * WebAssembly ABI variadic functions lower fixed parameters and preserve the
+ * LLVM variadic signature. Small integers and f32 call arguments are promoted.
+ */
+
+fn first(count: s32) s32 @public @convention("C") @arbitraryArgs {
+    if count == 0 {
+        return 0;
+    }
+
+    return arbitraryArg(s32);
+}
+
+fn main() s32 @public {
+    return first(3, 1 as s8, 2 as u16, 3.0 as f32);
+}

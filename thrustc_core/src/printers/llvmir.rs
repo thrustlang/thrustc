@@ -35,9 +35,9 @@ pub fn print_llvm_ir(
     llvm_module: &Module,
     file_name: &str,
     unoptimized: bool,
+    obfuscate: bool,
 ) {
     let compiler_options: &CompilerOptions = compiler.get_compilation_options();
-    let obfuscate: bool = compiler_options.need_obfuscate_archive_names();
 
     let optimization_name_modifier: &str = if unoptimized { "unopt_" } else { "" };
 

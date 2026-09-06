@@ -370,16 +370,10 @@ pub fn build_generic_call<'parser>(
 
     let arguments: ParsedCallArguments = self::parse_call_arguments(ctx)?;
 
-    let parameter_names: Vec<&str> =
-        generic.parameter_names.iter().map(String::as_str).collect();
+    let parameter_names: Vec<&str> = generic.parameter_names.iter().map(String::as_str).collect();
 
-    let args: Vec<Ast> = self::reorder_call_arguments(
-        name,
-        span,
-        arguments,
-        &parameter_names,
-        generic.has_varargs,
-    )?;
+    let args: Vec<Ast> =
+        self::reorder_call_arguments(name, span, arguments, &parameter_names, generic.has_varargs)?;
 
     let argument_types: Vec<Type> = args
         .iter()

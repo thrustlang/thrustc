@@ -1,0 +1,35 @@
+[package]
+name = "thrustc_llvm_webassembly_abi"
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+either = "1.15.0"
+
+thrustc_ast = { path = "../thrustc_ast" }
+thrustc_code_location = { path = "../thrustc_code_location" }
+thrustc_constants = { path = "../thrustc_constants" }
+thrustc_diagnostician = { path = "../thrustc_diagnostician" }
+thrustc_errors = { path = "../thrustc_errors" }
+thrustc_logging = { path = "../thrustc_logging" }
+thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
+thrustc_options = { path = "../thrustc_options" }
+thrustc_typesystem = { path = "../thrustc_typesystem" }
+
+inkwell = { workspace = true, optional = true }
+clang = { workspace = true, optional = true }
+
+[features]
+default = ["llvm_backend_static"]
+
+llvm_backend_dynamic = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-dynamic"]
+llvm_backend_static = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-static"]
+
+cbindgen_static = ["dep:clang", "clang/static"]
+cbindgen_dynamic = ["dep:clang"]

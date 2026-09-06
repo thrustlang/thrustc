@@ -80,21 +80,31 @@ pub fn fold_resolving(
             let left: BuiltinValue = self::fold_resolving(left, resolve)?;
             let right: BuiltinValue = self::fold_resolving(right, resolve)?;
 
-            fold_binary(*operator, left, right)
+            self::fold_binary(*operator, left, right)
         }
+
         Ast::UnaryOp {
-            operator, node, before, ..
+            operator,
+            node,
+            before,
+            ..
         } => {
             let value: BuiltinValue = self::fold_resolving(node, resolve)?;
 
-            fold_unary(*operator, value, *before)
+            self::fold_unary(*operator, value, *before)
         }
+
         Ast::Reference { name, span, .. } => resolve(name, *span),
+
         _ => None,
     }
 }
 
-fn fold_binary(operator: TokenType, left: BuiltinValue, right: BuiltinValue) -> Option<BuiltinValue> {
+fn fold_binary(
+    operator: TokenType,
+    left: BuiltinValue,
+    right: BuiltinValue,
+) -> Option<BuiltinValue> {
     match (left, right) {
         (BuiltinValue::Integer(left), BuiltinValue::Integer(right)) => match operator {
             TokenType::Plus => Some(BuiltinValue::Integer(left.saturating_add(right))),
@@ -117,6 +127,7 @@ fn fold_binary(operator: TokenType, left: BuiltinValue, right: BuiltinValue) -> 
             TokenType::Or => Some(BuiltinValue::Bool(left != 0 || right != 0)),
             _ => None,
         },
+
         (BuiltinValue::Bool(left), BuiltinValue::Bool(right)) => match operator {
             TokenType::EqEq => Some(BuiltinValue::Bool(left == right)),
             TokenType::BangEq => Some(BuiltinValue::Bool(left != right)),
@@ -124,6 +135,7 @@ fn fold_binary(operator: TokenType, left: BuiltinValue, right: BuiltinValue) -> 
             TokenType::Or => Some(BuiltinValue::Bool(left || right)),
             _ => None,
         },
+
         (BuiltinValue::Float(left), BuiltinValue::Float(right)) => match operator {
             TokenType::Plus => Some(BuiltinValue::Float(left + right)),
             TokenType::Minus => Some(BuiltinValue::Float(left - right)),
@@ -137,11 +149,13 @@ fn fold_binary(operator: TokenType, left: BuiltinValue, right: BuiltinValue) -> 
             TokenType::GreaterEq => Some(BuiltinValue::Bool(left >= right)),
             _ => None,
         },
+
         (BuiltinValue::CString(left), BuiltinValue::CString(right)) => match operator {
             TokenType::EqEq => Some(BuiltinValue::Bool(left == right)),
             TokenType::BangEq => Some(BuiltinValue::Bool(left != right)),
             _ => None,
         },
+
         _ => None,
     }
 }
@@ -154,7 +168,9 @@ fn fold_unary(operator: TokenType, value: BuiltinValue, before: bool) -> Option<
     match (operator, value) {
         (TokenType::Bang, BuiltinValue::Bool(value)) => Some(BuiltinValue::Bool(!value)),
         (TokenType::Not, BuiltinValue::Integer(value)) => Some(BuiltinValue::Integer(!value)),
-        (TokenType::Minus, BuiltinValue::Integer(value)) => Some(BuiltinValue::Integer(value.wrapping_neg())),
+        (TokenType::Minus, BuiltinValue::Integer(value)) => {
+            Some(BuiltinValue::Integer(value.wrapping_neg()))
+        }
         (TokenType::Minus, BuiltinValue::Float(value)) => Some(BuiltinValue::Float(-value)),
         (TokenType::Plus, BuiltinValue::Integer(value)) => Some(BuiltinValue::Integer(value)),
         (TokenType::Plus, BuiltinValue::Float(value)) => Some(BuiltinValue::Float(value)),

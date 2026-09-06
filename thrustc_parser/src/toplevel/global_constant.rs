@@ -20,10 +20,10 @@
 use thrustc_ast::{Ast, NodeId, ast_metadata::ConstantMetadata, traits::AstGetType};
 use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
 use thrustc_attributes::ThrustAttributes;
+use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_mir::atomicord::ThrustAtomicOrdering;
 use thrustc_parser_context::{Position, traits::TypeContextExtensions};
-use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, traits::InfererTypeExtensions};
@@ -102,7 +102,11 @@ pub fn build_global_const<'parser>(
     } else {
         ctx.get_mut_symbols().new_global_constant(
             name,
-            (constant_type.clone(), attributes.clone(), Some(value.clone())),
+            (
+                constant_type.clone(),
+                attributes.clone(),
+                Some(value.clone()),
+            ),
         )?;
 
         let constant: Ast<'_> = Ast::Const {

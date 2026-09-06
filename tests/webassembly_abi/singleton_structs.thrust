@@ -1,0 +1,35 @@
+/*
+ * Singleton aggregates are passed and returned as their only scalar member.
+ */
+
+struct One {
+    value: s16
+}
+
+struct Nested {
+    value: One
+}
+
+struct ArrayOne {
+    value: array[u32; 1]
+}
+
+fn one(value: One) One @public @convention("C") {
+    return value;
+}
+
+fn nested(value: Nested) Nested @public @convention("C") {
+    return value;
+}
+
+fn arrayOne(value: ArrayOne) ArrayOne @public @convention("C") {
+    return value;
+}
+
+fn callOne(value: One) One @public @convention("C") {
+    return one(value);
+}
+
+fn main() s32 @public {
+    return 0;
+}

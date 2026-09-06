@@ -18,8 +18,8 @@
 */
 
 use thrustc_ast::{Ast, NodeId, ast_builtins::AstBuiltin};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -398,7 +398,10 @@ pub fn build_arbitrary_arg<'parser>(
     )?;
 
     Ok(Ast::Builtin {
-        builtin: AstBuiltin::ArbitraryArg { ty: ty.clone(), span },
+        builtin: AstBuiltin::ArbitraryArg {
+            ty: ty.clone(),
+            span,
+        },
         kind: ty,
         span,
         id: NodeId::new(),

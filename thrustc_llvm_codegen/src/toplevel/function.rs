@@ -28,14 +28,13 @@ use inkwell::values::IntValue;
 use inkwell::values::PointerValue;
 use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeBlockEntensions;
+use thrustc_code_location::Span;
 use thrustc_entities::Function;
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributeComparator;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_llvm_call_conventions::LLVMCallConvention;
-use thrustc_llvm_system_v_abi::SystemVABIFunctionParameterConfiguration;
-use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 
@@ -101,7 +100,13 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
     let generated_function_type: (
         FunctionType<'_>,
         Option<thrustc_llvm_abi::LLVMABIConfiguration>,
-    ) = typegeneration::compile_as_function_type(context, return_type, parameters, ignore_args, CompilerFunctionVariant::PureFunction);
+    ) = typegeneration::compile_as_function_type(
+        context,
+        return_type,
+        parameters,
+        ignore_args,
+        CompilerFunctionVariant::PureFunction,
+    );
 
     let function_type: FunctionType<'_> = generated_function_type.0;
     let function_abi_configuration: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
@@ -113,31 +118,41 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
     let has_abi_configuration: bool = function_abi_configuration.is_some();
 
     if has_abi {
-        let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> = context.get_abi().unwrap_or_else(|| {
-            abort::abort_codegen(
-                context,
-                "Failed to compile as a function, expected an ABI!",
-                span,
-                std::path::PathBuf::from(file!()),
-                line!(),
-            )
-        });
-
-        if has_abi_configuration {
-            let configuration: &thrustc_llvm_abi::LLVMABIConfiguration<'_> = function_abi_configuration.as_ref().unwrap_or_else(|| {
+        let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
+            context.get_abi().unwrap_or_else(|| {
                 abort::abort_codegen(
                     context,
-                    "Failed to compile the function call, expected an ABI type configuration!",
+                    "Failed to compile as a function, expected an ABI!",
                     span,
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
             });
 
-            let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation = context.get_codegen_location().to_abi_representation();
+        if has_abi_configuration {
+            let configuration: &thrustc_llvm_abi::LLVMABIConfiguration<'_> =
+                function_abi_configuration.as_ref().unwrap_or_else(|| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to compile the function call, expected an ABI type configuration!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
 
-            let lowered_parameters_conventions: bool = thrustc_llvm_abi::lower_parameter_conventions(llvm_context, abi, llvm_function, configuration, codegen_location);
-    
+            let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
+                context.get_codegen_location().to_abi_representation();
+
+            let lowered_parameters_conventions: bool =
+                thrustc_llvm_abi::lower_parameter_conventions(
+                    llvm_context,
+                    abi,
+                    llvm_function,
+                    configuration,
+                    codegen_location,
+                );
+
             if !lowered_parameters_conventions {
                 abort::abort_codegen(
                     context,
@@ -148,7 +163,13 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
                 )
             }
 
-            let lowered_return_type_conventions: bool = thrustc_llvm_abi::lower_terminator_conventions(llvm_context, abi, configuration, llvm_function);
+            let lowered_return_type_conventions: bool =
+                thrustc_llvm_abi::lower_terminator_conventions(
+                    llvm_context,
+                    abi,
+                    configuration,
+                    llvm_function,
+                );
 
             if !lowered_return_type_conventions {
                 abort::abort_codegen(
@@ -159,14 +180,12 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
                     line!(),
                 )
             }
-
         }
-
     }
 
-    let applicant: LLVMAttributeApplicant<'_>= LLVMAttributeApplicant::Function {
+    let applicant: LLVMAttributeApplicant<'_> = LLVMAttributeApplicant::Function {
         value: llvm_function,
-        span
+        span,
     };
 
     AttributeBuilder::add_function_attributes(context, &attributes, applicant);
@@ -212,8 +231,10 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
         prototype.get_abi_configuration().cloned();
 
     let span: Span = prototype.get_span();
-    
-    codegen.get_mut_context().set_current_function(prototype.clone());
+
+    codegen
+        .get_mut_context()
+        .set_current_function(prototype.clone());
 
     let llvm_function_block: BasicBlock =
         block::append_block(codegen.get_context(), function_value);
@@ -222,12 +243,7 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
 
     llvm_builder.unset_current_debug_location();
 
-    if codegen
-        .get_context()
-        .get_compiler_options()
-        .get_llvm_backend()
-        .needs_stack_protector()
-    {
+    if codegen.get_context().get_file_options().stack_protector() {
         let stack_protector_ptr_value: PointerValue<'_> =
             self::emit_stack_protector_prologue(codegen.get_mut_context(), span);
 
@@ -237,18 +253,20 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
     }
 
     if let Some(function_body) = function_body {
-        
         if is_variadic {
             codegen
                 .get_mut_context()
                 .get_mut_variatic_context()
                 .emit_va_start(span);
         }
-        
 
         {
-            // the abi doens't lower varitic functions.
-            if has_abi && !is_variadic {                
+            let lowers_variadic_functions: bool = matches!(
+                codegen.get_context().get_abi(),
+                Some(thrustc_llvm_abi_representation::LLVMABIRepresentation::WebAssemblyABI { .. })
+            );
+
+            if has_abi && (!is_variadic || lowers_variadic_functions) {
                 let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
                     codegen.get_context().get_abi().unwrap_or_else(|| {
                         abort::abort_codegen(
@@ -259,7 +277,6 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                             line!(),
                         )
                     });
-
 
                 let configuration: &thrustc_llvm_abi::LLVMABIConfiguration = &abi_configuration
                     .unwrap_or_else(|| {
@@ -272,67 +289,52 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                         )
                     });
 
-                let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation  = codegen.get_context().get_codegen_location().to_abi_representation();
+                let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation = codegen
+                    .get_context()
+                    .get_codegen_location()
+                    .to_abi_representation();
 
-                let lowered_abi_parameters: Option<Vec<thrustc_llvm_abi::LLVMABIFunctionLoweredParameter>> =
-                    thrustc_llvm_abi::lower_function_parameters(
-                        llvm_builder,
-                        llvm_context,
-                        abi,
-                        function_value,
-                        configuration,
-                        codegen_location
-                    );
+                let lowered_abi_parameters: Option<
+                    Vec<thrustc_llvm_abi::LLVMABIFunctionLoweredParameter>,
+                > = thrustc_llvm_abi::lower_function_parameters(
+                    llvm_builder,
+                    llvm_context,
+                    abi,
+                    function_value,
+                    configuration,
+                    codegen_location,
+                );
 
-                if let Some(lowered_parameters)= lowered_abi_parameters {
-                    {
-                        for lowered_parameter in lowered_parameters {
-                            let name: &str = lowered_parameter.get_name();
-                            let ascii_name: String = lowered_parameter.get_ascii_name().replace("\0", "");
-                            let ty: &Type = lowered_parameter.get_type();
-                            let value: BasicValueEnum = lowered_parameter.get_value();
-                            let configuration: &thrustc_llvm_abi::LLVMABIConfiguration =
-                                lowered_parameter.get_abi_configuration();
-    
-                            if let thrustc_llvm_abi::LLVMABIConfiguration::SystemVFunctionParameterConfiguration(
-                                    configuration,
-                                ) = configuration {
-                                match configuration {
-                                    SystemVABIFunctionParameterConfiguration::Normal => {
-                                        codegen.get_mut_context().add_parameter(
-                                            name,
-                                            ascii_name,
-                                            ty,
-                                            value,
-                                            span,
-                                        );
-                                    }
-    
-                                    SystemVABIFunctionParameterConfiguration::FromMemory => {
-                                        codegen.get_mut_context().add_allocated_parameter(
-                                            name,
-                                            ty,
-                                            value.into_pointer_value(),
-                                            span,
-                                        );
-                                      
-                                    }
-                                    
-                                }
-                            } else {
-                                abort::abort_codegen(
-                                    codegen.get_mut_context(),
-                                    "Unsupported ABI configuration for function parameters!",
-                                    span,
-                                    std::path::PathBuf::from(file!()),
-                                    line!(),
-                                )
+                if let Some(lowered_parameters) = lowered_abi_parameters {
+                    for lowered_parameter in lowered_parameters {
+                        let name: &str = lowered_parameter.get_name();
+                        let ascii_name: String =
+                            lowered_parameter.get_ascii_name().replace("\0", "");
+
+                        let ty: &Type = lowered_parameter.get_type();
+                        let value: BasicValueEnum = lowered_parameter.get_value();
+
+                        match lowered_parameter.get_storage() {
+                            thrustc_llvm_abi::LLVMABIFunctionParameterStorage::Value => {
+                                codegen
+                                    .get_mut_context()
+                                    .add_parameter(name, ascii_name, ty, value, span);
                             }
-    
+
+                            thrustc_llvm_abi::LLVMABIFunctionParameterStorage::Address => {
+                                codegen.get_mut_context().add_allocated_parameter(
+                                    name,
+                                    ty,
+                                    value.into_pointer_value(),
+                                    span,
+                                );
+                            }
                         }
                     }
                 } else {
-                    for parameter in function_parameters.iter().map(|node| thrustc_entities::function_parameter_from_ast(node))
+                    for parameter in function_parameters
+                        .iter()
+                        .map(|node| thrustc_entities::function_parameter_from_ast(node))
                     {
                         let name: &str = parameter.0;
                         let ascii_name: String = parameter.1.replace("\0", "");
@@ -376,7 +378,6 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                         );
                     }
                 }
-              
             }
         }
 
@@ -429,7 +430,11 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
             codegen.get_mut_context().finish_function_debug_data();
 
             if function_type.is_void_type() && !function_body.has_terminator() {
-                if codegen.get_context().get_variatic_context().has_current_va_list() {
+                if codegen
+                    .get_context()
+                    .get_variatic_context()
+                    .has_current_va_list()
+                {
                     codegen
                         .get_mut_context()
                         .get_mut_variatic_context()
@@ -450,7 +455,7 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
     }
 
     codegen.get_mut_context().unset_current_function();
-    
+
     codegen
         .get_mut_context()
         .unset_function_stackguard_protector_pointer();
@@ -704,13 +709,11 @@ pub fn emit_stack_protector_epilogue<'ctx>(context: &mut LLVMCodeGenContext<'_, 
     llvm_builder.position_at_end(sucessbranch);
 }
 
-
 #[derive(Debug, Clone, Copy)]
 pub enum CompilerFunctionVariant {
     CompilerIntrinsic,
     AssemblerFunction,
     PureFunction,
-    
 }
 
 impl CompilerFunctionVariant {

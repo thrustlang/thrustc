@@ -19,7 +19,6 @@
 
 use thrustc_ast::Ast;
 use thrustc_code_location::Span;
-use thrustc_directive::FileDirectives;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
@@ -37,42 +36,18 @@ pub fn build_directive<'parser>(
 
     let span: Span = directive_tk.get_span();
 
-    let spec_tk: &Token = ctx.consume(
+    let _spec_tk: &Token = ctx.consume(
         TokenType::CString,
         CompilationIssueCode::E0001,
         "Expected a string literal with the compiler flag, like \"--disable-warnings=W0001\"."
             .into(),
     )?;
 
-    let spec: &str = spec_tk.get_lexeme();
-
     ctx.consume(
         TokenType::SemiColon,
         CompilationIssueCode::E0001,
         "Expected ';'.".into(),
     )?;
-
-    let warnings_to_disable: Vec<thrustc_errors::CompilationIssueCode> =
-        match thrustc_directive::parse_directive(spec) {
-            Ok(codes) => codes,
-            Err(message) => {
-                return Err(CompilationIssue::Error(
-                    CompilationIssueCode::E0001,
-                    message,
-                    "You should write a supported compiler flag, like '--disable-warnings=W0001'."
-                        .into(),
-                    None,
-                    span,
-                ));
-            }
-        };
-
-    thrustc_directive::register_directives(
-        ctx.get_file().get_path(),
-        FileDirectives {
-            warnings_to_disable,
-        },
-    );
 
     Ok(Ast::invalid_ast(span))
 }

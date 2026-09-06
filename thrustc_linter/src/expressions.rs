@@ -18,8 +18,8 @@
 */
 
 use thrustc_ast::{Ast, ast_builtins::AstBuiltin, traits::AstCodeLocation};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_token_type::{TokenType, traits::TokenTypeExtensions};
 use thrustc_typesystem::Type;
 
@@ -104,9 +104,7 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
             }
         }
 
-        Ast::Constructor {
-            name, data, ..
-        } => {
+        Ast::Constructor { name, data, .. } => {
             for (_, expr, ..) in data.iter() {
                 linter.analyze_expr(expr);
             }

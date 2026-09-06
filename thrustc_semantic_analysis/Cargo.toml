@@ -7,6 +7,7 @@ version.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+thrustc_directive = { path = "../thrustc_directive" }
 either = "1.15.0"
 
 thrustc_ast = { path = "../thrustc_ast" }

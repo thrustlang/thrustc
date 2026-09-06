@@ -33,12 +33,12 @@ pub fn emit_llvm_assembler(
     build_dir: &std::path::Path,
     file_name: &str,
     unoptimized: bool,
+    need_obfuscation: bool,
 ) -> Result<(), &'static str> {
     let compiler_options: &CompilerOptions = compiler.get_compilation_options();
     let llvm_backend: &LLVMBackend = compiler_options.get_llvm_backend();
     let target: &LLVMTarget = llvm_backend.get_target();
 
-    let need_obfuscation: bool = compiler_options.need_obfuscate_archive_names();
     let is_nvidia_target: bool = target.get_normalized_target_triple().is_nvptx_arch();
 
     let extension: &str = if is_nvidia_target { "ptx" } else { "s" };

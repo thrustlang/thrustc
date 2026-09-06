@@ -37,16 +37,15 @@ use inkwell::targets::TargetMachine;
 use inkwell::types::BasicTypeEnum;
 use inkwell::values::{FunctionValue, GlobalValue, PointerValue};
 
-use thrustc_diagnostician::Diagnostician;
-use thrustc_options::CompilationUnit;
-use thrustc_options::CompilerOptions;
 use thrustc_code_location::Span;
+use thrustc_diagnostician::Diagnostician;
+use thrustc_directive::FileOptions;
+use thrustc_options::CompilationUnit;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::context::LLVMCodeGenContext;
-use crate::optimizer::LLVMOptimizer;
-use crate::traits::{LLVMFunctionExtensions, LLVMDBGFunctionExtensions};
+use crate::traits::{LLVMDBGFunctionExtensions, LLVMFunctionExtensions};
 use crate::typegeneration;
 use crate::types::LLVMDBGFunction;
 
@@ -66,20 +65,16 @@ impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
     pub fn new(
         llvm_module: &Module<'ctx>,
         target_machine: &'a TargetMachine,
-        options: &CompilerOptions,
+        options: &FileOptions<'_, '_>,
         unit: &CompilationUnit,
     ) -> Self {
-        let is_optimized: bool = LLVMOptimizer::is_an_optimizable_module(options);
+        let is_optimized: bool = (!options.omit_default_optimizations()
+            && options.optimization().is_none_opt())
+            || options.optimization().is_high_opt();
 
-        let split_debug_inlining: bool = options
-            .get_llvm_backend()
-            .get_debug_config()
-            .need_split_debug_inlining();
+        let split_debug_inlining: bool = options.debug_for_inlining();
 
-        let debug_info_for_profiling: bool = options
-            .get_llvm_backend()
-            .get_debug_config()
-            .need_debug_info_for_profiling();
+        let debug_info_for_profiling: bool = options.debug_for_profiling();
 
         let directory: String = unit
             .get_path()
@@ -117,7 +112,7 @@ impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
             builder,
             unit: dicompileunit,
             target_machine,
-            diagnostician: Diagnostician::new(unit, options),
+            diagnostician: Diagnostician::new(unit, options.global()),
             subprograms: Vec::with_capacity(u8::MAX as usize),
             lexical_blocks: Vec::with_capacity(u8::MAX as usize),
             debug_locations: Vec::with_capacity(u8::MAX as usize),
@@ -181,8 +176,9 @@ impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
                 DIFlagsConstants::PUBLIC,
             );
 
-        let is_optimized: bool =
-            LLVMOptimizer::is_an_optimizable_module(context.get_compiler_options());
+        let is_optimized: bool = (!context.get_file_options().omit_default_optimizations()
+            && context.get_file_options().optimization().is_none_opt())
+            || context.get_file_options().optimization().is_high_opt();
 
         let file: DIFile<'_> = self.get_debug_unit().get_file();
 

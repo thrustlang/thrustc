@@ -20,7 +20,8 @@
 #![allow(clippy::result_unit_err)]
 
 use thrustc_builtins::BuiltinRegistry;
-use thrustc_options::{CompilationUnit, CompilerOptions};
+use thrustc_directive::FileOptions;
+use thrustc_options::CompilationUnit;
 use thrustc_token::Token;
 use thrustc_token_type::TokenType;
 
@@ -57,7 +58,7 @@ impl<'preprocessor> Preprocessor {
     pub fn generate_modules(
         &mut self,
         tokens: &'preprocessor [Token],
-        options: &'preprocessor CompilerOptions,
+        options: &'preprocessor FileOptions<'preprocessor, 'preprocessor>,
         file: &CompilationUnit,
         builtins: &'preprocessor BuiltinRegistry,
     ) -> Result<&[Module], ()> {

@@ -152,6 +152,9 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_llvm_nvidia_cuda_abi`**  
   NVIDIA CUDA ABI implementation.
 
+- **`thrustc_llvm_webassembly_abi`**
+  WebAssembly Basic C ABI implementation for arguments and return values.
+
 - **`thrustc_llvm_abi_representation`**  
   ABI data representation utilities.
 
@@ -379,6 +382,7 @@ Source File (.thrust)
 │    - thrustc_llvm_abi                           │
 │    - thrustc_llvm_system_v_abi                  │
 │    - thrustc_llvm_nvidia_cuda_abi               │
+│    - thrustc_llvm_webassembly_abi                │
 │    - thrustc_llvm_abi_representation            │
 │                                                 │
 │    Target & conventions:                        │
@@ -423,4 +427,3 @@ Source File (.thrust)
 | `x86_64-pc-windows-msvc` (Windows) | Yes | Full support, CI tested |
 
 ---
-

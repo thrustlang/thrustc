@@ -27,6 +27,7 @@ use crate::codegen;
 use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::type_cast;
+use crate::traits::AstLLVMGetType;
 use crate::types::LLVMFunction;
 
 use inkwell::AddressSpace;
@@ -44,6 +45,11 @@ pub fn compile<'ctx>(
     let llvm_context: &Context = context.get_llvm_context();
 
     let has_abi: bool = context.has_abi();
+
+    let lowers_variadic_functions: bool = matches!(
+        context.get_abi(),
+        Some(thrustc_llvm_abi_representation::LLVMABIRepresentation::WebAssemblyABI { .. })
+    );
 
     let function: LLVMFunction = context.get_table().get_function(name);
 
@@ -144,9 +150,14 @@ pub fn compile<'ctx>(
     if !has_abi {
         build_standard_call()
     } else {
-        if is_variatic || abi_configuration.is_none() {
+        if (is_variatic && !lowers_variadic_functions) || abi_configuration.is_none() {
             return build_standard_call();
         }
+
+        let argument_types: Vec<Type> = args
+            .iter()
+            .map(|argument| argument.get_type_for_llvm().clone())
+            .collect();
 
         let compiled_args: Vec<BasicValueEnum> = args
             .iter()
@@ -207,25 +218,27 @@ pub fn compile<'ctx>(
         let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
             context.get_codegen_location().to_abi_representation();
 
-        let lowered_args: Vec<BasicMetadataValueEnum<'_>> = thrustc_llvm_abi::lower_call_prologue(
-            llvm_context,
-            llvm_builder,
-            abi,
-            llvm_function,
-            configuration,
-            compiled_args,
-            codegen_location,
-            span,
-        )
-        .unwrap_or_else(|| {
-            abort::abort_codegen(
-                context,
-                "Failed to compile to lower the call arguments to a specific ABI!",
+        let lowered_args: Vec<BasicMetadataValueEnum<'_>> =
+            thrustc_llvm_abi::lower_call_prologue(
+                llvm_context,
+                llvm_builder,
+                abi,
+                llvm_function,
+                configuration,
+                compiled_args,
+                &argument_types,
+                codegen_location,
                 span,
-                std::path::PathBuf::from(file!()),
-                line!(),
             )
-        });
+            .unwrap_or_else(|| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile to lower the call arguments to a specific ABI!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
 
         let ret_value: BasicValueEnum =
             match llvm_builder.build_call(llvm_function, &lowered_args, "") {
@@ -241,6 +254,15 @@ pub fn compile<'ctx>(
                     } else {
                         callsite.set_call_convention(call_convention);
                     }
+
+                    thrustc_llvm_abi::lower_call_conventions(
+                        llvm_context,
+                        abi,
+                        configuration,
+                        callsite,
+                        &argument_types,
+                        codegen_location,
+                    );
 
                     let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
                         context.get_codegen_location().to_abi_representation();

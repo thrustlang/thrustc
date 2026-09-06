@@ -35,7 +35,7 @@ pub fn generate_string(
     context: &LLVMCodeGenContext<'_, '_>,
     range: std::ops::RangeInclusive<usize>,
 ) -> String {
-    if !context.get_compiler_options().need_obfuscate_ir() {
+    if !context.get_file_options().obfuscate_ir() {
         String::new()
     } else {
         let length: usize = fastrand::usize(range);

@@ -17,6 +17,8 @@
 
 */
 
+#![allow(clippy::too_many_arguments)]
+
 use std::path::PathBuf;
 
 use thrustc_ast::Ast;
@@ -24,7 +26,7 @@ use thrustc_attributes::ThrustAttributes;
 use thrustc_builtins::BuiltinRegistry;
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
-use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
+use thrustc_errors::{CompilationIssue, CompilationPosition};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
@@ -33,11 +35,13 @@ use thrustc_typesystem::Type;
 use crate::{
     abort,
     module::Module,
+    registry::SharedModuleRegistry,
     shared::type_context::TypeParseContext,
     signatures::{Signature, Symbol, Variant},
     submodule_parsing,
 };
 
+use thrustc_directive::FileOptions;
 use thrustc_generics::GenericScope;
 
 use ahash::AHashSet as HashSet;
@@ -49,10 +53,11 @@ pub struct ModuleParser<'module_parser> {
     errors: Vec<CompilationIssue>,
     warnings: Vec<CompilationIssue>,
     visited: HashSet<PathBuf>,
-    registry: crate::registry::SharedModuleRegistry,
+    registry: SharedModuleRegistry,
     builtins: &'module_parser BuiltinRegistry,
 
     options: &'module_parser CompilerOptions,
+    file_options: &'module_parser FileOptions<'module_parser, 'module_parser>,
     file: &'module_parser CompilationUnit,
     diagnostician: Diagnostician,
 
@@ -67,9 +72,10 @@ impl<'module_parser> ModuleParser<'module_parser> {
         name: String,
         tokens: Vec<Token>,
         options: &'module_parser CompilerOptions,
+        file_options: &'module_parser FileOptions<'module_parser, 'module_parser>,
         file: &'module_parser CompilationUnit,
         visited: HashSet<PathBuf>,
-        registry: crate::registry::SharedModuleRegistry,
+        registry: SharedModuleRegistry,
         builtins: &'module_parser BuiltinRegistry,
     ) -> Self {
         Self {
@@ -84,6 +90,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
 
             diagnostician: Diagnostician::new(file, options),
             options,
+            file_options,
             file,
 
             current: 0,
@@ -107,9 +114,10 @@ impl<'module_parser> ModuleParser<'module_parser> {
             let _ = self.start();
         }
 
-        let warnings_to_disable: &[CompilationIssueCode] = self.options.get_warnings_to_disable();
+        let warnings_to_disable =
+            thrustc_directive::combine_warnings_to_disable(self.file_options);
 
-        thrustc_errors::filter_warnings(warnings_to_disable, &mut self.warnings);
+        thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 
         for warning in self.warnings.iter() {
             self.diagnostician

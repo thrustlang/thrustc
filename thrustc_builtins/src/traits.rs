@@ -15,11 +15,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 use thrustc_errors::CompilationIssue;
 use thrustc_typesystem::Type;
 
 use crate::context::BuiltinContext;
-use crate::value::{BuiltinArgument, BuiltinValue};
 
 #[derive(Debug, Clone)]
 pub enum BuiltinParameter {

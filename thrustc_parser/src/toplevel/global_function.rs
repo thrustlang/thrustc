@@ -19,9 +19,9 @@
 
 use thrustc_ast::{Ast, NodeId, ast_metadata::FunctionParameterMetadata};
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
+use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParametersTypes};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_code_location::Span;
 use thrustc_parser_table::GenericFunctionEntry;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{TokenType, traits::TokenTypeAttributesExtensions};
@@ -156,7 +156,10 @@ pub fn build_function<'parser>(
                 name: name.to_string(),
                 type_params,
                 parameter_types: parameters_types.clone(),
-                parameter_names: parameter_names.iter().map(|name| name.to_string()).collect(),
+                parameter_names: parameter_names
+                    .iter()
+                    .map(|name| name.to_string())
+                    .collect(),
                 return_type: return_type.clone(),
                 attributes: attributes.clone(),
                 has_local_template: true,

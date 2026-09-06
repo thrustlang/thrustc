@@ -64,6 +64,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
     fn setup_target_specific_metadata_or_attributes(&self) {
         let options: &CompilerOptions = self.get_codegen_context().get_compiler_options();
         let llvm_backend: &LLVMBackend = options.get_llvm_backend();
+        let file_options = self.get_codegen_context().get_file_options();
 
         {
             let features: &str = llvm_backend.get_target_cpu().get_cpu_features();
@@ -90,7 +91,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                     function.add_attribute(AttributeLoc::Function, tune_cpu_attr);
                     function.add_attribute(AttributeLoc::Function, features_attr);
 
-                    if !llvm_backend.omit_trapping_math() {
+                    if !file_options.omit_trapping_math() {
                         let no_trapping_math_attr: Attribute = self
                             .get_codegen_context()
                             .get_llvm_context()
@@ -99,7 +100,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                         function.add_attribute(AttributeLoc::Function, no_trapping_math_attr);
                     }
 
-                    if !llvm_backend.omit_frame_pointer() {
+                    if !file_options.omit_frame_pointer() {
                         let frame_pointer_attr: Attribute = self
                             .get_codegen_context()
                             .get_llvm_context()
@@ -115,6 +116,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
     fn setup_llvm_module_flags(&self) {
         let options: &CompilerOptions = self.get_codegen_context().get_compiler_options();
         let llvm_backend: &LLVMBackend = options.get_llvm_backend();
+        let file_options = self.get_codegen_context().get_file_options();
 
         let lvl_max: BasicMetadataValueEnum = self
             .get_codegen_context()
@@ -138,8 +140,8 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
             .into();
 
         {
-            if llvm_backend.get_debug_config().is_debug_mode() {
-                let dwarf_version: u64 = llvm_backend.get_debug_config().get_dwarf_version();
+            if file_options.debug_mode() {
+                let dwarf_version: u64 = file_options.dwarf_version();
                 let debug_info_version: u32 = debug_info::debug_metadata_version();
 
                 let dwarf_v: MetadataValue = self
@@ -491,13 +493,13 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
 
         {
             let is_no_pic: bool = matches!(
-                llvm_backend.get_reloc_mode(),
+                file_options.reloc_model(),
                 RelocMode::Static | RelocMode::Default
             );
 
             if is_no_pic
                 || llvm_backend.is_execution_in_jit()
-                    && !llvm_backend.omit_direct_access_external_data()
+                    && !file_options.omit_direct_access_external_data()
             {
                 let direct_access_external_data: MetadataValue = self
                     .get_codegen_context()
@@ -564,9 +566,9 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
         }
 
         {
-            let is_pic: bool = matches!(llvm_backend.get_reloc_mode(), RelocMode::PIC);
+            let is_pic: bool = matches!(file_options.reloc_model(), RelocMode::PIC);
 
-            if !llvm_backend.omit_rtlibusegot() {
+            if !file_options.omit_rtlib_got() {
                 let triple_formatted: String = self
                     .get_codegen_context()
                     .get_target_triple()
@@ -607,7 +609,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
             }
         }
 
-        if !llvm_backend.get_optimization().is_high_opt() && !llvm_backend.omit_frame_pointer() {
+        if !file_options.optimization().is_high_opt() && !file_options.omit_frame_pointer() {
             let frame_pointer: MetadataValue = self
                 .get_codegen_context()
                 .get_llvm_context()
@@ -635,7 +637,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                 });
         }
 
-        if !llvm_backend.omit_uwtable() {
+        if !file_options.omit_uwtable() {
             let uwtable: MetadataValue = self
                 .get_codegen_context()
                 .get_llvm_context()
