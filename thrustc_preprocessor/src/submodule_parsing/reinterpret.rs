@@ -24,11 +24,19 @@ pub fn floating_point(lexeme: &str, span: Span) -> Result<(Type, f64), ()> {
     if lexeme.bytes().filter(|&b| b == b'.').count() > 1 {
         Err(())
     } else {
-        lexeme
-            .parse::<f32>()
-            .map(|f| (Type::F32 { span }, f as f64))
-            .or_else(|_| lexeme.parse::<f64>().map(|f| (Type::F64 { span }, f)))
-            .map_err(|_| ())
+        match lexeme.parse::<f64>() {
+            Ok(f64_value) => {
+                if let Ok(f32_value) = lexeme.parse::<f32>() {
+                    if (f32_value as f64) == f64_value {
+                        return Ok((Type::F32 { span }, f32_value as f64));
+                    }
+                }
+
+                Ok((Type::F64 { span }, f64_value))
+            }
+
+            Err(_) => Err(()),
+        }
     }
 }
 

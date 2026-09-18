@@ -1,0 +1,62 @@
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0020";
+
+struct Holder [T] {
+    item: T
+}
+
+fn identity [T] (value: T) T {
+    return value;
+}
+
+fn box [T] (value: T) Holder[T] {
+    return new Holder[T] { item: value };
+}
+
+fn first [T] (left: T, right: T) T {
+    return left;
+}
+
+fn main() s32 @public {
+    var number: s32 = 41;
+    var pointer: ptr[s32] = identity[ptr[s32]](ref number);
+
+    pointer[0] = pointer->[0] + 1;
+    if number != 42 { return 1; }
+
+    var selected: ptr[s32] = first[ptr[s32]](ref number, nullptr as ptr[s32]);
+    if selected->[0] != 42 { return 2; }
+
+    var boxed: Holder[ptr[s32]] = box[ptr[s32]](ref number);
+    boxed->item[0] = 50;
+    if number != 50 { return 3; }
+
+    var bytes: array[u8; 4];
+    bytes[0] = 7;
+
+    var arrayValue: array[u8; 4] = identity[array[u8; 4]](bytes);
+    if arrayValue->[0] != 7 { return 4; }
+
+    var bytes12: array[u8; 12];
+    bytes12[0] = 1;
+    bytes12[8] = 8;
+    bytes12[11] = 11;
+
+    var arrayValue12: array[u8; 12] = identity[array[u8; 12]](bytes12);
+    if arrayValue12->[0] != 1 { return 5; }
+    if arrayValue12->[8] != 8 { return 6; }
+    if arrayValue12->[11] != 11 { return 7; }
+
+    var bytes16: array[u8; 16];
+    bytes16[0] = 2;
+    bytes16[8] = 9;
+    bytes16[15] = 15;
+
+    var arrayValue16: array[u8; 16] = identity[array[u8; 16]](bytes16);
+    if arrayValue16->[0] != 2 { return 8; }
+    if arrayValue16->[8] != 9 { return 9; }
+    if arrayValue16->[15] != 15 { return 10; }
+
+    return 0;
+}

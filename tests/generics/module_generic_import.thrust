@@ -1,0 +1,15 @@
+struct Box [T] @public {
+    value: T
+}
+
+fn makeBox [T] (value: T) Box[T] @public {
+    return new Box[T] { value: value };
+}
+
+fn getValue [T] (value: ptr[Box[T]]) T @public {
+    return value->value;
+}
+
+fn setValue [T] (target: ptr[Box[T]], value: T) void @public {
+    target->value = value;
+}

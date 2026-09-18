@@ -188,12 +188,19 @@ impl<'module_parser> ModuleParser<'module_parser> {
                 let symbol: Symbol = submodule_parsing::function::parse_function(self)?;
                 self.module.add_symbol(symbol);
             }
+            TokenType::Intrinsic => {
+                let symbol: Symbol = submodule_parsing::intrinsic::parse_intrinsic(self)?;
+                self.module.add_symbol(symbol);
+            }
             TokenType::Static => {
                 let symbol: Symbol = submodule_parsing::r#static::parse_static(self)?;
                 self.module.add_symbol(symbol);
             }
             TokenType::Const => {
                 self.advance_until(TokenType::SemiColon)?;
+            }
+            TokenType::Enum => {
+                self.skip_signature_or_body()?;
             }
             _ => {
                 let _ = self.advance();
@@ -216,7 +223,14 @@ impl<'module_parser> ModuleParser<'module_parser> {
                 let symbol: Symbol = submodule_parsing::structure::parse_structure(self)?;
                 self.module.add_symbol(symbol);
             }
+            TokenType::Enum => {
+                let symbol: Symbol = submodule_parsing::r#enum::parse_enum(self)?;
+                self.module.add_symbol(symbol);
+            }
             TokenType::Fn => {
+                self.skip_signature_or_body()?;
+            }
+            TokenType::Intrinsic => {
                 self.skip_signature_or_body()?;
             }
             TokenType::Const => {

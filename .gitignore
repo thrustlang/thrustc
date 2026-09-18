@@ -4,3 +4,5 @@ target
 build
 node_modules
 out
+tests/scripts/__pycache__
+tests/dist

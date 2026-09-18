@@ -1,0 +1,27 @@
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0024";
+directive "--disable-warnings=W0013";
+
+import "module_enum.thrust" as enumAlias;
+import "module_enum.thrust" only { Status };
+
+fn chooseStatus(flag: bool) u32 {
+    if flag {
+        return enumAlias::Status=>Error;
+    }
+
+    return Status=>Ok;
+}
+
+fn main() s32 @public {
+    if Status=>Ok != 0 { return 1; }
+    if Status=>Warning != 1 { return 2; }
+    if enumAlias::Status=>Error != 2 { return 3; }
+    if chooseStatus(false) != 0 { return 4; }
+    if chooseStatus(true) != 2 { return 5; }
+
+    var value: u32 = Status=>Warning + enumAlias::Status=>Error;
+    if value != 3 { return 6; }
+
+    return 0;
+}

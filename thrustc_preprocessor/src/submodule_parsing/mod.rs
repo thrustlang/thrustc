@@ -20,8 +20,10 @@
 pub mod attributes;
 pub mod constant;
 pub mod custom_type;
+pub mod r#enum;
 pub mod expressions;
 pub mod function;
+pub mod intrinsic;
 pub mod import;
 pub mod modificators;
 pub mod reinterpret;

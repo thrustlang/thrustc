@@ -1,0 +1,13 @@
+directive "--disable-warnings=W0013";
+directive "--disable-warnings=W0024";
+
+enum Status @public {
+    Ok: u32 = 0;
+    Warning: u32 = 1;
+    Error: u32 = 2;
+}
+
+enum SignedState @public {
+    Negative: s32 = -1;
+    Positive: s32 = 1;
+}

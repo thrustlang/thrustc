@@ -81,7 +81,9 @@ impl AstGetType for Ast<'_> {
                     ExternalSignature::Constant { kind, .. } => kind,
                     ExternalSignature::CustomType { kind, .. } => kind,
                     ExternalSignature::Function { kind, .. } => kind,
+                    ExternalSignature::CompilerIntrinsic { kind, .. } => kind,
                     ExternalSignature::Struct { kind, .. } => kind,
+                    ExternalSignature::Enum { kind, .. } => kind,
                     ExternalSignature::Static { kind, .. } => kind,
                     ExternalSignature::Unavailable { kind, .. } => kind,
                 }
@@ -189,7 +191,9 @@ impl AstGetType for Ast<'_> {
                     ExternalSignature::Constant { kind, .. } => Ok(kind),
                     ExternalSignature::CustomType { kind, .. } => Ok(kind),
                     ExternalSignature::Function { kind, .. } => Ok(kind),
+                    ExternalSignature::CompilerIntrinsic { kind, .. } => Ok(kind),
                     ExternalSignature::Struct { kind, .. } => Ok(kind),
+                    ExternalSignature::Enum { kind, .. } => Ok(kind),
                     ExternalSignature::Static { kind, .. } => Ok(kind),
                     ExternalSignature::Unavailable { kind, .. } => Ok(kind),
                 }

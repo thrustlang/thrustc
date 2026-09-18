@@ -82,7 +82,9 @@ impl AstLLVMGetType for Ast<'_> {
                     ExternalSignature::Constant { kind, .. } => kind,
                     ExternalSignature::CustomType { kind, .. } => kind,
                     ExternalSignature::Function { kind, .. } => kind,
+                    ExternalSignature::CompilerIntrinsic { kind, .. } => kind,
                     ExternalSignature::Struct { kind, .. } => kind,
+                    ExternalSignature::Enum { kind, .. } => kind,
                     ExternalSignature::Static { kind, .. } => kind,
                     ExternalSignature::Unavailable { kind, .. } => kind,
                 }

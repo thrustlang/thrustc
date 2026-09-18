@@ -29,7 +29,10 @@ use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, traits::TypeExtensions};
+use thrustc_typesystem::{
+    Type,
+    traits::{TypeExtensions, TypeIsExtensions},
+};
 
 use crate::{ParserContext, statements};
 
@@ -153,7 +156,13 @@ fn build_dealloc_defer<'parser>(
 
     if let Some(deallocator) = deallocator {
         if let Some(name) = deallocator.last() {
-            deallocator_name = Some(name.clone());
+            deallocator_name = if deallocator.len() > 1 {
+                let access: &[String] = &deallocator[..deallocator.len().saturating_sub(1)];
+
+                Some(crate::module_import::qualified_symbol_name(access, name))
+            } else {
+                Some(name.clone())
+            };
         }
     } else if let Some((name, args)) =
         crate::module_import::ensure_deallocator_for_type(ctx, kind, *span)?
@@ -169,42 +178,36 @@ fn build_dealloc_defer<'parser>(
     };
 
     if generic_args.is_empty() {
-        let Some(entry) = ctx
-            .get_symbols()
-            .get_generic_function(&deallocator_name)
-            .cloned()
-        else {
-            return Ok(None);
-        };
+        if let Some(entry) = ctx.get_symbols().get_generic_function(&deallocator_name).cloned() {
+            let expected_arg: Type = Type::Ptr {
+                subtype: Some(std::boxed::Box::new(kind.clone())),
+                address_space: None,
+                span: *span,
+            };
 
-        let expected_arg: Type = Type::Ptr {
-            subtype: Some(std::boxed::Box::new(kind.clone())),
-            address_space: None,
-            span: *span,
-        };
+            let argument_types: Vec<Type> = vec![expected_arg];
 
-        let argument_types: Vec<Type> = vec![expected_arg];
-
-        if let Some(parameter_type) = entry.parameter_types.first() {
-            if parameter_type != &argument_types[0] {
-                return Ok(None);
+            if let Some(parameter_type) = entry.parameter_types.first() {
+                if parameter_type != &argument_types[0] {
+                    return Ok(None);
+                }
             }
-        }
 
-        if let Ok(result) = thrustc_generics::solve(
-            &entry.type_params,
-            &[],
-            &entry.parameter_types,
-            &argument_types,
-            &entry.return_type,
-            entry.has_varargs,
-            *span,
-        ) {
-            generic_args = entry
-                .type_params
-                .iter()
-                .filter_map(|parameter| result.env.get(parameter).cloned())
-                .collect();
+            if let Ok(result) = thrustc_generics::solve(
+                &entry.type_params,
+                &[],
+                &entry.parameter_types,
+                &argument_types,
+                &entry.return_type,
+                entry.has_varargs,
+                *span,
+            ) {
+                generic_args = entry
+                    .type_params
+                    .iter()
+                    .filter_map(|parameter| result.env.get(parameter).cloned())
+                    .collect();
+            }
         }
     }
 
@@ -216,11 +219,15 @@ fn build_dealloc_defer<'parser>(
         id: NodeId::new(),
     };
 
-    let argument: Ast = Ast::GetLocation {
-        expr: reference.into(),
-        kind: kind.get_type_ref(),
-        span: *span,
-        id: NodeId::new(),
+    let argument: Ast = if kind.is_ptr_type() {
+        reference
+    } else {
+        Ast::GetLocation {
+            expr: reference.into(),
+            kind: kind.get_type_ref(),
+            span: *span,
+            id: NodeId::new(),
+        }
     };
 
     let call: Ast = Ast::Call {

@@ -1,0 +1,187 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0017";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0028";
+directive "--disable-warnings=W0030";
+
+struct S8OverflowResult @public { value: s8, overflow: bool }
+struct S16OverflowResult @public { value: s16, overflow: bool }
+struct S32OverflowResult @public { value: s32, overflow: bool }
+struct S64OverflowResult @public { value: s64, overflow: bool }
+struct U8OverflowResult @public { value: u8, overflow: bool }
+struct U16OverflowResult @public { value: u16, overflow: bool }
+struct U32OverflowResult @public { value: u32, overflow: bool }
+struct U64OverflowResult @public { value: u64, overflow: bool }
+
+intrinsic("llvm.sadd.with.overflow.i8") signedAddWithOverflowS8(left: s8, right: s8) S8OverflowResult @public;
+intrinsic("llvm.sadd.with.overflow.i16") signedAddWithOverflowS16(left: s16, right: s16) S16OverflowResult @public;
+intrinsic("llvm.sadd.with.overflow.i32") signedAddWithOverflowS32(left: s32, right: s32) S32OverflowResult @public;
+intrinsic("llvm.sadd.with.overflow.i64") signedAddWithOverflowS64(left: s64, right: s64) S64OverflowResult @public;
+intrinsic("llvm.uadd.with.overflow.i8") unsignedAddWithOverflowU8(left: u8, right: u8) U8OverflowResult @public;
+intrinsic("llvm.uadd.with.overflow.i16") unsignedAddWithOverflowU16(left: u16, right: u16) U16OverflowResult @public;
+intrinsic("llvm.uadd.with.overflow.i32") unsignedAddWithOverflowU32(left: u32, right: u32) U32OverflowResult @public;
+intrinsic("llvm.uadd.with.overflow.i64") unsignedAddWithOverflowU64(left: u64, right: u64) U64OverflowResult @public;
+
+intrinsic("llvm.ssub.with.overflow.i8") signedSubWithOverflowS8(left: s8, right: s8) S8OverflowResult @public;
+intrinsic("llvm.ssub.with.overflow.i16") signedSubWithOverflowS16(left: s16, right: s16) S16OverflowResult @public;
+intrinsic("llvm.ssub.with.overflow.i32") signedSubWithOverflowS32(left: s32, right: s32) S32OverflowResult @public;
+intrinsic("llvm.ssub.with.overflow.i64") signedSubWithOverflowS64(left: s64, right: s64) S64OverflowResult @public;
+intrinsic("llvm.usub.with.overflow.i8") unsignedSubWithOverflowU8(left: u8, right: u8) U8OverflowResult @public;
+intrinsic("llvm.usub.with.overflow.i16") unsignedSubWithOverflowU16(left: u16, right: u16) U16OverflowResult @public;
+intrinsic("llvm.usub.with.overflow.i32") unsignedSubWithOverflowU32(left: u32, right: u32) U32OverflowResult @public;
+intrinsic("llvm.usub.with.overflow.i64") unsignedSubWithOverflowU64(left: u64, right: u64) U64OverflowResult @public;
+
+intrinsic("llvm.smul.with.overflow.i8") signedMulWithOverflowS8(left: s8, right: s8) S8OverflowResult @public;
+intrinsic("llvm.smul.with.overflow.i16") signedMulWithOverflowS16(left: s16, right: s16) S16OverflowResult @public;
+intrinsic("llvm.smul.with.overflow.i32") signedMulWithOverflowS32(left: s32, right: s32) S32OverflowResult @public;
+intrinsic("llvm.smul.with.overflow.i64") signedMulWithOverflowS64(left: s64, right: s64) S64OverflowResult @public;
+intrinsic("llvm.umul.with.overflow.i8") unsignedMulWithOverflowU8(left: u8, right: u8) U8OverflowResult @public;
+intrinsic("llvm.umul.with.overflow.i16") unsignedMulWithOverflowU16(left: u16, right: u16) U16OverflowResult @public;
+intrinsic("llvm.umul.with.overflow.i32") unsignedMulWithOverflowU32(left: u32, right: u32) U32OverflowResult @public;
+intrinsic("llvm.umul.with.overflow.i64") unsignedMulWithOverflowU64(left: u64, right: u64) U64OverflowResult @public;
+
+intrinsic("llvm.sadd.sat.i8") signedSaturatingAddS8(left: s8, right: s8) s8 @public;
+intrinsic("llvm.sadd.sat.i16") signedSaturatingAddS16(left: s16, right: s16) s16 @public;
+intrinsic("llvm.sadd.sat.i32") signedSaturatingAddS32(left: s32, right: s32) s32 @public;
+intrinsic("llvm.sadd.sat.i64") signedSaturatingAddS64(left: s64, right: s64) s64 @public;
+intrinsic("llvm.uadd.sat.i8") unsignedSaturatingAddU8(left: u8, right: u8) u8 @public;
+intrinsic("llvm.uadd.sat.i16") unsignedSaturatingAddU16(left: u16, right: u16) u16 @public;
+intrinsic("llvm.uadd.sat.i32") unsignedSaturatingAddU32(left: u32, right: u32) u32 @public;
+intrinsic("llvm.uadd.sat.i64") unsignedSaturatingAddU64(left: u64, right: u64) u64 @public;
+
+intrinsic("llvm.ssub.sat.i8") signedSaturatingSubS8(left: s8, right: s8) s8 @public;
+intrinsic("llvm.ssub.sat.i16") signedSaturatingSubS16(left: s16, right: s16) s16 @public;
+intrinsic("llvm.ssub.sat.i32") signedSaturatingSubS32(left: s32, right: s32) s32 @public;
+intrinsic("llvm.ssub.sat.i64") signedSaturatingSubS64(left: s64, right: s64) s64 @public;
+intrinsic("llvm.usub.sat.i8") unsignedSaturatingSubU8(left: u8, right: u8) u8 @public;
+intrinsic("llvm.usub.sat.i16") unsignedSaturatingSubU16(left: u16, right: u16) u16 @public;
+intrinsic("llvm.usub.sat.i32") unsignedSaturatingSubU32(left: u32, right: u32) u32 @public;
+intrinsic("llvm.usub.sat.i64") unsignedSaturatingSubU64(left: u64, right: u64) u64 @public;
+
+intrinsic("llvm.sshl.sat.i8") signedSaturatingShiftLeftS8(value: s8, amount: s8) s8 @public;
+intrinsic("llvm.sshl.sat.i16") signedSaturatingShiftLeftS16(value: s16, amount: s16) s16 @public;
+intrinsic("llvm.sshl.sat.i32") signedSaturatingShiftLeftS32(value: s32, amount: s32) s32 @public;
+intrinsic("llvm.sshl.sat.i64") signedSaturatingShiftLeftS64(value: s64, amount: s64) s64 @public;
+intrinsic("llvm.ushl.sat.i8") unsignedSaturatingShiftLeftU8(value: u8, amount: u8) u8 @public;
+intrinsic("llvm.ushl.sat.i16") unsignedSaturatingShiftLeftU16(value: u16, amount: u16) u16 @public;
+intrinsic("llvm.ushl.sat.i32") unsignedSaturatingShiftLeftU32(value: u32, amount: u32) u32 @public;
+intrinsic("llvm.ushl.sat.i64") unsignedSaturatingShiftLeftU64(value: u64, amount: u64) u64 @public;
+
+intrinsic("llvm.abs.i8") absS8(value: s8, intMinIsPoison: bool) s8 @public;
+intrinsic("llvm.abs.i16") absS16(value: s16, intMinIsPoison: bool) s16 @public;
+intrinsic("llvm.abs.i32") absS32(value: s32, intMinIsPoison: bool) s32 @public;
+intrinsic("llvm.abs.i64") absS64(value: s64, intMinIsPoison: bool) s64 @public;
+intrinsic("llvm.smax.i8") signedMaxS8(left: s8, right: s8) s8 @public;
+intrinsic("llvm.smax.i16") signedMaxS16(left: s16, right: s16) s16 @public;
+intrinsic("llvm.smax.i32") signedMaxS32(left: s32, right: s32) s32 @public;
+intrinsic("llvm.smax.i64") signedMaxS64(left: s64, right: s64) s64 @public;
+intrinsic("llvm.smin.i8") signedMinS8(left: s8, right: s8) s8 @public;
+intrinsic("llvm.smin.i16") signedMinS16(left: s16, right: s16) s16 @public;
+intrinsic("llvm.smin.i32") signedMinS32(left: s32, right: s32) s32 @public;
+intrinsic("llvm.smin.i64") signedMinS64(left: s64, right: s64) s64 @public;
+intrinsic("llvm.umax.i8") unsignedMaxU8(left: u8, right: u8) u8 @public;
+intrinsic("llvm.umax.i16") unsignedMaxU16(left: u16, right: u16) u16 @public;
+intrinsic("llvm.umax.i32") unsignedMaxU32(left: u32, right: u32) u32 @public;
+intrinsic("llvm.umax.i64") unsignedMaxU64(left: u64, right: u64) u64 @public;
+intrinsic("llvm.umin.i8") unsignedMinU8(left: u8, right: u8) u8 @public;
+intrinsic("llvm.umin.i16") unsignedMinU16(left: u16, right: u16) u16 @public;
+intrinsic("llvm.umin.i32") unsignedMinU32(left: u32, right: u32) u32 @public;
+intrinsic("llvm.umin.i64") unsignedMinU64(left: u64, right: u64) u64 @public;
+
+intrinsic("llvm.ctpop.i8") countOnesU8(value: u8) u8 @public;
+intrinsic("llvm.ctpop.i16") countOnesU16(value: u16) u16 @public;
+intrinsic("llvm.ctpop.i32") countOnesU32(value: u32) u32 @public;
+intrinsic("llvm.ctpop.i64") countOnesU64(value: u64) u64 @public;
+intrinsic("llvm.ctlz.i8") countLeadingZerosU8(value: u8, zeroIsPoison: bool) u8 @public;
+intrinsic("llvm.ctlz.i16") countLeadingZerosU16(value: u16, zeroIsPoison: bool) u16 @public;
+intrinsic("llvm.ctlz.i32") countLeadingZerosU32(value: u32, zeroIsPoison: bool) u32 @public;
+intrinsic("llvm.ctlz.i64") countLeadingZerosU64(value: u64, zeroIsPoison: bool) u64 @public;
+intrinsic("llvm.cttz.i8") countTrailingZerosU8(value: u8, zeroIsPoison: bool) u8 @public;
+intrinsic("llvm.cttz.i16") countTrailingZerosU16(value: u16, zeroIsPoison: bool) u16 @public;
+intrinsic("llvm.cttz.i32") countTrailingZerosU32(value: u32, zeroIsPoison: bool) u32 @public;
+intrinsic("llvm.cttz.i64") countTrailingZerosU64(value: u64, zeroIsPoison: bool) u64 @public;
+intrinsic("llvm.bitreverse.i8") bitReverseU8(value: u8) u8 @public;
+intrinsic("llvm.bitreverse.i16") bitReverseU16(value: u16) u16 @public;
+intrinsic("llvm.bitreverse.i32") bitReverseU32(value: u32) u32 @public;
+intrinsic("llvm.bitreverse.i64") bitReverseU64(value: u64) u64 @public;
+intrinsic("llvm.bswap.i16") byteSwapU16(value: u16) u16 @public;
+intrinsic("llvm.bswap.i32") byteSwapU32(value: u32) u32 @public;
+intrinsic("llvm.bswap.i64") byteSwapU64(value: u64) u64 @public;
+intrinsic("llvm.fshl.i8") funnelShiftLeftU8(left: u8, right: u8, amount: u8) u8 @public;
+intrinsic("llvm.fshl.i16") funnelShiftLeftU16(left: u16, right: u16, amount: u16) u16 @public;
+intrinsic("llvm.fshl.i32") funnelShiftLeftU32(left: u32, right: u32, amount: u32) u32 @public;
+intrinsic("llvm.fshl.i64") funnelShiftLeftU64(left: u64, right: u64, amount: u64) u64 @public;
+intrinsic("llvm.fshr.i8") funnelShiftRightU8(left: u8, right: u8, amount: u8) u8 @public;
+intrinsic("llvm.fshr.i16") funnelShiftRightU16(left: u16, right: u16, amount: u16) u16 @public;
+intrinsic("llvm.fshr.i32") funnelShiftRightU32(left: u32, right: u32, amount: u32) u32 @public;
+intrinsic("llvm.fshr.i64") funnelShiftRightU64(left: u64, right: u64, amount: u64) u64 @public;
+
+fn wrappingAddS32(left: s32, right: s32) s32 @public { return signedAddWithOverflowS32(left, right)->value; }
+fn wrappingAddU32(left: u32, right: u32) u32 @public { return unsignedAddWithOverflowU32(left, right)->value; }
+fn wrappingSubS32(left: s32, right: s32) s32 @public { return signedSubWithOverflowS32(left, right)->value; }
+fn wrappingSubU32(left: u32, right: u32) u32 @public { return unsignedSubWithOverflowU32(left, right)->value; }
+fn wrappingMulS32(left: s32, right: s32) s32 @public { return signedMulWithOverflowS32(left, right)->value; }
+fn wrappingMulU32(left: u32, right: u32) u32 @public { return unsignedMulWithOverflowU32(left, right)->value; }
+
+fn saturatingAdd [T] (left: T, right: T) T @public {
+    staticAssert(isInteger(T), "intrinsics::int::saturatingAdd[T] requires an integer type");
+
+    @if(isSameType(T, s32)) { return signedSaturatingAddS32(left, right) as T; }
+    @else if(isSameType(T, s64)) { return signedSaturatingAddS64(left, right) as T; }
+    @else if(isSameType(T, u32)) { return unsignedSaturatingAddU32(left, right) as T; }
+    @else if(isSameType(T, u64)) { return unsignedSaturatingAddU64(left, right) as T; }
+}
+
+fn saturatingSub [T] (left: T, right: T) T @public {
+    staticAssert(isInteger(T), "intrinsics::int::saturatingSub[T] requires an integer type");
+
+    @if(isSameType(T, s32)) { return signedSaturatingSubS32(left, right) as T; }
+    @else if(isSameType(T, s64)) { return signedSaturatingSubS64(left, right) as T; }
+    @else if(isSameType(T, u32)) { return unsignedSaturatingSubU32(left, right) as T; }
+    @else if(isSameType(T, u64)) { return unsignedSaturatingSubU64(left, right) as T; }
+}
+
+fn max [T] (left: T, right: T) T @public {
+    staticAssert(isInteger(T), "intrinsics::int::max[T] requires an integer type");
+
+    @if(isSameType(T, s32)) { return signedMaxS32(left, right) as T; }
+    @else if(isSameType(T, s64)) { return signedMaxS64(left, right) as T; }
+    @else if(isSameType(T, u32)) { return unsignedMaxU32(left, right) as T; }
+    @else if(isSameType(T, u64)) { return unsignedMaxU64(left, right) as T; }
+}
+
+fn min [T] (left: T, right: T) T @public {
+    staticAssert(isInteger(T), "intrinsics::int::min[T] requires an integer type");
+
+    @if(isSameType(T, s32)) { return signedMinS32(left, right) as T; }
+    @else if(isSameType(T, s64)) { return signedMinS64(left, right) as T; }
+    @else if(isSameType(T, u32)) { return unsignedMinU32(left, right) as T; }
+    @else if(isSameType(T, u64)) { return unsignedMinU64(left, right) as T; }
+}
+
+fn absolute [T] (value: T) T @public {
+    staticAssert(isSigned(T), "intrinsics::int::absolute[T] requires a signed integer type");
+
+    @if(isSameType(T, s32)) { return absS32(value, false) as T; }
+    @else if(isSameType(T, s64)) { return absS64(value, false) as T; }
+}

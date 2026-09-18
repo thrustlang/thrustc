@@ -1,0 +1,51 @@
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0020";
+
+import std::int;
+import std::tstring;
+
+fn main() s32 @public {
+    var nativeCString: CString = "789";
+
+    if int::parse[s32]("123") != 123 { return 1; }
+    if int::parse[s64]("-42") != -42 { return 2; }
+    if int::parse[u64]("42") != 42 { return 3; }
+    if int::parseWithBase[u64]("ff", 16) != 255 { return 4; }
+    if int::parseWithBase[s32]("0x10", 0) != 16 { return 5; }
+    if int::parseCString[s32](nativeCString) != 789 { return 20; }
+
+    var positive: int::ParseSignedResult = int::parseSigned("123");
+    if !(positive->ok) { return 6; }
+    if positive->value != 123 { return 7; }
+    if positive->end->[0] != '\0' { return 8; }
+
+    var invalid: int::ParseSignedResult = int::parseSigned("abc");
+    if invalid->ok { return 9; }
+    if invalid->end != ("abc" as ptr) { return 10; }
+
+    var partial: int::ParseSignedResult = int::parseSigned("123abc");
+    if !(partial->ok) { return 11; }
+    if partial->value != 123 { return 12; }
+    if partial->end->[0] != 'a' { return 13; }
+
+    var hexadecimal: int::ParseUnsignedResult = int::parseUnsignedWithBase("ff", 16);
+    if !(hexadecimal->ok) { return 14; }
+    if hexadecimal->value != 255 { return 15; }
+
+    var nativeChecked: int::ParseSignedResult = int::parseSignedCString(nativeCString);
+    if !(nativeChecked->ok) { return 21; }
+    if nativeChecked->value != 789 { return 22; }
+    if nativeChecked->end->[0] != '\0' { return 23; }
+
+    var text := tstring::fromCString("456");
+    var fromText: int::ParseSignedResult = int::parseSignedTString(ref text);
+    if !(fromText->ok) { return 16; }
+    if fromText->value != 456 { return 17; }
+    if fromText->end->[0] != '\0' { return 18; }
+    if int::parseTString[s32](ref text) != 456 { return 19; }
+
+    tstring::dropTString(ref text);
+
+    return 0;
+}

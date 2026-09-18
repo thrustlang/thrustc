@@ -1,0 +1,57 @@
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0024";
+
+import std::intrinsics::int as intrinsicInt;
+import std::intrinsics::int only { S32OverflowResult, signedAddWithOverflowS32 };
+
+fn main() s32 @public {
+    var onlyImported: S32OverflowResult = signedAddWithOverflowS32(1, 2);
+    if onlyImported->overflow { return 30; }
+    if onlyImported->value != 3 { return 31; }
+
+    var signedAdd: intrinsicInt::S32OverflowResult = intrinsicInt::signedAddWithOverflowS32(2147483647, 1);
+    if !(signedAdd->overflow) { return 1; }
+    if signedAdd->value != -2147483648 { return 2; }
+
+    var unsignedAdd: intrinsicInt::U32OverflowResult = intrinsicInt::unsignedAddWithOverflowU32(4294967295, 1);
+    if !(unsignedAdd->overflow) { return 3; }
+    if unsignedAdd->value != 0 { return 4; }
+
+    var signedSub: intrinsicInt::S32OverflowResult = intrinsicInt::signedSubWithOverflowS32(-2147483648, 1);
+    if !(signedSub->overflow) { return 5; }
+    if signedSub->value != 2147483647 { return 6; }
+
+    var unsignedMul: intrinsicInt::U32OverflowResult = intrinsicInt::unsignedMulWithOverflowU32(4294967295, 2);
+    if !(unsignedMul->overflow) { return 7; }
+    if unsignedMul->value != 4294967294 { return 8; }
+
+    if intrinsicInt::wrappingAddU32(4294967295, 1) != 0 { return 9; }
+    if intrinsicInt::wrappingSubU32(0, 1) != 4294967295 { return 10; }
+    if intrinsicInt::wrappingMulU32(4294967295, 2) != 4294967294 { return 11; }
+
+    if intrinsicInt::saturatingAdd[s32](2147483647, 1) != 2147483647 { return 12; }
+    if intrinsicInt::saturatingSub[s32](-2147483648, 1) != -2147483648 { return 13; }
+    if intrinsicInt::saturatingAdd[u32](4294967295, 1) != 4294967295 { return 14; }
+    if intrinsicInt::saturatingSub[u32](0, 1) != 0 { return 15; }
+
+    if intrinsicInt::signedSaturatingShiftLeftS32(1073741824, 1) != 2147483647 { return 16; }
+    if intrinsicInt::unsignedSaturatingShiftLeftU32(2147483648, 1) != 4294967295 { return 17; }
+
+    if intrinsicInt::absolute[s32](-9) != 9 { return 18; }
+    if intrinsicInt::max[s32](-1, 2) != 2 { return 19; }
+    if intrinsicInt::min[s32](-1, 2) != -1 { return 20; }
+    if intrinsicInt::max[u32](10, 2) != 10 { return 21; }
+    if intrinsicInt::min[u32](10, 2) != 2 { return 22; }
+
+    if intrinsicInt::countOnesU32(0xF0F0) != 8 { return 23; }
+    if intrinsicInt::countLeadingZerosU32(1, false) != 31 { return 24; }
+    if intrinsicInt::countTrailingZerosU32(8, false) != 3 { return 25; }
+    if intrinsicInt::bitReverseU8(0x0F) != 0xF0 { return 26; }
+    if intrinsicInt::byteSwapU32(0x12345678) != 0x78563412 { return 27; }
+    if intrinsicInt::funnelShiftLeftU8(0xFF, 0, 15) != 128 { return 28; }
+    if intrinsicInt::funnelShiftRightU8(0xFF, 0, 15) != 254 { return 29; }
+
+    return 0;
+}

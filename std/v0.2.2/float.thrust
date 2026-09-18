@@ -1,0 +1,124 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0017";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0028";
+directive "--disable-warnings=W0030";
+
+import std::ffi::c::float as c;
+import std::tstring;
+
+struct ParseF32Result @public {
+    value: f32,
+    end: ptr[char],
+    ok: bool
+}
+
+struct ParseF64Result @public {
+    value: f64,
+    end: ptr[char],
+    ok: bool
+}
+
+struct ParseF80Result @public {
+    value: f80,
+    end: ptr[char],
+    ok: bool
+}
+
+fn parse [T] (text: CString) T @public {
+    staticAssert(isFloat(T), "float::parse[T] requires a floating-point type");
+    staticAssert(isConst(T) == false, "float::parse[T] requires a non-const floating-point type");
+
+    @if(isSameType(T, f32)) {
+        return parseF32(text)->value as T;
+    } @else if(isSameType(T, f64)) {
+        return parseF64(text)->value as T;
+    } @else if(isSameType(T, f80)) {
+        return parseF80(text)->value as T;
+    }
+}
+
+fn parseCString [T] (text: CString) T @public {
+    return parse[T](text);
+}
+
+fn parseTString [T] (text: ptr[tstring::TString]) T @public {
+    return parse[T](tstring::toCString(text));
+}
+
+fn parseF32(text: CString) ParseF32Result @public {
+    var end: ptr = nullptr;
+    var value: f32 = c::strtof(text, ref end);
+
+    return new ParseF32Result {
+        value: value,
+        end: end as ptr[char],
+        ok: end != (text as ptr)
+    };
+}
+
+fn parseF32CString(text: CString) ParseF32Result @public {
+    return parseF32(text);
+}
+
+fn parseF32TString(text: ptr[tstring::TString]) ParseF32Result @public {
+    return parseF32(tstring::toCString(text));
+}
+
+fn parseF64(text: CString) ParseF64Result @public {
+    var end: ptr = nullptr;
+    var value: f64 = c::strtod(text, ref end);
+
+    return new ParseF64Result {
+        value: value,
+        end: end as ptr[char],
+        ok: end != (text as ptr)
+    };
+}
+
+fn parseF64CString(text: CString) ParseF64Result @public {
+    return parseF64(text);
+}
+
+fn parseF64TString(text: ptr[tstring::TString]) ParseF64Result @public {
+    return parseF64(tstring::toCString(text));
+}
+
+fn parseF80(text: CString) ParseF80Result @public {
+    var end: ptr = nullptr;
+    var value: f80 = c::strtold(text, ref end);
+
+    return new ParseF80Result {
+        value: value,
+        end: end as ptr[char],
+        ok: end != (text as ptr)
+    };
+}
+
+fn parseF80CString(text: CString) ParseF80Result @public {
+    return parseF80(text);
+}
+
+fn parseF80TString(text: ptr[tstring::TString]) ParseF80Result @public {
+    return parseF80(tstring::toCString(text));
+}

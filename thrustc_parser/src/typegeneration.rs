@@ -166,6 +166,13 @@ fn build_type_inner<'parser>(
                 if let Some((qualified_type, type_params)) =
                     crate::module_import::resolve_qualified_generic(ctx, &access, symbol)
                 {
+                    crate::module_import::synthesize_only_import(
+                        ctx,
+                        &access,
+                        &[symbol.to_string()],
+                        symbol_span,
+                    )?;
+
                     if let Some(type_params) = type_params {
                         if ctx.check(TokenType::LBracket) {
                             let env: thrustc_generics::TypeEnv =

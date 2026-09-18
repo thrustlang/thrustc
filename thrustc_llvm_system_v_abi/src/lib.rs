@@ -49,6 +49,15 @@ use thrustc_typesystem::{
     type_modificators::StructureTypeModificator,
 };
 
+fn integer_chunk_type(bits: u32, span: Span) -> Type {
+    match bits {
+        0..=8 => Type::U8 { span },
+        9..=16 => Type::U16 { span },
+        17..=32 => Type::U32 { span },
+        _ => Type::U64 { span },
+    }
+}
+
 #[derive(Debug)]
 pub struct SystemVABIContext<'system_v_abi> {
     target_triple: &'system_v_abi LLVMTargetTriple,
@@ -658,24 +667,13 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                     let is_integer: bool = array_fixed_ty.is_integer_type();
 
                     if is_integer {
-                        let first_integer_ty: Type = if array_fixed_ty.is_signed_integer_type() {
-                            Type::S64 {
-                                span: ty.get_span(),
-                            }
-                        } else {
-                            Type::U64 {
-                                span: ty.get_span(),
-                            }
-                        };
-
-                        let second_integer_ty: Type = first_integer_ty.clone();
-
-                        if layout.abi_size == 8 {
-                            return SystemVABIType::DecomposeAndExpand(
-                                vec![first_integer_ty],
-                                SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
-                            );
+                        if layout.abi_size <= 8 {
+                            return SystemVABIType::Coerce(ty, layout.width);
                         }
+
+                        let first_integer_ty: Type = self::integer_chunk_type(64, ty.get_span());
+                        let second_integer_ty: Type =
+                            self::integer_chunk_type(layout.width.saturating_sub(64), ty.get_span());
 
                         return SystemVABIType::DecomposeAndExpand(
                             vec![first_integer_ty, second_integer_ty],
@@ -746,24 +744,13 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                     let is_integer: bool = array_fixed_ty.is_integer_type();
 
                     if is_integer {
-                        let first_integer_ty: Type = if array_fixed_ty.is_signed_integer_type() {
-                            Type::S64 {
-                                span: ty.get_span(),
-                            }
-                        } else {
-                            Type::U64 {
-                                span: ty.get_span(),
-                            }
-                        };
-
-                        let second_integer_ty: Type = first_integer_ty.clone();
-
-                        if layout.abi_size == 8 {
-                            return SystemVABIType::DecomposeAndExpand(
-                                vec![first_integer_ty],
-                                SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandArray,
-                            );
+                        if layout.abi_size <= 8 {
+                            return SystemVABIType::Coerce(ty, layout.width);
                         }
+
+                        let first_integer_ty: Type = self::integer_chunk_type(64, ty.get_span());
+                        let second_integer_ty: Type =
+                            self::integer_chunk_type(layout.width.saturating_sub(64), ty.get_span());
 
                         return SystemVABIType::DecomposeAndExpand(
                             vec![first_integer_ty, second_integer_ty],
@@ -1131,7 +1118,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             )
                         });
 
-                    let loaded_value: BasicValueEnum<'_> = llvm_builder
+                    let loaded_value_instruction = llvm_builder
                         .build_load(original_llvm_ty, ptr, "")
                         .unwrap_or_else(|_| {
                             abort::abort_codegen(
@@ -1142,6 +1129,12 @@ pub fn lower_function_parameters<'llvm_abi>(
                                 line!(),
                             )
                         });
+
+                    loaded_value_instruction
+                        .as_instruction_value()
+                        .and_then(|instruction| instruction.set_alignment(alignment).ok());
+
+                    let loaded_value: BasicValueEnum<'_> = loaded_value_instruction;
 
                     processed_parameters.push((
                         name,
@@ -1361,11 +1354,9 @@ pub fn lower_function_parameters<'llvm_abi>(
                             {
                                 let second_element_ptr: PointerValue<'_> = unsafe {
                                     llvm_builder.build_gep(
-                                        second_decomposed_value.get_type(),
+                                        llvm_context.i8_type(),
                                         ptr,
-                                        &[
-                                            llvm_context.i32_type().const_int(1, false),
-                                        ],
+                                        &[llvm_context.i32_type().const_int(8, false)],
                                         "",
                                     )
                                 }.unwrap_or_else(|_| {
@@ -1557,7 +1548,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                         )
                     });
 
-                let coerced_value: BasicValueEnum<'_> = llvm_builder
+                let coerced_value_instruction = llvm_builder
                     .build_load(coerced_llvm_ty, ptr, "")
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
@@ -1568,6 +1559,12 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                             line!(),
                         )
                     });
+
+                coerced_value_instruction
+                    .as_instruction_value()
+                    .and_then(|instruction| instruction.set_alignment(alignment).ok());
+
+                let coerced_value: BasicValueEnum<'_> = coerced_value_instruction;
 
                 processed_args.push(coerced_value.into());
             }
@@ -1961,7 +1958,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 first_element_decomposed_ty,
                             );
 
-                        let value: BasicValueEnum<'_> =
+                        let value_instruction =
                             llvm_builder.build_load(first_element_decomposed_llvm_ty, ptr, "").unwrap_or_else(|_| {
                                 abort::abort_codegen(
                                     abi_context,
@@ -1971,6 +1968,12 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                     line!(),
                                 )
                             });
+
+                        value_instruction
+                            .as_instruction_value()
+                            .and_then(|instruction| instruction.set_alignment(alignment).ok());
+
+                        let value: BasicValueEnum<'_> = value_instruction;
 
                         processed_args.push(value.into());
                     } else {
@@ -2008,7 +2011,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 second_element_decomposed_ty,
                             );
 
-                        let first_value: BasicValueEnum<'_> =
+                        let first_value_instruction =
                             llvm_builder.build_load(first_element_decomposed_llvm_ty, ptr, "").unwrap_or_else(|_| {
                                 abort::abort_codegen(
                                     abi_context,
@@ -2019,6 +2022,12 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 )
                             });
 
+                        first_value_instruction
+                            .as_instruction_value()
+                            .and_then(|instruction| instruction.set_alignment(alignment).ok());
+
+                        let first_value: BasicValueEnum<'_> = first_value_instruction;
+
                         ptr = self::address_space_to_normal(
                             abi_context,
                             llvm_builder,
@@ -2028,7 +2037,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                         );
 
                         let ptr_to_second_element: PointerValue<'_> = unsafe {
-                            llvm_builder.build_in_bounds_gep(second_element_decomposed_llvm_ty, ptr, &[llvm_context.i32_type().const_int(1, false)], "").unwrap_or_else(|_| {
+                            llvm_builder.build_in_bounds_gep(llvm_context.i8_type(), ptr, &[llvm_context.i32_type().const_int(8, false)], "").unwrap_or_else(|_| {
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to build a GEP instruction to get the second element of a decomposed and expanded array parameter in System V ABI!",
@@ -2039,7 +2048,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                             })
                         };
 
-                        let second_value: BasicValueEnum<'_> =
+                        let second_value_instruction =
                             llvm_builder.build_load(second_element_decomposed_llvm_ty, ptr_to_second_element, "").unwrap_or_else(|_| {
                                 abort::abort_codegen(
                                     abi_context,
@@ -2049,6 +2058,12 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                     line!(),
                                 )
                             });
+
+                        second_value_instruction
+                            .as_instruction_value()
+                            .and_then(|instruction| instruction.set_alignment(alignment).ok());
+
+                        let second_value: BasicValueEnum<'_> = second_value_instruction;
 
                         processed_args.push(first_value.into());
                         processed_args.push(second_value.into());

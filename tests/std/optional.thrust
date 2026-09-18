@@ -1,0 +1,64 @@
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0020";
+
+import std::optional;
+
+struct Pair {
+    first: s32,
+    second: s32
+}
+
+fn main() s32 @public {
+    var present: optional::Optional[s32] = optional::some[s32](10);
+    if !optional::isSome(ref present) { return 1; }
+    if optional::isNone(ref present) { return 2; }
+    if !optional::hasValue(ref present) { return 3; }
+    if optional::unwrap(ref present) != 10 { return 4; }
+    if optional::unwrapOr(ref present, 99) != 10 { return 5; }
+    if optional::valueOr(ref present, 99) != 10 { return 6; }
+
+    var empty: optional::Optional[s32] = optional::none[s32]();
+    if optional::isSome(ref empty) { return 7; }
+    if !optional::isNone(ref empty) { return 8; }
+    if optional::unwrapOr(ref empty, 99) != 99 { return 9; }
+    if optional::valueOr(ref empty, 77) != 77 { return 10; }
+
+    optional::set(ref empty, 15);
+    if !optional::isSome(ref empty) { return 11; }
+    if optional::unwrap(ref empty) != 15 { return 12; }
+
+    var old: optional::Optional[s32] = optional::replace(ref empty, 20);
+    if !optional::isSome(ref old) { return 13; }
+    if optional::unwrap(ref old) != 15 { return 14; }
+    if optional::unwrap(ref empty) != 20 { return 15; }
+
+    var taken: optional::Optional[s32] = optional::take(ref empty);
+    if !optional::isSome(ref taken) { return 16; }
+    if optional::unwrap(ref taken) != 20 { return 17; }
+    if !optional::isNone(ref empty) { return 18; }
+
+    optional::clear(ref present);
+    if !optional::isNone(ref present) { return 19; }
+
+    var fallback: optional::Optional[s32] = optional::some[s32](44);
+    var chosen: optional::Optional[s32] = optional::orElse(ref present, fallback);
+    if optional::unwrap(ref chosen) != 44 { return 20; }
+
+    var raw: s32 = 123;
+    var fromPointer: optional::Optional[ptr[s32]] = optional::fromPtr[s32](ref raw);
+    if !optional::isSome(ref fromPointer) { return 21; }
+    if optional::ptrOrNull(ref fromPointer)->[0] != 123 { return 22; }
+
+    var nullPointer: optional::Optional[ptr[s32]] = optional::fromPtr[s32](nullptr as ptr[s32]);
+    if !optional::isNone(ref nullPointer) { return 23; }
+    if optional::ptrOrNull(ref nullPointer) != nullptr { return 24; }
+
+    var pair: Pair = new Pair { first: 3, second: 4 };
+    var maybePair: optional::Optional[Pair] = optional::some[Pair](pair);
+    if !optional::isSome(ref maybePair) { return 25; }
+    if optional::unwrap(ref maybePair)->first != 3 { return 26; }
+    if optional::unwrap(ref maybePair)->second != 4 { return 27; }
+
+    return 0;
+}

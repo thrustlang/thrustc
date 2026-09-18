@@ -1,0 +1,14 @@
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0024";
+
+import "module_enum.thrust" only { SignedState };
+
+fn main() s32 @public {
+    if SignedState=>Negative != -1 { return 1; }
+    if SignedState=>Positive != 1 { return 2; }
+
+    var value: s32 = SignedState=>Negative;
+    if value != -1 { return 3; }
+
+    return 0;
+}

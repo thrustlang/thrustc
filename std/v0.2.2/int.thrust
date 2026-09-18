@@ -1,0 +1,133 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0017";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0028";
+directive "--disable-warnings=W0030";
+
+import std::ffi::c::int as c;
+import std::tstring;
+
+struct ParseSignedResult @public {
+    value: s64,
+    end: ptr[char],
+    ok: bool
+}
+
+struct ParseUnsignedResult @public {
+    value: u64,
+    end: ptr[char],
+    ok: bool
+}
+
+fn parse [T] (text: CString) T @public {
+    return parseWithBase[T](text, 10);
+}
+
+fn parseCString [T] (text: CString) T @public {
+    return parse[T](text);
+}
+
+fn parseWithBase [T] (text: CString, base: s32) T @public {
+    staticAssert(isInteger(T), "int::parse[T] requires an integer type");
+    staticAssert(isConst(T) == false, "int::parse[T] requires a non-const integer type");
+
+    @if(isSigned(T)) {
+        return parseSignedWithBase(text, base)->value as T;
+    } @else {
+        return parseUnsignedWithBase(text, base)->value as T;
+    }
+}
+
+fn parseCStringWithBase [T] (text: CString, base: s32) T @public {
+    return parseWithBase[T](text, base);
+}
+
+fn parseTString [T] (text: ptr[tstring::TString]) T @public {
+    return parse[T](tstring::toCString(text));
+}
+
+fn parseTStringWithBase [T] (text: ptr[tstring::TString], base: s32) T @public {
+    return parseWithBase[T](tstring::toCString(text), base);
+}
+
+fn parseSigned(text: CString) ParseSignedResult @public {
+    return parseSignedWithBase(text, 10);
+}
+
+fn parseSignedCString(text: CString) ParseSignedResult @public {
+    return parseSigned(text);
+}
+
+fn parseSignedWithBase(text: CString, base: s32) ParseSignedResult @public {
+    var end: ptr = nullptr;
+    var value: s64 = c::strtoll(text, ref end, base);
+
+    return new ParseSignedResult {
+        value: value,
+        end: end as ptr[char],
+        ok: end != (text as ptr)
+    };
+}
+
+fn parseSignedCStringWithBase(text: CString, base: s32) ParseSignedResult @public {
+    return parseSignedWithBase(text, base);
+}
+
+fn parseSignedTString(text: ptr[tstring::TString]) ParseSignedResult @public {
+    return parseSigned(tstring::toCString(text));
+}
+
+fn parseSignedTStringWithBase(text: ptr[tstring::TString], base: s32) ParseSignedResult @public {
+    return parseSignedWithBase(tstring::toCString(text), base);
+}
+
+fn parseUnsigned(text: CString) ParseUnsignedResult @public {
+    return parseUnsignedWithBase(text, 10);
+}
+
+fn parseUnsignedCString(text: CString) ParseUnsignedResult @public {
+    return parseUnsigned(text);
+}
+
+fn parseUnsignedWithBase(text: CString, base: s32) ParseUnsignedResult @public {
+    var end: ptr = nullptr;
+    var value: u64 = c::strtoull(text, ref end, base);
+
+    return new ParseUnsignedResult {
+        value: value,
+        end: end as ptr[char],
+        ok: end != (text as ptr)
+    };
+}
+
+fn parseUnsignedCStringWithBase(text: CString, base: s32) ParseUnsignedResult @public {
+    return parseUnsignedWithBase(text, base);
+}
+
+fn parseUnsignedTString(text: ptr[tstring::TString]) ParseUnsignedResult @public {
+    return parseUnsigned(tstring::toCString(text));
+}
+
+fn parseUnsignedTStringWithBase(text: ptr[tstring::TString], base: s32) ParseUnsignedResult @public {
+    return parseUnsignedWithBase(tstring::toCString(text), base);
+}

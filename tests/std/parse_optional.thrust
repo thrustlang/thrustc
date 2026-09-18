@@ -1,0 +1,51 @@
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0020";
+
+import std::float;
+import std::int;
+import std::optional;
+import std::tstring;
+
+fn parseStrictS32(text: CString) optional::Optional[s32] {
+    var parsed: int::ParseSignedResult = int::parseSigned(text);
+
+    if !(parsed->ok) || parsed->end->[0] != '\0' {
+        return optional::none[s32]();
+    }
+
+    return optional::some[s32](parsed->value as s32);
+}
+
+fn parseStrictF64(text: CString) optional::Optional[f64] {
+    var parsed: float::ParseF64Result = float::parseF64(text);
+
+    if !(parsed->ok) || parsed->end->[0] != '\0' {
+        return optional::none[f64]();
+    }
+
+    return optional::some[f64](parsed->value);
+}
+
+fn main() s32 @public {
+    var integer: optional::Optional[s32] = parseStrictS32("123");
+    if !optional::isSome(ref integer) { return 1; }
+    if optional::unwrap(ref integer) != 123 { return 2; }
+
+    var invalidInteger: optional::Optional[s32] = parseStrictS32("123x");
+    if !optional::isNone(ref invalidInteger) { return 3; }
+
+    var floating: optional::Optional[f64] = parseStrictF64("2.5");
+    if !optional::isSome(ref floating) { return 4; }
+    if optional::unwrap(ref floating) != 2.5 { return 5; }
+
+    var invalidFloat: optional::Optional[f64] = parseStrictF64("x2.5");
+    if !optional::isNone(ref invalidFloat) { return 6; }
+
+    var text := tstring::fromCString("456");
+    var fromText: optional::Optional[s32] = optional::some[s32](int::parseTString[s32](ref text));
+    if optional::unwrap(ref fromText) != 456 { return 7; }
+    tstring::dropTString(ref text);
+
+    return 0;
+}

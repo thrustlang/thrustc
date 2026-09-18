@@ -1,0 +1,42 @@
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0020";
+
+import std::optional;
+
+struct Pair {
+    left: s32,
+    right: s32
+}
+
+fn choose [T] (primary: optional::Optional[T], fallback: optional::Optional[T]) optional::Optional[T] {
+    var local: optional::Optional[T] = primary;
+    return optional::orElse(ref local, fallback);
+}
+
+fn main() s32 @public {
+    var noneInt: optional::Optional[s32] = optional::none[s32]();
+    var someInt: optional::Optional[s32] = optional::some[s32](11);
+    var chosen: optional::Optional[s32] = choose[s32](noneInt, someInt);
+
+    if optional::isNone(ref noneInt) == false { return 1; }
+    if optional::unwrap(ref chosen) != 11 { return 2; }
+
+    var nested: optional::Optional[optional::Optional[s32]] = optional::some[optional::Optional[s32]](someInt);
+    if !optional::isSome(ref nested) { return 3; }
+    var inner: optional::Optional[s32] = optional::unwrap(ref nested);
+    if optional::unwrap(ref inner) != 11 { return 4; }
+
+    var emptyNested: optional::Optional[optional::Optional[s32]] = optional::none[optional::Optional[s32]]();
+    if !optional::isNone(ref emptyNested) { return 5; }
+
+    var pair: Pair = new Pair { left: 3, right: 5 };
+    var maybePair: optional::Optional[Pair] = optional::some[Pair](pair);
+    var takenPair: optional::Optional[Pair] = optional::take(ref maybePair);
+
+    if !optional::isNone(ref maybePair) { return 6; }
+    if optional::unwrap(ref takenPair)->left != 3 { return 7; }
+    if optional::unwrap(ref takenPair)->right != 5 { return 8; }
+
+    return 0;
+}

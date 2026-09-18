@@ -33,9 +33,11 @@ pub struct Symbol {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Variant {
     Function,
+    CompilerIntrinsic,
     Constant,
     Static,
     Struct,
+    Enum,
     CustomType,
 }
 
@@ -46,6 +48,14 @@ pub enum Signature {
         invalid_kind: Type,
         demangling_name: String,
         type_params: Option<Vec<String>>,
+        parameters: Vec<(String, Type, Span)>,
+        attributes: ThrustAttributes,
+        span: Span,
+    },
+    CompilerIntrinsic {
+        kind: Type,
+        invalid_kind: Type,
+        external_name: String,
         parameters: Vec<(String, Type, Span)>,
         attributes: ThrustAttributes,
         span: Span,
@@ -73,6 +83,12 @@ pub enum Signature {
         fields: Vec<(String, Type, Span)>,
         span: Span,
     },
+    Enum {
+        invalid_kind: Type,
+        fields: Vec<(String, Type, Option<BuiltinValue>, Span)>,
+        attributes: ThrustAttributes,
+        span: Span,
+    },
     CustomType {
         kind: Type,
         invalid_kind: Type,
@@ -87,9 +103,11 @@ impl Signature {
     pub fn get_span(&self) -> Span {
         match self {
             Signature::Function { span, .. } => *span,
+            Signature::CompilerIntrinsic { span, .. } => *span,
             Signature::Constant { span, .. } => *span,
             Signature::Static { span, .. } => *span,
             Signature::Struct { span, .. } => *span,
+            Signature::Enum { span, .. } => *span,
             Signature::CustomType { span, .. } => *span,
         }
     }

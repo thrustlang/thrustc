@@ -19,7 +19,7 @@ fn main() s32 @public {
         return 1;
     }
 
-    if bit_size != 16 {
+    if bit_size != 128 {
         return 2;
     }
 
@@ -35,7 +35,7 @@ fn main() s32 @public {
 
     var u64_bit_size: u64 = bitSizeOf(u64);
 
-    if u64_bit_size != 8 {
+    if u64_bit_size != 64 {
         return 5;
     }
 

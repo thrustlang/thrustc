@@ -1,0 +1,33 @@
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0024";
+
+import std::intrinsics::int as intIntr;
+import std::intrinsics::int only { S32OverflowResult, signedAddWithOverflowS32, unsignedAddWithOverflowU32 };
+import std::intrinsics::float as floatIntr;
+import std::intrinsics::float only { absF64, sqrtF64 };
+
+fn main() s32 @public {
+    var direct: S32OverflowResult = signedAddWithOverflowS32(10, 20);
+    if direct->overflow { return 1; }
+    if direct->value != 30 { return 2; }
+
+    var qualified: intIntr::S32OverflowResult = intIntr::signedAddWithOverflowS32(2147483647, 1);
+    if !(qualified->overflow) { return 3; }
+
+    var unsigned: intIntr::U32OverflowResult = unsignedAddWithOverflowU32(4294967295, 1);
+    if !(unsigned->overflow) { return 4; }
+    if unsigned->value != 0 { return 5; }
+
+    var repeated: intIntr::S32OverflowResult = intIntr::signedAddWithOverflowS32(1, 2);
+    if repeated->overflow { return 6; }
+    if repeated->value != 3 { return 7; }
+
+    if absF64(-9.0) != 9.0 { return 8; }
+    if sqrtF64(16.0) != 4.0 { return 9; }
+    if floatIntr::absF64(-3.0) != 3.0 { return 10; }
+    if floatIntr::squareRoot[f64](25.0) != 5.0 { return 11; }
+
+    return 0;
+}

@@ -25,7 +25,7 @@ use thrustc_ast::{
     Ast, ModuleExpressionValues, NodeId,
     ast_builtins::{AstBuiltin, DeferredBuiltinArgument},
     ast_logic_data::{ConstructorData, EnumData},
-    ast_metadata::FunctionParameterMetadata,
+    ast_metadata::{FunctionParameterMetadata, ReferenceMetadata, ReferenceType},
     traits::AstGetType,
 };
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
@@ -142,58 +142,68 @@ pub fn resolve_generics<'parser>(ctx: &mut ParserContext<'parser>) {
 
     let file_path: std::path::PathBuf = ctx.get_file().get_path().to_path_buf();
 
-    let pending: Vec<thrustc_generics::PendingInstantiation> =
-        thrustc_generics::drain_pending(&file_path);
+    let mut pending_iterations: usize = 0;
 
-    for pending in pending {
-        let Some(entry) = ctx
-            .get_symbols()
-            .get_generic_function(&pending.function)
-            .cloned()
-        else {
-            continue;
-        };
+    while thrustc_generics::has_pending_for(&file_path) && pending_iterations < 1024 {
+        pending_iterations = pending_iterations.saturating_add(1);
 
-        if !entry.has_local_template {
-            continue;
+        let pending: Vec<thrustc_generics::PendingInstantiation> =
+            thrustc_generics::drain_pending(&file_path);
+
+        if pending.is_empty() {
+            break;
         }
 
-        let module_str: String = pending.module.to_string_lossy().to_string();
+        for pending in pending {
+            let Some(entry) = ctx
+                .get_symbols()
+                .get_generic_function(&pending.function)
+                .cloned()
+            else {
+                continue;
+            };
 
-        let key: String =
-            thrustc_generics::instantiation_key(Some(&module_str), &entry.name, &pending.env);
+            if !entry.has_local_template {
+                continue;
+            }
 
-        if !memo.insert(key.clone()) {
-            continue;
+            let module_str: String = pending.module.to_string_lossy().to_string();
+
+            let key: String =
+                thrustc_generics::instantiation_key(Some(&module_str), &entry.name, &pending.env);
+
+            if !memo.insert(key.clone()) {
+                continue;
+            }
+
+            let Some(template) = templates.get(&entry.name) else {
+                continue;
+            };
+
+            let mut concrete: Ast<'parser> =
+                thrustc_generics::substitute_ast(template.clone(), &pending.env);
+
+            if let Ast::Function {
+                name,
+                ascii_name,
+                demangling_name,
+                ..
+            } = &mut concrete
+            {
+                *name = key.clone();
+                *ascii_name = key.clone();
+                *demangling_name = format!("{}.{}", ctx.get_file().get_base_name(), key);
+            }
+
+            if let Ast::Function { original_name, .. } = &mut concrete {
+                *original_name = Some(entry.name.clone());
+            }
+
+            let resolved: Ast<'parser> =
+                self::resolve_ast(ctx, concrete, &templates, &mut memo, &mut output);
+
+            output.push(resolved);
         }
-
-        let Some(template) = templates.get(&entry.name) else {
-            continue;
-        };
-
-        let mut concrete: Ast<'parser> =
-            thrustc_generics::substitute_ast(template.clone(), &pending.env);
-
-        if let Ast::Function {
-            name,
-            ascii_name,
-            demangling_name,
-            ..
-        } = &mut concrete
-        {
-            *name = key.clone();
-            *ascii_name = key.clone();
-            *demangling_name = format!("{}.{}", ctx.get_file().get_base_name(), key);
-        }
-
-        if let Ast::Function { original_name, .. } = &mut concrete {
-            *original_name = Some(entry.name.clone());
-        }
-
-        let resolved: Ast<'parser> =
-            self::resolve_ast(ctx, concrete, &templates, &mut memo, &mut output);
-
-        output.push(resolved);
     }
 
     self::emit_unused_type_parameter_warnings(ctx, &templates);
@@ -1068,15 +1078,24 @@ fn resolve_children<'parser>(
             metadata,
             span,
             id,
-        } => Ast::FunctionParameter {
-            name,
-            ascii_name,
-            kind,
-            position,
-            metadata,
-            span,
-            id,
-        },
+        } => {
+            let metadata: FunctionParameterMetadata =
+                if metadata.is_mutable() != kind.is_ptr_like_type() {
+                    FunctionParameterMetadata::new(kind.is_ptr_like_type())
+                } else {
+                    metadata
+                };
+
+            Ast::FunctionParameter {
+                name,
+                ascii_name,
+                kind,
+                position,
+                metadata,
+                span,
+                id,
+            }
+        }
         Ast::Return {
             expression,
             kind,
@@ -1175,13 +1194,28 @@ fn resolve_children<'parser>(
             metadata,
             span,
             id,
-        } => Ast::Reference {
-            name,
-            kind,
-            metadata,
-            span,
-            id,
-        },
+        } => {
+            let metadata: ReferenceMetadata = if matches!(metadata.get_type(), ReferenceType::Parameter)
+                && metadata.is_allocated() != kind.is_ptr_like_type()
+            {
+                ReferenceMetadata::new(
+                    kind.is_ptr_like_type(),
+                    metadata.is_mutable(),
+                    ReferenceType::Parameter,
+                    metadata.is_unitialized(),
+                )
+            } else {
+                metadata
+            };
+
+            Ast::Reference {
+                name,
+                kind,
+                metadata,
+                span,
+                id,
+            }
+        }
         Ast::Mutation {
             source,
             value,

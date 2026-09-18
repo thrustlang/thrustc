@@ -507,6 +507,11 @@ impl<'parser> SymbolTable<'parser> {
         Ok(())
     }
 
+    #[inline]
+    pub fn has_global_enum(&self, id: &str) -> bool {
+        self.global_enums.contains_key(id)
+    }
+
     pub fn new_enum(
         &mut self,
         id: &'parser str,
@@ -567,6 +572,11 @@ impl<'parser> SymbolTable<'parser> {
         self.intrinsics.insert(id, intrinsic);
 
         Ok(())
+    }
+
+    #[inline]
+    pub fn has_compiler_intrinsic(&self, id: &str) -> bool {
+        self.intrinsics.contains_key(id)
     }
 }
 

@@ -1,0 +1,31 @@
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0024";
+
+import "module_generic_import.thrust" as genericMod;
+import "module_generic_import.thrust" only { Box, makeBox, getValue, setValue };
+
+fn main() s32 @public {
+    var direct: Box[s32] = makeBox[s32](10);
+    if direct->value != 10 { return 1; }
+    if getValue[s32](ref direct) != 10 { return 2; }
+
+    setValue[s32](ref direct, 20);
+    if direct->value != 20 { return 3; }
+
+    var qualified: genericMod::Box[u64] = genericMod::makeBox[u64](30);
+    if qualified->value != 30 { return 4; }
+    if genericMod::getValue[u64](ref qualified) != 30 { return 5; }
+
+    var number: s32 = 40;
+    var pointerBox: genericMod::Box[ptr[s32]] = genericMod::makeBox[ptr[s32]](ref number);
+    pointerBox->value[0] = 41;
+    if number != 41 { return 6; }
+
+    genericMod::setValue[ptr[s32]](ref pointerBox, ref number);
+    pointerBox->value[0] = 42;
+    if number != 42 { return 7; }
+
+    return 0;
+}

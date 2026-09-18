@@ -39,9 +39,10 @@ use thrustc_parser_table::{GenericCustomTypeEntry, GenericFunctionEntry, Generic
 use thrustc_preprocessor::module::Module;
 use thrustc_preprocessor::signatures::{Signature, Variant};
 
+use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
-use thrustc_typesystem::traits::{TypeCodeLocation, TypePointerExtensions};
+use thrustc_typesystem::traits::{TypeCodeLocation, TypePointerExtensions, VoidTypeExtensions};
 use thrustc_typesystem::type_metadata::StructTypeMetadata;
 
 use crate::ParserContext;
@@ -58,7 +59,126 @@ pub fn build_qualified_expression<'parser>(
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
+    if ctx.match_token(TokenType::FatArrow)? {
+        let Some(Signature::Enum { fields, .. }) =
+            self::resolve_signature(ctx, access, symbol, Variant::Enum)
+        else {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0028,
+                format!("'{}::{}' not found.", access.join("::"), symbol),
+                "The module does not export an enum with that name.".into(),
+                None,
+                span,
+            ));
+        };
+
+        let field_tk = ctx.consume(
+            TokenType::Identifier,
+            CompilationIssueCode::E0001,
+            "Expected enum field name.".into(),
+        )?;
+        let field_name: &str = field_tk.get_lexeme();
+        let field_span: Span = field_tk.get_span();
+
+        let Some((_, field_type, Some(value), _)) = fields
+            .iter()
+            .find(|(candidate, ..)| candidate == field_name)
+        else {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0028,
+                "Unknown field.".into(),
+                "You should make sure that it exist in the enum definition.".into(),
+                None,
+                field_span,
+            ));
+        };
+
+        return Ok(Ast::EnumValue {
+            name: format!("{}::{}.{}", access.join("::"), symbol, field_name),
+            value: Box::new(value.to_ast(field_type.clone(), field_span)),
+            kind: field_type.clone(),
+            span,
+            id: NodeId::new(),
+        });
+    }
+
     if ctx.check(TokenType::LParen) || ctx.check(TokenType::LBracket) {
+        if let Some(Signature::CompilerIntrinsic {
+            kind,
+            external_name,
+            parameters,
+            attributes,
+            ..
+        }) = self::resolve_signature(ctx, access, symbol, Variant::CompilerIntrinsic)
+        {
+            ctx.consume(
+                TokenType::LParen,
+                CompilationIssueCode::E0001,
+                "Expected '('.".into(),
+            )?;
+
+            let arguments: crate::expressions::call::ParsedCallArguments =
+                crate::expressions::call::parse_call_arguments(ctx)?;
+
+            if !arguments.named.is_empty() {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0044,
+                    "Named arguments are not supported for compiler intrinsics.".into(),
+                    "You should use only positional arguments.".into(),
+                    None,
+                    span,
+                ));
+            }
+
+            let qualified_symbol_ref: &'parser str =
+                self::leak_parser_string(qualified_symbol.clone());
+            let parameter_types: Vec<Type> =
+                parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
+
+            if !ctx
+                .get_symbols()
+                .has_compiler_intrinsic(qualified_symbol_ref)
+            {
+                let external_name_ref: &'parser str =
+                    self::leak_parser_string(external_name.clone());
+
+                let _ = ctx.get_mut_symbols().new_compiler_intrinsic(
+                    qualified_symbol_ref,
+                    (
+                        kind.clone(),
+                        thrustc_entities::parser_entities::IntrinsicParametersTypes(
+                            parameter_types.clone(),
+                        ),
+                        attributes.has_ignore_attribute(),
+                    ),
+                );
+
+                if let Some(path) = origin.as_ref() {
+                    ctx.get_mut_symbols()
+                        .record_import_origin(qualified_symbol_ref, path.clone());
+                }
+
+                self::synthesize_compiler_intrinsic(
+                    ctx,
+                    qualified_symbol_ref,
+                    external_name_ref,
+                    kind.clone(),
+                    parameter_types.clone(),
+                    attributes.clone(),
+                    span,
+                );
+            }
+
+            return Ok(Ast::Call {
+                name: qualified_symbol.clone(),
+                args: arguments.positional,
+                generic_args: Vec::with_capacity(0),
+                kind: kind.clone(),
+                span,
+                id: NodeId::new(),
+            });
+        }
+
         let Some(Signature::Function {
             kind,
             demangling_name,
@@ -255,7 +375,7 @@ pub fn build_qualified_expression<'parser>(
     ))
 }
 
-fn qualified_symbol_name(access: &[String], symbol: &str) -> String {
+pub(crate) fn qualified_symbol_name(access: &[String], symbol: &str) -> String {
     let mut name: String = String::with_capacity(symbol.len() + 32);
 
     name.push_str("__qualified_");
@@ -308,6 +428,8 @@ fn build_qualified_generic_call<'parser>(
     let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
+
+    let qualified_symbol: String = self::qualified_symbol_name(access, symbol);
 
     let parameter_types: Vec<Type> = parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
     let parameter_names: Vec<String> = parameters.iter().map(|(name, ..)| name.clone()).collect();
@@ -375,6 +497,46 @@ fn build_qualified_generic_call<'parser>(
             Err(_) => Type::Void { span },
         })
         .collect();
+
+    let must_defer: bool = generic_args
+        .iter()
+        .chain(argument_types.iter())
+        .any(|ty| ty.contains_an_unresolved_type());
+
+    if must_defer {
+        let qualified_symbol_ref: &'parser str = self::leak_parser_string(qualified_symbol.clone());
+
+        if !ctx.get_symbols().has_generic_function(qualified_symbol_ref) {
+            ctx.get_mut_symbols().new_generic_function(
+                qualified_symbol_ref,
+                GenericFunctionEntry {
+                    name: symbol.to_string(),
+                    type_params: type_params.to_vec(),
+                    parameter_types: parameter_types.clone(),
+                    parameter_names: parameter_names.clone(),
+                    return_type: kind.clone(),
+                    attributes: attributes.clone(),
+                    has_local_template: false,
+                    has_varargs: has_ignore,
+                    span,
+                },
+            );
+
+            if let Some(origin) = origin.as_ref() {
+                ctx.get_mut_symbols()
+                    .record_import_origin(qualified_symbol_ref, origin.clone());
+            }
+        }
+
+        return Ok(Ast::Call {
+            name: qualified_symbol,
+            args,
+            generic_args,
+            kind,
+            span,
+            id: NodeId::new(),
+        });
+    }
 
     let result: thrustc_generics::SolveResult = match thrustc_generics::solve(
         type_params,
@@ -535,6 +697,50 @@ pub fn synthesize_only_import<'parser>(
                     parameter_names,
                     attributes.clone(),
                     demangling_name.clone(),
+                    span,
+                );
+            }
+            Signature::CompilerIntrinsic {
+                kind,
+                external_name,
+                parameters,
+                attributes,
+                ..
+            } => {
+                if ctx.get_symbols().has_compiler_intrinsic(&symbol.name)
+                    || ctx.get_symbols().has_function(&symbol.name)
+                {
+                    self::check_only_collision(ctx, &symbol.name, access, &origin, span)?;
+                    continue;
+                }
+
+                let symbol_ref: &'parser str = self::leak_parser_string(symbol.name.clone());
+                let external_name_ref: &'parser str =
+                    self::leak_parser_string(external_name.clone());
+                let parameter_types: Vec<Type> =
+                    parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
+
+                let _ = ctx.get_mut_symbols().new_compiler_intrinsic(
+                    symbol_ref,
+                    (
+                        kind.clone(),
+                        thrustc_entities::parser_entities::IntrinsicParametersTypes(
+                            parameter_types.clone(),
+                        ),
+                        attributes.has_ignore_attribute(),
+                    ),
+                );
+
+                ctx.get_mut_symbols()
+                    .record_import_origin(symbol_ref, origin.clone());
+
+                self::synthesize_compiler_intrinsic(
+                    ctx,
+                    symbol_ref,
+                    external_name_ref,
+                    kind.clone(),
+                    parameter_types,
+                    attributes.clone(),
                     span,
                 );
             }
@@ -731,6 +937,34 @@ pub fn synthesize_only_import<'parser>(
                     data: (symbol.name.as_str(), data, metadata, span),
                     kind: kind.clone(),
                     attributes: ThrustAttributes::new(),
+                    span,
+                    id: NodeId::new(),
+                });
+            }
+            Signature::Enum {
+                fields, attributes, ..
+            } => {
+                if ctx.get_symbols().has_global_enum(&symbol.name) {
+                    self::check_only_collision(ctx, &symbol.name, access, &origin, span)?;
+                    continue;
+                }
+
+                let enum_name: &'parser str = self::leak_parser_string(symbol.name.clone());
+                let data: thrustc_ast::ast_logic_data::EnumData<'parser> =
+                    self::build_enum_data(fields, span)?;
+
+                let _ = ctx
+                    .get_mut_symbols()
+                    .new_global_enum(enum_name, (data.clone(), attributes.clone()));
+
+                ctx.get_mut_symbols()
+                    .record_import_origin(enum_name, origin.clone());
+
+                ctx.add_ast_node(Ast::Enum {
+                    name: enum_name,
+                    data,
+                    attributes: attributes.clone(),
+                    kind: Type::Void { span },
                     span,
                     id: NodeId::new(),
                 });
@@ -1128,6 +1362,78 @@ fn synthesize_function<'parser>(
     };
 
     ctx.add_ast_node(declaration);
+}
+
+fn synthesize_compiler_intrinsic<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    symbol: &'parser str,
+    external_name: &'parser str,
+    return_type: thrustc_typesystem::Type,
+    parameter_types: Vec<thrustc_typesystem::Type>,
+    attributes: ThrustAttributes,
+    span: Span,
+) {
+    let parameters: Vec<Ast> = parameter_types
+        .iter()
+        .map(|kind| Ast::CompilerIntrinsicParameter {
+            kind: kind.clone(),
+            span,
+            id: NodeId::new(),
+        })
+        .collect();
+
+    let declaration: Ast = Ast::CompilerIntrinsic {
+        name: symbol,
+        external_name,
+        parameters,
+        parameters_types: parameter_types,
+        return_type,
+        attributes,
+        span,
+        id: NodeId::new(),
+    };
+
+    ctx.add_ast_node(declaration);
+}
+
+fn build_enum_data<'parser>(
+    fields: &[(
+        String,
+        Type,
+        Option<thrustc_compile_time::BuiltinValue>,
+        Span,
+    )],
+    span: Span,
+) -> Result<thrustc_ast::ast_logic_data::EnumData<'parser>, CompilationIssue> {
+    let mut data: thrustc_ast::ast_logic_data::EnumData<'parser> = Vec::with_capacity(fields.len());
+
+    for (field_name, field_type, value, field_span) in fields {
+        let Some(value) = value else {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0028,
+                format!(
+                    "Enum field '{}' cannot be resolved to a compile-time value.",
+                    field_name
+                ),
+                "Enum fields imported from modules must be resolvable to literals.".into(),
+                None,
+                span,
+            ));
+        };
+
+        let field_name_ref: &'parser str = self::leak_parser_string(field_name.clone());
+        data.push((
+            field_name_ref,
+            field_type.clone(),
+            value.to_ast(field_type.clone(), *field_span),
+        ));
+    }
+
+    Ok(data)
+}
+
+fn leak_parser_string<'parser>(value: String) -> &'parser str {
+    Box::leak(value.into_boxed_str())
 }
 
 fn synthesize_global<'parser>(

@@ -1,0 +1,58 @@
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0020";
+
+import std::float;
+import std::tstring;
+
+fn closeTo(actual: f64, expected: f64, epsilon: f64) bool {
+    var difference: f64 = actual - expected;
+
+    if difference < 0.0 {
+        difference = -difference;
+    }
+
+    return difference <= epsilon;
+}
+
+fn main() s32 @public {
+    var nativeCString: CString = "4.5";
+
+    if float::parse[f32]("3.5") as f64 != 3.5 { return 1; }
+    if float::parse[f64]("-0.25") != -0.25 { return 2; }
+    if float::parse[f64]("1e3") != 1000.0 { return 3; }
+    if float::parseCString[f64](nativeCString) != 4.5 { return 18; }
+
+    var single: float::ParseF32Result = float::parseF32("3.5");
+    if !(single->ok) { return 4; }
+    if single->value as f64 != 3.5 { return 5; }
+    if single->end->[0] != '\0' { return 6; }
+
+    var negative: float::ParseF64Result = float::parseF64("-0.25");
+    if !(negative->ok) { return 7; }
+    if negative->value != -0.25 { return 8; }
+
+    var nativeChecked: float::ParseF64Result = float::parseF64CString(nativeCString);
+    if !(nativeChecked->ok) { return 19; }
+    if nativeChecked->value != 4.5 { return 20; }
+    if nativeChecked->end->[0] != '\0' { return 21; }
+
+    var invalid: float::ParseF64Result = float::parseF64("abc");
+    if invalid->ok { return 9; }
+    if invalid->end != ("abc" as ptr) { return 10; }
+
+    var partial: float::ParseF64Result = float::parseF64("3.14xyz");
+    if !(partial->ok) { return 11; }
+    if !closeTo(partial->value, 3.14, 0.000001) { return 12; }
+    if partial->end->[0] != 'x' { return 13; }
+
+    var text := tstring::fromCString("2.25");
+    var fromText: float::ParseF64Result = float::parseF64TString(ref text);
+    if !(fromText->ok) { return 14; }
+    if fromText->value != 2.25 { return 15; }
+    if fromText->end->[0] != '\0' { return 16; }
+    if float::parseTString[f64](ref text) != 2.25 { return 17; }
+
+    tstring::dropTString(ref text);
+
+    return 0;
+}

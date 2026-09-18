@@ -77,7 +77,9 @@ pub fn compile<'ctx>(
     let function_abi_config: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
         generated_function_type.1;
 
-    let llvm_function: FunctionValue = llvm_module.add_function(external_name, function_type, None);
+    let llvm_function: FunctionValue = llvm_module
+        .get_function(external_name)
+        .unwrap_or_else(|| llvm_module.add_function(external_name, function_type, None));
 
     let applicant: LLVMAttributeApplicant<'_> = LLVMAttributeApplicant::Function {
         value: llvm_function,

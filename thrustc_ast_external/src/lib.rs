@@ -29,9 +29,11 @@ impl ExternalSymbol {
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize)]
 pub enum ExternalVariant {
     Function,
+    CompilerIntrinsic,
     Constant,
     Static,
     Struct,
+    Enum,
     CustomType,
     Unavailable,
 }
@@ -40,6 +42,13 @@ pub enum ExternalVariant {
 #[derive(Debug, Clone, Serialize)]
 pub enum ExternalSignature {
     Function {
+        kind: Type,
+        invalid_kind: Type,
+        parameters: Vec<(Type, Span)>,
+        attributes: ThrustAttributes,
+        span: Span,
+    },
+    CompilerIntrinsic {
         kind: Type,
         invalid_kind: Type,
         parameters: Vec<(Type, Span)>,
@@ -59,6 +68,11 @@ pub enum ExternalSignature {
         span: Span,
     },
     Struct {
+        kind: Type,
+        invalid_kind: Type,
+        span: Span,
+    },
+    Enum {
         kind: Type,
         invalid_kind: Type,
         span: Span,

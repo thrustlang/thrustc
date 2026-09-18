@@ -1,0 +1,122 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0017";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0030";
+
+struct Optional [T] @public {
+    value: T,
+    hasValue: bool
+}
+
+fn some [T] (item: T) Optional[T] @public {
+    var stored: T = item;
+
+    return new Optional[T] {
+        value: stored,
+        hasValue: true
+    };
+}
+
+fn none [T] () Optional[T] @public {
+    var optional: Optional[T];
+
+    optional->hasValue = false;
+
+    return optional;
+}
+
+fn hasValue [T] (optional: ptr[Optional[T]]) bool @public {
+    return optional->hasValue;
+}
+
+fn isSome [T] (optional: ptr[Optional[T]]) bool @public {
+    return optional->hasValue;
+}
+
+fn isNone [T] (optional: ptr[Optional[T]]) bool @public {
+    return !(optional->hasValue);
+}
+
+fn unwrap [T] (optional: ptr[Optional[T]]) T @public {
+    return optional->value;
+}
+
+fn unwrapOr [T] (optional: ptr[Optional[T]], fallback: T) T @public {
+    if optional->hasValue {
+        return optional->value;
+    }
+
+    return fallback;
+}
+
+fn valueOr [T] (optional: ptr[Optional[T]], fallback: T) T @public {
+    return unwrapOr(optional, fallback);
+}
+
+fn set [T] (optional: ptr[Optional[T]], value: T) void @public {
+    optional->value = value;
+    optional->hasValue = true;
+}
+
+fn replace [T] (optional: ptr[Optional[T]], value: T) Optional[T] @public {
+    var previous: Optional[T] = optional->[0];
+
+    set(optional, value);
+
+    return previous;
+}
+
+fn clear [T] (optional: ptr[Optional[T]]) void @public {
+    optional->hasValue = false;
+}
+
+fn take [T] (optional: ptr[Optional[T]]) Optional[T] @public {
+    var current: Optional[T] = optional->[0];
+
+    clear(optional);
+
+    return current;
+}
+
+fn orElse [T] (optional: ptr[Optional[T]], fallback: Optional[T]) Optional[T] @public {
+    if optional->hasValue {
+        return optional->[0];
+    }
+
+    return fallback;
+}
+
+fn fromPtr [T] (value: ptr[T]) Optional[ptr[T]] @public {
+    if value == nullptr {
+        return none[ptr[T]]();
+    }
+
+    return some[ptr[T]](value);
+}
+
+fn ptrOrNull [T] (optional: ptr[Optional[ptr[T]]]) ptr[T] @public {
+    if optional->hasValue {
+        return optional->value;
+    }
+
+    return nullptr;
+}

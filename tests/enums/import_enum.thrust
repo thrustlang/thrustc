@@ -1,0 +1,15 @@
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0024";
+
+import "module_enum.thrust" as enumMod;
+
+fn main() s32 @public {
+    if enumMod::Status=>Ok != 0 { return 1; }
+    if enumMod::Status=>Warning != 1 { return 2; }
+    if enumMod::Status=>Error != 2 { return 3; }
+
+    var value: u32 = enumMod::Status=>Error;
+    if value != 2 { return 4; }
+
+    return 0;
+}

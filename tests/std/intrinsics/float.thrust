@@ -1,0 +1,37 @@
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0024";
+
+import std::intrinsics::float as intrinsicFloat;
+import std::intrinsics::float only { absF64 };
+
+fn closeTo(actual: f64, expected: f64, epsilon: f64) bool {
+    var difference: f64 = actual - expected;
+
+    if difference < 0.0 {
+        difference = -difference;
+    }
+
+    return difference <= epsilon;
+}
+
+fn main() s32 @public {
+    if absF64(-4.0) != 4.0 { return 16; }
+
+    if intrinsicFloat::absolute[f64](-2.5) != 2.5 { return 1; }
+    if intrinsicFloat::copySign[f64](2.5, -1.0) != -2.5 { return 2; }
+    if intrinsicFloat::minimum[f64](3.0, 1.5) != 1.5 { return 3; }
+    if intrinsicFloat::maximum[f64](3.0, 1.5) != 3.0 { return 4; }
+    if intrinsicFloat::minNumF64(3.0, 1.5) != 1.5 { return 5; }
+    if intrinsicFloat::maxNumF64(3.0, 1.5) != 3.0 { return 6; }
+    if intrinsicFloat::squareRoot[f64](9.0) != 3.0 { return 7; }
+    if intrinsicFloat::fusedMultiplyAdd[f64](2.0, 3.0, 4.0) != 10.0 { return 8; }
+    if intrinsicFloat::mulAddF64(2.0, 3.0, 4.0) != 10.0 { return 9; }
+    if intrinsicFloat::floor[f64](3.75) != 3.0 { return 10; }
+    if intrinsicFloat::ceiling[f64](3.25) != 4.0 { return 11; }
+    if intrinsicFloat::truncate[f64](-3.75) != -3.0 { return 12; }
+    if intrinsicFloat::round[f64](3.5) != 4.0 { return 13; }
+    if intrinsicFloat::roundEvenF64(2.5) != 2.0 { return 14; }
+    if !closeTo(intrinsicFloat::absolute[f32](-1.25 as f32) as f64, 1.25, 0.000001) { return 15; }
+
+    return 0;
+}

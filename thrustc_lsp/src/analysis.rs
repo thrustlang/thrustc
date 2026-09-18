@@ -561,9 +561,11 @@ fn analyze_imported_modules(uri: &str, text: &str) -> Vec<ImportedModule> {
 fn convert_module_symbol(symbol: &thrustc_preprocessor::signatures::Symbol) -> Option<Symbol> {
     let kind: CompletionKind = match symbol.variant {
         Variant::Function => CompletionKind::Function,
+        Variant::CompilerIntrinsic => CompletionKind::Function,
         Variant::Constant => CompletionKind::Constant,
         Variant::Static => CompletionKind::Variable,
         Variant::Struct => CompletionKind::Struct,
+        Variant::Enum => CompletionKind::Enum,
         Variant::CustomType => CompletionKind::TypeParameter,
     };
     let mut detail: String = String::with_capacity(64);
@@ -581,6 +583,39 @@ fn convert_module_symbol(symbol: &thrustc_preprocessor::signatures::Symbol) -> O
             }
 
             detail.push_str("fn ");
+            detail.push_str(&symbol.name);
+            detail.push('(');
+
+            for (index, (name, ty, _)) in parameters.iter().enumerate() {
+                if index > 0 {
+                    detail.push_str(", ");
+                }
+
+                detail.push_str(name);
+                detail.push_str(": ");
+                detail.push_str(&ty.to_string());
+            }
+
+            detail.push(')');
+
+            if !kind.to_string().is_empty() {
+                detail.push(' ');
+                detail.push_str(&kind.to_string());
+            }
+
+            insert_text = Some(format!("{}($0)", symbol.name));
+        }
+        Signature::CompilerIntrinsic {
+            kind,
+            parameters,
+            attributes,
+            ..
+        } => {
+            if !attributes.has_public_attribute() {
+                return None;
+            }
+
+            detail.push_str("intrinsic ");
             detail.push_str(&symbol.name);
             detail.push('(');
 
@@ -626,6 +661,12 @@ fn convert_module_symbol(symbol: &thrustc_preprocessor::signatures::Symbol) -> O
         Signature::Struct { kind, .. } => {
             detail.push_str("struct: ");
             detail.push_str(&kind.to_string());
+        }
+        Signature::Enum { fields, .. } => {
+            detail.push_str("enum ");
+            detail.push_str(&symbol.name);
+            detail.push_str(" fields: ");
+            detail.push_str(&fields.len().to_string());
         }
         Signature::CustomType {
             kind, attributes, ..
