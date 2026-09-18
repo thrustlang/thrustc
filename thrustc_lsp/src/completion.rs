@@ -931,7 +931,7 @@ fn push_templates(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         "for-loop",
         CompletionKind::Snippet,
         "template",
-        Some("for var ${1:i}: usize = 0; ${1:i} < ${2:limit}; ${1:i} = ${1:i} + 1 {\n    $0\n}"),
+        Some("for var ${1:i}: usize = 0; ${1:i} < ${2:limit}; ${1:i} = ${1:i} + 1; {\n    $0\n}"),
     );
     self::push_item(
         items,
@@ -964,6 +964,14 @@ fn push_templates(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         CompletionKind::Snippet,
         "template",
         Some("if ${1:condition} {\n    $2\n} else {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "else-if-block",
+        CompletionKind::Snippet,
+        "template",
+        Some("else if ${1:condition} {\n    $0\n}"),
     );
     self::push_item(
         items,
