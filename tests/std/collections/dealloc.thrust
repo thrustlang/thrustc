@@ -1,0 +1,78 @@
+/*
+ * Exercises automatic @dealloc resolution for multiple standard collections in
+ * the same translation unit. This catches qualified import name collisions.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::vector;
+import std::collections::vecdeque;
+import std::collections::hashset;
+import std::collections::hashmap;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+fn testVector() s32 {
+    var values @dealloc: vector::Vector[s32] = vector::newVector[s32]();
+
+    vector::pushBack(ref values, 10);
+    vector::pushBack(ref values, 20);
+
+    if vector::getLength(ref values) != 2 { return 1; }
+    if vector::at(ref values, 0) != 10 { return 2; }
+    if vector::at(ref values, 1) != 20 { return 3; }
+
+    return 0;
+}
+
+fn testVecDeque() s32 {
+    var values @dealloc: vecdeque::VecDeque[s32] = vecdeque::newVecDeque[s32]();
+
+    vecdeque::pushBack(ref values, 10);
+    vecdeque::pushFront(ref values, 5);
+
+    if vecdeque::getLength(ref values) != 2 { return 1; }
+    if vecdeque::front(ref values) != 5 { return 2; }
+    if vecdeque::back(ref values) != 10 { return 3; }
+
+    return 0;
+}
+
+fn testHashSet() s32 {
+    var values @dealloc: hashset::HashSet[u64] = hashset::newHashSet[u64]();
+    var key10: u64 = 10;
+    var key20: u64 = 20;
+
+    if !hashset::insert(ref values, ref key10) { return 1; }
+    if !hashset::insert(ref values, ref key20) { return 2; }
+    if !hashset::contains(ref values, ref key10) { return 3; }
+    if hashset::getLength(ref values) != 2 { return 4; }
+
+    return 0;
+}
+
+fn testHashMap() s32 {
+    var values @dealloc: hashmap::HashMap[u64, s32] = hashmap::newHashMap[u64, s32]();
+    var key10: u64 = 10;
+    var key20: u64 = 20;
+    var found: ptr[s32];
+
+    if !hashmap::insert(ref values, ref key10, 100) { return 1; }
+    if !hashmap::insert(ref values, ref key20, 200) { return 2; }
+
+    found = hashmap::get(ref values, ref key10);
+    if found == nullptr { return 3; }
+    if found->[0] != 100 { return 4; }
+    if hashmap::getLength(ref values) != 2 { return 5; }
+
+    return 0;
+}
+
+fn main() s32 @public {
+    if testVector() != 0 { return 1; }
+    if testVecDeque() != 0 { return 2; }
+    if testHashSet() != 0 { return 3; }
+    if testHashMap() != 0 { return 4; }
+
+    return 0;
+}

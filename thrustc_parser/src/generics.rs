@@ -17,6 +17,8 @@
 
 */
 
+#![allow(clippy::too_many_arguments)]
+
 use std::collections::{HashMap, HashSet};
 
 use thrustc_ast::{
@@ -330,6 +332,7 @@ fn resolve_ast<'parser>(
 
                     self::ensure_instantiation(
                         ctx,
+                        &name,
                         &entry,
                         &result.env,
                         &key,
@@ -411,6 +414,7 @@ fn resolve_ast<'parser>(
 
 fn ensure_instantiation<'parser>(
     ctx: &mut ParserContext<'parser>,
+    symbol_key: &str,
     entry: &GenericFunctionEntry,
     env: &thrustc_generics::TypeEnv,
     key: &str,
@@ -492,7 +496,7 @@ fn ensure_instantiation<'parser>(
 
     let demangling_name: String = ctx
         .get_symbols()
-        .get_import_origin(&entry.name)
+        .get_import_origin(symbol_key)
         .and_then(|path| path.file_stem())
         .map_or_else(
             || format!("{}.{}", ctx.get_file().get_base_name(), key),
@@ -518,7 +522,7 @@ fn ensure_instantiation<'parser>(
 
     if let Some(origin) = ctx
         .get_symbols()
-        .get_import_origin(&entry.name)
+        .get_import_origin(symbol_key)
         .map(|path| path.to_path_buf())
     {
         thrustc_generics::record_pending(origin, entry.name.clone(), env.clone());

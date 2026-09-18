@@ -36,8 +36,8 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_mir::{atomicord::ThrustAtomicOrdering, threadmode::ThrustThreadMode};
 use thrustc_parser_external_table::ExternalSymbolTable;
 use thrustc_parser_table::{GenericCustomTypeEntry, GenericFunctionEntry, GenericStructEntry};
-use thrustc_preprocessor::signatures::{Signature, Variant};
 use thrustc_preprocessor::module::Module;
+use thrustc_preprocessor::signatures::{Signature, Variant};
 
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -52,6 +52,8 @@ pub fn build_qualified_expression<'parser>(
     symbol: &'parser str,
     span: Span,
 ) -> Result<thrustc_ast::Ast<'parser>, CompilationIssue> {
+    let qualified_symbol: String = self::qualified_symbol_name(access, symbol);
+
     let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
@@ -119,26 +121,10 @@ pub fn build_qualified_expression<'parser>(
             }
         };
 
-        if ctx.get_symbols().has_function(symbol) {
-            self::check_qualified_collision(ctx, symbol, access, origin.as_ref(), span)?;
-        } else {
-            let _ = ctx.get_mut_symbols().new_function(
-                symbol,
-                (
-                    return_type.clone(),
-                    FunctionParametersTypes(parameter_types.clone()),
-                    FunctionParameterNames(parameter_names.clone()),
-                    has_ignore,
-                ),
-            );
-
-            if let Some(path) = origin.as_ref() {
-                ctx.get_mut_symbols()
-                    .record_import_origin(symbol, path.clone());
-            }
-
+        if !self::has_synthesized_function(ctx, &qualified_symbol) {
             self::synthesize_function(
                 ctx,
+                &qualified_symbol,
                 symbol,
                 return_type.clone(),
                 parameter_types,
@@ -150,7 +136,7 @@ pub fn build_qualified_expression<'parser>(
         }
 
         return Ok(Ast::Call {
-            name: symbol.to_string(),
+            name: qualified_symbol,
             args,
             generic_args: Vec::with_capacity(0),
             kind: return_type,
@@ -269,6 +255,46 @@ pub fn build_qualified_expression<'parser>(
     ))
 }
 
+fn qualified_symbol_name(access: &[String], symbol: &str) -> String {
+    let mut name: String = String::with_capacity(symbol.len() + 32);
+
+    name.push_str("__qualified_");
+
+    for part in access {
+        for ch in part.chars() {
+            if ch == '_' || ch.is_ascii_alphanumeric() {
+                name.push(ch);
+            } else {
+                name.push('_');
+            }
+        }
+
+        name.push('_');
+    }
+
+    name.push_str(symbol);
+
+    name
+}
+
+fn has_synthesized_function(ctx: &ParserContext<'_>, name: &str) -> bool {
+    for node in ctx.get_ast() {
+        let Ast::Function {
+            name: function_name,
+            ..
+        } = node
+        else {
+            continue;
+        };
+
+        if function_name == name {
+            return true;
+        }
+    }
+
+    false
+}
+
 fn build_qualified_generic_call<'parser>(
     ctx: &mut ParserContext<'parser>,
     access: &[String],
@@ -286,28 +312,6 @@ fn build_qualified_generic_call<'parser>(
     let parameter_types: Vec<Type> = parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
     let parameter_names: Vec<String> = parameters.iter().map(|(name, ..)| name.clone()).collect();
     let has_ignore: bool = attributes.has_ignore_attribute();
-
-    if !ctx.get_symbols().has_generic_function(symbol) {
-        ctx.get_mut_symbols().new_generic_function(
-            symbol,
-            GenericFunctionEntry {
-                name: symbol.to_string(),
-                type_params: type_params.to_vec(),
-                parameter_types: parameter_types.clone(),
-                parameter_names: parameter_names.clone(),
-                return_type: kind.clone(),
-                attributes: attributes.clone(),
-                has_local_template: false,
-                has_varargs: has_ignore,
-                span,
-            },
-        );
-
-        if let Some(path) = origin.as_ref() {
-            ctx.get_mut_symbols()
-                .record_import_origin(symbol, path.clone());
-        }
-    }
 
     let mut generic_args: Vec<Type> = Vec::with_capacity(type_params.len());
 
@@ -372,7 +376,7 @@ fn build_qualified_generic_call<'parser>(
         })
         .collect();
 
-    let kind: Type = match thrustc_generics::solve(
+    let result: thrustc_generics::SolveResult = match thrustc_generics::solve(
         type_params,
         &generic_args,
         &parameter_types,
@@ -381,19 +385,58 @@ fn build_qualified_generic_call<'parser>(
         has_ignore,
         span,
     ) {
-        Ok(result) => result.return_type,
+        Ok(result) => result,
         Err(error) => {
             ctx.add_error_report(error);
 
-            Type::Void { span }
+            return Ok(Ast::invalid_ast(span));
         }
     };
 
+    let origin_key: Option<String> = origin
+        .as_ref()
+        .map(|path| path.to_string_lossy().to_string());
+    let key: String =
+        thrustc_generics::instantiation_key(origin_key.as_deref(), symbol, &result.env);
+
+    if !self::has_synthesized_function(ctx, &key) {
+        let concrete_parameter_types: Vec<Type> = parameter_types
+            .iter()
+            .map(|parameter| thrustc_generics::substitute(parameter, &result.env))
+            .collect();
+
+        let parameter_names_refs: Vec<&str> = parameter_names.iter().map(String::as_str).collect();
+        let concrete_return_type: Type = thrustc_generics::substitute(&kind, &result.env);
+        let demangling_name: String = origin
+            .as_ref()
+            .and_then(|path| path.file_stem())
+            .map_or_else(
+                || format!("{}.{key}", access.join("_")),
+                |module| format!("{}.{}", module.to_string_lossy(), key),
+            );
+
+        self::synthesize_function(
+            ctx,
+            &key,
+            symbol,
+            concrete_return_type.clone(),
+            concrete_parameter_types,
+            parameter_names_refs,
+            attributes.clone(),
+            demangling_name,
+            span,
+        );
+    }
+
+    if let Some(origin) = origin {
+        thrustc_generics::record_pending(origin, symbol.to_string(), result.env);
+    }
+
     Ok(Ast::Call {
-        name: symbol.to_string(),
+        name: key,
         args,
-        generic_args,
-        kind,
+        generic_args: Vec::with_capacity(0),
+        kind: result.return_type,
         span,
         id: NodeId::new(),
     })
@@ -485,6 +528,7 @@ pub fn synthesize_only_import<'parser>(
 
                 self::synthesize_function(
                     ctx,
+                    &symbol.name,
                     &symbol.name,
                     return_type,
                     parameter_types,
@@ -728,10 +772,8 @@ pub fn ensure_qualified_function<'parser>(
     access: &[String],
     symbol: &'parser str,
     span: Span,
-) -> Result<(), CompilationIssue> {
-    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
-        .resolve(access)
-        .map(|module| module.get_path().to_path_buf());
+) -> Result<String, CompilationIssue> {
+    let qualified_symbol: String = self::qualified_symbol_name(access, symbol);
 
     let Some(Signature::Function {
         kind,
@@ -754,57 +796,18 @@ pub fn ensure_qualified_function<'parser>(
     let return_type: Type = kind.clone();
     let parameter_types: Vec<Type> = parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
     let parameter_names: Vec<&str> = parameters.iter().map(|(name, ..)| name.as_str()).collect();
-    let has_ignore: bool = attributes.has_ignore_attribute();
 
-    if let Some(type_params) = type_params {
-        if !ctx.get_symbols().has_generic_function(symbol) {
-            ctx.get_mut_symbols().new_generic_function(
-                symbol,
-                GenericFunctionEntry {
-                    name: symbol.to_string(),
-                    type_params: type_params.clone(),
-                    parameter_types: parameter_types.clone(),
-                    parameter_names: parameter_names.iter().map(|name| name.to_string()).collect(),
-                    return_type: return_type.clone(),
-                    attributes: attributes.clone(),
-                    has_local_template: false,
-                    has_varargs: has_ignore,
-                    span,
-                },
-            );
-
-            if let Some(path) = origin.as_ref() {
-                ctx.get_mut_symbols()
-                    .record_import_origin(symbol, path.clone());
-            }
-        }
-
-        return Ok(());
+    if type_params.is_some() {
+        return Ok(qualified_symbol);
     }
 
-    if ctx.get_symbols().has_function(symbol) {
-        self::check_qualified_collision(ctx, symbol, access, origin.as_ref(), span)?;
-
-        return Ok(());
-    }
-
-    let _ = ctx.get_mut_symbols().new_function(
-        symbol,
-        (
-            return_type.clone(),
-            FunctionParametersTypes(parameter_types.clone()),
-            FunctionParameterNames(parameter_names.clone()),
-            has_ignore,
-        ),
-    );
-
-    if let Some(path) = origin.as_ref() {
-        ctx.get_mut_symbols()
-            .record_import_origin(symbol, path.clone());
+    if self::has_synthesized_function(ctx, &qualified_symbol) {
+        return Ok(qualified_symbol);
     }
 
     self::synthesize_function(
         ctx,
+        &qualified_symbol,
         symbol,
         return_type,
         parameter_types,
@@ -814,16 +817,16 @@ pub fn ensure_qualified_function<'parser>(
         span,
     );
 
-    Ok(())
+    Ok(qualified_symbol)
 }
 
 pub fn ensure_deallocator_for_type<'parser>(
     ctx: &mut ParserContext<'parser>,
     kind: &Type,
     span: Span,
-) -> Result<Option<String>, CompilationIssue> {
-    let found: Option<(Vec<String>, &'parser str)> = {
-        let mut found: Option<(Vec<String>, &'parser str)> = None;
+) -> Result<Option<(String, Vec<Type>)>, CompilationIssue> {
+    let found: Option<(Vec<String>, &'parser str, Vec<Type>)> = {
+        let mut found: Option<(Vec<String>, &'parser str, Vec<Type>)> = None;
 
         for module in ctx.get_modules() {
             let access: Vec<String> = if let Some(alias) = module.get_alias() {
@@ -845,20 +848,100 @@ pub fn ensure_deallocator_for_type<'parser>(
         found
     };
 
-    let Some((access, symbol)) = found else {
+    let Some((access, symbol, generic_args)) = found else {
         return Ok(None);
     };
 
-    self::ensure_qualified_function(ctx, &access, symbol, span)?;
+    let deallocator_name: String = if generic_args.is_empty() {
+        self::ensure_qualified_function(ctx, &access, symbol, span)?
+    } else {
+        self::ensure_concrete_qualified_function(ctx, &access, symbol, &generic_args, span)?
+    };
 
-    Ok(Some(symbol.to_string()))
+    Ok(Some((deallocator_name, Vec::with_capacity(0))))
+}
+
+fn ensure_concrete_qualified_function<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    access: &[String],
+    symbol: &'parser str,
+    generic_args: &[Type],
+    span: Span,
+) -> Result<String, CompilationIssue> {
+    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+        .resolve(access)
+        .map(|module| module.get_path().to_path_buf());
+
+    let Some(Signature::Function {
+        kind,
+        parameters,
+        attributes,
+        type_params: Some(type_params),
+        ..
+    }) = self::resolve_signature(ctx, access, symbol, Variant::Function)
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' not found.", access.join("::"), symbol),
+            "The module does not export a function with that name.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let mut env: thrustc_generics::TypeEnv =
+        thrustc_generics::TypeEnv::with_capacity(type_params.len());
+
+    for (parameter, argument) in type_params.iter().zip(generic_args.iter()) {
+        env.insert(parameter.clone(), argument.clone());
+    }
+
+    let origin_key: Option<String> = origin
+        .as_ref()
+        .map(|path| path.to_string_lossy().to_string());
+    let key: String = thrustc_generics::instantiation_key(origin_key.as_deref(), symbol, &env);
+
+    if !self::has_synthesized_function(ctx, &key) {
+        let parameter_types: Vec<Type> = parameters
+            .iter()
+            .map(|(_, ty, _)| thrustc_generics::substitute(ty, &env))
+            .collect();
+        let parameter_names: Vec<&str> =
+            parameters.iter().map(|(name, ..)| name.as_str()).collect();
+        let return_type: Type = thrustc_generics::substitute(kind, &env);
+        let concrete_demangling_name: String = origin
+            .as_ref()
+            .and_then(|path| path.file_stem())
+            .map_or_else(
+                || format!("{}.{key}", access.join("_")),
+                |module| format!("{}.{}", module.to_string_lossy(), key),
+            );
+
+        self::synthesize_function(
+            ctx,
+            &key,
+            symbol,
+            return_type,
+            parameter_types,
+            parameter_names,
+            attributes.clone(),
+            concrete_demangling_name,
+            span,
+        );
+    }
+
+    if let Some(origin) = origin {
+        thrustc_generics::record_pending(origin, symbol.to_string(), env);
+    }
+
+    Ok(key)
 }
 
 fn find_deallocator_in_module<'parser>(
     module: &'parser Module,
     access: Vec<String>,
     kind: &Type,
-) -> Option<(Vec<String>, &'parser str)> {
+) -> Option<(Vec<String>, &'parser str, Vec<Type>)> {
     for symbol in module.get_symbols() {
         if symbol.variant != Variant::Function {
             continue;
@@ -878,11 +961,54 @@ fn find_deallocator_in_module<'parser>(
             continue;
         }
 
-        if type_params.is_some() {
+        if parameters.len() != 1 {
             continue;
         }
 
-        if parameters.len() != 1 {
+        let expected_arg: Type = Type::Ptr {
+            subtype: Some(std::boxed::Box::new(kind.clone())),
+            address_space: None,
+            span: kind.get_span(),
+        };
+
+        if let Some(type_params) = type_params {
+            let Type::Ptr {
+                subtype: Some(subtype),
+                ..
+            } = &parameters[0].1
+            else {
+                continue;
+            };
+
+            if !self::deallocator_type_matches(subtype, kind) {
+                continue;
+            }
+
+            let parameter_types: Vec<Type> =
+                parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
+            let argument_types: Vec<Type> = vec![expected_arg];
+
+            if let Ok(result) = thrustc_generics::solve(
+                type_params,
+                &[],
+                &parameter_types,
+                &argument_types,
+                &Type::Void {
+                    span: kind.get_span(),
+                },
+                false,
+                kind.get_span(),
+            ) {
+                let generic_args: Vec<Type> = type_params
+                    .iter()
+                    .filter_map(|parameter| result.env.get(parameter).cloned())
+                    .collect();
+
+                if generic_args.len() == type_params.len() {
+                    return Some((access, symbol.name.as_str(), generic_args));
+                }
+            }
+
             continue;
         }
 
@@ -895,7 +1021,7 @@ fn find_deallocator_in_module<'parser>(
         };
 
         if subtype.as_ref() == kind {
-            return Some((access, symbol.name.as_str()));
+            return Some((access, symbol.name.as_str(), Vec::with_capacity(0)));
         }
     }
 
@@ -904,12 +1030,33 @@ fn find_deallocator_in_module<'parser>(
 
         submodule_access.push(submodule.get_name().to_string());
 
-        if let Some(candidate) = self::find_deallocator_in_module(submodule, submodule_access, kind) {
+        if let Some(candidate) = self::find_deallocator_in_module(submodule, submodule_access, kind)
+        {
             return Some(candidate);
         }
     }
 
     None
+}
+
+fn deallocator_type_matches(declared: &Type, provided: &Type) -> bool {
+    match (declared, provided) {
+        (Type::Struct { name: left, .. }, Type::Struct { name: right, .. }) => left == right,
+        (Type::Const(left, _), Type::Const(right, _)) => {
+            self::deallocator_type_matches(left, right)
+        }
+        (
+            Type::Ptr {
+                subtype: Some(left),
+                ..
+            },
+            Type::Ptr {
+                subtype: Some(right),
+                ..
+            },
+        ) => self::deallocator_type_matches(left, right),
+        _ => true,
+    }
 }
 
 pub fn resolve_qualified_generic<'parser>(
@@ -936,10 +1083,11 @@ pub fn resolve_qualified_generic<'parser>(
 
 fn synthesize_function<'parser>(
     ctx: &mut ParserContext<'parser>,
-    symbol: &'parser str,
+    symbol: &str,
+    original_name: &str,
     return_type: thrustc_typesystem::Type,
     parameter_types: Vec<thrustc_typesystem::Type>,
-    parameter_names: Vec<&'parser str>,
+    parameter_names: Vec<&str>,
     mut attributes: ThrustAttributes,
     demangling_name: String,
     span: Span,
@@ -969,7 +1117,7 @@ fn synthesize_function<'parser>(
         name: symbol.to_string(),
         ascii_name: symbol.to_string(),
         demangling_name,
-        original_name: Some(symbol.to_string()),
+        original_name: Some(original_name.to_string()),
         parameters,
         parameter_types,
         body: None,

@@ -29,9 +29,9 @@ import std::tstring;
 
 const HASHSET_INITIAL_CAPACITY: usize @public = 8;
 
-const KEY_MODE_RAW: u8 @public = 0;
-const KEY_MODE_CSTRING: u8 @public = 1;
-const KEY_MODE_TSTRING: u8 @public = 2;
+const KEY_MODE_RAW: u8 = 0;
+const KEY_MODE_CSTRING: u8 = 1;
+const KEY_MODE_TSTRING: u8 = 2;
 
 const MAX_LOAD_PERCENT: usize = 70;
 
@@ -83,7 +83,7 @@ fn withCapacity [K] (capacity: usize) HashSet[K] @public {
     return set;
 }
 
-fn dropHashSet [K] (set: ptr[HashSet[K]]) void @public {
+fn dropHashSet [K] (set: ptr[HashSet[K]]) void @public @deallocator {
     clear(set);
 
     if set->entries != nullptr {

@@ -1,0 +1,22 @@
+/*
+ * Exercises automatic @dealloc resolution for std::collections::vector.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::vector;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var values @dealloc: vector::Vector[s32] = vector::newVector[s32]();
+
+    vector::pushBack(ref values, 10);
+    vector::pushBack(ref values, 20);
+
+    if vector::getLength(ref values) != 2 { return 1; }
+    if vector::at(ref values, 0) != 10 { return 2; }
+    if vector::at(ref values, 1) != 20 { return 3; }
+
+    return 0;
+}

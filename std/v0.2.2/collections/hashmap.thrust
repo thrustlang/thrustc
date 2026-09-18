@@ -29,9 +29,9 @@ import std::tstring;
 
 const HASHMAP_INITIAL_CAPACITY: usize @public = 8;
 
-const KEY_MODE_RAW: u8 @public = 0;
-const KEY_MODE_CSTRING: u8 @public = 1;
-const KEY_MODE_TSTRING: u8 @public = 2;
+const KEY_MODE_RAW: u8 = 0;
+const KEY_MODE_CSTRING: u8 = 1;
+const KEY_MODE_TSTRING: u8 = 2;
 
 const MAX_LOAD_PERCENT: usize = 70;
 
@@ -84,7 +84,7 @@ fn withCapacity [K, V] (capacity: usize) HashMap[K, V] @public {
     return map;
 }
 
-fn dropHashMap [K, V] (map: ptr[HashMap[K, V]]) void @public {
+fn dropHashMap [K, V] (map: ptr[HashMap[K, V]]) void @public @deallocator {
     clear(map);
 
     if map->entries != nullptr {

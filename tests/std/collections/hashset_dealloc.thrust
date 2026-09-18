@@ -1,0 +1,22 @@
+/*
+ * Exercises automatic @dealloc resolution for std::collections::hashset.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::hashset;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var values @dealloc: hashset::HashSet[u64] = hashset::newHashSet[u64]();
+    var key10: u64 = 10;
+    var key20: u64 = 20;
+
+    if !hashset::insert(ref values, ref key10) { return 1; }
+    if !hashset::insert(ref values, ref key20) { return 2; }
+    if !hashset::contains(ref values, ref key10) { return 3; }
+    if hashset::getLength(ref values) != 2 { return 4; }
+
+    return 0;
+}

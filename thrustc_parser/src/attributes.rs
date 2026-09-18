@@ -18,19 +18,19 @@
 */
 
 use ahash::{HashMap, HashMapExt};
-use thrustc_ast::{traits::AstCodeLocation, Ast};
-use thrustc_attributes::{linkage::ThrustLinkage, ThrustAttribute, ThrustAttributes};
+use thrustc_ast::{Ast, traits::AstCodeLocation};
+use thrustc_attributes::{ThrustAttribute, ThrustAttributes, linkage::ThrustLinkage};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
-use thrustc_token::{traits::TokenExtensions, Token};
+use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{
-    traits::{TokenTypeAttributesExtensions, TokenTypeExtensions},
     TokenType,
+    traits::{TokenTypeAttributesExtensions, TokenTypeExtensions},
 };
 use thrustc_typesystem::Type;
 
-use crate::{expressions, typegeneration, ParserContext};
+use crate::{ParserContext, expressions, typegeneration};
 
 pub fn build_compiler_attributes<'parser>(
     ctx: &mut ParserContext<'parser>,

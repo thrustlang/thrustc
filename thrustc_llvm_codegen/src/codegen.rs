@@ -19,12 +19,12 @@
 
 #![allow(clippy::collapsible_if)]
 
+use inkwell::AddressSpace;
 use inkwell::basic_block::BasicBlock;
 use inkwell::context::Context;
 use inkwell::module::{Linkage, Module};
 use inkwell::types::{ArrayType, BasicTypeEnum, StructType};
 use inkwell::values::{BasicMetadataValueEnum, GlobalValue, PointerValue, StructValue};
-use inkwell::AddressSpace;
 use inkwell::{builder::Builder, values::BasicValueEnum};
 use thrustc_ast::ast_metadata::{ConstantMetadata, LocalMetadata, ReferenceType, StaticMetadata};
 use thrustc_attributes::traits::ThrustAttributesExtensions;
@@ -49,14 +49,14 @@ use crate::{
     type_cast, typegeneration,
 };
 
+use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeLocation;
 use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_ast::traits::AstStandardExtensions;
-use thrustc_ast::Ast;
+use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::{
     ConstantTypeExtensions, TypeIsExtensions, TypePointerExtensions, TypeStructExtensions,
 };
-use thrustc_typesystem::Type;
 
 #[derive(Debug)]
 pub struct LLVMCodegen<'a, 'ctx> {
@@ -411,8 +411,6 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                                 || node.is_continue_keyword()
                                 || node.is_continueall_keyword()
                             {
-                                self.codegen_deallocations(nodes);
-
                                 for postnode in post.iter() {
                                     self.codegen_post_executation(postnode);
                                 }
@@ -420,8 +418,6 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                                 self.codegen_block(node);
                             } else {
                                 self.codegen_block(node);
-
-                                self.codegen_deallocations(nodes);
 
                                 for postnode in post.iter() {
                                     self.codegen_post_executation(postnode);

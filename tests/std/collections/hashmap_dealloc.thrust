@@ -1,0 +1,26 @@
+/*
+ * Exercises automatic @dealloc resolution for std::collections::hashmap.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::hashmap;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var values @dealloc: hashmap::HashMap[u64, s32] = hashmap::newHashMap[u64, s32]();
+    var key10: u64 = 10;
+    var key20: u64 = 20;
+    var found: ptr[s32];
+
+    if !hashmap::insert(ref values, ref key10, 100) { return 1; }
+    if !hashmap::insert(ref values, ref key20, 200) { return 2; }
+
+    found = hashmap::get(ref values, ref key10);
+    if found == nullptr { return 3; }
+    if found->[0] != 100 { return 4; }
+    if hashmap::getLength(ref values) != 2 { return 5; }
+
+    return 0;
+}

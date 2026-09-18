@@ -52,7 +52,7 @@ fn withCapacity [T] (capacity: usize) Vector[T] @public {
     return vector;
 }
 
-fn dropVector [T] (vector: ptr[Vector[T]]) void @public {
+fn dropVector [T] (vector: ptr[Vector[T]]) void @public @deallocator {
     if vector->data != nullptr {
         mem::freeMemory(vector->data as ptr);
     }

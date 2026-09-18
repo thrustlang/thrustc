@@ -56,7 +56,7 @@ fn withCapacity [T] (capacity: usize) VecDeque[T] @public {
     return deque;
 }
 
-fn dropVecDeque [T] (deque: ptr[VecDeque[T]]) void @public {
+fn dropVecDeque [T] (deque: ptr[VecDeque[T]]) void @public @deallocator {
     if deque->data != nullptr {
         mem::freeMemory(deque->data as ptr);
     }
