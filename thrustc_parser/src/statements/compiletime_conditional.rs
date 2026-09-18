@@ -41,7 +41,7 @@ pub fn build_compiletime_conditional<'parser>(
         CompileTimeCondition::Known(true) => active = Some(self::parse_branch(ctx)?),
         CompileTimeCondition::Known(false) => self::parse_branch_discarded(ctx)?,
         CompileTimeCondition::Deferred(condition) => {
-            return self::parse_deferred_compiletime_conditional(ctx, condition, span);
+            return self::parse_deferred_compiletime_conditional(ctx, *condition, span);
         }
     }
 
@@ -55,7 +55,7 @@ pub fn build_compiletime_conditional<'parser>(
                 }
                 CompileTimeCondition::Known(_) => self::parse_branch_discarded(ctx)?,
                 CompileTimeCondition::Deferred(condition) if active.is_none() => {
-                    return self::parse_deferred_compiletime_conditional(ctx, condition, span);
+                    return self::parse_deferred_compiletime_conditional(ctx, *condition, span);
                 }
                 CompileTimeCondition::Deferred(_) => self::parse_branch_discarded(ctx)?,
             }
@@ -78,7 +78,7 @@ pub fn build_compiletime_conditional<'parser>(
                 }
                 CompileTimeCondition::Known(_) => self::parse_branch_discarded(ctx)?,
                 CompileTimeCondition::Deferred(condition) if active.is_none() => {
-                    return self::parse_deferred_compiletime_conditional(ctx, condition, span);
+                    return self::parse_deferred_compiletime_conditional(ctx, *condition, span);
                 }
                 CompileTimeCondition::Deferred(_) => self::parse_branch_discarded(ctx)?,
             }
@@ -249,9 +249,9 @@ pub(crate) fn evaluate_condition<'parser>(
 
     match thrustc_compile_time::fold(&expression) {
         Some(BuiltinValue::Bool(condition)) => Ok(CompileTimeCondition::Known(condition)),
-        _ if self::contains_deferred_builtin(&expression) => {
-            Ok(CompileTimeCondition::Deferred(expression))
-        }
+        _ if self::contains_deferred_builtin(&expression) => Ok(CompileTimeCondition::Deferred(
+            std::boxed::Box::new(expression),
+        )),
         _ => Err(CompilationIssue::Error(
             CompilationIssueCode::E0019,
             "The compile-time condition must be a constant boolean.".into(),
@@ -264,7 +264,7 @@ pub(crate) fn evaluate_condition<'parser>(
 
 pub(crate) enum CompileTimeCondition<'parser> {
     Known(bool),
-    Deferred(Ast<'parser>),
+    Deferred(Box<Ast<'parser>>),
 }
 
 impl<'parser> CompileTimeCondition<'parser> {
@@ -277,7 +277,7 @@ impl<'parser> CompileTimeCondition<'parser> {
                 value as u64,
                 Span::nothing(),
             ),
-            Self::Deferred(ast) => ast,
+            Self::Deferred(ast) => *ast,
         }
     }
 }

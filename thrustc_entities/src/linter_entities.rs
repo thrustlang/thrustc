@@ -17,7 +17,6 @@
 
 */
 
-
 use ahash::AHashMap as HashMap;
 use thrustc_code_location::Span;
 

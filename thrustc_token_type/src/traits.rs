@@ -17,7 +17,6 @@
 
 */
 
-
 pub trait TokenTypeBuiltinExtensions {
     fn is_builtin(&self) -> bool;
 }

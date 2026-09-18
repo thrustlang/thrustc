@@ -76,7 +76,10 @@ pub fn solve(
         if !env.contains_key(parameter) {
             return Err(CompilationIssue::Error(
                 CompilationIssueCode::E0051,
-                format!("Could not infer the generic type parameter '{}'.", parameter),
+                format!(
+                    "Could not infer the generic type parameter '{}'.",
+                    parameter
+                ),
                 "Provide it explicitly between brackets or make it appear in the arguments.".into(),
                 None,
                 span,

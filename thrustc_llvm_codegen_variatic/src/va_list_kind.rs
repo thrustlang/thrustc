@@ -146,10 +146,7 @@ pub fn build_va_list_llvm_type<'ctx>(
             .into(),
 
         VaListKind::AAPCSABI => context
-            .struct_type(
-                &[context.ptr_type(AddressSpace::default()).into()],
-                false,
-            )
+            .struct_type(&[context.ptr_type(AddressSpace::default()).into()], false)
             .into(),
 
         VaListKind::HexagonABI => context

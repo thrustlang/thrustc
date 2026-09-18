@@ -24,12 +24,12 @@ use thrustc_ast::{
     ast_logic_data::{ConstructorData, EnumData, StructureData},
     ast_metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 };
+use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{
     AssemblerFunction, ConstantSymbol, EnumSymbol, FoundSymbolId, Function, Intrinsic, LLISymbol,
     LocalSymbol, ParameterSymbol, StaticSymbol, Struct,
 };
 use thrustc_errors::{CompilationIssue, CompilationPosition};
-use thrustc_code_location::Span;
 use thrustc_typesystem::{Type, traits::TypeStructExtensions, type_metadata::StructTypeMetadata};
 
 use crate::traits::{

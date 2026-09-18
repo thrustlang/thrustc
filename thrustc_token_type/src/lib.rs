@@ -112,6 +112,8 @@ pub enum TokenType {
     Thunk,
     Constructor,
     Destructor,
+    Dealloc,
+    Deallocator,
     Promote,
 
     // Compile-time conditional compilation

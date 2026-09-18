@@ -19,8 +19,8 @@
 
 use thrustc_ast::Ast;
 use thrustc_attributes::{
-    ThrustAttribute, ThrustAttributeComparator, ThrustAttributes,
     traits::{ThrustAttributeComparatorExtensions, ThrustAttributesExtensions},
+    ThrustAttribute, ThrustAttributeComparator, ThrustAttributes,
 };
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
@@ -111,6 +111,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             Ast::Function {
                 attributes,
                 body,
+                parameter_types,
                 return_type,
                 span,
                 ..
@@ -145,6 +146,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                     attributes,
                     AttributeCheckerAttributeApplicant::Function {
                         return_type,
+                        parameter_types,
                         has_body: body.is_some(),
                     },
                     *span,
@@ -267,7 +269,11 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
         span: Span,
     ) {
         match applicant {
-            AttributeCheckerAttributeApplicant::Function { return_type, .. } => {
+            AttributeCheckerAttributeApplicant::Function {
+                return_type,
+                parameter_types,
+                ..
+            } => {
                 self.check_irrelevant_attributes(attributes, applicant);
                 self.check_illogical_attributes(attributes, applicant);
 
@@ -351,6 +357,36 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Functions that run after the entrypoint cannot have custom linkage."
                                 .into(),
                             "You should remove it.".into(),
+                            None,
+                            attr.get_span(),
+                        ));
+                    }
+                }
+
+                if let Some(attr) = attributes.get_attr(ThrustAttributeComparator::Deallocator) {
+                    if !return_type.is_void_type() {
+                        self.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0013,
+                            "Deallocator functions should not return anything.".into(),
+                            "Use a void return type.".into(),
+                            None,
+                            attr.get_span(),
+                        ));
+                    }
+
+                    if parameter_types.len() != 1 {
+                        self.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0013,
+                            "Deallocator functions should have exactly one parameter.".into(),
+                            "Use one parameter with pointer type, such as ptr[T].".into(),
+                            None,
+                            attr.get_span(),
+                        ));
+                    } else if !parameter_types[0].is_ptr_type() {
+                        self.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0013,
+                            "Deallocator function parameter should be a pointer.".into(),
+                            "Use one parameter with pointer type, such as ptr[T].".into(),
                             None,
                             attr.get_span(),
                         ));
@@ -634,6 +670,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             ThrustAttributeComparator::Destructor,
             ThrustAttributeComparator::Cuda,
             ThrustAttributeComparator::Promote,
+            ThrustAttributeComparator::Deallocator,
         ];
 
         const VALID_INTRINSIC_ATTRIBUTES: &[ThrustAttributeComparator] = &[
@@ -703,6 +740,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 
         const VALID_LOCAL_ATTRIBUTES: &[ThrustAttributeComparator] = &[
             ThrustAttributeComparator::Heap,
+            ThrustAttributeComparator::Dealloc,
             ThrustAttributeComparator::Align,
         ];
 

@@ -1,9 +1,9 @@
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationPosition};
 use thrustc_llvm_nvidia_cuda_abi::CudaABIContext;
 use thrustc_llvm_system_v_abi::SystemVABIContext;
 use thrustc_logging::LoggingType;
-use thrustc_code_location::Span;
 
 pub fn abort_system_v_abi_codegen(
     context: &mut SystemVABIContext,

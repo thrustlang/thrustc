@@ -312,9 +312,7 @@ impl CompileTimeBuiltinFunction for IsAix {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        Ok(BuiltinValue::Bool(
-            self::target_triple(context).is_os_aix(),
-        ))
+        Ok(BuiltinValue::Bool(self::target_triple(context).is_os_aix()))
     }
 }
 
@@ -608,7 +606,9 @@ impl CompileTimeBuiltinFunction for IsPpc {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        Ok(BuiltinValue::Bool(self::target_triple(context).is_ppc_arch()))
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_ppc_arch(),
+        ))
     }
 }
 
@@ -968,7 +968,9 @@ impl CompileTimeBuiltinFunction for IsizeWidth {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        Ok(BuiltinValue::Integer(context.target_info.isize_width() as u64))
+        Ok(BuiltinValue::Integer(
+            context.target_info.isize_width() as u64
+        ))
     }
 }
 
@@ -996,7 +998,9 @@ impl CompileTimeBuiltinFunction for UsizeWidth {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        Ok(BuiltinValue::Integer(context.target_info.usize_width() as u64))
+        Ok(BuiltinValue::Integer(
+            context.target_info.usize_width() as u64
+        ))
     }
 }
 
@@ -1099,7 +1103,11 @@ impl CompileTimeBuiltinFunction for TargetCPU {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        let cpu: &str = context.options.get_llvm_backend().get_target_cpu().get_cpu_name();
+        let cpu: &str = context
+            .options
+            .get_llvm_backend()
+            .get_target_cpu()
+            .get_cpu_name();
 
         Ok(BuiltinValue::CString(cpu.as_bytes().to_vec()))
     }

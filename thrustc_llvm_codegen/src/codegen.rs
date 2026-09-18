@@ -19,15 +19,16 @@
 
 #![allow(clippy::collapsible_if)]
 
-use inkwell::AddressSpace;
 use inkwell::basic_block::BasicBlock;
 use inkwell::context::Context;
 use inkwell::module::{Linkage, Module};
 use inkwell::types::{ArrayType, BasicTypeEnum, StructType};
-use inkwell::values::{GlobalValue, PointerValue, StructValue};
+use inkwell::values::{BasicMetadataValueEnum, GlobalValue, PointerValue, StructValue};
+use inkwell::AddressSpace;
 use inkwell::{builder::Builder, values::BasicValueEnum};
 use thrustc_ast::ast_metadata::{ConstantMetadata, LocalMetadata, ReferenceType, StaticMetadata};
-use thrustc_attributes::ThrustAttributes;
+use thrustc_attributes::traits::ThrustAttributesExtensions;
+use thrustc_attributes::{ThrustAttribute, ThrustAttributeComparator, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_entities::{GlobalConstant, GlobalStatic, LocalConstant, LocalStatic, LocalVariable};
 use thrustc_llvm_attributes::LLVMAttributes;
@@ -48,13 +49,14 @@ use crate::{
     type_cast, typegeneration,
 };
 
-use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeLocation;
 use thrustc_ast::traits::AstMemoryExtensions;
-use thrustc_typesystem::Type;
+use thrustc_ast::traits::AstStandardExtensions;
+use thrustc_ast::Ast;
 use thrustc_typesystem::traits::{
     ConstantTypeExtensions, TypeIsExtensions, TypePointerExtensions, TypeStructExtensions,
 };
+use thrustc_typesystem::Type;
 
 #[derive(Debug)]
 pub struct LLVMCodegen<'a, 'ctx> {
@@ -402,12 +404,40 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         let is_final_node: bool = idx == nodes_size.saturating_sub(1);
 
                         if is_final_node {
-                            for postnode in post.iter() {
-                                self.codegen_post_executation(postnode);
+                            if node.is_terminator_keyword()
+                                || node.is_unreacheable_keyword()
+                                || node.is_break_keyword()
+                                || node.is_breakall_keyword()
+                                || node.is_continue_keyword()
+                                || node.is_continueall_keyword()
+                            {
+                                self.codegen_deallocations(nodes);
+
+                                for postnode in post.iter() {
+                                    self.codegen_post_executation(postnode);
+                                }
+
+                                self.codegen_block(node);
+                            } else {
+                                self.codegen_block(node);
+
+                                self.codegen_deallocations(nodes);
+
+                                for postnode in post.iter() {
+                                    self.codegen_post_executation(postnode);
+                                }
                             }
+
+                            continue;
                         }
 
                         self.codegen_block(node);
+                    }
+
+                    if nodes.is_empty() {
+                        for postnode in post.iter() {
+                            self.codegen_post_executation(postnode);
+                        }
                     }
                 }
 
@@ -434,6 +464,119 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
             node => self.codegen_conditionals(node),
         }
+    }
+
+    fn codegen_deallocations(&mut self, nodes: &'ctx [Ast]) {
+        for node in nodes.iter().rev() {
+            let Ast::Var {
+                name,
+                kind,
+                attributes,
+                span,
+                ..
+            } = node
+            else {
+                continue;
+            };
+
+            let Some(ThrustAttribute::Dealloc(deallocator, _)) =
+                attributes.get_attr(ThrustAttributeComparator::Dealloc)
+            else {
+                continue;
+            };
+
+            let deallocator_name: Option<String> = if let Some(deallocator) = deallocator {
+                deallocator.last().cloned()
+            } else {
+                self.resolve_deallocator_name(kind)
+            };
+
+            let Some(deallocator_name) = deallocator_name else {
+                abort::abort_codegen(
+                    self.context,
+                    "Unable to resolve a deallocator for '@dealloc'. Use '@dealloc(function)' or define a matching '@deallocator' function.",
+                    *span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            };
+
+            let symbol: SymbolAllocated = self.context.get_table().get_symbol(name);
+            let function: LLVMFunction = self.context.get_table().get_function(&deallocator_name);
+            let parameter_type: Option<&Type> = function.2.first();
+            let mut argument: BasicMetadataValueEnum = symbol.get_ptr_value().into();
+
+            if let Some(parameter_type) = parameter_type {
+                if kind.is_ptr_type() && parameter_type == kind {
+                    let llvm_type: BasicTypeEnum =
+                        typegeneration::generate_type(self.context, kind);
+                    let loaded: BasicValueEnum = self
+                        .context
+                        .get_llvm_builder()
+                        .build_load(llvm_type, symbol.get_ptr_value(), "")
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                self.context,
+                                "Failed to load value for deallocation.",
+                                *span,
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                    argument = loaded.into();
+                }
+            }
+
+            self.context
+                .get_llvm_builder()
+                .build_call(function.0, &[argument], "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        self.context,
+                        "Failed to build deallocation call.",
+                        *span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+        }
+    }
+
+    fn resolve_deallocator_name(&self, kind: &Type) -> Option<String> {
+        for node in self.ast.iter() {
+            let Ast::Function {
+                name,
+                parameter_types,
+                attributes,
+                ..
+            } = node
+            else {
+                continue;
+            };
+
+            if !attributes.has_deallocator_attribute() {
+                continue;
+            }
+
+            let Some(parameter_type) = parameter_types.first() else {
+                continue;
+            };
+
+            let Type::Ptr {
+                subtype: Some(subtype),
+                ..
+            } = parameter_type
+            else {
+                continue;
+            };
+
+            if subtype.as_ref() == kind {
+                return Some(name.clone());
+            }
+        }
+
+        None
     }
 
     fn codegen_conditionals(&mut self, node: &'ctx Ast) {

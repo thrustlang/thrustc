@@ -1,0 +1,15 @@
+/*
+ * Imported module used by the @dealloc tests.
+ */
+
+struct ExternalHolder @public {
+    value: s32
+}
+
+fn newExternalHolder(value: s32) ExternalHolder @public {
+    return new ExternalHolder { value: value };
+}
+
+fn dropExternalHolder(holder: ptr[ExternalHolder]) void @public @deallocator {
+    holder->value = 0;
+}

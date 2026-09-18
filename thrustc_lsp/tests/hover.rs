@@ -1,13 +1,13 @@
 use serde_json::Value;
 use std::io::Write;
 
-fn complete_items(text: &str, line: u64, character: u64) -> Vec<Value> {
+fn hover_result(text: &str, line: u64, character: u64) -> Value {
     let test_id: u128 = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
         .unwrap_or_default();
     let test_root: std::path::PathBuf = std::env::temp_dir().join(format!(
-        "thrustc_lsp_completion_test_{}_{}",
+        "thrustc_lsp_hover_test_{}_{}",
         std::process::id(),
         test_id
     ));
@@ -39,7 +39,7 @@ fn complete_items(text: &str, line: u64, character: u64) -> Vec<Value> {
         serde_json::json!({
             "jsonrpc": "2.0",
             "id": 2,
-            "method": "textDocument/completion",
+            "method": "textDocument/hover",
             "params": {
                 "textDocument": {
                     "uri": uri
@@ -127,105 +127,51 @@ fn complete_items(text: &str, line: u64, character: u64) -> Vec<Value> {
             continue;
         }
 
-        let items: &[Value] = response
-            .get("result")
-            .and_then(|result| result.get("items"))
-            .and_then(Value::as_array)
-            .map(Vec::as_slice)
-            .unwrap_or_default();
-        let mut completions: Vec<Value> = Vec::with_capacity(items.len());
-
-        for item in items {
-            completions.push(item.clone());
-        }
-
-        return completions;
+        return response.get("result").cloned().unwrap_or(Value::Null);
     }
 
-    panic!("completion response was not returned");
-}
-
-fn complete_labels(text: &str, line: u64, character: u64) -> Vec<String> {
-    let items: Vec<Value> = self::complete_items(text, line, character);
-    let mut labels: Vec<String> = Vec::with_capacity(items.len());
-
-    for item in items {
-        let Some(label) = item.get("label").and_then(Value::as_str) else {
-            continue;
-        };
-
-        labels.push(label.to_string());
-    }
-
-    labels
+    panic!("hover response was not returned");
 }
 
 #[test]
-fn completes_std_module_symbols() {
-    let labels: Vec<String> =
-        self::complete_labels("import std::mem;\n\nfn main() s32 {\n    mem::\n}\n", 3, 9);
+fn hovers_local_function_signature() {
+    let result: Value = self::hover_result(
+        "fn add(a: s32, b: s32) s32 {\n    return a + b;\n}\n\nfn main() s32 {\n    return add(1, 2);\n}\n",
+        5,
+        12,
+    );
+    let value: &str = result
+        .get("contents")
+        .and_then(|contents| contents.get("value"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
 
-    assert!(labels.contains(&"allocateMemory".to_string()));
-    assert!(labels.contains(&"freeMemory".to_string()));
-    assert!(labels.contains(&"PROT_READ".to_string()));
-    assert!(!labels.contains(&"s32".to_string()));
+    assert!(value.contains("fn add(a: s32, b: s32) s32"));
 }
 
 #[test]
-fn completes_std_module_alias() {
-    let labels: Vec<String> = self::complete_labels(
-        "import std::mem as memory;\n\nfn main() s32 {\n    memory::\n}\n",
+fn hovers_imported_function_signature() {
+    let result: Value = self::hover_result(
+        "import std::mem;\n\nfn main() s32 {\n    mem::allocateMemory(64);\n\n    return 0;\n}\n",
         3,
         12,
     );
+    let value: &str = result
+        .get("contents")
+        .and_then(|contents| contents.get("value"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
 
-    assert!(labels.contains(&"allocateMemory".to_string()));
-    assert!(labels.contains(&"freeMemory".to_string()));
-    assert!(labels.contains(&"PROT_READ".to_string()));
+    assert!(value.contains("fn allocateMemory(size: usize) ptr"));
 }
 
 #[test]
-fn completes_std_module_only_import() {
-    let labels: Vec<String> = self::complete_labels(
-        "import std::mem only { allocateMemory };\n\nfn main() s32 {\n    mem::\n}\n",
+fn hover_unknown_symbol_returns_null() {
+    let result: Value = self::hover_result(
+        "fn main() s32 {\n    var value: s32 = 1;\n\n    return value;\n}\n",
         3,
-        9,
+        13,
     );
 
-    assert_eq!(labels, vec!["allocateMemory".to_string()]);
-    assert!(!labels.contains(&"freeMemory".to_string()));
-}
-
-#[test]
-fn templates_use_dash_labels_and_low_priority_sort_text() {
-    let items: Vec<Value> = self::complete_items("fn main() s32 {\n    \n}\n", 1, 4);
-    let mut found_for_keyword: bool = false;
-    let mut found_for_loop: bool = false;
-
-    for item in items {
-        let label: &str = item.get("label").and_then(Value::as_str).unwrap_or("");
-        let kind: u64 = item.get("kind").and_then(Value::as_u64).unwrap_or(0);
-
-        if label == "for" {
-            found_for_keyword = true;
-            assert_eq!(kind, 14);
-            assert!(item.get("sortText").is_none());
-        }
-
-        if label == "for-loop" {
-            found_for_loop = true;
-            assert_eq!(kind, 15);
-            assert_eq!(
-                item.get("sortText").and_then(Value::as_str),
-                Some("zzzz_for-loop")
-            );
-            assert_eq!(
-                item.get("insertTextFormat").and_then(Value::as_u64),
-                Some(2)
-            );
-        }
-    }
-
-    assert!(found_for_keyword);
-    assert!(found_for_loop);
+    assert!(result.is_null());
 }

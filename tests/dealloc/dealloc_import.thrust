@@ -1,0 +1,22 @@
+/*
+ * Exercises @dealloc with an explicitly qualified deallocator imported from a
+ * user module.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import "dealloc_module.thrust" as d;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+fn useExternal() s32 {
+    var holder @dealloc: d::ExternalHolder = d::newExternalHolder(77);
+
+    return 0;
+}
+
+fn main() s32 @public {
+    if useExternal() != 0 { return 1; }
+
+    return 0;
+}

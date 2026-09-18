@@ -18,19 +18,19 @@
 */
 
 use ahash::{HashMap, HashMapExt};
-use thrustc_ast::{Ast, traits::AstCodeLocation};
-use thrustc_attributes::{ThrustAttribute, ThrustAttributes, linkage::ThrustLinkage};
+use thrustc_ast::{traits::AstCodeLocation, Ast};
+use thrustc_attributes::{linkage::ThrustLinkage, ThrustAttribute, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::{
-    TokenType,
     traits::{TokenTypeAttributesExtensions, TokenTypeExtensions},
+    TokenType,
 };
 use thrustc_typesystem::Type;
 
-use crate::{ParserContext, expressions, typegeneration};
+use crate::{expressions, typegeneration, ParserContext};
 
 pub fn build_compiler_attributes<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -133,6 +133,19 @@ pub fn build_compiler_attributes<'parser>(
                 ))
             }
 
+            TokenType::Dealloc => {
+                ctx.consume(
+                    TokenType::Dealloc,
+                    CompilationIssueCode::E0001,
+                    "Expected '@dealloc' prologue for an attribute.".into(),
+                )?;
+
+                attributes.push(ThrustAttribute::Dealloc(
+                    self::build_dealloc_attribute(ctx)?,
+                    span,
+                ));
+            }
+
             tk_type if tk_type.is_attribute() => {
                 if let Some(compiler_attribute) = thrustc_attributes::as_attribute(tk_type, span) {
                     attributes.push(compiler_attribute);
@@ -147,6 +160,49 @@ pub fn build_compiler_attributes<'parser>(
     }
 
     Ok(attributes)
+}
+
+fn build_dealloc_attribute<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<Option<Vec<String>>, CompilationIssue> {
+    if !ctx.match_token(TokenType::LParen)? {
+        return Ok(None);
+    }
+
+    let first_tk: &Token = ctx.consume(
+        TokenType::Identifier,
+        CompilationIssueCode::E0001,
+        "Expected deallocator function name.".into(),
+    )?;
+    let mut access: Vec<String> = vec![first_tk.get_lexeme().to_string()];
+    let mut symbol: &'parser str = first_tk.get_lexeme();
+    let mut symbol_span: Span = first_tk.get_span();
+
+    while ctx.match_token(TokenType::ColonColon)? {
+        let part_tk: &Token = ctx.consume(
+            TokenType::Identifier,
+            CompilationIssueCode::E0001,
+            "Expected identifier after '::'.".into(),
+        )?;
+
+        access.push(part_tk.get_lexeme().to_string());
+        symbol = part_tk.get_lexeme();
+        symbol_span = part_tk.get_span();
+    }
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    if access.len() > 1 {
+        let module_access: Vec<String> = access[..access.len().saturating_sub(1)].to_vec();
+
+        crate::module_import::ensure_qualified_function(ctx, &module_access, symbol, symbol_span)?;
+    }
+
+    Ok(Some(access))
 }
 
 fn build_align_attribute<'parser>(

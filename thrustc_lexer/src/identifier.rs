@@ -83,6 +83,8 @@ lazy_static! {
         attributes.insert("@cuda", TokenType::Cuda);
         attributes.insert("@constructor", TokenType::Constructor);
         attributes.insert("@destructor", TokenType::Destructor);
+        attributes.insert("@dealloc", TokenType::Dealloc);
+        attributes.insert("@deallocator", TokenType::Deallocator);
 
         attributes.insert("@if", TokenType::IfAttribute);
         attributes.insert("@elif", TokenType::ElifAttribute);

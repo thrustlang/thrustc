@@ -19,13 +19,13 @@
 
 use ahash::{HashMap, HashMapExt};
 use thrustc_ast::Ast;
-use thrustc_attributes::{ThrustAttribute, ThrustAttributes, linkage::ThrustLinkage};
+use thrustc_attributes::{linkage::ThrustLinkage, ThrustAttribute, ThrustAttributes};
 use thrustc_code_location::Span;
 
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::{
-    TokenType,
     traits::{TokenTypeAttributesExtensions, TokenTypeExtensions},
+    TokenType,
 };
 use thrustc_typesystem::Type;
 
@@ -97,6 +97,15 @@ pub fn build_attributes<'parser>(
                 ))
             }
 
+            TokenType::Dealloc => {
+                parser.consume(TokenType::Dealloc)?;
+
+                attributes.push(ThrustAttribute::Dealloc(
+                    self::build_dealloc_attribute(parser)?,
+                    span,
+                ));
+            }
+
             TokenType::Align => {
                 parser.consume(TokenType::Align)?;
 
@@ -120,6 +129,27 @@ pub fn build_attributes<'parser>(
     }
 
     Ok(attributes)
+}
+
+fn build_dealloc_attribute<'parser>(
+    parser: &mut ModuleParser<'parser>,
+) -> Result<Option<Vec<String>>, ()> {
+    if !parser.match_token(TokenType::LParen)? {
+        return Ok(None);
+    }
+
+    let first_tk: &Token = parser.consume(TokenType::Identifier)?;
+    let mut access: Vec<String> = vec![first_tk.get_lexeme().to_string()];
+
+    while parser.match_token(TokenType::ColonColon)? {
+        let part_tk: &Token = parser.consume(TokenType::Identifier)?;
+
+        access.push(part_tk.get_lexeme().to_string());
+    }
+
+    parser.consume(TokenType::RParen)?;
+
+    Ok(Some(access))
 }
 
 fn build_align_attribute<'parser>(parser: &mut ModuleParser<'parser>) -> Result<u64, ()> {

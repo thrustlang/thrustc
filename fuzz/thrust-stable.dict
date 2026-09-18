@@ -167,6 +167,8 @@
 "@noReturn"
 "@packed"
 "@heap"
+"@dealloc"
+"@deallocator"
 "@public"
 "@linkage"
 "@extern"

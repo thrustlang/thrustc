@@ -25,6 +25,7 @@ use serde_json::Value;
 mod analysis;
 mod completion;
 mod documents;
+mod hover;
 
 #[cfg(not(target_pointer_width = "64"))]
 compile_error!("This compiler requires a 64-bit target.");
@@ -197,10 +198,11 @@ fn main() {
                     continue;
                 };
 
+                let result: Value = hover::hover(&documents, &analysis, &payload);
                 let response: Value = serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": id,
-                    "result": null
+                    "result": result
                 });
 
                 let body: String = response.to_string();

@@ -25,6 +25,7 @@ use thrustc_attributes::{
     traits::ThrustAttributesExtensions,
 };
 use thrustc_backends::llvm::LLVMBackend;
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_llvm_attributes::{
@@ -32,7 +33,6 @@ use thrustc_llvm_attributes::{
 };
 use thrustc_llvm_call_conventions::LLVMCallConvention;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 
 #[derive(Debug)]
 pub struct LLVMCallConventionsChecker<'call_conv_checker> {

@@ -17,7 +17,6 @@
 
 */
 
-
 use crate::Token;
 
 impl std::fmt::Display for Token {

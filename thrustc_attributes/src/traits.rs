@@ -26,6 +26,8 @@ pub trait ThrustAttributesExtensions {
     fn has_linkage_attribute(&self) -> bool;
     fn has_ignore_attribute(&self) -> bool;
     fn has_public_attribute(&self) -> bool;
+    fn has_dealloc_attribute(&self) -> bool;
+    fn has_deallocator_attribute(&self) -> bool;
     fn has_entrypoint_attribute(&self) -> bool;
     fn has_hot_attr(&self) -> bool;
     fn has_inline_attr(&self) -> bool;

@@ -19,8 +19,8 @@
 
 use colored::Colorize;
 
-use thrustc_logging::LoggingType;
 use thrustc_code_location::Span;
+use thrustc_logging::LoggingType;
 
 use crate::{DiagnosticType, Notificator, position::CodePosition};
 
@@ -206,9 +206,9 @@ pub(crate) fn generate(
 
         let span_highlight = match r#type {
             DiagnosticType::Warning => span_text.on_yellow().bold(),
-            DiagnosticType::Error
-            | DiagnosticType::FrontendBug
-            | DiagnosticType::BackendBug => span_text.on_red().bold(),
+            DiagnosticType::Error | DiagnosticType::FrontendBug | DiagnosticType::BackendBug => {
+                span_text.on_red().bold()
+            }
         };
 
         format!(

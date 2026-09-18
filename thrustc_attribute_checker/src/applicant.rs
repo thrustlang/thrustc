@@ -25,6 +25,7 @@ pub enum AttributeCheckerAttributeApplicant<'attr_checker> {
     Intrinsic,
     Function {
         return_type: &'attr_checker Type,
+        parameter_types: &'attr_checker [Type],
         has_body: bool,
     },
     Constant,

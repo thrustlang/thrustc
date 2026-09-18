@@ -37,9 +37,7 @@ impl<'parser> ExternalSymbolTable<'parser> {
 impl<'parser> ExternalSymbolTable<'parser> {
     #[inline]
     pub fn find_module(&self, name: &str) -> Option<&'parser Module> {
-        self.modules
-            .iter()
-            .find(|module| module.matches_name(name))
+        self.modules.iter().find(|module| module.matches_name(name))
     }
 
     pub fn resolve(&self, access: &[String]) -> Option<&'parser Module> {

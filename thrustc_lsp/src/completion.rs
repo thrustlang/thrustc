@@ -136,6 +136,7 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
             self::push_top_level_keywords(&mut items, &mut seen);
             self::push_type_symbols(&mut items, &mut seen, document_analysis);
             self::push_global_symbols(&mut items, &mut seen, document_analysis);
+            self::push_templates(&mut items, &mut seen);
 
             return items;
         }
@@ -373,6 +374,7 @@ fn push_global_items(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_keywords(items, seen);
     self::push_types(items, seen);
     self::push_builtins(items, seen);
+    self::push_templates(items, seen);
 }
 
 fn push_top_level_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
@@ -898,11 +900,206 @@ fn push_builtins(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     );
 }
 
+fn push_templates(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
+    self::push_item(
+        items,
+        seen,
+        "main-fn",
+        CompletionKind::Snippet,
+        "template",
+        Some("fn main() s32 @public {\n    $0\n\n    return 0;\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "fn-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("fn ${1:name}(${2:args}) ${3:void} {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "public-fn",
+        CompletionKind::Snippet,
+        "template",
+        Some("fn ${1:name}(${2:args}) ${3:void} @public {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "for-loop",
+        CompletionKind::Snippet,
+        "template",
+        Some("for var ${1:i}: usize = 0; ${1:i} < ${2:limit}; ${1:i} = ${1:i} + 1 {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "while-loop",
+        CompletionKind::Snippet,
+        "template",
+        Some("while ${1:condition} {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "loop-block",
+        CompletionKind::Snippet,
+        "template",
+        Some("loop {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "if-block",
+        CompletionKind::Snippet,
+        "template",
+        Some("if ${1:condition} {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "if-else",
+        CompletionKind::Snippet,
+        "template",
+        Some("if ${1:condition} {\n    $2\n} else {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "elif-block",
+        CompletionKind::Snippet,
+        "template",
+        Some("elif ${1:condition} {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "defer-block",
+        CompletionKind::Snippet,
+        "template",
+        Some("defer {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "struct-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("struct ${1:Name} {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "generic-struct",
+        CompletionKind::Snippet,
+        "template",
+        Some("struct ${1:Name} [${2:T}] {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "enum-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("enum ${1:Name} {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "type-alias",
+        CompletionKind::Snippet,
+        "template",
+        Some("type ${1:Name} = ${2:u32};"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "var-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("var ${1:name}: ${2:type} = ${3:value};"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "infer-var",
+        CompletionKind::Snippet,
+        "template",
+        Some("var ${1:name} := ${2:value};"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "const-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("const ${1:NAME}: ${2:type} = ${3:value};"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "static-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("static ${1:name}: ${2:type} = ${3:value};"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "import-as",
+        CompletionKind::Snippet,
+        "template",
+        Some("import ${1:std::mem} as ${2:mem};"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "import-only",
+        CompletionKind::Snippet,
+        "template",
+        Some("import ${1:std::mem} only { ${2:symbol} };"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "compiletime-if",
+        CompletionKind::Snippet,
+        "template",
+        Some("@if(${1:condition}) {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "compiletime-if-else",
+        CompletionKind::Snippet,
+        "template",
+        Some("@if(${1:condition}) {\n    $2\n} @else {\n    $0\n}"),
+    );
+}
+
 fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
         "@heap",
+        CompletionKind::Keyword,
+        "attribute",
+        None,
+    );
+    self::push_item(
+        items,
+        seen,
+        "@dealloc",
+        CompletionKind::Keyword,
+        "attribute",
+        Some("@dealloc"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "@deallocator",
         CompletionKind::Keyword,
         "attribute",
         None,
@@ -1183,6 +1380,10 @@ fn push_item(
     if let Some(insert_text) = insert_text {
         item["insertText"] = Value::String(insert_text.to_string());
         item["insertTextFormat"] = Value::Number(2.into());
+    }
+
+    if kind == CompletionKind::Snippet {
+        item["sortText"] = Value::String(format!("zzzz_{}", label));
     }
 
     items.push(item);

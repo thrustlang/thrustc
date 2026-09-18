@@ -32,6 +32,11 @@ impl std::fmt::Display for ThrustAttribute {
             }
             ThrustAttribute::Stack(..) => write!(f, "@stack"),
             ThrustAttribute::Heap(..) => write!(f, "@heap"),
+            ThrustAttribute::Dealloc(Some(deallocator), ..) => {
+                write!(f, "@dealloc({})", deallocator.join("::"))
+            }
+            ThrustAttribute::Dealloc(None, ..) => write!(f, "@dealloc"),
+            ThrustAttribute::Deallocator(..) => write!(f, "@deallocator"),
             ThrustAttribute::Public(..) => write!(f, "@public"),
             ThrustAttribute::EntryPoint(..) => write!(f, "@entrypoint"),
             ThrustAttribute::StrongStack(..) => write!(f, "@strongStack"),

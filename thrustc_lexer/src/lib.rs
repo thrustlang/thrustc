@@ -19,11 +19,11 @@
 
 #![allow(clippy::result_unit_err)]
 
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::CompilationIssue;
 use thrustc_logging::LoggingType;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_code_location::Span;
 use thrustc_token::Token;
 use thrustc_token_type::{TokenType, traits::TokenTypeExtensions};
 use unicode_categories::UnicodeCategories;

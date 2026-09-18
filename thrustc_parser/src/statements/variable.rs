@@ -17,18 +17,19 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, ast_metadata::LocalMetadata, traits::AstGetType};
-use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
-use thrustc_attributes::ThrustAttributes;
+use thrustc_ast::{ast_metadata::LocalMetadata, traits::AstGetType, Ast, NodeId};
+use thrustc_ast_modificators::{traits::ModificatorsExtensions, Modificators};
+use thrustc_attributes::traits::ThrustAttributesExtensions;
+use thrustc_attributes::{ThrustAttribute, ThrustAttributeComparator, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_mir::atomicord::ThrustAtomicOrdering;
-use thrustc_parser_context::{Position, traits::TypeContextExtensions};
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_parser_context::{traits::TypeContextExtensions, Position};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, traits::InfererTypeExtensions};
+use thrustc_typesystem::{traits::InfererTypeExtensions, Type};
 
-use crate::{ParserContext, attributes, expressions, modificators, typegeneration};
+use crate::{attributes, expressions, modificators, typegeneration, ParserContext};
 
 pub fn build_variable_stmt<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -54,7 +55,7 @@ pub fn build_variable_stmt<'parser>(
     let ascii_name: &str = local_tk.get_ascii_lexeme();
     let span: Span = local_tk.get_span();
 
-    let attributes: ThrustAttributes =
+    let mut attributes: ThrustAttributes =
         attributes::build_compiler_attributes(ctx, &[TokenType::Colon])?;
 
     ctx.consume(
@@ -76,6 +77,8 @@ pub fn build_variable_stmt<'parser>(
         let metadata: LocalMetadata = LocalMetadata::new(true, true, is_volatile, atomic_ord);
 
         if !ctx.is_main_scope() {
+            self::ensure_deallocator(ctx, &attributes, &local_type, span)?;
+
             ctx.get_mut_symbols()
                 .new_local(name, (local_type.clone(), metadata, span), span)?;
 
@@ -96,8 +99,12 @@ pub fn build_variable_stmt<'parser>(
             Ok(Ast::invalid_ast(span))
         }
     } else {
-        let attributes: ThrustAttributes =
+        let trailing_attributes: ThrustAttributes =
             attributes::build_compiler_attributes(ctx, &[TokenType::SemiColon, TokenType::Eq])?;
+
+        for attribute in trailing_attributes {
+            attributes.push(attribute);
+        }
 
         let metadata: LocalMetadata = LocalMetadata::new(false, true, is_volatile, atomic_ord);
 
@@ -133,6 +140,8 @@ pub fn build_variable_stmt<'parser>(
         }
 
         if !ctx.is_main_scope() {
+            self::ensure_deallocator(ctx, &attributes, &local_type, span)?;
+
             ctx.get_mut_symbols()
                 .new_local(name, (local_type.clone(), metadata, span), span)?;
 
@@ -153,4 +162,25 @@ pub fn build_variable_stmt<'parser>(
             Ok(Ast::invalid_ast(span))
         }
     }
+}
+
+fn ensure_deallocator<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    attributes: &ThrustAttributes,
+    kind: &Type,
+    _span: Span,
+) -> Result<(), CompilationIssue> {
+    let Some(ThrustAttribute::Dealloc(deallocator, attr_span)) =
+        attributes.get_attr(ThrustAttributeComparator::Dealloc)
+    else {
+        return Ok(());
+    };
+
+    if deallocator.is_some() {
+        return Ok(());
+    }
+
+    let _ = crate::module_import::ensure_deallocator_for_type(ctx, kind, attr_span)?;
+
+    Ok(())
 }

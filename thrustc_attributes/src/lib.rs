@@ -70,6 +70,8 @@ pub enum ThrustAttribute {
     // Memory Management
     Stack(Span),
     Heap(Span),
+    Dealloc(Option<Vec<String>>, Span),
+    Deallocator(Span),
 
     AsmThrow(Span),
     AsmSyntax(String, Span),
@@ -116,6 +118,8 @@ pub enum ThrustAttributeComparator {
 
     Stack,
     Heap,
+    Dealloc,
+    Deallocator,
 
     AsmThrow,
     AsmSyntax,
@@ -177,6 +181,16 @@ impl ThrustAttribute {
     #[inline]
     pub fn is_heap_attribute(&self) -> bool {
         matches!(self, ThrustAttribute::Heap(..))
+    }
+
+    #[inline]
+    pub fn is_dealloc_attribute(&self) -> bool {
+        matches!(self, ThrustAttribute::Dealloc(..))
+    }
+
+    #[inline]
+    pub fn is_deallocator_attribute(&self) -> bool {
+        matches!(self, ThrustAttribute::Deallocator(..))
     }
 
     #[inline]
@@ -265,6 +279,8 @@ impl ThrustAttribute {
             ThrustAttribute::AsmAlignStack(span) => *span,
             ThrustAttribute::Stack(span) => *span,
             ThrustAttribute::Heap(span) => *span,
+            ThrustAttribute::Dealloc(_, span) => *span,
+            ThrustAttribute::Deallocator(span) => *span,
             ThrustAttribute::Packed(span) => *span,
             ThrustAttribute::NoUnwind(span) => *span,
             ThrustAttribute::NoReturn(span) => *span,
@@ -306,6 +322,7 @@ pub fn as_attribute(token_type: TokenType, span: Span) -> Option<ThrustAttribute
         TokenType::EntryPoint => Some(ThrustAttribute::EntryPoint(span)),
         TokenType::Constructor => Some(ThrustAttribute::Constructor(span)),
         TokenType::Destructor => Some(ThrustAttribute::Destructor(span)),
+        TokenType::Deallocator => Some(ThrustAttribute::Deallocator(span)),
         TokenType::Cuda => Some(ThrustAttribute::Cuda(span)),
 
         _ => None,
@@ -335,6 +352,16 @@ impl ThrustAttributesExtensions for ThrustAttributes {
     #[inline]
     fn has_heap_attr(&self) -> bool {
         self.iter().any(|attr| attr.is_heap_attribute())
+    }
+
+    #[inline]
+    fn has_dealloc_attribute(&self) -> bool {
+        self.iter().any(|attr| attr.is_dealloc_attribute())
+    }
+
+    #[inline]
+    fn has_deallocator_attribute(&self) -> bool {
+        self.iter().any(|attr| attr.is_deallocator_attribute())
     }
 
     #[inline]
@@ -445,6 +472,8 @@ impl ThrustAttributeComparatorExtensions for ThrustAttribute {
             ThrustAttribute::Linkage(..) => ThrustAttributeComparator::Linkage,
             ThrustAttribute::Stack(..) => ThrustAttributeComparator::Stack,
             ThrustAttribute::Heap(..) => ThrustAttributeComparator::Heap,
+            ThrustAttribute::Dealloc(..) => ThrustAttributeComparator::Dealloc,
+            ThrustAttribute::Deallocator(..) => ThrustAttributeComparator::Deallocator,
             ThrustAttribute::Public(..) => ThrustAttributeComparator::Public,
             ThrustAttribute::EntryPoint(..) => ThrustAttributeComparator::EntryPoint,
             ThrustAttribute::Ignore(..) => ThrustAttributeComparator::Ignore,

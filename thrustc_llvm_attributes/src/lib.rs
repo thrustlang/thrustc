@@ -61,6 +61,8 @@ pub enum LLVMAttribute<'ctx> {
     // Memory Management
     Stack,
     Heap,
+    Dealloc,
+    Deallocator,
 
     // Assembler Attributes
     AsmThrow,
@@ -201,6 +203,8 @@ pub enum LLVMAttributeComparator {
 
     Stack,
     Heap,
+    Dealloc,
+    Deallocator,
 
     AsmThrow,
     AsmSyntax,
@@ -239,6 +243,8 @@ pub fn into_llvm_attribute(attribute: &ThrustAttribute) -> LLVMAttribute<'_> {
         ThrustAttribute::AsmAlignStack(..) => LLVMAttribute::AsmAlignStack,
         ThrustAttribute::Stack(..) => LLVMAttribute::Stack,
         ThrustAttribute::Heap(..) => LLVMAttribute::Heap,
+        ThrustAttribute::Dealloc(..) => LLVMAttribute::Dealloc,
+        ThrustAttribute::Deallocator(..) => LLVMAttribute::Deallocator,
         ThrustAttribute::Packed(..) => LLVMAttribute::Packed,
         ThrustAttribute::NoUnwind(..) => LLVMAttribute::NoUnwind,
         ThrustAttribute::NoReturn(..) => LLVMAttribute::NoReturn,

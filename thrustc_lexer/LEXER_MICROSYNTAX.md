@@ -169,7 +169,7 @@ as attribute tokens; any other `@`-prefixed word falls back to an `Identifier`.
 ### Stable attributes
 
 ```
-@align @optFuzzing @noUnwind @noReturn @packed @heap @public @linkage @extern
+@align @optFuzzing @noUnwind @noReturn @packed @heap @dealloc @deallocator @public @linkage @extern
 @arbitraryArgs @hot @minSize @alwaysInline @noInline @inline @safeStack
 @weakStack @strongStack @preciseFloatingPoint @convention @pure @thunk
 @cuda @constructor @destructor @if @elif @else

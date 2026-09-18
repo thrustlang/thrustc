@@ -26,9 +26,9 @@ use inkwell::values::AsValueRef;
 use inkwell::values::FunctionValue;
 use inkwell::values::GlobalValue;
 use thrustc_code_location::Span;
+use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
-use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_llvm_call_conventions::LLVMCallConvention;
 
 use crate::context::LLVMCodeGenContext;
@@ -225,6 +225,8 @@ impl<'ctx> AttributeBuilder {
                 | LLVMAttribute::Packed
                 | LLVMAttribute::Stack
                 | LLVMAttribute::Heap
+                | LLVMAttribute::Dealloc
+                | LLVMAttribute::Deallocator
                 | LLVMAttribute::AsmThrow
                 | LLVMAttribute::AsmSyntax(..)
                 | LLVMAttribute::AsmAlignStack
@@ -395,6 +397,8 @@ impl<'ctx> AttributeBuilder {
                 | LLVMAttribute::Packed
                 | LLVMAttribute::Stack
                 | LLVMAttribute::Heap
+                | LLVMAttribute::Dealloc
+                | LLVMAttribute::Deallocator
                 | LLVMAttribute::AsmThrow
                 | LLVMAttribute::AsmSyntax(..)
                 | LLVMAttribute::AsmAlignStack
@@ -443,6 +447,8 @@ impl<'ctx> AttributeBuilder {
                         | LLVMAttribute::Packed
                         | LLVMAttribute::Stack
                         | LLVMAttribute::Heap
+                        | LLVMAttribute::Dealloc
+                        | LLVMAttribute::Deallocator
                         | LLVMAttribute::AsmThrow
                         | LLVMAttribute::AsmSyntax(..)
                         | LLVMAttribute::AsmAlignStack

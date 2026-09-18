@@ -20,8 +20,8 @@
 use inkwell::module::Linkage;
 
 use crate::{
-    LLVMAttribute, LLVMAttributeComparator, LLVMAttributes,
     traits::{LLVMAttributeComparatorExtensions, LLVMAttributesExtensions},
+    LLVMAttribute, LLVMAttributeComparator, LLVMAttributes,
 };
 
 impl LLVMAttributesExtensions for LLVMAttributes<'_> {
@@ -123,6 +123,8 @@ impl LLVMAttributeComparatorExtensions for LLVMAttribute<'_> {
             LLVMAttribute::Convention(..) => LLVMAttributeComparator::Convention,
             LLVMAttribute::Stack => LLVMAttributeComparator::Stack,
             LLVMAttribute::Heap => LLVMAttributeComparator::Heap,
+            LLVMAttribute::Dealloc => LLVMAttributeComparator::Dealloc,
+            LLVMAttribute::Deallocator => LLVMAttributeComparator::Deallocator,
             LLVMAttribute::Public => LLVMAttributeComparator::Public,
             LLVMAttribute::EntryPoint => LLVMAttributeComparator::EntryPoint,
             LLVMAttribute::Ignore => LLVMAttributeComparator::Ignore,
@@ -189,6 +191,8 @@ impl std::fmt::Display for LLVMAttribute<'_> {
             }
             LLVMAttribute::Stack => write!(f, "@stack"),
             LLVMAttribute::Heap => write!(f, "@heap"),
+            LLVMAttribute::Dealloc => write!(f, "@dealloc"),
+            LLVMAttribute::Deallocator => write!(f, "@deallocator"),
             LLVMAttribute::Public => write!(f, "@public"),
             LLVMAttribute::EntryPoint => write!(f, "@entrypoint"),
             LLVMAttribute::StrongStack => write!(f, "@strongStack"),

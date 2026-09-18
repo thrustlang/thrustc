@@ -22,8 +22,8 @@ use thrustc_ast::{
     ast_logic_data::{EnumData, EnumDataField, StructureData},
     ast_metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 };
-use thrustc_errors::CompilationIssue;
 use thrustc_code_location::Span;
+use thrustc_errors::CompilationIssue;
 use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 pub trait FoundSymbolExtensions {

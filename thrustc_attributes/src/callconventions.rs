@@ -17,7 +17,6 @@
 
 */
 
-
 pub const CALL_CONVENTIONS_AVAILABLE: &[&str; 74] = &[
     "C",
     "fast",

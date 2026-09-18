@@ -1,0 +1,57 @@
+/*
+ * Exercises @dealloc and @deallocator: inferred deallocator functions for
+ * local values and explicit cleanup functions for raw pointers.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0017";
+directive "--disable-warnings=W0020";
+
+static mut droppedHolder: s32 = 0;
+static mut freedRaw: s32 = 0;
+
+struct Holder {
+    value: s32
+}
+
+fn dropHolder(holder: ptr[Holder]) void @deallocator {
+    droppedHolder = holder->value;
+}
+
+fn freeRaw(block: ptr) void {
+    freedRaw = freedRaw + 1;
+    mem::freeMemory(block);
+}
+
+fn useHolder() s32 {
+    var holder @dealloc: Holder = new Holder { value: 42 };
+
+    return 0;
+}
+
+fn useRaw() s32 {
+    var block @dealloc(freeRaw): ptr = mem::allocateMemory(64);
+
+    return 0;
+}
+
+fn useQualifiedRaw() s32 {
+    var block @dealloc(mem::freeMemory): ptr = mem::allocateMemory(64);
+
+    return 0;
+}
+
+fn main() s32 @public {
+    if useHolder() != 0 { return 1; }
+    if droppedHolder != 42 { return 2; }
+
+    if useRaw() != 0 { return 3; }
+    if freedRaw != 1 { return 4; }
+
+    if useQualifiedRaw() != 0 { return 5; }
+
+    return 0;
+}

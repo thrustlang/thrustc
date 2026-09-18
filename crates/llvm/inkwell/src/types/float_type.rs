@@ -128,9 +128,9 @@ impl<'ctx> FloatType<'ctx> {
     /// assert_eq!(f64_val.print_to_string().to_string(), "double 0x7FF0000000000000");
     /// ```
     pub unsafe fn const_float_from_string(self, slice: &str) -> FloatValue<'ctx> {
-    	assert!(!slice.is_empty());
+        assert!(!slice.is_empty());
 
-    	unsafe {
+        unsafe {
             FloatValue::new(LLVMConstRealOfStringAndSize(
                 self.as_type_ref(),
                 slice.as_ptr() as *const ::libc::c_char,

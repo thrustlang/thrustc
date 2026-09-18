@@ -17,10 +17,10 @@
 
 */
 
+use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationPosition};
 use thrustc_logging::LoggingType;
-use thrustc_code_location::Span;
 
 pub fn abort_compilation(
     diagnostician: &mut Diagnostician,

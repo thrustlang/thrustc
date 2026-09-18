@@ -17,7 +17,6 @@
 
 */
 
-
 use crate::traits::ErrorDisassembler;
 use crate::traits::IssueDisassembler;
 

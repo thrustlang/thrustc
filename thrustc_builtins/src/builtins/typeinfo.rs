@@ -58,8 +58,7 @@ impl CompileTimeBuiltinFunction for FixedArraySize {
                 return Err(CompilationIssue::Error(
                     CompilationIssueCode::E0019,
                     "The 'fixedArraySize' compiler builtin expects a type argument.".into(),
-                    "You should pass a fixed array type, like fixedArraySize(array[u8; 4])."
-                        .into(),
+                    "You should pass a fixed array type, like fixedArraySize(array[u8; 4]).".into(),
                     None,
                     *span,
                 ));
@@ -174,7 +173,9 @@ impl CompileTimeBuiltinFunction for IsPtrLike {
             }
         };
 
-        Ok(BuiltinValue::Bool(ty.remove_all_constant_type().is_ptr_like_type()))
+        Ok(BuiltinValue::Bool(
+            ty.remove_all_constant_type().is_ptr_like_type(),
+        ))
     }
 }
 

@@ -17,7 +17,6 @@
 
 */
 
-
 use crate::LLVMCallConvention;
 
 impl std::fmt::Display for LLVMCallConvention {

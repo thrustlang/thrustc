@@ -79,6 +79,8 @@ impl CompileTimeBuiltinFunction for DebugBuild {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        Ok(BuiltinValue::Bool(context.options.omit_default_optimizations()))
+        Ok(BuiltinValue::Bool(
+            context.options.omit_default_optimizations(),
+        ))
     }
 }

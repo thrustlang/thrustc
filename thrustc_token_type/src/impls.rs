@@ -18,8 +18,8 @@
 */
 
 use crate::{
-    TokenType,
     traits::{TokenTypeAttributesExtensions, TokenTypeBuiltinExtensions, TokenTypeExtensions},
+    TokenType,
 };
 
 impl TokenTypeExtensions for TokenType {
@@ -221,6 +221,8 @@ impl TokenTypeAttributesExtensions for TokenType {
                 | TokenType::OptFuzzing
                 | TokenType::Constructor
                 | TokenType::Destructor
+                | TokenType::Dealloc
+                | TokenType::Deallocator
                 | TokenType::Public
                 | TokenType::EntryPoint
                 | TokenType::Linkage
@@ -368,6 +370,8 @@ impl std::fmt::Display for TokenType {
             TokenType::Cuda => write!(f, "@cuda"),
             TokenType::Destructor => write!(f, "@destructor"),
             TokenType::Constructor => write!(f, "@constructor"),
+            TokenType::Dealloc => write!(f, "@dealloc"),
+            TokenType::Deallocator => write!(f, "@deallocator"),
             TokenType::Promote => write!(f, "@promote"),
 
             // Operators, Punctuation, and Special Constructs

@@ -17,7 +17,6 @@
 
 */
 
-
 use thrustc_errors::CompilationPosition;
 use thrustc_logging::LoggingType;
 

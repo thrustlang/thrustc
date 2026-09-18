@@ -119,8 +119,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
             let _ = self.start();
         }
 
-        let warnings_to_disable =
-            thrustc_directive::combine_warnings_to_disable(self.file_options);
+        let warnings_to_disable = thrustc_directive::combine_warnings_to_disable(self.file_options);
 
         thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 
