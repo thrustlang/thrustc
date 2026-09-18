@@ -1,0 +1,30 @@
+/*
+ * Compile-time conditionals whose conditions depend on generic type parameters.
+ * The inactive branches intentionally contain assignments that would be invalid
+ * for the other instantiation if they reached type checking.
+ */
+
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0005";
+
+fn classify [T] () s32 {
+    @if(isSameType(T, CString)) {
+        var value: T = "hello";
+
+        return 1;
+    } @else if(isSameType(T, u64)) {
+        var value: T = 42;
+
+        return 2;
+    } @else {
+        return 3;
+    }
+}
+
+fn main() s32 @public {
+    if classify[CString]() != 1 { return 1; }
+    if classify[u64]() != 2 { return 2; }
+    if classify[bool]() != 3 { return 3; }
+
+    return 0;
+}

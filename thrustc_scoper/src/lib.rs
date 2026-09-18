@@ -296,6 +296,12 @@ impl<'scoper> Scoper<'scoper> {
                 else_if_branch,
                 else_branch,
                 ..
+            }
+            | Ast::CompileTimeIf {
+                then_branch,
+                else_if_branch,
+                else_branch,
+                ..
             } => {
                 self.analyze_local_node(then_branch);
 

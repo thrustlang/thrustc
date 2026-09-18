@@ -1,0 +1,29 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+@if(isLinux() || isDarwin()) fn getentropy(buffer: ptr, length: usize) s32 @public @extern("getentropy") @convention("C");
+@else const hasGetEntropy: bool @public = false;
+
+@if(isWindows()) fn randS(value: ptr[u32]) s32 @public @extern("rand_s") @convention("C");
+@else const hasRandS: bool @public = false;
+
+fn time(timer: ptr[s64]) s64 @public @extern("time") @convention("C");
+fn clock() s64 @public @extern("clock") @convention("C");
+fn rand() s32 @public @extern("rand") @convention("C");
+fn srand(seed: u32) void @public @extern("srand") @convention("C");

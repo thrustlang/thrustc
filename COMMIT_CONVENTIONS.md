@@ -29,6 +29,7 @@ Valid locations:
 - `abi` Any location that usually involucrates the compiler Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
 - `preprocessador` Any location that usually involucrates the compiler preprocessor and module/import resolution (`thrustc_preprocessor`).
 - `std` Any location that usually involucrates the standard library (`std/`).
+- `lsp` Any location that usually involucrates the language server and editor integration (`thrustc_lsp`, `lsp/`).
 
 Example:
 
@@ -52,6 +53,7 @@ Valid locations:
 - `abi` Any location that usually involucrates the compiler Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
 - `preprocessador` Any location that usually involucrates the compiler preprocessor and module/import resolution (`thrustc_preprocessor`).
 - `std` Any location that usually involucrates the standard library (`std/`).
+- `lsp` Any location that usually involucrates the language server and editor integration (`thrustc_lsp`, `lsp/`).
 
 Any consecutive location written to the next one needs to be follow for a COMMA character `,`.
 
@@ -71,7 +73,6 @@ In order to create a well disigned combinatory title, you need to use the follow
 ### Description
 
 It needs to be concise, short, but detailed in the same time. It can be include a lot of technical slang.
-
 
 
 

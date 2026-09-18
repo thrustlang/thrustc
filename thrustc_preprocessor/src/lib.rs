@@ -76,9 +76,22 @@ impl<'preprocessor> Preprocessor {
 
         let mut merged: ahash::AHashMap<std::path::PathBuf, usize> =
             ahash::AHashMap::with_capacity(u8::MAX as usize);
+        let mut block_depth: usize = 0;
 
         while !context.is_eof() {
-            if context.check(TokenType::Import) {
+            if context.check(TokenType::LBrace) {
+                block_depth = block_depth.saturating_add(1);
+                let _ = context.only_advance();
+                continue;
+            }
+
+            if context.check(TokenType::RBrace) {
+                block_depth = block_depth.saturating_sub(1);
+                let _ = context.only_advance();
+                continue;
+            }
+
+            if block_depth == 0 && context.check(TokenType::Import) {
                 if let Ok(Some(module)) = highmodule_parsing::import::parse_import(&mut context) {
                     self.merge_module(&mut merged, module);
                 }
@@ -86,7 +99,7 @@ impl<'preprocessor> Preprocessor {
                 continue;
             }
 
-            if context.check(TokenType::IfAttribute) {
+            if block_depth == 0 && context.check(TokenType::IfAttribute) {
                 self.handle_conditional_imports(&mut context, &mut merged)?;
 
                 continue;

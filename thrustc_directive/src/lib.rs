@@ -33,40 +33,375 @@ use thrustc_token_type::TokenType;
 
 #[derive(Debug, Default)]
 pub struct FileDirectives {
-    pub optimization: Option<ThrustOptimization>,
-    pub reloc_model: Option<ThrustRelocMode>,
-    pub code_model: Option<ThrustCodeModel>,
-    pub debug: bool,
-    pub debug_for_inlining: bool,
-    pub debug_for_profiling: bool,
-    pub dwarf_version: Option<DwarfVersion>,
-    pub stop_at: Option<CompilationPhase>,
-    pub emit: Vec<EmitableUnit>,
-    pub print: Vec<PrintableUnit>,
-    pub stack_protector: bool,
-    pub symbol_linkage_strategy: Option<SymbolLinkageMergeStrategy>,
-    pub denormal_fp: Option<(DenormalFloatingPointBehavior, DenormalFloatingPointBehavior)>,
-    pub denormal_fp_32: Option<(
+    optimization: Option<ThrustOptimization>,
+    reloc_model: Option<ThrustRelocMode>,
+    code_model: Option<ThrustCodeModel>,
+    debug: bool,
+    debug_for_inlining: bool,
+    debug_for_profiling: bool,
+    dwarf_version: Option<DwarfVersion>,
+    stop_at: Option<CompilationPhase>,
+    emit: Vec<EmitableUnit>,
+    print: Vec<PrintableUnit>,
+    stack_protector: bool,
+    symbol_linkage_strategy: Option<SymbolLinkageMergeStrategy>,
+    denormal_fp: Option<(DenormalFloatingPointBehavior, DenormalFloatingPointBehavior)>,
+    denormal_fp_32: Option<(
         DenormalFloatingPointBehavior32BitFloatingPoint,
         DenormalFloatingPointBehavior32BitFloatingPoint,
     )>,
-    pub sanitizer: Option<Sanitizer>,
-    pub no_sanitize_bounds: bool,
-    pub no_sanitize_coverage: bool,
-    pub disable_all_sanitizers: bool,
-    pub disable_frame_pointer: bool,
-    pub disable_uwtable: bool,
-    pub disable_direct_access_external_data: bool,
-    pub disable_rtlib_got: bool,
-    pub disable_safe_trapping_math: bool,
-    pub disable_safe_math: bool,
-    pub disable_default_optimizations: bool,
-    pub opt_passes: Option<String>,
-    pub modificator_opt_passes: Option<Vec<LLVMModificatorPasses>>,
-    pub warnings_to_disable: Vec<CompilationIssueCode>,
-    pub disable_all_warnings: bool,
-    pub no_obfuscate_archive_names: bool,
-    pub no_obfuscate_ir: bool,
+    sanitizer: Option<Sanitizer>,
+    no_sanitize_bounds: bool,
+    no_sanitize_coverage: bool,
+    disable_all_sanitizers: bool,
+    disable_frame_pointer: bool,
+    disable_uwtable: bool,
+    disable_direct_access_external_data: bool,
+    disable_rtlib_got: bool,
+    disable_safe_trapping_math: bool,
+    disable_safe_math: bool,
+    disable_default_optimizations: bool,
+    opt_passes: Option<String>,
+    modificator_opt_passes: Option<Vec<LLVMModificatorPasses>>,
+    warnings_to_disable: Vec<CompilationIssueCode>,
+    disable_all_warnings: bool,
+    no_obfuscate_archive_names: bool,
+    no_obfuscate_ir: bool,
+}
+
+impl FileDirectives {
+    #[inline]
+    pub fn set_optimization(&mut self, optimization: ThrustOptimization) {
+        self.optimization = Some(optimization);
+    }
+
+    #[inline]
+    pub fn set_reloc_model(&mut self, reloc_model: ThrustRelocMode) {
+        self.reloc_model = Some(reloc_model);
+    }
+
+    #[inline]
+    pub fn set_code_model(&mut self, code_model: ThrustCodeModel) {
+        self.code_model = Some(code_model);
+    }
+
+    #[inline]
+    pub fn set_debug(&mut self, value: bool) {
+        self.debug = value;
+    }
+
+    #[inline]
+    pub fn set_debug_for_inlining(&mut self, value: bool) {
+        self.debug_for_inlining = value;
+    }
+
+    #[inline]
+    pub fn set_debug_for_profiling(&mut self, value: bool) {
+        self.debug_for_profiling = value;
+    }
+
+    #[inline]
+    pub fn set_dwarf_version(&mut self, dwarf_version: DwarfVersion) {
+        self.dwarf_version = Some(dwarf_version);
+    }
+
+    #[inline]
+    pub fn set_stop_at(&mut self, stop_at: CompilationPhase) {
+        self.stop_at = Some(stop_at);
+    }
+
+    #[inline]
+    pub fn add_emit(&mut self, emit: EmitableUnit) {
+        self.emit.push(emit);
+    }
+
+    #[inline]
+    pub fn add_print(&mut self, printable: PrintableUnit) {
+        self.print.push(printable);
+    }
+
+    #[inline]
+    pub fn set_stack_protector(&mut self, value: bool) {
+        self.stack_protector = value;
+    }
+
+    #[inline]
+    pub fn set_symbol_linkage_strategy(&mut self, strategy: SymbolLinkageMergeStrategy) {
+        self.symbol_linkage_strategy = Some(strategy);
+    }
+
+    #[inline]
+    pub fn set_denormal_fp(
+        &mut self,
+        denormal_fp: (DenormalFloatingPointBehavior, DenormalFloatingPointBehavior),
+    ) {
+        self.denormal_fp = Some(denormal_fp);
+    }
+
+    #[inline]
+    pub fn set_denormal_fp_32(
+        &mut self,
+        denormal_fp_32: (
+            DenormalFloatingPointBehavior32BitFloatingPoint,
+            DenormalFloatingPointBehavior32BitFloatingPoint,
+        ),
+    ) {
+        self.denormal_fp_32 = Some(denormal_fp_32);
+    }
+
+    #[inline]
+    pub fn set_sanitizer(&mut self, sanitizer: Sanitizer) {
+        self.sanitizer = Some(sanitizer);
+    }
+
+    #[inline]
+    pub fn set_no_sanitize_bounds(&mut self, value: bool) {
+        self.no_sanitize_bounds = value;
+    }
+
+    #[inline]
+    pub fn set_no_sanitize_coverage(&mut self, value: bool) {
+        self.no_sanitize_coverage = value;
+    }
+
+    #[inline]
+    pub fn set_disable_all_sanitizers(&mut self, value: bool) {
+        self.disable_all_sanitizers = value;
+    }
+
+    #[inline]
+    pub fn set_disable_frame_pointer(&mut self, value: bool) {
+        self.disable_frame_pointer = value;
+    }
+
+    #[inline]
+    pub fn set_disable_uwtable(&mut self, value: bool) {
+        self.disable_uwtable = value;
+    }
+
+    #[inline]
+    pub fn set_disable_direct_access_external_data(&mut self, value: bool) {
+        self.disable_direct_access_external_data = value;
+    }
+
+    #[inline]
+    pub fn set_disable_rtlib_got(&mut self, value: bool) {
+        self.disable_rtlib_got = value;
+    }
+
+    #[inline]
+    pub fn set_disable_safe_trapping_math(&mut self, value: bool) {
+        self.disable_safe_trapping_math = value;
+    }
+
+    #[inline]
+    pub fn set_disable_safe_math(&mut self, value: bool) {
+        self.disable_safe_math = value;
+    }
+
+    #[inline]
+    pub fn set_disable_default_optimizations(&mut self, value: bool) {
+        self.disable_default_optimizations = value;
+    }
+
+    #[inline]
+    pub fn set_opt_passes(&mut self, opt_passes: String) {
+        self.opt_passes = Some(opt_passes);
+    }
+
+    #[inline]
+    pub fn set_modificator_opt_passes(
+        &mut self,
+        modificator_opt_passes: Vec<LLVMModificatorPasses>,
+    ) {
+        self.modificator_opt_passes = Some(modificator_opt_passes);
+    }
+
+    #[inline]
+    pub fn add_warning_to_disable(&mut self, code: CompilationIssueCode) {
+        if !self.warnings_to_disable.contains(&code) {
+            self.warnings_to_disable.push(code);
+        }
+    }
+
+    #[inline]
+    pub fn set_disable_all_warnings(&mut self, value: bool) {
+        self.disable_all_warnings = value;
+    }
+
+    #[inline]
+    pub fn set_no_obfuscate_archive_names(&mut self, value: bool) {
+        self.no_obfuscate_archive_names = value;
+    }
+
+    #[inline]
+    pub fn set_no_obfuscate_ir(&mut self, value: bool) {
+        self.no_obfuscate_ir = value;
+    }
+}
+
+impl FileDirectives {
+    #[inline]
+    pub fn optimization(&self) -> Option<ThrustOptimization> {
+        self.optimization
+    }
+
+    #[inline]
+    pub fn reloc_model(&self) -> Option<ThrustRelocMode> {
+        self.reloc_model
+    }
+
+    #[inline]
+    pub fn code_model(&self) -> Option<ThrustCodeModel> {
+        self.code_model
+    }
+
+    #[inline]
+    pub fn debug(&self) -> bool {
+        self.debug
+    }
+
+    #[inline]
+    pub fn debug_for_inlining(&self) -> bool {
+        self.debug_for_inlining
+    }
+
+    #[inline]
+    pub fn debug_for_profiling(&self) -> bool {
+        self.debug_for_profiling
+    }
+
+    #[inline]
+    pub fn dwarf_version(&self) -> Option<DwarfVersion> {
+        self.dwarf_version
+    }
+
+    #[inline]
+    pub fn stop_at(&self) -> Option<CompilationPhase> {
+        self.stop_at
+    }
+
+    #[inline]
+    pub fn emit(&self) -> &[EmitableUnit] {
+        self.emit.as_slice()
+    }
+
+    #[inline]
+    pub fn print(&self) -> &[PrintableUnit] {
+        self.print.as_slice()
+    }
+
+    #[inline]
+    pub fn stack_protector(&self) -> bool {
+        self.stack_protector
+    }
+
+    #[inline]
+    pub fn symbol_linkage_strategy(&self) -> Option<SymbolLinkageMergeStrategy> {
+        self.symbol_linkage_strategy
+    }
+
+    #[inline]
+    pub fn denormal_fp(
+        &self,
+    ) -> Option<(DenormalFloatingPointBehavior, DenormalFloatingPointBehavior)> {
+        self.denormal_fp
+    }
+
+    #[inline]
+    pub fn denormal_fp_32(
+        &self,
+    ) -> Option<(
+        DenormalFloatingPointBehavior32BitFloatingPoint,
+        DenormalFloatingPointBehavior32BitFloatingPoint,
+    )> {
+        self.denormal_fp_32
+    }
+
+    #[inline]
+    pub fn sanitizer(&self) -> Option<Sanitizer> {
+        self.sanitizer
+    }
+
+    #[inline]
+    pub fn no_sanitize_bounds(&self) -> bool {
+        self.no_sanitize_bounds
+    }
+
+    #[inline]
+    pub fn no_sanitize_coverage(&self) -> bool {
+        self.no_sanitize_coverage
+    }
+
+    #[inline]
+    pub fn disable_all_sanitizers(&self) -> bool {
+        self.disable_all_sanitizers
+    }
+
+    #[inline]
+    pub fn disable_frame_pointer(&self) -> bool {
+        self.disable_frame_pointer
+    }
+
+    #[inline]
+    pub fn disable_uwtable(&self) -> bool {
+        self.disable_uwtable
+    }
+
+    #[inline]
+    pub fn disable_direct_access_external_data(&self) -> bool {
+        self.disable_direct_access_external_data
+    }
+
+    #[inline]
+    pub fn disable_rtlib_got(&self) -> bool {
+        self.disable_rtlib_got
+    }
+
+    #[inline]
+    pub fn disable_safe_trapping_math(&self) -> bool {
+        self.disable_safe_trapping_math
+    }
+
+    #[inline]
+    pub fn disable_safe_math(&self) -> bool {
+        self.disable_safe_math
+    }
+
+    #[inline]
+    pub fn disable_default_optimizations(&self) -> bool {
+        self.disable_default_optimizations
+    }
+
+    #[inline]
+    pub fn opt_passes(&self) -> Option<&str> {
+        self.opt_passes.as_deref()
+    }
+
+    #[inline]
+    pub fn modificator_opt_passes(&self) -> Option<&[LLVMModificatorPasses]> {
+        self.modificator_opt_passes.as_deref()
+    }
+
+    #[inline]
+    pub fn warnings_to_disable(&self) -> &[CompilationIssueCode] {
+        self.warnings_to_disable.as_slice()
+    }
+
+    #[inline]
+    pub fn disable_all_warnings(&self) -> bool {
+        self.disable_all_warnings
+    }
+
+    #[inline]
+    pub fn no_obfuscate_archive_names(&self) -> bool {
+        self.no_obfuscate_archive_names
+    }
+
+    #[inline]
+    pub fn no_obfuscate_ir(&self) -> bool {
+        self.no_obfuscate_ir
+    }
 }
 
 #[derive(Debug)]
@@ -95,7 +430,7 @@ impl<'global, 'local> FileOptions<'global, 'local> {
 
     #[inline]
     pub fn stop_compilation_at(&self, phase: CompilationPhase) -> bool {
-        self.local.stop_at.map_or_else(
+        self.local.stop_at().map_or_else(
             || self.global.stop_compilation_at(phase),
             |local| local == phase,
         )
@@ -103,29 +438,29 @@ impl<'global, 'local> FileOptions<'global, 'local> {
 
     #[inline]
     pub fn contains_emitable(&self, emit: EmitableUnit) -> bool {
-        self.local.emit.contains(&emit) || self.global.contains_emitable(emit)
+        self.local.emit().contains(&emit) || self.global.contains_emitable(emit)
     }
 
     #[inline]
     pub fn contains_printable(&self, printable: PrintableUnit) -> bool {
-        self.local.print.contains(&printable) || self.global.contains_printable(printable)
+        self.local.print().contains(&printable) || self.global.contains_printable(printable)
     }
 
     #[inline]
     pub fn disable_all_warnings(&self) -> bool {
-        self.local.disable_all_warnings || self.global.disable_all_warnings()
+        self.local.disable_all_warnings() || self.global.disable_all_warnings()
     }
 
     #[inline]
     pub fn optimization(&self) -> ThrustOptimization {
         self.local
-            .optimization
+            .optimization()
             .unwrap_or_else(|| self.global.get_llvm_backend().get_optimization())
     }
 
     #[inline]
     pub fn reloc_model(&self) -> inkwell::targets::RelocMode {
-        self.local.reloc_model.map_or_else(
+        self.local.reloc_model().map_or_else(
             || self.global.get_llvm_backend().get_reloc_mode(),
             ThrustRelocMode::to_llvm,
         )
@@ -133,7 +468,7 @@ impl<'global, 'local> FileOptions<'global, 'local> {
 
     #[inline]
     pub fn code_model(&self) -> inkwell::targets::CodeModel {
-        self.local.code_model.map_or_else(
+        self.local.code_model().map_or_else(
             || self.global.get_llvm_backend().get_code_model(),
             ThrustCodeModel::to_llvm,
         )
@@ -143,7 +478,7 @@ impl<'global, 'local> FileOptions<'global, 'local> {
     pub fn sanitizer(&self) -> Sanitizer {
         let mut sanitizer: Sanitizer = self
             .local
-            .sanitizer
+            .sanitizer()
             .unwrap_or_else(|| *self.global.get_llvm_backend().get_sanitizer());
 
         match &mut sanitizer {
@@ -152,11 +487,11 @@ impl<'global, 'local> FileOptions<'global, 'local> {
             | Sanitizer::Memory(config)
             | Sanitizer::Thread(config)
             | Sanitizer::Memtag(config) => {
-                if self.local.no_sanitize_bounds {
+                if self.local.no_sanitize_bounds() {
                     config.set_nosanitize_bounds(true);
                 }
 
-                if self.local.no_sanitize_coverage {
+                if self.local.no_sanitize_coverage() {
                     config.set_nosanitize_coverage(true);
                 }
             }
@@ -169,14 +504,14 @@ impl<'global, 'local> FileOptions<'global, 'local> {
     #[inline]
     pub fn symbol_linkage_strategy(&self) -> SymbolLinkageMergeStrategy {
         self.local
-            .symbol_linkage_strategy
+            .symbol_linkage_strategy()
             .unwrap_or_else(|| *self.global.get_llvm_backend().get_symbol_linkage_strategy())
     }
 
     #[inline]
     pub fn denormal_fp(&self) -> (DenormalFloatingPointBehavior, DenormalFloatingPointBehavior) {
         self.local
-            .denormal_fp
+            .denormal_fp()
             .unwrap_or_else(|| *self.global.get_llvm_backend().get_denormal_fp_behavior())
     }
 
@@ -187,7 +522,7 @@ impl<'global, 'local> FileOptions<'global, 'local> {
         DenormalFloatingPointBehavior32BitFloatingPoint,
         DenormalFloatingPointBehavior32BitFloatingPoint,
     ) {
-        self.local.denormal_fp_32.unwrap_or_else(|| {
+        self.local.denormal_fp_32().unwrap_or_else(|| {
             *self
                 .global
                 .get_llvm_backend()
@@ -198,48 +533,46 @@ impl<'global, 'local> FileOptions<'global, 'local> {
     #[inline]
     pub fn opt_passes(&self) -> &str {
         self.local
-            .opt_passes
-            .as_deref()
+            .opt_passes()
             .unwrap_or_else(|| self.global.get_llvm_backend().get_opt_passes())
     }
 
     #[inline]
     pub fn modificator_opt_passes(&self) -> &[LLVMModificatorPasses] {
         self.local
-            .modificator_opt_passes
-            .as_deref()
+            .modificator_opt_passes()
             .unwrap_or_else(|| self.global.get_llvm_backend().get_modificator_passes())
     }
 
     #[inline]
     pub fn omit_default_optimizations(&self) -> bool {
-        self.local.disable_default_optimizations || self.global.omit_default_optimizations()
+        self.local.disable_default_optimizations() || self.global.omit_default_optimizations()
     }
 
     #[inline]
     pub fn disable_all_sanitizers(&self) -> bool {
-        self.local.disable_all_sanitizers
+        self.local.disable_all_sanitizers()
             || self.global.get_llvm_backend().get_disable_all_sanitizers()
     }
 
     #[inline]
     pub fn stack_protector(&self) -> bool {
-        self.local.stack_protector || self.global.get_llvm_backend().needs_stack_protector()
+        self.local.stack_protector() || self.global.get_llvm_backend().needs_stack_protector()
     }
 
     #[inline]
     pub fn omit_frame_pointer(&self) -> bool {
-        self.local.disable_frame_pointer || self.global.get_llvm_backend().omit_frame_pointer()
+        self.local.disable_frame_pointer() || self.global.get_llvm_backend().omit_frame_pointer()
     }
 
     #[inline]
     pub fn omit_uwtable(&self) -> bool {
-        self.local.disable_uwtable || self.global.get_llvm_backend().omit_uwtable()
+        self.local.disable_uwtable() || self.global.get_llvm_backend().omit_uwtable()
     }
 
     #[inline]
     pub fn omit_direct_access_external_data(&self) -> bool {
-        self.local.disable_direct_access_external_data
+        self.local.disable_direct_access_external_data()
             || self
                 .global
                 .get_llvm_backend()
@@ -248,22 +581,23 @@ impl<'global, 'local> FileOptions<'global, 'local> {
 
     #[inline]
     pub fn omit_rtlib_got(&self) -> bool {
-        self.local.disable_rtlib_got || self.global.get_llvm_backend().omit_rtlibusegot()
+        self.local.disable_rtlib_got() || self.global.get_llvm_backend().omit_rtlibusegot()
     }
 
     #[inline]
     pub fn omit_trapping_math(&self) -> bool {
-        self.local.disable_safe_trapping_math || self.global.get_llvm_backend().omit_trapping_math()
+        self.local.disable_safe_trapping_math()
+            || self.global.get_llvm_backend().omit_trapping_math()
     }
 
     #[inline]
     pub fn disable_safe_math(&self) -> bool {
-        self.local.disable_safe_math || self.global.get_llvm_backend().has_disable_safe_math()
+        self.local.disable_safe_math() || self.global.get_llvm_backend().has_disable_safe_math()
     }
 
     #[inline]
     pub fn debug_mode(&self) -> bool {
-        self.local.debug
+        self.local.debug()
             || self
                 .global
                 .get_llvm_backend()
@@ -273,7 +607,7 @@ impl<'global, 'local> FileOptions<'global, 'local> {
 
     #[inline]
     pub fn debug_for_inlining(&self) -> bool {
-        self.local.debug_for_inlining
+        self.local.debug_for_inlining()
             || self
                 .global
                 .get_llvm_backend()
@@ -283,7 +617,7 @@ impl<'global, 'local> FileOptions<'global, 'local> {
 
     #[inline]
     pub fn debug_for_profiling(&self) -> bool {
-        self.local.debug_for_profiling
+        self.local.debug_for_profiling()
             || self
                 .global
                 .get_llvm_backend()
@@ -293,7 +627,7 @@ impl<'global, 'local> FileOptions<'global, 'local> {
 
     #[inline]
     pub fn dwarf_version(&self) -> u64 {
-        self.local.dwarf_version.map_or_else(
+        self.local.dwarf_version().map_or_else(
             || {
                 self.global
                     .get_llvm_backend()
@@ -309,12 +643,12 @@ impl<'global, 'local> FileOptions<'global, 'local> {
 
     #[inline]
     pub fn obfuscate_archive_names(&self) -> bool {
-        !self.local.no_obfuscate_archive_names && self.global.need_obfuscate_archive_names()
+        !self.local.no_obfuscate_archive_names() && self.global.need_obfuscate_archive_names()
     }
 
     #[inline]
     pub fn obfuscate_ir(&self) -> bool {
-        !self.local.no_obfuscate_ir && self.global.need_obfuscate_ir()
+        !self.local.no_obfuscate_ir() && self.global.need_obfuscate_ir()
     }
 }
 
@@ -398,7 +732,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.optimization = Some(self::parse_optimization(value)?);
+            directives.set_optimization(self::parse_optimization(value)?);
         }
 
         "-reloc-model" => {
@@ -406,14 +740,14 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.reloc_model = Some(self::parse_reloc_model(value)?);
+            directives.set_reloc_model(self::parse_reloc_model(value)?);
         }
         "-code-model" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.code_model = Some(self::parse_code_model(value)?);
+            directives.set_code_model(self::parse_code_model(value)?);
         }
         "-dbg" => {
             if value.is_some() {
@@ -423,7 +757,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.debug = true;
+            directives.set_debug(true);
         }
         "-dbg-for-inlining" => {
             if value.is_some() {
@@ -433,7 +767,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.debug_for_inlining = true;
+            directives.set_debug_for_inlining(true);
         }
         "-dbg-for-profiling" => {
             if value.is_some() {
@@ -443,35 +777,35 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.debug_for_profiling = true;
+            directives.set_debug_for_profiling(true);
         }
         "-dbg-dwarf-version" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.dwarf_version = Some(self::parse_dwarf(value)?);
+            directives.set_dwarf_version(self::parse_dwarf(value)?);
         }
         "-stop-at" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.stop_at = Some(self::parse_phase(value)?);
+            directives.set_stop_at(self::parse_phase(value)?);
         }
         "-emit" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.emit.push(self::parse_emit(value)?);
+            directives.add_emit(self::parse_emit(value)?);
         }
         "-print" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.print.push(self::parse_print(value)?);
+            directives.add_print(self::parse_print(value)?);
         }
         "--stack-protector" => {
             if value.is_some() {
@@ -481,36 +815,35 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.stack_protector = true;
+            directives.set_stack_protector(true);
         }
         "--symbol-linkage-strategy" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.symbol_linkage_strategy = Some(self::parse_linkage_strategy(value)?);
+            directives.set_symbol_linkage_strategy(self::parse_linkage_strategy(value)?);
         }
         "--denormal-floating-point-behavior" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.denormal_fp = Some(self::parse_pair(value, self::parse_denormal_value)?);
+            directives.set_denormal_fp(self::parse_pair(value, self::parse_denormal_value)?);
         }
         "--denormal-floating-point-32-bits-behavior" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.denormal_fp_32 =
-                Some(self::parse_pair(value, self::parse_denormal_32_value)?);
+            directives.set_denormal_fp_32(self::parse_pair(value, self::parse_denormal_32_value)?);
         }
         "--sanitizer" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.sanitizer = Some(self::parse_sanitizer(value)?);
+            directives.set_sanitizer(self::parse_sanitizer(value)?);
         }
         "--no-sanitize" => {
             let value: &str = value
@@ -527,7 +860,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.disable_all_sanitizers = true;
+            directives.set_disable_all_sanitizers(true);
         }
         "--disable-frame-pointer" => {
             if value.is_some() {
@@ -537,7 +870,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.disable_frame_pointer = true;
+            directives.set_disable_frame_pointer(true);
         }
         "--disable-uwtable" => {
             if value.is_some() {
@@ -547,7 +880,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.disable_uwtable = true;
+            directives.set_disable_uwtable(true);
         }
         "--disable-direct-access-external-data" => {
             if value.is_some() {
@@ -557,7 +890,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.disable_direct_access_external_data = true;
+            directives.set_disable_direct_access_external_data(true);
         }
         "--disable-rtlib-got" => {
             if value.is_some() {
@@ -567,7 +900,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.disable_rtlib_got = true;
+            directives.set_disable_rtlib_got(true);
         }
         "--disable-safe-trapping-math" => {
             if value.is_some() {
@@ -577,7 +910,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.disable_safe_trapping_math = true;
+            directives.set_disable_safe_trapping_math(true);
         }
         "--disable-safe-math" => {
             if value.is_some() {
@@ -587,7 +920,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.disable_safe_math = true;
+            directives.set_disable_safe_math(true);
         }
         "--disable-default-optimizations" => {
             if value.is_some() {
@@ -597,22 +930,23 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.disable_default_optimizations = true;
+            directives.set_disable_default_optimizations(true);
         }
         "--opt-passes" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.opt_passes = Some(value.to_string());
+            directives.set_opt_passes(value.to_string());
         }
         "--modificator-opt-passes" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
-            directives.modificator_opt_passes =
-                Some(LLVMModificatorPasses::into_llvm_modificator_passes(value));
+            directives.set_modificator_opt_passes(
+                LLVMModificatorPasses::into_llvm_modificator_passes(value),
+            );
         }
         "--disable-warnings" => {
             let value: &str = value
@@ -620,9 +954,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
 
             for code in self::parse_warning_codes(value)? {
-                if !directives.warnings_to_disable.contains(&code) {
-                    directives.warnings_to_disable.push(code);
-                }
+                directives.add_warning_to_disable(code);
             }
         }
         "--disable-all-warnings" => {
@@ -633,7 +965,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.disable_all_warnings = true;
+            directives.set_disable_all_warnings(true);
         }
         "--no-obfuscate-archive-names" => {
             if value.is_some() {
@@ -643,7 +975,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.no_obfuscate_archive_names = true;
+            directives.set_no_obfuscate_archive_names(true);
         }
         "--no-obfuscate-ir" => {
             if value.is_some() {
@@ -653,7 +985,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
                 ));
             }
 
-            directives.no_obfuscate_ir = true;
+            directives.set_no_obfuscate_ir(true);
         }
 
         _ => return Err(format!("Unknown directive flag '{}'.", flag)),
@@ -669,13 +1001,13 @@ pub fn combine_warnings_to_disable<'options>(
         return Cow::Borrowed(CompilationIssueCode::ALL_WARNING_CODES);
     }
 
-    if options.local.warnings_to_disable.is_empty() {
+    if options.local.warnings_to_disable().is_empty() {
         return Cow::Borrowed(options.global.get_warnings_to_disable());
     }
 
     let mut warnings: Vec<CompilationIssueCode> = options.global.get_warnings_to_disable().to_vec();
 
-    for code in &options.local.warnings_to_disable {
+    for code in options.local.warnings_to_disable() {
         if !warnings.contains(code) {
             warnings.push(*code);
         }
@@ -911,7 +1243,7 @@ fn parse_denormal_32_value(
 
 fn parse_sanitizer(value: &str) -> Result<Sanitizer, String> {
     let config: SanitizerConfiguration = SanitizerConfiguration::new();
-    
+
     match value {
         "address" => Ok(Sanitizer::Address(config)),
         "hwaddress" => Ok(Sanitizer::Hwaddress(config)),
@@ -925,8 +1257,8 @@ fn parse_sanitizer(value: &str) -> Result<Sanitizer, String> {
 fn apply_no_sanitize(directives: &mut FileDirectives, value: &str) -> Result<(), String> {
     for item in value.split(';').map(str::trim) {
         match item {
-            "bounds" => directives.no_sanitize_bounds = true,
-            "coverage" => directives.no_sanitize_coverage = true,
+            "bounds" => directives.set_no_sanitize_bounds(true),
+            "coverage" => directives.set_no_sanitize_coverage(true),
             _ => return Err(format!("Invalid sanitizer modifier: '{}'.", item)),
         }
     }

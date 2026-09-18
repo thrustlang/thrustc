@@ -1,0 +1,94 @@
+{
+  "name": "thrustlang-vscode",
+  "displayName": "Thrust Programming Language",
+  "description": "Syntax highlighting, theme, file icons, and language server support for the Thrust Programming Language",
+  "version": "0.2.1",
+  "publisher": "thrustlang",
+  "license": "GPL-3.0",
+  "repository": "https://github.com/thrustlang/thrustc",
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:thrust"
+  ],
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Themes",
+    "Linters"
+  ],
+  "scripts": {
+    "compile": "tsc -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "icon": "icons/thrust-file.png",
+  "contributes": {
+    "languages": [
+      {
+        "id": "thrust",
+        "aliases": [
+          "Thrust",
+          "thrust"
+        ],
+        "extensions": [
+          ".thrust"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "thrust",
+        "scopeName": "source.thrust",
+        "path": "./syntaxes/thrust.tmLanguage.json"
+      }
+    ],
+    "themes": [
+      {
+        "label": "One Dark Pro (Thrust)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/one-dark-pro.json"
+      },
+      {
+        "label": "Gruvbox Dark Hard (Thrust)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/gruvbox-dark-hard.json"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "thrust-icons",
+        "label": "Thrust File Icons",
+        "path": "./icons/thrust-icon-theme.json"
+      }
+    ],
+    "configuration": {
+      "title": "Thrust",
+      "properties": {
+        "thrust.lsp.path": {
+          "type": "string",
+          "default": "thrustc_lsp",
+          "description": "Path to the thrustc_lsp executable."
+        },
+        "thrust.lsp.args": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Additional arguments passed to thrustc_lsp."
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -11,7 +11,7 @@ fn applies_local_optimization() {
 
     apply_directive("-opt=O3", &mut directives).unwrap();
 
-    assert!(directives.optimization.unwrap().is_high_opt());
+    assert!(directives.optimization().unwrap().is_high_opt());
 }
 
 #[test]
@@ -31,7 +31,7 @@ fn accumulates_warning_directives() {
     apply_directive("--disable-warnings=W0020", &mut directives).unwrap();
     apply_directive("--disable-warnings=W0030", &mut directives).unwrap();
 
-    assert_eq!(directives.warnings_to_disable.len(), 2);
+    assert_eq!(directives.warnings_to_disable().len(), 2);
 }
 
 #[test]

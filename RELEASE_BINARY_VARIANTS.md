@@ -8,6 +8,8 @@ In the releases section of the Thrust Programming Language Github repository, yo
 
 - `thrustc`: This is the standard executable compiled with symbols and in debug mode for bug hunting in production, but it has a larger file size.
 - `thrustc-stripped`: This is the compiler binary, without symbols and without debug mode, so it's much smaller than the standard version.
+- `thrustc_lsp`: This is the language server executable used by editors such as Visual Studio Code.
+- `thrustc_lsp-stripped`: This is the language server binary, without symbols and without debug mode.
 
 ### Github Releases
 

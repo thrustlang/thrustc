@@ -1,0 +1,6 @@
+.vscodeignore
+packages/**
+src/**
+tsconfig.json
+package-lock.json
+*.vsix

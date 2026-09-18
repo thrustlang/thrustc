@@ -59,9 +59,7 @@ pub fn compile_as_function_type<'ctx>(
     let has_available_abi: bool = context.has_abi();
     let lowers_variadic_functions: bool = matches!(
         context.get_abi(),
-        Some(
-            thrustc_llvm_abi_representation::LLVMABIRepresentation::WebAssemblyABI { .. }
-        )
+        Some(thrustc_llvm_abi_representation::LLVMABIRepresentation::WebAssemblyABI { .. })
     );
 
     let mut standard_type_generation = |parameters: &[Ast<'ctx>], return_kind: &Type| {
@@ -112,9 +110,8 @@ pub fn compile_as_function_type<'ctx>(
             return standard_type_generation(parameters, kind);
         }
 
-        let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> = context
-            .get_abi()
-            .unwrap_or_else(|| {
+        let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
+            context.get_abi().unwrap_or_else(|| {
                 abort::abort_codegen(
                     context,
                     "Failed to compile as a function type, expected an ABI!",
@@ -124,9 +121,8 @@ pub fn compile_as_function_type<'ctx>(
                 )
             });
 
-        let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation = context
-            .get_codegen_location()
-            .to_abi_representation();
+        let codegen_location: thrustc_llvm_abi::LLVMABICodeGenLocation =
+            context.get_codegen_location().to_abi_representation();
 
         let function_type: (FunctionType<'_>, LLVMABIConfiguration<'_>) =
             thrustc_llvm_abi::create_function_type(
@@ -186,7 +182,7 @@ pub fn generate_type<'ctx>(
 
     match kind {
         t if t.is_integer_type() || t.is_char_type() || t.is_bool_type() => match kind {
-            Type::S8 { .. } | Type::U8 { .. } | Type::Char { .. }  => llvm_context.i8_type().into(),
+            Type::S8 { .. } | Type::U8 { .. } | Type::Char { .. } => llvm_context.i8_type().into(),
             Type::S16 { .. } | Type::U16 { .. } => llvm_context.i16_type().into(),
             Type::S32 { .. } | Type::U32 { .. } => llvm_context.i32_type().into(),
             Type::S64 { .. } | Type::U64 { .. } => llvm_context.i64_type().into(),
@@ -228,11 +224,19 @@ pub fn generate_type<'ctx>(
         Type::Array {
             infered_type: Some((infered_type, ..)),
             ..
-        } if !matches!(codegen_location, CodeGenLocation::CallArgExpr) => self::generate_type(context, infered_type),
+        } if !matches!(codegen_location, CodeGenLocation::CallArgExpr) => {
+            self::generate_type(context, infered_type)
+        }
 
         t if t.is_ptr_type() => {
-            if let Type::Ptr { address_space: Some(address_space), .. } = t {
-                llvm_context.ptr_type(AddressSpace::from(*address_space)).into()
+            if let Type::Ptr {
+                address_space: Some(address_space),
+                ..
+            } = t
+            {
+                llvm_context
+                    .ptr_type(AddressSpace::from(*address_space))
+                    .into()
             } else {
                 llvm_context.ptr_type(AddressSpace::default()).into()
             }
@@ -242,11 +246,13 @@ pub fn generate_type<'ctx>(
             let address_space: Option<u16> = t.get_address_space();
 
             if let Some(address_space) = address_space {
-                llvm_context.ptr_type(AddressSpace::from(address_space)).into()
+                llvm_context
+                    .ptr_type(AddressSpace::from(address_space))
+                    .into()
             } else {
                 llvm_context.ptr_type(AddressSpace::default()).into()
             }
-        },
+        }
 
         Type::Const(subtype, ..) => self::generate_type(context, subtype),
 
@@ -263,12 +269,13 @@ pub fn generate_type<'ctx>(
                     field_types.push(self::generate_type(context, ty));
                 }
             }
-            
 
             llvm_context.struct_type(&field_types, packed).into()
         }
 
-        Type::FixedArray { base_type,  size, .. } => {
+        Type::FixedArray {
+            base_type, size, ..
+        } => {
             let array_type: BasicTypeEnum = self::generate_type(context, base_type);
             array_type.array_type(*size).into()
         }
@@ -331,10 +338,15 @@ pub fn generate_dereference_type<'ctx>(
             ),
         },
 
-        
         t if t.is_ptr_type() => {
-            if let Type::Ptr { address_space: Some(address_space), .. } = t {
-                llvm_context.ptr_type(AddressSpace::from(*address_space)).into()
+            if let Type::Ptr {
+                address_space: Some(address_space),
+                ..
+            } = t
+            {
+                llvm_context
+                    .ptr_type(AddressSpace::from(*address_space))
+                    .into()
             } else {
                 llvm_context.ptr_type(AddressSpace::default()).into()
             }
@@ -361,7 +373,9 @@ pub fn generate_dereference_type<'ctx>(
             llvm_context.struct_type(&field_types, packed).into()
         }
 
-        Type::FixedArray { base_type, size, .. } => {
+        Type::FixedArray {
+            base_type, size, ..
+        } => {
             let array_type: BasicTypeEnum = self::generate_dereference_type(context, base_type);
             array_type.array_type(*size).into()
         }
@@ -390,12 +404,14 @@ pub fn generate_pointer_arithmetic_type<'ctx>(
         Type::Array {
             base_type: subtype, ..
         } => self::generate_type(context, subtype),
-        Type::Ptr { subtype: Some(subtype), .. } => self::generate_type(context, subtype),
+        Type::Ptr {
+            subtype: Some(subtype),
+            ..
+        } => self::generate_type(context, subtype),
 
         _ => self::generate_type(context, kind),
     }
 }
-
 
 pub fn determinate_mutation_target_type(source: &Ast<'_>, source_type: &Type) -> Type {
     if let Ast::Index { metadata, .. } = source {
@@ -406,7 +422,6 @@ pub fn determinate_mutation_target_type(source: &Ast<'_>, source_type: &Type) ->
 
     source_type.clone()
 }
-
 
 pub fn compile_as_dbg_type<'ctx>(
     context: &mut LLVMDebugContext<'_, 'ctx>,
@@ -553,7 +568,6 @@ pub fn compile_as_dbg_type<'ctx>(
         ),
     }
 }
-
 
 fn dbg_type_encoding(ty: &Type) -> u32 {
     if ty.is_bool_type() {

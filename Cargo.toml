@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "thrustc",
+    "thrustc_lsp",
     "thrustc_core",
     "thrustc_ast",
     "thrustc_builtins",
@@ -56,6 +57,8 @@ members = [
     "thrustc_std", 
     "thrustc_generics",
 ]
+
+default-members = ["thrustc"]
 
 exclude = [
     "fuzz"  

@@ -1,0 +1,207 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0030";
+
+import std::mem;
+
+const VECDEQUE_INITIAL_CAPACITY: usize @public = 4;
+
+struct VecDeque [T] @public {
+    data: ptr[T],
+    length: usize,
+    capacity: usize,
+    head: usize
+}
+
+fn newVecDeque [T] () VecDeque[T] @public {
+    return new VecDeque[T] {
+        data: nullptr,
+        length: 0,
+        capacity: 0,
+        head: 0
+    };
+}
+
+fn withCapacity [T] (capacity: usize) VecDeque[T] @public {
+    var deque := new VecDeque[T] {
+        data: nullptr,
+        length: 0,
+        capacity: 0,
+        head: 0
+    };
+
+    if capacity > 0 {
+        deque->data = (mem::allocateMemory(sizeOf(T) * capacity)) as ptr[T];
+        deque->capacity = capacity;
+    }
+
+    return deque;
+}
+
+fn dropVecDeque [T] (deque: ptr[VecDeque[T]]) void @public {
+    if deque->data != nullptr {
+        mem::freeMemory(deque->data as ptr);
+    }
+
+    deque->data = nullptr;
+    deque->length = 0;
+    deque->capacity = 0;
+    deque->head = 0;
+}
+
+fn getLength [T] (deque: ptr[VecDeque[T]]) usize @public {
+    return deque->length;
+}
+
+fn getCapacity [T] (deque: ptr[VecDeque[T]]) usize @public {
+    return deque->capacity;
+}
+
+fn isEmpty [T] (deque: ptr[VecDeque[T]]) bool @public {
+    return deque->length == 0;
+}
+
+fn getDataPointer [T] (deque: ptr[VecDeque[T]]) ptr[T] @public {
+    return deque->data;
+}
+
+fn at [T] (deque: ptr[VecDeque[T]], index: usize) T @public {
+    return deque->data->[(deque->head + index) % deque->capacity];
+}
+
+fn front [T] (deque: ptr[VecDeque[T]]) T @public {
+    return deque->data->[deque->head];
+}
+
+fn back [T] (deque: ptr[VecDeque[T]]) T @public {
+    return deque->data->[(deque->head + deque->length - 1) % deque->capacity];
+}
+
+fn ensureCapacity [T] (deque: ptr[VecDeque[T]], minimum: usize) void @public {
+    if minimum > deque->capacity {
+        var newCapacity: usize = deque->capacity;
+
+        if newCapacity == 0 {
+            newCapacity = VECDEQUE_INITIAL_CAPACITY;
+        }
+
+        while newCapacity < minimum {
+            newCapacity = newCapacity * 2;
+        }
+
+        setCapacity(deque, newCapacity);
+    }
+}
+
+fn pushBack [T] (deque: ptr[VecDeque[T]], value: T) void @public {
+    if deque->length == deque->capacity {
+        if deque->capacity == 0 {
+            ensureCapacity(deque, VECDEQUE_INITIAL_CAPACITY);
+        } else {
+            ensureCapacity(deque, deque->capacity * 2);
+        }
+    }
+
+    deque->data[(deque->head + deque->length) % deque->capacity] = value;
+    deque->length = deque->length + 1;
+}
+
+fn pushFront [T] (deque: ptr[VecDeque[T]], value: T) void @public {
+    if deque->length == deque->capacity {
+        if deque->capacity == 0 {
+            ensureCapacity(deque, VECDEQUE_INITIAL_CAPACITY);
+        } else {
+            ensureCapacity(deque, deque->capacity * 2);
+        }
+    }
+
+    if deque->head == 0 {
+        deque->head = deque->capacity - 1;
+    } else {
+        deque->head = deque->head - 1;
+    }
+
+    deque->data[deque->head] = value;
+    deque->length = deque->length + 1;
+}
+
+fn popBack [T] (deque: ptr[VecDeque[T]]) T @public {
+    deque->length = deque->length - 1;
+
+    return deque->data->[(deque->head + deque->length) % deque->capacity];
+}
+
+fn popFront [T] (deque: ptr[VecDeque[T]]) T @public {
+    var value: T = deque->data->[deque->head];
+
+    deque->length = deque->length - 1;
+
+    if deque->length == 0 {
+        deque->head = 0;
+    } else {
+        deque->head = (deque->head + 1) % deque->capacity;
+    }
+
+    return value;
+}
+
+fn clear [T] (deque: ptr[VecDeque[T]]) void @public {
+    deque->length = 0;
+    deque->head = 0;
+}
+
+fn reserveCapacity [T] (deque: ptr[VecDeque[T]], newCapacity: usize) void @public {
+    if newCapacity > deque->capacity {
+        setCapacity(deque, newCapacity);
+    }
+}
+
+fn shrinkToFit [T] (deque: ptr[VecDeque[T]]) void @public {
+    if deque->length == 0 {
+        setCapacity(deque, 0);
+    } else if deque->length < deque->capacity {
+        setCapacity(deque, deque->length);
+    }
+}
+
+fn setCapacity [T] (deque: ptr[VecDeque[T]], newCapacity: usize) void {
+    var oldData: ptr[T] = deque->data;
+    var oldCapacity: usize = deque->capacity;
+    var newData: ptr[T] = nullptr;
+    var index: usize = 0;
+
+    if newCapacity > 0 {
+        newData = (mem::allocateMemory(sizeOf(T) * newCapacity)) as ptr[T];
+    }
+
+    while index < deque->length {
+        newData[index] = oldData->[(deque->head + index) % oldCapacity];
+        index = index + 1;
+    }
+
+    if oldData != nullptr {
+        mem::freeMemory(oldData as ptr);
+    }
+
+    deque->data = newData;
+    deque->capacity = newCapacity;
+    deque->head = 0;
+}

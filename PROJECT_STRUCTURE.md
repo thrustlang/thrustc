@@ -20,6 +20,9 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_cli`**  
   Command-line interface helpers and argument parsing utilities (`help.rs`, `lib.rs`).
 
+- **`thrustc_lsp`**
+  Language server binary for editor integrations. It communicates through the Language Server Protocol over stdio and is distributed with the compiler releases.
+
 - **`thrustc_options`**  
   Compiler configuration and command-line options: backends, optimization levels, debug information, linkage, target settings (`lib.rs`, `linkage.rs`).
 
@@ -222,6 +225,10 @@ A comprehensive fuzzing infrastructure using `cargo-fuzz`:
 - **VS Code** — `thrust-vscode/` extension and packaged `.vsix` for Thrust language support.
 - **Neovim / Vim** — `thrust.vim` syntax file and `thrust.nvim/` plugin package.
 - **Theme** — `One Dark.tmTheme` compatible theme.
+
+## Language Server (`lsp/`)
+
+- **VS Code** — `lsp/vscode/` extension with syntax highlighting, themes, file icons, and `thrustc_lsp` client integration.
 
 ---
 

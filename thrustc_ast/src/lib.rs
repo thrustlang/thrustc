@@ -185,6 +185,15 @@ pub enum Ast<'ast> {
         span: Span,
         id: NodeId,
     },
+    CompileTimeIf {
+        condition: std::boxed::Box<Ast<'ast>>,
+        then_branch: std::boxed::Box<Ast<'ast>>,
+        else_if_branch: std::vec::Vec<Ast<'ast>>,
+        else_branch: Option<std::boxed::Box<Ast<'ast>>>,
+        kind: Type,
+        span: Span,
+        id: NodeId,
+    },
 
     // Loops
     For {

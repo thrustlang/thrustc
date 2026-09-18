@@ -2,3 +2,5 @@ Cargo.lock
 target
 -*o
 build
+node_modules
+out

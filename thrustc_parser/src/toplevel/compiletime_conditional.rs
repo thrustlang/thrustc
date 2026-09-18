@@ -24,6 +24,7 @@ use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
 
 use crate::statements::compiletime_conditional;
+use crate::statements::compiletime_conditional::CompileTimeCondition;
 use crate::{ParserContext, synchronize};
 
 pub fn build_compiletime_declaration<'parser>(
@@ -31,7 +32,8 @@ pub fn build_compiletime_declaration<'parser>(
 ) -> Result<Ast<'parser>, CompilationIssue> {
     let span: Span = ctx.peek().get_span();
 
-    let first_condition: bool = compiletime_conditional::evaluate_condition(ctx)?;
+    let first_condition: bool =
+        self::expect_known_condition(compiletime_conditional::evaluate_condition(ctx)?, span)?;
 
     let mut active: Option<Ast<'parser>> = None;
 
@@ -43,7 +45,10 @@ pub fn build_compiletime_declaration<'parser>(
 
     loop {
         if ctx.check(TokenType::ElifAttribute) {
-            let condition: bool = compiletime_conditional::evaluate_condition(ctx)?;
+            let condition: bool = self::expect_known_condition(
+                compiletime_conditional::evaluate_condition(ctx)?,
+                span,
+            )?;
 
             if active.is_none() && condition {
                 active = Some(super::parse(ctx)?);
@@ -61,7 +66,10 @@ pub fn build_compiletime_declaration<'parser>(
                 "Expected '@else'.".into(),
             )?;
 
-            let condition: bool = compiletime_conditional::evaluate_condition(ctx)?;
+            let condition: bool = self::expect_known_condition(
+                compiletime_conditional::evaluate_condition(ctx)?,
+                span,
+            )?;
 
             if active.is_none() && condition {
                 active = Some(super::parse(ctx)?);
@@ -104,6 +112,22 @@ pub fn build_compiletime_declaration<'parser>(
 
             Ok(Ast::invalid_ast(span))
         }
+    }
+}
+
+fn expect_known_condition(
+    condition: CompileTimeCondition<'_>,
+    span: Span,
+) -> Result<bool, CompilationIssue> {
+    match condition {
+        CompileTimeCondition::Known(value) => Ok(value),
+        CompileTimeCondition::Deferred(_) => Err(CompilationIssue::Error(
+            CompilationIssueCode::E0019,
+            "Top-level '@if' conditions cannot depend on generic parameters.".into(),
+            "Move this '@if' inside a generic declaration body or use a condition that can be evaluated immediately.".into(),
+            None,
+            span,
+        )),
     }
 }
 

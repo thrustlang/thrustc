@@ -89,7 +89,12 @@ jobs:
 
       - name: Building Thrust Compiler (Development)
         run: |
-          cargo build
+          cargo build -p thrustc
+        working-directory: thrustc
+
+      - name: Building Thrust LSP (Development)
+        run: |
+          cargo build -p thrustc_lsp
         working-directory: thrustc
 
       - name: Extracting File Type and Dynamic Dependencies
@@ -163,5 +168,6 @@ jobs:
 
           files: |
             thrustc/target/debug/thrustc
+            thrustc/target/debug/thrustc_lsp
           draft: false
           prerelease: true 

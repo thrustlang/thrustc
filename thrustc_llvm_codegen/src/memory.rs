@@ -20,6 +20,7 @@
 use std::path::PathBuf;
 
 use inkwell::AddressSpace;
+use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
@@ -27,6 +28,7 @@ use inkwell::targets::TargetData;
 use inkwell::types::BasicTypeEnum;
 use inkwell::values::BasicValue;
 use inkwell::values::BasicValueEnum;
+use inkwell::values::InstructionOpcode;
 use inkwell::values::InstructionValue;
 use inkwell::values::IntValue;
 use inkwell::values::PointerValue;
@@ -45,6 +47,7 @@ use crate::abort;
 use crate::atomic_operations;
 use crate::atomic_operations::LLVMAtomicModificators;
 use crate::context::LLVMCodeGenContext;
+use crate::traits::LLVMFunctionExtensions;
 use crate::typegeneration;
 
 #[derive(Debug, Clone, Copy)]
@@ -890,18 +893,13 @@ pub fn allocate_in<'ctx>(
 
     match site {
         LLVMAllocationSite::Stack => {
-            let ptr: PointerValue<'_> =
-                llvm_builder
-                    .build_alloca(llvm_type, "")
-                    .unwrap_or_else(|_| {
-                        abort::abort_codegen(
-                            context,
-                            "Failed to allocate in the stack!",
-                            span,
-                            PathBuf::from(file!()),
-                            line!(),
-                        )
-                    });
+            let ptr: PointerValue<'_> = self::allocate_at_function_entry(
+                context,
+                llvm_type,
+                "",
+                span,
+                "Failed to allocate in the stack!",
+            );
 
             context.mark_dbg_location(span);
 
@@ -949,6 +947,72 @@ pub fn allocate_in<'ctx>(
             .add_global(llvm_type, Some(AddressSpace::default()), "")
             .as_pointer_value(),
     }
+}
+
+pub fn allocate_at_function_entry<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    llvm_type: BasicTypeEnum<'ctx>,
+    llvm_name: &str,
+    span: Span,
+    failure_message: &str,
+) -> PointerValue<'ctx> {
+    let llvm_builder: &Builder<'_> = context.get_llvm_builder();
+
+    let current_block: BasicBlock<'ctx> = llvm_builder.get_insert_block().unwrap_or_else(|| {
+        abort::abort_codegen(
+            context,
+            "Failed to get current builder block!",
+            span,
+            PathBuf::from(file!()),
+            line!(),
+        )
+    });
+
+    let entry_block: BasicBlock<'ctx> = context
+        .get_current_function(span)
+        .get_value()
+        .get_first_basic_block()
+        .unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to get current function entry block!",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+    let mut insert_before: Option<InstructionValue<'ctx>> = entry_block.get_first_instruction();
+
+    while let Some(instruction) = insert_before {
+        if instruction.get_opcode() != InstructionOpcode::Alloca {
+            break;
+        }
+
+        insert_before = instruction.get_next_instruction();
+    }
+
+    if let Some(instruction) = insert_before {
+        llvm_builder.position_before(&instruction);
+    } else {
+        llvm_builder.position_at_end(entry_block);
+    }
+
+    let ptr: PointerValue<'ctx> = llvm_builder
+        .build_alloca(llvm_type, llvm_name)
+        .unwrap_or_else(|_| {
+            abort::abort_codegen(
+                context,
+                failure_message,
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+    llvm_builder.position_at_end(current_block);
+
+    ptr
 }
 
 pub fn gep_struct_anon<'ctx>(

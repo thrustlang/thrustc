@@ -53,6 +53,7 @@ impl AstLiteralExtensions for Ast<'_> {
             | Ast::If { .. }
             | Ast::Elif { .. }
             | Ast::Else { .. }
+            | Ast::CompileTimeIf { .. }
             | Ast::For { .. }
             | Ast::While { .. }
             | Ast::Loop { .. }

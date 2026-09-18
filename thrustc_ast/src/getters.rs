@@ -18,8 +18,8 @@
 */
 
 use thrustc_ast_external::{ExternalSignature, ExternalSymbol};
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::Type;
 
 use crate::{
@@ -122,6 +122,7 @@ impl AstGetType for Ast<'_> {
             Ast::If { kind, .. } => kind,
             Ast::Elif { kind, .. } => kind,
             Ast::Else { kind, .. } => kind,
+            Ast::CompileTimeIf { kind, .. } => kind,
             Ast::For { kind, .. } => kind,
             Ast::Loop { kind, .. } => kind,
             Ast::Break { kind, .. } => kind,
@@ -298,6 +299,7 @@ impl AstCodeLocation for Ast<'_> {
             Ast::If { span, .. } => *span,
             Ast::Elif { span, .. } => *span,
             Ast::Else { span, .. } => *span,
+            Ast::CompileTimeIf { span, .. } => *span,
             Ast::While { span, .. } => *span,
             Ast::For { span, .. } => *span,
             Ast::Loop { span, .. } => *span,

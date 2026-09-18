@@ -1,0 +1,110 @@
+/*
+ * Exercises std::collections::hashmap: generic numeric keys, updates, removal,
+ * CString content keys and TString content keys.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::tstring;
+import std::collections::hashmap;
+
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    if testNumericKeys() != 0 { return 1; }
+    if testCStringKeys() != 0 { return 2; }
+    if testTStringKeys() != 0 { return 3; }
+
+    return 0;
+}
+
+fn testNumericKeys() s32 {
+    var map := hashmap::newHashMap[u64, s32]();
+    var value: ptr[s32];
+    var key10: u64 = 10;
+    var key20: u64 = 20;
+    var key30: u64 = 30;
+
+    if !hashmap::isEmpty(ref map) { return 1; }
+
+    if !hashmap::insert(ref map, ref key10, 100) { return 2; }
+    if !hashmap::insert(ref map, ref key20, 200) { return 3; }
+    if hashmap::insert(ref map, ref key10, 300) { return 4; }
+
+    if hashmap::getLength(ref map) != 2 { return 5; }
+    if !hashmap::containsKey(ref map, ref key10) { return 6; }
+    if hashmap::containsKey(ref map, ref key30) { return 7; }
+
+    value = hashmap::get(ref map, ref key10);
+    if value == nullptr { return 8; }
+    if value->[0] != 300 { return 9; }
+
+    value = hashmap::get(ref map, ref key20);
+    if value == nullptr { return 10; }
+    if value->[0] != 200 { return 11; }
+
+    if !hashmap::remove(ref map, ref key10) { return 12; }
+    if hashmap::remove(ref map, ref key10) { return 13; }
+    if hashmap::containsKey(ref map, ref key10) { return 14; }
+    if hashmap::getLength(ref map) != 1 { return 15; }
+
+    hashmap::clear(ref map);
+    if !hashmap::isEmpty(ref map) { return 16; }
+
+    hashmap::dropHashMap(ref map);
+
+    return 0;
+}
+
+fn testCStringKeys() s32 {
+    var map := hashmap::newHashMap[CString, s32]();
+    var value: ptr[s32];
+    var one: CString = "one";
+    var two: CString = "two";
+    var oneAgain: CString = "one";
+    var three: CString = "three";
+
+    hashmap::insert(ref map, one as ptr, 1);
+    hashmap::insert(ref map, two as ptr, 2);
+    hashmap::insert(ref map, oneAgain as ptr, 10);
+
+    value = hashmap::get(ref map, one as ptr);
+    if value == nullptr { return 1; }
+    if value->[0] != 10 { return 2; }
+
+    value = hashmap::get(ref map, two as ptr);
+    if value == nullptr { return 3; }
+    if value->[0] != 2 { return 4; }
+
+    if hashmap::containsKey(ref map, three as ptr) { return 5; }
+
+    hashmap::dropHashMap(ref map);
+
+    return 0;
+}
+
+fn testTStringKeys() s32 {
+    var map := hashmap::newHashMap[tstring::TString, s32]();
+    var first := tstring::fromCString("alpha");
+    var second := tstring::fromCString("beta");
+    var lookup := tstring::fromCString("alpha");
+    var value: ptr[s32];
+
+    hashmap::insert(ref map, ref first as ptr, 11);
+    hashmap::insert(ref map, ref second as ptr, 22);
+    hashmap::insert(ref map, ref lookup as ptr, 33);
+
+    value = hashmap::get(ref map, ref lookup as ptr);
+    if value == nullptr { return 1; }
+    if value->[0] != 33 { return 2; }
+
+    value = hashmap::get(ref map, ref second as ptr);
+    if value == nullptr { return 3; }
+    if value->[0] != 22 { return 4; }
+
+    hashmap::dropHashMap(ref map);
+    tstring::dropTString(ref first);
+    tstring::dropTString(ref second);
+    tstring::dropTString(ref lookup);
+
+    return 0;
+}

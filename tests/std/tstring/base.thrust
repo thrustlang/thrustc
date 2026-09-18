@@ -93,20 +93,20 @@ fn main() s32 @public {
     if tstring::indexOf(ref hello, "zz") != tstring::len(ref hello) { return 49; }
     if tstring::indexOf(ref empty, "x") != 0 { return 50; }
 
-    tstring::destroyTString(ref lower);
-    tstring::destroyTString(ref upper);
-    tstring::destroyTString(ref mixed);
-    tstring::destroyTString(ref trimEnded);
-    tstring::destroyTString(ref trimStarted);
-    tstring::destroyTString(ref trimmed);
-    tstring::destroyTString(ref padded);
-    tstring::destroyTString(ref joined);
-    tstring::destroyTString(ref suffix);
-    tstring::destroyTString(ref fromView);
-    tstring::destroyTString(ref helloCopy);
-    tstring::destroyTString(ref hello);
-    tstring::destroyTString(ref reserved);
-    tstring::destroyTString(ref empty);
+    tstring::dropTString(ref lower);
+    tstring::dropTString(ref upper);
+    tstring::dropTString(ref mixed);
+    tstring::dropTString(ref trimEnded);
+    tstring::dropTString(ref trimStarted);
+    tstring::dropTString(ref trimmed);
+    tstring::dropTString(ref padded);
+    tstring::dropTString(ref joined);
+    tstring::dropTString(ref suffix);
+    tstring::dropTString(ref fromView);
+    tstring::dropTString(ref helloCopy);
+    tstring::dropTString(ref hello);
+    tstring::dropTString(ref reserved);
+    tstring::dropTString(ref empty);
 
     return 0;
 }

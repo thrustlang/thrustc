@@ -23,6 +23,7 @@ use colored::Colorize;
 
 use inkwell::targets::TargetTriple;
 use thrustc_backends::llvm::LLVMBackend;
+use thrustc_backends::llvm::Sanitizer;
 use thrustc_options::linkage::LinkingCompilersConfiguration;
 
 use crate::ThrustCompiler;
@@ -32,6 +33,7 @@ pub struct ClangLinker<'clang> {
     files: &'clang [std::path::PathBuf],
     config: &'clang LinkingCompilersConfiguration,
     backend: &'clang LLVMBackend,
+    sanitizers: &'clang [Sanitizer],
 }
 
 impl<'clang> ClangLinker<'clang> {
@@ -39,11 +41,13 @@ impl<'clang> ClangLinker<'clang> {
         files: &'clang [std::path::PathBuf],
         config: &'clang LinkingCompilersConfiguration,
         backend: &'clang LLVMBackend,
+        sanitizers: &'clang [Sanitizer],
     ) -> Self {
         Self {
             files,
             config,
             backend,
+            sanitizers,
         }
     }
 }
@@ -81,6 +85,7 @@ impl ClangLinker<'_> {
         clang_command.arg(triple_display);
 
         clang_command.args(self.files.iter());
+        self::add_sanitizer_link_flags(&mut clang_command, self.sanitizers);
         clang_command.args(self.config.get_args().iter());
 
         if self.config.get_debug_clang_commands() {
@@ -130,6 +135,7 @@ impl ClangLinker<'_> {
 pub struct GCCLinker<'gcc> {
     files: &'gcc [std::path::PathBuf],
     config: &'gcc LinkingCompilersConfiguration,
+    sanitizers: &'gcc [Sanitizer],
 }
 
 impl<'gcc> GCCLinker<'gcc> {
@@ -137,8 +143,13 @@ impl<'gcc> GCCLinker<'gcc> {
     pub fn new(
         files: &'gcc [std::path::PathBuf],
         config: &'gcc LinkingCompilersConfiguration,
+        sanitizers: &'gcc [Sanitizer],
     ) -> Self {
-        Self { files, config }
+        Self {
+            files,
+            config,
+            sanitizers,
+        }
     }
 }
 
@@ -168,6 +179,7 @@ impl GCCLinker<'_> {
 
         gcc_command.arg("-v");
         gcc_command.args(self.files.iter());
+        self::add_sanitizer_link_flags(&mut gcc_command, self.sanitizers);
         gcc_command.args(self.config.get_args().iter());
 
         if self.config.get_debug_gcc_commands() {
@@ -217,9 +229,15 @@ pub fn link_with_clang(compiler: &mut ThrustCompiler) {
         .get_linking_compilers_configuration();
 
     let all_compiled_files: &[std::path::PathBuf] = compiler.get_compiled_files();
+    let sanitizers: &[Sanitizer] = compiler.get_linked_sanitizers();
 
-    if let Ok(clang_time) =
-        ClangLinker::new(all_compiled_files, linking_compiler_config, llvm_backend).link()
+    if let Ok(clang_time) = ClangLinker::new(
+        all_compiled_files,
+        linking_compiler_config,
+        llvm_backend,
+        sanitizers,
+    )
+    .link()
     {
         compiler.linking_time = compiler.linking_time.saturating_add(clang_time);
 
@@ -249,8 +267,14 @@ pub fn link_with_gcc(compiler: &mut ThrustCompiler) {
         .get_linking_compilers_configuration();
 
     let all_compiled_files: &[std::path::PathBuf] = compiler.get_compiled_files();
+    let sanitizers: &[Sanitizer] = compiler.get_linked_sanitizers();
 
-    if let Ok(gcc_time) = GCCLinker::new(all_compiled_files, linking_compiler_configuration).link()
+    if let Ok(gcc_time) = GCCLinker::new(
+        all_compiled_files,
+        linking_compiler_configuration,
+        sanitizers,
+    )
+    .link()
     {
         compiler.linking_time = compiler.linking_time.saturating_add(gcc_time);
 
@@ -271,5 +295,33 @@ pub fn link_with_gcc(compiler: &mut ThrustCompiler) {
                 "FAILED".bright_red().bold()
             ),
         );
+    }
+}
+
+fn add_sanitizer_link_flags(command: &mut std::process::Command, sanitizers: &[Sanitizer]) {
+    if sanitizers.is_empty() {
+        return;
+    }
+
+    let flags: Vec<&'static str> = sanitizers
+        .iter()
+        .filter_map(self::sanitizer_link_name)
+        .collect();
+
+    if flags.is_empty() {
+        return;
+    }
+
+    command.arg(format!("-fsanitize={}", flags.join(",")));
+}
+
+fn sanitizer_link_name(sanitizer: &Sanitizer) -> Option<&'static str> {
+    match sanitizer {
+        Sanitizer::Address(..) => Some("address"),
+        Sanitizer::Memory(..) => Some("memory"),
+        Sanitizer::Thread(..) => Some("thread"),
+        Sanitizer::Hwaddress(..) => Some("hwaddress"),
+        Sanitizer::Memtag(..) => Some("memtag"),
+        Sanitizer::None => None,
     }
 }

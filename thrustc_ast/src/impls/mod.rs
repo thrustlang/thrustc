@@ -156,7 +156,10 @@ impl AstStandardExtensions for Ast<'_> {
 
     #[inline]
     fn is_conditional_keyword(&self) -> bool {
-        matches!(self, Ast::If { .. } | Ast::Elif { .. } | Ast::Else { .. })
+        matches!(
+            self,
+            Ast::If { .. } | Ast::Elif { .. } | Ast::Else { .. } | Ast::CompileTimeIf { .. }
+        )
     }
 
     #[inline]
@@ -213,6 +216,7 @@ impl AstAttributeExtensions for Ast<'_> {
             Ast::If { .. } => None,
             Ast::Elif { .. } => None,
             Ast::Else { .. } => None,
+            Ast::CompileTimeIf { .. } => None,
 
             // Loops
             Ast::For { .. } => None,
@@ -295,6 +299,7 @@ impl AstStatementExtensions for Ast<'_> {
                 | Ast::If { .. }
                 | Ast::Else { .. }
                 | Ast::Elif { .. }
+                | Ast::CompileTimeIf { .. }
                 | Ast::While { .. }
                 | Ast::For { .. }
                 | Ast::Loop { .. }

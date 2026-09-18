@@ -49,8 +49,8 @@ fn toCString(text: ptr[TString]) CString @public {
     return vec::getDataPointer[char](ref text.buffer) as const array[char];
 }
 
-fn destroyTString(text: ptr[TString]) void @public {
-    vec::destroyVector[char](ref text.buffer);
+fn dropTString(text: ptr[TString]) void @public {
+    vec::dropVector[char](ref text.buffer);
 }
 
 fn len(text: ptr[TString]) usize @public {

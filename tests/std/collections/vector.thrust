@@ -62,7 +62,7 @@ fn main() s32 @public {
     if !vector::isEmpty(ref v) { return 25; }
     if vector::getLength(ref v) != 0 { return 26; }
 
-    vector::destroyVector(ref v);
+    vector::dropVector(ref v);
 
     var pv := vector::withCapacity[Pair](2);
     if vector::getCapacity(ref pv) < 2 { return 27; }
@@ -76,7 +76,7 @@ fn main() s32 @public {
     if vector::at(ref pv, 1)->first != 3 { return 30; }
     if vector::at(ref pv, 1)->second != 4 { return 31; }
 
-    vector::destroyVector(ref pv);
+    vector::dropVector(ref pv);
 
     return 0;
 }

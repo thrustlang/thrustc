@@ -78,14 +78,26 @@ jobs:
 
       - name: Building Thrust Compiler (Release)
         run: |
-          cargo build --release
+          cargo build --release -p thrustc
+        working-directory: thrustc
+
+      - name: Building Thrust LSP (Release)
+        run: |
+          cargo build --release -p thrustc_lsp
         working-directory: thrustc
 
       - name: Building Thrust Compiler (Release - Stripped)
         run: |
-          cargo build --profile release-stripped
+          cargo build --profile release-stripped -p thrustc
 
           mv target/release-stripped/thrustc target/release-stripped/thrustc-stripped
+        working-directory: thrustc
+
+      - name: Building Thrust LSP (Release - Stripped)
+        run: |
+          cargo build --profile release-stripped -p thrustc_lsp
+
+          mv target/release-stripped/thrustc_lsp target/release-stripped/thrustc_lsp-stripped
         working-directory: thrustc
 
       - name: Extracting File Type and Dynamic Dependencies
@@ -159,5 +171,7 @@ jobs:
 
           files: |
             thrustc/target/release/thrustc
+            thrustc/target/release/thrustc_lsp
             thrustc/target/release-stripped/thrustc-stripped
+            thrustc/target/release-stripped/thrustc_lsp-stripped
           draft: false

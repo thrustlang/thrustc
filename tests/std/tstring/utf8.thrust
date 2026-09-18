@@ -72,9 +72,9 @@ fn main() s32 @public {
     if tstring::indexOf(ref text, "ana") != 4 { return 41; }
     if tstring::indexOf(ref text, "zz") != tstring::len(ref text) { return 42; }
 
-    tstring::destroyTString(ref builtCopy);
-    tstring::destroyTString(ref built);
-    tstring::destroyTString(ref text);
+    tstring::dropTString(ref builtCopy);
+    tstring::dropTString(ref built);
+    tstring::dropTString(ref text);
 
     return 0;
 }

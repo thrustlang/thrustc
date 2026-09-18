@@ -21,9 +21,9 @@ use inkwell::values::FunctionValue;
 
 use thrustc_ast::Ast;
 use thrustc_ast_external::{ExternalSignature, ExternalSymbol};
+use thrustc_code_location::Span;
 use thrustc_llvm_abi::LLVMABIConfiguration;
 use thrustc_llvm_attributes::LLVMAttributes;
-use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 use crate::{
@@ -118,6 +118,7 @@ impl AstLLVMGetType for Ast<'_> {
             Ast::If { kind, .. } => kind,
             Ast::Elif { kind, .. } => kind,
             Ast::Else { kind, .. } => kind,
+            Ast::CompileTimeIf { kind, .. } => kind,
             Ast::For { kind, .. } => kind,
             Ast::Loop { kind, .. } => kind,
             Ast::While { kind, .. } => kind,

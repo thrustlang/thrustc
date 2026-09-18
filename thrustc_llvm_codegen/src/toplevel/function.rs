@@ -44,6 +44,7 @@ use crate::attribute_builder::LLVMAttributeApplicant;
 use crate::block;
 use crate::codegen::LLVMCodegen;
 use crate::context::LLVMCodeGenContext;
+use crate::memory;
 use crate::traits::LLVMFunctionExtensions;
 use crate::typegeneration;
 use crate::types::LLVMDBGFunction;
@@ -238,6 +239,7 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
     codegen
         .get_mut_context()
         .set_current_function(prototype.clone());
+    codegen.get_mut_context().clear_local_llvm_names();
 
     let llvm_function_block: BasicBlock =
         block::append_block(codegen.get_context(), function_value);
@@ -503,17 +505,13 @@ pub fn emit_stack_protector_prologue<'ctx>(
         None,
     );
 
-    let stackguardslot_ptr: PointerValue<'_> = llvm_builder
-        .build_alloca(llvm_context.ptr_type(AddressSpace::default()), "")
-        .unwrap_or_else(|_| {
-            abort::abort_codegen(
-                context,
-                "Failed to compile stackguardslot pointer!",
-                span,
-                std::path::PathBuf::from(file!()),
-                line!(),
-            )
-        });
+    let stackguardslot_ptr: PointerValue<'_> = memory::allocate_at_function_entry(
+        context,
+        llvm_context.ptr_type(AddressSpace::default()).into(),
+        "",
+        span,
+        "Failed to compile stackguardslot pointer!",
+    );
 
     if let Some(instr) = stackguardslot_ptr.as_instruction_value() {
         let target_data: &TargetData = context.get_target_data();

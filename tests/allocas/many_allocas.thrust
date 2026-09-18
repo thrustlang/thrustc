@@ -1,0 +1,58 @@
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0030";
+directive "--disable-warnings=W0021";
+
+fn shadowed(flag: s32) s32 @public {
+    var value: s32 = 1;
+    var total: s32 = value;
+
+    if flag > 0 {
+        var value: s32 = 2;
+        var inner: s32 = value + flag;
+        total = total + inner;
+
+        if inner > 2 {
+            var value: s32 = 3;
+            var inner: s32 = value + total;
+            total = total + inner;
+        } else {
+            var value: s32 = 4;
+            var inner: s32 = value + total;
+            total = total + inner;
+        }
+    } else {
+        var value: s32 = 5;
+        var inner: s32 = value - flag;
+        total = total + inner;
+    }
+
+    while var i: s32 = 0; i < 4; {
+        var value: s32 = i + total;
+        var inner: s32 = value + i;
+        total = total + inner;
+        i++;
+    }
+
+    return total;
+}
+
+fn arrays(seed: s32) s32 @public {
+    var a: s32 = seed + 1;
+    var b: s32 = seed + 2;
+    var c: s32 = seed + 3;
+    var ptrs: array[ptr[s32]; 3] = fixed[ref a, ref b, ref c];
+    var count: s32 = 3;
+
+    return a + b + c + count;
+}
+
+fn main() s32 @public {
+    var result: s32 = shadowed(2) + arrays(1);
+
+    if result == 0 {
+        return 1;
+    }
+
+    return 0;
+}

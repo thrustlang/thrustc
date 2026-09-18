@@ -1,0 +1,113 @@
+/*
+ * Exercises std::collections::hashset: generic numeric keys, duplicates,
+ * removal, growth, CString content keys and TString content keys.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::tstring;
+import std::collections::hashset;
+
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    if testNumericKeys() != 0 { return 1; }
+    if testCStringKeys() != 0 { return 2; }
+    if testTStringKeys() != 0 { return 3; }
+
+    return 0;
+}
+
+fn testNumericKeys() s32 {
+    var set := hashset::newHashSet[u64]();
+    var key10: u64 = 10;
+    var key20: u64 = 20;
+    var key30: u64 = 30;
+    var key: u64 = 0;
+    var index: u64 = 0;
+
+    if !hashset::isEmpty(ref set) { return 1; }
+
+    if !hashset::insert(ref set, ref key10) { return 2; }
+    if !hashset::insert(ref set, ref key20) { return 3; }
+    if hashset::insert(ref set, ref key10) { return 4; }
+
+    if hashset::getLength(ref set) != 2 { return 5; }
+    if !hashset::contains(ref set, ref key10) { return 6; }
+    if hashset::contains(ref set, ref key30) { return 7; }
+
+    if !hashset::remove(ref set, ref key10) { return 8; }
+    if hashset::remove(ref set, ref key10) { return 9; }
+    if hashset::contains(ref set, ref key10) { return 10; }
+    if hashset::getLength(ref set) != 1 { return 11; }
+
+    while index < 64 {
+        key = index + 100;
+        if !hashset::insert(ref set, ref key) { return 12; }
+        index = index + 1;
+    }
+
+    if hashset::getLength(ref set) != 65 { return 13; }
+    if hashset::getCapacity(ref set) < 65 { return 14; }
+
+    key = 123;
+    if !hashset::contains(ref set, ref key) { return 15; }
+
+    hashset::clear(ref set);
+    if !hashset::isEmpty(ref set) { return 16; }
+
+    hashset::dropHashSet(ref set);
+
+    return 0;
+}
+
+fn testCStringKeys() s32 {
+    var set := hashset::newHashSet[CString]();
+    var one: CString = "one";
+    var two: CString = "two";
+    var oneAgain: CString = "one";
+    var three: CString = "three";
+
+    if !hashset::insert(ref set, one as ptr) { return 1; }
+    if !hashset::insert(ref set, two as ptr) { return 2; }
+    if hashset::insert(ref set, oneAgain as ptr) { return 3; }
+
+    if hashset::getLength(ref set) != 2 { return 4; }
+    if !hashset::contains(ref set, oneAgain as ptr) { return 5; }
+    if !hashset::contains(ref set, two as ptr) { return 6; }
+    if hashset::contains(ref set, three as ptr) { return 7; }
+
+    if !hashset::remove(ref set, one as ptr) { return 8; }
+    if hashset::contains(ref set, oneAgain as ptr) { return 9; }
+
+    hashset::dropHashSet(ref set);
+
+    return 0;
+}
+
+fn testTStringKeys() s32 {
+    var set := hashset::newHashSet[tstring::TString]();
+    var first := tstring::fromCString("alpha");
+    var second := tstring::fromCString("beta");
+    var lookup := tstring::fromCString("alpha");
+    var missing := tstring::fromCString("gamma");
+
+    if !hashset::insert(ref set, ref first as ptr) { return 1; }
+    if !hashset::insert(ref set, ref second as ptr) { return 2; }
+    if hashset::insert(ref set, ref lookup as ptr) { return 3; }
+
+    if hashset::getLength(ref set) != 2 { return 4; }
+    if !hashset::contains(ref set, ref lookup as ptr) { return 5; }
+    if !hashset::contains(ref set, ref second as ptr) { return 6; }
+    if hashset::contains(ref set, ref missing as ptr) { return 7; }
+
+    if !hashset::remove(ref set, ref lookup as ptr) { return 8; }
+    if hashset::contains(ref set, ref first as ptr) { return 9; }
+
+    hashset::dropHashSet(ref set);
+    tstring::dropTString(ref first);
+    tstring::dropTString(ref second);
+    tstring::dropTString(ref lookup);
+    tstring::dropTString(ref missing);
+
+    return 0;
+}

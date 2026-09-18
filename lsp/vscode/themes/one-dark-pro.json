@@ -1,0 +1,197 @@
+{
+  "name": "One Dark Pro",
+  "type": "dark",
+  "tokenColors": [
+    {
+      "name": "Comments",
+      "scope": [
+        "comment.block.thrust",
+        "comment.line.double-slash.thrust"
+      ],
+      "settings": {
+        "foreground": "#5C6370",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Strings",
+      "scope": [
+        "string.quoted.double.thrust",
+        "string.quoted.single.thrust"
+      ],
+      "settings": {
+        "foreground": "#98C379"
+      }
+    },
+    {
+      "name": "Escape sequences",
+      "scope": "constant.character.escape.thrust",
+      "settings": {
+        "foreground": "#56B6C2"
+      }
+    },
+    {
+      "name": "Numbers",
+      "scope": [
+        "constant.numeric.float.thrust",
+        "constant.numeric.hex.thrust",
+        "constant.numeric.binary.thrust",
+        "constant.numeric.integer.thrust"
+      ],
+      "settings": {
+        "foreground": "#D19A66"
+      }
+    },
+    {
+      "name": "Language constants (true, false, nullptr)",
+      "scope": "constant.language.thrust",
+      "settings": {
+        "foreground": "#D19A66"
+      }
+    },
+    {
+      "name": "ALL_CAPS user constants",
+      "scope": "variable.other.constant.thrust",
+      "settings": {
+        "foreground": "#D19A66"
+      }
+    },
+    {
+      "name": "Control flow keywords",
+      "scope": "keyword.control.thrust",
+      "settings": {
+        "foreground": "#C678DD"
+      }
+    },
+    {
+      "name": "Declaration keywords (fn, var, const, struct...)",
+      "scope": "keyword.declaration.thrust",
+      "settings": {
+        "foreground": "#C678DD"
+      }
+    },
+    {
+      "name": "Operator keywords (as, deref, ref, or, and...)",
+      "scope": "keyword.operator.thrust",
+      "settings": {
+        "foreground": "#C678DD"
+      }
+    },
+    {
+      "name": "Modifier keywords (mut, static...)",
+      "scope": "keyword.modifier.thrust",
+      "settings": {
+        "foreground": "#C678DD"
+      }
+    },
+    {
+      "name": "Atomic / thread qualifiers",
+      "scope": "storage.modifier.thrust",
+      "settings": {
+        "foreground": "#E5C07B"
+      }
+    },
+    {
+      "name": "Built-in types",
+      "scope": "storage.type.thrust",
+      "settings": {
+        "foreground": "#E5C07B"
+      }
+    },
+    {
+      "name": "Attributes (@public, @extern, @cuda...)",
+      "scope": "entity.other.attribute-name.thrust",
+      "settings": {
+        "foreground": "#56B6C2"
+      }
+    },
+    {
+      "name": "Built-in functions (sizeOf, memcpy...)",
+      "scope": "support.function.builtin.thrust",
+      "settings": {
+        "foreground": "#56B6C2"
+      }
+    },
+    {
+      "name": "Function definition name",
+      "scope": "entity.name.function.thrust",
+      "settings": {
+        "foreground": "#61AFEF"
+      }
+    },
+    {
+      "name": "Function calls",
+      "scope": "entity.name.function.call.thrust",
+      "settings": {
+        "foreground": "#61AFEF"
+      }
+    },
+    {
+      "name": "Comparison operators",
+      "scope": "keyword.operator.comparison.thrust",
+      "settings": {
+        "foreground": "#56B6C2"
+      }
+    },
+    {
+      "name": "Assignment operator",
+      "scope": "keyword.operator.assignment.thrust",
+      "settings": {
+        "foreground": "#56B6C2"
+      }
+    },
+    {
+      "name": "Arithmetic operators",
+      "scope": "keyword.operator.arithmetic.thrust",
+      "settings": {
+        "foreground": "#56B6C2"
+      }
+    },
+    {
+      "name": "Bitwise operators",
+      "scope": "keyword.operator.bitwise.thrust",
+      "settings": {
+        "foreground": "#56B6C2"
+      }
+    },
+    {
+      "name": "Logical not",
+      "scope": "keyword.operator.logical.thrust",
+      "settings": {
+        "foreground": "#56B6C2"
+      }
+    },
+    {
+      "name": "Punctuation — brackets",
+      "scope": "punctuation.brackets.thrust",
+      "settings": {
+        "foreground": "#ABB2BF"
+      }
+    },
+    {
+      "name": "Punctuation — separators",
+      "scope": "punctuation.separator.thrust",
+      "settings": {
+        "foreground": "#ABB2BF"
+      }
+    },
+    {
+      "name": "Punctuation — accessor dot",
+      "scope": "punctuation.accessor.thrust",
+      "settings": {
+        "foreground": "#ABB2BF"
+      }
+    }
+  ],
+  "colors": {
+    "editor.background": "#282C34",
+    "editor.foreground": "#ABB2BF",
+    "editorCursor.foreground": "#528BFF",
+    "editor.lineHighlightBackground": "#2C313A",
+    "editor.selectionBackground": "#3E4451",
+    "editorLineNumber.foreground": "#4B5263",
+    "editorLineNumber.activeForeground": "#ABB2BF",
+    "editorIndentGuide.background": "#3B4048",
+    "editorIndentGuide.activeBackground": "#ABB2BF"
+  }
+}

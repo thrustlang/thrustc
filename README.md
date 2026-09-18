@@ -127,6 +127,10 @@ You can target macOS, Windows, Linux, and other platforms directly from your cur
 
 If you want to know a high-level command line view, you should check out: [Thrust Compiler - Commands & Flags](https://github.com/thrustlang/thrustc/blob/master/CLI.md)
 
+## Language Server
+
+If you want to configure editor integration through the Language Server Protocol, especially for Visual Studio Code, check out: [Thrust LSP - Visual Studio Code](https://github.com/thrustlang/thrustc/blob/master/lsp/vscode/README.md)
+
 ## Compiler Structure
 
 If you want to know a little about the compiler's structure, you should check out: [Thrust Programming Language - Compiler Structure](https://github.com/thrustlang/thrustc/blob/master/PROJECT_STRUCTURE.md)

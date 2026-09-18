@@ -44,6 +44,7 @@ use inkwell::targets::TargetTriple;
 use thrustc_ast::Ast;
 use thrustc_backends::ThrustOptimization;
 use thrustc_backends::llvm::LLVMBackend;
+use thrustc_backends::llvm::Sanitizer;
 use thrustc_backends::llvm::jit;
 use thrustc_backends::llvm::jit::JITConfiguration;
 use thrustc_backends::llvm::target::LLVMTarget;
@@ -82,6 +83,7 @@ pub struct ThrustCompiler<'thrustc> {
     /// recompilado tras quedar pendientes instanciaciones genéricas), su archivo
     /// objeto anterior se reemplaza para que el enlazador no encuentre símbolos duplicados.
     source_to_object: std::collections::HashMap<std::path::PathBuf, std::path::PathBuf>,
+    linked_sanitizers: Vec<Sanitizer>,
     file_output_requested: bool,
 
     options: &'thrustc CompilerOptions,
@@ -107,6 +109,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             unready: units,
 
             source_to_object: std::collections::HashMap::with_capacity(units.len()),
+            linked_sanitizers: Vec::with_capacity(5),
             file_output_requested: false,
 
             options,
@@ -368,7 +371,9 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             }
         };
         let file_options: FileOptions<'_, '_> = FileOptions::new(self.options, &directives);
-        self.file_output_requested |= !directives.emit.is_empty() || !directives.print.is_empty();
+        self.register_linked_sanitizer(&file_options);
+        self.file_output_requested |=
+            !directives.emit().is_empty() || !directives.print().is_empty();
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
@@ -831,7 +836,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             }
         };
         let file_options: FileOptions<'_, '_> = FileOptions::new(self.options, &directives);
-        self.file_output_requested |= !directives.emit.is_empty() || !directives.print.is_empty();
+        self.file_output_requested |=
+            !directives.emit().is_empty() || !directives.print().is_empty();
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
@@ -1206,6 +1212,39 @@ impl ThrustCompiler<'_> {
 
         self.linked_objects.push(object);
     }
+
+    fn register_linked_sanitizer(&mut self, file_options: &FileOptions<'_, '_>) {
+        if file_options.disable_all_sanitizers() {
+            return;
+        }
+
+        let sanitizer: Sanitizer = file_options.sanitizer();
+
+        if sanitizer.is_none() || self::contains_sanitizer_kind(&self.linked_sanitizers, sanitizer)
+        {
+            return;
+        }
+
+        self.linked_sanitizers.push(sanitizer);
+    }
+
+    #[inline]
+    pub fn get_linked_sanitizers(&self) -> &[Sanitizer] {
+        &self.linked_sanitizers
+    }
+}
+
+fn contains_sanitizer_kind(sanitizers: &[Sanitizer], sanitizer: Sanitizer) -> bool {
+    sanitizers.iter().any(|candidate| {
+        matches!(
+            (candidate, sanitizer),
+            (Sanitizer::Address(..), Sanitizer::Address(..))
+                | (Sanitizer::Memory(..), Sanitizer::Memory(..))
+                | (Sanitizer::Thread(..), Sanitizer::Thread(..))
+                | (Sanitizer::Hwaddress(..), Sanitizer::Hwaddress(..))
+                | (Sanitizer::Memtag(..), Sanitizer::Memtag(..))
+        )
+    })
 }
 
 impl ThrustCompiler<'_> {

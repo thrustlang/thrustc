@@ -8,13 +8,27 @@ Thrust Programming Language includes syntax highlighting support for VS Code and
 
 ## VS Code
 
+The legacy highlighting-only extension is located at:
+
+```text
+highlighting/vscode/thrust-vscode/
+```
+
+The official VS Code extension with syntax highlighting and language server support is located at:
+
+```text
+lsp/vscode/
+```
+
 Install the extension from the generated VSIX package:
 
 ```console
-code --install-extension highlighting/vscode/thrustlang-highlighting-0.2.1.vsix
+code --install-extension lsp/vscode/thrustlang-vscode-0.2.1.vsix
 ```
 
-The extension includes Thrust syntax highlighting, file icons, and the available editor themes.
+The extension includes Thrust syntax highlighting, file icons, the available editor themes, and integration with `thrustc_lsp`.
+
+The language server executable must be available as `thrustc_lsp` in `PATH`, or configured through `thrust.lsp.path` in VS Code settings.
 
 ## Neovim/Vim
 

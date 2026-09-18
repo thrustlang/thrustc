@@ -17,7 +17,6 @@
 
 */
 
-
 use std::borrow::Cow;
 use std::ffi::CStr;
 use std::ffi::CString;
@@ -45,13 +44,13 @@ use inkwell::values::GlobalValue;
 use inkwell::values::InstructionOpcode;
 use inkwell::values::InstructionValue;
 
-use thrustc_options::CompilerOptions;
 use thrustc_backends::ThrustOptimization;
 use thrustc_backends::llvm::DenormalFloatingPointBehavior;
 use thrustc_backends::llvm::DenormalFloatingPointBehavior32BitFloatingPoint;
 use thrustc_backends::llvm::Sanitizer;
 use thrustc_backends::llvm::SymbolLinkageMergeStrategy;
 use thrustc_backends::llvm::passes::LLVMModificatorPasses;
+use thrustc_options::CompilerOptions;
 
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 
@@ -289,14 +288,8 @@ impl LLVMOptimizer<'_, '_> {
     #[inline]
     pub fn is_an_optimizable_module(options: &CompilerOptions) -> bool {
         (!options.omit_default_optimizations()
-            && options
-                .get_llvm_backend()
-                .get_optimization()
-                .is_none_opt())
-            || options
-                .get_llvm_backend()
-                .get_optimization()
-                .is_high_opt()
+            && options.get_llvm_backend().get_optimization().is_none_opt())
+            || options.get_llvm_backend().get_optimization().is_high_opt()
     }
 }
 
@@ -1060,42 +1053,33 @@ impl<'a, 'ctx> LLVMMachineSpecificFunctionOptimizer<'a, 'ctx> {
             InstructionOpcode::FPExt => {
                 state_data.set_has_floating_point(true);
             }
-            InstructionOpcode::Phi
-                if is_float_involved(&instruction) => {
-                    state_data.set_has_floating_point(true);
-                }
-            InstructionOpcode::Select
-                if is_float_involved(&instruction) => {
-                    state_data.set_has_floating_point(true);
-                }
-            InstructionOpcode::Load
-                if is_float_involved(&instruction) => {
-                    state_data.set_has_floating_point(true);
-                }
-            InstructionOpcode::Store
-                if is_float_involved(&instruction) => {
-                    state_data.set_has_floating_point(true);
-                }
-            InstructionOpcode::ExtractElement
-                if is_float_involved(&instruction) => {
-                    state_data.set_has_floating_point(true);
-                }
-            InstructionOpcode::InsertElement
-                if is_float_involved(&instruction) => {
-                    state_data.set_has_floating_point(true);
-                }
-            InstructionOpcode::ShuffleVector
-                if is_float_involved(&instruction) => {
-                    state_data.set_has_floating_point(true);
-                }
-            InstructionOpcode::ExtractValue
-                if is_float_involved(&instruction) => {
-                    state_data.set_has_floating_point(true);
-                }
-            InstructionOpcode::InsertValue
-                if is_float_involved(&instruction) => {
-                    state_data.set_has_floating_point(true);
-                }
+            InstructionOpcode::Phi if is_float_involved(&instruction) => {
+                state_data.set_has_floating_point(true);
+            }
+            InstructionOpcode::Select if is_float_involved(&instruction) => {
+                state_data.set_has_floating_point(true);
+            }
+            InstructionOpcode::Load if is_float_involved(&instruction) => {
+                state_data.set_has_floating_point(true);
+            }
+            InstructionOpcode::Store if is_float_involved(&instruction) => {
+                state_data.set_has_floating_point(true);
+            }
+            InstructionOpcode::ExtractElement if is_float_involved(&instruction) => {
+                state_data.set_has_floating_point(true);
+            }
+            InstructionOpcode::InsertElement if is_float_involved(&instruction) => {
+                state_data.set_has_floating_point(true);
+            }
+            InstructionOpcode::ShuffleVector if is_float_involved(&instruction) => {
+                state_data.set_has_floating_point(true);
+            }
+            InstructionOpcode::ExtractValue if is_float_involved(&instruction) => {
+                state_data.set_has_floating_point(true);
+            }
+            InstructionOpcode::InsertValue if is_float_involved(&instruction) => {
+                state_data.set_has_floating_point(true);
+            }
 
             _ => (),
         }
@@ -1272,17 +1256,21 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
 
 impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
     pub fn run(&self) {
-        let target_triple_formatted: String = self.module.get_triple().as_str().to_string_lossy().to_string();
+        let target_triple_formatted: String = self
+            .module
+            .get_triple()
+            .as_str()
+            .to_string_lossy()
+            .to_string();
         let target_triple: LLVMTargetTriple = LLVMTargetTriple::new(target_triple_formatted);
 
         if target_triple.is_linux_based() {
-            
             let same_name_values: Vec<(GlobalValue, FunctionValue)> = self
                 .module
                 .get_globals()
                 .filter_map(|global| {
                     let global_name: Cow<'_, str> = utils::clean_llvm_name(global.get_name());
-    
+
                     let global_is_linkage_external: bool = matches!(
                         global.get_linkage(),
                         Linkage::External
@@ -1292,13 +1280,15 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
                             | Linkage::Common
                             | Linkage::ExternalWeak
                     );
-    
+
                     self.module
                         .get_functions()
                         .find(|func| {
-                            let is_llvm_intrinsic_function: bool = self::is_llvm_intrinsic_function(*func);
-                            let function_name: Cow<'_, str> = utils::clean_llvm_name(func.get_name());
-    
+                            let is_llvm_intrinsic_function: bool =
+                                self::is_llvm_intrinsic_function(*func);
+                            let function_name: Cow<'_, str> =
+                                utils::clean_llvm_name(func.get_name());
+
                             let function_is_linkage_external: bool = matches!(
                                 global.get_linkage(),
                                 Linkage::External
@@ -1308,38 +1298,44 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
                                     | Linkage::Common
                                     | Linkage::ExternalWeak
                             );
-    
+
                             global_name == function_name
                                 && global_is_linkage_external
-                                && function_is_linkage_external && !is_llvm_intrinsic_function
+                                && function_is_linkage_external
+                                && !is_llvm_intrinsic_function
                         })
                         .map(|func| (global, func))
                 })
                 .collect();
-    
-            {
 
-                let standard_comdat_generation = ||   {
-                    let mut merge_strategy: ComdatSelectionKind = match self.config.get_symbol_linkage_strategy() {
-                        SymbolLinkageMergeStrategy::Any => ComdatSelectionKind::Any,
-                        SymbolLinkageMergeStrategy::Exact => ComdatSelectionKind::ExactMatch,
-                        SymbolLinkageMergeStrategy::Large => ComdatSelectionKind::Largest,
-                        SymbolLinkageMergeStrategy::SameSize => ComdatSelectionKind::SameSize,
-                        SymbolLinkageMergeStrategy::NoDuplicates => ComdatSelectionKind::NoDuplicates,
-                    };
-        
-                    if target_triple.is_object_format_elf() && merge_strategy != ComdatSelectionKind::Any && merge_strategy != ComdatSelectionKind::NoDuplicates {
+            {
+                let standard_comdat_generation = || {
+                    let mut merge_strategy: ComdatSelectionKind =
+                        match self.config.get_symbol_linkage_strategy() {
+                            SymbolLinkageMergeStrategy::Any => ComdatSelectionKind::Any,
+                            SymbolLinkageMergeStrategy::Exact => ComdatSelectionKind::ExactMatch,
+                            SymbolLinkageMergeStrategy::Large => ComdatSelectionKind::Largest,
+                            SymbolLinkageMergeStrategy::SameSize => ComdatSelectionKind::SameSize,
+                            SymbolLinkageMergeStrategy::NoDuplicates => {
+                                ComdatSelectionKind::NoDuplicates
+                            }
+                        };
+
+                    if target_triple.is_object_format_elf()
+                        && merge_strategy != ComdatSelectionKind::Any
+                        && merge_strategy != ComdatSelectionKind::NoDuplicates
+                    {
                         thrustc_logging::print_warning(
                             thrustc_logging::LoggingType::Warning,
                             "ELF-based target only support the any and noduplicates modes for the symbol linkage strategy!",
                         );
-                        
+
                         merge_strategy = ComdatSelectionKind::Any;
                     }
-        
+
                     for (gl, func) in same_name_values.iter().rev() {
                         let cleaned: Cow<'_, str> = utils::clean_llvm_name(gl.get_name());
-        
+
                         let c_string_str: CString =
                             CString::new(cleaned.as_ref()).unwrap_or_else(|error| {
                                 thrustc_logging::print_warning(
@@ -1352,28 +1348,26 @@ impl<'a, 'ctx> LLVMComdatApplier<'a, 'ctx> {
         
                                 CString::default()
                             });
-        
+
                         let c_str: &CStr = c_string_str.as_c_str();
-        
+
                         let comdat: Comdat = unsafe {
                             Comdat::new(LLVMGetOrInsertComdat(
                                 self.module.as_mut_ptr(),
                                 c_str.as_ptr(),
                             ))
                         };
-        
+
                         comdat.set_selection_kind(merge_strategy);
-        
+
                         gl.set_comdat(comdat);
                         func.as_global_value().set_comdat(comdat);
                     }
-                 };
+                };
 
-                standard_comdat_generation() 
-
+                standard_comdat_generation()
             }
         }
-
     }
 }
 
@@ -1730,7 +1724,7 @@ impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
     pub fn run(&mut self) {
         let ordered_functions: Vec<FunctionValue<'_>> =
             utils::get_functions_by_ordered_calls(self.module.get_functions().collect());
-    
+
         {
             for function in ordered_functions.iter() {
                 self.visit_function_once(*function);
@@ -1908,7 +1902,8 @@ impl<'a, 'ctx> LLVMParameterOptimizer<'a, 'ctx> {
     ) {
         if instruction.get_opcode() == InstructionOpcode::Call {
             let callsite: CallSiteValue = unsafe { CallSiteValue::new(instruction.as_value_ref()) };
-            let called_value: *mut LLVMValue = unsafe { LLVMGetCalledValue(callsite.as_value_ref()) };
+            let called_value: *mut LLVMValue =
+                unsafe { LLVMGetCalledValue(callsite.as_value_ref()) };
 
             if !unsafe { LLVMIsAFunction(called_value) }.is_null()
                 && !callsite.is_tail_call()
@@ -2216,27 +2211,27 @@ impl LLVMOptimizationBlocker<'_, '_> {
 
             let optnone_id: u32 = Attribute::get_named_enum_kind_id("optnone");
             let optnone: Attribute = self.context.create_enum_attribute(optnone_id, 0);
-            
+
             function.add_attribute(AttributeLoc::Function, optnone);
 
             let noinline_id: u32 = Attribute::get_named_enum_kind_id("noinline");
             let noinline: Attribute = self.context.create_enum_attribute(noinline_id, 0);
-            
+
             function.add_attribute(AttributeLoc::Function, noinline);
 
             let nounwind_id: u32 = Attribute::get_named_enum_kind_id("nounwind");
             let nounwind: Attribute = self.context.create_enum_attribute(nounwind_id, 0);
-            
+
             function.add_attribute(AttributeLoc::Function, nounwind);
 
             let sspstrong_id: u32 = Attribute::get_named_enum_kind_id("sspstrong");
             let sspstrong: Attribute = self.context.create_enum_attribute(sspstrong_id, 0);
-            
+
             function.add_attribute(AttributeLoc::Function, sspstrong);
 
             let uwtable_id: u32 = Attribute::get_named_enum_kind_id("uwtable");
             let uwtable: Attribute = self.context.create_enum_attribute(uwtable_id, 2);
-            
+
             function.add_attribute(AttributeLoc::Function, uwtable);
         }
     }
@@ -2256,10 +2251,16 @@ fn is_llvm_intrinsic_call(instruction: InstructionValue<'_>) -> bool {
 
     let called: FunctionValue = callsite.get_called_fn_value();
 
-    called.get_name().to_str().is_ok_and(|name| name.starts_with("llvm."))
+    called
+        .get_name()
+        .to_str()
+        .is_ok_and(|name| name.starts_with("llvm."))
 }
 
 #[inline]
 fn is_llvm_intrinsic_function(function: FunctionValue<'_>) -> bool {
-    function.get_name().to_str().is_ok_and(|name| name.starts_with("llvm."))
+    function
+        .get_name()
+        .to_str()
+        .is_ok_and(|name| name.starts_with("llvm."))
 }

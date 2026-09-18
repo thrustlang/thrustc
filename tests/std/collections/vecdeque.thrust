@@ -1,0 +1,101 @@
+/*
+ * Exercises std::collections::vecdeque: construction, front/back pushes,
+ * front/back pops, wrap-around, growth, capacity management and destruction,
+ * with both a primitive element type and a struct element type.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::vecdeque;
+
+struct Pair {
+    first: s32,
+    second: s32
+}
+
+fn main() s32 @public {
+    var d := vecdeque::newVecDeque[s32]();
+
+    if !vecdeque::isEmpty(ref d) { return 1; }
+    if vecdeque::getLength(ref d) != 0 { return 2; }
+    if vecdeque::getCapacity(ref d) != 0 { return 3; }
+
+    vecdeque::pushBack[s32](ref d, 10);
+    vecdeque::pushBack[s32](ref d, 20);
+    vecdeque::pushFront[s32](ref d, 5);
+
+    if vecdeque::getLength(ref d) != 3 { return 4; }
+    if vecdeque::front(ref d) != 5 { return 5; }
+    if vecdeque::back(ref d) != 20 { return 6; }
+    if vecdeque::at(ref d, 0) != 5 { return 7; }
+    if vecdeque::at(ref d, 1) != 10 { return 8; }
+    if vecdeque::at(ref d, 2) != 20 { return 9; }
+
+    if vecdeque::popFront(ref d) != 5 { return 10; }
+    if vecdeque::popBack(ref d) != 20 { return 11; }
+    if vecdeque::getLength(ref d) != 1 { return 12; }
+    if vecdeque::front(ref d) != 10 { return 13; }
+    if vecdeque::back(ref d) != 10 { return 14; }
+
+    vecdeque::clear(ref d);
+    if !vecdeque::isEmpty(ref d) { return 15; }
+
+    vecdeque::pushBack[s32](ref d, 1);
+    vecdeque::pushBack[s32](ref d, 2);
+    vecdeque::pushBack[s32](ref d, 3);
+    vecdeque::pushBack[s32](ref d, 4);
+
+    if vecdeque::popFront(ref d) != 1 { return 16; }
+    if vecdeque::popFront(ref d) != 2 { return 17; }
+
+    vecdeque::pushBack[s32](ref d, 5);
+    vecdeque::pushBack[s32](ref d, 6);
+
+    if vecdeque::at(ref d, 0) != 3 { return 18; }
+    if vecdeque::at(ref d, 1) != 4 { return 19; }
+    if vecdeque::at(ref d, 2) != 5 { return 20; }
+    if vecdeque::at(ref d, 3) != 6 { return 21; }
+
+    vecdeque::pushFront[s32](ref d, 2);
+    vecdeque::pushFront[s32](ref d, 1);
+
+    if vecdeque::getLength(ref d) != 6 { return 22; }
+    if vecdeque::getCapacity(ref d) < 6 { return 23; }
+    if vecdeque::at(ref d, 0) != 1 { return 24; }
+    if vecdeque::at(ref d, 1) != 2 { return 25; }
+    if vecdeque::at(ref d, 2) != 3 { return 26; }
+    if vecdeque::at(ref d, 3) != 4 { return 27; }
+    if vecdeque::at(ref d, 4) != 5 { return 28; }
+    if vecdeque::at(ref d, 5) != 6 { return 29; }
+
+    vecdeque::reserveCapacity(ref d, 32);
+    if vecdeque::getCapacity(ref d) < 32 { return 30; }
+    if vecdeque::front(ref d) != 1 { return 31; }
+    if vecdeque::back(ref d) != 6 { return 32; }
+
+    vecdeque::shrinkToFit(ref d);
+    if vecdeque::getCapacity(ref d) != vecdeque::getLength(ref d) { return 33; }
+    if vecdeque::at(ref d, 0) != 1 { return 34; }
+    if vecdeque::at(ref d, 5) != 6 { return 35; }
+
+    vecdeque::clear(ref d);
+    vecdeque::shrinkToFit(ref d);
+    if vecdeque::getCapacity(ref d) != 0 { return 36; }
+    if vecdeque::getDataPointer(ref d) != nullptr { return 37; }
+
+    vecdeque::dropVecDeque(ref d);
+
+    var pd := vecdeque::withCapacity[Pair](2);
+    if vecdeque::getCapacity(ref pd) < 2 { return 38; }
+
+    vecdeque::pushBack(ref pd, new Pair { first: 1, second: 2 });
+    vecdeque::pushFront(ref pd, new Pair { first: 3, second: 4 });
+
+    if vecdeque::front(ref pd)->first != 3 { return 39; }
+    if vecdeque::front(ref pd)->second != 4 { return 40; }
+    if vecdeque::back(ref pd)->first != 1 { return 41; }
+    if vecdeque::back(ref pd)->second != 2 { return 42; }
+
+    vecdeque::dropVecDeque(ref pd);
+
+    return 0;
+}

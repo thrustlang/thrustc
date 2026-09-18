@@ -1,0 +1,490 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+directive "--disable-warnings=W0010";
+directive "--disable-warnings=W0017";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0029";
+directive "--disable-warnings=W0030";
+
+import std::mem;
+import std::random;
+import std::tstring;
+
+const HASHMAP_INITIAL_CAPACITY: usize @public = 8;
+
+const KEY_MODE_RAW: u8 @public = 0;
+const KEY_MODE_CSTRING: u8 @public = 1;
+const KEY_MODE_TSTRING: u8 @public = 2;
+
+const MAX_LOAD_PERCENT: usize = 70;
+
+const ENTRY_EMPTY: u8 = 0;
+const ENTRY_OCCUPIED: u8 = 1;
+const ENTRY_TOMBSTONE: u8 = 2;
+
+struct HashMapEntry [V] @public {
+    key: ptr,
+    keySize: usize,
+    value: V,
+    hash: u64,
+    state: u8
+}
+
+struct HashMap [K, V] @public {
+    entries: ptr[HashMapEntry[V]],
+    length: usize,
+    capacity: usize,
+    tombstones: usize,
+    seed0: u64,
+    seed1: u64,
+    keyMode: u8,
+    keySize: usize,
+    keyMarker: ptr[K]
+}
+
+fn newHashMap [K, V] () HashMap[K, V] @public {
+    /*
+     * Raw keys are stored as exactly sizeOf(K) bytes. CString and TString are
+     * content keys instead: copying/comparing their pointer or struct bytes
+     * would compare ownership metadata, not the string contents.
+     */
+    @if(isSameType(K, CString)) {
+        return buildHashMap[K, V](KEY_MODE_CSTRING, 0);
+    } @else if(isSameType(K, tstring::TString)) {
+        return buildHashMap[K, V](KEY_MODE_TSTRING, 0);
+    } @else {
+        return buildHashMap[K, V](KEY_MODE_RAW, sizeOf(K));
+    }
+}
+
+fn withCapacity [K, V] (capacity: usize) HashMap[K, V] @public {
+    var map := newHashMap[K, V]();
+
+    if capacity > 0 {
+        reserveCapacity(ref map, capacity);
+    }
+
+    return map;
+}
+
+fn dropHashMap [K, V] (map: ptr[HashMap[K, V]]) void @public {
+    clear(map);
+
+    if map->entries != nullptr {
+        mem::freeMemory(map->entries as ptr);
+    }
+
+    map->entries = nullptr;
+    map->length = 0;
+    map->capacity = 0;
+    map->tombstones = 0;
+}
+
+fn getLength [K, V] (map: ptr[HashMap[K, V]]) usize @public {
+    return map->length;
+}
+
+fn getCapacity [K, V] (map: ptr[HashMap[K, V]]) usize @public {
+    return map->capacity;
+}
+
+fn isEmpty [K, V] (map: ptr[HashMap[K, V]]) bool @public {
+    return map->length == 0;
+}
+
+fn containsKey [K, V] (map: ptr[HashMap[K, V]], key: ptr) bool @public {
+    return get(map, key) != nullptr;
+}
+
+fn get [K, V] (map: ptr[HashMap[K, V]], key: ptr) ptr[V] @public {
+    if map->capacity == 0 {
+        return nullptr;
+    }
+
+    var keySize: usize = getKeySize(map, key);
+    var hash: u64 = hashKeyData(map, key, keySize);
+    var index: usize = (hash as usize) % map->capacity;
+    var probes: usize = 0;
+
+    while probes < map->capacity {
+        if entryState(ref map->entries[index]) == ENTRY_EMPTY {
+            return nullptr;
+        }
+
+        if entryState(ref map->entries[index]) == ENTRY_OCCUPIED
+            && entryHash(ref map->entries[index]) == hash
+            && entryKeyEquals(ref map->entries[index], map, key, keySize)
+        {
+            return entryValue(ref map->entries[index]);
+        }
+
+        index = (index + 1) % map->capacity;
+        probes = probes + 1;
+    }
+
+    return nullptr;
+}
+
+fn insert [K, V] (map: ptr[HashMap[K, V]], key: ptr, value: V) bool @public {
+    ensureCapacity(map);
+
+    var keySize: usize = getKeySize(map, key);
+    var hash: u64 = hashKeyData(map, key, keySize);
+    var index: usize = (hash as usize) % map->capacity;
+    var probes: usize = 0;
+    var firstTombstone: usize = map->capacity;
+    var localValue: V = value;
+
+    while probes < map->capacity {
+        if entryState(ref map->entries[index]) == ENTRY_EMPTY {
+            if firstTombstone != map->capacity {
+                index = firstTombstone;
+                map->tombstones = map->tombstones - 1;
+            }
+
+            setEntry(ref map->entries[index], map, key, keySize, ref localValue, hash);
+            map->length = map->length + 1;
+
+            return true;
+        }
+
+        if entryState(ref map->entries[index]) == ENTRY_TOMBSTONE && firstTombstone == map->capacity {
+            firstTombstone = index;
+        }
+
+        if entryState(ref map->entries[index]) == ENTRY_OCCUPIED
+            && entryHash(ref map->entries[index]) == hash
+            && entryKeyEquals(ref map->entries[index], map, key, keySize)
+        {
+            setEntryValue(ref map->entries[index], ref localValue);
+
+            return false;
+        }
+
+        index = (index + 1) % map->capacity;
+        probes = probes + 1;
+    }
+
+    reserveCapacity(map, map->capacity * 2);
+
+    return insert(map, key, value);
+}
+
+fn remove [K, V] (map: ptr[HashMap[K, V]], key: ptr) bool @public {
+    if map->capacity == 0 {
+        return false;
+    }
+
+    var keySize: usize = getKeySize(map, key);
+    var hash: u64 = hashKeyData(map, key, keySize);
+    var index: usize = (hash as usize) % map->capacity;
+    var probes: usize = 0;
+
+    while probes < map->capacity {
+        if entryState(ref map->entries[index]) == ENTRY_EMPTY {
+            return false;
+        }
+
+        if entryState(ref map->entries[index]) == ENTRY_OCCUPIED
+            && entryHash(ref map->entries[index]) == hash
+            && entryKeyEquals(ref map->entries[index], map, key, keySize)
+        {
+            freeEntryKey(ref map->entries[index]);
+            setEntryState(ref map->entries[index], ENTRY_TOMBSTONE);
+            map->length = map->length - 1;
+            map->tombstones = map->tombstones + 1;
+
+            return true;
+        }
+
+        index = (index + 1) % map->capacity;
+        probes = probes + 1;
+    }
+
+    return false;
+}
+
+fn clear [K, V] (map: ptr[HashMap[K, V]]) void @public {
+    var index: usize = 0;
+
+    while index < map->capacity {
+        if entryState(ref map->entries[index]) == ENTRY_OCCUPIED {
+            freeEntryKey(ref map->entries[index]);
+        }
+
+        setEntryState(ref map->entries[index], ENTRY_EMPTY);
+        index = index + 1;
+    }
+
+    map->length = 0;
+    map->tombstones = 0;
+}
+
+fn reserveCapacity [K, V] (map: ptr[HashMap[K, V]], requestedCapacity: usize) void @public {
+    var newCapacity: usize = HASHMAP_INITIAL_CAPACITY;
+
+    while newCapacity < requestedCapacity {
+        newCapacity = newCapacity * 2;
+    }
+
+    if newCapacity > map->capacity {
+        rehash(map, newCapacity);
+    }
+}
+
+fn buildHashMap [K, V] (keyMode: u8, keySize: usize) HashMap[K, V] {
+    return new HashMap[K, V] {
+        entries: nullptr,
+        length: 0,
+        capacity: 0,
+        tombstones: 0,
+        seed0: random::randomU64(),
+        seed1: random::randomU64(),
+        keyMode: keyMode,
+        keySize: keySize,
+        keyMarker: nullptr
+    };
+}
+
+fn ensureCapacity [K, V] (target: ptr[HashMap[K, V]]) void {
+    if target->capacity == 0 {
+        rehash(target, HASHMAP_INITIAL_CAPACITY);
+        return;
+    }
+
+    if (target->length + target->tombstones + 1) * 100 >= target->capacity * MAX_LOAD_PERCENT {
+        rehash(target, target->capacity * 2);
+    }
+}
+
+fn rehash [K, V] (target: ptr[HashMap[K, V]], newCapacity: usize) void {
+    var oldEntries: ptr[HashMapEntry[V]] = target->entries;
+    var oldCapacity: usize = target->capacity;
+    var index: usize = 0;
+
+    target->entries = mem::allocateZeroedMemory(newCapacity, sizeOf(HashMapEntry[V])) as ptr[HashMapEntry[V]];
+    target->capacity = newCapacity;
+    target->length = 0;
+    target->tombstones = 0;
+
+    while index < oldCapacity {
+        if entryState(ref oldEntries[index]) == ENTRY_OCCUPIED {
+            insertRehashed(target, ref oldEntries[index]);
+        }
+
+        index = index + 1;
+    }
+
+    if oldEntries != nullptr {
+        mem::freeMemory(oldEntries as ptr);
+    }
+}
+
+fn insertRehashed [K, V] (target: ptr[HashMap[K, V]], source: ptr[HashMapEntry[V]]) void {
+    var index: usize = (source->hash as usize) % target->capacity;
+
+    loop {
+        if entryState(ref target->entries[index]) != ENTRY_OCCUPIED {
+            copyEntry(ref target->entries[index], source);
+            target->length = target->length + 1;
+
+            return;
+        }
+
+        index = (index + 1) % target->capacity;
+    }
+}
+
+fn setEntry [K, V] (entry: ptr[HashMapEntry[V]], map: ptr[HashMap[K, V]], key: ptr, keySize: usize, value: ptr[V], hash: u64) void {
+    entry->key = copyKey(map, key, keySize);
+    entry->keySize = keySize;
+    entry->value = value->[0];
+    entry->hash = hash;
+    entry->state = ENTRY_OCCUPIED;
+}
+
+fn copyEntry [V] (target: ptr[HashMapEntry[V]], source: ptr[HashMapEntry[V]]) void {
+    target->key = source->key;
+    target->keySize = source->keySize;
+    target->value = source->value;
+    target->hash = source->hash;
+    target->state = source->state;
+}
+
+fn setEntryValue [V] (entry: ptr[HashMapEntry[V]], value: ptr[V]) void {
+    entry->value = value->[0];
+}
+
+fn setEntryState [V] (entry: ptr[HashMapEntry[V]], state: u8) void {
+    entry->state = state;
+}
+
+fn freeEntryKey [V] (entry: ptr[HashMapEntry[V]]) void {
+    if entry->key != nullptr {
+        mem::freeMemory(entry->key);
+    }
+
+    entry->key = nullptr;
+    entry->keySize = 0;
+}
+
+fn entryValue [V] (entry: ptr[HashMapEntry[V]]) ptr[V] {
+    return entry.value;
+}
+
+fn entryHash [V] (entry: ptr[HashMapEntry[V]]) u64 {
+    return entry->hash;
+}
+
+fn entryState [V] (entry: ptr[HashMapEntry[V]]) u8 {
+    return entry->state;
+}
+
+fn entryKeyEquals [K, V] (entry: ptr[HashMapEntry[V]], map: ptr[HashMap[K, V]], key: ptr, keySize: usize) bool {
+    if entry->keySize != keySize {
+        return false;
+    }
+
+    return mem::compareMemory(entry->key, keyDataPointer(map, key), keySize) == 0;
+}
+
+fn copyKey [K, V] (map: ptr[HashMap[K, V]], key: ptr, keySize: usize) ptr {
+    var copy: ptr = mem::allocateMemory(keySize);
+
+    mem::copyMemory(copy, keyDataPointer(map, key), keySize);
+
+    return copy;
+}
+
+fn hashKeyData [K, V] (map: ptr[HashMap[K, V]], key: ptr, keySize: usize) u64 {
+    return sipHash13(keyDataPointer(map, key) as ptr[u8], keySize, map->seed0, map->seed1);
+}
+
+fn getKeySize [K, V] (map: ptr[HashMap[K, V]], key: ptr) usize {
+    /*
+     * CString length excludes the trailing NUL because equality and hashing are
+     * based on string content. TString follows the same rule through tstring::len.
+     */
+    if map->keyMode == KEY_MODE_CSTRING {
+        return cstringLength(key as CString);
+    }
+
+    if map->keyMode == KEY_MODE_TSTRING {
+        return tstring::len(key as ptr[tstring::TString]);
+    }
+
+    return map->keySize;
+}
+
+fn keyDataPointer [K, V] (map: ptr[HashMap[K, V]], key: ptr) ptr {
+    /*
+     * Raw and CString keys already point at the compared bytes. TString keys are
+     * structs, so their comparable data is the backing string buffer.
+     */
+    if map->keyMode == KEY_MODE_TSTRING {
+        return tstring::toCString(key as ptr[tstring::TString]) as ptr;
+    }
+
+    return key;
+}
+
+fn cstringLength(text: CString) usize {
+    var index: usize = 0;
+    var data: ptr[char] = text as ptr[char];
+
+    while data->[index] != '\0' {
+        index = index + 1;
+    }
+
+    return index;
+}
+
+fn sipHash13(data: ptr[u8], length: usize, seed0: u64, seed1: u64) u64 {
+    var v0: u64 = 0x736F6D6570736575 ^ seed0;
+    var v1: u64 = 0x646F72616E646F6D ^ seed1;
+    var v2: u64 = 0x6C7967656E657261 ^ seed0;
+    var v3: u64 = 0x7465646279746573 ^ seed1;
+    var offset: usize = 0;
+    var message: u64;
+    var last: u64 = (length as u64) << 56;
+
+    while offset + 8 <= length {
+        message = readU64LittleEndian(data, offset);
+        v3 = v3 ^ message;
+        sipRound(ref v0, ref v1, ref v2, ref v3);
+        v0 = v0 ^ message;
+        offset = offset + 8;
+    }
+
+    last = last | readTail(data, offset, length - offset);
+    v3 = v3 ^ last;
+    sipRound(ref v0, ref v1, ref v2, ref v3);
+    v0 = v0 ^ last;
+    v2 = v2 ^ 0xFF;
+    sipRound(ref v0, ref v1, ref v2, ref v3);
+    sipRound(ref v0, ref v1, ref v2, ref v3);
+    sipRound(ref v0, ref v1, ref v2, ref v3);
+
+    return v0 ^ v1 ^ v2 ^ v3;
+}
+
+fn sipRound(v0: ptr[u64], v1: ptr[u64], v2: ptr[u64], v3: ptr[u64]) void {
+    v0[0] = v0->[0] + v1->[0];
+    v1[0] = rotateLeft64(v1->[0], 13);
+    v1[0] = v1->[0] ^ v0->[0];
+    v0[0] = rotateLeft64(v0->[0], 32);
+    v2[0] = v2->[0] + v3->[0];
+    v3[0] = rotateLeft64(v3->[0], 16);
+    v3[0] = v3->[0] ^ v2->[0];
+    v0[0] = v0->[0] + v3->[0];
+    v3[0] = rotateLeft64(v3->[0], 21);
+    v3[0] = v3->[0] ^ v0->[0];
+    v2[0] = v2->[0] + v1->[0];
+    v1[0] = rotateLeft64(v1->[0], 17);
+    v1[0] = v1->[0] ^ v2->[0];
+    v2[0] = rotateLeft64(v2->[0], 32);
+}
+
+fn readU64LittleEndian(data: ptr[u8], offset: usize) u64 {
+    return (data->[offset] as u64)
+        | ((data->[offset + 1] as u64) << 8)
+        | ((data->[offset + 2] as u64) << 16)
+        | ((data->[offset + 3] as u64) << 24)
+        | ((data->[offset + 4] as u64) << 32)
+        | ((data->[offset + 5] as u64) << 40)
+        | ((data->[offset + 6] as u64) << 48)
+        | ((data->[offset + 7] as u64) << 56);
+}
+
+fn readTail(data: ptr[u8], offset: usize, length: usize) u64 {
+    var result: u64 = 0;
+    var index: usize = 0;
+
+    while index < length {
+        result = result | ((data->[offset + index] as u64) << ((index * 8) as u32));
+        index = index + 1;
+    }
+
+    return result;
+}
+
+fn rotateLeft64(value: u64, bits: u32) u64 {
+    return (value << bits) | (value >> (64 - bits));
+}

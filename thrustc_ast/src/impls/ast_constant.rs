@@ -17,10 +17,7 @@
 
 */
 
-use crate::{
-    Ast,
-    traits::AstConstantExtensions,
-};
+use crate::{Ast, traits::AstConstantExtensions};
 
 impl AstConstantExtensions for Ast<'_> {
     fn is_constant_value(&self) -> bool {
@@ -57,6 +54,7 @@ impl AstConstantExtensions for Ast<'_> {
             | Ast::If { .. }
             | Ast::Elif { .. }
             | Ast::Else { .. }
+            | Ast::CompileTimeIf { .. }
             | Ast::For { .. }
             | Ast::While { .. }
             | Ast::Loop { .. }

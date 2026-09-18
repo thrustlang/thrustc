@@ -1,0 +1,37 @@
+/*
+ * Exercises std::random: explicit seeding, random u64 generation and byte filling.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::random;
+
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var first: u64;
+    var second: u64;
+    var bytes: array[u8; 16];
+    var index: usize = 0;
+    var nonZero: bool = false;
+
+    random::seedRandom(123456);
+
+    first = random::randomU64();
+    second = random::randomU64();
+
+    if first == second { return 1; }
+
+    random::fillRandomBytes(ref bytes as ptr, 16);
+
+    while index < 16 {
+        if bytes->[index] != 0 {
+            nonZero = true;
+        }
+
+        index = index + 1;
+    }
+
+    if !nonZero { return 2; }
+
+    return 0;
+}

@@ -28,7 +28,7 @@ use thrustc_typesystem::Type;
 use std::path::PathBuf;
 
 use crate::context::LLVMCodeGenContext;
-use crate::{abort, heap_memory, typegeneration};
+use crate::{abort, heap_memory, memory, typegeneration};
 
 pub fn allocate_variable<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
@@ -37,7 +37,7 @@ pub fn allocate_variable<'ctx>(
     attributes: &ThrustAttributes,
     span: Span,
 ) -> PointerValue<'ctx> {
-    let llvm_name: String = format!("local.{}", llvm_name);
+    let llvm_name: String = context.reserve_local_llvm_name(llvm_name, span);
     let llvm_type: BasicTypeEnum = typegeneration::generate_type(context, kind);
 
     context.mark_dbg_location(span);
@@ -57,19 +57,13 @@ fn try_allocate_at_stack<'ctx>(
     attributes: &ThrustAttributes,
     span: Span,
 ) -> PointerValue<'ctx> {
-    let llvm_builder: &inkwell::builder::Builder<'_> = context.get_llvm_builder();
-
-    let ptr: PointerValue<'_> = llvm_builder
-        .build_alloca(llvm_type, llvm_name)
-        .unwrap_or_else(|_| {
-            abort::abort_codegen(
-                context,
-                "Failed to allocate at stack!",
-                span,
-                PathBuf::from(file!()),
-                line!(),
-            )
-        });
+    let ptr: PointerValue<'_> = memory::allocate_at_function_entry(
+        context,
+        llvm_type,
+        llvm_name,
+        span,
+        "Failed to allocate at stack!",
+    );
 
     let instruction: inkwell::values::InstructionValue<'_> =
         ptr.as_instruction().unwrap_or_else(|| {

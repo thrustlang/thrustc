@@ -265,6 +265,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     | Ast::If { .. }
                     | Ast::Elif { .. }
                     | Ast::Else { .. }
+                    | Ast::CompileTimeIf { .. }
                     | Ast::For { .. }
                     | Ast::While { .. }
                     | Ast::Loop { .. }
@@ -344,6 +345,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             | Ast::If { .. }
             | Ast::Elif { .. }
             | Ast::Else { .. }
+            | Ast::CompileTimeIf { .. }
             | Ast::For { .. }
             | Ast::While { .. }
             | Ast::Loop { .. }
@@ -1103,6 +1105,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             | Ast::If { .. }
             | Ast::Elif { .. }
             | Ast::Else { .. }
+            | Ast::CompileTimeIf { .. }
             | Ast::For { .. }
             | Ast::While { .. }
             | Ast::Loop { .. }

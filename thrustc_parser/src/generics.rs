@@ -28,7 +28,7 @@ use thrustc_ast::{
 };
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
 use thrustc_code_location::Span;
-use thrustc_compile_time::BuiltinArgument;
+use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_table::GenericFunctionEntry;
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -746,6 +746,87 @@ fn resolve_children<'parser>(
             span,
             id,
         },
+        Ast::CompileTimeIf {
+            condition,
+            then_branch,
+            else_if_branch,
+            else_branch,
+            span,
+            ..
+        } => {
+            let condition: Ast<'parser> =
+                self::resolve_ast(ctx, *condition, templates, memo, output);
+
+            match thrustc_compile_time::fold(&condition) {
+                Some(BuiltinValue::Bool(true)) => {
+                    return self::resolve_ast(ctx, *then_branch, templates, memo, output);
+                }
+                Some(BuiltinValue::Bool(false)) => {}
+                _ => {
+                    ctx.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0019,
+                        "The compile-time condition must resolve to a constant boolean.".into(),
+                        "Generic '@if' conditions must become constant after type substitution."
+                            .into(),
+                        None,
+                        span,
+                    ));
+
+                    return Ast::invalid_ast(span);
+                }
+            }
+
+            for elif in else_if_branch {
+                let Ast::Elif {
+                    condition,
+                    block,
+                    span,
+                    ..
+                } = elif
+                else {
+                    continue;
+                };
+
+                let condition: Ast<'parser> =
+                    self::resolve_ast(ctx, *condition, templates, memo, output);
+
+                match thrustc_compile_time::fold(&condition) {
+                    Some(BuiltinValue::Bool(true)) => {
+                        return self::resolve_ast(ctx, *block, templates, memo, output);
+                    }
+                    Some(BuiltinValue::Bool(false)) => {}
+                    _ => {
+                        ctx.add_error_report(CompilationIssue::Error(
+                            CompilationIssueCode::E0019,
+                            "The compile-time condition must resolve to a constant boolean."
+                                .into(),
+                            "Generic '@if' conditions must become constant after type substitution."
+                                .into(),
+                            None,
+                            span,
+                        ));
+
+                        return Ast::invalid_ast(span);
+                    }
+                }
+            }
+
+            if let Some(otherwise) = else_branch {
+                if let Ast::Else { block, .. } = *otherwise {
+                    return self::resolve_ast(ctx, *block, templates, memo, output);
+                }
+            }
+
+            ctx.add_error_report(CompilationIssue::Error(
+                CompilationIssueCode::E0019,
+                "The '@if' compile-time conditional has no active branch.".into(),
+                "Every '@if'/'@elif' condition was false and there is no '@else' branch. Make a condition true or add an '@else' branch.".into(),
+                None,
+                span,
+            ));
+
+            Ast::invalid_ast(span)
+        }
         Ast::Elif {
             condition,
             block,

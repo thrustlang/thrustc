@@ -134,6 +134,15 @@ fn visit_all_types_inner<'ast>(
             kind,
             span,
             ..
+        }
+        | Ast::CompileTimeIf {
+            condition,
+            then_branch,
+            else_if_branch,
+            else_branch,
+            kind,
+            span,
+            ..
         } => {
             on_type(kind, *span);
             if let Some(span) = visit_all_types_inner(condition, on_type, depth) {

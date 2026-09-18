@@ -103,7 +103,7 @@ fn main() s32 @public {
     printVector(ref v);
     if !vector::isEmpty(ref v) { return 8; }
 
-    vector::destroyVector(ref v);
+    vector::dropVector(ref v);
 
     io::println("=== vector<Pair> ===");
     var pv := vector::withCapacity[Pair](2);
@@ -122,7 +122,7 @@ fn main() s32 @public {
     if vector::at(ref pv, 0)->first != 1 { return 9; }
     if vector::at(ref pv, 1)->second != 4 { return 10; }
 
-    vector::destroyVector(ref pv);
+    vector::dropVector(ref pv);
 
     io::println("=== done ===");
 

@@ -19,6 +19,7 @@
 
 #![allow(clippy::too_many_arguments)]
 
+use ahash::AHashSet as HashSet;
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
@@ -57,6 +58,7 @@ use crate::types::LLVMDBGFunction;
 use crate::types::LLVMDtors;
 use crate::types::LLVMFunction;
 use crate::types::LLVMStackProtectorPointer;
+use crate::utils;
 
 #[derive(Debug)]
 pub struct LLVMCodeGenContext<'a, 'ctx> {
@@ -79,6 +81,7 @@ pub struct LLVMCodeGenContext<'a, 'ctx> {
     codegen_location: Vec<CodeGenLocation>,
 
     atomic_modificators: Vec<LLVMAtomicModificators>,
+    local_llvm_names: HashSet<String>,
 
     ptr_anchor: Option<PointerAnchor<'ctx>>,
 
@@ -148,6 +151,7 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
             codegen_location: Vec::new(),
 
             atomic_modificators: Vec::new(),
+            local_llvm_names: HashSet::with_capacity(u8::MAX as usize),
 
             ptr_anchor: None,
 
@@ -182,6 +186,44 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     #[inline]
     pub fn add_global_constant(&mut self, name: &'ctx str, symbol: SymbolAllocated<'ctx>) {
         self.table.add_global_constant(name, symbol);
+    }
+}
+
+impl LLVMCodeGenContext<'_, '_> {
+    #[inline]
+    pub fn clear_local_llvm_names(&mut self) {
+        self.local_llvm_names.clear();
+    }
+
+    pub fn reserve_local_llvm_name(&mut self, base_name: &str, _span: Span) -> String {
+        let base_name: String = format!("local.{}", base_name);
+
+        if self.local_llvm_names.insert(base_name.clone()) {
+            return base_name;
+        }
+
+        let mut attempt: usize = 0;
+
+        loop {
+            let mut discriminator: String =
+                utils::generate_string(self, utils::SHORT_RANGE_OBFUSCATION);
+
+            if discriminator.is_empty() {
+                discriminator = attempt.to_string();
+            }
+
+            let name: String = format!(
+                "local.{}.{}",
+                discriminator,
+                base_name.trim_start_matches("local.")
+            );
+
+            if self.local_llvm_names.insert(name.clone()) {
+                return name;
+            }
+
+            attempt = attempt.saturating_add(1);
+        }
     }
 }
 

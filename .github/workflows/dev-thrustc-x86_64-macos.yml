@@ -104,7 +104,13 @@ jobs:
       - name: Building Thrust Compiler (Development)
         run: |
           export LIBRARY_PATH="$(brew --prefix zstd)/lib:${LIBRARY_PATH:-}"
-          cargo build
+          cargo build -p thrustc
+        working-directory: thrustc
+
+      - name: Building Thrust LSP (Development)
+        run: |
+          export LIBRARY_PATH="$(brew --prefix zstd)/lib:${LIBRARY_PATH:-}"
+          cargo build -p thrustc_lsp
         working-directory: thrustc
 
       - name: Extracting File Type and Dynamic Dependencies
@@ -178,5 +184,6 @@ jobs:
 
           files: |
             thrustc/target/debug/thrustc
+            thrustc/target/debug/thrustc_lsp
           draft: false
           prerelease: true 

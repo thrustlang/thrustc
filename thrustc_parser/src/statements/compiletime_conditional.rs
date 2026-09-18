@@ -18,11 +18,13 @@
 */
 
 use thrustc_ast::Ast;
+use thrustc_ast::ast_builtins::AstBuiltin;
 use thrustc_code_location::Span;
 use thrustc_compile_time::BuiltinValue;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
+use thrustc_typesystem::Type;
 
 use crate::{ParserContext, expressions, statements, statements::code_block};
 
@@ -31,24 +33,31 @@ pub fn build_compiletime_conditional<'parser>(
 ) -> Result<Ast<'parser>, CompilationIssue> {
     let span: Span = ctx.peek().get_span();
 
-    let first_condition: bool = self::evaluate_condition(ctx)?;
+    let first_condition: CompileTimeCondition<'parser> = self::evaluate_condition(ctx)?;
 
     let mut active: Option<Ast<'parser>> = None;
 
-    if first_condition {
-        active = Some(self::parse_branch(ctx)?);
-    } else {
-        self::parse_branch_discarded(ctx)?;
+    match first_condition {
+        CompileTimeCondition::Known(true) => active = Some(self::parse_branch(ctx)?),
+        CompileTimeCondition::Known(false) => self::parse_branch_discarded(ctx)?,
+        CompileTimeCondition::Deferred(condition) => {
+            return self::parse_deferred_compiletime_conditional(ctx, condition, span);
+        }
     }
 
     loop {
         if ctx.check(TokenType::ElifAttribute) {
-            let condition: bool = self::evaluate_condition(ctx)?;
+            let condition: CompileTimeCondition<'parser> = self::evaluate_condition(ctx)?;
 
-            if active.is_none() && condition {
-                active = Some(self::parse_branch(ctx)?);
-            } else {
-                self::parse_branch_discarded(ctx)?;
+            match condition {
+                CompileTimeCondition::Known(true) if active.is_none() => {
+                    active = Some(self::parse_branch(ctx)?)
+                }
+                CompileTimeCondition::Known(_) => self::parse_branch_discarded(ctx)?,
+                CompileTimeCondition::Deferred(condition) if active.is_none() => {
+                    return self::parse_deferred_compiletime_conditional(ctx, condition, span);
+                }
+                CompileTimeCondition::Deferred(_) => self::parse_branch_discarded(ctx)?,
             }
 
             continue;
@@ -61,12 +70,17 @@ pub fn build_compiletime_conditional<'parser>(
                 "Expected '@else'.".into(),
             )?;
 
-            let condition: bool = self::evaluate_condition(ctx)?;
+            let condition: CompileTimeCondition<'parser> = self::evaluate_condition(ctx)?;
 
-            if active.is_none() && condition {
-                active = Some(self::parse_branch(ctx)?);
-            } else {
-                self::parse_branch_discarded(ctx)?;
+            match condition {
+                CompileTimeCondition::Known(true) if active.is_none() => {
+                    active = Some(self::parse_branch(ctx)?)
+                }
+                CompileTimeCondition::Known(_) => self::parse_branch_discarded(ctx)?,
+                CompileTimeCondition::Deferred(condition) if active.is_none() => {
+                    return self::parse_deferred_compiletime_conditional(ctx, condition, span);
+                }
+                CompileTimeCondition::Deferred(_) => self::parse_branch_discarded(ctx)?,
             }
 
             continue;
@@ -107,6 +121,89 @@ pub fn build_compiletime_conditional<'parser>(
     }
 }
 
+fn parse_deferred_compiletime_conditional<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    condition: Ast<'parser>,
+    span: Span,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let then_branch: Ast<'parser> = self::parse_branch(ctx)?;
+    let mut else_if_branch: Vec<Ast<'parser>> = Vec::with_capacity(4);
+    let mut else_branch: Option<std::boxed::Box<Ast<'parser>>> = None;
+
+    loop {
+        if ctx.check(TokenType::ElifAttribute) {
+            let condition: Ast<'parser> = self::evaluate_condition(ctx)?.into_ast();
+            let block: Ast<'parser> = self::parse_branch(ctx)?;
+
+            else_if_branch.push(Ast::Elif {
+                condition: std::boxed::Box::new(condition),
+                block: std::boxed::Box::new(block),
+                kind: Type::Void { span },
+                span,
+                id: thrustc_ast::NodeId::new(),
+            });
+
+            continue;
+        }
+
+        if ctx.check(TokenType::ElseAttribute) && ctx.check_to(TokenType::If, 1) {
+            let else_span: Span = ctx.peek().get_span();
+
+            ctx.consume(
+                TokenType::ElseAttribute,
+                CompilationIssueCode::E0001,
+                "Expected '@else'.".into(),
+            )?;
+
+            let condition: Ast<'parser> = self::evaluate_condition(ctx)?.into_ast();
+            let block: Ast<'parser> = self::parse_branch(ctx)?;
+
+            else_if_branch.push(Ast::Elif {
+                condition: std::boxed::Box::new(condition),
+                block: std::boxed::Box::new(block),
+                kind: Type::Void { span: else_span },
+                span: else_span,
+                id: thrustc_ast::NodeId::new(),
+            });
+
+            continue;
+        }
+
+        if ctx.check(TokenType::ElseAttribute) {
+            let else_span: Span = ctx.peek().get_span();
+
+            ctx.consume(
+                TokenType::ElseAttribute,
+                CompilationIssueCode::E0001,
+                "Expected '@else'.".into(),
+            )?;
+
+            let block: Ast<'parser> = self::parse_branch(ctx)?;
+
+            else_branch = Some(std::boxed::Box::new(Ast::Else {
+                block: std::boxed::Box::new(block),
+                kind: Type::Void { span: else_span },
+                span: else_span,
+                id: thrustc_ast::NodeId::new(),
+            }));
+
+            break;
+        }
+
+        break;
+    }
+
+    Ok(Ast::CompileTimeIf {
+        condition: std::boxed::Box::new(condition),
+        then_branch: std::boxed::Box::new(then_branch),
+        else_if_branch,
+        else_branch,
+        kind: Type::Void { span },
+        span,
+        id: thrustc_ast::NodeId::new(),
+    })
+}
+
 fn parse_branch<'parser>(
     ctx: &mut ParserContext<'parser>,
 ) -> Result<Ast<'parser>, CompilationIssue> {
@@ -133,7 +230,7 @@ fn parse_branch_discarded<'parser>(
 
 pub(crate) fn evaluate_condition<'parser>(
     ctx: &mut ParserContext<'parser>,
-) -> Result<bool, CompilationIssue> {
+) -> Result<CompileTimeCondition<'parser>, CompilationIssue> {
     let if_tk: &Token = ctx.advance()?;
 
     ctx.consume(
@@ -151,7 +248,10 @@ pub(crate) fn evaluate_condition<'parser>(
     )?;
 
     match thrustc_compile_time::fold(&expression) {
-        Some(BuiltinValue::Bool(condition)) => Ok(condition),
+        Some(BuiltinValue::Bool(condition)) => Ok(CompileTimeCondition::Known(condition)),
+        _ if self::contains_deferred_builtin(&expression) => {
+            Ok(CompileTimeCondition::Deferred(expression))
+        }
         _ => Err(CompilationIssue::Error(
             CompilationIssueCode::E0019,
             "The compile-time condition must be a constant boolean.".into(),
@@ -159,5 +259,41 @@ pub(crate) fn evaluate_condition<'parser>(
             None,
             if_tk.get_span(),
         )),
+    }
+}
+
+pub(crate) enum CompileTimeCondition<'parser> {
+    Known(bool),
+    Deferred(Ast<'parser>),
+}
+
+impl<'parser> CompileTimeCondition<'parser> {
+    fn into_ast(self) -> Ast<'parser> {
+        match self {
+            Self::Known(value) => Ast::new_boolean(
+                Type::Bool {
+                    span: Span::nothing(),
+                },
+                value as u64,
+                Span::nothing(),
+            ),
+            Self::Deferred(ast) => ast,
+        }
+    }
+}
+
+fn contains_deferred_builtin(node: &Ast<'_>) -> bool {
+    match node {
+        Ast::Builtin {
+            builtin: AstBuiltin::DeferredCompileTime { .. },
+            ..
+        } => true,
+        Ast::Group { node, .. } => self::contains_deferred_builtin(node),
+        Ast::BinaryOp { left, right, .. } => {
+            self::contains_deferred_builtin(left) || self::contains_deferred_builtin(right)
+        }
+        Ast::UnaryOp { node, .. } => self::contains_deferred_builtin(node),
+        Ast::As { from, .. } => self::contains_deferred_builtin(from),
+        _ => false,
     }
 }

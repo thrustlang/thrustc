@@ -327,6 +327,24 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
             span,
             id,
         },
+        Ast::CompileTimeIf {
+            condition,
+            then_branch,
+            else_if_branch,
+            else_branch,
+            kind,
+            span,
+            id,
+        } => Ast::CompileTimeIf {
+            condition: std::boxed::Box::new(self::substitute_ast(*condition, env)),
+            then_branch: std::boxed::Box::new(self::substitute_ast(*then_branch, env)),
+            else_if_branch: self::substitute_ast_list(else_if_branch, env),
+            else_branch: else_branch
+                .map(|branch| std::boxed::Box::new(self::substitute_ast(*branch, env))),
+            kind: self::substitute(&kind, env),
+            span,
+            id,
+        },
         Ast::For {
             local,
             condition,
@@ -1011,12 +1029,10 @@ fn substitute_builtin<'ast>(builtin: AstBuiltin<'ast>, env: &TypeEnv) -> AstBuil
             arguments: arguments
                 .into_iter()
                 .map(|argument| match argument {
-                    DeferredBuiltinArgument::Type { ty, span } => {
-                        DeferredBuiltinArgument::Type {
-                            ty: self::substitute(&ty, env),
-                            span,
-                        }
-                    }
+                    DeferredBuiltinArgument::Type { ty, span } => DeferredBuiltinArgument::Type {
+                        ty: self::substitute(&ty, env),
+                        span,
+                    },
                     DeferredBuiltinArgument::Value { expression, span } => {
                         DeferredBuiltinArgument::Value {
                             expression: std::boxed::Box::new(self::substitute_ast(
@@ -1126,6 +1142,13 @@ fn collect_unresolved_ast_hints(node: &Ast<'_>, out: &mut std::collections::Hash
             }
         }
         Ast::If {
+            condition,
+            then_branch,
+            else_if_branch,
+            else_branch,
+            ..
+        }
+        | Ast::CompileTimeIf {
             condition,
             then_branch,
             else_if_branch,

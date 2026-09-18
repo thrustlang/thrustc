@@ -94,14 +94,26 @@ jobs:
 
       - name: Building Thrust Compiler (Release)
         run: |
-          cargo build --release
+          cargo build --release -p thrustc
+        working-directory: thrustc
+
+      - name: Building Thrust LSP (Release)
+        run: |
+          cargo build --release -p thrustc_lsp
         working-directory: thrustc
 
       - name: Building Thrust Compiler (Release - Stripped)
         shell: pwsh
         run: |
-          cargo build --profile release-stripped
+          cargo build --profile release-stripped -p thrustc
           Move-Item -Path "target/release-stripped/thrustc.exe" -Destination "target/release-stripped/thrustc-stripped.exe" -Force
+        working-directory: thrustc
+
+      - name: Building Thrust LSP (Release - Stripped)
+        shell: pwsh
+        run: |
+          cargo build --profile release-stripped -p thrustc_lsp
+          Move-Item -Path "target/release-stripped/thrustc_lsp.exe" -Destination "target/release-stripped/thrustc_lsp-stripped.exe" -Force
         working-directory: thrustc
 
       - name: Releasing Thrust Compiler
@@ -149,5 +161,7 @@ jobs:
 
           files: |
             thrustc/target/release/thrustc.exe
+            thrustc/target/release/thrustc_lsp.exe
             thrustc/target/release-stripped/thrustc-stripped.exe
+            thrustc/target/release-stripped/thrustc_lsp-stripped.exe
           draft: false

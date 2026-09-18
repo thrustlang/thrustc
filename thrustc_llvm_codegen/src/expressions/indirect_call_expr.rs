@@ -129,24 +129,23 @@ pub fn compile<'ctx>(
             )
         });
 
-        let (function_type, configuration) =
-            thrustc_llvm_abi::create_anonymous_function_type(
-                llvm_context,
-                abi,
-                return_type,
-                parameter_types,
-                is_var_args,
-                context.get_codegen_location().to_abi_representation(),
+        let (function_type, configuration) = thrustc_llvm_abi::create_anonymous_function_type(
+            llvm_context,
+            abi,
+            return_type,
+            parameter_types,
+            is_var_args,
+            context.get_codegen_location().to_abi_representation(),
+        )
+        .unwrap_or_else(|| {
+            abort::abort_codegen(
+                context,
+                "Failed to create a WebAssembly indirect call type.",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
             )
-            .unwrap_or_else(|| {
-                abort::abort_codegen(
-                    context,
-                    "Failed to create a WebAssembly indirect call type.",
-                    span,
-                    std::path::PathBuf::from(file!()),
-                    line!(),
-                )
-            });
+        });
 
         (function_type, Some(configuration))
     } else {
