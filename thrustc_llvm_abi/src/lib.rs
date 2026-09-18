@@ -486,6 +486,7 @@ pub fn lower_call_epilogue<'llvm_abi>(
                 .get_type()
                 .get_return_type()
                 .is_none();
+
             let mut abi_context: thrustc_llvm_system_v_abi::SystemVABIContext =
                 thrustc_llvm_system_v_abi::SystemVABIContext::new(
                     file,
@@ -543,6 +544,7 @@ pub fn lower_call_epilogue<'llvm_abi>(
                 .get_type()
                 .get_return_type()
                 .is_none();
+
             let mut abi_context: thrustc_llvm_nvidia_cuda_abi::CudaABIContext<'_> =
                 thrustc_llvm_nvidia_cuda_abi::CudaABIContext::new(
                     file,
@@ -575,13 +577,14 @@ pub fn lower_call_epilogue<'llvm_abi>(
             target_data,
             ..
         } => {
-            let mut abi_context = thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
-                file,
-                options,
-                (*target_info).clone(),
-                target_data,
-                codegen_location.to_webassembly(),
-            );
+            let mut abi_context: thrustc_llvm_webassembly_abi::WebAssemblyABIContext<'_> =
+                thrustc_llvm_webassembly_abi::WebAssemblyABIContext::new(
+                    file,
+                    options,
+                    (*target_info).clone(),
+                    target_data,
+                    codegen_location.to_webassembly(),
+                );
 
             let configuration = match configuration {
                 LLVMABIConfiguration::WebAssemblyFunctionTypeConfiguration(configuration) => {

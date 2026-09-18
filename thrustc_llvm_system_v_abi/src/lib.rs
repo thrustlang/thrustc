@@ -49,15 +49,6 @@ use thrustc_typesystem::{
     type_modificators::StructureTypeModificator,
 };
 
-fn integer_chunk_type(bits: u32, span: Span) -> Type {
-    match bits {
-        0..=8 => Type::U8 { span },
-        9..=16 => Type::U16 { span },
-        17..=32 => Type::U32 { span },
-        _ => Type::U64 { span },
-    }
-}
-
 #[derive(Debug)]
 pub struct SystemVABIContext<'system_v_abi> {
     target_triple: &'system_v_abi LLVMTargetTriple,
@@ -667,13 +658,22 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                     let is_integer: bool = array_fixed_ty.is_integer_type();
 
                     if is_integer {
+                        fn integer_chunk_type(bits: u32, span: Span) -> Type {
+                            match bits {
+                                0..=8 => Type::U8 { span },
+                                9..=16 => Type::U16 { span },
+                                17..=32 => Type::U32 { span },
+                                _ => Type::U64 { span },
+                            }
+                        }
+
                         if layout.abi_size <= 8 {
                             return SystemVABIType::Coerce(ty, layout.width);
                         }
 
-                        let first_integer_ty: Type = self::integer_chunk_type(64, ty.get_span());
+                        let first_integer_ty: Type = integer_chunk_type(64, ty.get_span());
                         let second_integer_ty: Type =
-                            self::integer_chunk_type(layout.width.saturating_sub(64), ty.get_span());
+                            integer_chunk_type(layout.width.saturating_sub(64), ty.get_span());
 
                         return SystemVABIType::DecomposeAndExpand(
                             vec![first_integer_ty, second_integer_ty],
@@ -731,6 +731,15 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                 (SystemVABITypeClass::INTEGER, SystemVABITypeClass::INTEGER)
                     if ty.is_fixed_array_type() =>
                 {
+                    fn integer_chunk_type(bits: u32, span: Span) -> Type {
+                        match bits {
+                            0..=8 => Type::U8 { span },
+                            9..=16 => Type::U16 { span },
+                            17..=32 => Type::U32 { span },
+                            _ => Type::U64 { span },
+                        }
+                    }
+
                     let array_fixed_ty: Type = ty.get_fixed_array_base_type();
 
                     if array_fixed_ty.is_array_type()
@@ -748,9 +757,9 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                             return SystemVABIType::Coerce(ty, layout.width);
                         }
 
-                        let first_integer_ty: Type = self::integer_chunk_type(64, ty.get_span());
+                        let first_integer_ty: Type = integer_chunk_type(64, ty.get_span());
                         let second_integer_ty: Type =
-                            self::integer_chunk_type(layout.width.saturating_sub(64), ty.get_span());
+                            integer_chunk_type(layout.width.saturating_sub(64), ty.get_span());
 
                         return SystemVABIType::DecomposeAndExpand(
                             vec![first_integer_ty, second_integer_ty],
@@ -2011,7 +2020,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 second_element_decomposed_ty,
                             );
 
-                        let first_value_instruction =
+                        let first_value_instruction: BasicValueEnum<'_> =
                             llvm_builder.build_load(first_element_decomposed_llvm_ty, ptr, "").unwrap_or_else(|_| {
                                 abort::abort_codegen(
                                     abi_context,
@@ -2048,7 +2057,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                             })
                         };
 
-                        let second_value_instruction =
+                        let second_value_instruction: BasicValueEnum<'_> =
                             llvm_builder.build_load(second_element_decomposed_llvm_ty, ptr_to_second_element, "").unwrap_or_else(|_| {
                                 abort::abort_codegen(
                                     abi_context,
