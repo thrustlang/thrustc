@@ -4,6 +4,12 @@ All notable changes to the Thrust Compiler (thrustc) are documented here.
 
 ## [Unreleased]
 
+### Features
+- Feat(fuzz) Integrating more relavant test for the current compiler. ([`39e1908`](https://github.com/thrustlang/thrustc/commit/39e19080b5eace6605a4c498030e741ca96e158a))
+
+
+## [thrustc-x86_64-linux-ubuntu-v0.2.2] - 2026-09-19
+
 ### Bug Fixes
 - Fix(lsp) Fixing type suggestion in deteterminate contexts. ([`496baa7`](https://github.com/thrustlang/thrustc/commit/496baa72c1108bc654899f9125858f10572e080e))
 - Fix(lsp) For loop snippet syntax. ([`08f0458`](https://github.com/thrustlang/thrustc/commit/08f045863e0a954d7fcc748d7ce11c0a71cdf312))
