@@ -4,12 +4,6 @@ All notable changes to the Thrust Compiler (thrustc) are documented here.
 
 ## [Unreleased]
 
-### Features
-- Feat(fuzz) Integrating more relavant test for the current compiler. ([`39e1908`](https://github.com/thrustlang/thrustc/commit/39e19080b5eace6605a4c498030e741ca96e158a))
-
-
-## [thrustc-x86_64-linux-ubuntu-v0.2.2] - 2026-09-19
-
 ### Bug Fixes
 - Fix(lsp) Fixing type suggestion in deteterminate contexts. ([`496baa7`](https://github.com/thrustlang/thrustc/commit/496baa72c1108bc654899f9125858f10572e080e))
 - Fix(lsp) For loop snippet syntax. ([`08f0458`](https://github.com/thrustlang/thrustc/commit/08f045863e0a954d7fcc748d7ce11c0a71cdf312))
@@ -19,6 +13,7 @@ All notable changes to the Thrust Compiler (thrustc) are documented here.
 
 
 ### Features
+- Feat(fuzz) Integrating more relavant test for the current compiler. ([`39e1908`](https://github.com/thrustlang/thrustc/commit/39e19080b5eace6605a4c498030e741ca96e158a))
 - **std**: (feat(std),fix(llvm_backend),fix(frontend)) Implementing Queue , Stack in the std, and fixing various issues regarding generics and imports. ([`daad8e4`](https://github.com/thrustlang/thrustc/commit/daad8e4ba1586932f5b0cb21edac54d3ed2d125a))
 - **std**: (feat(std),fix(abi)) Optional value module and new compiler intrisincs for integer and floating-pointer number. And, also a fix in the SystemV regarding fixed array sized that fits in two registers. ([`c549840`](https://github.com/thrustlang/thrustc/commit/c549840e196062b4abf6e1499eccde4a13035878))
 - **frontend**: (feat(frontend),feat(llvm_backend)) Adding automatic dealloc and deallocator attribute. ([`4f5fbef`](https://github.com/thrustlang/thrustc/commit/4f5fbef53c61356e955431ec64dc1a5d0e152c61))
