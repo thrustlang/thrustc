@@ -13,3 +13,7 @@ Recurring resources for properly developing the LLVM codegen backend of the comp
 - [ARM ABI](https://github.com/ARM-software/abi-aa) — ARM Architecture Procedure Call Standard (AAPCS) and related ABI specifications.
 - [WebAssembly Basic C ABI](https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md) — Basic C ABI conventions for WebAssembly.
 - [LLVM C API](https://github.com/llvm/llvm-project/tree/main/llvm/include/llvm-c) — LLVM C API headers, useful as a guide to use LLVM.
+- [LLVM Intrinsics](https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/IR/Intrinsics.td) — Target-independent LLVM intrinsic definitions.
+- [X86 Intrinsics](https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/IR/IntrinsicsX86.td) — X86 and x86-64 intrinsic definitions.
+- [NVVM Intrinsics](https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/IR/IntrinsicsNVVM.td) — NVIDIA CUDA and NVPTX intrinsic definitions.
+- [WebAssembly Intrinsics](https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/IR/IntrinsicsWebAssembly.td) — WebAssembly intrinsic definitions.

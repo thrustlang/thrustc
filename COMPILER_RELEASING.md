@@ -96,9 +96,6 @@ Script: `tag-manager` (`.sh`, `.ps1`, `.fish`, `.bat`).
 
 This step creates the git tag for the release and optionally pushes it to the remote.
 
-> [!NOTE]
-> The tag is created on the current `HEAD`. Run this step on the commit you actually want to release, and double check the tag name before confirming the push.
-
 ## After the release
 
 Once `deploy-version` finishes, the release is tagged and the documentation is live. You can:
