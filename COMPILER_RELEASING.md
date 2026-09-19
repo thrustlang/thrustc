@@ -106,3 +106,12 @@ Once `deploy-version` finishes, the release is tagged and the documentation is l
 - Check the generated changelog under `changelogs/<tag>/README.md`.
 - Create the GitHub release pointing at the new tag, using the changelog as the release notes.
 - Update the prebuilt binaries if the project publishes them to GitHub releases.
+
+## Release Binary Variants
+
+The [GitHub Releases](https://github.com/thrustlang/thrustc/releases) page provides four compiler and language server binary variants:
+
+- `thrustc`: The standard compiler executable, compiled with symbols and debug information for investigating production bugs. It has a larger file size.
+- `thrustc-stripped`: The compiler executable without symbols or debug information, resulting in a much smaller file size.
+- `thrustc_lsp`: The language server executable used by editors such as Visual Studio Code.
+- `thrustc_lsp-stripped`: The language server executable without symbols or debug information.

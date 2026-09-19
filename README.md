@@ -171,10 +171,6 @@ If you want to know how to fuzz the compiler with stable and unstable features t
 
 If you want to know how a new compiler version is released, you should check out: [Thrust Programming Language - Compiler Releasing](https://github.com/thrustlang/thrustc/blob/master/COMPILER_RELEASING.md)
 
-## Release Binary Variants
-
-If you want to know the differences between the compiler binaries shipped in Github releases, you should check out: [Thrust Programming Language - Release Binary Variants](https://github.com/thrustlang/thrustc/blob/master/RELEASE_BINARY_VARIANTS.md)
-
 ## Code of Conduct
 
 If you want to know the code of conduct expected from the project contributors, you should check out: [Thrust Programming Language - Code of Conduct](https://github.com/thrustlang/thrustc/blob/master/CODE_OF_CONDUCT.md)
