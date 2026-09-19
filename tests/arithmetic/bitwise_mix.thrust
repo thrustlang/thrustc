@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    var value: u32 = (0b1010 | 0b0101) & 0b1111;
+    if value != 15 { return 1; }
+    return 0;
+}

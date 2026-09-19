@@ -1,0 +1,9 @@
+fn sum_to(value: s32) s32 {
+    if value == 0 { return 0; }
+    return value + sum_to(value - 1);
+}
+
+fn main() s32 @public {
+    if sum_to(5) != 15 { return 1; }
+    return 0;
+}

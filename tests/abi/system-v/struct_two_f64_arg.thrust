@@ -1,0 +1,14 @@
+struct Vec2d {
+    x: f64,
+    y: f64
+}
+
+fn sum(value: Vec2d) f64 {
+    return value.x + value.y;
+}
+
+fn main() s32 @public {
+    var v := new Vec2d { x: 3.0, y: 4.0 };
+    if sum(v) != 7.0 { return 1; }
+    return 0;
+}

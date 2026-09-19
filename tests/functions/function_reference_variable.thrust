@@ -1,0 +1,9 @@
+fn double(value: s32) s32 { return value * 2; }
+
+fn main() s32 @public {
+    var callback: Fn[s32] -> s32 = double;
+
+    if callback(21) != 42 { return 1; }
+
+    return 0;
+}

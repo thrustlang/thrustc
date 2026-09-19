@@ -1,0 +1,9 @@
+fn main() s32 @public {
+    @if(false) {
+        return 1;
+    } @elif(true) {
+        return 0;
+    } @else {
+        return 2;
+    }
+}

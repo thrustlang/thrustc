@@ -1,0 +1,4 @@
+fn main() s32 @public {
+    staticAssert(true, "stable qa");
+    return 0;
+}

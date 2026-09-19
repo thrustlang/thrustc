@@ -1,0 +1,7 @@
+type Word = u32;
+
+fn main() s32 @public {
+    if sizeOf(Word) != 4 { return 1; }
+    if typeWidth(Word) != 32 { return 2; }
+    return 0;
+}

@@ -21,7 +21,8 @@ thrustc_generics = { path = "../thrustc_generics" }
 thrustc_preprocessor = { path = "../thrustc_preprocessor" }
 thrustc_entities = { path = "../thrustc_entities" }
 thrustc_ast_modificators = { path = "../thrustc_ast_modificators" }
-thrustc_mir = { path = "../thrustc_mir" }
+thrustc_atomic_ordering = { path = "../thrustc_atomic_ordering" }
+thrustc_thread_mode = { path = "../thrustc_thread_mode" }
 thrustc_attributes = { path = "../thrustc_attributes" }
 thrustc_builtins = { path = "../thrustc_builtins" }
 thrustc_compile_time = { path = "../thrustc_compile_time" }

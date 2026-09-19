@@ -1,0 +1,6 @@
+fn first [T] (left: T, right: T) T { return left; }
+
+fn main() s32 @public {
+    if first(11, 22) != 11 { return 1; }
+    return 0;
+}

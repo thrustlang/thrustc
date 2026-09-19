@@ -23,7 +23,7 @@ use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_attributes::{ThrustAttribute, ThrustAttributeComparator, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_mir::atomicord::ThrustAtomicOrdering;
+use thrustc_atomic_ordering::ThrustAtomicOrdering;
 use thrustc_parser_context::{traits::TypeContextExtensions, Position};
 use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;

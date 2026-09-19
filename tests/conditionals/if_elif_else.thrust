@@ -1,0 +1,12 @@
+fn classify(value: s32) s32 {
+    if value < 0 { return -1; }
+    elif value == 0 { return 0; }
+    else { return 1; }
+}
+
+fn main() s32 @public {
+    if classify(-1) != -1 { return 1; }
+    if classify(0) != 0 { return 2; }
+    if classify(1) != 1 { return 3; }
+    return 0;
+}

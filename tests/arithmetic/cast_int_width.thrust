@@ -1,0 +1,6 @@
+fn main() s32 @public {
+    var small: u8 = 42;
+    var wide: u32 = small as u32;
+    if wide != 42 { return 1; }
+    return 0;
+}

@@ -1,0 +1,10 @@
+enum Sign {
+    Neg: s32 = -1;
+    Pos: s32 = 1;
+}
+
+fn main() s32 @public {
+    if Sign=>Neg != -1 { return 1; }
+    if Sign=>Pos != 1 { return 2; }
+    return 0;
+}

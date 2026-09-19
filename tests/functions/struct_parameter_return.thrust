@@ -1,0 +1,10 @@
+struct Value { x: s32 }
+
+fn bump(value: Value) Value { return new Value { x: value.x + 1 }; }
+
+fn main() s32 @public {
+    var v := new Value { x: 41 };
+    var out := bump(v);
+    if out->x != 42 { return 1; }
+    return 0;
+}

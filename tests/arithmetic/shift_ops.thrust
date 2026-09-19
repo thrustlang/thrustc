@@ -1,0 +1,8 @@
+fn main() s32 @public {
+    var value: u32 = 1;
+    value = value << 5;
+    if value != 32 { return 1; }
+    value = value >> 2;
+    if value != 8 { return 2; }
+    return 0;
+}

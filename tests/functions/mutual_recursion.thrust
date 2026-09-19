@@ -1,0 +1,15 @@
+fn even(value: s32) bool {
+    if value == 0 { return true; }
+    return odd(value - 1);
+}
+
+fn odd(value: s32) bool {
+    if value == 0 { return false; }
+    return even(value - 1);
+}
+
+fn main() s32 @public {
+    if !even(6) { return 1; }
+    if !odd(7) { return 2; }
+    return 0;
+}

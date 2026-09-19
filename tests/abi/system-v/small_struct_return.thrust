@@ -1,0 +1,15 @@
+struct Pair32 {
+    left: u32,
+    right: u32
+}
+
+fn make() Pair32 {
+    return new Pair32 { left: 21, right: 34 };
+}
+
+fn main() s32 @public {
+    var p := make();
+    if p->left != 21 { return 1; }
+    if p->right != 34 { return 2; }
+    return 0;
+}

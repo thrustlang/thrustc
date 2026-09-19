@@ -1,0 +1,6 @@
+fn main() s32 @public {
+    var value: f64 = 9.0;
+    var integer: s32 = value as s32;
+    if integer != 9 { return 1; }
+    return 0;
+}

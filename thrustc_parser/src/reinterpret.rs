@@ -157,11 +157,11 @@ pub fn integer(lexeme: &str, span: Span) -> Result<(Type, u64), CompilationIssue
             span,
         ))
     } else {
-        if let Ok(n) = lexeme.parse::<usize>() {
+        if let Ok(n) = cleaned.parse::<usize>() {
             return match_unsigned(n, span);
         }
 
-        if let Ok(n) = lexeme.parse::<isize>() {
+        if let Ok(n) = cleaned.parse::<isize>() {
             return match_signed(n, span);
         }
 

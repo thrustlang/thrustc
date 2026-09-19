@@ -1,0 +1,3 @@
+fn main() s32 @public {
+    return missing_symbol;
+}

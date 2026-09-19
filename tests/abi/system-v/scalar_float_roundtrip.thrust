@@ -1,0 +1,8 @@
+fn add(a: f64, b: f64) f64 {
+    return a + b;
+}
+
+fn main() s32 @public {
+    if add(1.5, 2.25) != 3.75 { return 1; }
+    return 0;
+}

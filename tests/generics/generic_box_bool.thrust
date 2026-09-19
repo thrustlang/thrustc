@@ -1,0 +1,7 @@
+struct Box [T] { value: T }
+
+fn main() s32 @public {
+    var b := new Box[bool] { value: true };
+    if b->value != true { return 1; }
+    return 0;
+}

@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if !isSameType(const u32, u32) { return 1; }
+    if isSameType(u32, u64) { return 2; }
+    return 0;
+}

@@ -1,0 +1,15 @@
+struct Pair64 {
+    left: u64,
+    right: u64
+}
+
+fn check(value: Pair64) s32 {
+    if value.left != 11 { return 1; }
+    if value.right != 13 { return 2; }
+    return 0;
+}
+
+fn main() s32 @public {
+    var p := new Pair64 { left: 11, right: 13 };
+    return check(p);
+}

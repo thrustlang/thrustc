@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if typeWidth(f32) != 32 { return 1; }
+    if typeWidth(f64) != 64 { return 2; }
+    return 0;
+}

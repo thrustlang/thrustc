@@ -1474,6 +1474,13 @@ pub fn compile_as_value<'ctx>(
             ..
         } => {
             let symbol: SymbolAllocated<'_> = context.get_table().get_symbol(name);
+
+            if matches!(symbol, SymbolAllocated::Function { .. }) {
+                let function_pointer: BasicValueEnum<'_> = symbol.get_ptr_value().into();
+
+                return type_cast::try_smart_cast(context, cast_type, ty, function_pointer, *span);
+            }
+
             let atomic_config: Option<LLVMAtomicModificators> =
                 symbol.determinate_atomic_configuration();
 
@@ -1518,11 +1525,22 @@ pub fn compile_as_value<'ctx>(
             let value_type: &Type = value.get_type_for_llvm();
 
             if value_type.is_ptr_like_type() {
-                context.add_codegen_location(CodeGenLocation::LValue);
-                let value: BasicValueEnum = self::compile_as_ptr_value(context, value, Some(kind));
-                context.pop_current_codegen_location();
+                let should_load_pointer_reference: bool = matches!(value.as_ref(), Ast::Reference { .. })
+                    && value_type.is_flat_ptr_type();
 
-                let deref_value: BasicValueEnum = if value.is_pointer_value() {
+                let dereference_pointer: BasicValueEnum = if should_load_pointer_reference {
+                    self::compile_as_value(context, value, Some(value_type))
+                } else {
+                    context.add_codegen_location(CodeGenLocation::LValue);
+
+                    let pointer_value: BasicValueEnum = self::compile_as_ptr_value(context, value, Some(kind));
+
+                    context.pop_current_codegen_location();
+
+                    pointer_value
+                };
+
+                let deref_value: BasicValueEnum = if dereference_pointer.is_pointer_value() {
                     let deref_metadata = metadata.get_llvm_metadata();
 
                     let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
@@ -1533,13 +1551,13 @@ pub fn compile_as_value<'ctx>(
                     context.push_atomic_modificators(atomic_config);
 
                     let deref_value: BasicValueEnum =
-                        memory::dereference(context, value.into_pointer_value(), kind, *span);
+                        memory::dereference(context, dereference_pointer.into_pointer_value(), kind, *span);
 
                     context.pop_atomic_modificators();
 
                     deref_value
                 } else {
-                    value
+                    dereference_pointer
                 };
 
                 type_cast::try_smart_cast(context, cast_type, kind, deref_value, *span)

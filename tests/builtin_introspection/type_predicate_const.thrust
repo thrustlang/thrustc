@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if !isConst(const u32) { return 1; }
+    if isConst(u32) { return 2; }
+    return 0;
+}

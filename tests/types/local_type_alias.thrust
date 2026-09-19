@@ -1,0 +1,7 @@
+type Local = u32;
+
+fn main() s32 @public {
+    var value: Local = 42;
+    if value != 42 { return 1; }
+    return 0;
+}

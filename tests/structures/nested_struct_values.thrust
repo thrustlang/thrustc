@@ -1,0 +1,9 @@
+struct A { x: s32 }
+struct B { a: A, y: s32 }
+
+fn main() s32 @public {
+    var a := new A { x: 12 };
+    var b := new B { a: a, y: 30 };
+    if b->a.x + b->y != 42 { return 1; }
+    return 0;
+}

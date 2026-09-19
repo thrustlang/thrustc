@@ -21,7 +21,7 @@ use thrustc_ast::{Ast, NodeId, ast_metadata::LoadMetadata, traits::AstGetType};
 use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
 use thrustc_code_location::Span;
 use thrustc_errors::CompilationIssue;
-use thrustc_mir::atomicord::ThrustAtomicOrdering;
+use thrustc_atomic_ordering::ThrustAtomicOrdering;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, traits::TypeExtensions};

@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    var p: ptr[u64] = nullptr as ptr[u64];
+    if p != nullptr { return 1; }
+    return 0;
+}

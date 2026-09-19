@@ -1,0 +1,9 @@
+static mut value: s32 = 0;
+
+fn set_value(next: s32) void { value = next; }
+
+fn main() s32 @public {
+    set_value(42);
+    if value != 42 { return 1; }
+    return 0;
+}

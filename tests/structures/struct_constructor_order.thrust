@@ -1,0 +1,11 @@
+struct Point {
+    x: s32,
+    y: s32
+}
+
+fn main() s32 @public {
+    var p := new Point { y: 9, x: 4 };
+    if p->x != 4 { return 1; }
+    if p->y != 9 { return 2; }
+    return 0;
+}

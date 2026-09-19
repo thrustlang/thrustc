@@ -39,9 +39,7 @@ impl ThrustThreadMode {
             ThrustThreadMode::GeneralDynamicTLSModel => {
                 inkwell::ThreadLocalMode::GeneralDynamicTLSModel
             }
-            ThrustThreadMode::LocalDynamicTLSModel => {
-                inkwell::ThreadLocalMode::LocalDynamicTLSModel
-            }
+            ThrustThreadMode::LocalDynamicTLSModel => inkwell::ThreadLocalMode::LocalDynamicTLSModel,
             ThrustThreadMode::InitialExecTLSModel => inkwell::ThreadLocalMode::InitialExecTLSModel,
             ThrustThreadMode::LocalExecTLSModel => inkwell::ThreadLocalMode::LocalExecTLSModel,
         }

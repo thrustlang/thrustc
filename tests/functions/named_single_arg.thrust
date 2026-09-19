@@ -1,0 +1,6 @@
+fn square(value: s32) s32 { return value * value; }
+
+fn main() s32 @public {
+    if square(value = 6) != 36 { return 1; }
+    return 0;
+}

@@ -1,0 +1,9 @@
+fn fib(value: s32) s32 {
+    if value < 2 { return value; }
+    return fib(value - 1) + fib(value - 2);
+}
+
+fn main() s32 @public {
+    if fib(7) != 13 { return 1; }
+    return 0;
+}

@@ -1,0 +1,6 @@
+fn main() s32 @public {
+    if sizeOf(u32) != 4 { return 1; }
+    if alignOf(u32) == 0 { return 2; }
+    if typeWidth(u64) != 64 { return 3; }
+    return 0;
+}

@@ -1,0 +1,7 @@
+struct Box [T] { value: T }
+
+fn main() s32 @public {
+    var b := new Box[f64] { value: 8.5 };
+    if b->value != 8.5 { return 1; }
+    return 0;
+}

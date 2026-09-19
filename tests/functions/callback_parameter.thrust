@@ -1,0 +1,12 @@
+fn apply(value: s32, callback: Fn[s32] -> s32) s32 {
+    return callback(value);
+}
+
+fn triple(value: s32) s32 {
+    return value * 3;
+}
+
+fn main() s32 @public {
+    if apply(14, triple) != 42 { return 1; }
+    return 0;
+}

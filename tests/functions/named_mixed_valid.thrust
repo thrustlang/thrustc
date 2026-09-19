@@ -1,0 +1,6 @@
+fn pack(a: s32, b: s32, c: s32) s32 { return a * 100 + b * 10 + c; }
+
+fn main() s32 @public {
+    if pack(1, c = 3, b = 2) != 123 { return 1; }
+    return 0;
+}

@@ -1,0 +1,7 @@
+fn negate(value: bool) bool { return !value; }
+
+fn main() s32 @public {
+    if negate(true) != false { return 1; }
+    if negate(false) != true { return 2; }
+    return 0;
+}

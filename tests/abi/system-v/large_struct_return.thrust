@@ -1,0 +1,17 @@
+struct LargeRet {
+    a: u64,
+    b: u64,
+    c: u64
+}
+
+fn make() LargeRet {
+    return new LargeRet { a: 8, b: 13, c: 21 };
+}
+
+fn main() s32 @public {
+    var v := make();
+    if v->a != 8 { return 1; }
+    if v->b != 13 { return 2; }
+    if v->c != 21 { return 3; }
+    return 0;
+}

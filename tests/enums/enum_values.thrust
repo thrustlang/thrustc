@@ -1,0 +1,12 @@
+enum Status {
+    Ok: u32 = 0;
+    Warn: u32 = 1;
+    Err: u32 = 2;
+}
+
+fn main() s32 @public {
+    if Status=>Ok != 0 { return 1; }
+    if Status=>Warn != 1 { return 2; }
+    if Status=>Err != 2 { return 3; }
+    return 0;
+}

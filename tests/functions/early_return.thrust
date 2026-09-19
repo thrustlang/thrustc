@@ -1,0 +1,10 @@
+fn choose(flag: bool) s32 {
+    if flag { return 11; }
+    return 13;
+}
+
+fn main() s32 @public {
+    if choose(true) != 11 { return 1; }
+    if choose(false) != 13 { return 2; }
+    return 0;
+}

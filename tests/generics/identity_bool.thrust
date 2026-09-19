@@ -1,0 +1,8 @@
+fn identity [T] (value: T) T {
+    return value;
+}
+
+fn main() s32 @public {
+    if identity(true) != true { return 1; }
+    return 0;
+}

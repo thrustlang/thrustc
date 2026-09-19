@@ -1,0 +1,15 @@
+struct Color {
+    r: u8,
+    g: u8,
+    b: u8
+}
+
+fn sum(value: Color) s32 {
+    return value.r as s32 + value.g as s32 + value.b as s32;
+}
+
+fn main() s32 @public {
+    var c := new Color { r: 3, g: 5, b: 7 };
+    if sum(c) != 15 { return 1; }
+    return 0;
+}

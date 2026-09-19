@@ -1,0 +1,7 @@
+fn main() s32 @public {
+    @if(isLinux()) {
+        return 0;
+    } @else {
+        return 1;
+    }
+}

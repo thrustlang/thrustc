@@ -1,5 +1,5 @@
 [package]
-name = "thrustc_mir"
+name = "thrustc_thread_mode"
 description.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,9 +10,6 @@ rust-version.workspace = true
 serde = { version = "1.0.228", features = ["derive"] }
 
 inkwell = { workspace = true, optional = true }
-clang = { workspace = true, optional = true }
-
-thrustc_code_location = { path = "../thrustc_code_location" }
 
 arbitrary =  { version = "1.4.2", features = ["derive"], optional = true }
 
@@ -22,10 +19,4 @@ default = ["llvm_backend_static"]
 llvm_backend_dynamic = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-dynamic"]
 llvm_backend_static  = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-static"]
 
-cbindgen_static      = ["dep:clang", "clang/static"]
-cbindgen_dynamic     = ["dep:clang"]
-
-fuzz = [
-    "dep:arbitrary",
-    "thrustc_code_location/fuzz",
-]
+fuzz = ["dep:arbitrary"]

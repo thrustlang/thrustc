@@ -18,7 +18,8 @@
 */
 
 use serde::Serialize;
-use thrustc_mir::{atomicord::ThrustAtomicOrdering, threadmode::ThrustThreadMode};
+use thrustc_atomic_ordering::ThrustAtomicOrdering;
+use thrustc_thread_mode::ThrustThreadMode;
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;

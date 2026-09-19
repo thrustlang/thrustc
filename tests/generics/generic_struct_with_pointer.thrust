@@ -1,0 +1,7 @@
+struct Holder [T] { data: ptr[T] }
+
+fn main() s32 @public {
+    var h := new Holder[s32] { data: nullptr };
+    if h->data != nullptr { return 1; }
+    return 0;
+}

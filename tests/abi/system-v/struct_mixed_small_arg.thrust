@@ -1,0 +1,15 @@
+struct Mixed {
+    a: u32,
+    b: u8
+}
+
+fn check(value: Mixed) s32 {
+    if value.a != 100 { return 1; }
+    if value.b != 7 { return 2; }
+    return 0;
+}
+
+fn main() s32 @public {
+    var v := new Mixed { a: 100, b: 7 };
+    return check(v);
+}

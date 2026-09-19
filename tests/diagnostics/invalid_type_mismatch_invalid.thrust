@@ -1,0 +1,4 @@
+fn main() s32 @public {
+    var value: s32 = true;
+    return value;
+}

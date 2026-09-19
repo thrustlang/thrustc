@@ -383,12 +383,17 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             Ok(directives) => directives,
             Err(error) => {
                 let mut diagnostician: Diagnostician = Diagnostician::new(file, self.options);
+
                 diagnostician.dispatch_diagnostic(&error, thrustc_logging::LoggingType::Error);
+
                 return interrupt::archive_compilation_module(self, file, file_time);
             }
         };
+
         let file_options: FileOptions<'_, '_> = FileOptions::new(self.options, &directives);
+
         self.register_linked_sanitizer(&file_options);
+
         self.file_output_requested |=
             !directives.emit().is_empty() || !directives.print().is_empty();
 
@@ -731,8 +736,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let context: Context = Context::create();
 
         let mut it_failed: bool = false;
-        let mut modules: Vec<(std::path::PathBuf, Module)> =
-            Vec::with_capacity(u8::MAX as usize);
+        let mut modules: Vec<(std::path::PathBuf, Module)> = Vec::with_capacity(u8::MAX as usize);
 
         let std_modules: Result<Vec<(std::path::PathBuf, Module)>, ()> =
             self.compile_imported_std_jit(&context);
@@ -768,10 +772,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                     .canonicalize()
                     .unwrap_or_else(|_| file.get_path().to_path_buf());
 
-                if let Some(index) = modules
-                    .iter()
-                    .position(|(candidate, _)| candidate == &path)
-                {
+                if let Some(index) = modules.iter().position(|(candidate, _)| candidate == &path) {
                     modules[index] = (path, module);
                 } else {
                     modules.push((path, module));
@@ -824,8 +825,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                     );
                 };
 
-                let module_path: std::path::PathBuf =
-                    path.canonicalize().unwrap_or(path.clone());
+                let module_path: std::path::PathBuf = path.canonicalize().unwrap_or(path.clone());
 
                 if let Some(index) = modules
                     .iter()
@@ -870,10 +870,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             );
         }
 
-        let mut modules: Vec<Module> = modules
-            .into_iter()
-            .map(|(_, module)| module)
-            .collect();
+        let mut modules: Vec<Module> = modules.into_iter().map(|(_, module)| module).collect();
 
         modules.reverse();
 
@@ -942,11 +939,15 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             Ok(directives) => directives,
             Err(error) => {
                 let mut diagnostician: Diagnostician = Diagnostician::new(file, self.options);
+
                 diagnostician.dispatch_diagnostic(&error, thrustc_logging::LoggingType::Error);
+
                 return interrupt::archive_compilation_module_jit(self, file, file_time);
             }
         };
+
         let file_options: FileOptions<'_, '_> = FileOptions::new(self.options, &directives);
+
         self.file_output_requested |=
             !directives.emit().is_empty() || !directives.print().is_empty();
 

@@ -1,0 +1,7 @@
+fn round(value: ptr[s32]) ptr[s32] { return value; }
+
+fn main() s32 @public {
+    var p: ptr[s32] = nullptr;
+    if round(p) != nullptr { return 1; }
+    return 0;
+}

@@ -1,0 +1,6 @@
+fn choose [A, B, C] (a: A, b: B, c: C) C { return c; }
+
+fn main() s32 @public {
+    if choose[s32, u64](1, 2, 33) != 33 { return 1; }
+    return 0;
+}

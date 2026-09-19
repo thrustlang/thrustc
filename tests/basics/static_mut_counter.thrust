@@ -1,0 +1,10 @@
+static mut counter: s32 = 0;
+
+fn bump() void { counter += 1; }
+
+fn main() s32 @public {
+    bump();
+    bump();
+    if counter != 2 { return 1; }
+    return 0;
+}

@@ -1,0 +1,6 @@
+fn main() s32 @public {
+    if !isNumeric(s32) { return 1; }
+    if !isNumeric(f64) { return 2; }
+    if isNumeric(ptr) { return 3; }
+    return 0;
+}

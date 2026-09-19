@@ -1,0 +1,8 @@
+fn round(value: s32) s32 {
+    return value;
+}
+
+fn main() s32 @public {
+    if round(-17) != -17 { return 1; }
+    return 0;
+}

@@ -1,0 +1,6 @@
+fn pass_value [T] (value: T) T { return value; }
+
+fn main() s32 @public {
+    if pass_value(64) != 64 { return 1; }
+    return 0;
+}

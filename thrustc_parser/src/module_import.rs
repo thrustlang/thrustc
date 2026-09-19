@@ -33,7 +33,8 @@ use thrustc_attributes::{ThrustAttribute, ThrustAttributes, traits::ThrustAttrib
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParametersTypes};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_mir::{atomicord::ThrustAtomicOrdering, threadmode::ThrustThreadMode};
+use thrustc_atomic_ordering::ThrustAtomicOrdering;
+use thrustc_thread_mode::ThrustThreadMode;
 use thrustc_parser_external_table::ExternalSymbolTable;
 use thrustc_parser_table::{GenericCustomTypeEntry, GenericFunctionEntry, GenericStructEntry};
 use thrustc_preprocessor::module::Module;

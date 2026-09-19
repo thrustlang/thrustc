@@ -1,0 +1,6 @@
+fn round(value: char) char { return value; }
+
+fn main() s32 @public {
+    if round('A') != 'A' { return 1; }
+    return 0;
+}

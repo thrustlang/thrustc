@@ -1,0 +1,8 @@
+struct Pair [A, B] { left: A, right: B }
+
+fn main() s32 @public {
+    var p := new Pair[u64, s32] { left: 9, right: -2 };
+    if p->left != 9 { return 1; }
+    if p->right != -2 { return 2; }
+    return 0;
+}

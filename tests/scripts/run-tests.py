@@ -61,7 +61,7 @@ EXPECTED_RUN_CODES = {
     "module_reexportation/reexport_a.thrust": 3,
     "modules/named_args_module.thrust": 3,
     "optimization/disable_default_optimization.thrust": 173,
-    "webassembly_abi/variadic.thrust": 1,
+    "abi/wasm/variadic.thrust": 1,
 }
 
 SKIPPED_TEST_PATHS = {

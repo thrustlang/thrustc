@@ -1,0 +1,11 @@
+fn main() s32 @public {
+    var hits: s32 = 0;
+    for var a: s32 = 0; a < 3; a++; {
+        for var b: s32 = 0; b < 3; b++; {
+            if a == 1 && b == 1 { breakall; }
+            hits += 1;
+        }
+    }
+    if hits != 4 { return 1; }
+    return 0;
+}

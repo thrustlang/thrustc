@@ -1,0 +1,7 @@
+type Ptr [T] = ptr[T];
+
+fn main() s32 @public {
+    var p: Ptr[s32] = nullptr;
+    if p != nullptr { return 1; }
+    return 0;
+}

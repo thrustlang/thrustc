@@ -1,0 +1,6 @@
+fn main() s32 @public {
+    if 0b101010 != 42 { return 1; }
+    if 0x2A != 42 { return 2; }
+    if 0o52 != 42 { return 3; }
+    return 0;
+}

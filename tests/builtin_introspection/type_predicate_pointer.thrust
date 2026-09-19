@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if !isPointer(ptr[s32]) { return 1; }
+    if isPointer(s32) { return 2; }
+    return 0;
+}

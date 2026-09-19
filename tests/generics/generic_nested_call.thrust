@@ -1,0 +1,7 @@
+fn identity [T] (value: T) T { return value; }
+fn twice [T] (value: T) T { return identity(identity(value)); }
+
+fn main() s32 @public {
+    if twice(55) != 55 { return 1; }
+    return 0;
+}

@@ -1,0 +1,10 @@
+fn main() s32 @public {
+    var i: s32 = 0;
+    var sum: s32 = 0;
+    while i < 6 {
+        sum += i;
+        i += 1;
+    }
+    if sum != 15 { return 1; }
+    return 0;
+}

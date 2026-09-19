@@ -1,0 +1,10 @@
+struct Triple {
+    a: u8,
+    b: u16,
+    c: u32
+}
+
+fn main() s32 @public {
+    if fieldCount(Triple) != 3 { return 1; }
+    return 0;
+}

@@ -12,12 +12,14 @@ repository.workspace = true
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
 
-thrustc_mir = { path = "../thrustc_mir" }
+thrustc_atomic_ordering = { path = "../thrustc_atomic_ordering" }
+thrustc_thread_mode = { path = "../thrustc_thread_mode" }
 
 arbitrary =  { version = "1.4.2", features = ["derive"], optional = true }
 
 [features]
 fuzz = [
     "dep:arbitrary",
-    "thrustc_mir/fuzz"
+    "thrustc_atomic_ordering/fuzz",
+    "thrustc_thread_mode/fuzz"
 ]

@@ -1,0 +1,7 @@
+fn apply [T] (value: T, callback: Fn[T] -> T) T { return callback(value); }
+fn inc(value: s32) s32 { return value + 1; }
+
+fn main() s32 @public {
+    if apply[s32](41, inc) != 42 { return 1; }
+    return 0;
+}

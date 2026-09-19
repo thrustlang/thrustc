@@ -1,0 +1,9 @@
+struct Box [T] { value: T }
+
+fn make [T] (value: T) Box[T] { return new Box[T] { value: value }; }
+
+fn main() s32 @public {
+    var b := make(false);
+    if b->value != false { return 1; }
+    return 0;
+}

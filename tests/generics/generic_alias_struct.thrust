@@ -1,0 +1,8 @@
+struct Box [T] { value: T }
+type IntBox = Box[s32];
+
+fn main() s32 @public {
+    var b: IntBox = new Box[s32] { value: 19 };
+    if b->value != 19 { return 1; }
+    return 0;
+}

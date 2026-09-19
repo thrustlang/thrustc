@@ -1,0 +1,7 @@
+fn main() s32 @public {
+    if typeWidth(u8) != 8 { return 1; }
+    if typeWidth(u16) != 16 { return 2; }
+    if typeWidth(u32) != 32 { return 3; }
+    if typeWidth(u64) != 64 { return 4; }
+    return 0;
+}

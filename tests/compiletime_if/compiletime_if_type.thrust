@@ -1,0 +1,7 @@
+fn main() s32 @public {
+    @if(isInteger(s32)) {
+        return 0;
+    } @else {
+        return 1;
+    }
+}

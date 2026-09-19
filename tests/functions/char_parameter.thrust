@@ -1,0 +1,7 @@
+fn is_a(value: char) bool { return value == 'a'; }
+
+fn main() s32 @public {
+    if !is_a('a') { return 1; }
+    if is_a('b') { return 2; }
+    return 0;
+}

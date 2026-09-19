@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if fixedArraySize(array[u8; 7]) != 7 { return 1; }
+    if !isFixedArrayOfSize(array[u8; 7], 7) { return 2; }
+    return 0;
+}

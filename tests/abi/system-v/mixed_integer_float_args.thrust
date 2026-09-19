@@ -1,0 +1,11 @@
+fn check(a: s32, b: f64, c: u64, d: f64) s32 {
+    if a != 3 { return 1; }
+    if b != 4.0 { return 2; }
+    if c != 5 { return 3; }
+    if d != 6.0 { return 4; }
+    return 0;
+}
+
+fn main() s32 @public {
+    return check(3, 4.0, 5, 6.0);
+}

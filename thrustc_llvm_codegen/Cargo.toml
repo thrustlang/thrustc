@@ -26,7 +26,8 @@ thrustc_backends = { path = "../thrustc_backends" }
 thrustc_directive = { path = "../thrustc_directive" }
 thrustc_attributes = { path = "../thrustc_attributes" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
-thrustc_mir = { path = "../thrustc_mir" }
+thrustc_atomic_ordering = { path = "../thrustc_atomic_ordering" }
+thrustc_thread_mode = { path = "../thrustc_thread_mode" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_ast = { path = "../thrustc_ast" }
 thrustc_ast_external = { path = "../thrustc_ast_external" }

@@ -1,0 +1,6 @@
+fn sum(a: s32, b: s32) s32 { return a + b; }
+
+fn main() s32 @public {
+    if sum(20, 22) != 42 { return 1; }
+    return 0;
+}

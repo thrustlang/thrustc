@@ -1,0 +1,9 @@
+fn apply(value: s32, callback: Fn[s32] -> s32) s32 { return callback(value); }
+fn inc(value: s32) s32 { return value + 1; }
+fn dec(value: s32) s32 { return value - 1; }
+
+fn main() s32 @public {
+    if apply(41, inc) != 42 { return 1; }
+    if apply(43, dec) != 42 { return 2; }
+    return 0;
+}

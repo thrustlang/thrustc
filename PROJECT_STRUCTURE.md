@@ -123,8 +123,8 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_directive`**  
   Compiler directive handling.
 
-- **`thrustc_mir`**  
-  Mid-level Intermediate Representation (atomic operations, thread mode).
+- **`thrustc_atomic_ordering`** & **`thrustc_thread_mode`**  
+  Shared atomic ordering and thread-local mode definitions, including LLVM conversions.
 
 ### LLVM Backend
 
@@ -369,10 +369,10 @@ Source File (.thrust)
     │
     ▼
 ┌─────────────────────────────────────────────────┐
-│ 7. MIR (optional)  (thrustc_mir)                │
-│    - Mid-level Intermediate Representation      │
+│ 7. Shared IR data                               │
+│    (thrustc_atomic_ordering, thrustc_thread_mode)│
 │    - Atomic operations & thread mode            │
-│    - May be bypassed (direct to LLVM)           │
+│    - LLVM conversion helpers                    │
 └─────────────────────────────────────────────────┘
     │
     ▼

@@ -1,0 +1,7 @@
+type Id [T] = T;
+
+fn main() s32 @public {
+    var x: Id[s32] = 31;
+    if x != 31 { return 1; }
+    return 0;
+}

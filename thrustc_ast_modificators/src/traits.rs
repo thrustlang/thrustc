@@ -17,7 +17,8 @@
 
 */
 
-use thrustc_mir::{atomicord::ThrustAtomicOrdering, threadmode::ThrustThreadMode};
+use thrustc_atomic_ordering::ThrustAtomicOrdering;
+use thrustc_thread_mode::ThrustThreadMode;
 
 pub trait ModificatorsExtensions {
     fn get_thread_mode_modificator(&self) -> Option<ThrustThreadMode>;

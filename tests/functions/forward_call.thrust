@@ -1,0 +1,6 @@
+fn main() s32 @public {
+    if later(21) != 42 { return 1; }
+    return 0;
+}
+
+fn later(value: s32) s32 { return value * 2; }
