@@ -1,0 +1,13 @@
+fn main() s32 @public {
+    var acc: s32 = 0;
+
+    for var i: s32 = 0; i < 5; i = i + 1; {
+        acc = acc + i;
+    }
+
+    if acc != 10 {
+        return 1;
+    }
+
+    return 0;
+}

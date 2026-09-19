@@ -20,13 +20,13 @@
 #![allow(clippy::collapsible_match)]
 
 use thrustc_ast::{
-    Ast,
     ast_builtins::AstBuiltin,
     ast_metadata::ReferenceType,
     traits::{
         AstCodeLocation, AstConstantExtensions, AstExpressionExtensions, AstGetType,
         AstStandardExtensions, AstStatementExtensions,
     },
+    Ast,
 };
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::CompilationIssue;
@@ -290,7 +290,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 self.expected_expression(condition);
                 self.analyze_expression(condition);
 
-                self.expected_expression(actions);
+                self.expected_statement_or_loose_expression(actions);
                 self.analyze_expression(actions);
 
                 self.expected_statement_or_loose_expression(block);

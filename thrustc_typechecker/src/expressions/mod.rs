@@ -18,23 +18,23 @@
 */
 
 use thrustc_ast::{
-    Ast,
     traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
+    Ast,
 };
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 
 use thrustc_code_location::Span;
 use thrustc_typesystem::{
-    Type,
     traits::{
         ConstantTypeExtensions, TypeArrayEntensions, TypeCodeLocation, TypeFixedArrayEntensions,
         TypeIsExtensions, TypePointerExtensions, VoidTypeExtensions,
     },
+    Type,
 };
 
 use crate::{
-    TypeChecker, context::TypeCheckerControlContext, operations, type_checking,
-    type_metadata::TypeCheckerNodeMetadata,
+    context::TypeCheckerControlContext, operations, type_checking,
+    type_metadata::TypeCheckerNodeMetadata, TypeChecker,
 };
 
 mod call_expr;

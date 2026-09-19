@@ -17,9 +17,9 @@
 
 */
 
-use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeLocation;
 use thrustc_ast::traits::AstExpressionExtensions;
+use thrustc_ast::Ast;
 use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -99,7 +99,11 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
     llvm_builder.position_at_end(steps);
 
     if !actions.is_unary_before_operation() {
-        let _ = codegen::compile_as_value(codegen.get_mut_context(), actions, None);
+        if matches!(**actions, Ast::Mutation { .. }) {
+            codegen.codegen_block(actions);
+        } else {
+            let _ = codegen::compile_as_value(codegen.get_mut_context(), actions, None);
+        }
     }
 
     llvm_builder

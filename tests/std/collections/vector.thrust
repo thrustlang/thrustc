@@ -20,11 +20,11 @@ fn main() s32 @public {
     if vector::getLength(ref v) != 0 { return 2; }
     if vector::getCapacity(ref v) != 0 { return 3; }
 
-    vector::pushBack[s32](ref v, 10);
-    vector::pushBack[s32](ref v, 20);
-    vector::pushBack[s32](ref v, 30);
-    vector::pushBack[s32](ref v, 40);
-    vector::pushBack[s32](ref v, 50);
+    vector::push[s32](ref v, 10);
+    vector::push[s32](ref v, 20);
+    vector::push[s32](ref v, 30);
+    vector::push[s32](ref v, 40);
+    vector::push[s32](ref v, 50);
 
     if vector::isEmpty(ref v) { return 4; }
     if vector::getLength(ref v) != 5 { return 5; }
@@ -67,8 +67,8 @@ fn main() s32 @public {
     var pv := vector::withCapacity[Pair](2);
     if vector::getCapacity(ref pv) < 2 { return 27; }
 
-    vector::pushBack(ref pv, new Pair { first: 1, second: 2 });
-    vector::pushBack(ref pv, new Pair { first: 3, second: 4 });
+    vector::push(ref pv, new Pair { first: 1, second: 2 });
+    vector::push(ref pv, new Pair { first: 3, second: 4 });
 
     if vector::at(ref pv, 0)->first != 1 { return 28; }
     if vector::at(ref pv, 0)->second != 2 { return 29; }

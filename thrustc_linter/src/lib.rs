@@ -18,16 +18,16 @@
 */
 
 use thrustc_ast::{
-    Ast,
     traits::{AstAttributeExtensions, AstCodeLocation},
+    Ast,
 };
-use thrustc_attributes::{ThrustAttributeComparator, traits::ThrustAttributesExtensions};
+use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributeComparator};
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::FileOptions;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_token_type::{TokenType, traits::TokenTypeExtensions};
+use thrustc_token_type::{traits::TokenTypeExtensions, TokenType};
 
 use ahash::AHashMap as HashMap;
 
@@ -291,7 +291,13 @@ impl<'linter> Linter<'linter> {
                 ..
             } => {
                 self.analyze_stmt(local);
-                self.analyze_expr(actions);
+
+                if matches!(**actions, Ast::Mutation { .. }) {
+                    self.analyze_stmt(actions);
+                } else {
+                    self.analyze_expr(actions);
+                }
+
                 self.analyze_expr(condition);
                 self.analyze_stmt(block);
 

@@ -425,7 +425,7 @@ fn cstringLength(text: CString) usize {
 }
 
 fn pushNullTerminator(text: ptr[TString]) void {
-    vec::pushBack[char](ref text.buffer, '\0');
+    vec::push[char](ref text.buffer, '\0');
 }
 
 fn removeNullTerminator(text: ptr[TString]) void {
@@ -435,7 +435,7 @@ fn removeNullTerminator(text: ptr[TString]) void {
 }
 
 fn appendByteUnchecked(text: ptr[TString], value: char) void {
-    vec::pushBack[char](ref text.buffer, value);
+    vec::push[char](ref text.buffer, value);
 }
 
 fn buildWithCapacity(capacity: usize) TString {

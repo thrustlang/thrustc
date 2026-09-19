@@ -197,6 +197,247 @@ fn completes_std_module_only_import() {
 }
 
 #[test]
+fn import_context_only_suggests_std_root() {
+    let labels: Vec<String> = self::complete_labels("import ", 0, 7);
+
+    assert_eq!(labels, vec!["std".to_string()]);
+}
+
+#[test]
+fn import_context_completes_std_root_submodules() {
+    let labels: Vec<String> = self::complete_labels("import std::", 0, 12);
+
+    assert!(labels.contains(&"collections".to_string()));
+    assert!(labels.contains(&"ffi".to_string()));
+    assert!(labels.contains(&"intrinsics".to_string()));
+    assert!(labels.contains(&"io".to_string()));
+    assert!(labels.contains(&"mem".to_string()));
+    assert!(!labels.contains(&"s32".to_string()));
+    assert!(!labels.contains(&"fn".to_string()));
+    assert!(!labels.contains(&"for-loop".to_string()));
+}
+
+#[test]
+fn import_context_completes_std_folders() {
+    let labels: Vec<String> = self::complete_labels("import std::ffi::", 0, 17);
+
+    assert_eq!(labels, vec!["c".to_string()]);
+}
+
+#[test]
+fn import_context_completes_nested_std_folder_modules() {
+    let labels: Vec<String> = self::complete_labels("import std::ffi::c::", 0, 20);
+
+    assert!(labels.contains(&"float".to_string()));
+    assert!(labels.contains(&"int".to_string()));
+    assert!(labels.contains(&"io".to_string()));
+    assert!(labels.contains(&"math".to_string()));
+    assert!(labels.contains(&"mem".to_string()));
+    assert!(labels.contains(&"primitives".to_string()));
+    assert!(labels.contains(&"random".to_string()));
+}
+
+#[test]
+fn import_context_filters_partial_std_modules() {
+    let labels: Vec<String> = self::complete_labels("import std::collections::v", 0, 26);
+
+    assert_eq!(labels.len(), 2);
+    assert!(labels.contains(&"vecdeque".to_string()));
+    assert!(labels.contains(&"vector".to_string()));
+}
+
+#[test]
+fn import_only_context_completes_public_symbols() {
+    let labels: Vec<String> = self::complete_labels("import std::mem only { ", 0, 23);
+
+    assert!(labels.contains(&"allocateMemory".to_string()));
+    assert!(labels.contains(&"freeMemory".to_string()));
+    assert!(labels.contains(&"PROT_READ".to_string()));
+    assert!(!labels.contains(&"s32".to_string()));
+}
+
+#[test]
+fn import_only_context_filters_partial_symbols() {
+    let labels: Vec<String> = self::complete_labels("import std::mem only { alloc", 0, 28);
+
+    assert!(labels.contains(&"allocateMemory".to_string()));
+    assert!(labels.iter().all(|label| label.starts_with("alloc")));
+}
+
+#[test]
+fn import_only_context_omits_already_selected_symbols() {
+    let labels: Vec<String> =
+        self::complete_labels("import std::mem only { allocateMemory, ", 0, 39);
+
+    assert!(!labels.contains(&"allocateMemory".to_string()));
+    assert!(labels.contains(&"freeMemory".to_string()));
+}
+
+#[test]
+fn import_only_context_completes_vector_symbols() {
+    let labels: Vec<String> =
+        self::complete_labels("import std::collections::vector only { p", 0, 40);
+
+    assert!(labels.contains(&"push".to_string()));
+    assert!(labels.contains(&"popBack".to_string()));
+    assert!(labels.iter().all(|label| label.starts_with('p')));
+}
+
+#[test]
+fn top_level_completion_uses_stable_declarations() {
+    let labels: Vec<String> = self::complete_labels("", 0, 0);
+
+    assert!(labels.contains(&"fn".to_string()));
+    assert!(labels.contains(&"intrinsic".to_string()));
+    assert!(labels.contains(&"directive".to_string()));
+    assert!(labels.contains(&"@if".to_string()));
+    assert!(!labels.contains(&"return".to_string()));
+    assert!(!labels.contains(&"for-loop".to_string()));
+}
+
+#[test]
+fn statement_completion_uses_statement_starters_only() {
+    let labels: Vec<String> = self::complete_labels("fn main() s32 {\n    \n}\n", 1, 4);
+
+    assert!(labels.contains(&"return".to_string()));
+    assert!(labels.contains(&"breakall".to_string()));
+    assert!(labels.contains(&"continueall".to_string()));
+    assert!(labels.contains(&"deref".to_string()));
+    assert!(labels.contains(&"load".to_string()));
+    assert!(labels.contains(&"fixed".to_string()));
+    assert!(labels.contains(&"new".to_string()));
+    assert!(!labels.contains(&"fn".to_string()));
+    assert!(!labels.contains(&"import".to_string()));
+    assert!(!labels.contains(&"directive".to_string()));
+}
+
+#[test]
+fn type_completion_uses_real_type_names() {
+    let labels: Vec<String> = self::complete_labels("fn main() s32 {\n    var text: \n}\n", 1, 14);
+
+    assert!(labels.contains(&"CString".to_string()));
+    assert!(labels.contains(&"Fn".to_string()));
+    assert!(labels.contains(&"f80".to_string()));
+    assert!(labels.contains(&"fppc_128".to_string()));
+    assert!(!labels.contains(&"cstring".to_string()));
+    assert!(!labels.contains(&"fnref".to_string()));
+    assert!(!labels.contains(&"fx8680".to_string()));
+}
+
+#[test]
+fn attribute_completion_uses_real_stable_attribute_names() {
+    let labels: Vec<String> = self::complete_labels("fn main() s32 @", 0, 15);
+
+    assert!(labels.contains(&"@arbitraryArgs".to_string()));
+    assert!(labels.contains(&"@entrypoint".to_string()));
+    assert!(labels.contains(&"@inline".to_string()));
+    assert!(labels.contains(&"@preciseFloatingPoint".to_string()));
+    assert!(!labels.contains(&"@ignore".to_string()));
+    assert!(!labels.contains(&"@entryPoint".to_string()));
+    assert!(!labels.contains(&"@inlineHint".to_string()));
+    assert!(!labels.contains(&"@preciseFloats".to_string()));
+    assert!(!labels.contains(&"@promote".to_string()));
+}
+
+#[test]
+fn builtin_completion_uses_real_builtin_names() {
+    let labels: Vec<String> = self::complete_labels("fn main() s32 {\n    \n}\n", 1, 4);
+
+    assert!(labels.contains(&"sizeOf".to_string()));
+    assert!(labels.contains(&"isLinux".to_string()));
+    assert!(labels.contains(&"staticAssert".to_string()));
+    assert!(labels.contains(&"memcpy".to_string()));
+    assert!(!labels.contains(&"memCpy".to_string()));
+}
+
+#[test]
+fn completes_std_submodules_without_global_items() {
+    let labels: Vec<String> =
+        self::complete_labels("import std;\n\nfn main() s32 {\n    std::\n}\n", 3, 9);
+
+    assert!(labels.contains(&"collections".to_string()));
+    assert!(labels.contains(&"ffi".to_string()));
+    assert!(labels.contains(&"io".to_string()));
+    assert!(labels.contains(&"mem".to_string()));
+    assert!(!labels.contains(&"s32".to_string()));
+    assert!(!labels.contains(&"fn".to_string()));
+    assert!(!labels.contains(&"for-loop".to_string()));
+}
+
+#[test]
+fn completes_nested_std_submodules() {
+    let labels: Vec<String> = self::complete_labels(
+        "import std;\n\nfn main() s32 {\n    std::collections::\n}\n",
+        3,
+        22,
+    );
+
+    assert!(labels.contains(&"vector".to_string()));
+    assert!(labels.contains(&"hashmap".to_string()));
+    assert!(labels.contains(&"hashset".to_string()));
+    assert!(labels.contains(&"vecdeque".to_string()));
+    assert!(!labels.contains(&"s32".to_string()));
+}
+
+#[test]
+fn completes_imported_function_call_arguments() {
+    let labels: Vec<String> = self::complete_labels(
+        "import std::mem;\n\nfn main() s32 {\n    mem::allocateMemory(\n}\n",
+        3,
+        24,
+    );
+
+    assert!(labels.contains(&"size".to_string()));
+    assert!(!labels.contains(&"s32".to_string()));
+}
+
+#[test]
+fn completes_imported_generic_function_call_arguments() {
+    let labels: Vec<String> = self::complete_labels(
+        "import std::collections::vector;\n\nfn main() s32 {\n    vector::push[s32](\n}\n",
+        3,
+        22,
+    );
+
+    assert_eq!(labels, vec!["vector".to_string(), "value".to_string()]);
+}
+
+#[test]
+fn completes_variadic_fixed_arguments() {
+    let labels: Vec<String> = self::complete_labels(
+        "import std::io;\n\nfn main() s32 {\n    io::print(\n}\n",
+        3,
+        14,
+    );
+
+    assert_eq!(labels, vec!["fmt".to_string()]);
+}
+
+#[test]
+fn variadic_extra_arguments_use_normal_completion() {
+    let labels: Vec<String> = self::complete_labels(
+        "import std::io;\n\nfn main() s32 {\n    var value: s32 = 1;\n    io::print(\"%d\", \n}\n",
+        4,
+        21,
+    );
+
+    assert!(labels.contains(&"value".to_string()));
+    assert!(labels.contains(&"io".to_string()));
+    assert!(!labels.contains(&"fmt".to_string()));
+}
+
+#[test]
+fn completes_local_function_call_arguments() {
+    let labels: Vec<String> = self::complete_labels(
+        "fn sum(a: s32, b: s32) s32 {\n    return a + b;\n}\n\nfn main() s32 {\n    sum(\n}\n",
+        5,
+        8,
+    );
+
+    assert_eq!(labels, vec!["a".to_string(), "b".to_string()]);
+}
+
+#[test]
 fn templates_use_dash_labels_and_low_priority_sort_text() {
     let items: Vec<Value> = self::complete_items("fn main() s32 {\n    \n}\n", 1, 4);
     let mut found_for_keyword: bool = false;

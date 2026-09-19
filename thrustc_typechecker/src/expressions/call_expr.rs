@@ -18,21 +18,21 @@
 */
 
 use thrustc_ast::{
-    Ast,
     traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
+    Ast,
 };
 use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_code_location::Span;
 use thrustc_entities::typechecker_entities::TypeCheckerFunction;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::{
-    Type,
     traits::{TypeIsExtensions, VoidTypeExtensions},
+    Type,
 };
 
 use crate::{
-    TypeChecker, context::TypeCheckerControlContext, type_checking,
-    type_metadata::TypeCheckerNodeMetadata,
+    context::TypeCheckerControlContext, type_checking, type_metadata::TypeCheckerNodeMetadata,
+    TypeChecker,
 };
 
 pub fn validate_node<'type_checker>(

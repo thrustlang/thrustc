@@ -18,16 +18,16 @@
 */
 
 use thrustc_ast::{
-    Ast,
     ast_builtins::AstBuiltin,
     traits::{AstCodeLocation, AstGetType, AstMemoryExtensions, AstStandardExtensions},
+    Ast,
 };
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::{
-    Type,
     traits::{TypeExtensions, TypePointerExtensions},
+    Type,
 };
 
 use crate::GeneralAnalyzer;

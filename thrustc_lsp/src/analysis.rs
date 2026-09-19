@@ -17,6 +17,8 @@
 
 */
 
+#![allow(clippy::too_many_arguments)]
+
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -93,12 +95,15 @@ pub struct Enumeration {
 pub struct Function {
     name: String,
     parameters: Vec<Symbol>,
+    is_variadic: bool,
 }
 
 #[derive(Clone, Debug)]
 pub struct ImportedModule {
     name: String,
     symbols: Vec<Symbol>,
+    functions: Vec<Function>,
+    submodules: Vec<ImportedModule>,
 }
 
 #[derive(Clone, Debug)]
@@ -190,6 +195,31 @@ impl DocumentAnalysis {
 
 impl Symbol {
     #[inline]
+    pub(crate) fn new(
+        name: String,
+        kind: CompletionKind,
+        detail: String,
+        insert_text: Option<String>,
+        type_name: Option<String>,
+        scope_start: u64,
+        scope_end: u64,
+        declaration_line: u64,
+    ) -> Self {
+        Self {
+            name,
+            kind,
+            detail,
+            insert_text,
+            type_name,
+            scope_start,
+            scope_end,
+            declaration_line,
+        }
+    }
+}
+
+impl Symbol {
+    #[inline]
     pub fn get_name(&self) -> &str {
         &self.name
     }
@@ -259,6 +289,11 @@ impl Function {
     pub fn get_parameters(&self) -> &[Symbol] {
         &self.parameters
     }
+
+    #[inline]
+    pub fn is_variadic(&self) -> bool {
+        self.is_variadic
+    }
 }
 
 impl ImportedModule {
@@ -270,6 +305,16 @@ impl ImportedModule {
     #[inline]
     pub fn get_symbols(&self) -> &[Symbol] {
         &self.symbols
+    }
+
+    #[inline]
+    pub fn get_functions(&self) -> &[Function] {
+        &self.functions
+    }
+
+    #[inline]
+    pub fn get_submodules(&self) -> &[ImportedModule] {
+        &self.submodules
     }
 }
 
@@ -378,7 +423,11 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                     symbols.push(parameter.clone());
                 }
 
-                functions.push(Function { name, parameters });
+                functions.push(Function {
+                    name,
+                    parameters,
+                    is_variadic: trimmed.contains("@arbitraryArgs"),
+                });
             }
         }
 
@@ -489,16 +538,19 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
 fn analyze_imported_modules(uri: &str, text: &str) -> Vec<ImportedModule> {
     let mut modules: Vec<ImportedModule> = Vec::with_capacity(u8::MAX as usize);
     let path: PathBuf = self::uri_to_path(uri);
+
     let name: String = path.file_name().map_or_else(
         || "memory.thrust".to_string(),
         |name| name.to_string_lossy().to_string(),
     );
+
     let base_name: String = path.file_stem().map_or_else(
         || "memory".to_string(),
         |name| name.to_string_lossy().to_string(),
     );
 
     let options: CompilerOptions = CompilerOptions::new();
+
     let target_info: TargetInfo = TargetInfo::new(
         options
             .get_llvm_backend()
@@ -506,56 +558,81 @@ fn analyze_imported_modules(uri: &str, text: &str) -> Vec<ImportedModule> {
             .get_normalized_target_triple()
             .clone(),
     );
+
     let builtins: BuiltinRegistry = thrustc_builtins::default_registry(target_info);
+
     let file: CompilationUnit = CompilationUnit::new(name, path, text.to_string(), base_name);
+
     let Ok(tokens) = Lexer::lex_for_preprocessor(&file, &options) else {
         return modules;
     };
+
     let Ok(directives) = thrustc_directive::apply_file_directives(&tokens) else {
         return modules;
     };
+
     let file_options: thrustc_directive::FileOptions =
         thrustc_directive::FileOptions::new(&options, &directives);
+
     let mut preprocessor: Preprocessor = Preprocessor::new();
+
     let Ok(imported) = preprocessor.generate_modules(&tokens, &file_options, &file, &builtins)
     else {
         return modules;
     };
 
     for module in imported {
-        let mut symbols: Vec<Symbol> = Vec::with_capacity(u8::MAX as usize);
-
-        for symbol in module.get_symbols() {
-            if let Some(only) = module.get_only() {
-                if !only.contains(&symbol.name) {
-                    continue;
-                }
-            }
-
-            let Some(converted) = self::convert_module_symbol(symbol) else {
-                continue;
-            };
-
-            symbols.push(converted);
-        }
-
-        let module_name: String = if let Some(alias) = module.get_alias() {
-            if alias.is_empty() {
-                module.get_name().to_string()
-            } else {
-                alias.join("::")
-            }
-        } else {
-            module.get_name().to_string()
-        };
-
-        modules.push(ImportedModule {
-            name: module_name,
-            symbols,
-        });
+        modules.push(self::convert_imported_module(module));
     }
 
     modules
+}
+
+fn convert_imported_module(module: &thrustc_preprocessor::module::Module) -> ImportedModule {
+    let mut symbols: Vec<Symbol> = Vec::with_capacity(u8::MAX as usize);
+    let mut functions: Vec<Function> = Vec::with_capacity(u8::MAX as usize);
+    let mut submodules: Vec<ImportedModule> = Vec::with_capacity(module.get_submodules().len());
+
+    for symbol in module.get_symbols() {
+        if let Some(only) = module.get_only() {
+            if !only.contains(&symbol.name) {
+                continue;
+            }
+        }
+
+        if let Some(function) = self::convert_module_function(symbol) {
+            functions.push(function);
+        }
+
+        let Some(converted) = self::convert_module_symbol(symbol) else {
+            continue;
+        };
+
+        symbols.push(converted);
+    }
+
+    if module.get_only().is_none() {
+        for submodule in module.get_submodules() {
+            submodules.push(self::convert_imported_module(submodule));
+        }
+    }
+
+    let module_name: String = if let Some(alias) = module.get_alias() {
+        if alias.is_empty() {
+            module.get_name().to_string()
+        } else {
+            alias.join("::")
+        }
+    } else {
+        module.get_name().to_string()
+    };
+
+    ImportedModule {
+        name: module_name,
+        symbols,
+        functions,
+        submodules,
+    }
 }
 
 fn convert_module_symbol(symbol: &thrustc_preprocessor::signatures::Symbol) -> Option<Symbol> {
@@ -692,47 +769,52 @@ fn convert_module_symbol(symbol: &thrustc_preprocessor::signatures::Symbol) -> O
     })
 }
 
-fn uri_to_path(uri: &str) -> PathBuf {
-    let uri: &str = uri.strip_prefix("file://").unwrap_or(uri);
-    let mut result: String = String::with_capacity(uri.len());
-    let bytes: &[u8] = uri.as_bytes();
-    let mut index: usize = 0;
+fn convert_module_function(symbol: &thrustc_preprocessor::signatures::Symbol) -> Option<Function> {
+    let (Signature::Function {
+        parameters,
+        attributes,
+        ..
+    }
+    | Signature::CompilerIntrinsic {
+        parameters,
+        attributes,
+        ..
+    }) = &symbol.signature
+    else {
+        return None;
+    };
 
-    while index < bytes.len() {
-        if bytes[index] == b'%' && index + 2 < bytes.len() {
-            let first: u8 = bytes[index + 1];
-            let second: u8 = bytes[index + 2];
-            let high: Option<u8> = if first.is_ascii_digit() {
-                Some(first - b'0')
-            } else if (b'a'..=b'f').contains(&first) {
-                Some(first - b'a' + 10)
-            } else if (b'A'..=b'F').contains(&first) {
-                Some(first - b'A' + 10)
-            } else {
-                None
-            };
-            let low: Option<u8> = if second.is_ascii_digit() {
-                Some(second - b'0')
-            } else if (b'a'..=b'f').contains(&second) {
-                Some(second - b'a' + 10)
-            } else if (b'A'..=b'F').contains(&second) {
-                Some(second - b'A' + 10)
-            } else {
-                None
-            };
-
-            if let (Some(high), Some(low)) = (high, low) {
-                result.push((high << 4 | low) as char);
-                index = index.saturating_add(3);
-                continue;
-            }
-        }
-
-        result.push(bytes[index] as char);
-        index = index.saturating_add(1);
+    if !attributes.has_public_attribute() {
+        return None;
     }
 
-    PathBuf::from(result)
+    let mut converted_parameters: Vec<Symbol> = Vec::with_capacity(parameters.len());
+
+    for (name, ty, param_span) in parameters {
+        converted_parameters.push(Symbol {
+            name: name.clone(),
+            kind: CompletionKind::Variable,
+            detail: ty.to_string(),
+            insert_text: None,
+            type_name: Some(ty.to_string()),
+            scope_start: 0,
+            scope_end: u64::MAX,
+            declaration_line: param_span.get_line().into(),
+        });
+    }
+
+    Some(Function {
+        name: symbol.name.clone(),
+        parameters: converted_parameters,
+        is_variadic: attributes.has_ignore_attribute(),
+    })
+}
+
+fn uri_to_path(uri: &str) -> PathBuf {
+    url::Url::parse(uri)
+        .ok()
+        .and_then(|uri| uri.to_file_path().ok())
+        .unwrap_or_else(|| PathBuf::from(uri))
 }
 
 fn parse_struct_fields(lines: &[&str], start: usize, end: u64) -> Vec<Symbol> {

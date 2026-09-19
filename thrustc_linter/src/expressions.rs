@@ -17,10 +17,10 @@
 
 */
 
-use thrustc_ast::{Ast, ast_builtins::AstBuiltin, traits::AstCodeLocation};
+use thrustc_ast::{ast_builtins::AstBuiltin, traits::AstCodeLocation, Ast};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
-use thrustc_token_type::{TokenType, traits::TokenTypeExtensions};
+use thrustc_token_type::{traits::TokenTypeExtensions, TokenType};
 use thrustc_typesystem::Type;
 
 use crate::Linter;

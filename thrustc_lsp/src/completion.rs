@@ -22,8 +22,12 @@
 use std::collections::HashSet;
 
 use serde_json::Value;
+use thrustc_attributes::traits::ThrustAttributesExtensions;
+use thrustc_preprocessor::signatures::{Signature, Variant};
 
-use crate::analysis::{Analysis, CompletionKind, DocumentAnalysis, Symbol};
+use crate::analysis::{
+    Analysis, CompletionKind, DocumentAnalysis, Function, ImportedModule, Symbol,
+};
 use crate::documents::Documents;
 
 pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> Vec<Value> {
@@ -81,12 +85,38 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
     let trimmed: &str = prefix.trim_end();
     let last_word: Option<&str> = trimmed.rsplit(char::is_whitespace).next();
 
+    if self::try_import_completion(&mut items, &mut seen, &prefix) {
+        return items;
+    }
+
     if trimmed.ends_with('@') || last_word.is_some_and(|last_word| last_word.starts_with('@')) {
         self::push_attributes(&mut items, &mut seen);
         return items;
     }
 
+    let is_type_context: bool = self::is_type_context(&prefix, trimmed);
+
+    if is_type_context {
+        if let Some(document_analysis) = document_analysis {
+            if self::try_module_type_completion(&mut items, &mut seen, document_analysis, &prefix) {
+                return items;
+            }
+        }
+
+        self::push_types(&mut items, &mut seen);
+
+        if let Some(document_analysis) = document_analysis {
+            self::push_type_symbols(&mut items, &mut seen, document_analysis);
+        }
+
+        return items;
+    }
+
     if let Some(document_analysis) = document_analysis {
+        if self::try_call_argument_completion(&mut items, &mut seen, document_analysis, &prefix) {
+            return items;
+        }
+
         if self::try_module_completion(&mut items, &mut seen, document_analysis, &prefix) {
             return items;
         }
@@ -98,35 +128,6 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
         if self::try_enum_completion(&mut items, &mut seen, document_analysis, &prefix) {
             return items;
         }
-
-        if self::try_call_argument_completion(&mut items, &mut seen, document_analysis, &prefix) {
-            return items;
-        }
-    }
-
-    let words: Vec<&str> = trimmed.split_whitespace().collect();
-    let is_type_context: bool = if trimmed.ends_with("::") {
-        false
-    } else if trimmed.ends_with(':') {
-        true
-    } else if trimmed.ends_with(" as") || trimmed.ends_with(" as ") {
-        true
-    } else if words.is_empty() {
-        false
-    } else {
-        let last: &str = words[words.len().saturating_sub(1)];
-
-        last == "ptr" || last == "array" || last == "fixed" || last == "fnref"
-    };
-
-    if is_type_context {
-        self::push_types(&mut items, &mut seen);
-
-        if let Some(document_analysis) = document_analysis {
-            self::push_type_symbols(&mut items, &mut seen, document_analysis);
-        }
-
-        return items;
     }
 
     if let Some(document_analysis) = document_analysis {
@@ -136,17 +137,259 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
             self::push_top_level_keywords(&mut items, &mut seen);
             self::push_type_symbols(&mut items, &mut seen, document_analysis);
             self::push_global_symbols(&mut items, &mut seen, document_analysis);
-            self::push_templates(&mut items, &mut seen);
+            self::push_top_level_templates(&mut items, &mut seen);
 
             return items;
         }
 
         self::push_visible_symbols(&mut items, &mut seen, document_analysis, line);
+        self::push_statement_keywords(&mut items, &mut seen);
+        self::push_expression_keywords(&mut items, &mut seen);
+        self::push_builtins(&mut items, &mut seen);
+        self::push_statement_templates(&mut items, &mut seen);
+
+        return items;
     }
 
     self::push_global_items(&mut items, &mut seen);
 
     items
+}
+
+fn is_type_context(prefix: &str, trimmed: &str) -> bool {
+    if trimmed.ends_with(':') || trimmed.ends_with(" as") || trimmed.ends_with(" as ") {
+        return true;
+    }
+
+    let line: &str = prefix.trim_start();
+    let words: Vec<&str> = trimmed.split_whitespace().collect();
+
+    if let Some(last) = words.last() {
+        if matches!(*last, "ptr" | "array" | "fixed" | "Fn" | "const") {
+            return true;
+        }
+    }
+
+    if line.starts_with("type ") {
+        if let Some(eq_index) = line.rfind('=') {
+            let after_eq: &str = line[eq_index.saturating_add(1)..].trim();
+
+            if !after_eq.contains(';') && !after_eq.contains('{') {
+                return true;
+            }
+        }
+    }
+
+    if line.starts_with("fn ") {
+        if let Some(close_index) = line.rfind(')') {
+            let after_close: &str = line[close_index.saturating_add(1)..].trim();
+
+            if !after_close.contains('{')
+                && !after_close.contains(';')
+                && !after_close.contains('@')
+            {
+                return true;
+            }
+        }
+    }
+
+    if let Some(as_index) = line.rfind(" as ") {
+        let after_as: &str = line[as_index.saturating_add(" as ".len())..].trim();
+
+        if !after_as.contains(';') && !after_as.contains('{') && !after_as.contains(')') {
+            return true;
+        }
+    }
+
+    if let Some(colon_index) = line.rfind(':') {
+        let before_colon: &str = &line[..colon_index];
+        let after_colon: &str = line[colon_index.saturating_add(1)..].trim();
+        let previous_is_colon: bool = before_colon.ends_with(':');
+        let next_is_colon: bool = line[colon_index.saturating_add(1)..].starts_with(':');
+
+        if !previous_is_colon
+            && !next_is_colon
+            && !after_colon.contains('=')
+            && !after_colon.contains(';')
+            && !after_colon.contains('{')
+            && !after_colon.contains(')')
+        {
+            return true;
+        }
+    }
+
+    if let Some(open_index) = line.rfind('[') {
+        if line[open_index.saturating_add(1)..].contains(']') {
+            return false;
+        }
+
+        let before_open: &str = line[..open_index].trim_end();
+        let type_constructor: &str = before_open
+            .rsplit(|ch: char| !(ch == '_' || ch.is_ascii_alphanumeric()))
+            .next()
+            .unwrap_or_default();
+
+        if matches!(type_constructor, "ptr" | "array" | "Fn") {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn try_import_completion(items: &mut Vec<Value>, seen: &mut HashSet<String>, prefix: &str) -> bool {
+    let line: &str = prefix.trim_start();
+    let Some(source) = line.strip_prefix("import") else {
+        return false;
+    };
+
+    if source.chars().next().is_some_and(|ch| !ch.is_whitespace()) {
+        return false;
+    }
+
+    let mut source: &str = source.trim_start();
+
+    if source.starts_with('"') {
+        return true;
+    }
+
+    if let Some(only_index) = source.find(" only ") {
+        let only_source: &str = &source[only_index + " only ".len()..];
+        let Some(open_index) = only_source.rfind('{') else {
+            return true;
+        };
+
+        let after_open: &str = &only_source[open_index.saturating_add(1)..];
+
+        if after_open.contains('}') {
+            return true;
+        }
+
+        let module_source: &str = source[..only_index].trim();
+
+        if !module_source.starts_with("std") {
+            return true;
+        }
+
+        let access: Vec<String> = module_source
+            .split("::")
+            .filter(|part| !part.is_empty())
+            .map(str::to_string)
+            .collect();
+
+        if access.first().map(String::as_str) != Some("std") {
+            return true;
+        }
+
+        let options: thrustc_options::CompilerOptions = thrustc_options::CompilerOptions::new();
+
+        let Ok(module) = thrustc_preprocessor::std_library::find_std_module(&access, &options)
+        else {
+            return true;
+        };
+
+        let mut used: HashSet<String> = HashSet::with_capacity(8);
+        let mut partial: &str = after_open.trim();
+
+        if let Some(comma_index) = partial.rfind(',') {
+            for name in partial[..comma_index].split(',') {
+                let name: &str = name.trim();
+
+                if !name.is_empty() {
+                    used.insert(name.to_string());
+                }
+            }
+
+            partial = partial[comma_index.saturating_add(1)..].trim();
+        }
+
+        for symbol in module.get_symbols() {
+            if used.contains(&symbol.name) {
+                continue;
+            }
+
+            if !partial.is_empty() && !symbol.name.starts_with(partial) {
+                continue;
+            }
+
+            let Some(symbol) = self::convert_import_symbol(symbol) else {
+                continue;
+            };
+
+            self::push_item(
+                items,
+                seen,
+                symbol.get_name(),
+                symbol.get_kind(),
+                symbol.get_detail(),
+                None,
+            );
+        }
+
+        return true;
+    }
+
+    for marker in [" only ", " as ", ";"] {
+        if let Some(index) = source.find(marker) {
+            source = &source[..index];
+        }
+    }
+
+    let source: &str = source.trim();
+
+    if source.is_empty() || "std".starts_with(source) {
+        self::push_item(items, seen, "std", CompletionKind::Module, "module", None);
+        return true;
+    }
+
+    if !source.starts_with("std") {
+        return true;
+    }
+
+    let ends_with_separator: bool = source.ends_with("::");
+    let mut parts: Vec<&str> = source.split("::").filter(|part| !part.is_empty()).collect();
+
+    let partial: &str = if ends_with_separator {
+        ""
+    } else {
+        parts.pop().unwrap_or_default()
+    };
+
+    if parts.is_empty() {
+        if "std".starts_with(partial) {
+            self::push_item(items, seen, "std", CompletionKind::Module, "module", None);
+        }
+
+        return true;
+    }
+
+    if parts.first().copied() != Some("std") {
+        return true;
+    }
+
+    let options: thrustc_options::CompilerOptions = thrustc_options::CompilerOptions::new();
+    let access: Vec<String> = parts.iter().map(|part| (*part).to_string()).collect();
+
+    let Ok(module) = thrustc_preprocessor::std_library::find_std_module(&access, &options) else {
+        return true;
+    };
+
+    for submodule in module.get_submodules() {
+        if !partial.is_empty() && !submodule.get_name().starts_with(partial) {
+            continue;
+        }
+
+        self::push_item(
+            items,
+            seen,
+            submodule.get_name(),
+            CompletionKind::Module,
+            "module",
+            None,
+        );
+    }
+
+    true
 }
 
 fn try_module_completion(
@@ -159,6 +402,15 @@ fn try_module_completion(
     let Some(index) = prefix.rfind("::") else {
         return false;
     };
+    let tail: &str = &prefix[index.saturating_add(2)..];
+
+    if tail
+        .chars()
+        .any(|ch| !(ch == '_' || ch.is_ascii_alphanumeric() || ch == ':'))
+    {
+        return false;
+    }
+
     let source: &str = &prefix[..index];
     let mut chars: Vec<char> = Vec::with_capacity(32);
 
@@ -182,11 +434,82 @@ fn try_module_completion(
     let receiver: String = chars.into_iter().collect();
 
     for module in document_analysis.get_modules() {
-        if module.get_name() != receiver {
+        let Some(module) = self::find_imported_module(module, &receiver) else {
             continue;
+        };
+
+        for submodule in module.get_submodules() {
+            self::push_item(
+                items,
+                seen,
+                submodule.get_name(),
+                CompletionKind::Module,
+                "module",
+                None,
+            );
         }
 
         for symbol in module.get_symbols() {
+            self::push_symbol(items, seen, symbol);
+        }
+
+        return true;
+    }
+
+    false
+}
+
+fn try_module_type_completion(
+    items: &mut Vec<Value>,
+    seen: &mut HashSet<String>,
+    document_analysis: &DocumentAnalysis,
+    prefix: &str,
+) -> bool {
+    let prefix: &str = prefix.trim_end();
+    let Some(index) = prefix.rfind("::") else {
+        return false;
+    };
+    let tail: &str = &prefix[index.saturating_add(2)..];
+
+    if tail
+        .chars()
+        .any(|ch| !(ch == '_' || ch.is_ascii_alphanumeric() || ch == ':'))
+    {
+        return false;
+    }
+
+    let source: &str = &prefix[..index];
+    let mut chars: Vec<char> = Vec::with_capacity(32);
+
+    for ch in source.chars().rev() {
+        if ch == '_' || ch.is_ascii_alphanumeric() || ch == ':' {
+            chars.push(ch);
+            continue;
+        }
+
+        if !chars.is_empty() {
+            break;
+        }
+    }
+
+    if chars.is_empty() {
+        return false;
+    }
+
+    chars.reverse();
+
+    let receiver: String = chars.into_iter().collect();
+
+    for module in document_analysis.get_modules() {
+        let Some(module) = self::find_imported_module(module, &receiver) else {
+            continue;
+        };
+
+        for symbol in module.get_symbols() {
+            if !self::is_type_completion_kind(symbol.get_kind()) {
+                continue;
+            }
+
             self::push_symbol(items, seen, symbol);
         }
 
@@ -289,36 +612,134 @@ fn try_call_argument_completion(
     document_analysis: &DocumentAnalysis,
     prefix: &str,
 ) -> bool {
-    let Some(open_index) = prefix.rfind('(') else {
+    let Some(open_index) = self::find_active_call_open(prefix) else {
         return false;
     };
-    let source: &str = &prefix[..open_index];
-    let Some(function_name) = self::previous_identifier(source) else {
+    let mut source: &str = prefix[..open_index].trim_end();
+
+    source = self::strip_trailing_generic_args(source).trim_end();
+
+    let Some(function_path) = self::previous_path(source) else {
         return false;
     };
+    let arguments: &str = &prefix[open_index.saturating_add(1)..];
+    let split_arguments: Vec<&str> = self::split_top_level_arguments(arguments);
+    let current_argument_index: usize = split_arguments.len().saturating_sub(1);
+    let mut used_named_arguments: HashSet<String> = HashSet::with_capacity(8);
+
+    for argument in &split_arguments {
+        let Some(eq_index) = argument.find('=') else {
+            continue;
+        };
+
+        let mut chars: Vec<char> = Vec::with_capacity(32);
+
+        for ch in argument[..eq_index].trim().chars().rev() {
+            if ch == '_' || ch.is_ascii_alphanumeric() {
+                chars.push(ch);
+                continue;
+            }
+
+            if !chars.is_empty() {
+                break;
+            }
+        }
+
+        chars.reverse();
+
+        let name: String = chars.into_iter().collect();
+
+        if !name.is_empty() {
+            used_named_arguments.insert(name);
+        }
+    }
+
+    if let Some((module_path, function_name)) = function_path.rsplit_once("::") {
+        for module in document_analysis.get_modules() {
+            let Some(module) = self::find_imported_module(module, module_path) else {
+                continue;
+            };
+
+            for function in module.get_functions() {
+                if function.get_name() != function_name {
+                    continue;
+                }
+
+                return self::push_call_argument_completions(
+                    items,
+                    seen,
+                    function,
+                    current_argument_index,
+                    &used_named_arguments,
+                );
+            }
+        }
+
+        return false;
+    }
 
     for function in document_analysis.get_functions() {
-        if function.get_name() != function_name {
+        if function.get_name() != function_path {
             continue;
         }
 
-        for parameter in function.get_parameters() {
-            let label: &str = parameter.get_name();
-            let insert_text: String = format!("{}= ", label);
-            self::push_item(
-                items,
-                seen,
-                label,
-                CompletionKind::Variable,
-                parameter.get_detail(),
-                Some(&insert_text),
-            );
-        }
-
-        return true;
+        return self::push_call_argument_completions(
+            items,
+            seen,
+            function,
+            current_argument_index,
+            &used_named_arguments,
+        );
     }
 
     false
+}
+
+fn push_call_argument_completions(
+    items: &mut Vec<Value>,
+    seen: &mut HashSet<String>,
+    function: &Function,
+    current_argument_index: usize,
+    used_named_arguments: &HashSet<String>,
+) -> bool {
+    let parameters: &[Symbol] = function.get_parameters();
+
+    if function.is_variadic()
+        && (current_argument_index >= parameters.len()
+            || parameters
+                .iter()
+                .all(|parameter| used_named_arguments.contains(parameter.get_name())))
+    {
+        return false;
+    }
+
+    if !function.is_variadic() && current_argument_index >= parameters.len() {
+        return true;
+    }
+
+    for (index, parameter) in parameters.iter().enumerate() {
+        if index < current_argument_index {
+            continue;
+        }
+
+        let label: &str = parameter.get_name();
+
+        if used_named_arguments.contains(label) {
+            continue;
+        }
+
+        let insert_text: String = format!("{}= ", label);
+        self::push_item(
+            items,
+            seen,
+            label,
+            CompletionKind::Variable,
+            parameter.get_detail(),
+            Some(&insert_text),
+        );
+    }
+
+    true
 }
 
 fn push_visible_symbols(
@@ -358,10 +779,7 @@ fn push_type_symbols(
     for symbol in document_analysis.get_symbols() {
         let kind: CompletionKind = symbol.get_kind();
 
-        if !matches!(
-            kind,
-            CompletionKind::Enum | CompletionKind::Struct | CompletionKind::TypeParameter
-        ) {
+        if !self::is_type_completion_kind(kind) {
             continue;
         }
 
@@ -370,11 +788,20 @@ fn push_type_symbols(
 }
 
 #[inline]
+fn is_type_completion_kind(kind: CompletionKind) -> bool {
+    matches!(
+        kind,
+        CompletionKind::Enum | CompletionKind::Struct | CompletionKind::TypeParameter
+    )
+}
+
+#[inline]
 fn push_global_items(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_keywords(items, seen);
     self::push_types(items, seen);
     self::push_builtins(items, seen);
-    self::push_templates(items, seen);
+    self::push_top_level_templates(items, seen);
+    self::push_statement_templates(items, seen);
 }
 
 fn push_top_level_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
@@ -437,14 +864,6 @@ fn push_top_level_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "importc",
-        CompletionKind::Keyword,
-        "C import",
-        None,
-    );
-    self::push_item(
-        items,
-        seen,
         "intrinsic",
         CompletionKind::Keyword,
         "compiler intrinsic",
@@ -453,15 +872,22 @@ fn push_top_level_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "asmfn",
+        "directive",
         CompletionKind::Keyword,
-        "assembler function",
+        "compiler directive",
         None,
+    );
+    self::push_item(
+        items,
+        seen,
+        "@if",
+        CompletionKind::Keyword,
+        "compile-time conditional",
+        Some("@if(${1:condition}) $0"),
     );
 }
 
-fn push_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
-    self::push_item(items, seen, "fn", CompletionKind::Keyword, "keyword", None);
+fn push_statement_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(items, seen, "var", CompletionKind::Keyword, "keyword", None);
     self::push_item(
         items,
@@ -556,7 +982,23 @@ fn push_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
+        "breakall",
+        CompletionKind::Keyword,
+        "keyword",
+        None,
+    );
+    self::push_item(
+        items,
+        seen,
         "continue",
+        CompletionKind::Keyword,
+        "keyword",
+        None,
+    );
+    self::push_item(
+        items,
+        seen,
+        "continueall",
         CompletionKind::Keyword,
         "keyword",
         None,
@@ -572,30 +1014,14 @@ fn push_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "import",
+        "@if",
         CompletionKind::Keyword,
-        "keyword",
-        None,
+        "compile-time conditional",
+        Some("@if(${1:condition}) $0"),
     );
-    self::push_item(
-        items,
-        seen,
-        "importc",
-        CompletionKind::Keyword,
-        "keyword",
-        None,
-    );
-    self::push_item(
-        items,
-        seen,
-        "only",
-        CompletionKind::Keyword,
-        "keyword",
-        None,
-    );
-    self::push_item(items, seen, "as", CompletionKind::Keyword, "keyword", None);
-    self::push_item(items, seen, "mut", CompletionKind::Keyword, "keyword", None);
-    self::push_item(items, seen, "ref", CompletionKind::Keyword, "keyword", None);
+}
+
+fn push_expression_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
@@ -620,9 +1046,91 @@ fn push_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         "keyword",
         None,
     );
+    self::push_item(
+        items,
+        seen,
+        "deref",
+        CompletionKind::Keyword,
+        "keyword",
+        None,
+    );
+    self::push_item(
+        items,
+        seen,
+        "load",
+        CompletionKind::Keyword,
+        "keyword",
+        None,
+    );
+    self::push_item(items, seen, "ref", CompletionKind::Keyword, "keyword", None);
+    self::push_item(items, seen, "new", CompletionKind::Keyword, "keyword", None);
+    self::push_item(
+        items,
+        seen,
+        "fixed",
+        CompletionKind::Keyword,
+        "keyword",
+        None,
+    );
+    self::push_item(
+        items,
+        seen,
+        "unreachable",
+        CompletionKind::Keyword,
+        "keyword",
+        None,
+    );
+}
+
+fn push_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
+    self::push_statement_keywords(items, seen);
+    self::push_expression_keywords(items, seen);
+    self::push_item(items, seen, "fn", CompletionKind::Keyword, "keyword", None);
+    self::push_item(
+        items,
+        seen,
+        "import",
+        CompletionKind::Keyword,
+        "keyword",
+        None,
+    );
+    self::push_item(
+        items,
+        seen,
+        "only",
+        CompletionKind::Keyword,
+        "keyword",
+        None,
+    );
+    self::push_item(items, seen, "as", CompletionKind::Keyword, "keyword", None);
+    self::push_item(items, seen, "mut", CompletionKind::Keyword, "keyword", None);
+    self::push_item(
+        items,
+        seen,
+        "intrinsic",
+        CompletionKind::Keyword,
+        "keyword",
+        None,
+    );
+    self::push_item(
+        items,
+        seen,
+        "directive",
+        CompletionKind::Keyword,
+        "keyword",
+        None,
+    );
 }
 
 fn push_types(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
+    self::push_item(
+        items,
+        seen,
+        "const",
+        CompletionKind::Keyword,
+        "type qualifier",
+        None,
+    );
     self::push_item(
         items,
         seen,
@@ -738,7 +1246,7 @@ fn push_types(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "fx8680",
+        "f80",
         CompletionKind::TypeParameter,
         "type",
         None,
@@ -746,7 +1254,7 @@ fn push_types(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "fppc128",
+        "fppc_128",
         CompletionKind::TypeParameter,
         "type",
         None,
@@ -770,7 +1278,7 @@ fn push_types(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "cstring",
+        "CString",
         CompletionKind::TypeParameter,
         "type",
         None,
@@ -778,7 +1286,7 @@ fn push_types(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "cnstring",
+        "CNString",
         CompletionKind::TypeParameter,
         "type",
         None,
@@ -818,7 +1326,7 @@ fn push_types(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "fnref",
+        "Fn",
         CompletionKind::TypeParameter,
         "type",
         None,
@@ -861,26 +1369,26 @@ fn push_builtins(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "memCpy",
+        "memcpy",
         CompletionKind::Function,
         "builtin",
-        Some("memCpy($0)"),
+        Some("memcpy($0)"),
     );
     self::push_item(
         items,
         seen,
-        "memMove",
+        "memmove",
         CompletionKind::Function,
         "builtin",
-        Some("memMove($0)"),
+        Some("memmove($0)"),
     );
     self::push_item(
         items,
         seen,
-        "memSet",
+        "memset",
         CompletionKind::Function,
         "builtin",
-        Some("memSet($0)"),
+        Some("memset($0)"),
     );
     self::push_item(
         items,
@@ -898,9 +1406,98 @@ fn push_builtins(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         "builtin",
         Some("arbitraryArgs($0)"),
     );
+
+    for builtin in [
+        "sizeOf",
+        "alignOf",
+        "file",
+        "fileLine",
+        "currentFuncName",
+        "staticAssert",
+        "compileError",
+        "compileWarning",
+        "isSigned",
+        "isUnsigned",
+        "isInteger",
+        "isFloat",
+        "isBool",
+        "isChar",
+        "isPointer",
+        "isArray",
+        "isFixedArray",
+        "isStruct",
+        "isVoid",
+        "isConst",
+        "isNumeric",
+        "isFunction",
+        "typeWidth",
+        "fieldCount",
+        "fixedArraySize",
+        "isSameType",
+        "isPtrLike",
+        "isFixedArrayOfSize",
+        "compilerVersion",
+        "debugBuild",
+        "stringLength",
+        "targetOS",
+        "targetArch",
+        "targetVendor",
+        "targetAbi",
+        "targetTriple",
+        "isLinux",
+        "isWindows",
+        "isDarwin",
+        "isApple",
+        "isAix",
+        "is64Bit",
+        "is32Bit",
+        "isBigEndian",
+        "isLittleEndian",
+        "isX86",
+        "isX8664",
+        "isArm",
+        "isAarch64",
+        "isRiscv64",
+        "isPpc",
+        "isPpc64",
+        "isMips64",
+        "isSystemz",
+        "isLoongarch64",
+        "isWasm",
+        "isElf",
+        "isMachO",
+        "isCoff",
+        "hasPosixThreads",
+        "hasSysvAbi",
+        "pointerWidth",
+        "isizeWidth",
+        "usizeWidth",
+        "pointerAlign",
+        "maxAlignment",
+        "targetCPU",
+        "targetCpuFeatures",
+        "hasFeature",
+        "hostOsName",
+        "hostArch",
+        "hostEndian",
+        "currentTimestamp",
+        "processorCount",
+        "pageSize",
+        "cpuCacheLineSize",
+        "hostName",
+    ] {
+        self::push_item(
+            items,
+            seen,
+            builtin,
+            CompletionKind::Function,
+            "compiler builtin",
+            Some(&format!("{}($0)", builtin)),
+        );
+    }
 }
 
-fn push_templates(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
+fn push_top_level_templates(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
@@ -925,6 +1522,97 @@ fn push_templates(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         "template",
         Some("fn ${1:name}(${2:args}) ${3:void} @public {\n    $0\n}"),
     );
+    self::push_item(
+        items,
+        seen,
+        "struct-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("struct ${1:Name} {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "generic-struct",
+        CompletionKind::Snippet,
+        "template",
+        Some("struct ${1:Name} [${2:T}] {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "enum-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("enum ${1:Name} {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "type-alias",
+        CompletionKind::Snippet,
+        "template",
+        Some("type ${1:Name} = ${2:u32};"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "const-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("const ${1:NAME}: ${2:type} = ${3:value};"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "static-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("static ${1:name}: ${2:type} = ${3:value};"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "import-as",
+        CompletionKind::Snippet,
+        "template",
+        Some("import ${1:std::mem} as ${2:mem};"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "import-only",
+        CompletionKind::Snippet,
+        "template",
+        Some("import ${1:std::mem} only { ${2:symbol} };"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "directive-template",
+        CompletionKind::Snippet,
+        "template",
+        Some("directive \"${1:--disable-warnings=W0000}\";"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "compiletime-if",
+        CompletionKind::Snippet,
+        "template",
+        Some("@if(${1:condition}) {\n    $0\n}"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "compiletime-if-else",
+        CompletionKind::Snippet,
+        "template",
+        Some("@if(${1:condition}) {\n    $2\n} @else {\n    $0\n}"),
+    );
+}
+
+fn push_statement_templates(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
@@ -992,38 +1680,6 @@ fn push_templates(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "struct-template",
-        CompletionKind::Snippet,
-        "template",
-        Some("struct ${1:Name} {\n    $0\n}"),
-    );
-    self::push_item(
-        items,
-        seen,
-        "generic-struct",
-        CompletionKind::Snippet,
-        "template",
-        Some("struct ${1:Name} [${2:T}] {\n    $0\n}"),
-    );
-    self::push_item(
-        items,
-        seen,
-        "enum-template",
-        CompletionKind::Snippet,
-        "template",
-        Some("enum ${1:Name} {\n    $0\n}"),
-    );
-    self::push_item(
-        items,
-        seen,
-        "type-alias",
-        CompletionKind::Snippet,
-        "template",
-        Some("type ${1:Name} = ${2:u32};"),
-    );
-    self::push_item(
-        items,
-        seen,
         "var-template",
         CompletionKind::Snippet,
         "template",
@@ -1040,50 +1696,10 @@ fn push_templates(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "const-template",
-        CompletionKind::Snippet,
-        "template",
-        Some("const ${1:NAME}: ${2:type} = ${3:value};"),
-    );
-    self::push_item(
-        items,
-        seen,
-        "static-template",
-        CompletionKind::Snippet,
-        "template",
-        Some("static ${1:name}: ${2:type} = ${3:value};"),
-    );
-    self::push_item(
-        items,
-        seen,
-        "import-as",
-        CompletionKind::Snippet,
-        "template",
-        Some("import ${1:std::mem} as ${2:mem};"),
-    );
-    self::push_item(
-        items,
-        seen,
-        "import-only",
-        CompletionKind::Snippet,
-        "template",
-        Some("import ${1:std::mem} only { ${2:symbol} };"),
-    );
-    self::push_item(
-        items,
-        seen,
         "compiletime-if",
         CompletionKind::Snippet,
         "template",
         Some("@if(${1:condition}) {\n    $0\n}"),
-    );
-    self::push_item(
-        items,
-        seen,
-        "compiletime-if-else",
-        CompletionKind::Snippet,
-        "template",
-        Some("@if(${1:condition}) {\n    $2\n} @else {\n    $0\n}"),
     );
 }
 
@@ -1123,7 +1739,7 @@ fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "@ignore",
+        "@arbitraryArgs",
         CompletionKind::Keyword,
         "attribute",
         None,
@@ -1139,7 +1755,7 @@ fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "@entryPoint",
+        "@entrypoint",
         CompletionKind::Keyword,
         "attribute",
         None,
@@ -1171,7 +1787,7 @@ fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "@inlineHint",
+        "@inline",
         CompletionKind::Keyword,
         "attribute",
         None,
@@ -1211,7 +1827,7 @@ fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
-        "@preciseFloats",
+        "@preciseFloatingPoint",
         CompletionKind::Keyword,
         "attribute",
         None,
@@ -1244,38 +1860,6 @@ fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         items,
         seen,
         "@packed",
-        CompletionKind::Keyword,
-        "attribute",
-        None,
-    );
-    self::push_item(
-        items,
-        seen,
-        "@asmAlignStack",
-        CompletionKind::Keyword,
-        "attribute",
-        None,
-    );
-    self::push_item(
-        items,
-        seen,
-        "@asmSyntax",
-        CompletionKind::Keyword,
-        "attribute",
-        Some("@asmSyntax(\"$0\")"),
-    );
-    self::push_item(
-        items,
-        seen,
-        "@asmThrow",
-        CompletionKind::Keyword,
-        "attribute",
-        None,
-    );
-    self::push_item(
-        items,
-        seen,
-        "@asmSideEffects",
         CompletionKind::Keyword,
         "attribute",
         None,
@@ -1344,14 +1928,6 @@ fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         "attribute",
         None,
     );
-    self::push_item(
-        items,
-        seen,
-        "@promote",
-        CompletionKind::Keyword,
-        "attribute",
-        None,
-    );
 }
 
 #[inline]
@@ -1364,6 +1940,140 @@ fn push_symbol(items: &mut Vec<Value>, seen: &mut HashSet<String>, symbol: &Symb
         symbol.get_detail(),
         symbol.get_insert_text(),
     );
+}
+
+fn convert_import_symbol(symbol: &thrustc_preprocessor::signatures::Symbol) -> Option<Symbol> {
+    let kind: CompletionKind = match symbol.variant {
+        Variant::Function | Variant::CompilerIntrinsic => CompletionKind::Function,
+        Variant::Constant => CompletionKind::Constant,
+        Variant::Static => CompletionKind::Variable,
+        Variant::Struct => CompletionKind::Struct,
+        Variant::Enum => CompletionKind::Enum,
+        Variant::CustomType => CompletionKind::TypeParameter,
+    };
+
+    let mut detail: String = String::with_capacity(64);
+    let mut insert_text: Option<String> = None;
+
+    match &symbol.signature {
+        Signature::Function {
+            kind,
+            parameters,
+            attributes,
+            ..
+        } => {
+            if !attributes.has_public_attribute() {
+                return None;
+            }
+
+            detail.push_str("fn ");
+            detail.push_str(&symbol.name);
+            detail.push('(');
+
+            for (index, (name, ty, _)) in parameters.iter().enumerate() {
+                if index > 0 {
+                    detail.push_str(", ");
+                }
+
+                detail.push_str(name);
+                detail.push_str(": ");
+                detail.push_str(&ty.to_string());
+            }
+
+            detail.push(')');
+
+            if !kind.to_string().is_empty() {
+                detail.push(' ');
+                detail.push_str(&kind.to_string());
+            }
+
+            insert_text = Some(format!("{}($0)", symbol.name));
+        }
+        Signature::CompilerIntrinsic {
+            kind,
+            parameters,
+            attributes,
+            ..
+        } => {
+            if !attributes.has_public_attribute() {
+                return None;
+            }
+
+            detail.push_str("intrinsic ");
+            detail.push_str(&symbol.name);
+            detail.push('(');
+
+            for (index, (name, ty, _)) in parameters.iter().enumerate() {
+                if index > 0 {
+                    detail.push_str(", ");
+                }
+
+                detail.push_str(name);
+                detail.push_str(": ");
+                detail.push_str(&ty.to_string());
+            }
+
+            detail.push(')');
+
+            if !kind.to_string().is_empty() {
+                detail.push(' ');
+                detail.push_str(&kind.to_string());
+            }
+
+            insert_text = Some(format!("{}($0)", symbol.name));
+        }
+        Signature::Constant {
+            kind, attributes, ..
+        } => {
+            if !attributes.has_public_attribute() {
+                return None;
+            }
+
+            detail.push_str("const: ");
+            detail.push_str(&kind.to_string());
+        }
+        Signature::Static {
+            kind, attributes, ..
+        } => {
+            if !attributes.has_public_attribute() {
+                return None;
+            }
+
+            detail.push_str("static: ");
+            detail.push_str(&kind.to_string());
+        }
+        Signature::Struct { kind, .. } => {
+            detail.push_str("struct: ");
+            detail.push_str(&kind.to_string());
+        }
+        Signature::Enum { fields, .. } => {
+            detail.push_str("enum ");
+            detail.push_str(&symbol.name);
+            detail.push_str(" fields: ");
+            detail.push_str(&fields.len().to_string());
+        }
+        Signature::CustomType {
+            kind, attributes, ..
+        } => {
+            if !attributes.has_public_attribute() {
+                return None;
+            }
+
+            detail.push_str("type: ");
+            detail.push_str(&kind.to_string());
+        }
+    }
+
+    Some(Symbol::new(
+        symbol.name.clone(),
+        kind,
+        detail,
+        insert_text,
+        None,
+        0,
+        u64::MAX,
+        0,
+    ))
 }
 
 #[inline]
@@ -1417,6 +2127,200 @@ fn resolve_symbol_type(
     }
 
     None
+}
+
+fn find_imported_module<'a>(
+    module: &'a ImportedModule,
+    receiver: &str,
+) -> Option<&'a ImportedModule> {
+    if module.get_name() == receiver {
+        return Some(module);
+    }
+
+    let parts: Vec<&str> = receiver
+        .split("::")
+        .filter(|part| !part.is_empty())
+        .collect();
+
+    self::find_imported_module_parts(module, &parts)
+}
+
+fn find_imported_module_parts<'a>(
+    module: &'a ImportedModule,
+    parts: &[&str],
+) -> Option<&'a ImportedModule> {
+    if parts.is_empty() {
+        return Some(module);
+    }
+
+    if module.get_name() != parts[0] {
+        return None;
+    }
+
+    if parts.len() == 1 {
+        return Some(module);
+    }
+
+    for submodule in module.get_submodules() {
+        if let Some(module) = self::find_imported_module_parts(submodule, &parts[1..]) {
+            return Some(module);
+        }
+    }
+
+    None
+}
+
+fn find_active_call_open(prefix: &str) -> Option<usize> {
+    let mut stack: Vec<usize> = Vec::with_capacity(8);
+    let mut in_string: bool = false;
+    let mut in_char: bool = false;
+    let mut escaped: bool = false;
+
+    for (index, ch) in prefix.char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+
+        if (in_string || in_char) && ch == '\\' {
+            escaped = true;
+            continue;
+        }
+
+        if ch == '"' && !in_char {
+            in_string = !in_string;
+            continue;
+        }
+
+        if ch == '\'' && !in_string {
+            in_char = !in_char;
+            continue;
+        }
+
+        if in_string || in_char {
+            continue;
+        }
+
+        if ch == '(' {
+            stack.push(index);
+        } else if ch == ')' {
+            stack.pop();
+        }
+    }
+
+    stack.pop()
+}
+
+fn split_top_level_arguments(arguments: &str) -> Vec<&str> {
+    let mut result: Vec<&str> = Vec::with_capacity(8);
+    let mut start: usize = 0;
+    let mut paren_depth: usize = 0;
+    let mut bracket_depth: usize = 0;
+    let mut brace_depth: usize = 0;
+    let mut in_string: bool = false;
+    let mut in_char: bool = false;
+    let mut escaped: bool = false;
+
+    for (index, ch) in arguments.char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+
+        if (in_string || in_char) && ch == '\\' {
+            escaped = true;
+            continue;
+        }
+
+        if ch == '"' && !in_char {
+            in_string = !in_string;
+            continue;
+        }
+
+        if ch == '\'' && !in_string {
+            in_char = !in_char;
+            continue;
+        }
+
+        if in_string || in_char {
+            continue;
+        }
+
+        match ch {
+            '(' => paren_depth = paren_depth.saturating_add(1),
+            ')' => paren_depth = paren_depth.saturating_sub(1),
+            '[' => bracket_depth = bracket_depth.saturating_add(1),
+            ']' => bracket_depth = bracket_depth.saturating_sub(1),
+            '{' => brace_depth = brace_depth.saturating_add(1),
+            '}' => brace_depth = brace_depth.saturating_sub(1),
+            ',' if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0 => {
+                result.push(arguments[start..index].trim());
+                start = index.saturating_add(1);
+            }
+            _ => {}
+        }
+    }
+
+    result.push(arguments[start..].trim());
+
+    result
+}
+
+fn strip_trailing_generic_args(source: &str) -> &str {
+    let source: &str = source.trim_end();
+
+    if !source.ends_with(']') {
+        return source;
+    }
+
+    let mut depth: usize = 0;
+
+    for (index, ch) in source.char_indices().rev() {
+        if ch == ']' {
+            depth = depth.saturating_add(1);
+            continue;
+        }
+
+        if ch == '[' {
+            depth = depth.saturating_sub(1);
+
+            if depth == 0 {
+                return &source[..index];
+            }
+        }
+    }
+
+    source
+}
+
+fn previous_path(source: &str) -> Option<String> {
+    let mut chars: Vec<char> = Vec::with_capacity(32);
+
+    for ch in source.chars().rev() {
+        if ch == '_' || ch.is_ascii_alphanumeric() || ch == ':' {
+            chars.push(ch);
+            continue;
+        }
+
+        if !chars.is_empty() {
+            break;
+        }
+    }
+
+    if chars.is_empty() {
+        return None;
+    }
+
+    chars.reverse();
+
+    let path: String = chars.into_iter().collect();
+    let path: &str = path.trim_matches(':');
+
+    if path.is_empty() {
+        None
+    } else {
+        Some(path.to_string())
+    }
 }
 
 #[inline]

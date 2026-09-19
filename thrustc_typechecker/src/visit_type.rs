@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_ast::{ModuleExpressionValues, traits::AstCodeLocation};
+use thrustc_ast::{traits::AstCodeLocation, ModuleExpressionValues};
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 

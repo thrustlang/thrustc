@@ -26,9 +26,9 @@ use inkwell::values::AsValueRef;
 use inkwell::values::FunctionValue;
 use inkwell::values::GlobalValue;
 use thrustc_code_location::Span;
-use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_llvm_attributes::LLVMAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
+use thrustc_llvm_attributes::traits::LLVMAttributesExtensions;
 use thrustc_llvm_call_conventions::LLVMCallConvention;
 
 use crate::context::LLVMCodeGenContext;

@@ -1,45 +1,8 @@
 import std::io;
-
-enum ExitCode @public {
-    Ok: s32 = 0;
-    InvalidInput: s32 = 1;
-    IOError: s32 = 2;
-}
-
-fn codeOf(value: s32) s32 @public {
-    if value == ExitCode=>Ok {
-        return 0;
-    }
-
-    if value == ExitCode=>InvalidInput {
-        return 1;
-    }
-
-    return ExitCode=>IOError;
-}
-
-fn fibonacci [T] (n: T) T @public {
-    if n <= 0 { return 0; }
-    if n == 1 { return 1; }
-
-    var a: T = 0;
-    var b: T = 1;
-    var i: T = 2;
-    var result: T = 0;
-
-    while i <= n {
-        result = a + b;
-        a = b;
-        b = result;
-        i++;
-    }
-
-    return result;
-}
+import std::collections::vector;
 
 fn main() s32 @public {
-    var result: s32 = fibonacci[s32](10);
-    // Expected result: fib(10) = 55
-    io::print("fib(%d) = %d\n", 10, result);
+    var vt @dealloc := vector::newVector[s32]();
+    
     return 0;
 }

@@ -17,18 +17,18 @@
 
 */
 
-use thrustc_ast::{Ast, ast_metadata::CastingMetadata};
+use thrustc_ast::{ast_metadata::CastingMetadata, Ast};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
-    Type,
     traits::{TypeCodeLocation, VoidTypeExtensions},
+    Type,
 };
 
 use crate::{
-    TypeChecker, context::TypeCheckerControlContext, type_metadata::TypeCheckerNodeMetadata,
+    context::TypeCheckerControlContext, type_metadata::TypeCheckerNodeMetadata, TypeChecker,
 };
 
 pub fn check_type_together(

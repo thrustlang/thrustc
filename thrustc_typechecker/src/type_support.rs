@@ -20,8 +20,8 @@
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_llvm_target_triple::traits::LLVMTargetTripleSupport;
 use thrustc_typesystem::{
-    Type,
     traits::{ConstantTypeExtensions, TypeCodeLocation},
+    Type,
 };
 
 use crate::TypeChecker;

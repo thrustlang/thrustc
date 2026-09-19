@@ -18,6 +18,8 @@
 */
 
 directive "--disable-warnings=W0010";
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
 directive "--disable-warnings=W0017";
 directive "--disable-warnings=W0020";
 directive "--disable-warnings=W0029";

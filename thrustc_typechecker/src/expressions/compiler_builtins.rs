@@ -18,15 +18,15 @@
 */
 
 use thrustc_ast::{
-    Ast,
     ast_builtins::AstBuiltin,
     traits::{AstCodeLocation, AstGetType},
+    Ast,
 };
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::{
-    Type,
     traits::{TypeCodeLocation, TypeIsExtensions, VoidTypeExtensions},
+    Type,
 };
 
 use crate::TypeChecker;

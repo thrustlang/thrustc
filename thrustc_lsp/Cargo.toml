@@ -9,6 +9,7 @@ rust-version.workspace = true
 [dependencies]
 rustversion = "1.0.22"
 serde_json = "1.0.149"
+url = "2"
 
 thrustc_attributes = { path = "../thrustc_attributes" }
 thrustc_builtins = { path = "../thrustc_builtins" }

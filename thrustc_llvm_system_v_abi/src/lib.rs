@@ -758,6 +758,8 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                         }
 
                         let first_integer_ty: Type = integer_chunk_type(64, ty.get_span());
+
+                        // REASON: clang System-V ABI = i64 + i32 e.g
                         let second_integer_ty: Type =
                             integer_chunk_type(layout.width.saturating_sub(64), ty.get_span());
 

@@ -107,7 +107,7 @@ fn ensureCapacity [T] (vector: ptr[Vector[T]], minimum: usize) void @public {
     }
 }
 
-fn pushBack [T] (vector: ptr[Vector[T]], value: T) void @public {
+fn push [T] (vector: ptr[Vector[T]], value: T) void @public {
     if vector->length == vector->capacity {
         if vector->capacity == 0 {
             ensureCapacity(vector, INITIAL_CAPACITY);

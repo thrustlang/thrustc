@@ -18,11 +18,11 @@
 */
 
 use thrustc_ast::{
-    Ast,
     traits::{
         AstCodeLocation, AstConstantExtensions, AstGetType, AstMemoryExtensions,
         AstStandardExtensions,
     },
+    Ast,
 };
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::FileOptions;
@@ -30,7 +30,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 
 use thrustc_code_location::Span;
-use thrustc_typesystem::{Type, traits::TypeExtensions};
+use thrustc_typesystem::{traits::TypeExtensions, Type};
 
 use crate::context::AnalyzerContext;
 
@@ -415,7 +415,11 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                 self.analyze_stmt(local)?;
                 self.analyze_expr(condition)?;
 
-                self.analyze_expr(actions)?;
+                if matches!(**actions, Ast::Mutation { .. }) {
+                    self.analyze_stmt(actions)?;
+                } else {
+                    self.analyze_expr(actions)?;
+                }
                 self.analyze_stmt(block)?;
 
                 Ok(())

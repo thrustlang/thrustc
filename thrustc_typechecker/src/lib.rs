@@ -18,8 +18,8 @@
 */
 
 use thrustc_ast::{
-    Ast,
     traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
+    Ast,
 };
 
 use thrustc_code_location::Span;
@@ -28,8 +28,8 @@ use thrustc_directive::FileOptions;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::{
-    Type,
     traits::{DereferenceExtensions, TypeIsExtensions, VoidTypeExtensions},
+    Type,
 };
 
 use crate::{
@@ -705,7 +705,11 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 }
 
                 self.analyze_expr(condition)?;
-                self.analyze_expr(actions)?;
+                if matches!(**actions, Ast::Mutation { .. }) {
+                    self.analyze_stmt(actions)?;
+                } else {
+                    self.analyze_expr(actions)?;
+                }
                 self.analyze_stmt(block)?;
 
                 Ok(())
