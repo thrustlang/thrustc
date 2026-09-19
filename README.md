@@ -127,6 +127,14 @@ You can target macOS, Windows, Linux, and other platforms directly from your cur
 
 If you want to know a high-level command line view, you should check out: [Thrust Compiler - Commands & Flags](https://github.com/thrustlang/thrustc/blob/master/CLI.md)
 
+## Language Syntax
+
+For detailed information about the Thrust programming language syntax, check out the [Thrust Syntax repository](https://github.com/thrustlang/syntax).
+
+## Torio
+
+For high-level project and toolchain management, check out [Torio](https://github.com/thrustlang/torio), the package manager and compiler controller for Thrust.
+
 ## Language Server
 
 If you want to configure editor integration through the Language Server Protocol, especially for Visual Studio Code, check out: [Thrust LSP - Visual Studio Code](https://github.com/thrustlang/thrustc/blob/master/lsp/vscode/README.md)
