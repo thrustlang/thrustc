@@ -31,7 +31,7 @@ $release_dir = "changelogs/$tag_name"
 New-Item -ItemType Directory -Force -Path $release_dir | Out-Null
 
 Write-Host "Generating changelog for: $range"
-git-cliff $range --output "$release_dir/README.md"
+git-cliff $range --tag $tag_name --output "$release_dir/README.md"
 
 cargo run --quiet 2>$null
 $help_output = & "./target/debug/thrustc.exe" --help 2>&1

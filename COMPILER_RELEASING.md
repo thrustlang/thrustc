@@ -87,17 +87,6 @@ Script: `release-changelog` (`.sh`, `.ps1`, `.fish`, `.bat`).
 
 This step creates the changelog for the new version and tags it. It needs `git-cliff` installed and works from the root of the project.
 
-What it does:
-
-1. Creates the `changelogs/` directory if it does not exist.
-2. Shows the available tags sorted by version, to help you pick the previous one.
-3. Asks you for the **previous tag** (the one the changelog starts from) and validates that it exists.
-4. Asks you for the **new tag name** (the version being released).
-5. Runs `git-cliff <previous-tag>..HEAD`, generating `changelogs/<new-tag>/README.md` with all the commits in between.
-6. Builds the compiler and appends its `--help` output to the changelog under a `## Command Line` section.
-7. Commits the changelog with the message `Bumping '<new-tag>'`.
-8. Creates the new tag, then pushes both the current branch (`HEAD`) and the new tag to `origin`.
-
 > [!IMPORTANT]
 > Both tags are required and are read from the terminal. The previous tag must exist, otherwise the script exits with an error. The new tag should follow the existing naming convention used in the project (for example `thrustc-x86_64-linux-ubuntu-v0.1.5`).
 
@@ -106,14 +95,6 @@ What it does:
 Script: `tag-manager` (`.sh`, `.ps1`, `.fish`, `.bat`).
 
 This step creates the git tag for the release and optionally pushes it to the remote.
-
-What it does:
-
-1. Asks you for the **tag name** and validates that it is not empty.
-2. Checks that you are inside a git repository.
-3. If the tag already exists locally, deletes it. If it also exists on `origin`, deletes it there too.
-4. Creates the new tag on the current commit.
-5. Asks `Push to remote? [Y/n]`. Answering anything other than `n` or `N` pushes the tag to `origin`.
 
 > [!NOTE]
 > The tag is created on the current `HEAD`. Run this step on the commit you actually want to release, and double check the tag name before confirming the push.

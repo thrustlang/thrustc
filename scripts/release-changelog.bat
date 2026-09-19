@@ -31,7 +31,7 @@ set release_dir=changelogs\%tag_name%
 if not exist "%release_dir%" mkdir "%release_dir%"
 
 echo Generating changelog for: %range%
-git-cliff "%range%" --output "%release_dir%\README.md"
+git-cliff "%range%" --tag "%tag_name%" --output "%release_dir%\README.md"
 
 cargo run --quiet >nul 2>&1
 if errorlevel 1 (echo Warning: cargo run failed, continuing...)
