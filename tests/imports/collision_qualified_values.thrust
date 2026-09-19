@@ -1,0 +1,11 @@
+import "collision_values/a.thrust" as left;
+import "collision_values/b.thrust" as right;
+
+fn main() s32 @public {
+    if left::VALUE != 11 { return 1; }
+    if right::VALUE != 21 { return 2; }
+    if left::counter != 12 { return 3; }
+    if right::counter != 22 { return 4; }
+
+    return 0;
+}

@@ -424,6 +424,7 @@ pub fn compile_constant<'ctx>(
         | TokenType::MinusEq
         | TokenType::StarEq
         | TokenType::SlashEq
+        | TokenType::Arith
         | TokenType::ArithEq
         | TokenType::BangEq
         | TokenType::EqEq

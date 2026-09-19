@@ -116,8 +116,9 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
     let function_abi_configuration: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
         generated_function_type.1;
 
-    let llvm_function: FunctionValue =
-        llvm_module.add_function(&canonical_name, function_type, None);
+    let llvm_function: FunctionValue = llvm_module
+        .get_function(&canonical_name)
+        .unwrap_or_else(|| llvm_module.add_function(&canonical_name, function_type, None));
 
     let has_abi_configuration: bool = function_abi_configuration.is_some();
 

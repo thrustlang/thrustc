@@ -40,15 +40,17 @@ pub fn archive_compilation(
 ) -> Result<(), ()> {
     compiler.thrustc_time = compiler.thrustc_time.saturating_add(file_time.elapsed());
 
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stdout,
-        &format!(
-            "{} {} {}\n",
-            "Compilation".custom_color((141, 141, 142)).bold(),
-            "FINISHED".bright_green().bold(),
-            file.get_path().to_string_lossy()
-        ),
-    );
+    if !compiler.get_compilation_options().quiet() {
+        thrustc_logging::write(
+            thrustc_logging::OutputIn::Stdout,
+            &format!(
+                "{} {} {}\n",
+                "Compilation".custom_color((141, 141, 142)).bold(),
+                "FINISHED".bright_green().bold(),
+                file.get_path().to_string_lossy()
+            ),
+        );
+    }
 
     Ok(())
 }
@@ -61,15 +63,17 @@ pub fn archive_compilation_module_jit(
 ) -> Result<either::Either<MemoryBuffer, ()>, ()> {
     compiler.thrustc_time = compiler.thrustc_time.saturating_add(file_time.elapsed());
 
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stdout,
-        &format!(
-            "{} {} {}\n",
-            "Compilation".custom_color((141, 141, 142)).bold(),
-            "FINISHED".bright_green().bold(),
-            file.get_path().to_string_lossy()
-        ),
-    );
+    if !compiler.get_compilation_options().quiet() {
+        thrustc_logging::write(
+            thrustc_logging::OutputIn::Stdout,
+            &format!(
+                "{} {} {}\n",
+                "Compilation".custom_color((141, 141, 142)).bold(),
+                "FINISHED".bright_green().bold(),
+                file.get_path().to_string_lossy()
+            ),
+        );
+    }
 
     Ok(either::Either::Right(()))
 }

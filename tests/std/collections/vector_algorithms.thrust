@@ -1,0 +1,65 @@
+/*
+ * Exercises std::collections::vector forEach, filter and map.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::vector;
+
+static mut sum: s32 = 0;
+
+fn addToSum(value: s32) void {
+    sum = sum + value;
+}
+
+fn isEven(value: s32) bool {
+    return value % 2 == 0;
+}
+
+fn rejectAll(value: s32) bool {
+    return value < 0;
+}
+
+fn toS64(value: s32) s64 {
+    return (value * 3) as s64;
+}
+
+fn main() s32 @public {
+    var empty @dealloc: vector::Vector[s32] = vector::newVector[s32]();
+    var emptyFiltered @dealloc: vector::Vector[s32] = vector::filter(ref empty, isEven);
+    var emptyMapped @dealloc: vector::Vector[s64] = vector::map[s32, s64](ref empty, toS64);
+
+    if !vector::isEmpty(ref emptyFiltered) { return 1; }
+    if !vector::isEmpty(ref emptyMapped) { return 2; }
+
+    var values @dealloc: vector::Vector[s32] = vector::newVector[s32]();
+
+    vector::push(ref values, 1);
+    vector::push(ref values, 2);
+    vector::push(ref values, 3);
+    vector::push(ref values, 4);
+    vector::push(ref values, 5);
+
+    vector::forEach(ref values, addToSum);
+    if sum != 15 { return 3; }
+
+    var evens @dealloc: vector::Vector[s32] = vector::filter(ref values, isEven);
+
+    if vector::getLength(ref evens) != 2 { return 4; }
+    if vector::at(ref evens, 0) != 2 { return 5; }
+    if vector::at(ref evens, 1) != 4 { return 6; }
+
+    var rejected @dealloc: vector::Vector[s32] = vector::filter(ref values, rejectAll);
+    if !vector::isEmpty(ref rejected) { return 7; }
+
+    var mapped @dealloc: vector::Vector[s64] = vector::map[s32, s64](ref values, toS64);
+
+    if vector::getLength(ref mapped) != 5 { return 8; }
+    if vector::at(ref mapped, 0) != 3 { return 9; }
+    if vector::at(ref mapped, 2) != 9 { return 10; }
+    if vector::at(ref mapped, 4) != 15 { return 11; }
+
+    if vector::getLength(ref values) != 5 { return 12; }
+    if vector::at(ref values, 0) != 1 { return 13; }
+
+    return 0;
+}

@@ -1,0 +1,72 @@
+/*
+ * Exercises std::collections::stack: LIFO order, growth, capacity management,
+ * reuse and generic struct values.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::stack;
+
+directive "--disable-warnings=W0020";
+
+struct Pair {
+    first: s32,
+    second: s32
+}
+
+fn main() s32 @public {
+    var values := stack::newStack[s32]();
+
+    if !stack::isEmpty(ref values) { return 1; }
+    if stack::getLength(ref values) != 0 { return 2; }
+    if stack::getCapacity(ref values) != 0 { return 3; }
+
+    stack::push(ref values, 10);
+    stack::push(ref values, 20);
+    stack::push(ref values, 30);
+    stack::push(ref values, 40);
+    stack::push(ref values, 50);
+
+    if stack::isEmpty(ref values) { return 4; }
+    if stack::getLength(ref values) != 5 { return 5; }
+    if stack::getCapacity(ref values) < 5 { return 6; }
+    if stack::peek(ref values) != 50 { return 7; }
+
+    if stack::pop(ref values) != 50 { return 8; }
+    if stack::pop(ref values) != 40 { return 9; }
+    if stack::getLength(ref values) != 3 { return 10; }
+    if stack::peek(ref values) != 30 { return 11; }
+
+    stack::reserveCapacity(ref values, 32);
+    if stack::getCapacity(ref values) < 32 { return 12; }
+
+    stack::shrinkToFit(ref values);
+    if stack::getCapacity(ref values) != 3 { return 13; }
+
+    stack::clear(ref values);
+    if !stack::isEmpty(ref values) { return 14; }
+
+    stack::shrinkToFit(ref values);
+    if stack::getCapacity(ref values) != 0 { return 15; }
+
+    stack::push(ref values, 99);
+    if stack::peek(ref values) != 99 { return 16; }
+    if stack::pop(ref values) != 99 { return 17; }
+
+    stack::dropStack(ref values);
+
+    var pairs := stack::withCapacity[Pair](2);
+
+    if stack::getCapacity(ref pairs) < 2 { return 18; }
+
+    stack::push(ref pairs, new Pair { first: 1, second: 2 });
+    stack::push(ref pairs, new Pair { first: 3, second: 4 });
+
+    if stack::peek(ref pairs)->first != 3 { return 19; }
+    if stack::peek(ref pairs)->second != 4 { return 20; }
+    if stack::pop(ref pairs)->first != 3 { return 21; }
+    if stack::pop(ref pairs)->first != 1 { return 22; }
+
+    stack::dropStack(ref pairs);
+
+    return 0;
+}

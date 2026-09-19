@@ -241,7 +241,14 @@ fn generate_llvm_name(
             return extern_name.to_string();
         }
         if attrs.has_public_attribute() {
-            return base_name.to_string();
+            let module_name: String = context
+                .get_llvm_module()
+                .get_name()
+                .to_string_lossy()
+                .to_string();
+            let module_name: &str = module_name.strip_suffix(".thrust").unwrap_or(&module_name);
+
+            return format!("{}.{}", module_name, base_name);
         }
     }
 

@@ -169,8 +169,9 @@ fn build_dealloc_defer<'parser>(
     {
         deallocator_name = Some(name);
         generic_args = args;
-    } else if let Some(name) = self::find_local_deallocator(ctx, kind) {
+    } else if let Some((name, args)) = self::find_local_deallocator(ctx, kind, *span) {
         deallocator_name = Some(name);
+        generic_args = args;
     }
 
     let Some(deallocator_name) = deallocator_name else {
@@ -186,12 +187,6 @@ fn build_dealloc_defer<'parser>(
             };
 
             let argument_types: Vec<Type> = vec![expected_arg];
-
-            if let Some(parameter_type) = entry.parameter_types.first() {
-                if parameter_type != &argument_types[0] {
-                    return Ok(None);
-                }
-            }
 
             if let Ok(result) = thrustc_generics::solve(
                 &entry.type_params,
@@ -247,7 +242,11 @@ fn build_dealloc_defer<'parser>(
     }))
 }
 
-fn find_local_deallocator<'parser>(ctx: &ParserContext<'parser>, kind: &Type) -> Option<String> {
+fn find_local_deallocator<'parser>(
+    ctx: &ParserContext<'parser>,
+    kind: &Type,
+    span: Span,
+) -> Option<(String, Vec<Type>)> {
     for node in ctx.get_ast() {
         let Ast::Function {
             name,
@@ -276,7 +275,35 @@ fn find_local_deallocator<'parser>(ctx: &ParserContext<'parser>, kind: &Type) ->
         };
 
         if subtype.as_ref() == kind {
-            return Some(name.clone());
+            return Some((name.clone(), Vec::with_capacity(0)));
+        }
+
+        let Some(entry) = ctx.get_symbols().get_generic_function(name) else {
+            continue;
+        };
+
+        let argument_type: Type = Type::Ptr {
+            subtype: Some(std::boxed::Box::new(kind.clone())),
+            address_space: None,
+            span,
+        };
+
+        if let Ok(result) = thrustc_generics::solve(
+            &entry.type_params,
+            &[],
+            &entry.parameter_types,
+            &[argument_type],
+            &entry.return_type,
+            entry.has_varargs,
+            span,
+        ) {
+            let generic_args: Vec<Type> = entry
+                .type_params
+                .iter()
+                .filter_map(|parameter| result.env.get(parameter).cloned())
+                .collect();
+
+            return Some((name.clone(), generic_args));
         }
     }
 

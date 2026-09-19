@@ -28,6 +28,7 @@ pub struct Symbol {
     pub name: String,
     pub signature: Signature,
     pub variant: Variant,
+    pub public: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -111,4 +112,5 @@ impl Signature {
             Signature::CustomType { span, .. } => *span,
         }
     }
+
 }

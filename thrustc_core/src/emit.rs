@@ -184,48 +184,73 @@ pub fn before_frontend(
     build_dir: &std::path::Path,
     file: &CompilationUnit,
     emited: Emited,
-) -> bool {
+) -> Result<bool, ()> {
     if compiler_options.contains_emitable(EmitableUnit::TokensPretty) {
         if let Emited::Tokens(tokens) = emited {
             if emitters::tokens::to_file_pretty(tokens, build_dir, file.get_name()).is_err() {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to emit pretty tokens for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
     if compiler_options.contains_emitable(EmitableUnit::Tokens) {
         if let Emited::Tokens(tokens) = emited {
             if emitters::tokens::to_file(tokens, build_dir, file.get_name()).is_err() {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!("Failed to emit tokens for '{}'.", file.get_path().display()),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
     if compiler_options.contains_emitable(EmitableUnit::UnCheckedAstPretty) {
         if let Emited::Ast(ast) = emited {
             if emitters::ast::to_file_pretty(ast, build_dir, file.get_name()).is_err() {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to emit the pretty AST for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
     if compiler_options.contains_emitable(EmitableUnit::UnCheckedAst) {
         if let Emited::Ast(ast) = emited {
             if emitters::ast::to_file(ast, build_dir, file.get_name()).is_err() {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to emit the AST for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
-    false
+    Ok(false)
 }
 
 pub fn after_frontend(
@@ -234,46 +259,71 @@ pub fn after_frontend(
     build_dir: &std::path::Path,
     file: &CompilationUnit,
     emited: Emited,
-) -> bool {
+) -> Result<bool, ()> {
     if compiler_options.contains_emitable(EmitableUnit::TokensPretty) {
         if let Emited::Tokens(tokens) = emited {
             if emitters::tokens::to_file_pretty(tokens, build_dir, file.get_name()).is_err() {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to emit pretty tokens for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
     if compiler_options.contains_emitable(EmitableUnit::Tokens) {
         if let Emited::Tokens(tokens) = emited {
             if emitters::tokens::to_file(tokens, build_dir, file.get_name()).is_err() {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!("Failed to emit tokens for '{}'.", file.get_path().display()),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
     if compiler_options.contains_emitable(EmitableUnit::AstPretty) {
         if let Emited::Ast(ast) = emited {
             if emitters::ast::to_file_pretty(ast, build_dir, file.get_name()).is_err() {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to emit the pretty AST for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
     if compiler_options.contains_emitable(EmitableUnit::Ast) {
         if let Emited::Ast(ast) = emited {
             if emitters::ast::to_file(ast, build_dir, file.get_name()).is_err() {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to emit the AST for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
-    false
+    Ok(false)
 }

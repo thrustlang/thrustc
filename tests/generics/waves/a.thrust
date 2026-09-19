@@ -1,0 +1,5 @@
+import "b.thrust";
+
+fn first [T] (value: T) T @public {
+    return b::second[T](value);
+}

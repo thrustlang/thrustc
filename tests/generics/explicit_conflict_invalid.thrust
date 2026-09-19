@@ -1,0 +1,10 @@
+fn identity [T] (value: T) T {
+    return value;
+}
+
+fn main() s32 @public {
+    var signed: s32 = 1;
+    var wide: u64 = identity[u64](signed);
+
+    return wide as s32;
+}

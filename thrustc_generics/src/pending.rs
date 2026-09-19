@@ -31,63 +31,72 @@ pub struct PendingInstantiation {
     pub env: TypeEnv,
 }
 
+#[derive(Debug, Default)]
+struct PendingInstantiations {
+    required: Vec<PendingInstantiation>,
+    dirty: HashSet<PathBuf>,
+}
+
 thread_local! {
-    static PENDING_INSTANTIATIONS: RefCell<Vec<PendingInstantiation>> = const { RefCell::new(Vec::new()) };
+    static PENDING_INSTANTIATIONS: RefCell<PendingInstantiations> = RefCell::new(PendingInstantiations::default());
 }
 
 pub fn record_pending(module: PathBuf, function: String, env: TypeEnv) {
     PENDING_INSTANTIATIONS.with(|cell| {
-        let mut pending: std::cell::RefMut<'_, Vec<PendingInstantiation>> = cell.borrow_mut();
+        let mut pending: std::cell::RefMut<'_, PendingInstantiations> = cell.borrow_mut();
 
         let key: String = hashing::type_env_fingerprint(&env);
 
-        if !pending.iter().any(|entry| {
+        if !pending.required.iter().any(|entry| {
             entry.module == module
                 && entry.function == function
                 && hashing::type_env_fingerprint(&entry.env) == key
         }) {
-            pending.push(PendingInstantiation {
-                module,
+            pending.required.push(PendingInstantiation {
+                module: module.clone(),
                 function,
                 env,
             });
+
+            pending.dirty.insert(module);
         }
     });
 }
 
-pub fn drain_pending(module: &Path) -> Vec<PendingInstantiation> {
+pub fn take_pending(module: &Path) -> Vec<PendingInstantiation> {
     PENDING_INSTANTIATIONS.with(|cell| {
-        let mut pending: std::cell::RefMut<'_, Vec<PendingInstantiation>> = cell.borrow_mut();
+        let mut pending: std::cell::RefMut<'_, PendingInstantiations> = cell.borrow_mut();
 
-        let mut drained: Vec<PendingInstantiation> = Vec::with_capacity(u8::MAX as usize);
-        let mut seen: HashSet<(PathBuf, String, String)> = HashSet::with_capacity(u8::MAX as usize);
+        pending.dirty.remove(module);
 
-        let mut index: usize = 0;
-
-        while index < pending.len() {
-            if pending[index].module == module {
-                let entry: PendingInstantiation = pending.remove(index);
-
-                let key: String = hashing::type_env_fingerprint(&entry.env);
-
-                if seen.insert((entry.module.clone(), entry.function.clone(), key)) {
-                    drained.push(entry);
-                }
-            } else {
-                index = index.saturating_add(1);
-            }
-        }
-
-        drained
+        pending
+            .required
+            .iter()
+            .filter(|entry| entry.module == module)
+            .cloned()
+            .collect()
     })
+}
+
+pub fn pending_module_paths() -> Vec<PathBuf> {
+    PENDING_INSTANTIATIONS.with(|cell| cell.borrow().dirty.iter().cloned().collect())
+}
+
+pub fn reset_pending_instantiations() {
+    PENDING_INSTANTIATIONS.with(|cell| {
+        let mut pending: std::cell::RefMut<'_, PendingInstantiations> = cell.borrow_mut();
+
+        pending.required.clear();
+        pending.dirty.clear();
+    });
 }
 
 #[inline]
 pub fn has_pending_instantiations() -> bool {
-    PENDING_INSTANTIATIONS.with(|cell| !cell.borrow().is_empty())
+    PENDING_INSTANTIATIONS.with(|cell| !cell.borrow().dirty.is_empty())
 }
 
 #[inline]
 pub fn has_pending_for(module: &Path) -> bool {
-    PENDING_INSTANTIATIONS.with(|cell| cell.borrow().iter().any(|pending| pending.module == module))
+    PENDING_INSTANTIATIONS.with(|cell| cell.borrow().dirty.contains(module))
 }

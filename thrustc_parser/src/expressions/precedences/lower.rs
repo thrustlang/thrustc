@@ -24,6 +24,7 @@ use thrustc_ast::{Ast, NodeId, traits::AstGetType};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_context::traits::PositionExtensions;
+use thrustc_parser_table::traits::FoundSymbolExtensions;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{TokenType, traits::TokenTypeBuiltinExtensions};
 use thrustc_typesystem::{
@@ -260,11 +261,22 @@ pub fn lower_precedence<'parser>(
                 call::build_generic_call(ctx, name, span)?
             } else if ctx.match_token(TokenType::FatArrow)? {
                 enum_value::build_enum_value(ctx, name, span)?
-            } else if ctx.match_token(TokenType::LParen)? {
-                if ctx.get_builtins().get_function(name).is_some() {
-                    builtin_call::build_builtin_call(ctx, name, span)?
+            } else if ctx.check(TokenType::LParen) {
+                let symbol = ctx.get_symbols().get_symbols_id(name, span);
+                let is_indirect = symbol
+                    .as_ref()
+                    .is_ok_and(|symbol| symbol.is_parameter() || symbol.is_local());
+
+                if is_indirect {
+                    reference::build_reference(ctx, name, span)?
                 } else {
-                    call::build_call(ctx, name, span)?
+                    ctx.match_token(TokenType::LParen)?;
+
+                    if ctx.get_builtins().get_function(name).is_some() {
+                        builtin_call::build_builtin_call(ctx, name, span)?
+                    } else {
+                        call::build_call(ctx, name, span)?
+                    }
                 }
             } else if ctx.match_token(TokenType::ColonColon)? {
                 let mut access: Vec<String> = Vec::with_capacity(4);

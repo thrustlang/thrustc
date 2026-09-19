@@ -749,7 +749,9 @@ pub fn validate_node<'type_checker>(
             Ok(())
         }
         Ast::Reference { kind, .. } => {
-            if kind.contains_void_type() || kind.is_void_type() {
+            if !kind.is_function_reference_type()
+                && (kind.contains_void_type() || kind.is_void_type())
+            {
                 typechecker.add_error_report(CompilationIssue::Error(
                     CompilationIssueCode::E0019,
                     "Cannot use 'void' as a value.".into(),

@@ -1,0 +1,43 @@
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0029";
+directive "--disable-warnings=W0030";
+
+fn breakFromAction() s32 {
+    var hits: s32 = 0;
+
+    for var i: s32 = 0; true; break; {
+        hits += 1;
+    }
+
+    return hits;
+}
+
+fn continueFromAction() s32 {
+    var hits: s32 = 0;
+
+    for var i: s32 = 0; i < 3; {
+        i += 1;
+        continue;
+    } {
+        hits += 1;
+    }
+
+    return hits;
+}
+
+fn returnFromAction() s32 {
+    for var i: s32 = 0; true; return 7; {
+        i += 1;
+    }
+
+    return 9;
+}
+
+fn main() s32 @public {
+    if breakFromAction() != 1 { return 1; }
+    if continueFromAction() != 3 { return 2; }
+    if returnFromAction() != 7 { return 3; }
+
+    return 0;
+}

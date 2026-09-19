@@ -1033,6 +1033,7 @@ fn is_global_only(flag: &str) -> bool {
         "-h" | "--help"
             | "-v"
             | "--version"
+            | "--quiet"
             | "--explain"
             | "--dump-compiler-version"
             | "--print-targets"

@@ -1,0 +1,7 @@
+const REMAINDER: f64 = 7.0 % 3.0;
+
+fn main() s32 @public {
+    if REMAINDER != 1.0 { return 1; }
+
+    return 0;
+}

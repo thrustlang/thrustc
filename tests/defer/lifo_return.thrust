@@ -1,0 +1,19 @@
+static mut trace: s32 = 0;
+
+fn append(value: s32) void {
+    trace = trace * 10 + value;
+}
+
+fn execute() s32 {
+    defer append(1);
+    defer append(2);
+
+    return 7;
+}
+
+fn main() s32 @public {
+    if execute() != 7 { return 1; }
+    if trace != 21 { return 2; }
+
+    return 0;
+}

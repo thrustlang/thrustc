@@ -46,6 +46,7 @@ use std::path::PathBuf;
 pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     unary: UnaryOperation<'ctx>,
+    before: bool,
     cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
     match unary {
@@ -55,7 +56,9 @@ pub fn compile<'ctx>(
             Ast::Reference {
                 name, kind, span, ..
             },
-        ) => self::compile_increment_decrement_ref(context, name, unary.0, kind, *span, cast_type),
+        ) => self::compile_increment_decrement_ref(
+            context, name, unary.0, kind, *span, before, cast_type,
+        ),
         (TokenType::PlusPlus | TokenType::MinusMinus, _, expr) => {
             self::compile_increment_decrement(context, unary.0, expr, cast_type)
         }
@@ -109,6 +112,7 @@ fn compile_increment_decrement_ref<'ctx>(
     operator: &TokenType,
     kind: &Type,
     span: Span,
+    before: bool,
     cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder = context.get_llvm_builder();
@@ -214,10 +218,12 @@ fn compile_increment_decrement_ref<'ctx>(
                 ),
             };
 
+            symbol.store(context, result);
+
+            let result: BasicValueEnum = if before { result } else { old_value.into() };
+
             let result: BasicValueEnum =
                 type_cast::try_smart_cast(context, cast_type, kind, result, span);
-
-            symbol.store(context, result);
 
             if atomic_config.is_some() {
                 context.pop_atomic_modificators();
@@ -266,16 +272,18 @@ fn compile_increment_decrement_ref<'ctx>(
                 ),
             };
 
-            let new_value: BasicValueEnum =
-                type_cast::try_smart_cast(context, cast_type, kind, result, span);
+            symbol.store(context, result);
 
-            symbol.store(context, new_value);
+            let result: BasicValueEnum = if before { result } else { old_value.into() };
+
+            let result: BasicValueEnum =
+                type_cast::try_smart_cast(context, cast_type, kind, result, span);
 
             if atomic_config.is_some() {
                 context.pop_atomic_modificators();
             }
 
-            new_value
+            result
         }
     }
 }
@@ -465,17 +473,18 @@ fn compile_logical_negation<'ctx>(
         kind if kind.is_ptr_type() => {
             let ptr_value: PointerValue<'_> = value.into_pointer_value();
 
-            let new_value: IntValue<'_> = llvm_builder
-                .build_is_not_null(ptr_value, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        "Failed to compile the operation!",
-                        span,
-                        PathBuf::from(file!()),
-                        line!(),
-                    )
-                });
+            let new_value: IntValue<'_> =
+                llvm_builder
+                    .build_is_null(ptr_value, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            "Failed to compile the operation!",
+                            span,
+                            PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
 
             type_cast::try_smart_cast(context, cast_type, kind, new_value.into(), span)
         }

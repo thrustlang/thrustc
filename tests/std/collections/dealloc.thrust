@@ -8,6 +8,8 @@ import std::collections::vector;
 import std::collections::vecdeque;
 import std::collections::hashset;
 import std::collections::hashmap;
+import std::collections::stack;
+import std::collections::queue;
 
 directive "--disable-warnings=W0005";
 directive "--disable-warnings=W0020";
@@ -68,11 +70,37 @@ fn testHashMap() s32 {
     return 0;
 }
 
+fn testStack() s32 {
+    var values @dealloc: stack::Stack[s32] = stack::newStack[s32]();
+
+    stack::push(ref values, 10);
+    stack::push(ref values, 20);
+
+    if stack::getLength(ref values) != 2 { return 1; }
+    if stack::pop(ref values) != 20 { return 2; }
+
+    return 0;
+}
+
+fn testQueue() s32 {
+    var values @dealloc: queue::Queue[s32] = queue::newQueue[s32]();
+
+    queue::enqueue(ref values, 10);
+    queue::enqueue(ref values, 20);
+
+    if queue::getLength(ref values) != 2 { return 1; }
+    if queue::dequeue(ref values) != 10 { return 2; }
+
+    return 0;
+}
+
 fn main() s32 @public {
     if testVector() != 0 { return 1; }
     if testVecDeque() != 0 { return 2; }
     if testHashSet() != 0 { return 3; }
     if testHashMap() != 0 { return 4; }
+    if testStack() != 0 { return 5; }
+    if testQueue() != 0 { return 6; }
 
     return 0;
 }

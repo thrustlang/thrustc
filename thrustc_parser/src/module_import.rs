@@ -273,19 +273,20 @@ pub fn build_qualified_expression<'parser>(
         ..
     }) = self::resolve_signature(ctx, access, symbol, Variant::Constant)
     {
-        if ctx.get_symbols().has_global_constant(symbol) {
-            self::check_qualified_collision(ctx, symbol, access, origin.as_ref(), span)?;
-        } else {
+        let qualified_symbol: &'parser str =
+            self::leak_parser_string(self::qualified_symbol_name(access, symbol));
+
+        if !ctx.get_symbols().has_global_constant(qualified_symbol) {
             let folded_value: Option<Ast> = value.as_ref().map(|v| v.to_ast(kind.clone(), span));
 
             let _ = ctx.get_mut_symbols().new_global_constant(
-                symbol,
+                qualified_symbol,
                 (kind.clone(), attributes.clone(), folded_value.clone()),
             );
 
             if let Some(path) = origin.as_ref() {
                 ctx.get_mut_symbols()
-                    .record_import_origin(symbol, path.clone());
+                    .record_import_origin(qualified_symbol, path.clone());
             }
 
             let Some(value_ast) = folded_value else {
@@ -305,7 +306,7 @@ pub fn build_qualified_expression<'parser>(
 
             self::synthesize_constant(
                 ctx,
-                symbol,
+                qualified_symbol,
                 kind.clone(),
                 &value_ast,
                 attributes,
@@ -315,7 +316,7 @@ pub fn build_qualified_expression<'parser>(
         }
 
         return Ok(Ast::Reference {
-            name: symbol,
+            name: qualified_symbol,
             kind: kind.clone(),
             span,
             metadata: ReferenceMetadata::new(true, false, ReferenceType::Constant, false),
@@ -331,24 +332,25 @@ pub fn build_qualified_expression<'parser>(
         ..
     }) = self::resolve_signature(ctx, access, symbol, Variant::Static)
     {
-        if ctx.get_symbols().has_global_static(symbol) {
-            self::check_qualified_collision(ctx, symbol, access, origin.as_ref(), span)?;
-        } else {
+        let qualified_symbol: &'parser str =
+            self::leak_parser_string(self::qualified_symbol_name(access, symbol));
+
+        if !ctx.get_symbols().has_global_static(qualified_symbol) {
             let metadata: thrustc_ast::ast_metadata::StaticMetadata =
                 self::build_static_metadata(*is_mutable, attributes, modificators);
 
             let _ = ctx
                 .get_mut_symbols()
-                .new_global_static(symbol, (kind.clone(), metadata, attributes.clone()));
+                .new_global_static(qualified_symbol, (kind.clone(), metadata, attributes.clone()));
 
             if let Some(path) = origin.as_ref() {
                 ctx.get_mut_symbols()
-                    .record_import_origin(symbol, path.clone());
+                    .record_import_origin(qualified_symbol, path.clone());
             }
 
             self::synthesize_global(
                 ctx,
-                symbol,
+                qualified_symbol,
                 kind.clone(),
                 attributes,
                 *is_mutable,
@@ -358,7 +360,7 @@ pub fn build_qualified_expression<'parser>(
         }
 
         return Ok(Ast::Reference {
-            name: symbol,
+            name: qualified_symbol,
             kind: kind.clone(),
             span,
             metadata: ReferenceMetadata::new(true, false, ReferenceType::Static, false),
@@ -619,7 +621,7 @@ pub fn synthesize_only_import<'parser>(
     let origin: std::path::PathBuf = module.get_path().to_path_buf();
 
     for symbol in module.get_symbols() {
-        if !names.contains(&symbol.name) {
+        if !names.contains(&symbol.name) || !symbol.public {
             continue;
         }
 

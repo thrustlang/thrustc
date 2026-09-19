@@ -20,9 +20,10 @@ fn main() s32 @public {
     if positive->value != 123 { return 7; }
     if positive->end->[0] != '\0' { return 8; }
 
-    var invalid: int::ParseSignedResult = int::parseSigned("abc");
+    var invalidCString: CString = "abc";
+    var invalid: int::ParseSignedResult = int::parseSigned(invalidCString);
     if invalid->ok { return 9; }
-    if invalid->end != ("abc" as ptr) { return 10; }
+    if invalid->end != ((load invalidCString) as ptr[char]) { return 10; }
 
     var partial: int::ParseSignedResult = int::parseSigned("123abc");
     if !(partial->ok) { return 11; }

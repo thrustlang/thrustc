@@ -1,0 +1,18 @@
+fn even [T] (value: T, count: u32) bool {
+    if count == 0 { return true; }
+
+    return odd[T](value, count - 1);
+}
+
+fn odd [T] (value: T, count: u32) bool {
+    if count == 0 { return false; }
+
+    return even[T](value, count - 1);
+}
+
+fn main() s32 @public {
+    if !even[s32](1, 8) { return 1; }
+    if !odd[u64](2, 7) { return 2; }
+
+    return 0;
+}

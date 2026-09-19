@@ -1,0 +1,8 @@
+import "waves/a.thrust";
+
+fn main() s32 @public {
+    if a::first[s32](41) != 41 { return 1; }
+    if a::first[u64](42) != 42 { return 2; }
+
+    return 0;
+}

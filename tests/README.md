@@ -81,7 +81,7 @@ For each discovered test, the runner:
 
 - Resolves user imports written as `import "file.thrust"` recursively.
 - Adds imported user modules to the same compiler invocation as the root test.
-- Lets `thrustc` resolve `std::...` imports internally.
+- Resolves `std::...` imports from the repository's `std/` directory.
 - Adds `-lm` automatically for tests that use `std::math`, `std::ffi::c::math`, or floating-point modulo operations.
 - Compiles into `tests/dist/bin/<test-id>`.
 - Stores build artifacts under `tests/dist/build/<test-id>`.

@@ -1,0 +1,5 @@
+import "multi_wave_provider.thrust";
+
+fn wrappedIdentity [T] (value: T) T @public {
+    return multi_wave_provider::identity[T](value);
+}

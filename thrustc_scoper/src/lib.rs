@@ -346,11 +346,23 @@ impl<'scoper> Scoper<'scoper> {
                 self.analyze_local_node(block);
                 self.get_mut_context().leave_loop();
             }
-            Ast::For { local, block, .. } => {
+            Ast::For {
+                local,
+                condition,
+                actions,
+                block,
+                ..
+            } => {
                 self.get_mut_context().enter_loop();
                 self.get_mut_table().add_scope();
 
                 self.analyze_local_node(local);
+                self.analyze_local_node(condition);
+
+                self.get_mut_table().add_scope();
+                self.analyze_local_node(actions);
+                self.get_mut_table().pop_scope();
+
                 self.analyze_local_node(block);
 
                 self.get_mut_table().pop_scope();

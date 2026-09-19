@@ -64,8 +64,8 @@ impl<'clang> ClangLinker<'clang> {
 
         let mut cmd: std::process::Command = self.build_clang_command(clang_path);
 
-        if self.handle_command(&mut cmd) {
-            return Ok(start_time.elapsed());
+        if !self.handle_command(&mut cmd) {
+            return Err(());
         }
 
         Ok(start_time.elapsed())
@@ -75,8 +75,6 @@ impl<'clang> ClangLinker<'clang> {
 impl ClangLinker<'_> {
     pub fn build_clang_command(&self, clang_path: &std::path::Path) -> std::process::Command {
         let mut clang_command: std::process::Command = std::process::Command::new(clang_path);
-
-        clang_command.arg("-v");
 
         let triple: &TargetTriple = self.backend.get_target().get_target_triple();
         let triple_display: String = triple.as_str().to_string_lossy().into_owned();
@@ -89,6 +87,7 @@ impl ClangLinker<'_> {
         clang_command.args(self.config.get_args().iter());
 
         if self.config.get_debug_clang_commands() {
+            clang_command.arg("-v");
             thrustc_logging::print_debug(
                 thrustc_logging::LoggingType::Debug,
                 &format!("Generated Clang command: '{:?}'.\n", clang_command),
@@ -126,7 +125,13 @@ impl ClangLinker<'_> {
                 false
             }
 
-            _ => false,
+            Err(error) => {
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!("Failed to execute Clang: {error}."),
+                );
+                false
+            }
         }
     }
 }
@@ -165,8 +170,8 @@ impl<'gcc> GCCLinker<'gcc> {
 
         let mut cmd: std::process::Command = self.build_gcc_command(gcc_path);
 
-        if self.handle_command(&mut cmd) {
-            return Ok(start_time.elapsed());
+        if !self.handle_command(&mut cmd) {
+            return Err(());
         }
 
         Ok(start_time.elapsed())
@@ -177,12 +182,12 @@ impl GCCLinker<'_> {
     pub fn build_gcc_command(&self, gcc_path: &std::path::Path) -> std::process::Command {
         let mut gcc_command: std::process::Command = std::process::Command::new(gcc_path);
 
-        gcc_command.arg("-v");
         gcc_command.args(self.files.iter());
         self::add_sanitizer_link_flags(&mut gcc_command, self.sanitizers);
         gcc_command.args(self.config.get_args().iter());
 
         if self.config.get_debug_gcc_commands() {
+            gcc_command.arg("-v");
             thrustc_logging::print_debug(
                 thrustc_logging::LoggingType::Debug,
                 &format!("Generated GCC command: {:?}\n", gcc_command),
@@ -216,12 +221,18 @@ impl GCCLinker<'_> {
                 false
             }
 
-            _ => false,
+            Err(error) => {
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!("Failed to execute GCC: {error}."),
+                );
+                false
+            }
         }
     }
 }
 
-pub fn link_with_clang(compiler: &mut ThrustCompiler) {
+pub fn link_with_clang(compiler: &mut ThrustCompiler) -> Result<(), ()> {
     let llvm_backend: &LLVMBackend = compiler.get_compilation_options().get_llvm_backend();
 
     let linking_compiler_config: &LinkingCompilersConfiguration = compiler
@@ -241,27 +252,35 @@ pub fn link_with_clang(compiler: &mut ThrustCompiler) {
     {
         compiler.linking_time = compiler.linking_time.saturating_add(clang_time);
 
-        thrustc_logging::write(
-            thrustc_logging::OutputIn::Stdout,
-            &format!(
-                "{} {}\n",
-                "Linking".custom_color((141, 141, 142)).bold(),
-                "FINISHED".bright_green().bold()
-            ),
-        );
+        if !compiler.get_compilation_options().quiet() {
+            thrustc_logging::write(
+                thrustc_logging::OutputIn::Stdout,
+                &format!(
+                    "{} {}\n",
+                    "Linking".custom_color((141, 141, 142)).bold(),
+                    "FINISHED".bright_green().bold()
+                ),
+            );
+        }
+
+        Ok(())
     } else {
-        thrustc_logging::write(
-            thrustc_logging::OutputIn::Stderr,
-            &format!(
-                "\r{} {}\n",
-                "Linking".custom_color((141, 141, 142)).bold(),
-                "FAILED".bright_red().bold()
-            ),
-        );
+        if !compiler.get_compilation_options().quiet() {
+            thrustc_logging::write(
+                thrustc_logging::OutputIn::Stderr,
+                &format!(
+                    "\r{} {}\n",
+                    "Linking".custom_color((141, 141, 142)).bold(),
+                    "FAILED".bright_red().bold()
+                ),
+            );
+        }
+
+        Err(())
     }
 }
 
-pub fn link_with_gcc(compiler: &mut ThrustCompiler) {
+pub fn link_with_gcc(compiler: &mut ThrustCompiler) -> Result<(), ()> {
     let linking_compiler_configuration: &LinkingCompilersConfiguration = compiler
         .get_compilation_options()
         .get_linking_compilers_configuration();
@@ -278,23 +297,31 @@ pub fn link_with_gcc(compiler: &mut ThrustCompiler) {
     {
         compiler.linking_time = compiler.linking_time.saturating_add(gcc_time);
 
-        thrustc_logging::write(
-            thrustc_logging::OutputIn::Stdout,
-            &format!(
-                "{} {}\n",
-                "Linking".custom_color((141, 141, 142)).bold(),
-                "FINISHED".bright_green().bold()
-            ),
-        );
+        if !compiler.get_compilation_options().quiet() {
+            thrustc_logging::write(
+                thrustc_logging::OutputIn::Stdout,
+                &format!(
+                    "{} {}\n",
+                    "Linking".custom_color((141, 141, 142)).bold(),
+                    "FINISHED".bright_green().bold()
+                ),
+            );
+        }
+
+        Ok(())
     } else {
-        thrustc_logging::write(
-            thrustc_logging::OutputIn::Stderr,
-            &format!(
-                "\r{} {}\n",
-                "Linking".custom_color((141, 141, 142)).bold(),
-                "FAILED".bright_red().bold()
-            ),
-        );
+        if !compiler.get_compilation_options().quiet() {
+            thrustc_logging::write(
+                thrustc_logging::OutputIn::Stderr,
+                &format!(
+                    "\r{} {}\n",
+                    "Linking".custom_color((141, 141, 142)).bold(),
+                    "FAILED".bright_red().bold()
+                ),
+            );
+        }
+
+        Err(())
     }
 }
 

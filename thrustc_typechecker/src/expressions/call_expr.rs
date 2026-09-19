@@ -60,7 +60,10 @@ pub fn validate_node<'type_checker>(
 
     if parameter_types
         .iter()
-        .any(|ty| ty.contains_void_type() || ty.is_void_type())
+        .any(|ty| {
+            !ty.is_function_reference_type()
+                && (ty.contains_void_type() || ty.is_void_type())
+        })
     {
         typechecker.add_error_report(CompilationIssue::Error(
             CompilationIssueCode::E0019,

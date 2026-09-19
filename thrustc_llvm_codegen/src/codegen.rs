@@ -411,7 +411,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                                 || node.is_continue_keyword()
                                 || node.is_continueall_keyword()
                             {
-                                for postnode in post.iter() {
+                                for postnode in post.iter().rev() {
                                     self.codegen_post_executation(postnode);
                                 }
 
@@ -419,7 +419,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             } else {
                                 self.codegen_block(node);
 
-                                for postnode in post.iter() {
+                                for postnode in post.iter().rev() {
                                     self.codegen_post_executation(postnode);
                                 }
                             }
@@ -431,7 +431,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     }
 
                     if nodes.is_empty() {
-                        for postnode in post.iter() {
+                        for postnode in post.iter().rev() {
                             self.codegen_post_executation(postnode);
                         }
                     }
@@ -1103,9 +1103,15 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 operator,
                 kind,
                 node,
+                before,
                 ..
             } => {
-                expressions::unary_expr::compile(self.context, (operator, kind, node), None);
+                expressions::unary_expr::compile(
+                    self.context,
+                    (operator, kind, node),
+                    *before,
+                    None,
+                );
             }
 
             Ast::BinaryOp {
@@ -1444,8 +1450,9 @@ pub fn compile_as_value<'ctx>(
             operator,
             kind,
             node,
+            before,
             ..
-        } => expressions::unary_expr::compile(context, (operator, kind, node), cast_type),
+        } => expressions::unary_expr::compile(context, (operator, kind, node), *before, cast_type),
 
         // Direct Reference
         Ast::GetLocation { expr, .. } => {
@@ -1896,6 +1903,10 @@ pub fn compile_as_ptr_value<'ctx>(
 
             let is_ptr_like_type: bool = ptr_type.is_ptr_like_type();
             let is_pointer_array: bool = !ptr_type.is_array_type_with_inference();
+
+            if matches!(symbol, SymbolAllocated::Function { .. }) {
+                return base_ptr.into();
+            }
 
             if codegen_location.is_direct_behavior() {
                 return base_ptr.into();

@@ -20,6 +20,7 @@
 use std::ffi::CString;
 
 use ahash::AHashSet as HashSet;
+use inkwell::llvm_sys::core::{LLVMGetCalledValue, LLVMIsAFunction};
 use inkwell::values::{
     AsValueRef, CallSiteValue, FunctionValue, InstructionOpcode, InstructionValue,
 };
@@ -70,6 +71,19 @@ pub fn clean_llvm_name(name: &std::ffi::CStr) -> std::borrow::Cow<'_, str> {
     s
 }
 
+#[inline]
+pub fn get_direct_called_fn_value<'ctx>(
+    callsite: CallSiteValue<'ctx>,
+) -> Option<FunctionValue<'ctx>> {
+    let called_value = unsafe { LLVMGetCalledValue(callsite.as_value_ref()) };
+
+    if unsafe { LLVMIsAFunction(called_value) }.is_null() {
+        None
+    } else {
+        Some(callsite.get_called_fn_value())
+    }
+}
+
 pub fn get_functions_by_ordered_calls<'ctx>(
     functions: Vec<FunctionValue<'ctx>>,
 ) -> Vec<FunctionValue<'ctx>> {
@@ -106,12 +120,12 @@ fn dfs_post_order<'ctx>(
             if current_instr.get_opcode() == InstructionOpcode::Call {
                 let callsite: CallSiteValue<'_> =
                     unsafe { CallSiteValue::new(current_instr.as_value_ref()) };
-                let called_fn: FunctionValue<'_> = callsite.get_called_fn_value();
+                if let Some(called_fn) = get_direct_called_fn_value(callsite) {
+                    let called_name: CString = called_fn.get_name().to_owned();
 
-                let called_name: CString = called_fn.get_name().to_owned();
-
-                if allowed.contains(&called_name) {
-                    dfs_post_order(&called_fn, allowed, visited, ordered);
+                    if allowed.contains(&called_name) {
+                        dfs_post_order(&called_fn, allowed, visited, ordered);
+                    }
                 }
             }
 

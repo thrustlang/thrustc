@@ -1,0 +1,9 @@
+import "../modules/module_only.thrust";
+import "../modules/module_only.thrust" only { stack };
+
+fn main() s32 @public {
+    if module_only::stack(3) != 3 { return 1; }
+    if stack(2) != 2 { return 2; }
+
+    return 0;
+}

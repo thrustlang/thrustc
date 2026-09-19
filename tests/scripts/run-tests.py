@@ -65,8 +65,6 @@ EXPECTED_RUN_CODES = {
 }
 
 SKIPPED_TEST_PATHS = {
-    "imports/collision_qualified_invalid.thrust",
-    "imports/only_then_full.thrust",
     "load/load_index.thrust",
     "module_reexportation/std_reexport.thrust",
     "stress/stress_test_80k.thrust",
@@ -295,7 +293,7 @@ def compiletime_std_args(test_path: Path, root: Path) -> list[str]:
     relative = test_path.relative_to(tests_dir).as_posix()
 
     if not relative.startswith("compiletime_if_imports/if_std_import"):
-        return []
+        return ["-std", str(root / "std")]
 
     stdroot = tests_dir / "compiletime_if_imports" / "stdroot"
 

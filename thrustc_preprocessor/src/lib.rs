@@ -74,7 +74,10 @@ impl<'preprocessor> Preprocessor {
         let mut context: PreprocessorContext<'_> =
             PreprocessorContext::new(tokens, options, file, visited, registry, builtins);
 
-        let mut merged: ahash::AHashMap<std::path::PathBuf, usize> =
+        let mut merged: ahash::AHashMap<
+            (std::path::PathBuf, Option<Vec<String>>),
+            usize,
+        > =
             ahash::AHashMap::with_capacity(u8::MAX as usize);
         let mut block_depth: usize = 0;
 
@@ -92,8 +95,10 @@ impl<'preprocessor> Preprocessor {
             }
 
             if block_depth == 0 && context.check(TokenType::Import) {
-                if let Ok(Some(module)) = highmodule_parsing::import::parse_import(&mut context) {
-                    self.merge_module(&mut merged, module);
+                match highmodule_parsing::import::parse_import(&mut context) {
+                    Ok(Some(module)) => self.merge_module(&mut merged, module),
+                    Ok(None) => (),
+                    Err(()) => return Err(()),
                 }
 
                 continue;
@@ -116,7 +121,7 @@ impl<'preprocessor> Preprocessor {
     fn handle_conditional_imports(
         &mut self,
         context: &mut PreprocessorContext<'_>,
-        merged: &mut ahash::AHashMap<std::path::PathBuf, usize>,
+        merged: &mut ahash::AHashMap<(std::path::PathBuf, Option<Vec<String>>), usize>,
     ) -> Result<(), ()> {
         let first_condition: bool =
             highmodule_parsing::compiletime_conditional::evaluate_condition(context)?;
@@ -182,10 +187,16 @@ impl<'preprocessor> Preprocessor {
     fn merge_active_import(
         &mut self,
         context: &mut PreprocessorContext<'_>,
-        merged: &mut ahash::AHashMap<std::path::PathBuf, usize>,
+        merged: &mut ahash::AHashMap<(std::path::PathBuf, Option<Vec<String>>), usize>,
     ) -> Result<(), ()> {
-        if let Ok(Some(module)) = highmodule_parsing::import::parse_import(context) {
-            self.merge_module(merged, module);
+        if !context.check(TokenType::Import) {
+            return Ok(());
+        }
+
+        match highmodule_parsing::import::parse_import(context) {
+            Ok(Some(module)) => self.merge_module(merged, module),
+            Ok(None) => (),
+            Err(()) => return Err(()),
         }
 
         Ok(())
@@ -193,10 +204,13 @@ impl<'preprocessor> Preprocessor {
 
     fn merge_module(
         &mut self,
-        merged: &mut ahash::AHashMap<std::path::PathBuf, usize>,
+        merged: &mut ahash::AHashMap<(std::path::PathBuf, Option<Vec<String>>), usize>,
         module: Module,
     ) {
-        let key: std::path::PathBuf = module.get_path().to_path_buf();
+        let key: (std::path::PathBuf, Option<Vec<String>>) = (
+            module.get_path().to_path_buf(),
+            module.get_alias().map(|alias| alias.to_vec()),
+        );
 
         if let Some(&index) = merged.get(&key) {
             self.modules[index].merge_import(module);

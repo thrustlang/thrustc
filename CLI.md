@@ -91,6 +91,7 @@ Warning compiler flags:
 
 Other compiler flags:
 
+• --quiet Suppress compiler progress and timing output while preserving diagnostics.
 • --copy-output-to-clipboard Copy the total printable output of the compiler into the operating system clipboard. It only works using '-print' compiler flag.
 • --debug-clang-command Displays the generated command for Clang in the phase of linking.
 • --debug-gcc-command Displays the generated command for GCC in the phase of linking.

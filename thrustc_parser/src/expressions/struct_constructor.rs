@@ -301,8 +301,6 @@ pub fn build_constructor<'parser>(
     )?;
 
     let mut data: ConstructorData = ConstructorData::with_capacity(u8::MAX as usize);
-    let mut counter: usize = 0;
-
     let required: usize = fields.len();
 
     loop {
@@ -337,25 +335,21 @@ pub fn build_constructor<'parser>(
                 continue;
             };
 
-            if counter >= required {
-                ctx.add_error_report(CompilationIssue::Error(
-                    CompilationIssueCode::E0026,
-                    format!("Expected '{}' fields, not '{}' fields.", required, counter),
-                    "You should reorder it and fill it out.".into(),
-                    None,
-                    span,
-                ));
-
-                continue;
-            }
-
             let expression: Ast = expressions::parse_expr(ctx)?;
+
+            if data.iter().any(|(name, ..)| *name == field_name) {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0026,
+                    format!("Field '{}' was provided more than once.", field_name),
+                    "You should provide each structure field once.".into(),
+                    None,
+                    field_span,
+                ));
+            }
 
             let target_type: Type = fields[field_index].1.clone();
 
-            data.push((field_name, expression, target_type, counter as u32));
-
-            counter += 1;
+            data.push((field_name, expression, target_type, field_index as u32));
 
             if ctx.check(TokenType::RBrace) {
                 break;
@@ -403,6 +397,8 @@ pub fn build_constructor<'parser>(
             span,
         ));
     }
+
+    data.sort_by_key(|field| field.3);
 
     ctx.consume(
         TokenType::RBrace,

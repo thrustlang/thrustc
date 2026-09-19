@@ -202,7 +202,9 @@ pub fn validate_node<'type_checker>(
                     let type_: &Type = node.get_any_type();
                     let span: Span = node.get_span();
 
-                    if type_.contains_void_type() || type_.is_void_type() {
+                    if !type_.is_function_reference_type()
+                        && (type_.contains_void_type() || type_.is_void_type())
+                    {
                         typechecker.add_error_report(CompilationIssue::Error(
                             CompilationIssueCode::E0019,
                             "Cannot use 'void' as a value.".into(),

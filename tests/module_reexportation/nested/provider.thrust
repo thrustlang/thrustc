@@ -1,0 +1,11 @@
+const VALUE: s32 @public = 7;
+
+type Number @public = s32;
+
+enum State @public {
+    Ready: s32 = 9;
+}
+
+fn value() s32 @public {
+    return VALUE;
+}

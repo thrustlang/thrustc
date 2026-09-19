@@ -17,9 +17,8 @@
 
 */
 
-use thrustc_ast::traits::AstCodeLocation;
-use thrustc_ast::traits::AstExpressionExtensions;
 use thrustc_ast::Ast;
+use thrustc_ast::traits::AstCodeLocation;
 use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -98,35 +97,9 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
 
     llvm_builder.position_at_end(steps);
 
-    if !actions.is_unary_before_operation() {
-        if matches!(**actions, Ast::Mutation { .. }) {
-            codegen.codegen_block(actions);
-        } else {
-            let _ = codegen::compile_as_value(codegen.get_mut_context(), actions, None);
-        }
-    }
+    let outermost_loop: bool = codegen.get_context().get_loop_ctx().get_all_branch_depth() == 0;
 
-    llvm_builder
-        .build_unconditional_branch(cond)
-        .unwrap_or_else(|_| {
-            abort::abort_codegen(
-                codegen.get_mut_context(),
-                "Failed to compile for loop start terminator to condition!",
-                block.get_span(),
-                std::path::PathBuf::from(file!()),
-                line!(),
-            )
-        });
-
-    llvm_builder.position_at_end(cond);
-
-    self::short_circuit_comparison(codegen, condition, body, exit, llvm_function);
-
-    block::move_specific_after_the_last(codegen.get_mut_context(), body, *span);
-
-    llvm_builder.position_at_end(body);
-
-    if codegen.get_context().get_loop_ctx().get_all_branch_depth() == 0 {
+    if outermost_loop {
         codegen
             .get_mut_context()
             .get_mut_loop_context()
@@ -135,8 +108,58 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
         codegen
             .get_mut_context()
             .get_mut_loop_context()
+            .set_continueall_branch(cond);
+    }
+
+    codegen
+        .get_mut_context()
+        .get_mut_loop_context()
+        .add_continue_branch(cond);
+
+    codegen
+        .get_mut_context()
+        .get_mut_loop_context()
+        .add_break_branch(exit);
+
+    codegen.get_mut_context().begin_scope();
+    codegen.codegen_block(actions);
+    codegen.get_mut_context().end_scope();
+
+    if codegen
+        .get_mut_context()
+        .get_last_builder_block(actions.get_span())
+        .get_terminator()
+        .is_none()
+    {
+        llvm_builder
+            .build_unconditional_branch(cond)
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    codegen.get_mut_context(),
+                    "Failed to compile for loop action to condition!",
+                    actions.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+    }
+
+    codegen.get_mut_context().get_mut_loop_context().pop();
+
+    if outermost_loop {
+        codegen
+            .get_mut_context()
+            .get_mut_loop_context()
             .set_continueall_branch(steps);
     }
+
+    llvm_builder.position_at_end(cond);
+
+    self::short_circuit_comparison(codegen, condition, body, exit, llvm_function);
+
+    block::move_specific_after_the_last(codegen.get_mut_context(), body, *span);
+
+    llvm_builder.position_at_end(body);
 
     codegen
         .get_mut_context()
@@ -147,10 +170,6 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
         .get_mut_context()
         .get_mut_loop_context()
         .add_break_branch(exit);
-
-    if actions.is_unary_before_operation() {
-        let _ = codegen::compile_as_value(codegen.get_mut_context(), actions, None);
-    }
 
     codegen.codegen_block(block);
 

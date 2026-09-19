@@ -159,6 +159,15 @@ impl Module {
         None
     }
 
+    pub fn search_exported_symbol(
+        &self,
+        hint: String,
+        target_variant: Variant,
+    ) -> Option<&Symbol> {
+        self.search_symbol(hint, target_variant)
+            .filter(|symbol| symbol.public)
+    }
+
     #[inline]
     pub fn find_submodule(&self, access: Vec<String>) -> Option<&Module> {
         let mut current_module: &Module = self;

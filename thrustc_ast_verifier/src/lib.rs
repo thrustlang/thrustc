@@ -291,7 +291,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 self.analyze_expression(condition);
 
                 self.expected_statement_or_loose_expression(actions);
-                self.analyze_expression(actions);
+                self.analyze_stmt(actions);
 
                 self.expected_statement_or_loose_expression(block);
                 self.analyze_stmt(block);

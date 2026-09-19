@@ -1,0 +1,20 @@
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0030";
+
+fn main() s32 @public {
+    var first: s32 = -1;
+    var count: s32 = 0;
+
+    for var i: s32 = 0; i < 3; ++i; {
+        if first == -1 {
+            first = i;
+        }
+
+        count = count + 1;
+    }
+
+    if first != 0 { return 1; }
+    if count != 3 { return 2; }
+
+    return 0;
+}

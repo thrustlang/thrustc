@@ -124,6 +124,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
 impl ThrustCompiler<'_> {
     pub fn compile(&mut self) -> CompileTime {
+        thrustc_generics::reset_pending_instantiations();
+
         if self.unready.is_empty() {
             thrustc_logging::print_critical_error(
                 thrustc_logging::LoggingType::Error,
@@ -184,11 +186,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         it_failed = it_failed || self.reprocess_pending_instantiations().is_err();
 
-        it_failed = it_failed
-            || self.get_compilation_options().was_printed()
+        let output_requested: bool = self.get_compilation_options().was_printed()
             || self.get_compilation_options().was_emited()
-            || self.file_output_requested
-            || self.get_compiled_files().is_empty();
+            || self.file_output_requested;
+
+        it_failed = it_failed || (self.get_compiled_files().is_empty() && !output_requested);
 
         if it_failed {
             return (
@@ -200,15 +202,25 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             );
         }
 
-        starter::linking_phase(self.get_compiled_files());
+        if output_requested {
+            return (
+                false,
+                self.thrustc_time,
+                self.thrustc_frontend_time,
+                self.thrustc_backend_time,
+                self.linking_time,
+            );
+        }
+
+        starter::linking_phase(self.get_compilation_options(), self.get_compiled_files());
 
         let linking_compiler_config: &LinkingCompilersConfiguration =
             self.options.get_linking_compilers_configuration();
 
         if linking_compiler_config.get_use_clang() {
-            linkage::link_with_clang(self);
+            it_failed = linkage::link_with_clang(self).is_err();
         } else if linking_compiler_config.get_use_gcc() {
-            linkage::link_with_gcc(self);
+            it_failed = linkage::link_with_gcc(self).is_err();
         } else {
             thrustc_logging::print_warning(
                 thrustc_logging::LoggingType::Warning,
@@ -293,12 +305,13 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn compile_imported_std_jit<'a>(
         &mut self,
         context: &'a Context,
-    ) -> Result<Vec<Module<'a>>, ()> {
+    ) -> Result<Vec<(std::path::PathBuf, Module<'a>)>, ()> {
         if !thrustc_preprocessor::std_library::has_imported_std() {
             return Ok(Vec::with_capacity(0));
         }
 
-        let mut modules: Vec<Module<'a>> = Vec::with_capacity(u8::MAX as usize);
+        let mut modules: Vec<(std::path::PathBuf, Module<'a>)> =
+            Vec::with_capacity(u8::MAX as usize);
 
         let mut compiled_paths: std::collections::HashSet<std::path::PathBuf> =
             std::collections::HashSet::new();
@@ -326,7 +339,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 });
 
                 let content: String = thrustc_reader::get_file_source_code(&path);
-                let unit: CompilationUnit = CompilationUnit::new(name, path, content, base_name);
+                let unit: CompilationUnit =
+                    CompilationUnit::new(name, path.clone(), content, base_name);
 
                 let compiled_file: either::Either<MemoryBuffer, ()> =
                     self.compile_file_with_llvm_jit(&unit)?;
@@ -335,7 +349,10 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                     .left()
                     .and_then(|memory_buffer| context.create_module_from_ir(memory_buffer).ok())
                 {
-                    modules.push(module);
+                    let module_path: std::path::PathBuf =
+                        path.canonicalize().unwrap_or(path.clone());
+
+                    modules.push((module_path, module));
                 }
 
                 compiled_any = true;
@@ -353,7 +370,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let file_time: std::time::Instant = std::time::Instant::now();
         let frontend_time: std::time::Instant = std::time::Instant::now();
 
-        starter::archive_compilation_unit(file);
+        starter::archive_compilation_unit(self.get_compilation_options(), file);
 
         let llvm_backend: &LLVMBackend = self.options.get_llvm_backend();
         let build_dir: &std::path::PathBuf = self.options.get_build_dir();
@@ -377,7 +394,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-        if print::before_frontend(self, &file_options, file, Emited::Tokens(&tokens)) {
+        if print::before_frontend(self, &file_options, file, Emited::Tokens(&tokens))? {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -387,7 +404,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             build_dir,
             file,
             Emited::Tokens(&tokens),
-        ) {
+        )? {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -434,11 +451,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let ast: &[Ast] = parser_context.get_ast();
 
-        if emit::before_frontend(self, &file_options, build_dir, file, Emited::Ast(ast)) {
+        if emit::before_frontend(self, &file_options, build_dir, file, Emited::Ast(ast))? {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if print::before_frontend(self, &file_options, file, Emited::Ast(ast)) {
+        if print::before_frontend(self, &file_options, file, Emited::Ast(ast))? {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -495,11 +512,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             }
         }
 
-        if print::after_frontend(self, &file_options, file, Emited::Ast(ast)) {
+        if print::after_frontend(self, &file_options, file, Emited::Ast(ast))? {
             return finisher::archive_compilation(self, file_time, file);
         }
 
-        if emit::after_frontend(self, &file_options, build_dir, file, Emited::Ast(ast)) {
+        if emit::after_frontend(self, &file_options, build_dir, file, Emited::Ast(ast))? {
             return finisher::archive_compilation(self, file_time, file);
         }
 
@@ -714,11 +731,13 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let context: Context = Context::create();
 
         let mut it_failed: bool = false;
-        let mut modules: Vec<Module> = Vec::with_capacity(u8::MAX as usize);
+        let mut modules: Vec<(std::path::PathBuf, Module)> =
+            Vec::with_capacity(u8::MAX as usize);
 
-        let std_modules: Result<Vec<Module>, ()> = self.compile_imported_std_jit(&context);
+        let std_modules: Result<Vec<(std::path::PathBuf, Module)>, ()> =
+            self.compile_imported_std_jit(&context);
 
-        let std_modules: Vec<Module> = match std_modules {
+        let std_modules: Vec<(std::path::PathBuf, Module)> = match std_modules {
             Ok(std_modules) => std_modules,
             Err(()) => {
                 return (
@@ -744,15 +763,92 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 .and_then(|either| either.left())
                 .and_then(|memory_buffer| context.create_module_from_ir(memory_buffer).ok())
             {
-                modules.push(module)
+                let path: std::path::PathBuf = file
+                    .get_path()
+                    .canonicalize()
+                    .unwrap_or_else(|_| file.get_path().to_path_buf());
+
+                if let Some(index) = modules
+                    .iter()
+                    .position(|(candidate, _)| candidate == &path)
+                {
+                    modules[index] = (path, module);
+                } else {
+                    modules.push((path, module));
+                }
             }
         }
 
-        it_failed = it_failed
-            || self.get_compilation_options().was_printed()
+        let mut reprocesses: usize = 0;
+
+        while thrustc_generics::has_pending_instantiations() && reprocesses < 1024 {
+            let paths: Vec<std::path::PathBuf> = thrustc_generics::pending_module_paths();
+
+            for path in paths {
+                let name: String = path
+                    .file_name()
+                    .map_or_else(String::new, |name| name.to_string_lossy().to_string());
+
+                let base_name: String = path.file_stem().map_or_else(String::new, |base_name| {
+                    base_name.to_string_lossy().to_string()
+                });
+
+                let content: String = thrustc_reader::get_file_source_code(&path);
+                let unit: CompilationUnit =
+                    CompilationUnit::new(name, path.clone(), content, base_name);
+
+                let compiled_file: either::Either<MemoryBuffer, ()> =
+                    match self.compile_file_with_llvm_jit(&unit) {
+                        Ok(compiled_file) => compiled_file,
+                        Err(()) => {
+                            return (
+                                true,
+                                self.thrustc_time,
+                                self.thrustc_frontend_time,
+                                self.thrustc_backend_time,
+                                self.linking_time,
+                            );
+                        }
+                    };
+
+                let Some(module) = compiled_file
+                    .left()
+                    .and_then(|memory_buffer| context.create_module_from_ir(memory_buffer).ok())
+                else {
+                    return (
+                        true,
+                        self.thrustc_time,
+                        self.thrustc_frontend_time,
+                        self.thrustc_backend_time,
+                        self.linking_time,
+                    );
+                };
+
+                let module_path: std::path::PathBuf =
+                    path.canonicalize().unwrap_or(path.clone());
+
+                if let Some(index) = modules
+                    .iter()
+                    .position(|(candidate, _)| candidate == &module_path)
+                {
+                    modules[index] = (module_path, module);
+                } else {
+                    modules.push((module_path, module));
+                }
+            }
+
+            reprocesses = reprocesses.saturating_add(1);
+        }
+
+        if thrustc_generics::has_pending_instantiations() {
+            it_failed = true;
+        }
+
+        let output_requested: bool = self.get_compilation_options().was_printed()
             || self.get_compilation_options().was_emited()
-            || self.file_output_requested
-            || modules.is_empty();
+            || self.file_output_requested;
+
+        it_failed = it_failed || (modules.is_empty() && !output_requested);
 
         if it_failed {
             return (
@@ -763,6 +859,21 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 self.linking_time,
             );
         }
+
+        if output_requested {
+            return (
+                false,
+                self.thrustc_time,
+                self.thrustc_frontend_time,
+                self.thrustc_backend_time,
+                self.linking_time,
+            );
+        }
+
+        let mut modules: Vec<Module> = modules
+            .into_iter()
+            .map(|(_, module)| module)
+            .collect();
 
         modules.reverse();
 
@@ -818,7 +929,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let file_time: std::time::Instant = std::time::Instant::now();
         let frontend_time: std::time::Instant = std::time::Instant::now();
 
-        starter::archive_compilation_unit(file);
+        starter::archive_compilation_unit(self.get_compilation_options(), file);
 
         let llvm_backend: &LLVMBackend = self.options.get_llvm_backend();
         let build_dir: &std::path::PathBuf = self.options.get_build_dir();
@@ -841,7 +952,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         self.update_thrustc_frontend_time(frontend_time.elapsed());
 
-        if print::before_frontend(self, &file_options, file, Emited::Tokens(&tokens)) {
+        if print::before_frontend(self, &file_options, file, Emited::Tokens(&tokens))? {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
@@ -851,7 +962,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             build_dir,
             file,
             Emited::Tokens(&tokens),
-        ) {
+        )? {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
@@ -897,11 +1008,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let ast: &[Ast] = parser_context.get_ast();
 
-        if print::before_frontend(self, &file_options, file, Emited::Ast(ast)) {
+        if print::before_frontend(self, &file_options, file, Emited::Ast(ast))? {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if emit::before_frontend(self, &file_options, build_dir, file, Emited::Ast(ast)) {
+        if emit::before_frontend(self, &file_options, build_dir, file, Emited::Ast(ast))? {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
@@ -956,11 +1067,11 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             }
         }
 
-        if print::after_frontend(self, &file_options, file, Emited::Ast(ast)) {
+        if print::after_frontend(self, &file_options, file, Emited::Ast(ast))? {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
-        if emit::after_frontend(self, &file_options, build_dir, file, Emited::Ast(ast)) {
+        if emit::after_frontend(self, &file_options, build_dir, file, Emited::Ast(ast))? {
             return finisher::archive_compilation_module_jit(self, file_time, file);
         }
 
@@ -1150,39 +1261,21 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
     fn reprocess_pending_instantiations(&mut self) -> Result<(), ()> {
         let mut reprocesses: usize = 0;
 
-        loop {
-            let mut reprocessed: bool = false;
+        while thrustc_generics::has_pending_instantiations() && reprocesses < 1024 {
+            let paths: Vec<std::path::PathBuf> = thrustc_generics::pending_module_paths();
 
-            for path in self.pending_candidate_paths() {
-                if thrustc_generics::has_pending_for(&path) {
-                    self.compile_imported_std_module(&path)?;
-
-                    reprocessed = true;
-                }
+            for path in paths {
+                self.compile_imported_std_module(&path)?;
             }
 
             reprocesses = reprocesses.saturating_add(1);
+        }
 
-            if !reprocessed || reprocesses >= 1024 {
-                break;
-            }
+        if thrustc_generics::has_pending_instantiations() {
+            return Err(());
         }
 
         Ok(())
-    }
-
-    fn pending_candidate_paths(&self) -> Vec<std::path::PathBuf> {
-        let mut paths: Vec<std::path::PathBuf> = Vec::with_capacity(u8::MAX as usize);
-
-        for module in thrustc_preprocessor::std_library::get_imported_std_modules() {
-            paths.push(module.get_path().to_path_buf());
-        }
-
-        for file in self.unready.iter() {
-            paths.push(file.get_path().to_path_buf());
-        }
-
-        paths
     }
 }
 
@@ -1203,6 +1296,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
 impl ThrustCompiler<'_> {
     fn register_compiled_unit(&mut self, source: std::path::PathBuf, object: std::path::PathBuf) {
+        let source: std::path::PathBuf = source.canonicalize().unwrap_or(source);
+
         if let Some(previous) = self.source_to_object.insert(source, object.clone()) {
             self.linked_objects
                 .retain(|candidate| candidate != &previous);

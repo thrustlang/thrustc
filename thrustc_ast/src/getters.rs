@@ -203,6 +203,7 @@ impl AstGetType for Ast<'_> {
             Ast::UnaryOp { kind, .. } => Ok(kind),
             Ast::Group { kind, .. } => Ok(kind),
             Ast::Index { kind, .. } => Ok(kind),
+            Ast::IndirectCall { kind, .. } => Ok(kind),
 
             // Type operations
             Ast::As { cast: kind, .. } => Ok(kind),

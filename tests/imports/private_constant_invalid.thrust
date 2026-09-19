@@ -1,0 +1,5 @@
+import "private/module.thrust" as private;
+
+fn main() s32 @public {
+    return private::HIDDEN_VALUE;
+}

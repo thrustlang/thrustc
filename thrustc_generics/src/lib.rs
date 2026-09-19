@@ -25,8 +25,8 @@ mod substitution;
 
 pub use self::hashing::instantiation_key;
 pub use self::pending::{
-    PendingInstantiation, drain_pending, has_pending_for, has_pending_instantiations,
-    record_pending,
+    PendingInstantiation, has_pending_for, has_pending_instantiations, pending_module_paths,
+    record_pending, reset_pending_instantiations, take_pending,
 };
 pub use self::scope::GenericScope;
 pub use self::solve::{SolveResult, TypeEnv, solve};

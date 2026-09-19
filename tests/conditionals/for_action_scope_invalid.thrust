@@ -1,0 +1,10 @@
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    for var i: s32 = 0; i < 1; var actionLocal: s32 = 7; {
+        return actionLocal;
+    }
+
+    return 0;
+}

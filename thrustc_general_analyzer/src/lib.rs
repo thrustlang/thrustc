@@ -414,12 +414,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
             } => {
                 self.analyze_stmt(local)?;
                 self.analyze_expr(condition)?;
-
-                if matches!(**actions, Ast::Mutation { .. }) {
-                    self.analyze_stmt(actions)?;
-                } else {
-                    self.analyze_expr(actions)?;
-                }
+                self.analyze_stmt(actions)?;
                 self.analyze_stmt(block)?;
 
                 Ok(())

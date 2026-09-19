@@ -292,11 +292,10 @@ impl<'linter> Linter<'linter> {
             } => {
                 self.analyze_stmt(local);
 
-                if matches!(**actions, Ast::Mutation { .. }) {
-                    self.analyze_stmt(actions);
-                } else {
-                    self.analyze_expr(actions);
-                }
+                self.begin_scope();
+                self.analyze_stmt(actions);
+                self.generate_scoped_warnings();
+                self.end_scope();
 
                 self.analyze_expr(condition);
                 self.analyze_stmt(block);

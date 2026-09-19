@@ -70,7 +70,14 @@ pub fn parse_for_loop_stmt<'parser>(
 
         let local: Ast = variable::build_variable_stmt(ctx)?;
         let condition: Ast = expressions::parse_expression(ctx)?;
-        let actions: Ast = expressions::parse_expression(ctx)?;
+
+        ctx.get_mut_symbols().begin_scope();
+        ctx.begin_scope();
+
+        let actions: Ast = statements::parse(ctx)?;
+
+        ctx.get_mut_symbols().end_scope();
+        ctx.end_scope();
 
         let body: Ast = if ctx.check(TokenType::LBrace) {
             code_block::parse_code_block_stmt(ctx)?

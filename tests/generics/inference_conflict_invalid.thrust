@@ -1,0 +1,10 @@
+fn same [T] (left: T, right: T) T {
+    return left;
+}
+
+fn main() s32 @public {
+    var signed: s32 = 1;
+    var wide: u64 = 2;
+
+    return same(signed, wide);
+}

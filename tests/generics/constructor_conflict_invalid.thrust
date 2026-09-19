@@ -1,0 +1,12 @@
+struct Pair [T] {
+    left: T,
+    right: T
+}
+
+fn main() s32 @public {
+    var signed: s32 = 1;
+    var wide: u64 = 2;
+    var pair := new Pair { left: signed, right: wide };
+
+    return pair->left;
+}

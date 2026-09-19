@@ -1,0 +1,2 @@
+const VALUE: s32 @public = 11;
+static mut counter: s32 @public @extern("collision_left_counter") = 12;

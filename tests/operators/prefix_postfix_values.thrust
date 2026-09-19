@@ -1,0 +1,27 @@
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var integer: s32 = 10;
+    var oldInteger: s32 = integer++;
+
+    if oldInteger != 10 { return 1; }
+    if integer != 11 { return 2; }
+
+    var newInteger: s32 = ++integer;
+
+    if newInteger != 12 { return 3; }
+    if integer != 12 { return 4; }
+
+    var floating: f64 = 4.0;
+    var oldFloating: f64 = floating--;
+
+    if oldFloating != 4.0 { return 5; }
+    if floating != 3.0 { return 6; }
+
+    var newFloating: f64 = --floating;
+
+    if newFloating != 2.0 { return 7; }
+    if floating != 2.0 { return 8; }
+
+    return 0;
+}

@@ -1,0 +1,11 @@
+import "nested/wrapper.thrust" as outer;
+
+fn main() s32 @public {
+    var number: outer::inner::Number = outer::inner::value();
+
+    if number != 7 { return 1; }
+    if outer::inner::VALUE != 7 { return 2; }
+    if outer::inner::State=>Ready != 9 { return 3; }
+
+    return 0;
+}

@@ -1,0 +1,12 @@
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var value: s32 = 7;
+    var pointer: ptr[s32] = ref value;
+    var nullPointer: ptr[s32] = nullptr;
+
+    if !nullPointer == false { return 1; }
+    if !pointer { return 2; }
+
+    return 0;
+}

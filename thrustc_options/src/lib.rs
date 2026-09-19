@@ -43,6 +43,7 @@ pub struct CompilerOptions {
 
     abi_configuration: ABIConfiguration,
     disable_all_warnings: bool,
+    quiet: bool,
 
     stop_compilation_at: CompilationPhase,
 
@@ -169,6 +170,7 @@ impl CompilerOptions {
 
             abi_configuration: ABIConfiguration::new(false, thrustc_abi::SpecificABI::None),
             disable_all_warnings: false,
+            quiet: false,
             stop_compilation_at: CompilationPhase::None,
 
             enable_ansi_colors: false,
@@ -236,6 +238,11 @@ impl CompilerOptions {
     #[inline]
     pub fn set_disable_all_warnings(&mut self) {
         self.disable_all_warnings = true;
+    }
+
+    #[inline]
+    pub fn set_quiet(&mut self) {
+        self.quiet = true;
     }
 
     #[inline]
@@ -538,6 +545,11 @@ impl CompilerOptions {
     #[inline]
     pub fn disable_all_warnings(&self) -> bool {
         self.disable_all_warnings
+    }
+
+    #[inline]
+    pub fn quiet(&self) -> bool {
+        self.quiet
     }
 
     #[inline]

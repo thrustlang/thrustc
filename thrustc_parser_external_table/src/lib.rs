@@ -74,7 +74,7 @@ impl<'parser> ExternalSymbolTable<'parser> {
     ) -> Option<&'parser Symbol> {
         let module: &Module = self.resolve(access)?;
 
-        module.search_symbol(name.to_string(), variant)
+        module.search_exported_symbol(name.to_string(), variant)
     }
 
     pub fn search_signature(

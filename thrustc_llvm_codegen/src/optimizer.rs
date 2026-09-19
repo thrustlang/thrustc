@@ -472,7 +472,7 @@ impl<'a, 'ctx> LLVMFunctionOptimizer<'a, 'ctx> {
                     let callsite: CallSiteValue<'_> =
                         unsafe { CallSiteValue::new(instr.as_value_ref()) };
 
-                    callsite.get_called_fn_value() == function
+                    utils::get_direct_called_fn_value(callsite) == Some(function)
                 })
                 .count();
 
@@ -505,9 +505,10 @@ impl<'a, 'ctx> LLVMFunctionOptimizer<'a, 'ctx> {
                 .any(|instr| {
                     let callsite: CallSiteValue =
                         unsafe { CallSiteValue::new(instr.as_value_ref()) };
-                    let called: FunctionValue = callsite.get_called_fn_value();
-
-                    self.function.is_some_and(|current| current == called)
+                    match utils::get_direct_called_fn_value(callsite) {
+                        Some(called) => self.function.is_some_and(|current| current == called),
+                        None => true,
+                    }
                 });
 
             if MAX_OPT_INSTRUCTIONS_LEN > instructions_count {
@@ -534,7 +535,9 @@ impl<'a, 'ctx> LLVMFunctionOptimizer<'a, 'ctx> {
                     InstructionOpcode::Call => {
                         let call_site: CallSiteValue<'_> =
                             unsafe { CallSiteValue::new(inst.as_value_ref()) };
-                        let called_func: FunctionValue<'_> = call_site.get_called_fn_value();
+                        let Some(called_func) = utils::get_direct_called_fn_value(call_site) else {
+                            return false;
+                        };
 
                         for attribute in called_func.attributes(AttributeLoc::Function) {
                             let memory_id: u32 = Attribute::get_named_enum_kind_id("memory");
@@ -563,7 +566,9 @@ impl<'a, 'ctx> LLVMFunctionOptimizer<'a, 'ctx> {
                     InstructionOpcode::Call => {
                         let call_site: CallSiteValue<'_> =
                             unsafe { CallSiteValue::new(inst.as_value_ref()) };
-                        let called_func: FunctionValue<'_> = call_site.get_called_fn_value();
+                        let Some(called_func) = utils::get_direct_called_fn_value(call_site) else {
+                            return false;
+                        };
 
                         for attribute in called_func.attributes(AttributeLoc::Function) {
                             let memory_id: u32 = Attribute::get_named_enum_kind_id("memory");
@@ -592,7 +597,9 @@ impl<'a, 'ctx> LLVMFunctionOptimizer<'a, 'ctx> {
                     InstructionOpcode::Call => {
                         let call_site: CallSiteValue<'_> =
                             unsafe { CallSiteValue::new(inst.as_value_ref()) };
-                        let called_func: FunctionValue<'_> = call_site.get_called_fn_value();
+                        let Some(called_func) = utils::get_direct_called_fn_value(call_site) else {
+                            return false;
+                        };
 
                         for attribute in called_func.attributes(AttributeLoc::Function) {
                             let memory_id: u32 = Attribute::get_named_enum_kind_id("memory");

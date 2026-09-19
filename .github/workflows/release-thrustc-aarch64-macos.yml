@@ -25,9 +25,25 @@ jobs:
           echo "Unique ID: $BUILD_ID"
           echo "Version: $VERSION"
 
-      - name: Cloning Thrust Compiler
+      - name: Checking Out Tagged Thrust Compiler
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+          path: thrustc
+
+      - name: Setting up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: thrustc/lsp/vscode/package-lock.json
+
+      - name: Packaging VS Code Extension
         run: |
-          git clone --depth 1 https://github.com/thrustlang/thrustc
+          npm ci
+          npx --no-install vsce package
+        working-directory: thrustc/lsp/vscode
 
       - name: Reading Changelog
         run: |
@@ -193,4 +209,6 @@ jobs:
             thrustc/target/release/thrustc_lsp
             thrustc/target/release-stripped/thrustc-stripped
             thrustc/target/release-stripped/thrustc_lsp-stripped
+            thrustc/lsp/vscode/thrustlang-vscode-*.vsix
           draft: false
+          fail_on_unmatched_files: true

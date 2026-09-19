@@ -1,0 +1,5 @@
+import "b.thrust";
+
+fn fromA() s32 @public {
+    return 1;
+}

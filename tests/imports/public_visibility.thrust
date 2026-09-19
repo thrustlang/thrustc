@@ -1,0 +1,7 @@
+import "private/module.thrust" as private;
+
+fn main() s32 @public {
+    if private::visibleFunction() != 3 { return 1; }
+
+    return 0;
+}

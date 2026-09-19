@@ -186,7 +186,8 @@ impl VoidTypeExtensions for Type {
                     parameter_types
                         .iter()
                         .any(contains_an_unresolved_type_inner_type)
-                        || contains_an_unresolved_type_inner_type(return_type)
+                        || (!matches!(return_type.as_ref(), Type::Void { .. })
+                            && contains_an_unresolved_type_inner_type(return_type))
                 }
 
                 Type::Void { .. } | Type::Unresolved { .. } => true,
@@ -220,7 +221,8 @@ impl VoidTypeExtensions for Type {
                 parameter_types
                     .iter()
                     .any(contains_an_unresolved_type_inner_type)
-                    || contains_an_unresolved_type_inner_type(return_type)
+                    || (!matches!(return_type.as_ref(), Type::Void { .. })
+                        && contains_an_unresolved_type_inner_type(return_type))
             }
 
             Type::Unresolved { .. } => true,

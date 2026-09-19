@@ -1,0 +1,14 @@
+directive "--disable-warnings=W0020";
+
+import "multi_wave_provider.thrust";
+import "multi_wave_wrapper.thrust";
+
+fn main() s32 @public {
+    var direct: u64 = multi_wave_provider::identity[u64](41);
+    var wrapped: s32 = multi_wave_wrapper::wrappedIdentity[s32](1);
+
+    if direct != 41 { return 1; }
+    if wrapped != 1 { return 2; }
+
+    return 0;
+}

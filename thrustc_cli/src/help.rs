@@ -705,6 +705,16 @@ pub fn show_help() -> ! {
         &format!(
             "{} {} {}\n",
             "•".bold(),
+            "--quiet".custom_color((141, 141, 142)).bold(),
+            "Suppress compiler progress and timing output while preserving diagnostics."
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
             "--copy-output-to-clipboard"
                 .custom_color((141, 141, 142))
                 .bold(),

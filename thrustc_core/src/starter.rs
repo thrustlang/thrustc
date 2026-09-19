@@ -19,10 +19,14 @@
 
 use colored::Colorize;
 
-use thrustc_options::CompilationUnit;
+use thrustc_options::{CompilationUnit, CompilerOptions};
 
 #[inline]
-pub fn archive_compilation_unit(file: &CompilationUnit) {
+pub fn archive_compilation_unit(options: &CompilerOptions, file: &CompilationUnit) {
+    if options.quiet() {
+        return;
+    }
+
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stdout,
         &format!(
@@ -35,7 +39,11 @@ pub fn archive_compilation_unit(file: &CompilationUnit) {
 }
 
 #[inline]
-pub fn linking_phase(files: &[std::path::PathBuf]) {
+pub fn linking_phase(options: &CompilerOptions, files: &[std::path::PathBuf]) {
+    if options.quiet() {
+        return;
+    }
+
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stdout,
         &format!(

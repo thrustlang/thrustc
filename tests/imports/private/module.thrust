@@ -1,0 +1,13 @@
+fn hiddenFunction() s32 {
+    return 1;
+}
+
+const HIDDEN_VALUE: s32 = 2;
+
+struct HiddenStruct {
+    value: s32
+}
+
+fn visibleFunction() s32 @public {
+    return 3;
+}

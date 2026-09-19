@@ -1,0 +1,5 @@
+import "./self_import_invalid.thrust";
+
+fn main() s32 @public {
+    return 0;
+}

@@ -148,7 +148,7 @@ pub fn resolve_generics<'parser>(ctx: &mut ParserContext<'parser>) {
         pending_iterations = pending_iterations.saturating_add(1);
 
         let pending: Vec<thrustc_generics::PendingInstantiation> =
-            thrustc_generics::drain_pending(&file_path);
+            thrustc_generics::take_pending(&file_path);
 
         if pending.is_empty() {
             break;

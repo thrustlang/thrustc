@@ -71,19 +71,15 @@ impl LinkingCompilersConfiguration {
 
         let clang_result: Result<std::process::ExitStatus, std::io::Error> = clang_command.status();
         let gcc_result: Result<std::process::ExitStatus, std::io::Error> = gcc_command.status();
+        let clang_available: bool = clang_result.is_ok_and(|status| status.success());
+        let gcc_available: bool = gcc_result.is_ok_and(|status| status.success());
 
-        if self.use_clang
-            && (clang_result.is_err() || clang_result.is_ok_and(|status| !status.success()))
-            && self.custom_clang.components().count() == 0
-        {
+        if self.use_clang && !clang_available && gcc_available {
             self.use_clang = false;
             self.use_gcc = true;
         }
 
-        if self.use_gcc
-            && (gcc_result.is_err() || gcc_result.is_ok_and(|status| !status.success()))
-            && self.custom_gcc.components().count() == 0
-        {
+        if self.use_gcc && !gcc_available && clang_available {
             self.use_gcc = false;
             self.use_clang = true;
         }

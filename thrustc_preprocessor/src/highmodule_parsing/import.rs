@@ -51,12 +51,12 @@ pub fn parse_import<'preprocessor>(
 
     let mut module_path: PathBuf = PathBuf::from(import_str);
 
-    if let Ok(canocalized) = module_path.canonicalize() {
-        module_path = canocalized;
-    }
-
     if module_path.is_relative() {
         module_path = current_dir.join(import_str);
+    }
+
+    if let Ok(canonicalized) = module_path.canonicalize() {
+        module_path = canonicalized;
     }
 
     let mut only: Option<Vec<String>> = None;
@@ -106,14 +106,15 @@ pub fn parse_import<'preprocessor>(
     }
 
     if parser.has_visited(&module_path) {
-        parser.add_warning(CompilationIssue::Warning(
-            CompilationIssueCode::W0018,
-            "A circular import was founded here. Omitting it by default. The recomendation is to remove it."
-                .into(),
+        parser.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0035,
+            "Circular module import detected.".into(),
+            "Remove the circular dependency between these modules.".into(),
+            None,
             span,
         ));
 
-        return Ok(None);
+        return Err(());
     }
 
     if !module_path.exists() {

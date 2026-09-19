@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_attributes::ThrustAttributes;
+use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_code_location::Span;
 use thrustc_compile_time::BuiltinValue;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
@@ -48,6 +48,7 @@ pub fn parse_constant<'module_parser>(
     let r#type: Type = typegeneration::build_type(ctx)?;
 
     let mut attributes: ThrustAttributes = attributes::build_attributes(ctx, &[TokenType::Eq])?;
+    let public: bool = attributes.has_public_attribute();
 
     let added_public: bool = submodule_parsing::ensure_exposed(&mut attributes, &name, span, false);
 
@@ -83,6 +84,7 @@ pub fn parse_constant<'module_parser>(
             modificators,
         },
         variant: Variant::Constant,
+        public,
     };
 
     Ok(symbol)

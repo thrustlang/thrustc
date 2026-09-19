@@ -1,0 +1,23 @@
+/*
+ * Exercises calls through generic function-reference parameters.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+fn apply[T, U](value: T, callback: Fn[T] -> U) U {
+    return callback(value);
+}
+
+fn double(value: s32) s32 {
+    return value * 2;
+}
+
+fn isPositive(value: s64) bool {
+    return value > 0;
+}
+
+fn main() s32 @public {
+    if apply[s32, s32](21, double) != 42 { return 1; }
+    if !apply[s64, bool](7, isPositive) { return 2; }
+
+    return 0;
+}

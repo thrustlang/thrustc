@@ -1,0 +1,9 @@
+import "../modules/module_col_a.thrust";
+import "../modules/module_col_b.thrust";
+
+fn main() s32 @public {
+    if module_col_a::collide(1) != 1 { return 1; }
+    if module_col_b::collide(1) != 2 { return 2; }
+
+    return 0;
+}

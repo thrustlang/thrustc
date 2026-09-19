@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_attributes::ThrustAttributes;
+use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_code_location::Span;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
@@ -53,6 +53,7 @@ pub fn parse_structure<'module_parser>(
     let type_params: Option<Vec<String>> = crate::submodule_parsing::parse_generic_parameters(ctx)?;
 
     let attributes: ThrustAttributes = attributes::build_attributes(ctx, &[TokenType::LBrace])?;
+    let public: bool = attributes.has_public_attribute();
 
     ctx.consume(TokenType::LBrace)?;
 
@@ -113,6 +114,7 @@ pub fn parse_structure<'module_parser>(
             span,
         },
         variant: Variant::Struct,
+        public,
     };
 
     Ok(symbol)

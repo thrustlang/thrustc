@@ -1,6 +1,9 @@
 import "../modules/module_only.thrust" only { stack };
 import "../modules/module_only.thrust";
 
-fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
-    return module_only::stack(3) + stack(2);
+fn main() s32 @public {
+    if module_only::stack(3) != 3 { return 1; }
+    if stack(2) != 2 { return 2; }
+
+    return 0;
 }

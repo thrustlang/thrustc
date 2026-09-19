@@ -1,0 +1,3 @@
+fn third [T] (value: T) T @public {
+    return value;
+}

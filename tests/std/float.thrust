@@ -36,9 +36,10 @@ fn main() s32 @public {
     if nativeChecked->value != 4.5 { return 20; }
     if nativeChecked->end->[0] != '\0' { return 21; }
 
-    var invalid: float::ParseF64Result = float::parseF64("abc");
+    var invalidCString: CString = "abc";
+    var invalid: float::ParseF64Result = float::parseF64(invalidCString);
     if invalid->ok { return 9; }
-    if invalid->end != ("abc" as ptr) { return 10; }
+    if invalid->end != ((load invalidCString) as ptr[char]) { return 10; }
 
     var partial: float::ParseF64Result = float::parseF64("3.14xyz");
     if !(partial->ok) { return 11; }

@@ -20,6 +20,7 @@
 directive "--disable-warnings=W0020";
 
 import std::mem;
+import std::optional;
 
 const INITIAL_CAPACITY: usize @public = 4;
 
@@ -27,6 +28,12 @@ struct Vector [T] @public {
     data: ptr[T],
     length: usize,
     capacity: usize
+}
+
+struct VectorIterator [T] @public {
+    data: ptr[T],
+    length: usize,
+    index: usize
 }
 
 fn newVector [T] () Vector[T] @public {
@@ -191,4 +198,61 @@ fn swapElements [T] (vector: ptr[Vector[T]], first: usize, second: usize) void @
 
     vector->data[first] = vector->data->[second];
     vector->data[second] = temp;
+}
+
+fn iter [T] (vector: ptr[Vector[T]]) VectorIterator[T] @public {
+    return new VectorIterator[T] {
+        data: vector->data,
+        length: vector->length,
+        index: 0
+    };
+}
+
+fn next [T] (iterator: ptr[VectorIterator[T]]) optional::Optional[T] @public {
+    if iterator->index >= iterator->length {
+        return optional::none[T]();
+    }
+
+    var value: T = iterator->data->[iterator->index];
+    iterator->index = iterator->index + 1;
+
+    return optional::some[T](value);
+}
+
+fn forEach [T] (vector: ptr[Vector[T]], action: Fn[T] -> void) void @public {
+    var index: usize = 0;
+
+    while index < vector->length {
+        action(vector->data->[index]);
+        index = index + 1;
+    }
+}
+
+fn filter [T] (vector: ptr[Vector[T]], predicate: Fn[T] -> bool) Vector[T] @public {
+    var result: Vector[T] = withCapacity[T](vector->length);
+    var index: usize = 0;
+
+    while index < vector->length {
+        var value: T = vector->data->[index];
+
+        if predicate(value) {
+            push[T](ref result, value);
+        }
+
+        index = index + 1;
+    }
+
+    return result;
+}
+
+fn map [T, U] (vector: ptr[Vector[T]], mapper: Fn[T] -> U) Vector[U] @public {
+    var result: Vector[U] = withCapacity[U](vector->length);
+    var index: usize = 0;
+
+    while index < vector->length {
+        push[U](ref result, mapper(vector->data->[index]));
+        index = index + 1;
+    }
+
+    return result;
 }

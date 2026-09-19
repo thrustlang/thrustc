@@ -1,0 +1,19 @@
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0030";
+
+fn main() s32 @public {
+    var bodyHits: s32 = 0;
+    var actionHits: s32 = 0;
+
+    for var outer: s32 = 0; outer < 2; for var inner: s32 = 0; inner < 1; inner += 1; {
+        actionHits += 1;
+        outer += 1;
+    } {
+        bodyHits += 1;
+    }
+
+    if bodyHits != 2 { return 1; }
+    if actionHits != 2 { return 2; }
+
+    return 0;
+}

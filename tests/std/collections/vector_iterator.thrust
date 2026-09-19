@@ -1,0 +1,53 @@
+/*
+ * Exercises std::collections::vector iteration, including empty vectors and
+ * the iterator's captured length.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::optional;
+import std::collections::vector;
+
+fn main() s32 @public {
+    var values @dealloc: vector::Vector[s32] = vector::newVector[s32]();
+    var emptyIterator := vector::iter(ref values);
+    var emptyItem := vector::next(ref emptyIterator);
+
+    if !optional::isNone(ref emptyItem) { return 1; }
+
+    vector::push(ref values, 10);
+    vector::push(ref values, 20);
+    vector::push(ref values, 30);
+
+    var iterator := vector::iter(ref values);
+
+    vector::push(ref values, 40);
+
+    var first := vector::next(ref iterator);
+    if optional::unwrap(ref first) != 10 { return 2; }
+
+    var second := vector::next(ref iterator);
+    if optional::unwrap(ref second) != 20 { return 3; }
+
+    var third := vector::next(ref iterator);
+    if optional::unwrap(ref third) != 30 { return 4; }
+
+    var end := vector::next(ref iterator);
+    if !optional::isNone(ref end) { return 5; }
+
+    var completeIterator := vector::iter(ref values);
+    var index: s32 = 0;
+    var total: s32 = 0;
+
+    while index < 4 {
+        var item := vector::next(ref completeIterator);
+
+        if optional::isNone(ref item) { return 6; }
+
+        total = total + optional::unwrap(ref item);
+        index = index + 1;
+    }
+
+    if total != 100 { return 7; }
+
+    return 0;
+}

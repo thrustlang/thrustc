@@ -34,15 +34,17 @@ pub fn archive_compilation_module(
 ) -> Result<(), ()> {
     compiler.update_thrustc_time(file_time.elapsed());
 
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{} {} {}\n",
-            "Compilation".custom_color((141, 141, 142)).bold(),
-            "FAILED".bright_red().bold(),
-            file.get_path().to_string_lossy()
-        ),
-    );
+    if !compiler.get_compilation_options().quiet() {
+        thrustc_logging::write(
+            thrustc_logging::OutputIn::Stderr,
+            &format!(
+                "{} {} {}\n",
+                "Compilation".custom_color((141, 141, 142)).bold(),
+                "FAILED".bright_red().bold(),
+                file.get_path().to_string_lossy()
+            ),
+        );
+    }
 
     Err(())
 }
@@ -55,15 +57,17 @@ pub fn archive_compilation_module_jit(
 ) -> Result<either::Either<MemoryBuffer, ()>, ()> {
     compiler.update_thrustc_time(file_time.elapsed());
 
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{} {} {}\n",
-            "Compilation".custom_color((141, 141, 142)).bold(),
-            "FAILED".bright_red().bold(),
-            file.get_path().to_string_lossy()
-        ),
-    );
+    if !compiler.get_compilation_options().quiet() {
+        thrustc_logging::write(
+            thrustc_logging::OutputIn::Stderr,
+            &format!(
+                "{} {} {}\n",
+                "Compilation".custom_color((141, 141, 142)).bold(),
+                "FAILED".bright_red().bold(),
+                file.get_path().to_string_lossy()
+            ),
+        );
+    }
 
     Err(())
 }
@@ -80,15 +84,17 @@ pub fn archive_compilation_unit_with_message(
 
     compiler.update_thrustc_time(file_time.elapsed());
 
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{} {} {}\n",
-            "Compilation".custom_color((141, 141, 142)).bold(),
-            "FAILED".bright_red().bold(),
-            file.get_path().to_string_lossy()
-        ),
-    );
+    if !compiler.get_compilation_options().quiet() {
+        thrustc_logging::write(
+            thrustc_logging::OutputIn::Stderr,
+            &format!(
+                "{} {} {}\n",
+                "Compilation".custom_color((141, 141, 142)).bold(),
+                "FAILED".bright_red().bold(),
+                file.get_path().to_string_lossy()
+            ),
+        );
+    }
 
     Err(())
 }

@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_attributes::ThrustAttributes;
+use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_code_location::Span;
 use thrustc_compile_time::BuiltinValue;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
@@ -39,6 +39,7 @@ pub fn parse_enum<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> Res
     let name: String = name_tk.get_lexeme().to_string();
 
     let mut attributes: ThrustAttributes = attributes::build_attributes(ctx, &[TokenType::LBrace])?;
+    let public: bool = attributes.has_public_attribute();
     let added_public: bool = crate::submodule_parsing::ensure_exposed(&mut attributes, &name, span, false);
 
     if added_public {
@@ -85,5 +86,6 @@ pub fn parse_enum<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> Res
             span,
         },
         variant: Variant::Enum,
+        public,
     })
 }

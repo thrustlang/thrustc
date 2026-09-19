@@ -1,0 +1,21 @@
+/*
+ * Exercises automatic @dealloc resolution for std::collections::queue.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::queue;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var values @dealloc: queue::Queue[s32] = queue::newQueue[s32]();
+
+    queue::enqueue(ref values, 10);
+    queue::enqueue(ref values, 20);
+
+    if queue::getLength(ref values) != 2 { return 1; }
+    if queue::dequeue(ref values) != 10 { return 2; }
+
+    return 0;
+}

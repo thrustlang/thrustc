@@ -1,0 +1,18 @@
+directive "--disable-warnings=W0020";
+
+struct Pair {
+    first: s32,
+    second: s32
+}
+
+fn main() s32 @public {
+    var pair: Pair = new Pair {
+        second: 22,
+        first: 11
+    };
+
+    if pair->first != 11 { return 1; }
+    if pair->second != 22 { return 2; }
+
+    return 0;
+}

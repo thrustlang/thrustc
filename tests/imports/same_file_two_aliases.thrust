@@ -1,0 +1,9 @@
+import "../modules/module_only.thrust" as left;
+import "../modules/./module_only.thrust" as right;
+
+fn main() s32 @public {
+    if left::stack(1) != 1 { return 1; }
+    if right::stack(2) != 2 { return 2; }
+
+    return 0;
+}

@@ -705,11 +705,11 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 }
 
                 self.analyze_expr(condition)?;
-                if matches!(**actions, Ast::Mutation { .. }) {
-                    self.analyze_stmt(actions)?;
-                } else {
-                    self.analyze_expr(actions)?;
-                }
+
+                self.begin_scope();
+                self.analyze_stmt(actions)?;
+                self.end_scope();
+
                 self.analyze_stmt(block)?;
 
                 Ok(())

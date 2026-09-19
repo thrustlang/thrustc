@@ -98,6 +98,8 @@ impl PreprocessorContext<'_> {
                         .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
                 }
             }
+
+            return Err(());
         }
 
         Ok(())

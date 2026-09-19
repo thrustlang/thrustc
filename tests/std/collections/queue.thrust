@@ -1,0 +1,85 @@
+/*
+ * Exercises std::collections::queue: FIFO order, wrap-around growth, capacity
+ * management, reuse and generic struct values.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::queue;
+
+directive "--disable-warnings=W0020";
+
+struct Pair {
+    first: s32,
+    second: s32
+}
+
+fn main() s32 @public {
+    var values := queue::newQueue[s32]();
+
+    if !queue::isEmpty(ref values) { return 1; }
+    if queue::getLength(ref values) != 0 { return 2; }
+    if queue::getCapacity(ref values) != 0 { return 3; }
+
+    queue::enqueue(ref values, 1);
+    queue::enqueue(ref values, 2);
+    queue::enqueue(ref values, 3);
+    queue::enqueue(ref values, 4);
+
+    if queue::dequeue(ref values) != 1 { return 4; }
+    if queue::dequeue(ref values) != 2 { return 5; }
+
+    queue::enqueue(ref values, 5);
+    queue::enqueue(ref values, 6);
+    queue::enqueue(ref values, 7);
+
+    if queue::getLength(ref values) != 5 { return 6; }
+    if queue::getCapacity(ref values) < 5 { return 7; }
+    if queue::front(ref values) != 3 { return 8; }
+    if queue::back(ref values) != 7 { return 9; }
+
+    queue::reserveCapacity(ref values, 32);
+    if queue::getCapacity(ref values) < 32 { return 10; }
+    if queue::front(ref values) != 3 { return 11; }
+    if queue::back(ref values) != 7 { return 12; }
+
+    queue::shrinkToFit(ref values);
+    if queue::getCapacity(ref values) != 5 { return 13; }
+
+    if queue::dequeue(ref values) != 3 { return 14; }
+    if queue::dequeue(ref values) != 4 { return 15; }
+    if queue::dequeue(ref values) != 5 { return 16; }
+    if queue::dequeue(ref values) != 6 { return 17; }
+    if queue::dequeue(ref values) != 7 { return 18; }
+    if !queue::isEmpty(ref values) { return 19; }
+
+    queue::enqueue(ref values, 8);
+    queue::enqueue(ref values, 9);
+    queue::clear(ref values);
+    queue::shrinkToFit(ref values);
+
+    if queue::getCapacity(ref values) != 0 { return 20; }
+
+    queue::enqueue(ref values, 10);
+    if queue::front(ref values) != 10 { return 21; }
+    if queue::dequeue(ref values) != 10 { return 22; }
+
+    queue::dropQueue(ref values);
+
+    var pairs := queue::withCapacity[Pair](2);
+
+    if queue::getCapacity(ref pairs) < 2 { return 23; }
+
+    queue::enqueue(ref pairs, new Pair { first: 1, second: 2 });
+    queue::enqueue(ref pairs, new Pair { first: 3, second: 4 });
+
+    if queue::front(ref pairs)->first != 1 { return 24; }
+    if queue::front(ref pairs)->second != 2 { return 25; }
+    if queue::back(ref pairs)->first != 3 { return 26; }
+    if queue::back(ref pairs)->second != 4 { return 27; }
+    if queue::dequeue(ref pairs)->first != 1 { return 28; }
+    if queue::dequeue(ref pairs)->first != 3 { return 29; }
+
+    queue::dropQueue(ref pairs);
+
+    return 0;
+}

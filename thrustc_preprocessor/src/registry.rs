@@ -28,7 +28,7 @@ pub type SharedModuleRegistry = Rc<RefCell<ModuleRegistry>>;
 
 #[derive(Debug, Default)]
 pub struct ModuleRegistry {
-    modules: HashMap<String, Rc<Module>>,
+    modules: HashMap<String, Vec<Rc<Module>>>,
 }
 
 impl ModuleRegistry {
@@ -43,27 +43,42 @@ impl ModuleRegistry {
     pub fn register(&mut self, module: &Module) {
         let name: String = module.get_name().to_string();
 
-        self.modules.insert(name, Rc::new(module.clone()));
+        let modules: &mut Vec<Rc<Module>> = self.modules.entry(name).or_default();
+
+        if let Some(index) = modules.iter().position(|candidate| {
+            candidate.get_path() == module.get_path() && candidate.get_alias() == module.get_alias()
+        }) {
+            modules[index] = Rc::new(module.clone());
+        } else {
+            modules.push(Rc::new(module.clone()));
+        }
     }
 
     #[inline]
     pub fn find(&self, name: &str) -> Option<Rc<Module>> {
-        self.modules.get(name).cloned()
+        self.modules.get(name).and_then(|modules| {
+            modules
+                .iter()
+                .min_by_key(|module| module.get_path().components().count())
+                .cloned()
+        })
     }
 }
 
 impl ModuleRegistry {
     pub fn resolve(&self, access: &[String]) -> Option<Rc<Module>> {
-        for module in self.modules.values() {
-            if let Some(length) = module.alias_prefix_len(access) {
-                let rest: &[String] = &access[length..];
+        for modules in self.modules.values() {
+            for module in modules {
+                if let Some(length) = module.alias_prefix_len(access) {
+                    let rest: &[String] = &access[length..];
 
-                if rest.is_empty() {
-                    return Some(module.clone());
-                }
+                    if rest.is_empty() {
+                        return Some(module.clone());
+                    }
 
-                if let Some(submodule) = module.find_submodule(rest.to_vec()) {
-                    return Some(Rc::new(submodule.clone()));
+                    if let Some(submodule) = module.find_submodule(rest.to_vec()) {
+                        return Some(Rc::new(submodule.clone()));
+                    }
                 }
             }
         }

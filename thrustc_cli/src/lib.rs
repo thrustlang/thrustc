@@ -254,6 +254,11 @@ impl CommandLine {
                 self.advance();
             }
 
+            "--quiet" => {
+                self.advance();
+                self.get_mut_options().set_quiet();
+            }
+
             "-tools-dir" => {
                 self.advance();
 
@@ -710,56 +715,10 @@ impl CommandLine {
                 self.advance();
             }
 
-            "-L" => {
-                self.advance();
-                self.validate_llvm_required(arg);
-
-                let library_path_dir: PathBuf = PathBuf::from(self.peek());
-
-                self.get_mut_options()
-                    .get_mut_llvm_backend()
-                    .get_mut_linker_config()
-                    .add_library_path(library_path_dir);
-
-                self.advance();
-            }
-
-            "-l" => {
-                self.advance();
-                self.validate_llvm_required(arg);
-
-                let link_library: String = self.peek().into();
-
-                self.get_mut_options()
-                    .get_mut_llvm_backend()
-                    .get_mut_linker_config()
-                    .add_link_library(link_library);
-
-                self.advance();
-            }
-
-            "-no-executable" => {
-                self.advance();
-                self.validate_llvm_required(arg);
-
-                self.get_mut_options()
-                    .get_mut_llvm_backend()
-                    .get_mut_linker_config()
-                    .set_build_executable(false);
-            }
-
-            "-o" | "-output" => {
-                self.advance();
-                self.validate_llvm_required(arg);
-
-                let output: String = self.peek().into();
-
-                self.get_mut_options()
-                    .get_mut_llvm_backend()
-                    .get_mut_linker_config()
-                    .set_output(output);
-
-                self.advance();
+            "-L" | "-l" | "-no-executable" | "-o" | "-output" => {
+                self.report_error(&format!(
+                    "The linker flag '{arg}' belongs to the experimental LLD driver and is not available. Pass the equivalent C compiler argument through '-cc-args'."
+                ));
             }
 
             "-debug-linker-command" => {
@@ -1796,6 +1755,14 @@ pub fn report_compile_time(
     compile_time: CompileTime,
 ) -> ! {
     let failed: bool = compile_time.0;
+
+    if options.quiet() {
+        if failed {
+            std::process::exit(thrustc_constants::FAILURE_CODE);
+        } else {
+            std::process::exit(thrustc_constants::SUCCESFUL_CODE);
+        }
+    }
 
     let thrustc_time_ms: f64 = compile_time.1.as_secs_f64() * 1000.0;
     let frontend_time_ms: f64 = compile_time.2.as_secs_f64() * 1000.0;

@@ -1,0 +1,77 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+directive "--disable-warnings=W0020";
+
+import std::collections::vector;
+
+struct Stack [T] @public {
+    storage: vector::Vector[T]
+}
+
+fn newStack [T] () Stack[T] @public {
+    return new Stack[T] {
+        storage: vector::newVector[T]()
+    };
+}
+
+fn withCapacity [T] (capacity: usize) Stack[T] @public {
+    return new Stack[T] {
+        storage: vector::withCapacity[T](capacity)
+    };
+}
+
+fn dropStack [T] (stack: ptr[Stack[T]]) void @public @deallocator {
+    vector::dropVector[T](ref stack.storage);
+}
+
+fn getLength [T] (stack: ptr[Stack[T]]) usize @public {
+    return vector::getLength[T](ref stack.storage);
+}
+
+fn getCapacity [T] (stack: ptr[Stack[T]]) usize @public {
+    return vector::getCapacity[T](ref stack.storage);
+}
+
+fn isEmpty [T] (stack: ptr[Stack[T]]) bool @public {
+    return vector::isEmpty[T](ref stack.storage);
+}
+
+fn push [T] (stack: ptr[Stack[T]], value: T) void @public {
+    vector::push[T](ref stack.storage, value);
+}
+
+fn pop [T] (stack: ptr[Stack[T]]) T @public {
+    return vector::popBack[T](ref stack.storage);
+}
+
+fn peek [T] (stack: ptr[Stack[T]]) T @public {
+    return vector::back[T](ref stack.storage);
+}
+
+fn clear [T] (stack: ptr[Stack[T]]) void @public {
+    vector::clear[T](ref stack.storage);
+}
+
+fn reserveCapacity [T] (stack: ptr[Stack[T]], capacity: usize) void @public {
+    vector::reserveCapacity[T](ref stack.storage, capacity);
+}
+
+fn shrinkToFit [T] (stack: ptr[Stack[T]]) void @public {
+    vector::shrinkToFit[T](ref stack.storage);
+}

@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_attributes::ThrustAttributes;
+use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -84,6 +84,7 @@ pub fn parse_function<'module_parser>(
 
     let mut attributes: ThrustAttributes =
         attributes::build_attributes(ctx, &[TokenType::SemiColon, TokenType::LBrace])?;
+    let public: bool = attributes.has_public_attribute();
 
     let added_public: bool =
         crate::submodule_parsing::ensure_exposed(&mut attributes, &name, span, true);
@@ -116,6 +117,7 @@ pub fn parse_function<'module_parser>(
             span,
         },
         variant: Variant::Function,
+        public,
     };
 
     Ok(symbol)

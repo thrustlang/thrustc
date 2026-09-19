@@ -1,0 +1,13 @@
+struct Pair {
+    first: s32,
+    second: s32
+}
+
+fn main() s32 @public {
+    var pair: Pair = new Pair {
+        first: 11,
+        first: 22
+    };
+
+    return 0;
+}

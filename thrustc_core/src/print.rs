@@ -111,16 +111,23 @@ pub fn before_frontend(
     options: &FileOptions<'_, '_>,
     file: &CompilationUnit,
     emited: Emited,
-) -> bool {
+) -> Result<bool, ()> {
     if options.contains_printable(PrintableUnit::TokensPretty) {
         if let Emited::Tokens(tokens) = emited {
             if printers::tokens::print_to_stdout_pretty(options.global(), tokens, file.get_name())
                 .is_err()
             {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to print pretty tokens for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
@@ -128,10 +135,17 @@ pub fn before_frontend(
         if let Emited::Tokens(tokens) = emited {
             if printers::tokens::print_to_stdout(options.global(), tokens, file.get_name()).is_err()
             {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to print tokens for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
@@ -140,24 +154,38 @@ pub fn before_frontend(
             if printers::ast::print_to_stdout_pretty(options.global(), ast, file.get_name())
                 .is_err()
             {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to print the pretty AST for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
     if options.contains_printable(PrintableUnit::UnCheckedAst) {
         if let Emited::Ast(ast) = emited {
             if printers::ast::print_to_stdout(options.global(), ast, file.get_name()).is_err() {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to print the AST for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
-    false
+    Ok(false)
 }
 
 #[inline]
@@ -166,16 +194,23 @@ pub fn after_frontend(
     options: &FileOptions<'_, '_>,
     file: &CompilationUnit,
     emited: Emited,
-) -> bool {
+) -> Result<bool, ()> {
     if options.contains_printable(PrintableUnit::TokensPretty) {
         if let Emited::Tokens(tokens) = emited {
             if printers::tokens::print_to_stdout_pretty(options.global(), tokens, file.get_name())
                 .is_err()
             {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to print pretty tokens for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
@@ -183,10 +218,17 @@ pub fn after_frontend(
         if let Emited::Tokens(tokens) = emited {
             if printers::tokens::print_to_stdout(options.global(), tokens, file.get_name()).is_err()
             {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to print tokens for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
@@ -195,22 +237,36 @@ pub fn after_frontend(
             if printers::ast::print_to_stdout_pretty(options.global(), ast, file.get_name())
                 .is_err()
             {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to print the pretty AST for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
     if options.contains_printable(PrintableUnit::Ast) {
         if let Emited::Ast(ast) = emited {
             if printers::ast::print_to_stdout(options.global(), ast, file.get_name()).is_err() {
-                return false;
+                thrustc_logging::print_error(
+                    thrustc_logging::LoggingType::Error,
+                    &format!(
+                        "Failed to print the AST for '{}'.",
+                        file.get_path().display()
+                    ),
+                );
+                return Err(());
             }
 
-            return true;
+            return Ok(true);
         }
     }
 
-    false
+    Ok(false)
 }

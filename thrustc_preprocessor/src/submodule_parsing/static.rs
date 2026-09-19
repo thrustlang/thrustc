@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_attributes::ThrustAttributes;
+use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -48,6 +48,7 @@ pub fn parse_static<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> R
 
     let mut attributes: ThrustAttributes =
         attributes::build_attributes(ctx, &[TokenType::Eq, TokenType::SemiColon])?;
+    let public: bool = attributes.has_public_attribute();
 
     let added_public: bool = submodule_parsing::ensure_exposed(&mut attributes, &name, span, true);
 
@@ -78,6 +79,7 @@ pub fn parse_static<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> R
             span,
         },
         variant: Variant::Static,
+        public,
     };
 
     Ok(symbol)

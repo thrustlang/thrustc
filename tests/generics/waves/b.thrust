@@ -1,0 +1,5 @@
+import "c.thrust";
+
+fn second [T] (value: T) T @public {
+    return c::third[T](value);
+}

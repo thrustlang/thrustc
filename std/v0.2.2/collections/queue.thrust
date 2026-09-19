@@ -1,0 +1,81 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+directive "--disable-warnings=W0020";
+
+import std::collections::vecdeque;
+
+struct Queue [T] @public {
+    storage: vecdeque::VecDeque[T]
+}
+
+fn newQueue [T] () Queue[T] @public {
+    return new Queue[T] {
+        storage: vecdeque::newVecDeque[T]()
+    };
+}
+
+fn withCapacity [T] (capacity: usize) Queue[T] @public {
+    return new Queue[T] {
+        storage: vecdeque::withCapacity[T](capacity)
+    };
+}
+
+fn dropQueue [T] (queue: ptr[Queue[T]]) void @public @deallocator {
+    vecdeque::dropVecDeque[T](ref queue.storage);
+}
+
+fn getLength [T] (queue: ptr[Queue[T]]) usize @public {
+    return vecdeque::getLength[T](ref queue.storage);
+}
+
+fn getCapacity [T] (queue: ptr[Queue[T]]) usize @public {
+    return vecdeque::getCapacity[T](ref queue.storage);
+}
+
+fn isEmpty [T] (queue: ptr[Queue[T]]) bool @public {
+    return vecdeque::isEmpty[T](ref queue.storage);
+}
+
+fn enqueue [T] (queue: ptr[Queue[T]], value: T) void @public {
+    vecdeque::pushBack[T](ref queue.storage, value);
+}
+
+fn dequeue [T] (queue: ptr[Queue[T]]) T @public {
+    return vecdeque::popFront[T](ref queue.storage);
+}
+
+fn front [T] (queue: ptr[Queue[T]]) T @public {
+    return vecdeque::front[T](ref queue.storage);
+}
+
+fn back [T] (queue: ptr[Queue[T]]) T @public {
+    return vecdeque::back[T](ref queue.storage);
+}
+
+fn clear [T] (queue: ptr[Queue[T]]) void @public {
+    vecdeque::clear[T](ref queue.storage);
+}
+
+fn reserveCapacity [T] (queue: ptr[Queue[T]], capacity: usize) void @public {
+    vecdeque::reserveCapacity[T](ref queue.storage, capacity);
+}
+
+fn shrinkToFit [T] (queue: ptr[Queue[T]]) void @public {
+    vecdeque::shrinkToFit[T](ref queue.storage);
+}
