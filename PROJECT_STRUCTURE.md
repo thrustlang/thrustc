@@ -278,10 +278,10 @@ Per-platform changelogs for release versions:
 
 ---
 
-## Resources (`resources/`)
+## References
 
-- **`resources/linkers.md`** — Linker documentation.
-- **`resources/llvm.md`** — LLVM integration documentation.
+- **`LINKER_REFERENCE.md`** — Linker documentation.
+- **`LLVM_REFERENCE.md`** — LLVM integration and ABI documentation.
 
 ---
 

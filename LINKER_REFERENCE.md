@@ -1,6 +1,6 @@
 <img src="https://github.com/thrustlang/.github/blob/main/assets/logos/new%20logo/thrustlang-logo-banner-text-italic.png" alt="logo" style="width: 80%; height: 80%;">
 
-# Thrust Compiler - Linker Resources
+# Thrust Compiler - Linker Reference
 
 <img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
 
