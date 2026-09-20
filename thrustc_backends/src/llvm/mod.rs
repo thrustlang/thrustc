@@ -105,6 +105,8 @@ impl LLVMBackend {
             target_cpu: LLVMTargetCPU {
                 target_cpu: TargetMachine::get_host_cpu_name().to_string(),
                 target_cpu_features: TargetMachine::get_host_cpu_features().to_string(),
+                target_cpu_configured: false,
+                target_cpu_features_configured: false,
             },
             optimization: ThrustOptimization::None,
             reloc_mode: RelocMode::PIC,
@@ -440,6 +442,32 @@ impl SanitizerConfiguration {
     }
 }
 
+impl LLVMBackend {
+    pub fn get_cross_target_cpu(&self) -> (&str, &str) {
+        let host_target_triple: LLVMTargetTriple = LLVMTargetTriple::generate_default_from_llvm();
+        let target_triple: &LLVMTargetTriple = self.target.get_normalized_target_triple();
+
+        let host_architecture: &str = host_target_triple.get_arch();
+        let target_architecture: &str = target_triple.get_arch();
+        let is_cross_compilation: bool = host_architecture != target_architecture;
+
+        let cpu: &str = if is_cross_compilation && !self.target_cpu.target_cpu_configured {
+            "generic"
+        } else {
+            self.target_cpu.get_cpu_name()
+        };
+
+        let features: &str =
+            if is_cross_compilation && !self.target_cpu.target_cpu_features_configured {
+                ""
+            } else {
+                self.target_cpu.get_cpu_features()
+            };
+
+        (cpu, features)
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum SymbolLinkageMergeStrategy {
     Any,
@@ -458,6 +486,7 @@ pub enum DenormalFloatingPointBehavior {
 }
 
 impl DenormalFloatingPointBehavior {
+    #[inline]
     pub fn as_llvm_repr(&self) -> &'static str {
         match self {
             Self::IEEE => "ieee",
@@ -467,6 +496,7 @@ impl DenormalFloatingPointBehavior {
         }
     }
 
+    #[inline]
     pub fn is_default(
         behavior: (DenormalFloatingPointBehavior, DenormalFloatingPointBehavior),
     ) -> bool {
@@ -489,6 +519,7 @@ pub enum DenormalFloatingPointBehavior32BitFloatingPoint {
 }
 
 impl DenormalFloatingPointBehavior32BitFloatingPoint {
+    #[inline]
     pub fn as_llvm_repr(&self) -> &'static str {
         match self {
             Self::IEEE => "ieee",
@@ -498,6 +529,7 @@ impl DenormalFloatingPointBehavior32BitFloatingPoint {
         }
     }
 
+    #[inline]
     pub fn is_default(
         behavior: (
             DenormalFloatingPointBehavior32BitFloatingPoint,

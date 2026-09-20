@@ -22,12 +22,76 @@ use inkwell::targets::{TargetMachine, TargetTriple};
 mod impls;
 pub mod traits;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LLVMARMABI {
+    APCS,
+    AAPCS,
+    AAPCSVFP,
+}
+
 #[derive(Debug, Clone)]
 pub struct LLVMTargetTriple {
     arch: String,
     vendor: String,
     os: String,
     abi: String,
+}
+
+impl LLVMTargetTriple {
+    pub fn get_arm_abi(&self) -> Option<LLVMARMABI> {
+        let architecture: &str = self.get_arch();
+        let os: &str = self.get_os();
+        let abi: &str = self.get_abi();
+
+        let is_aarch64: bool = self.is_aarch64_arch();
+        let is_arm: bool = architecture.starts_with("arm") && !is_aarch64;
+        let is_thumb: bool = architecture.starts_with("thumb");
+
+        if !is_arm && !is_thumb {
+
+            return None;
+
+        }
+
+        let is_eabi: bool = matches!(
+            os,
+            "android" | "eabi" | "eabihf" | "gnueabi" | "gnueabihf" | "musleabi" | "musleabihf" | "ohos"
+        ) || matches!(
+            abi,
+            "android" | "eabi" | "eabihf" | "gnueabi" | "gnueabihf" | "musleabi" | "musleabihf" | "ohos"
+        );
+        let is_hard_float_eabi: bool = matches!(os, "eabihf" | "gnueabihf" | "musleabihf")
+            || matches!(abi, "eabihf" | "gnueabihf" | "musleabihf");
+        let is_watch_abi: bool = os.contains("watchos") || abi.contains("watchos");
+        let is_windows: bool = os.contains("windows") || abi.contains("windows");
+        let is_apcs: bool = matches!(os, "apcs" | "apcs-gnu")
+            || matches!(abi, "apcs" | "apcs-gnu");
+        let is_aapcs16: bool = matches!(os, "aapcs16") || matches!(abi, "aapcs16");
+
+        let inferred_abi: LLVMARMABI = if is_hard_float_eabi || is_watch_abi {
+            LLVMARMABI::AAPCSVFP
+        } else if is_eabi {
+            LLVMARMABI::AAPCS
+        } else {
+            LLVMARMABI::APCS
+        };
+
+        let requested_abi: LLVMARMABI = if is_windows || is_aapcs16 || is_hard_float_eabi {
+            LLVMARMABI::AAPCSVFP
+        } else if is_apcs {
+            LLVMARMABI::APCS
+        } else {
+            LLVMARMABI::AAPCS
+        };
+
+        if requested_abi == inferred_abi {
+
+            return None;
+
+        }
+
+        Some(requested_abi)
+    }
 }
 
 impl LLVMTargetTriple {

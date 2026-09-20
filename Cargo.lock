@@ -1855,6 +1855,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "thrustc_llvm_attribute_architecture"
+version = "0.2.2"
+dependencies = [
+ "inkwell",
+ "thrustc_llvm_call_conventions",
+ "thrustc_llvm_target_triple",
+]
+
+[[package]]
 name = "thrustc_llvm_attributes"
 version = "0.2.2"
 dependencies = [
@@ -1914,6 +1923,7 @@ dependencies = [
  "thrustc_errors",
  "thrustc_llvm_abi",
  "thrustc_llvm_abi_representation",
+ "thrustc_llvm_attribute_architecture",
  "thrustc_llvm_attributes",
  "thrustc_llvm_call_conventions",
  "thrustc_llvm_codegen_variatic",

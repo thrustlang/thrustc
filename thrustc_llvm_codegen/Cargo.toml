@@ -20,6 +20,7 @@ thrustc_llvm_abi = { path = "../thrustc_llvm_abi" }
 thrustc_llvm_codegen_variatic = { path = "../thrustc_llvm_codegen_variatic" }
 thrustc_llvm_abi_representation = { path = "../thrustc_llvm_abi_representation" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
+thrustc_llvm_attribute_architecture = { path = "../thrustc_llvm_attribute_architecture" }
 thrustc_llvm_attributes = { path = "../thrustc_llvm_attributes" }
 thrustc_llvm_call_conventions = { path = "../thrustc_llvm_call_conventions" }
 thrustc_backends = { path = "../thrustc_backends" }

@@ -67,8 +67,7 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
         let file_options = self.get_codegen_context().get_file_options();
 
         {
-            let features: &str = llvm_backend.get_target_cpu().get_cpu_features();
-            let cpu: &str = llvm_backend.get_target_cpu().get_cpu_name();
+            let (cpu, features): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
             let features_attr: Attribute = self
                 .get_codegen_context()

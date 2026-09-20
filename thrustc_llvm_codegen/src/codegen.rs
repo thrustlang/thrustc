@@ -31,7 +31,9 @@ use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_attributes::{ThrustAttribute, ThrustAttributeComparator, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_entities::{GlobalConstant, GlobalStatic, LocalConstant, LocalStatic, LocalVariable};
+use thrustc_llvm_attribute_architecture::LLVMArchitectureAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
+use thrustc_llvm_target_triple::LLVMTargetTriple;
 
 use crate::atomic_operations::LLVMAtomicModificators;
 use crate::compiler_builtins::LLVMBuiltin;
@@ -89,6 +91,20 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             }
 
             LLVMMetadata::setup_platform_specific_metadata(self.get_context());
+        }
+
+        {
+            let context: &LLVMCodeGenContext = self.get_context();
+            let target_triple: &inkwell::targets::TargetTriple = context.get_target_triple();
+            let target_triple_string: &std::ffi::CStr = target_triple.as_str();
+            let target_triple_lossy: std::borrow::Cow<'_, str> =
+                target_triple_string.to_string_lossy();
+            let target_triple_formatted: String = target_triple_lossy.into_owned();
+            let llvm_target_triple: LLVMTargetTriple =
+                LLVMTargetTriple::new(target_triple_formatted);
+            let module: &Module = context.get_llvm_module();
+
+            LLVMArchitectureAttribute::apply(module, &llvm_target_triple);
         }
     }
 
@@ -1525,15 +1541,17 @@ pub fn compile_as_value<'ctx>(
             let value_type: &Type = value.get_type_for_llvm();
 
             if value_type.is_ptr_like_type() {
-                let should_load_pointer_reference: bool = matches!(value.as_ref(), Ast::Reference { .. })
-                    && value_type.is_flat_ptr_type();
+                let should_load_pointer_reference: bool =
+                    matches!(value.as_ref(), Ast::Reference { .. })
+                        && value_type.is_flat_ptr_type();
 
                 let dereference_pointer: BasicValueEnum = if should_load_pointer_reference {
                     self::compile_as_value(context, value, Some(value_type))
                 } else {
                     context.add_codegen_location(CodeGenLocation::LValue);
 
-                    let pointer_value: BasicValueEnum = self::compile_as_ptr_value(context, value, Some(kind));
+                    let pointer_value: BasicValueEnum =
+                        self::compile_as_ptr_value(context, value, Some(kind));
 
                     context.pop_current_codegen_location();
 
@@ -1550,8 +1568,12 @@ pub fn compile_as_value<'ctx>(
 
                     context.push_atomic_modificators(atomic_config);
 
-                    let deref_value: BasicValueEnum =
-                        memory::dereference(context, dereference_pointer.into_pointer_value(), kind, *span);
+                    let deref_value: BasicValueEnum = memory::dereference(
+                        context,
+                        dereference_pointer.into_pointer_value(),
+                        kind,
+                        *span,
+                    );
 
                     context.pop_atomic_modificators();
 

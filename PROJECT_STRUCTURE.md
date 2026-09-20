@@ -137,6 +137,9 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_llvm_target_triple`**  
   Intelligent wrapper around LLVM target triples with architecture queries (`supports_f80`, `supports_ppc128`, `is_64_bit`, etc.).
 
+- **`thrustc_llvm_attribute_architecture`**
+  Applies target architecture calling conventions to LLVM functions and call sites after code generation.
+
 - **`thrustc_llvm_attributes`**  
   Mapping and emission of LLVM-specific attributes.
 
@@ -395,6 +398,7 @@ Source File (.thrust)
 │                                                 │
 │    Target & conventions:                        │
 │    - thrustc_llvm_target_triple                 │
+│    - thrustc_llvm_attribute_architecture        │
 │    - thrustc_llvm_attributes                    │
 │    - thrustc_llvm_call_conventions              │
 │    - thrustc_llvm_call_conventions_checker      │

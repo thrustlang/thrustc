@@ -1103,11 +1103,8 @@ impl CompileTimeBuiltinFunction for TargetCPU {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        let cpu: &str = context
-            .options
-            .get_llvm_backend()
-            .get_target_cpu()
-            .get_cpu_name();
+        let llvm_backend = context.options.get_llvm_backend();
+        let (cpu, _): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
         Ok(BuiltinValue::CString(cpu.as_bytes().to_vec()))
     }
@@ -1135,11 +1132,8 @@ impl CompileTimeBuiltinFunction for TargetCpuFeatures {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        let features: &str = context
-            .options
-            .get_llvm_backend()
-            .get_target_cpu()
-            .get_cpu_features();
+        let llvm_backend = context.options.get_llvm_backend();
+        let (_, features): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
         Ok(BuiltinValue::CString(features.as_bytes().to_vec()))
     }
@@ -1185,11 +1179,8 @@ impl CompileTimeBuiltinFunction for HasFeature {
             }
         };
 
-        let features: &str = context
-            .options
-            .get_llvm_backend()
-            .get_target_cpu()
-            .get_cpu_features();
+        let llvm_backend = context.options.get_llvm_backend();
+        let (_, features): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
         let enabled: bool = features.split(',').any(|entry| {
             let entry: &str = entry.trim();

@@ -1,0 +1,22 @@
+[package]
+name = "thrustc_llvm_attribute_architecture"
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+inkwell = { workspace = true, optional = true }
+
+thrustc_llvm_call_conventions = { path = "../thrustc_llvm_call_conventions" }
+thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
+
+[features]
+default = ["llvm_backend_static"]
+
+llvm_backend_dynamic = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-dynamic"]
+llvm_backend_static  = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-static"]

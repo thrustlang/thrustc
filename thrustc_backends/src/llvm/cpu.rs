@@ -23,6 +23,8 @@ use std::collections::HashSet;
 pub struct LLVMTargetCPU {
     pub target_cpu: String,
     pub target_cpu_features: String,
+    pub(super) target_cpu_configured: bool,
+    pub(super) target_cpu_features_configured: bool,
 }
 
 impl LLVMTargetCPU {
@@ -41,19 +43,24 @@ impl LLVMTargetCPU {
     #[inline]
     pub fn set_cpu_name(&mut self, name: String) {
         self.target_cpu = name;
+        self.target_cpu_configured = true;
     }
 
     #[inline]
     pub fn set_processador_features(&mut self, features: String) {
         self.target_cpu_features = features;
+        self.target_cpu_features_configured = true;
     }
 
     #[inline]
     pub fn disable_cpu_all_features(&mut self) {
         self.target_cpu_features = "".into();
+        self.target_cpu_features_configured = true;
     }
 
     pub fn remove_cpu_features(&mut self, blacklist: Vec<&str>) {
+        self.target_cpu_features_configured = true;
+
         if self.target_cpu_features.is_empty() {
             return;
         }
@@ -89,6 +96,8 @@ impl LLVMTargetCPU {
     }
 
     pub fn add_cpu_features(&mut self, blacklist: Vec<&str>) {
+        self.target_cpu_features_configured = true;
+
         if self.target_cpu_features.is_empty() {
             return;
         }
