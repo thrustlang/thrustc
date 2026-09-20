@@ -60,7 +60,10 @@ pub fn build_structure<'parser>(
         ctx.get_mut_symbols().begin_generic_scope();
     }
 
-    let type_params: Vec<String> = crate::generics::parse_type_parameters(ctx)?;
+    let type_params: Vec<String> =
+        thrustc_generics_monomorphization::generics::parse_type_parameters(
+            &mut ctx.generics_context(),
+        )?;
 
     let attributes: ThrustAttributes =
         attributes::build_compiler_attributes(ctx, &[TokenType::LBrace])?;
@@ -75,7 +78,7 @@ pub fn build_structure<'parser>(
 
     let metadata: StructTypeMetadata = StructTypeMetadata::new(modificator);
 
-    let mut data: StructureData = StructureData::new(name, metadata, span);
+    let mut data: StructureData = StructureData::new(name.to_string(), metadata, span);
     let mut field_position: u32 = 0;
 
     loop {
@@ -102,7 +105,7 @@ pub fn build_structure<'parser>(
             let field_type: Type = typegeneration::build_type(ctx, false)?;
 
             data.1
-                .push((field_name, field_type, field_position, field_span));
+                .push((field_name.to_string(), field_type, field_position, field_span));
 
             field_position = field_position.saturating_add(1);
 
@@ -149,29 +152,29 @@ pub fn build_structure<'parser>(
     if parse_forward {
         if is_generic {
             ctx.get_mut_symbols().new_generic_struct(
-                name,
+                name.to_string(),
                 GenericStructEntry {
                     type_params,
-                    field_names: data.1.iter().map(|(field_name, ..)| *field_name).collect(),
+                    field_names: data.1.iter().map(|(field_name, ..)| field_name.clone()).collect(),
                     field_types: data.1.iter().map(|(_, ty, ..)| ty.clone()).collect(),
                     metadata,
                     span,
                 },
             );
         } else {
-            let struct_: Struct = (name, data.1, attributes, metadata, span);
+            let struct_: Struct = (name.to_string(), data.1, attributes, metadata, span);
 
-            ctx.get_mut_symbols().new_global_struct(name, struct_)?;
+            ctx.get_mut_symbols().new_global_struct(name.to_string(), struct_)?;
         }
 
         Ok(Ast::new_nullptr(span))
     } else {
         if is_generic {
             ctx.get_mut_symbols().new_generic_struct(
-                name,
+                name.to_string(),
                 GenericStructEntry {
                     type_params,
-                    field_names: data.1.iter().map(|(field_name, ..)| *field_name).collect(),
+                    field_names: data.1.iter().map(|(field_name, ..)| field_name.clone()).collect(),
                     field_types: data.1.iter().map(|(_, ty, ..)| ty.clone()).collect(),
                     metadata,
                     span,
@@ -182,7 +185,7 @@ pub fn build_structure<'parser>(
         let structure_type: Type = data.get_struct_type();
 
         let struct_: Ast<'_> = Ast::Struct {
-            name,
+            name: name.to_string(),
             data,
             kind: structure_type,
             attributes,

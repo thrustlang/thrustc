@@ -303,7 +303,7 @@ pub fn lower_precedence<'parser>(
                     }
                 };
 
-                crate::module_import::build_qualified_expression(ctx, &access, symbol, symbol_span)?
+                crate::expressions::qualified::build_qualified_expression(ctx, &access, symbol, symbol_span)?
             } else {
                 reference::build_reference(ctx, name, span)?
             }

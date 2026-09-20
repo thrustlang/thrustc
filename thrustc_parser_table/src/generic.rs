@@ -35,9 +35,9 @@ pub struct GenericFunctionEntry {
 }
 
 #[derive(Debug, Clone)]
-pub struct GenericStructEntry<'parser> {
+pub struct GenericStructEntry {
     pub type_params: Vec<String>,
-    pub field_names: Vec<&'parser str>,
+    pub field_names: Vec<String>,
     pub field_types: Vec<Type>,
     pub metadata: StructTypeMetadata,
     pub span: Span,

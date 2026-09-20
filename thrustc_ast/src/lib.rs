@@ -140,8 +140,8 @@ pub enum Ast<'ast> {
 
     // Structures
     Struct {
-        name: &'ast str,
-        data: StructureData<'ast>,
+        name: String,
+        data: StructureData,
         kind: Type,
         span: Span,
         attributes: ThrustAttributes,
@@ -149,7 +149,7 @@ pub enum Ast<'ast> {
     },
 
     Constructor {
-        name: &'ast str,
+        name: String,
         data: ConstructorData<'ast>,
         kind: Type,
         span: Span,
@@ -269,7 +269,7 @@ pub enum Ast<'ast> {
 
     // Enums
     Enum {
-        name: &'ast str,
+        name: String,
         data: EnumData<'ast>,
         attributes: ThrustAttributes,
         kind: Type,
@@ -286,8 +286,8 @@ pub enum Ast<'ast> {
 
     // Functions
     CompilerIntrinsic {
-        name: &'ast str,
-        external_name: &'ast str,
+        name: String,
+        external_name: String,
         parameters: std::vec::Vec<Ast<'ast>>,
         parameters_types: std::vec::Vec<Type>,
         return_type: Type,
@@ -350,8 +350,8 @@ pub enum Ast<'ast> {
 
     // Static
     Static {
-        name: &'ast str,
-        ascii_name: &'ast str,
+        name: String,
+        ascii_name: String,
         kind: Type,
         value: Option<std::boxed::Box<Ast<'ast>>>,
         attributes: ThrustAttributes,
@@ -363,8 +363,8 @@ pub enum Ast<'ast> {
 
     // Constants
     Const {
-        name: &'ast str,
-        ascii_name: &'ast str,
+        name: String,
+        ascii_name: String,
         kind: Type,
         value: std::boxed::Box<Ast<'ast>>,
         attributes: ThrustAttributes,
@@ -389,7 +389,7 @@ pub enum Ast<'ast> {
 
     // Reference
     Reference {
-        name: &'ast str,
+        name: String,
         kind: Type,
         metadata: ReferenceMetadata,
         span: Span,

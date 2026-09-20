@@ -104,9 +104,9 @@ pub trait AstConstantExtensions {
     fn is_constant_value(&self) -> bool;
 }
 
-pub trait AstStructureDataExtensions<'ast> {
-    fn new(name: &'ast str, metadata: StructTypeMetadata, span: Span) -> Self;
-    fn get_struct_fields(&self) -> &StructureDataFields<'_>;
+pub trait AstStructureDataExtensions {
+    fn new(name: String, metadata: StructTypeMetadata, span: Span) -> Self;
+    fn get_struct_fields(&self) -> &StructureDataFields;
 }
 
 pub trait AstPropertyDataExtensions {

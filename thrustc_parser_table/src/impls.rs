@@ -280,8 +280,8 @@ impl<'parser> StructSymbolExtensions<'parser> for Struct<'parser> {
     }
 
     #[inline]
-    fn get_data(&self) -> StructureData<'parser> {
-        (self.0, self.1.clone(), self.3, self.4)
+    fn get_data(&self) -> StructureData {
+        (self.0.clone(), self.1.clone(), self.3, self.4)
     }
 }
 
@@ -354,7 +354,7 @@ impl FunctionExtensions for Function<'_> {
     }
 
     #[inline]
-    fn get_parameter_names(&self) -> Vec<&str> {
+    fn get_parameter_names(&self) -> Vec<String> {
         self.2.0.clone()
     }
 }

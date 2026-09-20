@@ -53,7 +53,10 @@ pub fn build_custom_type<'parser>(
         ctx.get_mut_symbols().begin_generic_scope();
     }
 
-    let type_params: Vec<String> = crate::generics::parse_type_parameters(ctx)?;
+    let type_params: Vec<String> =
+        thrustc_generics_monomorphization::generics::parse_type_parameters(
+            &mut ctx.generics_context(),
+        )?;
 
     let attributes: ThrustAttributes =
         attributes::build_compiler_attributes(ctx, &[TokenType::LBrace])?;
@@ -81,7 +84,7 @@ pub fn build_custom_type<'parser>(
     if parse_forward {
         if is_generic {
             ctx.get_mut_symbols().new_generic_custom_type(
-                name,
+                name.to_string(),
                 GenericCustomTypeEntry {
                     type_params,
                     kind: custom_type.clone(),
@@ -89,14 +92,14 @@ pub fn build_custom_type<'parser>(
             );
         } else {
             ctx.get_mut_symbols()
-                .new_global_custom_type(name, (custom_type, attributes))?;
+                .new_global_custom_type(name.to_string(), (custom_type, attributes))?;
         }
 
         Ok(Ast::new_nullptr(span))
     } else {
         if is_generic {
             ctx.get_mut_symbols().new_generic_custom_type(
-                name,
+                name.to_string(),
                 GenericCustomTypeEntry {
                     type_params,
                     kind: custom_type.clone(),

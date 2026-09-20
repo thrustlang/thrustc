@@ -30,6 +30,8 @@ use thrustc_parser_context::{ControlContext, TypeContext};
 use thrustc_parser_table::SymbolTable;
 use thrustc_preprocessor::module::Module;
 
+use thrustc_generics_monomorphization::context::GenericsContext;
+use thrustc_import_synthesis::context::ImportContext;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 
@@ -37,9 +39,7 @@ mod abort;
 mod attributes;
 mod builtins;
 mod expressions;
-mod generics;
 mod modificators;
-mod module_import;
 mod reinterpret;
 mod statements;
 mod synchronize;
@@ -136,7 +136,7 @@ impl<'parser> Parser<'parser> {
             }
         }
 
-        crate::generics::resolve_generics(&mut ctx);
+        thrustc_generics_monomorphization::generics::resolve_generics(&mut ctx.generics_context());
 
         let throwed_errors: bool = ctx.verify();
 
@@ -676,5 +676,27 @@ impl ParserContext<'_> {
     #[inline(always)]
     pub fn is_eof(&mut self) -> bool {
         self.peek().kind == TokenType::Eof
+    }
+}
+
+impl<'parser> ParserContext<'parser> {
+    pub fn generics_context(&mut self) -> GenericsContext<'parser, '_> {
+        GenericsContext::new(
+            self.tokens,
+            &mut self.position,
+            &mut self.ast,
+            &mut self.table,
+            self.file,
+            &mut *self.builtins,
+            self.options,
+            self.current_function_name,
+            &mut self.errors,
+            &mut self.warnings,
+            &mut self.diagnostician,
+        )
+    }
+
+    pub fn import_context(&mut self) -> ImportContext<'parser, '_> {
+        ImportContext::new(self.modules, &mut self.table, &mut self.ast)
     }
 }

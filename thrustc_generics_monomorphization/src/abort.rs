@@ -18,25 +18,29 @@
 */
 
 use thrustc_code_location::Span;
-use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
+use thrustc_diagnostician::Diagnostician;
+use thrustc_errors::{CompilationIssue, CompilationPosition};
+use thrustc_logging::LoggingType;
 
-use crate::Ast;
+pub fn abort_compilation(
+    diagnostician: &mut Diagnostician,
+    position: CompilationPosition,
+    message: &str,
+    span: Span,
+    file: std::path::PathBuf,
+    line: u32,
+) -> ! {
+    diagnostician.dispatch_diagnostic(
+        &CompilationIssue::FrontendBug(
+            "Failed to Compile".into(),
+            message.into(),
+            span,
+            position,
+            file,
+            line,
+        ),
+        LoggingType::FrontendBug,
+    );
 
-pub type StructureData = (
-    String,
-    Vec<(String, Type, u32, Span)>,
-    StructTypeMetadata,
-    Span,
-);
-
-pub type StructureDataFields = Vec<(String, Type, u32, Span)>;
-pub type StructDataField<'ctx> = (usize, &'ctx (String, Type, u32, Span));
-
-pub type EnumData<'ctx> = Vec<(String, Type, Ast<'ctx>)>;
-pub type EnumDataField<'ctx> = (String, Type, Ast<'ctx>);
-
-pub type ConstructorData<'ctx> = Vec<(String, Ast<'ctx>, Type, u32)>;
-
-pub type PropertyData = Vec<(Type, (Type, u32))>;
-pub type PropertyDataField = (Type, (Type, u32));
-pub type PropertyDataBaseField = (Type, u32);
+    std::process::exit(thrustc_constants::FAILURE_CODE);
+}

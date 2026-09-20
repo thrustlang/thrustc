@@ -40,10 +40,10 @@ use thrustc_typesystem::{
     traits::{TypeCodeLocation, TypePointerExtensions},
 };
 
-use crate::ParserContext;
+use crate::context::GenericsContext;
 
 pub fn parse_type_parameters<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
 ) -> Result<Vec<String>, CompilationIssue> {
     if !ctx.check(TokenType::LBracket) {
         return Ok(Vec::with_capacity(0));
@@ -106,17 +106,14 @@ pub fn parse_type_parameters<'parser>(
     Ok(parameters)
 }
 
-pub fn resolve_generics<'parser>(ctx: &mut ParserContext<'parser>) {
+pub fn resolve_generics<'parser>(ctx: &mut GenericsContext<'parser, '_>) {
     if !ctx.get_symbols().has_any_generic() {
         return;
     }
 
     let templates: HashMap<String, Ast<'parser>> = self::collect_local_templates(ctx);
-
     let mut memo: HashSet<String> = HashSet::new();
-
     let existing: Vec<Ast<'parser>> = std::mem::take(ctx.get_mut_ast());
-
     let mut output: Vec<Ast<'parser>> = Vec::with_capacity(existing.len() + 8);
 
     for node in existing {
@@ -212,7 +209,7 @@ pub fn resolve_generics<'parser>(ctx: &mut ParserContext<'parser>) {
 }
 
 fn emit_unused_type_parameter_warnings<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
     templates: &HashMap<String, Ast<'parser>>,
 ) {
     let mut warnings: Vec<CompilationIssue> = Vec::new();
@@ -282,7 +279,7 @@ fn emit_unused_type_parameter_warnings<'parser>(
 }
 
 fn resolve_ast<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
     node: Ast<'parser>,
     templates: &HashMap<String, Ast<'parser>>,
     memo: &mut HashSet<String>,
@@ -423,7 +420,7 @@ fn resolve_ast<'parser>(
 }
 
 fn ensure_instantiation<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
     symbol_key: &str,
     entry: &GenericFunctionEntry,
     env: &thrustc_generics::TypeEnv,
@@ -540,7 +537,7 @@ fn ensure_instantiation<'parser>(
 }
 
 fn resolve_children<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
     node: Ast<'parser>,
     templates: &HashMap<String, Ast<'parser>>,
     memo: &mut HashSet<String>,
@@ -1195,18 +1192,19 @@ fn resolve_children<'parser>(
             span,
             id,
         } => {
-            let metadata: ReferenceMetadata = if matches!(metadata.get_type(), ReferenceType::Parameter)
-                && metadata.is_allocated() != kind.is_ptr_like_type()
-            {
-                ReferenceMetadata::new(
-                    kind.is_ptr_like_type(),
-                    metadata.is_mutable(),
-                    ReferenceType::Parameter,
-                    metadata.is_unitialized(),
-                )
-            } else {
-                metadata
-            };
+            let metadata: ReferenceMetadata =
+                if matches!(metadata.get_type(), ReferenceType::Parameter)
+                    && metadata.is_allocated() != kind.is_ptr_like_type()
+                {
+                    ReferenceMetadata::new(
+                        kind.is_ptr_like_type(),
+                        metadata.is_mutable(),
+                        ReferenceType::Parameter,
+                        metadata.is_unitialized(),
+                    )
+                } else {
+                    metadata
+                };
 
             Ast::Reference {
                 name,
@@ -1420,7 +1418,7 @@ fn resolve_children<'parser>(
 }
 
 fn resolve_constructor_data<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
     data: ConstructorData<'parser>,
     templates: &HashMap<String, Ast<'parser>>,
     memo: &mut HashSet<String>,
@@ -1439,7 +1437,7 @@ fn resolve_constructor_data<'parser>(
 }
 
 fn resolve_enum_data<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
     data: EnumData<'parser>,
     templates: &HashMap<String, Ast<'parser>>,
     memo: &mut HashSet<String>,
@@ -1457,7 +1455,7 @@ fn resolve_enum_data<'parser>(
 }
 
 fn resolve_module_expression_values<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
     values: ModuleExpressionValues<'parser>,
     templates: &HashMap<String, Ast<'parser>>,
     memo: &mut HashSet<String>,
@@ -1475,7 +1473,7 @@ fn resolve_module_expression_values<'parser>(
 }
 
 fn resolve_builtin<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
     builtin: AstBuiltin<'parser>,
     templates: &HashMap<String, Ast<'parser>>,
     memo: &mut HashSet<String>,
@@ -1536,7 +1534,7 @@ fn resolve_builtin<'parser>(
 }
 
 fn collect_local_templates<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
 ) -> HashMap<String, Ast<'parser>> {
     let mut templates: HashMap<String, Ast<'parser>> = HashMap::new();
 
@@ -1563,7 +1561,7 @@ fn collect_local_templates<'parser>(
 }
 
 fn resolve_ast_list<'parser>(
-    ctx: &mut ParserContext<'parser>,
+    ctx: &mut GenericsContext<'parser, '_>,
     nodes: Vec<Ast<'parser>>,
     templates: &HashMap<String, Ast<'parser>>,
     memo: &mut HashSet<String>,

@@ -28,6 +28,7 @@ pub mod index;
 pub mod load;
 pub mod precedences;
 pub mod property;
+pub mod qualified;
 pub mod reference;
 pub mod struct_constructor;
 

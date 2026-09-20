@@ -249,7 +249,7 @@ pub fn build_assembler_function<'parser>(
             AssemblerFunctionParametersTypes(parameters_types);
 
         ctx.get_mut_symbols().new_asm_function(
-            asm_function_name,
+            asm_function_name.to_string(),
             (return_type, parameters_types_repr, is_public),
         )?;
 

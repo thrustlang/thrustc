@@ -84,7 +84,7 @@ pub fn build_reference<'parser>(
                         };
 
                         return Ok(Ast::Reference {
-                            name,
+                            name: name.to_string(),
                             kind: function_ty,
                             span,
                             metadata: ReferenceMetadata::new(
@@ -122,7 +122,7 @@ pub fn build_reference<'parser>(
                         let is_unitialized: bool = metadata.is_unitialized();
 
                         return Ok(Ast::Reference {
-                            name,
+                            name: name.to_string(),
                             kind: static_type,
                             span,
                             metadata: ReferenceMetadata::new(
@@ -156,7 +156,7 @@ pub fn build_reference<'parser>(
                         let constant_type: Type = object.get_type();
 
                         return Ok(Ast::Reference {
-                            name,
+                            name: name.to_string(),
                             kind: constant_type,
                             span,
                             metadata: ReferenceMetadata::new(
@@ -191,7 +191,7 @@ pub fn build_reference<'parser>(
                         let is_allocated: bool = parameter_type.is_ptr_like_type();
 
                         return Ok(Ast::Reference {
-                            name,
+                            name: name.to_string(),
                             kind: parameter_type,
                             span,
                             metadata: ReferenceMetadata::new(
@@ -224,7 +224,7 @@ pub fn build_reference<'parser>(
                 let is_allocated: bool = lli_type.is_ptr_type();
 
                 return Ok(Ast::Reference {
-                    name,
+                    name: name.to_string(),
                     kind: lli_type,
                     span,
                     metadata: ReferenceMetadata::new(
@@ -254,7 +254,7 @@ pub fn build_reference<'parser>(
                         let is_unitialized: bool = metadata.is_unitialized();
 
                         let reference: Ast = Ast::Reference {
-                            name,
+                            name: name.to_string(),
                             kind: local_type.clone(),
                             span,
                             metadata: ReferenceMetadata::new(

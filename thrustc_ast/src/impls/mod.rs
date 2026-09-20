@@ -502,24 +502,24 @@ impl AstConstructorDataExtensions for ConstructorData<'_> {
     }
 }
 
-impl<'a> AstStructureDataExtensions<'a> for StructureData<'a> {
+impl AstStructureDataExtensions for StructureData {
     #[inline]
-    fn new(name: &'a str, metadata: StructTypeMetadata, span: thrustc_code_location::Span) -> Self {
+    fn new(name: String, metadata: StructTypeMetadata, span: thrustc_code_location::Span) -> Self {
         (name, Vec::with_capacity(u8::MAX as usize), metadata, span)
     }
 
     #[inline]
-    fn get_struct_fields(&self) -> &crate::ast_logic_data::StructureDataFields<'_> {
+    fn get_struct_fields(&self) -> &crate::ast_logic_data::StructureDataFields {
         &self.1
     }
 }
 
-impl AstStructFieldsDataExtensions for StructureData<'_> {
+impl AstStructFieldsDataExtensions for StructureData {
     #[inline]
     fn get_struct_type(&self) -> Type {
         let types: Vec<Type> = self.1.iter().map(|field| field.1.clone()).collect();
 
-        let name: String = self.0.to_string();
+        let name: String = self.0.clone();
         let span: Span = self.3;
 
         let metadata: StructTypeMetadata = self.get_struct_metadata();

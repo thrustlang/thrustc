@@ -87,14 +87,14 @@ pub fn parse_static_stmt<'parser>(
 
         if !ctx.is_main_scope() {
             ctx.get_mut_symbols().new_static(
-                name,
+                name.to_string(),
                 (static_type.clone(), metadata, attributes.clone()),
                 span,
             )?;
 
             let static_: Ast = Ast::Static {
-                name,
-                ascii_name,
+                name: name.to_string(),
+                ascii_name: ascii_name.to_string(),
                 kind: static_type,
                 value: None,
                 attributes,
@@ -142,14 +142,14 @@ pub fn parse_static_stmt<'parser>(
 
         if !ctx.is_main_scope() {
             ctx.get_mut_symbols().new_static(
-                name,
+                name.to_string(),
                 (static_type.clone(), metadata, attributes.clone()),
                 span,
             )?;
 
             let static_: Ast = Ast::Static {
-                name,
-                ascii_name,
+                name: name.to_string(),
+                ascii_name: ascii_name.to_string(),
                 kind: static_type,
                 value: Some(value.into()),
                 attributes,

@@ -87,7 +87,7 @@ pub fn parse_enum_stmt<'parser>(
                 String::from("Expected ';'."),
             )?;
 
-            data.push((name, field_type, expr));
+            data.push((name.to_string(), field_type, expr));
 
             continue;
         } else {
@@ -107,10 +107,10 @@ pub fn parse_enum_stmt<'parser>(
 
     if !ctx.is_main_scope() {
         ctx.get_mut_symbols()
-            .new_enum(enum_name, (data.clone(), enum_attributes.clone()), span)?;
+            .new_enum(enum_name.to_string(), (data.clone(), enum_attributes.clone()), span)?;
 
         Ok(Ast::Enum {
-            name: enum_name,
+            name: enum_name.to_string(),
             data,
             attributes: enum_attributes,
             kind: Type::Void { span },

@@ -148,7 +148,12 @@ pub fn build_import<'parser>(
         };
 
         if !access.is_empty() {
-            crate::module_import::synthesize_only_import(ctx, &access, &only_names, span)?;
+            thrustc_import_synthesis::synthesis::synthesize_only_import(
+                &mut ctx.import_context(),
+                &access,
+                &only_names,
+                span,
+            )?;
         }
     }
 

@@ -17,19 +17,19 @@
 
 */
 
-use thrustc_ast::{ast_metadata::LocalMetadata, traits::AstGetType, Ast, NodeId};
-use thrustc_ast_modificators::{traits::ModificatorsExtensions, Modificators};
+use thrustc_ast::{Ast, NodeId, ast_metadata::LocalMetadata, traits::AstGetType};
+use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
+use thrustc_atomic_ordering::ThrustAtomicOrdering;
 use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_attributes::{ThrustAttribute, ThrustAttributeComparator, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_atomic_ordering::ThrustAtomicOrdering;
-use thrustc_parser_context::{traits::TypeContextExtensions, Position};
-use thrustc_token::{traits::TokenExtensions, Token};
+use thrustc_parser_context::{Position, traits::TypeContextExtensions};
+use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{traits::InfererTypeExtensions, Type};
+use thrustc_typesystem::{Type, traits::InfererTypeExtensions};
 
-use crate::{attributes, expressions, modificators, typegeneration, ParserContext};
+use crate::{ParserContext, attributes, expressions, modificators, typegeneration};
 
 pub fn build_variable_stmt<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -79,8 +79,11 @@ pub fn build_variable_stmt<'parser>(
         if !ctx.is_main_scope() {
             self::ensure_deallocator(ctx, &attributes, &local_type, span)?;
 
-            ctx.get_mut_symbols()
-                .new_local(name, (local_type.clone(), metadata, span), span)?;
+            ctx.get_mut_symbols().new_local(
+                name.to_string(),
+                (local_type.clone(), metadata, span),
+                span,
+            )?;
 
             let local: Ast = Ast::Var {
                 name,
@@ -142,8 +145,11 @@ pub fn build_variable_stmt<'parser>(
         if !ctx.is_main_scope() {
             self::ensure_deallocator(ctx, &attributes, &local_type, span)?;
 
-            ctx.get_mut_symbols()
-                .new_local(name, (local_type.clone(), metadata, span), span)?;
+            ctx.get_mut_symbols().new_local(
+                name.to_string(),
+                (local_type.clone(), metadata, span),
+                span,
+            )?;
 
             let local: Ast = Ast::Var {
                 name,
@@ -180,7 +186,11 @@ fn ensure_deallocator<'parser>(
         return Ok(());
     }
 
-    let _ = crate::module_import::ensure_deallocator_for_type(ctx, kind, attr_span)?;
+    let _ = thrustc_import_synthesis::synthesis::ensure_deallocator_for_type(
+        &mut ctx.import_context(),
+        kind,
+        attr_span,
+    )?;
 
     Ok(())
 }

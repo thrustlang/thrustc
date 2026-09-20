@@ -88,13 +88,13 @@ pub fn build_global_static<'parser>(
 
         if parse_forward {
             ctx.get_mut_symbols()
-                .new_global_static(name, (static_type, metadata, attributes))?;
+                .new_global_static(name.to_string(), (static_type, metadata, attributes))?;
 
             Ok(Ast::new_nullptr(span))
         } else {
             let static_: Ast = Ast::Static {
-                name,
-                ascii_name,
+                name: name.to_string(),
+                ascii_name: ascii_name.to_string(),
                 kind: static_type,
                 value: None,
                 attributes,
@@ -140,13 +140,13 @@ pub fn build_global_static<'parser>(
 
         if parse_forward {
             ctx.get_mut_symbols()
-                .new_global_static(name, (static_type, metadata, attributes))?;
+                .new_global_static(name.to_string(), (static_type, metadata, attributes))?;
 
             Ok(Ast::new_nullptr(span))
         } else {
             let static_: Ast = Ast::Static {
-                name,
-                ascii_name,
+                name: name.to_string(),
+                ascii_name: ascii_name.to_string(),
                 kind: static_type,
                 value: Some(value.into()),
                 attributes,

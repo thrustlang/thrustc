@@ -29,8 +29,8 @@ use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 use ahash::AHashMap as HashMap;
 
 pub type Struct<'parser> = (
-    &'parser str,
-    Vec<(&'parser str, Type, u32, Span)>,
+    String,
+    Vec<(String, Type, u32, Span)>,
     ThrustAttributes,
     StructTypeMetadata,
     Span,
@@ -39,7 +39,7 @@ pub type Struct<'parser> = (
 pub type Function<'parser> = (
     Type,
     FunctionParametersTypes,
-    FunctionParameterNames<'parser>,
+    FunctionParameterNames,
     bool,
 );
 pub type AssemblerFunction<'parser> = (Type, AssemblerFunctionParametersTypes, bool);
@@ -49,7 +49,7 @@ pub type Intrinsic<'parser> = (Type, IntrinsicParametersTypes, bool);
 pub struct FunctionParametersTypes(pub Vec<Type>);
 
 #[derive(Debug, Clone)]
-pub struct FunctionParameterNames<'parser>(pub Vec<&'parser str>);
+pub struct FunctionParameterNames(pub Vec<String>);
 
 #[derive(Debug, Clone)]
 pub struct AssemblerFunctionParametersTypes(pub Vec<Type>);
@@ -80,27 +80,27 @@ pub type LLISymbol<'parser> = (Type, Span);
 pub type LocalSymbol<'parser> = (Type, LocalMetadata, Span);
 pub type ParameterSymbol<'parser> = (Type, FunctionParameterMetadata, Span);
 
-pub type GlobalCustomTypes<'parser> = HashMap<&'parser str, CustomTypeSymbol<'parser>>;
-pub type LocalCustomTypes<'parser> = Vec<HashMap<&'parser str, CustomTypeSymbol<'parser>>>;
+pub type GlobalCustomTypes<'parser> = HashMap<String, CustomTypeSymbol<'parser>>;
+pub type LocalCustomTypes<'parser> = Vec<HashMap<String, CustomTypeSymbol<'parser>>>;
 
-pub type GlobalStructs<'parser> = HashMap<&'parser str, Struct<'parser>>;
-pub type LocalStructs<'parser> = Vec<HashMap<&'parser str, Struct<'parser>>>;
+pub type GlobalStructs<'parser> = HashMap<String, Struct<'parser>>;
+pub type LocalStructs<'parser> = Vec<HashMap<String, Struct<'parser>>>;
 
-pub type LocalStatics<'parser> = Vec<HashMap<&'parser str, StaticSymbol<'parser>>>;
-pub type GlobalStatics<'parser> = HashMap<&'parser str, StaticSymbol<'parser>>;
+pub type LocalStatics<'parser> = Vec<HashMap<String, StaticSymbol<'parser>>>;
+pub type GlobalStatics<'parser> = HashMap<String, StaticSymbol<'parser>>;
 
-pub type LocalConstants<'parser> = Vec<HashMap<&'parser str, ConstantSymbol<'parser>>>;
-pub type GlobalConstants<'parser> = HashMap<&'parser str, ConstantSymbol<'parser>>;
+pub type LocalConstants<'parser> = Vec<HashMap<String, ConstantSymbol<'parser>>>;
+pub type GlobalConstants<'parser> = HashMap<String, ConstantSymbol<'parser>>;
 
-pub type GlobalEnums<'parser> = HashMap<&'parser str, EnumSymbol<'parser>>;
-pub type LocalEnums<'parser> = Vec<HashMap<&'parser str, EnumSymbol<'parser>>>;
+pub type GlobalEnums<'parser> = HashMap<String, EnumSymbol<'parser>>;
+pub type LocalEnums<'parser> = Vec<HashMap<String, EnumSymbol<'parser>>>;
 
 pub type Parameters<'parser> = HashMap<String, ParameterSymbol<'parser>>;
 
-pub type Intrinsics<'parser> = HashMap<&'parser str, Intrinsic<'parser>>;
+pub type Intrinsics<'parser> = HashMap<String, Intrinsic<'parser>>;
 
-pub type Functions<'parser> = HashMap<&'parser str, Function<'parser>>;
-pub type AssemblerFunctions<'parser> = HashMap<&'parser str, AssemblerFunction<'parser>>;
+pub type Functions<'parser> = HashMap<String, Function<'parser>>;
+pub type AssemblerFunctions<'parser> = HashMap<String, AssemblerFunction<'parser>>;
 
-pub type LLIs<'parser> = Vec<HashMap<&'parser str, LLISymbol<'parser>>>;
-pub type Locals<'parser> = Vec<HashMap<&'parser str, LocalSymbol<'parser>>>;
+pub type LLIs<'parser> = Vec<HashMap<String, LLISymbol<'parser>>>;
+pub type Locals<'parser> = Vec<HashMap<String, LocalSymbol<'parser>>>;

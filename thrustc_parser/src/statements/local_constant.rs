@@ -94,14 +94,14 @@ pub fn parse_constant_stmt<'parser>(
 
     if !ctx.is_main_scope() {
         ctx.get_mut_symbols().new_constant(
-            name,
+            name.to_string(),
             (const_type.clone(), attributes.clone(), Some(value.clone())),
             span,
         )?;
 
         let constant: Ast<'_> = Ast::Const {
-            name,
-            ascii_name,
+            name: name.to_string(),
+            ascii_name: ascii_name.to_string(),
             kind: const_type,
             value: value.into(),
             attributes,

@@ -265,14 +265,17 @@ pub fn build_call<'parser>(
 
                 match function {
                     Ok(function) => {
-                        let parameter_names: Vec<&str> =
+                        let parameter_names: Vec<String> =
                             FunctionExtensions::get_parameter_names(&function);
+
+                        let parameter_names_refs: Vec<&str> =
+                            parameter_names.iter().map(String::as_str).collect();
 
                         let args: Vec<Ast> = match self::reorder_call_arguments(
                             name,
                             span,
                             arguments,
-                            &parameter_names,
+                            &parameter_names_refs,
                             function.3,
                         ) {
                             Ok(args) => args,

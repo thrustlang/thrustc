@@ -64,7 +64,7 @@ pub fn parse_custom_type_stmt<'parser>(
 
     if !ctx.is_main_scope() {
         ctx.get_mut_symbols()
-            .new_custom_type(name, (custom_type.clone(), attributes), span)?;
+            .new_custom_type(name.to_string(), (custom_type.clone(), attributes), span)?;
 
         Ok(Ast::CustomType {
             name: name.to_string(),

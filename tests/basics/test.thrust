@@ -1,8 +1,28 @@
 import std::io;
-import std::collections::vector;
+
+fn fibonacci[T](n: T) T @public {
+    if n <= 0 { return 0; }
+    if n == 1 { return 1; }
+
+    var a: T = 0;
+    var b: T = 1;
+    var i: T = 2;
+    var result: T = 0;
+
+    while i <= n {
+        result = a + b;
+        a = b;
+        b = result;
+        i++;
+    }
+
+    return result;
+}
 
 fn main() s32 @public {
-    var vt @dealloc := vector::newVector[s32]();
+    var result: s32 = fibonacci[s32](10);
+    
+    io::print("fib(%d) = %d\n", 10, result);
     
     return 0;
 }

@@ -96,12 +96,12 @@ pub fn build_global_const<'parser>(
 
     if parse_forward {
         ctx.get_mut_symbols()
-            .new_global_constant(name, (constant_type, attributes, Some(value.clone())))?;
+            .new_global_constant(name.to_string(), (constant_type, attributes, Some(value.clone())))?;
 
         Ok(Ast::new_nullptr(span))
     } else {
         ctx.get_mut_symbols().new_global_constant(
-            name,
+            name.to_string(),
             (
                 constant_type.clone(),
                 attributes.clone(),
@@ -110,8 +110,8 @@ pub fn build_global_const<'parser>(
         )?;
 
         let constant: Ast<'_> = Ast::Const {
-            name,
-            ascii_name,
+            name: name.to_string(),
+            ascii_name: ascii_name.to_string(),
             kind: constant_type,
             value: value.into(),
             attributes,

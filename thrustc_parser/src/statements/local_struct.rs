@@ -63,7 +63,7 @@ pub fn parse_structure_stmt<'parser>(
 
     let metadata: StructTypeMetadata = StructTypeMetadata::new(modificator);
 
-    let mut data: StructureData = StructureData::new(name, metadata, span);
+    let mut data: StructureData = StructureData::new(name.to_string(), metadata, span);
     let mut field_position: u32 = 0;
 
     loop {
@@ -90,7 +90,7 @@ pub fn parse_structure_stmt<'parser>(
             let field_type: Type = typegeneration::build_type(ctx, false)?;
 
             data.1
-                .push((field_name, field_type, field_position, field_span));
+                .push((field_name.to_string(), field_type, field_position, field_span));
 
             field_position = field_position.saturating_add(1);
 
@@ -131,12 +131,12 @@ pub fn parse_structure_stmt<'parser>(
     let ty: Type = data.get_struct_type();
 
     if !ctx.is_main_scope() {
-        let struct_: Struct = (name, data.1.clone(), attributes.clone(), metadata, span);
+        let struct_: Struct = (name.to_string(), data.1.clone(), attributes.clone(), metadata, span);
 
-        ctx.get_mut_symbols().new_struct(name, struct_, span)?;
+        ctx.get_mut_symbols().new_struct(name.to_string(), struct_, span)?;
 
         let struct_ast: Ast<'_> = Ast::Struct {
-            name,
+            name: name.to_string(),
             data,
             kind: ty,
             attributes,

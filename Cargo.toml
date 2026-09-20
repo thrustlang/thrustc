@@ -58,6 +58,8 @@ members = [
     "thrustc_utils", 
     "thrustc_std", 
     "thrustc_generics",
+    "thrustc_generics_monomorphization",
+    "thrustc_import_synthesis",
 ]
 
 default-members = ["thrustc"]

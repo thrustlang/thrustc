@@ -140,15 +140,15 @@ pub fn build_compiler_intrinsic<'parser>(
             IntrinsicParametersTypes(parameters_types);
 
         ctx.get_mut_symbols().new_compiler_intrinsic(
-            name,
+            name.to_string(),
             (return_type, intrinsic_parameters_types_repr, has_ignore),
         )?;
 
         Ok(Ast::new_nullptr(span))
     } else {
         let ast: Ast<'_> = Ast::CompilerIntrinsic {
-            name,
-            external_name,
+            name: name.to_string(),
+            external_name: external_name.to_string(),
             parameters,
             parameters_types,
             return_type,

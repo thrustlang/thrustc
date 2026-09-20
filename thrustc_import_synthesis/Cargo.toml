@@ -1,0 +1,27 @@
+[package]
+name = "thrustc_import_synthesis"
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+thrustc_ast = { path = "../thrustc_ast" }
+thrustc_ast_modificators = { path = "../thrustc_ast_modificators" }
+thrustc_attributes = { path = "../thrustc_attributes" }
+thrustc_atomic_ordering = { path = "../thrustc_atomic_ordering" }
+thrustc_code_location = { path = "../thrustc_code_location" }
+thrustc_compile_time = { path = "../thrustc_compile_time" }
+thrustc_entities = { path = "../thrustc_entities" }
+thrustc_errors = { path = "../thrustc_errors" }
+thrustc_generics = { path = "../thrustc_generics" }
+thrustc_parser_external_table = { path = "../thrustc_parser_external_table" }
+thrustc_parser_table = { path = "../thrustc_parser_table" }
+thrustc_preprocessor = { path = "../thrustc_preprocessor" }
+thrustc_thread_mode = { path = "../thrustc_thread_mode" }
+thrustc_typesystem = { path = "../thrustc_typesystem" }

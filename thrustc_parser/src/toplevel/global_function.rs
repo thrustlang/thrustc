@@ -57,7 +57,10 @@ pub fn build_function<'parser>(
         ctx.get_mut_symbols().begin_generic_scope();
     }
 
-    let type_params: Vec<String> = crate::generics::parse_type_parameters(ctx)?;
+    let type_params: Vec<String> =
+        thrustc_generics_monomorphization::generics::parse_type_parameters(
+            &mut ctx.generics_context(),
+        )?;
 
     ctx.consume(
         TokenType::LParen,
@@ -67,7 +70,7 @@ pub fn build_function<'parser>(
 
     let mut parameters: Vec<Ast> = Vec::with_capacity(16);
     let mut parameters_types: Vec<Type> = Vec::with_capacity(16);
-    let mut parameter_names: Vec<&'parser str> = Vec::with_capacity(16);
+    let mut parameter_names: Vec<String> = Vec::with_capacity(16);
     let mut parameter_position: u32 = 0;
 
     loop {
@@ -96,7 +99,7 @@ pub fn build_function<'parser>(
             FunctionParameterMetadata::new(kind.is_ptr_like_type());
 
         parameters_types.push(kind.clone());
-        parameter_names.push(name);
+        parameter_names.push(name.to_string());
 
         parameters.push(Ast::FunctionParameter {
             name: name.to_string(),
@@ -151,7 +154,7 @@ pub fn build_function<'parser>(
 
     if is_generic {
         ctx.get_mut_symbols().new_generic_function(
-            name,
+            name.to_string(),
             GenericFunctionEntry {
                 name: name.to_string(),
                 type_params,
@@ -172,7 +175,7 @@ pub fn build_function<'parser>(
     if parse_forward {
         if !is_generic {
             ctx.get_mut_symbols().new_function(
-                name,
+                name.to_string(),
                 (
                     return_type,
                     FunctionParametersTypes(parameters_types),

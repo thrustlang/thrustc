@@ -890,12 +890,12 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
 }
 
 fn substitute_structure_data<'ast>(
-    data: StructureData<'ast>,
+    data: StructureData,
     env: &TypeEnv,
-) -> StructureData<'ast> {
+) -> StructureData {
     let (name, fields, metadata, span) = data;
 
-    let fields: Vec<(&'ast str, Type, u32, Span)> = fields
+    let fields: Vec<(String, Type, u32, Span)> = fields
         .into_iter()
         .map(|(field_name, field_type, position, field_span)| {
             (

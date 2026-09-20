@@ -88,7 +88,7 @@ pub fn build_enum<'parser>(
                 "Expected ';'.".into(),
             )?;
 
-            data.push((name, field_type, expr));
+            data.push((name.to_string(), field_type, expr));
         } else {
             let span: Span = ctx.advance()?.get_span();
 
@@ -110,12 +110,12 @@ pub fn build_enum<'parser>(
 
     if parse_forward {
         ctx.get_mut_symbols()
-            .new_global_enum(name, (data, attributes))?;
+            .new_global_enum(name.to_string(), (data, attributes))?;
 
         Ok(Ast::new_nullptr(span))
     } else {
         Ok(Ast::Enum {
-            name,
+            name: name.to_string(),
             data,
             attributes,
             kind: Type::Void { span },

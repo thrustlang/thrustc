@@ -54,9 +54,9 @@ pub struct SymbolTable<'parser> {
     global_constants: GlobalConstants<'parser>,
     global_enums: GlobalEnums<'parser>,
 
-    generic_functions: ahash::AHashMap<&'parser str, GenericFunctionEntry>,
-    generic_structs: ahash::AHashMap<&'parser str, GenericStructEntry<'parser>>,
-    generic_custom_types: ahash::AHashMap<&'parser str, GenericCustomTypeEntry>,
+    generic_functions: ahash::AHashMap<String, GenericFunctionEntry>,
+    generic_structs: ahash::AHashMap<String, GenericStructEntry>,
+    generic_custom_types: ahash::AHashMap<String, GenericCustomTypeEntry>,
 
     local_structs: LocalStructs<'parser>,
     local_statics: LocalStatics<'parser>,
@@ -68,7 +68,7 @@ pub struct SymbolTable<'parser> {
     llis: LLIs<'parser>,
     parameters: Parameters<'parser>,
 
-    imported_symbols: ahash::AHashMap<&'parser str, PathBuf>,
+    imported_symbols: ahash::AHashMap<String, PathBuf>,
 
     type_parameter_scope: GenericScope,
 
@@ -143,7 +143,7 @@ impl SymbolTable<'_> {
 
 impl<'parser> SymbolTable<'parser> {
     #[inline]
-    pub fn record_import_origin(&mut self, id: &'parser str, path: PathBuf) {
+    pub fn record_import_origin(&mut self, id: String, path: PathBuf) {
         self.imported_symbols.insert(id, path);
     }
 
@@ -189,17 +189,17 @@ impl SymbolTable<'_> {
 
 impl<'parser> SymbolTable<'parser> {
     #[inline]
-    pub fn new_generic_function(&mut self, id: &'parser str, entry: GenericFunctionEntry) {
+    pub fn new_generic_function(&mut self, id: String, entry: GenericFunctionEntry) {
         self.generic_functions.insert(id, entry);
     }
 
     #[inline]
-    pub fn new_generic_struct(&mut self, id: &'parser str, entry: GenericStructEntry<'parser>) {
+    pub fn new_generic_struct(&mut self, id: String, entry: GenericStructEntry) {
         self.generic_structs.insert(id, entry);
     }
 
     #[inline]
-    pub fn new_generic_custom_type(&mut self, id: &'parser str, entry: GenericCustomTypeEntry) {
+    pub fn new_generic_custom_type(&mut self, id: String, entry: GenericCustomTypeEntry) {
         self.generic_custom_types.insert(id, entry);
     }
 }
@@ -225,26 +225,22 @@ impl<'parser> SymbolTable<'parser> {
     #[inline]
     pub fn iter_generic_functions(
         &self,
-    ) -> impl Iterator<Item = (&'parser str, &GenericFunctionEntry)> {
-        self.generic_functions
-            .iter()
-            .map(|(id, entry)| (*id, entry))
+    ) -> impl Iterator<Item = (&String, &GenericFunctionEntry)> {
+        self.generic_functions.iter()
     }
 
     #[inline]
     pub fn iter_generic_structs(
         &self,
-    ) -> impl Iterator<Item = (&'parser str, &GenericStructEntry<'parser>)> {
-        self.generic_structs.iter().map(|(id, entry)| (*id, entry))
+    ) -> impl Iterator<Item = (&String, &GenericStructEntry)> {
+        self.generic_structs.iter()
     }
 
     #[inline]
     pub fn iter_generic_custom_types(
         &self,
-    ) -> impl Iterator<Item = (&'parser str, &GenericCustomTypeEntry)> {
-        self.generic_custom_types
-            .iter()
-            .map(|(id, entry)| (*id, entry))
+    ) -> impl Iterator<Item = (&String, &GenericCustomTypeEntry)> {
+        self.generic_custom_types.iter()
     }
 }
 
@@ -255,7 +251,7 @@ impl<'parser> SymbolTable<'parser> {
     }
 
     #[inline]
-    pub fn get_generic_struct(&self, id: &str) -> Option<&GenericStructEntry<'parser>> {
+    pub fn get_generic_struct(&self, id: &str) -> Option<&GenericStructEntry> {
         self.generic_structs.get(id)
     }
 
@@ -349,7 +345,7 @@ impl<'parser> SymbolTable<'parser> {
 impl<'parser> SymbolTable<'parser> {
     pub fn new_local(
         &mut self,
-        id: &'parser str,
+        id: String,
         local: LocalSymbol<'parser>,
         span: Span,
     ) -> Result<(), CompilationIssue> {
@@ -371,7 +367,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_global_static(
         &mut self,
-        id: &'parser str,
+        id: String,
         static_: StaticSymbol<'parser>,
     ) -> Result<(), CompilationIssue> {
         self.global_statics.insert(id, static_);
@@ -381,7 +377,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_static(
         &mut self,
-        id: &'parser str,
+        id: String,
         static_: StaticSymbol<'parser>,
         span: Span,
     ) -> Result<(), CompilationIssue> {
@@ -403,7 +399,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_global_constant(
         &mut self,
-        id: &'parser str,
+        id: String,
         constant: ConstantSymbol<'parser>,
     ) -> Result<(), CompilationIssue> {
         self.global_constants.insert(id, constant);
@@ -413,7 +409,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_constant(
         &mut self,
-        id: &'parser str,
+        id: String,
         constant: ConstantSymbol<'parser>,
         span: Span,
     ) -> Result<(), CompilationIssue> {
@@ -435,7 +431,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_global_custom_type(
         &mut self,
-        id: &'parser str,
+        id: String,
         ctype: CustomTypeSymbol<'parser>,
     ) -> Result<(), CompilationIssue> {
         self.global_custom_types.insert(id, ctype);
@@ -445,7 +441,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_custom_type(
         &mut self,
-        id: &'parser str,
+        id: String,
         ctype: CustomTypeSymbol<'parser>,
         span: Span,
     ) -> Result<(), CompilationIssue> {
@@ -467,7 +463,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_global_struct(
         &mut self,
-        id: &'parser str,
+        id: String,
         fields: Struct<'parser>,
     ) -> Result<(), CompilationIssue> {
         self.global_structs.insert(id, fields);
@@ -477,7 +473,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_struct(
         &mut self,
-        id: &'parser str,
+        id: String,
         fields: Struct<'parser>,
         span: Span,
     ) -> Result<(), CompilationIssue> {
@@ -499,7 +495,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_global_enum(
         &mut self,
-        id: &'parser str,
+        id: String,
         union: EnumSymbol<'parser>,
     ) -> Result<(), CompilationIssue> {
         self.global_enums.insert(id, union);
@@ -514,12 +510,12 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_enum(
         &mut self,
-        id: &'parser str,
+        id: String,
         union: EnumSymbol<'parser>,
         span: Span,
     ) -> Result<(), CompilationIssue> {
         if let Some(last_scope) = self.local_enums.last_mut() {
-            if last_scope.contains_key(id) {
+            if last_scope.contains_key(&id) {
                 return Err(CompilationIssue::Error(
                     CompilationIssueCode::E0004,
                     format!("Enum '{}' was declared before.", id),
@@ -546,7 +542,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_asm_function(
         &mut self,
-        id: &'parser str,
+        id: String,
         function: AssemblerFunction<'parser>,
     ) -> Result<(), CompilationIssue> {
         self.asm_functions.insert(id, function);
@@ -556,7 +552,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_function(
         &mut self,
-        id: &'parser str,
+        id: String,
         function: Function<'parser>,
     ) -> Result<(), CompilationIssue> {
         self.functions.insert(id, function);
@@ -566,7 +562,7 @@ impl<'parser> SymbolTable<'parser> {
 
     pub fn new_compiler_intrinsic(
         &mut self,
-        id: &'parser str,
+        id: String,
         intrinsic: Intrinsic<'parser>,
     ) -> Result<(), CompilationIssue> {
         self.intrinsics.insert(id, intrinsic);

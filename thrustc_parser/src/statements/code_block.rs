@@ -159,13 +159,19 @@ fn build_dealloc_defer<'parser>(
             deallocator_name = if deallocator.len() > 1 {
                 let access: &[String] = &deallocator[..deallocator.len().saturating_sub(1)];
 
-                Some(crate::module_import::qualified_symbol_name(access, name))
+                Some(thrustc_import_synthesis::synthesis::qualified_symbol_name(
+                    access, name,
+                ))
             } else {
                 Some(name.clone())
             };
         }
     } else if let Some((name, args)) =
-        crate::module_import::ensure_deallocator_for_type(ctx, kind, *span)?
+        thrustc_import_synthesis::synthesis::ensure_deallocator_for_type(
+            &mut ctx.import_context(),
+            kind,
+            *span,
+        )?
     {
         deallocator_name = Some(name);
         generic_args = args;
@@ -179,7 +185,11 @@ fn build_dealloc_defer<'parser>(
     };
 
     if generic_args.is_empty() {
-        if let Some(entry) = ctx.get_symbols().get_generic_function(&deallocator_name).cloned() {
+        if let Some(entry) = ctx
+            .get_symbols()
+            .get_generic_function(&deallocator_name)
+            .cloned()
+        {
             let expected_arg: Type = Type::Ptr {
                 subtype: Some(std::boxed::Box::new(kind.clone())),
                 address_space: None,
@@ -207,7 +217,7 @@ fn build_dealloc_defer<'parser>(
     }
 
     let reference: Ast = Ast::Reference {
-        name,
+        name: name.to_string(),
         kind: kind.clone(),
         metadata: ReferenceMetadata::new(true, true, ReferenceType::Local, false),
         span: *span,

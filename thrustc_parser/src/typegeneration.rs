@@ -164,10 +164,14 @@ fn build_type_inner<'parser>(
                 };
 
                 if let Some((qualified_type, type_params)) =
-                    crate::module_import::resolve_qualified_generic(ctx, &access, symbol)
+                    thrustc_import_synthesis::synthesis::resolve_qualified_generic(
+                        &ctx.import_context(),
+                        &access,
+                        symbol,
+                    )
                 {
-                    crate::module_import::synthesize_only_import(
-                        ctx,
+                    thrustc_import_synthesis::synthesis::synthesize_only_import(
+                        &mut ctx.import_context(),
                         &access,
                         &[symbol.to_string()],
                         symbol_span,

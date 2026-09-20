@@ -20,19 +20,19 @@
 use ahash::AHashSet as HashSet;
 
 #[derive(Debug)]
-pub struct ScoperSymbolTable<'symbol_table> {
-    functions: HashSet<&'symbol_table str>,
-    compiler_intrinsics: HashSet<&'symbol_table str>,
-    assembler_functions: HashSet<&'symbol_table str>,
-    statics: HashSet<&'symbol_table str>,
-    constants: HashSet<&'symbol_table str>,
+pub struct ScoperSymbolTable {
+    functions: HashSet<String>,
+    compiler_intrinsics: HashSet<String>,
+    assembler_functions: HashSet<String>,
+    statics: HashSet<String>,
+    constants: HashSet<String>,
 
-    locals: Vec<HashSet<&'symbol_table str>>,
+    locals: Vec<HashSet<String>>,
 
-    parameters: HashSet<&'symbol_table str>,
+    parameters: HashSet<String>,
 }
 
-impl<'symbol_table> ScoperSymbolTable<'symbol_table> {
+impl ScoperSymbolTable {
     #[inline]
     pub fn new() -> Self {
         Self {
@@ -47,79 +47,79 @@ impl<'symbol_table> ScoperSymbolTable<'symbol_table> {
     }
 }
 
-impl<'symbol_table> ScoperSymbolTable<'symbol_table> {
+impl ScoperSymbolTable {
     #[inline]
-    pub fn add_function(&mut self, name: &'symbol_table str) {
-        self.functions.insert(name);
+    pub fn add_function(&mut self, name: &str) {
+        self.functions.insert(name.to_string());
     }
 
     #[inline]
-    pub fn add_compiler_intrinsic(&mut self, name: &'symbol_table str) {
-        self.compiler_intrinsics.insert(name);
+    pub fn add_compiler_intrinsic(&mut self, name: &str) {
+        self.compiler_intrinsics.insert(name.to_string());
     }
 
     #[inline]
-    pub fn add_assembler_function(&mut self, name: &'symbol_table str) {
-        self.assembler_functions.insert(name);
+    pub fn add_assembler_function(&mut self, name: &str) {
+        self.assembler_functions.insert(name.to_string());
     }
 
     #[inline]
-    pub fn add_static(&mut self, name: &'symbol_table str) {
-        self.statics.insert(name);
+    pub fn add_static(&mut self, name: &str) {
+        self.statics.insert(name.to_string());
     }
 
     #[inline]
-    pub fn add_constant(&mut self, name: &'symbol_table str) {
-        self.constants.insert(name);
+    pub fn add_constant(&mut self, name: &str) {
+        self.constants.insert(name.to_string());
     }
 
     #[inline]
-    pub fn add_local(&mut self, name: &'symbol_table str) {
+    pub fn add_local(&mut self, name: &str) {
         let Some(last_scope) = self.locals.last_mut() else {
             return;
         };
 
-        last_scope.insert(name);
+        last_scope.insert(name.to_string());
     }
 
     #[inline]
-    pub fn add_parameter(&mut self, name: &'symbol_table str) {
-        self.parameters.insert(name);
+    pub fn add_parameter(&mut self, name: &str) {
+        self.parameters.insert(name.to_string());
     }
 }
 
-impl<'symbol_table> ScoperSymbolTable<'symbol_table> {
+impl ScoperSymbolTable {
     #[inline]
-    pub fn symbol_exists(&self, name: &'symbol_table str) -> bool {
-        if self.parameters.get(name).is_some() {
+    pub fn symbol_exists(&self, name: &str) -> bool {
+        if self.parameters.contains(name) {
             return true;
         }
 
         {
             for scope in self.locals.iter().rev() {
-                if scope.get(name).is_some() {
+                if scope.contains(name) {
                     return true;
                 }
             }
         }
 
-        if self.functions.get(name).is_some() {
+        if self.functions.contains(name) {
             return true;
         }
 
-        if self.assembler_functions.get(name).is_some() {
+        if self.assembler_functions.contains(name) {
             return true;
         }
 
-        if self.compiler_intrinsics.get(name).is_some() {
+        if self.compiler_intrinsics.contains(name) {
             return true;
         }
 
-        if self.statics.get(name).is_some() {
+        if self.statics.contains(name) {
             return true;
         }
 
-        if self.constants.get(name).is_some() {
+        if self.constants.contains(name) {
             return true;
         }
 
@@ -127,7 +127,7 @@ impl<'symbol_table> ScoperSymbolTable<'symbol_table> {
     }
 }
 
-impl<'symbol_table> ScoperSymbolTable<'symbol_table> {
+impl ScoperSymbolTable {
     #[inline]
     pub fn add_scope(&mut self) {
         self.locals.push(HashSet::with_capacity(u8::MAX as usize));

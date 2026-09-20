@@ -199,7 +199,12 @@ fn build_dealloc_attribute<'parser>(
     if access.len() > 1 {
         let module_access: Vec<String> = access[..access.len().saturating_sub(1)].to_vec();
 
-        crate::module_import::ensure_qualified_function(ctx, &module_access, symbol, symbol_span)?;
+        thrustc_import_synthesis::synthesis::ensure_qualified_function(
+            &mut ctx.import_context(),
+            &module_access,
+            symbol,
+            symbol_span,
+        )?;
     }
 
     Ok(Some(access))

@@ -102,6 +102,12 @@ The frontend uses a **handwritten recursive descent parser**. The backend perfor
 - **`thrustc_generics`**  
   Generic type resolution and substitution: parameter solving (`solve.rs`), type and AST substitution (`substitution.rs`), generic scope (`scope.rs`), pending instantiations (`pending.rs`).
 
+- **`thrustc_generics_monomorphization`**  
+  Parser-level monomorphization driver for generics: resolves generic calls and instantiates concrete templates during parsing (`generics.rs`), with its own parser-light context (`context.rs`).
+
+- **`thrustc_import_synthesis`**  
+  Import resolution and synthesis: resolves qualified module symbols (`resolve_signature`, `resolve_qualified_generic`), synthesizes imported functions, intrinsics, constants, statics, structs, enums and custom types, and handles import collisions and deallocators (`synthesis.rs`), with its own parser-light context (`context.rs`).
+
 - **`thrustc_general_analyzer`**  
   General static analysis with context and expression visitors.
 

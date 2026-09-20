@@ -1774,11 +1774,52 @@ dependencies = [
 ]
 
 [[package]]
+name = "thrustc_generics_monomorphization"
+version = "0.2.2"
+dependencies = [
+ "thrustc_ast",
+ "thrustc_attributes",
+ "thrustc_builtins",
+ "thrustc_code_location",
+ "thrustc_compile_time",
+ "thrustc_constants",
+ "thrustc_diagnostician",
+ "thrustc_errors",
+ "thrustc_generics",
+ "thrustc_logging",
+ "thrustc_options",
+ "thrustc_parser_table",
+ "thrustc_token",
+ "thrustc_token_type",
+ "thrustc_typesystem",
+]
+
+[[package]]
 name = "thrustc_heap_allocator"
 version = "0.2.2"
 dependencies = [
  "thrustc_constants",
  "thrustc_logging",
+]
+
+[[package]]
+name = "thrustc_import_synthesis"
+version = "0.2.2"
+dependencies = [
+ "thrustc_ast",
+ "thrustc_ast_modificators",
+ "thrustc_atomic_ordering",
+ "thrustc_attributes",
+ "thrustc_code_location",
+ "thrustc_compile_time",
+ "thrustc_entities",
+ "thrustc_errors",
+ "thrustc_generics",
+ "thrustc_parser_external_table",
+ "thrustc_parser_table",
+ "thrustc_preprocessor",
+ "thrustc_thread_mode",
+ "thrustc_typesystem",
 ]
 
 [[package]]
@@ -2105,6 +2146,8 @@ dependencies = [
  "thrustc_entities",
  "thrustc_errors",
  "thrustc_generics",
+ "thrustc_generics_monomorphization",
+ "thrustc_import_synthesis",
  "thrustc_lexer",
  "thrustc_llvm_target_triple",
  "thrustc_logging",

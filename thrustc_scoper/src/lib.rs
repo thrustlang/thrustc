@@ -39,7 +39,7 @@ pub struct Scoper<'scoper> {
     errors: Vec<CompilationIssue>,
     diagnostician: Diagnostician,
 
-    table: ScoperSymbolTable<'scoper>,
+    table: ScoperSymbolTable,
 }
 
 impl<'scoper> Scoper<'scoper> {
@@ -131,11 +131,11 @@ impl<'scoper> Scoper<'scoper> {
             }
 
             Ast::CompilerIntrinsic { name, .. } => {
-                self.get_mut_table().add_compiler_intrinsic(name);
+                self.get_mut_table().add_compiler_intrinsic(name.as_str());
             }
 
             Ast::Static { name, value, .. } => {
-                self.get_mut_table().add_static(name);
+                self.get_mut_table().add_static(name.as_str());
 
                 let Some(value) = value else {
                     return;
@@ -145,7 +145,7 @@ impl<'scoper> Scoper<'scoper> {
             }
 
             Ast::Const { name, value, .. } => {
-                self.get_mut_table().add_constant(name);
+                self.get_mut_table().add_constant(name.as_str());
                 self.analyze_local_node(value);
             }
 
@@ -267,7 +267,7 @@ impl<'scoper> Scoper<'scoper> {
 
         match node {
             Ast::Static { name, value, .. } => {
-                self.get_mut_table().add_local(name);
+                self.get_mut_table().add_local(name.as_str());
 
                 let Some(value) = value else {
                     return;
@@ -277,7 +277,7 @@ impl<'scoper> Scoper<'scoper> {
             }
 
             Ast::Const { name, value, .. } => {
-                self.get_mut_table().add_local(name);
+                self.get_mut_table().add_local(name.as_str());
                 self.analyze_local_node(value);
             }
 
@@ -566,7 +566,7 @@ impl<'scoper> Scoper<'scoper> {
     }
 
     #[inline]
-    fn get_table(&self) -> &ScoperSymbolTable<'scoper> {
+    fn get_table(&self) -> &ScoperSymbolTable {
         &self.table
     }
 }
@@ -578,7 +578,7 @@ impl<'scoper> Scoper<'scoper> {
     }
 
     #[inline]
-    fn get_mut_table(&mut self) -> &mut ScoperSymbolTable<'scoper> {
+    fn get_mut_table(&mut self) -> &mut ScoperSymbolTable {
         &mut self.table
     }
 }

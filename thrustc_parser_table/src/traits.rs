@@ -54,7 +54,7 @@ pub trait FoundSymbolEitherExtensions<'parser> {
 }
 
 pub trait StructSymbolExtensions<'parser> {
-    fn get_data(&self) -> StructureData<'parser>;
+    fn get_data(&self) -> StructureData;
     fn get_metadata(&self) -> StructTypeMetadata;
     fn get_field_type(&self, name: &str) -> Option<Type>;
 
@@ -96,7 +96,7 @@ pub trait LLISymbolExtensions {
 
 pub trait FunctionExtensions {
     fn get_type(&self) -> Type;
-    fn get_parameter_names(&self) -> Vec<&str>;
+    fn get_parameter_names(&self) -> Vec<String>;
 }
 
 pub trait FunctionAssemblerExtensions {
