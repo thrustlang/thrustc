@@ -4,7 +4,7 @@
 
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt= "standard-separator" style= "width: 1hv;"> </img>
 
-**Thrust Compiler** is a compiler that transfers the source code of Thrust files directly to the specified destination. The process includes static type analysis, code generation, destination-specific optimizations, machine-specific code compilation, and finally, emitting or linking.
+**Thrust Compiler** is a compiler that transfers the source code of Thrust files directly to the specified destination. The process includes static type analysis, code generation, optimizations, machine code compilation, and finally, emitting or linking.
 
 > [!IMPORTANT]  
 > The compiler is in an early development phase. It still hasn't made the major releases. There are still edge cases to be handled, and the compiler is under constant testing and fuzzing.
@@ -102,7 +102,7 @@ $ ./target/release/thrustc --help
 
 ## Cross Compilation
 
-Thrust Compiler offers powerful cross-compilation support, just like '[Clang](https://github.com/llvm/llvm-project/tree/main/clang)'.
+Thrust Compiler offers cross-compilation support, just like '[Clang](https://github.com/llvm/llvm-project/tree/main/clang)'.
 
 ### RISC-V 64-bit
 
