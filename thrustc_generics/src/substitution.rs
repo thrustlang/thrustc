@@ -889,10 +889,7 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
     }
 }
 
-fn substitute_structure_data<'ast>(
-    data: StructureData,
-    env: &TypeEnv,
-) -> StructureData {
+fn substitute_structure_data(data: StructureData, env: &TypeEnv) -> StructureData {
     let (name, fields, metadata, span) = data;
 
     let fields: Vec<(String, Type, u32, Span)> = fields

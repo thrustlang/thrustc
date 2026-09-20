@@ -31,7 +31,7 @@ use thrustc_parser_external_table::ExternalSymbolTable;
 use thrustc_parser_table::GenericFunctionEntry;
 use thrustc_preprocessor::signatures::{Signature, Variant};
 
-use thrustc_token::traits::TokenExtensions;
+use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::VoidTypeExtensions;
@@ -69,7 +69,7 @@ pub fn build_qualified_expression<'parser>(
             ));
         };
 
-        let field_tk = ctx.consume(
+        let field_tk: &Token = ctx.consume(
             TokenType::Identifier,
             CompilationIssueCode::E0001,
             "Expected enum field name.".into(),
@@ -241,7 +241,7 @@ pub fn build_qualified_expression<'parser>(
             }
         };
 
-        if !thrustc_import_synthesis::synthesis::has_synthesized_function(
+        if !thrustc_import_synthesis::synthesis::has_any_synthetized_function(
             &ctx.import_context(),
             &qualified_symbol,
         ) {
@@ -538,7 +538,10 @@ fn build_qualified_generic_call<'parser>(
     let key: String =
         thrustc_generics::instantiation_key(origin_key.as_deref(), symbol, &result.env);
 
-    if !thrustc_import_synthesis::synthesis::has_synthesized_function(&ctx.import_context(), &key) {
+    if !thrustc_import_synthesis::synthesis::has_any_synthetized_function(
+        &ctx.import_context(),
+        &key,
+    ) {
         let concrete_parameter_types: Vec<Type> = parameter_types
             .iter()
             .map(|parameter| thrustc_generics::substitute(parameter, &result.env))

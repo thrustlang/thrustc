@@ -30,6 +30,7 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
     if let Some(params) = payload.get("params") {
         if let Some(document) = params.get("textDocument") {
             let uri_value: Option<&Value> = document.get("uri");
+
             uri = uri_value.and_then(Value::as_str);
         }
 
@@ -119,6 +120,7 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
                 }
 
                 detail = Some(symbol.get_detail().to_string());
+
                 break;
             }
         }
@@ -137,6 +139,7 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
             }
 
             detail = Some(symbol.get_detail().to_string());
+
             break;
         }
     }

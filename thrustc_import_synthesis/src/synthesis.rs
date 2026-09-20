@@ -471,7 +471,7 @@ pub fn ensure_qualified_function<'parser>(
         return Ok(qualified_symbol);
     }
 
-    if self::has_synthesized_function(ctx, &qualified_symbol) {
+    if self::has_any_synthetized_function(ctx, &qualified_symbol) {
         return Ok(qualified_symbol);
     }
 
@@ -571,7 +571,7 @@ fn ensure_concrete_qualified_function<'parser>(
         .map(|path| path.to_string_lossy().to_string());
     let key: String = thrustc_generics::instantiation_key(origin_key.as_deref(), symbol, &env);
 
-    if !self::has_synthesized_function(ctx, &key) {
+    if !self::has_any_synthetized_function(ctx, &key) {
         let parameter_types: Vec<Type> = parameters
             .iter()
             .map(|(_, ty, _)| thrustc_generics::substitute(ty, &env))
@@ -612,6 +612,24 @@ fn find_deallocator_in_module<'parser>(
     access: Vec<String>,
     kind: &Type,
 ) -> Option<(Vec<String>, &'parser str, Vec<Type>)> {
+    fn deallocator_type_matches(declared: &Type, provided: &Type) -> bool {
+        match (declared, provided) {
+            (Type::Struct { name: left, .. }, Type::Struct { name: right, .. }) => left == right,
+            (Type::Const(left, _), Type::Const(right, _)) => deallocator_type_matches(left, right),
+            (
+                Type::Ptr {
+                    subtype: Some(left),
+                    ..
+                },
+                Type::Ptr {
+                    subtype: Some(right),
+                    ..
+                },
+            ) => deallocator_type_matches(left, right),
+            _ => true,
+        }
+    }
+
     for symbol in module.get_symbols() {
         if symbol.variant != Variant::Function {
             continue;
@@ -650,7 +668,7 @@ fn find_deallocator_in_module<'parser>(
                 continue;
             };
 
-            if !self::deallocator_type_matches(subtype, kind) {
+            if !deallocator_type_matches(subtype, kind) {
                 continue;
             }
 
@@ -707,26 +725,6 @@ fn find_deallocator_in_module<'parser>(
     }
 
     None
-}
-
-fn deallocator_type_matches(declared: &Type, provided: &Type) -> bool {
-    match (declared, provided) {
-        (Type::Struct { name: left, .. }, Type::Struct { name: right, .. }) => left == right,
-        (Type::Const(left, _), Type::Const(right, _)) => {
-            self::deallocator_type_matches(left, right)
-        }
-        (
-            Type::Ptr {
-                subtype: Some(left),
-                ..
-            },
-            Type::Ptr {
-                subtype: Some(right),
-                ..
-            },
-        ) => self::deallocator_type_matches(left, right),
-        _ => true,
-    }
 }
 
 pub fn resolve_qualified_generic<'parser>(
@@ -999,7 +997,7 @@ pub fn qualified_symbol_name(access: &[String], symbol: &str) -> String {
     name
 }
 
-pub fn has_synthesized_function<'parser>(ctx: &ImportContext<'parser, '_>, name: &str) -> bool {
+pub fn has_any_synthetized_function<'parser>(ctx: &ImportContext<'parser, '_>, name: &str) -> bool {
     for node in ctx.get_ast() {
         let Ast::Function {
             name: function_name,

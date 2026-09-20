@@ -65,10 +65,8 @@ pub enum WebAssemblyABIType<'abi> {
 pub struct WebAssemblyABIParameterConfiguration<'abi> {
     pub name: &'abi str,
     pub ascii_name: &'abi str,
-
     pub ty: &'abi Type,
     pub passing: WebAssemblyABIType<'abi>,
-
     pub source_index: usize,
     pub llvm_index: Option<u32>,
 }
@@ -77,9 +75,7 @@ pub struct WebAssemblyABIParameterConfiguration<'abi> {
 pub struct WebAssemblyABIFunctionTypeConfiguration<'abi> {
     pub return_type: &'abi Type,
     pub return_passing: WebAssemblyABIType<'abi>,
-
     pub parameters: Vec<WebAssemblyABIParameterConfiguration<'abi>>,
-
     pub is_variadic: bool,
 }
 
@@ -328,6 +324,7 @@ pub fn lower_call_prologue<'abi>(
                             line!(),
                         )
                     });
+
                 scalar_value
                     .as_instruction_value()
                     .unwrap_or_else(|| {
@@ -349,6 +346,7 @@ pub fn lower_call_prologue<'abi>(
                             line!(),
                         )
                     });
+
                 lowered.push(scalar_value.into());
             }
         }
@@ -387,6 +385,7 @@ pub fn lower_call_prologue<'abi>(
                                 line!(),
                             )
                         });
+
                     llvm_builder
                         .build_store(buffer, *value)
                         .unwrap_or_else(|_| {
@@ -398,11 +397,10 @@ pub fn lower_call_prologue<'abi>(
                                 line!(),
                             )
                         });
+
                     lowered.push(buffer.into());
                 }
             }
-
-            WebAssemblyABIType::Ignore(_) => {}
 
             WebAssemblyABIType::Direct(_) => {
                 let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(ty) {
@@ -458,6 +456,8 @@ pub fn lower_call_prologue<'abi>(
 
                 lowered.push(promoted.into());
             }
+
+            WebAssemblyABIType::Ignore(_) => {}
         }
     }
 
@@ -603,7 +603,7 @@ pub fn lower_call_epilogue<'abi>(
             ) {
                 Some(buffer.into())
             } else {
-                let value = llvm_builder
+                let value: BasicValueEnum<'_> = llvm_builder
                     .build_load(aggregate_type, buffer, "")
                     .unwrap_or_else(|_| {
                         abort::abort_codegen(
@@ -636,6 +636,7 @@ pub fn lower_call_epilogue<'abi>(
                             line!(),
                         )
                     });
+
                 Some(value)
             }
         }
@@ -1035,6 +1036,7 @@ pub fn lower_function_terminator<'abi>(
                         line!(),
                     )
                 });
+
             true
         }
     }
@@ -1516,15 +1518,10 @@ fn generate_type<'abi>(
             .into(),
 
         Type::Bool { .. } => llvm_context.bool_type().into(),
-
         Type::F32 { .. } => llvm_context.f32_type().into(),
-
         Type::F64 { .. } => llvm_context.f64_type().into(),
-
         Type::F128 { .. } => llvm_context.f128_type().into(),
-
         Type::FX8680 { .. } => llvm_context.x86_f80_type().into(),
-
         Type::FPPC128 { .. } => llvm_context.ppc_f128_type().into(),
 
         Type::Array {

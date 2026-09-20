@@ -297,7 +297,7 @@ fn resolve_ast<'parser>(
             let Some(entry) = ctx.get_symbols().get_generic_function(&name).cloned() else {
                 return Ast::Call {
                     name,
-                    args: self::resolve_ast_list(ctx, args, templates, memo, output),
+                    args: self::resolve_node_ast_list(ctx, args, templates, memo, output),
                     generic_args,
                     kind,
                     span,
@@ -350,7 +350,7 @@ fn resolve_ast<'parser>(
 
                     Ast::Call {
                         name: key,
-                        args: self::resolve_ast_list(ctx, args, templates, memo, output),
+                        args: self::resolve_node_ast_list(ctx, args, templates, memo, output),
                         generic_args: Vec::with_capacity(0),
                         kind: result.return_type,
                         span,
@@ -359,7 +359,7 @@ fn resolve_ast<'parser>(
                 }
                 Err(_) => Ast::Call {
                     name,
-                    args: self::resolve_ast_list(ctx, args, templates, memo, output),
+                    args: self::resolve_node_ast_list(ctx, args, templates, memo, output),
                     generic_args: Vec::with_capacity(0),
                     kind,
                     span,
@@ -513,7 +513,7 @@ fn ensure_instantiation<'parser>(
     attributes.push(ThrustAttribute::Public(entry.span));
     attributes.push(ThrustAttribute::Extern(demangling_name.clone(), entry.span));
 
-    output.push(Ast::Function {
+    let function: Ast<'_> = Ast::Function {
         name: key.to_string(),
         ascii_name: key.to_string(),
         demangling_name,
@@ -525,7 +525,9 @@ fn ensure_instantiation<'parser>(
         attributes,
         span: entry.span,
         id: NodeId::new(),
-    });
+    };
+
+    output.push(function);
 
     if let Some(origin) = ctx
         .get_symbols()
@@ -553,7 +555,7 @@ fn resolve_children<'parser>(
             id,
         } => Ast::Call {
             name,
-            args: self::resolve_ast_list(ctx, args, templates, memo, output),
+            args: self::resolve_node_ast_list(ctx, args, templates, memo, output),
             generic_args,
             kind,
             span,
@@ -643,7 +645,7 @@ fn resolve_children<'parser>(
             span,
             id,
         } => Ast::FixedArray {
-            items: self::resolve_ast_list(ctx, items, templates, memo, output),
+            items: self::resolve_node_ast_list(ctx, items, templates, memo, output),
             kind,
             span,
             id,
@@ -654,7 +656,7 @@ fn resolve_children<'parser>(
             span,
             id,
         } => Ast::Array {
-            items: self::resolve_ast_list(ctx, items, templates, memo, output),
+            items: self::resolve_node_ast_list(ctx, items, templates, memo, output),
             kind,
             span,
             id,
@@ -749,7 +751,13 @@ fn resolve_children<'parser>(
                 memo,
                 output,
             )),
-            else_if_branch: self::resolve_ast_list(ctx, else_if_branch, templates, memo, output),
+            else_if_branch: self::resolve_node_ast_list(
+                ctx,
+                else_if_branch,
+                templates,
+                memo,
+                output,
+            ),
             else_branch: else_branch.map(|branch| {
                 std::boxed::Box::new(self::resolve_ast(ctx, *branch, templates, memo, output))
             }),
@@ -926,8 +934,8 @@ fn resolve_children<'parser>(
             span,
             id,
         } => Ast::Block {
-            nodes: self::resolve_ast_list(ctx, nodes, templates, memo, output),
-            post: self::resolve_ast_list(ctx, post, templates, memo, output),
+            nodes: self::resolve_node_ast_list(ctx, nodes, templates, memo, output),
+            post: self::resolve_node_ast_list(ctx, post, templates, memo, output),
             kind,
             span,
             id,
@@ -994,7 +1002,7 @@ fn resolve_children<'parser>(
         } => Ast::CompilerIntrinsic {
             name,
             external_name,
-            parameters: self::resolve_ast_list(ctx, parameters, templates, memo, output),
+            parameters: self::resolve_node_ast_list(ctx, parameters, templates, memo, output),
             parameters_types,
             return_type,
             attributes,
@@ -1018,7 +1026,7 @@ fn resolve_children<'parser>(
         } => Ast::AssemblerFunction {
             name,
             ascii_name,
-            parameters: self::resolve_ast_list(ctx, parameters, templates, memo, output),
+            parameters: self::resolve_node_ast_list(ctx, parameters, templates, memo, output),
             parameters_types,
             assembler,
             constraints,
@@ -1057,7 +1065,7 @@ fn resolve_children<'parser>(
             ascii_name,
             demangling_name,
             original_name,
-            parameters: self::resolve_ast_list(ctx, parameters, templates, memo, output),
+            parameters: self::resolve_node_ast_list(ctx, parameters, templates, memo, output),
             parameter_types,
             body: body.map(|block| {
                 std::boxed::Box::new(self::resolve_ast(ctx, *block, templates, memo, output))
@@ -1235,7 +1243,7 @@ fn resolve_children<'parser>(
             id,
         } => Ast::Address {
             source: std::boxed::Box::new(self::resolve_ast(ctx, *source, templates, memo, output)),
-            indexes: self::resolve_ast_list(ctx, indexes, templates, memo, output),
+            indexes: self::resolve_node_ast_list(ctx, indexes, templates, memo, output),
             kind,
             span,
             id,
@@ -1336,7 +1344,7 @@ fn resolve_children<'parser>(
                 ctx, *function, templates, memo, output,
             )),
             function_type,
-            args: self::resolve_ast_list(ctx, args, templates, memo, output),
+            args: self::resolve_node_ast_list(ctx, args, templates, memo, output),
             kind,
             span,
             id,
@@ -1352,7 +1360,7 @@ fn resolve_children<'parser>(
         } => Ast::AsmValue {
             assembler,
             constraints,
-            args: self::resolve_ast_list(ctx, args, templates, memo, output),
+            args: self::resolve_node_ast_list(ctx, args, templates, memo, output),
             kind,
             attributes,
             span,
@@ -1417,61 +1425,6 @@ fn resolve_children<'parser>(
     }
 }
 
-fn resolve_constructor_data<'parser>(
-    ctx: &mut GenericsContext<'parser, '_>,
-    data: ConstructorData<'parser>,
-    templates: &HashMap<String, Ast<'parser>>,
-    memo: &mut HashSet<String>,
-    output: &mut Vec<Ast<'parser>>,
-) -> ConstructorData<'parser> {
-    data.into_iter()
-        .map(|(field_name, expression, target_type, position)| {
-            (
-                field_name,
-                self::resolve_ast(ctx, expression, templates, memo, output),
-                target_type,
-                position,
-            )
-        })
-        .collect()
-}
-
-fn resolve_enum_data<'parser>(
-    ctx: &mut GenericsContext<'parser, '_>,
-    data: EnumData<'parser>,
-    templates: &HashMap<String, Ast<'parser>>,
-    memo: &mut HashSet<String>,
-    output: &mut Vec<Ast<'parser>>,
-) -> EnumData<'parser> {
-    data.into_iter()
-        .map(|(name, ty, expression)| {
-            (
-                name,
-                ty,
-                self::resolve_ast(ctx, expression, templates, memo, output),
-            )
-        })
-        .collect()
-}
-
-fn resolve_module_expression_values<'parser>(
-    ctx: &mut GenericsContext<'parser, '_>,
-    values: ModuleExpressionValues<'parser>,
-    templates: &HashMap<String, Ast<'parser>>,
-    memo: &mut HashSet<String>,
-    output: &mut Vec<Ast<'parser>>,
-) -> ModuleExpressionValues<'parser> {
-    match values {
-        ModuleExpressionValues::Call { arguments, span } => ModuleExpressionValues::Call {
-            arguments: self::resolve_ast_list(ctx, arguments, templates, memo, output),
-            span,
-        },
-        ModuleExpressionValues::Reference { name, span } => {
-            ModuleExpressionValues::Reference { name, span }
-        }
-    }
-}
-
 fn resolve_builtin<'parser>(
     ctx: &mut GenericsContext<'parser, '_>,
     builtin: AstBuiltin<'parser>,
@@ -1533,6 +1486,61 @@ fn resolve_builtin<'parser>(
     }
 }
 
+fn resolve_constructor_data<'parser>(
+    ctx: &mut GenericsContext<'parser, '_>,
+    data: ConstructorData<'parser>,
+    templates: &HashMap<String, Ast<'parser>>,
+    memo: &mut HashSet<String>,
+    output: &mut Vec<Ast<'parser>>,
+) -> ConstructorData<'parser> {
+    data.into_iter()
+        .map(|(field_name, expression, target_type, position)| {
+            (
+                field_name,
+                self::resolve_ast(ctx, expression, templates, memo, output),
+                target_type,
+                position,
+            )
+        })
+        .collect()
+}
+
+fn resolve_enum_data<'parser>(
+    ctx: &mut GenericsContext<'parser, '_>,
+    data: EnumData<'parser>,
+    templates: &HashMap<String, Ast<'parser>>,
+    memo: &mut HashSet<String>,
+    output: &mut Vec<Ast<'parser>>,
+) -> EnumData<'parser> {
+    data.into_iter()
+        .map(|(name, ty, expression)| {
+            (
+                name,
+                ty,
+                self::resolve_ast(ctx, expression, templates, memo, output),
+            )
+        })
+        .collect()
+}
+
+fn resolve_module_expression_values<'parser>(
+    ctx: &mut GenericsContext<'parser, '_>,
+    values: ModuleExpressionValues<'parser>,
+    templates: &HashMap<String, Ast<'parser>>,
+    memo: &mut HashSet<String>,
+    output: &mut Vec<Ast<'parser>>,
+) -> ModuleExpressionValues<'parser> {
+    match values {
+        ModuleExpressionValues::Call { arguments, span } => ModuleExpressionValues::Call {
+            arguments: self::resolve_node_ast_list(ctx, arguments, templates, memo, output),
+            span,
+        },
+        ModuleExpressionValues::Reference { name, span } => {
+            ModuleExpressionValues::Reference { name, span }
+        }
+    }
+}
+
 fn collect_local_templates<'parser>(
     ctx: &mut GenericsContext<'parser, '_>,
 ) -> HashMap<String, Ast<'parser>> {
@@ -1560,7 +1568,7 @@ fn collect_local_templates<'parser>(
     templates
 }
 
-fn resolve_ast_list<'parser>(
+fn resolve_node_ast_list<'parser>(
     ctx: &mut GenericsContext<'parser, '_>,
     nodes: Vec<Ast<'parser>>,
     templates: &HashMap<String, Ast<'parser>>,

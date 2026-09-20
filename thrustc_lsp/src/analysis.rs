@@ -122,80 +122,9 @@ pub struct Analysis {
     analyzed_documents: usize,
 }
 
-impl Analysis {
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            documents: HashMap::with_capacity(u8::MAX as usize),
-            analyzed_documents: 0,
-        }
-    }
-
-    pub fn analyze_document(&mut self, document: Option<&Document>) -> Vec<Value> {
-        let Some(document) = document else {
-            return Vec::with_capacity(0);
-        };
-
-        let uri: &str = document.get_uri();
-        let text: &str = document.get_text();
-        let document_analysis: DocumentAnalysis = self::analyze_text(uri, text);
-
-        self.documents.insert(uri.to_string(), document_analysis);
-        self.analyzed_documents = self.analyzed_documents.saturating_add(1);
-
-        Vec::with_capacity(0)
-    }
-}
-
-impl Analysis {
-    #[inline]
-    pub fn get_document(&self, uri: &str) -> Option<&DocumentAnalysis> {
-        self.documents.get(uri)
-    }
-
-    #[inline]
-    pub fn remove_document(&mut self, uri: &str) {
-        self.documents.remove(uri);
-    }
-}
-
-impl DocumentAnalysis {
-    #[inline]
-    pub fn get_symbols(&self) -> &[Symbol] {
-        &self.symbols
-    }
-
-    #[inline]
-    pub fn get_structures(&self) -> &[Structure] {
-        &self.structures
-    }
-
-    #[inline]
-    pub fn get_enumerations(&self) -> &[Enumeration] {
-        &self.enumerations
-    }
-
-    #[inline]
-    pub fn get_functions(&self) -> &[Function] {
-        &self.functions
-    }
-
-    #[inline]
-    pub fn get_modules(&self) -> &[ImportedModule] {
-        &self.modules
-    }
-
-    #[inline]
-    pub fn get_line_depth(&self, line: u64) -> u64 {
-        let line: usize = line.try_into().unwrap_or(usize::MAX);
-
-        self.line_depths.get(line).copied().unwrap_or(0)
-    }
-}
-
 impl Symbol {
     #[inline]
-    pub(crate) fn new(
+    pub fn new(
         name: String,
         kind: CompletionKind,
         detail: String,
@@ -255,6 +184,58 @@ impl Symbol {
     }
 }
 
+impl Symbol {
+    #[inline]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    #[inline]
+    pub fn set_kind(&mut self, kind: CompletionKind) {
+        self.kind = kind;
+    }
+
+    #[inline]
+    pub fn set_detail(&mut self, detail: String) {
+        self.detail = detail;
+    }
+
+    #[inline]
+    pub fn set_insert_text(&mut self, insert_text: Option<String>) {
+        self.insert_text = insert_text;
+    }
+
+    #[inline]
+    pub fn set_type_name(&mut self, type_name: Option<String>) {
+        self.type_name = type_name;
+    }
+
+    #[inline]
+    pub fn set_scope_start(&mut self, scope_start: u64) {
+        self.scope_start = scope_start;
+    }
+
+    #[inline]
+    pub fn set_scope_end(&mut self, scope_end: u64) {
+        self.scope_end = scope_end;
+    }
+
+    #[inline]
+    pub fn set_declaration_line(&mut self, declaration_line: u64) {
+        self.declaration_line = declaration_line;
+    }
+}
+
+impl Structure {
+    #[inline]
+    pub fn new(name: String, fields: Vec<Symbol>) -> Self {
+        Self {
+            name,
+            fields,
+        }
+    }
+}
+
 impl Structure {
     #[inline]
     pub fn get_name(&self) -> &str {
@@ -267,6 +248,28 @@ impl Structure {
     }
 }
 
+impl Structure {
+    #[inline]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    #[inline]
+    pub fn set_fields(&mut self, fields: Vec<Symbol>) {
+        self.fields = fields;
+    }
+}
+
+impl Enumeration {
+    #[inline]
+    pub fn new(name: String, values: Vec<Symbol>) -> Self {
+        Self {
+            name,
+            values,
+        }
+    }
+}
+
 impl Enumeration {
     #[inline]
     pub fn get_name(&self) -> &str {
@@ -276,6 +279,29 @@ impl Enumeration {
     #[inline]
     pub fn get_values(&self) -> &[Symbol] {
         &self.values
+    }
+}
+
+impl Enumeration {
+    #[inline]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    #[inline]
+    pub fn set_values(&mut self, values: Vec<Symbol>) {
+        self.values = values;
+    }
+}
+
+impl Function {
+    #[inline]
+    pub fn new(name: String, parameters: Vec<Symbol>, is_variadic: bool) -> Self {
+        Self {
+            name,
+            parameters,
+            is_variadic,
+        }
     }
 }
 
@@ -293,6 +319,40 @@ impl Function {
     #[inline]
     pub fn is_variadic(&self) -> bool {
         self.is_variadic
+    }
+}
+
+impl Function {
+    #[inline]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    #[inline]
+    pub fn set_parameters(&mut self, parameters: Vec<Symbol>) {
+        self.parameters = parameters;
+    }
+
+    #[inline]
+    pub fn set_is_variadic(&mut self, is_variadic: bool) {
+        self.is_variadic = is_variadic;
+    }
+}
+
+impl ImportedModule {
+    #[inline]
+    pub fn new(
+        name: String,
+        symbols: Vec<Symbol>,
+        functions: Vec<Function>,
+        submodules: Vec<ImportedModule>,
+    ) -> Self {
+        Self {
+            name,
+            symbols,
+            functions,
+            submodules,
+        }
     }
 }
 
@@ -318,6 +378,176 @@ impl ImportedModule {
     }
 }
 
+impl ImportedModule {
+    #[inline]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    #[inline]
+    pub fn set_symbols(&mut self, symbols: Vec<Symbol>) {
+        self.symbols = symbols;
+    }
+
+    #[inline]
+    pub fn set_functions(&mut self, functions: Vec<Function>) {
+        self.functions = functions;
+    }
+
+    #[inline]
+    pub fn set_submodules(&mut self, submodules: Vec<ImportedModule>) {
+        self.submodules = submodules;
+    }
+}
+
+impl DocumentAnalysis {
+    #[inline]
+    pub fn new(
+        symbols: Vec<Symbol>,
+        structures: Vec<Structure>,
+        enumerations: Vec<Enumeration>,
+        functions: Vec<Function>,
+        modules: Vec<ImportedModule>,
+        line_depths: Vec<u64>,
+    ) -> Self {
+        Self {
+            symbols,
+            structures,
+            enumerations,
+            functions,
+            modules,
+            line_depths,
+        }
+    }
+}
+
+impl DocumentAnalysis {
+    #[inline]
+    pub fn get_line_depth(&self, line: u64) -> u64 {
+        let line: usize = line.try_into().unwrap_or(usize::MAX);
+
+        self.line_depths.get(line).copied().unwrap_or(0)
+    }
+
+    #[inline]
+    pub fn get_symbols(&self) -> &[Symbol] {
+        &self.symbols
+    }
+
+    #[inline]
+    pub fn get_structures(&self) -> &[Structure] {
+        &self.structures
+    }
+
+    #[inline]
+    pub fn get_enumerations(&self) -> &[Enumeration] {
+        &self.enumerations
+    }
+
+    #[inline]
+    pub fn get_functions(&self) -> &[Function] {
+        &self.functions
+    }
+
+    #[inline]
+    pub fn get_modules(&self) -> &[ImportedModule] {
+        &self.modules
+    }
+}
+
+impl DocumentAnalysis {
+    #[inline]
+    pub fn set_symbols(&mut self, symbols: Vec<Symbol>) {
+        self.symbols = symbols;
+    }
+
+    #[inline]
+    pub fn set_structures(&mut self, structures: Vec<Structure>) {
+        self.structures = structures;
+    }
+
+    #[inline]
+    pub fn set_enumerations(&mut self, enumerations: Vec<Enumeration>) {
+        self.enumerations = enumerations;
+    }
+
+    #[inline]
+    pub fn set_functions(&mut self, functions: Vec<Function>) {
+        self.functions = functions;
+    }
+
+    #[inline]
+    pub fn set_modules(&mut self, modules: Vec<ImportedModule>) {
+        self.modules = modules;
+    }
+
+    #[inline]
+    pub fn set_line_depths(&mut self, line_depths: Vec<u64>) {
+        self.line_depths = line_depths;
+    }
+}
+
+impl Analysis {
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            documents: HashMap::with_capacity(u8::MAX as usize),
+            analyzed_documents: 0,
+        }
+    }
+}
+
+impl Analysis {
+    pub fn analyze_document(&mut self, document: Option<&Document>) -> Vec<Value> {
+        let Some(document) = document else {
+            return Vec::with_capacity(0);
+        };
+
+        let uri: &str = document.get_uri();
+        let text: &str = document.get_text();
+        let document_analysis: DocumentAnalysis = self::analyze_text(uri, text);
+
+        self.documents.insert(uri.to_string(), document_analysis);
+        self.analyzed_documents = self.analyzed_documents.saturating_add(1);
+
+        Vec::with_capacity(0)
+    }
+
+    #[inline]
+    pub fn remove_document(&mut self, uri: &str) {
+        self.documents.remove(uri);
+    }
+}
+
+impl Analysis {
+    #[inline]
+    pub fn get_document(&self, uri: &str) -> Option<&DocumentAnalysis> {
+        self.documents.get(uri)
+    }
+
+    #[inline]
+    pub fn get_documents(&self) -> &HashMap<String, DocumentAnalysis> {
+        &self.documents
+    }
+
+    #[inline]
+    pub fn get_analyzed_documents(&self) -> usize {
+        self.analyzed_documents
+    }
+}
+
+impl Analysis {
+    #[inline]
+    pub fn set_documents(&mut self, documents: HashMap<String, DocumentAnalysis>) {
+        self.documents = documents;
+    }
+
+    #[inline]
+    pub fn set_analyzed_documents(&mut self, analyzed_documents: usize) {
+        self.analyzed_documents = analyzed_documents;
+    }
+}
+
 fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
     let lines: Vec<&str> = text.lines().collect();
     let line_depths: Vec<u64> = self::build_line_depths(&lines);
@@ -340,6 +570,7 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
 
         if trimmed.is_empty() {
             line_index = line_index.saturating_add(1);
+
             continue;
         }
 
@@ -349,19 +580,19 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
 
             if !name.is_empty() {
                 let fields: Vec<Symbol> = self::parse_struct_fields(&lines, line_index, end_line);
-                let symbol: Symbol = Symbol {
-                    name: name.clone(),
-                    kind: CompletionKind::Struct,
-                    detail: "struct".into(),
-                    insert_text: None,
-                    type_name: Some(name.clone()),
-                    scope_start: 0,
-                    scope_end: total_lines,
-                    declaration_line: line_number,
-                };
+                let symbol: Symbol = Symbol::new(
+                    name.clone(),
+                    CompletionKind::Struct,
+                    "struct".into(),
+                    None,
+                    Some(name.clone()),
+                    0,
+                    total_lines,
+                    line_number,
+                );
 
                 symbols.push(symbol);
-                structures.push(Structure { name, fields });
+                structures.push(Structure::new(name, fields));
             }
         }
 
@@ -371,19 +602,19 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
 
             if !name.is_empty() {
                 let values: Vec<Symbol> = self::parse_enum_values(&lines, line_index, end_line);
-                let symbol: Symbol = Symbol {
-                    name: name.clone(),
-                    kind: CompletionKind::Enum,
-                    detail: "enum".into(),
-                    insert_text: None,
-                    type_name: Some(name.clone()),
-                    scope_start: 0,
-                    scope_end: total_lines,
-                    declaration_line: line_number,
-                };
+                let symbol: Symbol = Symbol::new(
+                    name.clone(),
+                    CompletionKind::Enum,
+                    "enum".into(),
+                    None,
+                    Some(name.clone()),
+                    0,
+                    total_lines,
+                    line_number,
+                );
 
                 symbols.push(symbol);
-                enumerations.push(Enumeration { name, values });
+                enumerations.push(Enumeration::new(name, values));
             }
         }
 
@@ -406,16 +637,16 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
 
                 let detail: String = detail.trim().to_string();
                 let insert_text: String = format!("{}($0)", name);
-                let symbol: Symbol = Symbol {
-                    name: name.clone(),
-                    kind: CompletionKind::Function,
+                let symbol: Symbol = Symbol::new(
+                    name.clone(),
+                    CompletionKind::Function,
                     detail,
-                    insert_text: Some(insert_text),
-                    type_name: None,
-                    scope_start: 0,
-                    scope_end: total_lines,
-                    declaration_line: line_number,
-                };
+                    Some(insert_text),
+                    None,
+                    0,
+                    total_lines,
+                    line_number,
+                );
 
                 symbols.push(symbol);
 
@@ -423,29 +654,32 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                     symbols.push(parameter.clone());
                 }
 
-                functions.push(Function {
+                functions.push(Function::new(
                     name,
                     parameters,
-                    is_variadic: trimmed.contains("@arbitraryArgs"),
-                });
+                    trimmed.contains("@arbitraryArgs"),
+                ));
             }
         }
 
         if trimmed.starts_with("type ") {
             let name: String = self::parse_named_declaration(trimmed, "type");
-            let aliased_type: String = self::parse_type_after_colon(trimmed);
+            let aliased_type: String = match trimmed.split_once(':') {
+                Some((_, right)) => self::clean_type(right),
+                None => String::new(),
+            };
 
             if !name.is_empty() {
-                symbols.push(Symbol {
+                symbols.push(Symbol::new(
                     name,
-                    kind: CompletionKind::TypeParameter,
-                    detail: aliased_type,
-                    insert_text: None,
-                    type_name: None,
-                    scope_start: 0,
-                    scope_end: total_lines,
-                    declaration_line: line_number,
-                });
+                    CompletionKind::TypeParameter,
+                    aliased_type,
+                    None,
+                    None,
+                    0,
+                    total_lines,
+                    line_number,
+                ));
             }
         }
 
@@ -462,7 +696,10 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                 "var"
             };
             let name: String = self::parse_named_declaration(trimmed, keyword);
-            let type_name: String = self::parse_type_after_colon(trimmed);
+            let type_name: String = match trimmed.split_once(':') {
+                Some((_, right)) => self::clean_type(right),
+                None => String::new(),
+            };
             let mut scope_start: u64 = 0;
             let mut scope_end: u64 = total_lines;
 
@@ -483,16 +720,16 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                     format!("{}: {}", keyword, type_name)
                 };
 
-                symbols.push(Symbol {
+                symbols.push(Symbol::new(
                     name,
                     kind,
                     detail,
-                    insert_text: None,
-                    type_name: Some(type_name),
+                    None,
+                    Some(type_name),
                     scope_start,
                     scope_end,
-                    declaration_line: line_number,
-                });
+                    line_number,
+                ));
             }
         }
 
@@ -509,130 +746,30 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                 .to_string();
 
             if !imported.is_empty() {
-                symbols.push(Symbol {
-                    name: imported.clone(),
-                    kind: CompletionKind::Module,
-                    detail: "module".into(),
-                    insert_text: None,
-                    type_name: Some(imported),
-                    scope_start: 0,
-                    scope_end: total_lines,
-                    declaration_line: line_number,
-                });
+                symbols.push(Symbol::new(
+                    imported.clone(),
+                    CompletionKind::Module,
+                    "module".into(),
+                    None,
+                    Some(imported),
+                    0,
+                    total_lines,
+                    line_number,
+                ));
             }
         }
 
         line_index = line_index.saturating_add(1);
     }
 
-    DocumentAnalysis {
+    DocumentAnalysis::new(
         symbols,
         structures,
         enumerations,
         functions,
         modules,
         line_depths,
-    }
-}
-
-fn analyze_imported_modules(uri: &str, text: &str) -> Vec<ImportedModule> {
-    let mut modules: Vec<ImportedModule> = Vec::with_capacity(u8::MAX as usize);
-    let path: PathBuf = self::uri_to_path(uri);
-
-    let name: String = path.file_name().map_or_else(
-        || "memory.thrust".to_string(),
-        |name| name.to_string_lossy().to_string(),
-    );
-
-    let base_name: String = path.file_stem().map_or_else(
-        || "memory".to_string(),
-        |name| name.to_string_lossy().to_string(),
-    );
-
-    let options: CompilerOptions = CompilerOptions::new();
-
-    let target_info: TargetInfo = TargetInfo::new(
-        options
-            .get_llvm_backend()
-            .get_target()
-            .get_normalized_target_triple()
-            .clone(),
-    );
-
-    let builtins: BuiltinRegistry = thrustc_builtins::default_registry(target_info);
-
-    let file: CompilationUnit = CompilationUnit::new(name, path, text.to_string(), base_name);
-
-    let Ok(tokens) = Lexer::lex_for_preprocessor(&file, &options) else {
-        return modules;
-    };
-
-    let Ok(directives) = thrustc_directive::apply_file_directives(&tokens) else {
-        return modules;
-    };
-
-    let file_options: thrustc_directive::FileOptions =
-        thrustc_directive::FileOptions::new(&options, &directives);
-
-    let mut preprocessor: Preprocessor = Preprocessor::new();
-
-    let Ok(imported) = preprocessor.generate_modules(&tokens, &file_options, &file, &builtins)
-    else {
-        return modules;
-    };
-
-    for module in imported {
-        modules.push(self::convert_imported_module(module));
-    }
-
-    modules
-}
-
-fn convert_imported_module(module: &thrustc_preprocessor::module::Module) -> ImportedModule {
-    let mut symbols: Vec<Symbol> = Vec::with_capacity(u8::MAX as usize);
-    let mut functions: Vec<Function> = Vec::with_capacity(u8::MAX as usize);
-    let mut submodules: Vec<ImportedModule> = Vec::with_capacity(module.get_submodules().len());
-
-    for symbol in module.get_symbols() {
-        if let Some(only) = module.get_only() {
-            if !only.contains(&symbol.name) {
-                continue;
-            }
-        }
-
-        if let Some(function) = self::convert_module_function(symbol) {
-            functions.push(function);
-        }
-
-        let Some(converted) = self::convert_module_symbol(symbol) else {
-            continue;
-        };
-
-        symbols.push(converted);
-    }
-
-    if module.get_only().is_none() {
-        for submodule in module.get_submodules() {
-            submodules.push(self::convert_imported_module(submodule));
-        }
-    }
-
-    let module_name: String = if let Some(alias) = module.get_alias() {
-        if alias.is_empty() {
-            module.get_name().to_string()
-        } else {
-            alias.join("::")
-        }
-    } else {
-        module.get_name().to_string()
-    };
-
-    ImportedModule {
-        name: module_name,
-        symbols,
-        functions,
-        submodules,
-    }
+    )
 }
 
 fn convert_module_symbol(symbol: &thrustc_preprocessor::signatures::Symbol) -> Option<Symbol> {
@@ -757,153 +894,121 @@ fn convert_module_symbol(symbol: &thrustc_preprocessor::signatures::Symbol) -> O
         }
     }
 
-    Some(Symbol {
-        name: symbol.name.clone(),
+    Some(Symbol::new(
+        symbol.name.clone(),
         kind,
         detail,
         insert_text,
-        type_name: None,
-        scope_start: 0,
-        scope_end: u64::MAX,
-        declaration_line: 0,
-    })
+        None,
+        0,
+        u64::MAX,
+        0,
+    ))
 }
 
-fn convert_module_function(symbol: &thrustc_preprocessor::signatures::Symbol) -> Option<Function> {
-    let (Signature::Function {
-        parameters,
-        attributes,
-        ..
-    }
-    | Signature::CompilerIntrinsic {
-        parameters,
-        attributes,
-        ..
-    }) = &symbol.signature
-    else {
-        return None;
-    };
-
-    if !attributes.has_public_attribute() {
-        return None;
-    }
-
-    let mut converted_parameters: Vec<Symbol> = Vec::with_capacity(parameters.len());
-
-    for (name, ty, param_span) in parameters {
-        converted_parameters.push(Symbol {
-            name: name.clone(),
-            kind: CompletionKind::Variable,
-            detail: ty.to_string(),
-            insert_text: None,
-            type_name: Some(ty.to_string()),
-            scope_start: 0,
-            scope_end: u64::MAX,
-            declaration_line: param_span.get_line().into(),
-        });
-    }
-
-    Some(Function {
-        name: symbol.name.clone(),
-        parameters: converted_parameters,
-        is_variadic: attributes.has_ignore_attribute(),
-    })
-}
-
-fn uri_to_path(uri: &str) -> PathBuf {
-    url::Url::parse(uri)
+fn analyze_imported_modules(uri: &str, text: &str) -> Vec<ImportedModule> {
+    let mut modules: Vec<ImportedModule> = Vec::with_capacity(u8::MAX as usize);
+    let path: PathBuf = url::Url::parse(uri)
         .ok()
         .and_then(|uri| uri.to_file_path().ok())
-        .unwrap_or_else(|| PathBuf::from(uri))
-}
+        .unwrap_or_else(|| PathBuf::from(uri));
 
-fn parse_struct_fields(lines: &[&str], start: usize, end: u64) -> Vec<Symbol> {
-    let mut fields: Vec<Symbol> = Vec::with_capacity(u8::MAX as usize);
-    let mut line_index: usize = start.saturating_add(1);
-    let end: usize = end.try_into().unwrap_or(usize::MAX);
-    let mut block_comment: bool = false;
+    let name: String = path.file_name().map_or_else(
+        || "memory.thrust".to_string(),
+        |name| name.to_string_lossy().to_string(),
+    );
+    let base_name: String = path.file_stem().map_or_else(
+        || "memory".to_string(),
+        |name| name.to_string_lossy().to_string(),
+    );
 
-    while line_index <= end && line_index < lines.len() {
-        let raw_line: &str = lines[line_index];
-        let line: String = self::clean_line(raw_line, &mut block_comment);
-        let trimmed: &str = line.trim();
-        let line_number: u64 = line_index.try_into().unwrap_or(u64::MAX);
+    let options: CompilerOptions = CompilerOptions::new();
+    let target_info: TargetInfo = TargetInfo::new(
+        options
+            .get_llvm_backend()
+            .get_target()
+            .get_normalized_target_triple()
+            .clone(),
+    );
+    let builtins: BuiltinRegistry = thrustc_builtins::default_registry(target_info);
+    let file: CompilationUnit = CompilationUnit::new(name, path, text.to_string(), base_name);
 
-        if !trimmed.contains(':') || trimmed.starts_with("fn ") {
-            line_index = line_index.saturating_add(1);
-            continue;
-        }
+    let Ok(tokens) = Lexer::lex_for_preprocessor(&file, &options) else {
+        return modules;
+    };
 
-        let Some((name, ty)) = trimmed.split_once(':') else {
-            line_index = line_index.saturating_add(1);
-            continue;
-        };
+    let Ok(directives) = thrustc_directive::apply_file_directives(&tokens) else {
+        return modules;
+    };
+    let file_options: thrustc_directive::FileOptions =
+        thrustc_directive::FileOptions::new(&options, &directives);
+    let mut preprocessor: Preprocessor = Preprocessor::new();
 
-        let name: String = self::clean_identifier(name);
-        let type_name: String = self::clean_type(ty);
+    let Ok(imported) = preprocessor.generate_modules(&tokens, &file_options, &file, &builtins)
+    else {
+        return modules;
+    };
 
-        if !name.is_empty() {
-            fields.push(Symbol {
-                name,
-                kind: CompletionKind::Field,
-                detail: type_name.clone(),
-                insert_text: None,
-                type_name: Some(type_name),
-                scope_start: 0,
-                scope_end: u64::MAX,
-                declaration_line: line_number,
-            });
-        }
-
-        line_index = line_index.saturating_add(1);
+    for module in imported {
+        modules.push(self::convert_imported_module(module));
     }
 
-    fields
+    modules
 }
 
-fn parse_enum_values(lines: &[&str], start: usize, end: u64) -> Vec<Symbol> {
-    let mut values: Vec<Symbol> = Vec::with_capacity(u8::MAX as usize);
-    let mut line_index: usize = start.saturating_add(1);
-    let end: usize = end.try_into().unwrap_or(usize::MAX);
-    let mut block_comment: bool = false;
+fn clean_line(line: &str, block_comment: &mut bool) -> String {
+    let mut result: String = String::with_capacity(line.len());
+    let chars: Vec<char> = line.chars().collect();
+    let mut index: usize = 0;
+    let mut in_string: bool = false;
+    let mut in_char: bool = false;
 
-    while line_index <= end && line_index < lines.len() {
-        let raw_line: &str = lines[line_index];
-        let line: String = self::clean_line(raw_line, &mut block_comment);
-        let trimmed: &str = line.trim();
-        let line_number: u64 = line_index.try_into().unwrap_or(u64::MAX);
+    while index < chars.len() {
+        let ch: char = chars[index];
+        let next: char = chars.get(index.saturating_add(1)).copied().unwrap_or('\0');
 
-        if trimmed.is_empty() || trimmed.starts_with('}') {
-            line_index = line_index.saturating_add(1);
+        if *block_comment {
+            if ch == '*' && next == '/' {
+                *block_comment = false;
+                index = index.saturating_add(2);
+
+                continue;
+            }
+
+            index = index.saturating_add(1);
+
             continue;
         }
 
-        let left: &str = trimmed.split(':').next().unwrap_or(trimmed);
-        let left: &str = left.split('=').next().unwrap_or(left);
-        let left: &str = left.split(';').next().unwrap_or(left);
-        let name: String = self::clean_identifier(left);
-
-        if !name.is_empty() {
-            values.push(Symbol {
-                name,
-                kind: CompletionKind::EnumMember,
-                detail: "enum value".into(),
-                insert_text: None,
-                type_name: None,
-                scope_start: 0,
-                scope_end: u64::MAX,
-                declaration_line: line_number,
-            });
+        if !in_string && !in_char && ch == '/' && next == '/' {
+            break;
         }
 
-        line_index = line_index.saturating_add(1);
+        if !in_string && !in_char && ch == '/' && next == '*' {
+            *block_comment = true;
+            index = index.saturating_add(2);
+
+            continue;
+        }
+
+        if ch == '"' && !in_char {
+            in_string = !in_string;
+        }
+
+        if ch == '\'' && !in_string {
+            in_char = !in_char;
+        }
+
+        result.push(ch);
+        index = index.saturating_add(1);
     }
 
-    values
+    result
 }
 
 fn parse_function_parameters(line: &str, declaration_line: u64, scope_end: u64) -> Vec<Symbol> {
     let mut parameters: Vec<Symbol> = Vec::with_capacity(16);
+
     let Some(open) = line.find('(') else {
         return parameters;
     };
@@ -932,89 +1037,190 @@ fn parse_function_parameters(line: &str, declaration_line: u64, scope_end: u64) 
             continue;
         }
 
-        parameters.push(Symbol {
+        parameters.push(Symbol::new(
             name,
-            kind: CompletionKind::Variable,
-            detail: type_name.clone(),
-            insert_text: None,
-            type_name: Some(type_name),
-            scope_start: declaration_line,
+            CompletionKind::Variable,
+            type_name.clone(),
+            None,
+            Some(type_name),
+            declaration_line,
             scope_end,
             declaration_line,
-        });
+        ));
     }
 
     parameters
 }
 
-fn build_line_depths(lines: &[&str]) -> Vec<u64> {
-    let mut line_depths: Vec<u64> = Vec::with_capacity(lines.len());
-    let mut depth: u64 = 0;
+fn parse_struct_fields(lines: &[&str], start: usize, end: u64) -> Vec<Symbol> {
+    let mut fields: Vec<Symbol> = Vec::with_capacity(u8::MAX as usize);
+    let mut line_index: usize = start.saturating_add(1);
+    let end: usize = end.try_into().unwrap_or(usize::MAX);
     let mut block_comment: bool = false;
 
-    for line in lines {
-        let line: String = self::clean_line(line, &mut block_comment);
-        line_depths.push(depth);
+    while line_index <= end && line_index < lines.len() {
+        let raw_line: &str = lines[line_index];
+        let line: String = self::clean_line(raw_line, &mut block_comment);
+        let trimmed: &str = line.trim();
+        let line_number: u64 = line_index.try_into().unwrap_or(u64::MAX);
 
-        for ch in line.chars() {
-            if ch == '{' {
-                depth = depth.saturating_add(1);
-            }
+        if !trimmed.contains(':') || trimmed.starts_with("fn ") {
+            line_index = line_index.saturating_add(1);
 
-            if ch == '}' {
-                depth = depth.saturating_sub(1);
-            }
+            continue;
         }
+
+        let Some((name, ty)) = trimmed.split_once(':') else {
+            line_index = line_index.saturating_add(1);
+
+            continue;
+        };
+
+        let name: String = self::clean_identifier(name);
+        let type_name: String = self::clean_type(ty);
+
+        if !name.is_empty() {
+            fields.push(Symbol::new(
+                name,
+                CompletionKind::Field,
+                type_name.clone(),
+                None,
+                Some(type_name),
+                0,
+                u64::MAX,
+                line_number,
+            ));
+        }
+
+        line_index = line_index.saturating_add(1);
     }
 
-    line_depths
+    fields
 }
 
-fn clean_line(line: &str, block_comment: &mut bool) -> String {
-    let mut result: String = String::with_capacity(line.len());
-    let chars: Vec<char> = line.chars().collect();
-    let mut index: usize = 0;
-    let mut in_string: bool = false;
-    let mut in_char: bool = false;
+fn convert_imported_module(module: &thrustc_preprocessor::module::Module) -> ImportedModule {
+    let mut symbols: Vec<Symbol> = Vec::with_capacity(u8::MAX as usize);
+    let mut functions: Vec<Function> = Vec::with_capacity(u8::MAX as usize);
+    let mut submodules: Vec<ImportedModule> = Vec::with_capacity(module.get_submodules().len());
 
-    while index < chars.len() {
-        let ch: char = chars[index];
-        let next: char = chars.get(index.saturating_add(1)).copied().unwrap_or('\0');
-
-        if *block_comment {
-            if ch == '*' && next == '/' {
-                *block_comment = false;
-                index = index.saturating_add(2);
+    for symbol in module.get_symbols() {
+        if let Some(only) = module.get_only() {
+            if !only.contains(&symbol.name) {
                 continue;
             }
+        }
 
-            index = index.saturating_add(1);
+        if let Some(function) = self::convert_module_function(symbol) {
+            functions.push(function);
+        }
+
+        let Some(converted) = self::convert_module_symbol(symbol) else {
             continue;
-        }
+        };
 
-        if !in_string && !in_char && ch == '/' && next == '/' {
-            break;
-        }
-
-        if !in_string && !in_char && ch == '/' && next == '*' {
-            *block_comment = true;
-            index = index.saturating_add(2);
-            continue;
-        }
-
-        if ch == '"' && !in_char {
-            in_string = !in_string;
-        }
-
-        if ch == '\'' && !in_string {
-            in_char = !in_char;
-        }
-
-        result.push(ch);
-        index = index.saturating_add(1);
+        symbols.push(converted);
     }
 
-    result
+    if module.get_only().is_none() {
+        for submodule in module.get_submodules() {
+            submodules.push(self::convert_imported_module(submodule));
+        }
+    }
+
+    let module_name: String = if let Some(alias) = module.get_alias() {
+        if alias.is_empty() {
+            module.get_name().to_string()
+        } else {
+            alias.join("::")
+        }
+    } else {
+        module.get_name().to_string()
+    };
+
+    ImportedModule::new(module_name, symbols, functions, submodules)
+}
+
+fn parse_enum_values(lines: &[&str], start: usize, end: u64) -> Vec<Symbol> {
+    let mut values: Vec<Symbol> = Vec::with_capacity(u8::MAX as usize);
+    let mut line_index: usize = start.saturating_add(1);
+    let end: usize = end.try_into().unwrap_or(usize::MAX);
+    let mut block_comment: bool = false;
+
+    while line_index <= end && line_index < lines.len() {
+        let raw_line: &str = lines[line_index];
+        let line: String = self::clean_line(raw_line, &mut block_comment);
+        let trimmed: &str = line.trim();
+        let line_number: u64 = line_index.try_into().unwrap_or(u64::MAX);
+
+        if trimmed.is_empty() || trimmed.starts_with('}') {
+            line_index = line_index.saturating_add(1);
+
+            continue;
+        }
+
+        let left: &str = trimmed.split(':').next().unwrap_or(trimmed);
+        let left: &str = left.split('=').next().unwrap_or(left);
+        let left: &str = left.split(';').next().unwrap_or(left);
+        let name: String = self::clean_identifier(left);
+
+        if !name.is_empty() {
+            values.push(Symbol::new(
+                name,
+                CompletionKind::EnumMember,
+                "enum value".into(),
+                None,
+                None,
+                0,
+                u64::MAX,
+                line_number,
+            ));
+        }
+
+        line_index = line_index.saturating_add(1);
+    }
+
+    values
+}
+
+fn convert_module_function(symbol: &thrustc_preprocessor::signatures::Symbol) -> Option<Function> {
+    let (Signature::Function {
+        parameters,
+        attributes,
+        ..
+    }
+    | Signature::CompilerIntrinsic {
+        parameters,
+        attributes,
+        ..
+    }) = &symbol.signature
+    else {
+        return None;
+    };
+
+    if !attributes.has_public_attribute() {
+        return None;
+    }
+
+    let mut converted_parameters: Vec<Symbol> = Vec::with_capacity(parameters.len());
+
+    for (name, ty, param_span) in parameters {
+        converted_parameters.push(Symbol::new(
+            name.clone(),
+            CompletionKind::Variable,
+            ty.to_string(),
+            None,
+            Some(ty.to_string()),
+            0,
+            u64::MAX,
+            param_span.get_line().into(),
+        ));
+    }
+
+    Some(Function::new(
+        symbol.name.clone(),
+        converted_parameters,
+        attributes.has_ignore_attribute(),
+    ))
 }
 
 fn find_block_end(lines: &[&str], start: usize) -> u64 {
@@ -1043,6 +1249,7 @@ fn find_block_end(lines: &[&str], start: usize) -> u64 {
 
         if saw_open {
             line_index = line_index.saturating_add(1);
+
             continue;
         }
 
@@ -1054,6 +1261,52 @@ fn find_block_end(lines: &[&str], start: usize) -> u64 {
     }
 
     lines.len().try_into().unwrap_or(u64::MAX)
+}
+
+fn build_line_depths(lines: &[&str]) -> Vec<u64> {
+    let mut line_depths: Vec<u64> = Vec::with_capacity(lines.len());
+    let mut depth: u64 = 0;
+    let mut block_comment: bool = false;
+
+    for line in lines {
+        let line: String = self::clean_line(line, &mut block_comment);
+
+        line_depths.push(depth);
+
+        for ch in line.chars() {
+            if ch == '{' {
+                depth = depth.saturating_add(1);
+            }
+
+            if ch == '}' {
+                depth = depth.saturating_sub(1);
+            }
+        }
+    }
+
+    line_depths
+}
+
+fn parse_named_declaration(line: &str, keyword: &str) -> String {
+    let mut source: &str = line.trim();
+
+    if let Some(rest) = source.strip_prefix(keyword) {
+        source = rest.trim_start();
+    }
+
+    let mut name: String = String::with_capacity(32);
+
+    for ch in source.chars() {
+        if ch == '_' || ch.is_ascii_alphanumeric() {
+            name.push(ch);
+
+            continue;
+        }
+
+        break;
+    }
+
+    name
 }
 
 fn find_scope_end(line_depths: &[u64], start: usize, depth: u64) -> u64 {
@@ -1072,37 +1325,22 @@ fn find_scope_end(line_depths: &[u64], start: usize, depth: u64) -> u64 {
     line_depths.len().try_into().unwrap_or(u64::MAX)
 }
 
-fn parse_named_declaration(line: &str, keyword: &str) -> String {
-    let mut source: &str = line.trim();
+fn clean_identifier(value: &str) -> String {
+    let mut result: String = String::with_capacity(value.len());
 
-    if let Some(rest) = source.strip_prefix(keyword) {
-        source = rest.trim_start();
-    }
-
-    let mut name: String = String::with_capacity(32);
-
-    for ch in source.chars() {
+    for ch in value.trim().chars() {
         if ch == '_' || ch.is_ascii_alphanumeric() {
-            name.push(ch);
+            result.push(ch);
+
             continue;
         }
 
         break;
     }
 
-    name
+    result
 }
 
-#[inline]
-fn parse_type_after_colon(line: &str) -> String {
-    let Some((_, right)) = line.split_once(':') else {
-        return String::new();
-    };
-
-    self::clean_type(right)
-}
-
-#[inline]
 fn clean_type(value: &str) -> String {
     let mut result: String = String::with_capacity(value.len());
 
@@ -1115,20 +1353,4 @@ fn clean_type(value: &str) -> String {
     }
 
     result.trim().to_string()
-}
-
-#[inline]
-fn clean_identifier(value: &str) -> String {
-    let mut result: String = String::with_capacity(value.len());
-
-    for ch in value.trim().chars() {
-        if ch == '_' || ch.is_ascii_alphanumeric() {
-            result.push(ch);
-            continue;
-        }
-
-        break;
-    }
-
-    result
 }
