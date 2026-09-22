@@ -228,6 +228,15 @@ fn forEach [T] (vector: ptr[Vector[T]], action: Fn[T] -> void) void @public {
     }
 }
 
+fn forEachPtr [T] (vector: ptr[Vector[T]], action: Fn[ptr[T]] -> void) void @public {
+    var index: usize = 0;
+
+    while index < vector->length {
+        action(ref vector->data[index]);
+        index = index + 1;
+    }
+}
+
 fn filter [T] (vector: ptr[Vector[T]], predicate: Fn[T] -> bool) Vector[T] @public {
     var result: Vector[T] = withCapacity[T](vector->length);
     var index: usize = 0;

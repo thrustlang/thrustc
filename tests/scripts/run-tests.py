@@ -392,6 +392,9 @@ def compile_test(
 
     command.extend(compiletime_std_args(test_path, root))
 
+    if "atomics" in test_path.parts:
+        command.extend(["-mode", "unstable"])
+
     command.extend(str(path) for path in files)
 
     if cc_args:

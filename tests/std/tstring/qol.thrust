@@ -1,0 +1,156 @@
+/*
+ * Exercises std::tstring quality-of-life API: split, join, repeat, reverse,
+ * replaceAll, removePrefix, removeSuffix, substring, lastIndexOf,
+ * countOccurrences and the ASCII predicate helpers.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::tstring;
+import std::collections::vector as vec;
+
+fn main() s32 @public {
+    var text := tstring::fromCString("a,b,c,d");
+
+    var parts := tstring::split(ref text, ",");
+    if vec::getLength[tstring::TString](ref parts) != 4 { return 1; }
+
+    var part0: tstring::TString = vec::at[tstring::TString](ref parts, 0);
+    var expectedA := tstring::fromCString("a");
+    if !tstring::equals(ref part0, ref expectedA) { return 2; }
+    tstring::dropTString(ref expectedA);
+
+    var part3: tstring::TString = vec::at[tstring::TString](ref parts, 3);
+    var expectedD := tstring::fromCString("d");
+    if !tstring::equals(ref part3, ref expectedD) { return 3; }
+    tstring::dropTString(ref expectedD);
+
+    var joined := tstring::join(ref parts, "-");
+    var expectedJoined := tstring::fromCString("a-b-c-d");
+    if !tstring::equals(ref joined, ref expectedJoined) { return 4; }
+    tstring::dropTString(ref expectedJoined);
+    tstring::dropTString(ref joined);
+
+    var ws := tstring::fromCString("one  two\tthree");
+    var words := tstring::splitWhitespace(ref ws);
+    if vec::getLength[tstring::TString](ref words) != 3 { return 5; }
+
+    var word0: tstring::TString = vec::at[tstring::TString](ref words, 0);
+    var expectedOne := tstring::fromCString("one");
+    if !tstring::equals(ref word0, ref expectedOne) { return 6; }
+    tstring::dropTString(ref expectedOne);
+    tstring::dropTString(ref ws);
+
+    var lines := tstring::fromCString("x\ny\nz");
+    var lineParts := tstring::splitLines(ref lines);
+    if vec::getLength[tstring::TString](ref lineParts) != 3 { return 7; }
+    tstring::dropTString(ref lines);
+
+    var rev := tstring::reverse(ref text);
+    var expectedRev := tstring::fromCString("d,c,b,a");
+    if !tstring::equals(ref rev, ref expectedRev) { return 8; }
+    tstring::dropTString(ref expectedRev);
+    tstring::dropTString(ref rev);
+
+    var rep := tstring::repeat(ref text, 2);
+    var expectedRep := tstring::fromCString("a,b,c,da,b,c,d");
+    if !tstring::equals(ref rep, ref expectedRep) { return 9; }
+    tstring::dropTString(ref expectedRep);
+    tstring::dropTString(ref rep);
+
+    var replaced := tstring::replaceAll(ref text, ",", ";");
+    var expectedReplaced := tstring::fromCString("a;b;c;d");
+    if !tstring::equals(ref replaced, ref expectedReplaced) { return 10; }
+    tstring::dropTString(ref expectedReplaced);
+    tstring::dropTString(ref replaced);
+
+    var removedPrefix := tstring::removePrefix(ref text, "a,");
+    var expectedRemovedPrefix := tstring::fromCString("b,c,d");
+    if !tstring::equals(ref removedPrefix, ref expectedRemovedPrefix) { return 11; }
+    tstring::dropTString(ref expectedRemovedPrefix);
+    tstring::dropTString(ref removedPrefix);
+
+    var removedSuffix := tstring::removeSuffix(ref text, ",d");
+    var expectedRemovedSuffix := tstring::fromCString("a,b,c");
+    if !tstring::equals(ref removedSuffix, ref expectedRemovedSuffix) { return 12; }
+    tstring::dropTString(ref expectedRemovedSuffix);
+    tstring::dropTString(ref removedSuffix);
+
+    var sub := tstring::substring(ref text, 2, 5);
+    var expectedSub := tstring::fromCString("b,c");
+    if !tstring::equals(ref sub, ref expectedSub) { return 13; }
+    tstring::dropTString(ref expectedSub);
+    tstring::dropTString(ref sub);
+
+    if tstring::lastIndexOf(ref text, ",") != 5 { return 14; }
+    if tstring::countOccurrences(ref text, ",") != 3 { return 15; }
+
+    var digits := tstring::fromCString("12345");
+    var letters := tstring::fromCString("abc");
+    var alphaNum := tstring::fromCString("a1b2");
+    var spaces := tstring::fromCString(" \t");
+
+    if !tstring::isNumeric(ref digits) { return 16; }
+    if tstring::isNumeric(ref letters) { return 17; }
+    if !tstring::isAlphabetic(ref letters) { return 18; }
+    if tstring::isAlphabetic(ref digits) { return 19; }
+    if !tstring::isAlphanumeric(ref alphaNum) { return 20; }
+    if !tstring::isWhitespaceOnly(ref spaces) { return 21; }
+    if !tstring::isASCII(ref text) { return 22; }
+
+    var chars := tstring::split(ref text, "");
+
+    if vec::getLength[tstring::TString](ref chars) != 7 { return 23; }
+
+    var char0: tstring::TString = vec::at[tstring::TString](ref chars, 0);
+    var expectedFirstChar := tstring::fromCString("a");
+    if !tstring::equals(ref char0, ref expectedFirstChar) { return 24; }
+    tstring::dropTString(ref expectedFirstChar);
+
+    tstring::dropTString(ref spaces);
+    tstring::dropTString(ref alphaNum);
+    tstring::dropTString(ref letters);
+    tstring::dropTString(ref digits);
+
+    var partsData: ptr[tstring::TString] = vec::getDataPointer[tstring::TString](ref parts);
+    var i: usize = 0;
+
+    while i < vec::getLength[tstring::TString](ref parts) {
+        tstring::dropTString(ref partsData[i]);
+        i = i + 1;
+    }
+
+    vec::dropVector[tstring::TString](ref parts);
+
+    var wordsData: ptr[tstring::TString] = vec::getDataPointer[tstring::TString](ref words);
+    i = 0;
+
+    while i < vec::getLength[tstring::TString](ref words) {
+        tstring::dropTString(ref wordsData[i]);
+        i = i + 1;
+    }
+
+    vec::dropVector[tstring::TString](ref words);
+
+    var lineData: ptr[tstring::TString] = vec::getDataPointer[tstring::TString](ref lineParts);
+    i = 0;
+
+    while i < vec::getLength[tstring::TString](ref lineParts) {
+        tstring::dropTString(ref lineData[i]);
+        i = i + 1;
+    }
+
+    vec::dropVector[tstring::TString](ref lineParts);
+
+    var charsData: ptr[tstring::TString] = vec::getDataPointer[tstring::TString](ref chars);
+    i = 0;
+
+    while i < vec::getLength[tstring::TString](ref chars) {
+        tstring::dropTString(ref charsData[i]);
+        i = i + 1;
+    }
+
+    vec::dropVector[tstring::TString](ref chars);
+    tstring::dropTString(ref text);
+
+    return 0;
+}

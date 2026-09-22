@@ -1,28 +1,21 @@
+import std::tstring;
+import std::collections::vector;
 import std::io;
 
-fn fibonacci[T](n: T) T @public {
-    if n <= 0 { return 0; }
-    if n == 1 { return 1; }
+fn iterate(str: ptr[tstring::TString]) void {
+    io::print("%s\n", tstring::toCString(str));
+}
 
-    var a: T = 0;
-    var b: T = 1;
-    var i: T = 2;
-    var result: T = 0;
-
-    while i <= n {
-        result = a + b;
-        a = b;
-        b = result;
-        i++;
-    }
-
-    return result;
+fn dropAllTstring(str: ptr[tstring::TString]) void {
+    tstring::dropTString(str);
 }
 
 fn main() s32 @public {
-    var result: s32 = fibonacci[s32](10);
-    
-    io::print("fib(%d) = %d\n", 10, result);
+    var tstr: tstring::TString = tstring::fromCString("hello");
+    var tstr_splitted: vector::Vector[tstring::TString] = tstring::split(ref tstr, "");
+
+    vector::forEachPtr(ref tstr_splitted, iterate);
+    tstring::dropTString(ref tstr);
     
     return 0;
 }
