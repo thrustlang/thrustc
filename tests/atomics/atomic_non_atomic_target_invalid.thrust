@@ -1,0 +1,9 @@
+fn main() s32 @public {
+    var counter: u32 = 10;
+
+    var old: u32 = atomicAdd(counter, 5);
+
+    if old != 10 { return 1; }
+
+    return 0;
+}

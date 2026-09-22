@@ -21,7 +21,7 @@
 #![allow(clippy::incompatible_msrv)]
 
 use crate::abort;
-use crate::atomic_operations::LLVMAtomicModificators;
+use thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators;
 use crate::codegen;
 use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;

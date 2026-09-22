@@ -18,16 +18,20 @@
 */
 
 use thrustc_ast::{
-    ast_builtins::AstBuiltin,
-    traits::{AstCodeLocation, AstGetType, AstMemoryExtensions, AstStandardExtensions},
     Ast,
+    ast_builtins::AstBuiltin,
+    traits::{
+        AstBaseReferenceExtensions, AstCodeLocation, AstGetType, AstMemoryExtensions,
+        AstStandardExtensions,
+    },
 };
+use thrustc_atomic_ordering::ThrustAtomicOrdering;
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::{
-    traits::{TypeExtensions, TypePointerExtensions},
     Type,
+    traits::{TypeExtensions, TypeIsExtensions, TypePointerExtensions},
 };
 
 use crate::GeneralAnalyzer;
@@ -258,6 +262,39 @@ pub fn validate_node<'analyzer>(
             | AstBuiltin::ArbitraryArg { .. }
             | AstBuiltin::ArbitraryArgs { .. }
             | AstBuiltin::DeferredCompileTime { .. } => Ok(()),
+
+            AstBuiltin::AtomicRMW {
+                destination,
+                value,
+                span,
+                ..
+            } => {
+                analyzer.analyze_expr(destination)?;
+                analyzer.analyze_expr(value)?;
+
+                self::validate_atomic_operation(analyzer, destination, *span)?;
+                self::validate_atomic_integer_operands(analyzer, destination, value, *span)?;
+
+                Ok(())
+            }
+
+            AstBuiltin::AtomicCompareAndSwap {
+                destination,
+                expected,
+                new_value,
+                success,
+                failure,
+                span,
+            } => {
+                analyzer.analyze_expr(destination)?;
+                analyzer.analyze_expr(expected)?;
+                analyzer.analyze_expr(new_value)?;
+
+                self::validate_atomic_operation(analyzer, destination, *span)?;
+                self::validate_cmpxchg_orderings(analyzer, *success, *failure, *span)?;
+
+                Ok(())
+            }
         },
 
         Ast::AsmValue { .. }
@@ -286,4 +323,181 @@ pub fn validate_node<'analyzer>(
             Ok(())
         }
     }
+}
+
+pub fn validate_atomic_operation(
+    analyzer: &mut GeneralAnalyzer<'_>,
+    destination: &Ast<'_>,
+    span: Span,
+) -> Result<(), CompilationIssue> {
+    let reference: &Ast<'_> = match destination.get_base_reference() {
+        Some(reference) => reference,
+
+        None => {
+            analyzer.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0008,
+                "An value with memory address was expected.".into(),
+                "The atomic operation destination must be a memory location backed by an atomic variable.".into(),
+                None,
+                span,
+            ));
+
+            return Ok(());
+        }
+    };
+
+    let Ast::Reference { metadata, .. } = reference else {
+        return Ok(());
+    };
+
+    let Some(atomic_ord) = metadata.get_atomic_ord() else {
+        analyzer.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0056,
+            "The atomic operation target has no atomic ordering.".into(),
+            "Declare the target with an atomic ordering modificator such as atomicRelax, atomicGrab, atomicDrop, atomicSync or atomicStrict.".into(),
+            None,
+            span,
+        ));
+
+        return Ok(());
+    };
+
+    if matches!(
+        atomic_ord,
+        ThrustAtomicOrdering::AtomicNone | ThrustAtomicOrdering::AtomicFree
+    ) {
+        analyzer.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0056,
+            "The atomic operation requires an ordering of at least atomicRelax.".into(),
+            "Use an atomic ordering modificator stronger than atomicNone or atomicFree.".into(),
+            None,
+            span,
+        ));
+    }
+
+    Ok(())
+}
+
+// Enforces the ordering rules of the LLVM cmpxchg instruction.
+pub fn validate_cmpxchg_orderings(
+    analyzer: &mut GeneralAnalyzer<'_>,
+    success: ThrustAtomicOrdering,
+    failure: ThrustAtomicOrdering,
+    span: Span,
+) -> Result<(), CompilationIssue> {
+    // LLVM LangRef (cmpxchg): both the success and failure orderings must be at least monotonic.
+    if matches!(
+        success,
+        ThrustAtomicOrdering::AtomicNone | ThrustAtomicOrdering::AtomicFree
+    ) {
+        analyzer.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0056,
+            "The success ordering of an atomic compare-and-swap must be at least atomicRelax."
+                .into(),
+            "Use an atomic ordering modificator stronger than atomicNone or atomicFree.".into(),
+            None,
+            span,
+        ));
+    }
+
+    if matches!(
+        failure,
+        ThrustAtomicOrdering::AtomicNone | ThrustAtomicOrdering::AtomicFree
+    ) {
+        analyzer.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0056,
+            "The failure ordering of an atomic compare-and-swap must be at least atomicRelax."
+                .into(),
+            "Use an atomic ordering modificator stronger than atomicNone or atomicFree.".into(),
+            None,
+            span,
+        ));
+    }
+
+    // LLVM LangRef (cmpxchg): the failure ordering must not be release or acquire-release.
+    if matches!(
+        failure,
+        ThrustAtomicOrdering::AtomicDrop | ThrustAtomicOrdering::AtomicSync
+    ) {
+        analyzer.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0056,
+            "The failure ordering of an atomic compare-and-swap cannot be release or acquire-release.".into(),
+            "Use a failure ordering such as atomicRelax or atomicGrab.".into(),
+            None,
+            span,
+        ));
+    }
+
+    // LLVM LangRef (cmpxchg): the failure ordering must not be stricter than the success ordering.
+    // Ranks each ordering so they can be compared: relax < grab < drop < sync < strict.
+    let success_strength: u8 = match success {
+        ThrustAtomicOrdering::AtomicRelax => 0,
+        ThrustAtomicOrdering::AtomicGrab => 1,
+        ThrustAtomicOrdering::AtomicDrop => 2,
+        ThrustAtomicOrdering::AtomicSync => 3,
+        ThrustAtomicOrdering::AtomicStrict => 4,
+
+        _ => 0,
+    };
+
+    let failure_strength: u8 = match failure {
+        ThrustAtomicOrdering::AtomicRelax => 0,
+        ThrustAtomicOrdering::AtomicGrab => 1,
+        ThrustAtomicOrdering::AtomicDrop => 2,
+        ThrustAtomicOrdering::AtomicSync => 3,
+        ThrustAtomicOrdering::AtomicStrict => 4,
+
+        _ => 0,
+    };
+
+    // Rejects a failure ordering stricter than the success ordering.
+    if failure_strength > success_strength {
+        analyzer.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0056,
+            "The failure ordering of an atomic compare-and-swap cannot be stronger than the success ordering.".into(),
+            "Use a failure ordering equal to or weaker than the success ordering.".into(),
+            None,
+            span,
+        ));
+    }
+
+    Ok(())
+}
+
+pub fn validate_atomic_integer_operands(
+    analyzer: &mut GeneralAnalyzer<'_>,
+    destination: &Ast<'_>,
+    value: &Ast<'_>,
+    span: Span,
+) -> Result<(), CompilationIssue> {
+    let destination_type: &Type = destination.get_value_type()?;
+    let value_type: &Type = value.get_value_type()?;
+
+    if !destination_type.is_integer_type() {
+        analyzer.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0056,
+            format!(
+                "The atomic operation requires an integer destination, got '{}' type.",
+                destination_type
+            ),
+            "Use an integer variable as the atomic operation destination.".into(),
+            None,
+            span,
+        ));
+    }
+
+    if !value_type.is_integer_type() {
+        analyzer.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0056,
+            format!(
+                "The atomic operation requires an integer value, got '{}' type.",
+                value_type
+            ),
+            "Use an integer value as the atomic operation operand.".into(),
+            None,
+            span,
+        ));
+    }
+
+    Ok(())
 }

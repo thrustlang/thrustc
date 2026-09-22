@@ -322,11 +322,14 @@ pub fn build_qualified_expression<'parser>(
             );
         }
 
+        let metadata: ReferenceMetadata =
+            ReferenceMetadata::new(true, false, ReferenceType::Constant, false, None);
+
         return Ok(Ast::Reference {
             name: qualified_symbol,
             kind: kind.clone(),
             span,
-            metadata: ReferenceMetadata::new(true, false, ReferenceType::Constant, false),
+            metadata,
             id: NodeId::new(),
         });
     }
@@ -375,11 +378,14 @@ pub fn build_qualified_expression<'parser>(
             );
         }
 
+        let metadata: ReferenceMetadata =
+            ReferenceMetadata::new(true, false, ReferenceType::Static, false, None);
+
         return Ok(Ast::Reference {
             name: qualified_symbol,
             kind: kind.clone(),
             span,
-            metadata: ReferenceMetadata::new(true, false, ReferenceType::Static, false),
+            metadata,
             id: NodeId::new(),
         });
     }

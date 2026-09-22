@@ -33,11 +33,11 @@ use crate::{
         ConstructorData, EnumData, EnumDataField, PropertyData, PropertyDataField, StructureData,
     },
     traits::{
-        AstAttributeExtensions, AstCodeBlockEntensions, AstConstructorDataExtensions,
-        AstDeclarationExtensions, AstEnumFieldsDataExtensions, AstExpressionExtensions, AstGetType,
-        AstMemoryExtensions, AstPropertyDataExtensions, AstPropertyDataFieldExtensions,
-        AstStandardExtensions, AstStatementExtensions, AstStructFieldsDataExtensions,
-        AstStructureDataExtensions,
+        AstAttributeExtensions, AstBaseReferenceExtensions, AstCodeBlockEntensions,
+        AstConstructorDataExtensions, AstDeclarationExtensions, AstEnumFieldsDataExtensions,
+        AstExpressionExtensions, AstGetType, AstMemoryExtensions, AstPropertyDataExtensions,
+        AstPropertyDataFieldExtensions, AstStandardExtensions, AstStatementExtensions,
+        AstStructFieldsDataExtensions, AstStructureDataExtensions,
     },
 };
 
@@ -432,6 +432,22 @@ impl AstCodeBlockEntensions for Ast<'_> {
         }
 
         false
+    }
+}
+
+impl<'ast> AstBaseReferenceExtensions<'ast> for Ast<'ast> {
+    fn get_base_reference(&self) -> Option<&Ast<'ast>> {
+        match self {
+            Ast::Reference { .. } => Some(self),
+            Ast::Group { node, .. } => node.get_base_reference(),
+            Ast::Property { source, .. } => source.get_base_reference(),
+            Ast::Deref { value, .. } => value.get_base_reference(),
+            Ast::Index { source, .. } => source.get_base_reference(),
+            Ast::Load { source, .. } => source.get_base_reference(),
+            Ast::GetLocation { expr, .. } => expr.get_base_reference(),
+
+            _ => None,
+        }
     }
 }
 

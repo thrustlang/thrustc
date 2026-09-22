@@ -44,8 +44,7 @@ use thrustc_typesystem::traits::ConstantTypeExtensions;
 use thrustc_typesystem::traits::TypeExtensions;
 
 use crate::abort;
-use crate::atomic_operations;
-use crate::atomic_operations::LLVMAtomicModificators;
+use thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators;
 use crate::context::LLVMCodeGenContext;
 use crate::traits::LLVMFunctionExtensions;
 use crate::typegeneration;
@@ -231,8 +230,8 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 });
 
             if let Some(atomic_config) = context.get_atomic_modificators() {
-                atomic_operations::set_atomic_behavior_load_instruction(
-                    context,
+                thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_load_instruction(
+                    context.get_mut_atomic_context(),
                     instruction,
                     atomic_config,
                     span,
@@ -282,8 +281,8 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 });
 
             if let Some(atomic_config) = context.get_atomic_modificators() {
-                atomic_operations::set_atomic_behavior_load_instruction(
-                    context,
+                thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_load_instruction(
+                    context.get_mut_atomic_context(),
                     instruction,
                     atomic_config,
                     span,
@@ -328,8 +327,8 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 });
 
             if let Some(atomic_config) = context.get_atomic_modificators() {
-                atomic_operations::set_atomic_behavior_load_instruction(
-                    context,
+                thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_load_instruction(
+                    context.get_mut_atomic_context(),
                     instruction,
                     atomic_config,
                     span,
@@ -379,8 +378,8 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 });
 
             if let Some(atomic_config) = context.get_atomic_modificators() {
-                atomic_operations::set_atomic_behavior_load_instruction(
-                    context,
+                thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_load_instruction(
+                    context.get_mut_atomic_context(),
                     instruction,
                     atomic_config,
                     *span,
@@ -440,8 +439,8 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 });
 
             if let Some(atomic_config) = context.get_atomic_modificators() {
-                atomic_operations::set_atomic_behavior_store_instruction(
-                    context,
+                thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_store_instruction(
+                    context.get_mut_atomic_context(),
                     instruction,
                     atomic_config,
                     span,
@@ -475,8 +474,8 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 });
 
             if let Some(atomic_config) = context.get_atomic_modificators() {
-                atomic_operations::set_atomic_behavior_store_instruction(
-                    context,
+                thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_store_instruction(
+                    context.get_mut_atomic_context(),
                     instruction,
                     atomic_config,
                     span,
@@ -510,8 +509,8 @@ impl<'ctx> SymbolAllocated<'ctx> {
                 });
 
             if let Some(atomic_config) = context.get_atomic_modificators() {
-                atomic_operations::set_atomic_behavior_store_instruction(
-                    context,
+                thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_store_instruction(
+                    context.get_mut_atomic_context(),
                     store,
                     atomic_config,
                     span,
@@ -549,10 +548,10 @@ impl<'ctx> SymbolAllocated<'ctx> {
                     return None;
                 }
 
-                let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                    atomic_volatile: metadata.volatile,
-                    atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
-                };
+                let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators::new(
+                    metadata.volatile,
+                    metadata.atomic_ord.map(|ord| ord.to_llvm()),
+                );
 
                 Some(atomic_config)
             }
@@ -562,10 +561,10 @@ impl<'ctx> SymbolAllocated<'ctx> {
                     return None;
                 }
 
-                let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                    atomic_volatile: metadata.volatile,
-                    atomic_ord: metadata.atomic_ord.map(|ord| ord.to_llvm()),
-                };
+                let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators::new(
+                    metadata.volatile,
+                    metadata.atomic_ord.map(|ord| ord.to_llvm()),
+                );
 
                 Some(atomic_config)
             }
@@ -674,8 +673,8 @@ pub fn store<'ctx>(
             });
 
     if let Some(atomic_config) = context.get_atomic_modificators() {
-        atomic_operations::set_atomic_behavior_store_instruction(
-            context,
+        thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_store_instruction(
+            context.get_mut_atomic_context(),
             store,
             atomic_config,
             span,
@@ -733,8 +732,8 @@ pub fn load<'ctx>(
         });
 
     if let Some(atomic_config) = context.get_atomic_modificators() {
-        atomic_operations::set_atomic_behavior_load_instruction(
-            context,
+        thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_load_instruction(
+            context.get_mut_atomic_context(),
             instruction,
             atomic_config,
             span,
@@ -794,8 +793,8 @@ pub fn load_pointer<'ctx>(
         });
 
     if let Some(atomic_config) = context.get_atomic_modificators() {
-        atomic_operations::set_atomic_behavior_load_instruction(
-            context,
+        thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_load_instruction(
+            context.get_mut_atomic_context(),
             instruction,
             atomic_config,
             span,
@@ -855,8 +854,8 @@ pub fn dereference<'ctx>(
         });
 
     if let Some(atomic_config) = context.get_atomic_modificators() {
-        atomic_operations::set_atomic_behavior_load_instruction(
-            context,
+        thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_load_instruction(
+            context.get_mut_atomic_context(),
             instruction,
             atomic_config,
             span,
@@ -1117,8 +1116,8 @@ pub fn auto_deference_a_nested_pointer<'ctx>(
         });
 
     if let Some(atomic_config) = context.get_atomic_modificators() {
-        atomic_operations::set_atomic_behavior_load_instruction(
-            context,
+        thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_load_instruction(
+            context.get_mut_atomic_context(),
             instruction,
             atomic_config,
             span,
@@ -1161,8 +1160,8 @@ pub fn auto_deference_a_nested_pointer<'ctx>(
         });
 
         if let Some(atomic_config) = context.get_atomic_modificators() {
-            atomic_operations::set_atomic_behavior_load_instruction(
-                context,
+            thrustc_llvm_codegen_atomic::behavior::set_atomic_behavior_load_instruction(
+                context.get_mut_atomic_context(),
                 instruction,
                 atomic_config,
                 span,

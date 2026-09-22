@@ -83,16 +83,19 @@ pub fn build_reference<'parser>(
                             span,
                         };
 
+                        let metadata: ReferenceMetadata = ReferenceMetadata::new(
+                            true,
+                            false,
+                            ReferenceType::default(),
+                            false,
+                            None,
+                        );
+
                         return Ok(Ast::Reference {
                             name: name.to_string(),
                             kind: function_ty,
                             span,
-                            metadata: ReferenceMetadata::new(
-                                true,
-                                false,
-                                ReferenceType::default(),
-                                false,
-                            ),
+                            metadata,
                             id: NodeId::new(),
                         });
                     }
@@ -130,6 +133,7 @@ pub fn build_reference<'parser>(
                                 is_mutable,
                                 ReferenceType::Static,
                                 is_unitialized,
+                                metadata.get_llvm_metadata().atomic_ord,
                             ),
                             id: NodeId::new(),
                         });
@@ -155,16 +159,19 @@ pub fn build_reference<'parser>(
                     Ok(object) => {
                         let constant_type: Type = object.get_type();
 
+                        let metadata: ReferenceMetadata = ReferenceMetadata::new(
+                            true,
+                            false,
+                            ReferenceType::Constant,
+                            false,
+                            None,
+                        );
+
                         return Ok(Ast::Reference {
                             name: name.to_string(),
                             kind: constant_type,
                             span,
-                            metadata: ReferenceMetadata::new(
-                                true,
-                                false,
-                                ReferenceType::Constant,
-                                false,
-                            ),
+                            metadata,
                             id: NodeId::new(),
                         });
                     }
@@ -190,16 +197,19 @@ pub fn build_reference<'parser>(
                         let is_mutable: bool = metadata.is_mutable();
                         let is_allocated: bool = parameter_type.is_ptr_like_type();
 
+                        let metadata: ReferenceMetadata = ReferenceMetadata::new(
+                            is_allocated,
+                            is_mutable,
+                            ReferenceType::Parameter,
+                            false,
+                            None,
+                        );
+
                         return Ok(Ast::Reference {
                             name: name.to_string(),
                             kind: parameter_type,
                             span,
-                            metadata: ReferenceMetadata::new(
-                                is_allocated,
-                                is_mutable,
-                                ReferenceType::Parameter,
-                                false,
-                            ),
+                            metadata,
                             id: NodeId::new(),
                         });
                     }
@@ -223,16 +233,19 @@ pub fn build_reference<'parser>(
 
                 let is_allocated: bool = lli_type.is_ptr_type();
 
+                let metadata: ReferenceMetadata = ReferenceMetadata::new(
+                    is_allocated,
+                    false,
+                    ReferenceType::default(),
+                    false,
+                    None,
+                );
+
                 return Ok(Ast::Reference {
                     name: name.to_string(),
                     kind: lli_type,
                     span,
-                    metadata: ReferenceMetadata::new(
-                        is_allocated,
-                        false,
-                        ReferenceType::default(),
-                        false,
-                    ),
+                    metadata,
                     id: NodeId::new(),
                 });
             }
@@ -253,16 +266,19 @@ pub fn build_reference<'parser>(
                         let is_mutable: bool = metadata.is_mutable();
                         let is_unitialized: bool = metadata.is_unitialized();
 
+                        let metadata: ReferenceMetadata = ReferenceMetadata::new(
+                            true,
+                            is_mutable,
+                            ReferenceType::Local,
+                            is_unitialized,
+                            metadata.get_llvm_metadata().atomic_ord,
+                        );
+
                         let reference: Ast = Ast::Reference {
                             name: name.to_string(),
                             kind: local_type.clone(),
                             span,
-                            metadata: ReferenceMetadata::new(
-                                true,
-                                is_mutable,
-                                ReferenceType::Local,
-                                is_unitialized,
-                            ),
+                            metadata,
                             id: NodeId::new(),
                         };
 

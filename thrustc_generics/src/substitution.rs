@@ -1017,6 +1017,32 @@ fn substitute_builtin<'ast>(builtin: AstBuiltin<'ast>, env: &TypeEnv) -> AstBuil
             span,
         },
         AstBuiltin::ArbitraryArgs { span } => AstBuiltin::ArbitraryArgs { span },
+        AstBuiltin::AtomicRMW {
+            operation,
+            destination,
+            value,
+            span,
+        } => AstBuiltin::AtomicRMW {
+            operation,
+            destination: std::boxed::Box::new(self::substitute_ast(*destination, env)),
+            value: std::boxed::Box::new(self::substitute_ast(*value, env)),
+            span,
+        },
+        AstBuiltin::AtomicCompareAndSwap {
+            destination,
+            expected,
+            new_value,
+            success,
+            failure,
+            span,
+        } => AstBuiltin::AtomicCompareAndSwap {
+            destination: std::boxed::Box::new(self::substitute_ast(*destination, env)),
+            expected: std::boxed::Box::new(self::substitute_ast(*expected, env)),
+            new_value: std::boxed::Box::new(self::substitute_ast(*new_value, env)),
+            success,
+            failure,
+            span,
+        },
         AstBuiltin::DeferredCompileTime {
             name,
             arguments,
@@ -1382,6 +1408,20 @@ fn collect_unresolved_builtin_hints(
             self::collect_unresolved_ast_hints(src, out);
             self::collect_unresolved_ast_hints(dst, out);
             self::collect_unresolved_ast_hints(size, out);
+        }
+        AstBuiltin::AtomicRMW { destination, value, .. } => {
+            self::collect_unresolved_ast_hints(destination, out);
+            self::collect_unresolved_ast_hints(value, out);
+        }
+        AstBuiltin::AtomicCompareAndSwap {
+            destination,
+            expected,
+            new_value,
+            ..
+        } => {
+            self::collect_unresolved_ast_hints(destination, out);
+            self::collect_unresolved_ast_hints(expected, out);
+            self::collect_unresolved_ast_hints(new_value, out);
         }
         AstBuiltin::ArbitraryArgs { .. } => (),
         AstBuiltin::DeferredCompileTime { arguments, .. } => {

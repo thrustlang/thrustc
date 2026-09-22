@@ -35,7 +35,6 @@ use thrustc_llvm_attribute_architecture::LLVMArchitectureAttribute;
 use thrustc_llvm_attributes::LLVMAttributes;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 
-use crate::atomic_operations::LLVMAtomicModificators;
 use crate::compiler_builtins::LLVMBuiltin;
 use crate::context::{CodeGenLocation, LLVMCodeGenContext};
 use crate::expressions::unary_expr;
@@ -50,8 +49,10 @@ use crate::{
     abort, block, codegen, compiler_builtins, expressions, memory, stack_memory, static_memory,
     type_cast, typegeneration,
 };
+use thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators;
 
 use thrustc_ast::Ast;
+use thrustc_ast::traits::AstBaseReferenceExtensions;
 use thrustc_ast::traits::AstCodeLocation;
 use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_ast::traits::AstStandardExtensions;
@@ -1561,10 +1562,10 @@ pub fn compile_as_value<'ctx>(
                 let deref_value: BasicValueEnum = if dereference_pointer.is_pointer_value() {
                     let deref_metadata = metadata.get_llvm_metadata();
 
-                    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                        atomic_volatile: deref_metadata.volatile,
-                        atomic_ord: deref_metadata.atomic_ord.map(|ord| ord.to_llvm()),
-                    };
+                    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators::new(
+                        deref_metadata.volatile,
+                        deref_metadata.atomic_ord.map(|ord| ord.to_llvm()),
+                    );
 
                     context.push_atomic_modificators(atomic_config);
 
@@ -1618,10 +1619,10 @@ pub fn compile_as_value<'ctx>(
                     let load_metadata: thrustc_ast::ast_metadata::LLVMLoadMetadata =
                         metadata.get_llvm_metadata();
 
-                    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators {
-                        atomic_volatile: load_metadata.volatile,
-                        atomic_ord: load_metadata.atomic_ord.map(|ord| ord.to_llvm()),
-                    };
+                    let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators::new(
+                        load_metadata.volatile,
+                        load_metadata.atomic_ord.map(|ord| ord.to_llvm()),
+                    );
 
                     context.push_atomic_modificators(atomic_config);
 
@@ -2103,4 +2104,44 @@ pub fn compile_entry_point_desctructors<'ctx>(context: &mut LLVMCodeGenContext<'
 
     global.set_linkage(Linkage::Appending);
     global.set_initializer(&dtor_type.const_array(&llvm_dtors));
+}
+
+pub fn get_atomic_ordering<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    destination: &'ctx Ast<'ctx>,
+    span: Span,
+) -> inkwell::AtomicOrdering {
+    let reference: &Ast<'ctx> = match destination.get_base_reference() {
+        Some(reference) => reference,
+
+        None => abort::abort_codegen(
+            context,
+            "The atomic operation destination is not a memory reference!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        ),
+    };
+
+    let Ast::Reference { metadata, .. } = reference else {
+        abort::abort_codegen(
+            context,
+            "The atomic operation destination is not a memory reference!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        );
+    };
+
+    let Some(atomic_ord) = metadata.get_atomic_ord() else {
+        abort::abort_codegen(
+            context,
+            "The atomic operation target has no atomic ordering!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        );
+    };
+
+    atomic_ord.to_llvm()
 }

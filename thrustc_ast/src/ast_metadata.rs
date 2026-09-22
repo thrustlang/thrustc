@@ -138,6 +138,7 @@ pub struct ReferenceMetadata {
     is_mutable: bool,
     reference_type: ReferenceType,
     is_unitialized: bool,
+    atomic_ord: Option<ThrustAtomicOrdering>,
 }
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
@@ -159,12 +160,14 @@ impl ReferenceMetadata {
         is_mutable: bool,
         reference_type: ReferenceType,
         is_unitialized: bool,
+        atomic_ord: Option<ThrustAtomicOrdering>,
     ) -> Self {
         Self {
             is_allocated,
             is_mutable,
             reference_type,
             is_unitialized,
+            atomic_ord,
         }
     }
 }
@@ -173,6 +176,11 @@ impl ReferenceMetadata {
     #[inline]
     pub fn get_type(&self) -> ReferenceType {
         self.reference_type
+    }
+
+    #[inline]
+    pub fn get_atomic_ord(&self) -> Option<ThrustAtomicOrdering> {
+        self.atomic_ord
     }
 }
 

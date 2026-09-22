@@ -1209,6 +1209,7 @@ fn resolve_children<'parser>(
                         metadata.is_mutable(),
                         ReferenceType::Parameter,
                         metadata.is_unitialized(),
+                        metadata.get_atomic_ord(),
                     )
                 } else {
                     metadata
@@ -1474,6 +1475,40 @@ fn resolve_builtin<'parser>(
         AstBuiltin::AbiAlignOf { ty, span } => AstBuiltin::AbiAlignOf { ty, span },
         AstBuiltin::ArbitraryArg { ty, span } => AstBuiltin::ArbitraryArg { ty, span },
         AstBuiltin::ArbitraryArgs { span } => AstBuiltin::ArbitraryArgs { span },
+        AstBuiltin::AtomicRMW {
+            operation,
+            destination,
+            value,
+            span,
+        } => AstBuiltin::AtomicRMW {
+            operation,
+            destination: std::boxed::Box::new(self::resolve_ast(
+                ctx, *destination, templates, memo, output,
+            )),
+            value: std::boxed::Box::new(self::resolve_ast(ctx, *value, templates, memo, output)),
+            span,
+        },
+        AstBuiltin::AtomicCompareAndSwap {
+            destination,
+            expected,
+            new_value,
+            success,
+            failure,
+            span,
+        } => AstBuiltin::AtomicCompareAndSwap {
+            destination: std::boxed::Box::new(self::resolve_ast(
+                ctx, *destination, templates, memo, output,
+            )),
+            expected: std::boxed::Box::new(self::resolve_ast(
+                ctx, *expected, templates, memo, output,
+            )),
+            new_value: std::boxed::Box::new(self::resolve_ast(
+                ctx, *new_value, templates, memo, output,
+            )),
+            success,
+            failure,
+            span,
+        },
         AstBuiltin::DeferredCompileTime {
             name,
             arguments,

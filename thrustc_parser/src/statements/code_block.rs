@@ -216,10 +216,13 @@ fn build_dealloc_defer<'parser>(
         }
     }
 
+    let metadata: ReferenceMetadata =
+        ReferenceMetadata::new(true, true, ReferenceType::Local, false, None);
+
     let reference: Ast = Ast::Reference {
         name: name.to_string(),
         kind: kind.clone(),
-        metadata: ReferenceMetadata::new(true, true, ReferenceType::Local, false),
+        metadata,
         span: *span,
         id: NodeId::new(),
     };

@@ -201,6 +201,20 @@ pub enum TokenType {
     ArbitraryArg,
     ArbitraryArgs,
 
+    // -- Atomic Builtins --
+    AtomicStore,
+    AtomicAdd,
+    AtomicSubtract,
+    AtomicAnd,
+    AtomicNand,
+    AtomicOr,
+    AtomicXor,
+    AtomicSignedMaximum,
+    AtomicSignedMinimum,
+    AtomicUnsignedMaximum,
+    AtomicUnsignedMinimum,
+    AtomicCompareAndSwap,
+
     // --- Types ---
     S8,
     S16,

@@ -24,7 +24,6 @@ use thrustc_ast::Ast;
 use crate::{codegen::LLVMCodegen, context::LLVMCodeGenContext, metadata::LLVMMetadata};
 
 mod abort;
-mod atomic_operations;
 mod attribute_builder;
 mod block;
 mod branch_context;

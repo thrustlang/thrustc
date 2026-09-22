@@ -1,0 +1,15 @@
+fn main() s32 @public {
+    var atomicRelax counter: u32 = 1;
+
+    var previous: u32 = atomicStore(counter, 42);
+
+    if previous != 1 { return 1; }
+    if counter != 42 { return 2; }
+
+    var swapped: u32 = atomicStore(counter, 7);
+
+    if swapped != 42 { return 3; }
+    if counter != 7 { return 4; }
+
+    return 0;
+}

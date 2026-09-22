@@ -249,6 +249,18 @@ impl TokenTypeBuiltinExtensions for TokenType {
                 | TokenType::AbiAlignOf
                 | TokenType::ArbitraryArg
                 | TokenType::ArbitraryArgs
+                | TokenType::AtomicStore
+                | TokenType::AtomicAdd
+                | TokenType::AtomicSubtract
+                | TokenType::AtomicAnd
+                | TokenType::AtomicNand
+                | TokenType::AtomicOr
+                | TokenType::AtomicXor
+                | TokenType::AtomicSignedMaximum
+                | TokenType::AtomicSignedMinimum
+                | TokenType::AtomicUnsignedMaximum
+                | TokenType::AtomicUnsignedMinimum
+                | TokenType::AtomicCompareAndSwap
         )
     }
 }
@@ -446,6 +458,20 @@ impl std::fmt::Display for TokenType {
             TokenType::AbiAlignOf => write!(f, "abiAlignOf"),
             TokenType::ArbitraryArg => write!(f, "arbitraryArg"),
             TokenType::ArbitraryArgs => write!(f, "arbitraryArgs"),
+
+            // Atomic Builtins
+            TokenType::AtomicStore => write!(f, "atomicStore"),
+            TokenType::AtomicAdd => write!(f, "atomicAdd"),
+            TokenType::AtomicSubtract => write!(f, "atomicSubtract"),
+            TokenType::AtomicAnd => write!(f, "atomicAnd"),
+            TokenType::AtomicNand => write!(f, "atomicNand"),
+            TokenType::AtomicOr => write!(f, "atomicOr"),
+            TokenType::AtomicXor => write!(f, "atomicXor"),
+            TokenType::AtomicSignedMaximum => write!(f, "atomicSignedMaximum"),
+            TokenType::AtomicSignedMinimum => write!(f, "atomicSignedMinimum"),
+            TokenType::AtomicUnsignedMaximum => write!(f, "atomicUnsignedMaximum"),
+            TokenType::AtomicUnsignedMinimum => write!(f, "atomicUnsignedMinimum"),
+            TokenType::AtomicCompareAndSwap => write!(f, "atomicCompareAndSwap"),
 
             // Import
             TokenType::Import => write!(f, "import"),

@@ -24,10 +24,15 @@ use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 use crate::ast_logic_data::{EnumDataField, PropertyDataField, StructureDataFields};
+use crate::Ast;
 
 pub trait AstGetType {
     fn get_any_type(&self) -> &Type;
     fn get_value_type(&self) -> Result<&Type, CompilationIssue>;
+}
+
+pub trait AstBaseReferenceExtensions<'ast> {
+    fn get_base_reference(&self) -> Option<&Ast<'ast>>;
 }
 
 pub trait AstCodeLocation {

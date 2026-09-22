@@ -117,6 +117,23 @@ lazy_static! {
         builtins.insert("arbitraryArg", TokenType::ArbitraryArg);
         builtins.insert("arbitraryArgs", TokenType::ArbitraryArgs);
 
+        let compiler_mode: CompilerFeaturesMode = thrustc_backends::get_compiler_features();
+
+        if compiler_mode.is_unstable_mode() {
+            builtins.insert("atomicStore", TokenType::AtomicStore);
+            builtins.insert("atomicAdd", TokenType::AtomicAdd);
+            builtins.insert("atomicSubtract", TokenType::AtomicSubtract);
+            builtins.insert("atomicAnd", TokenType::AtomicAnd);
+            builtins.insert("atomicNand", TokenType::AtomicNand);
+            builtins.insert("atomicOr", TokenType::AtomicOr);
+            builtins.insert("atomicXor", TokenType::AtomicXor);
+            builtins.insert("atomicSignedMaximum", TokenType::AtomicSignedMaximum);
+            builtins.insert("atomicSignedMinimum", TokenType::AtomicSignedMinimum);
+            builtins.insert("atomicUnsignedMaximum", TokenType::AtomicUnsignedMaximum);
+            builtins.insert("atomicUnsignedMinimum", TokenType::AtomicUnsignedMinimum);
+            builtins.insert("atomicCompareAndSwap", TokenType::AtomicCompareAndSwap);
+        }
+
         builtins
     };
 }

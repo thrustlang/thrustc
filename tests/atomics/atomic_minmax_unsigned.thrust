@@ -1,0 +1,25 @@
+fn main() s32 @public {
+    var atomicRelax value: u32 = 10;
+
+    var old: u32 = atomicUnsignedMaximum(value, 5);
+
+    if old != 10 { return 1; }
+    if value != 10 { return 2; }
+
+    old = atomicUnsignedMaximum(value, 20);
+
+    if old != 10 { return 3; }
+    if value != 20 { return 4; }
+
+    old = atomicUnsignedMinimum(value, 15);
+
+    if old != 20 { return 5; }
+    if value != 15 { return 6; }
+
+    old = atomicUnsignedMinimum(value, 25);
+
+    if old != 15 { return 7; }
+    if value != 15 { return 8; }
+
+    return 0;
+}

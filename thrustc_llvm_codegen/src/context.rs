@@ -44,8 +44,9 @@ use thrustc_options::CompilerOptions;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::type_layout::TargetInfo;
 
+use thrustc_llvm_codegen_atomic::context::LLVMAtomicCodeGenContext;
+
 use crate::abort;
-use crate::atomic_operations::LLVMAtomicModificators;
 use crate::branch_context::LLVMLoopContext;
 use crate::debug_context::LLVMDebugContext;
 use crate::memory::SymbolAllocated;
@@ -80,7 +81,7 @@ pub struct LLVMCodeGenContext<'a, 'ctx> {
 
     codegen_location: Vec<CodeGenLocation>,
 
-    atomic_modificators: Vec<LLVMAtomicModificators>,
+    atomic_context: LLVMAtomicCodeGenContext<'ctx>,
     local_llvm_names: HashSet<String>,
 
     ptr_anchor: Option<PointerAnchor<'ctx>>,
@@ -131,6 +132,9 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
         let variatic_context: LLVMVariaticContext =
             LLVMVariaticContext::new(module, context, builder, &llvm_target_triple, file, options);
 
+        let atomic_context: LLVMAtomicCodeGenContext<'ctx> =
+            LLVMAtomicCodeGenContext::new(builder, target_data, file, options);
+
         Self {
             module,
             context,
@@ -150,7 +154,7 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
 
             codegen_location: Vec::new(),
 
-            atomic_modificators: Vec::new(),
+            atomic_context,
             local_llvm_names: HashSet::with_capacity(u8::MAX as usize),
 
             ptr_anchor: None,
@@ -410,18 +414,33 @@ impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
 
 impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
     #[inline]
-    pub fn push_atomic_modificators(&mut self, modificators: LLVMAtomicModificators) {
-        self.atomic_modificators.push(modificators);
+    pub fn push_atomic_modificators(
+        &mut self,
+        modificators: thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators,
+    ) {
+        self.atomic_context.push_atomic_modificators(modificators);
     }
 
     #[inline]
     pub fn pop_atomic_modificators(&mut self) {
-        self.atomic_modificators.pop();
+        self.atomic_context.pop_atomic_modificators();
     }
 
     #[inline]
-    pub fn get_atomic_modificators(&self) -> Option<LLVMAtomicModificators> {
-        self.atomic_modificators.last().copied()
+    pub fn get_atomic_modificators(
+        &self,
+    ) -> Option<thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators> {
+        self.atomic_context.get_atomic_modificators()
+    }
+
+    #[inline]
+    pub fn get_atomic_context(&self) -> &LLVMAtomicCodeGenContext<'ctx> {
+        &self.atomic_context
+    }
+
+    #[inline]
+    pub fn get_mut_atomic_context(&mut self) -> &mut LLVMAtomicCodeGenContext<'ctx> {
+        &mut self.atomic_context
     }
 }
 

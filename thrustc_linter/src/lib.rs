@@ -18,7 +18,7 @@
 */
 
 use thrustc_ast::{
-    traits::{AstAttributeExtensions, AstCodeLocation},
+    traits::{AstAttributeExtensions, AstBaseReferenceExtensions, AstCodeLocation},
     Ast,
 };
 use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributeComparator};
@@ -1141,16 +1141,11 @@ fn expr_has_no_effect(node: &Ast) -> bool {
 }
 
 fn lvalue_base_reference<'a>(source: &'a Ast<'a>) -> Option<&'a str> {
-    match source {
-        Ast::Reference { name, .. } => Some(name),
-        Ast::Group { node, .. } => self::lvalue_base_reference(node),
-        Ast::Property { source, .. } => self::lvalue_base_reference(source),
-        Ast::Deref { value, .. } => self::lvalue_base_reference(value),
-        Ast::Index { source, .. } => self::lvalue_base_reference(source),
-        Ast::Load { source, .. } => self::lvalue_base_reference(source),
-        Ast::GetLocation { expr, .. } => self::lvalue_base_reference(expr),
-        _ => None,
+    if let Some(Ast::Reference { name, .. }) = source.get_base_reference() {
+        return Some(name);
     }
+
+    None
 }
 
 fn constant_condition_warning(condition: &Ast, span: Span) -> Option<CompilationIssue> {

@@ -20,6 +20,10 @@ For example:
 
 <img src= "https://github.com/thrustlang/thrustc/blob/master/assets/examples/diagnostics/ValueWithoutAddressDiagnostic.png"></img>
 
+#### Invalid Atomic Operation
+
+`E0056` reports an atomic operation whose target has no atomic ordering, or whose ordering arguments are not valid for LLVM. Use `thrustc --explain E0056` for details.
+
 ### Warnings
 
 #### Unknown Call Convention

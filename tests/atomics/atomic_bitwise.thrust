@@ -1,0 +1,25 @@
+fn main() s32 @public {
+    var atomicRelax value: u32 = 0xC;
+
+    var old: u32 = atomicAnd(value, 0xA);
+
+    if old != 0xC { return 1; }
+    if value != 0x8 { return 2; }
+
+    old = atomicOr(value, 0x3);
+
+    if old != 0x8 { return 3; }
+    if value != 0xB { return 4; }
+
+    old = atomicXor(value, 0xF);
+
+    if old != 0xB { return 5; }
+    if value != 0x4 { return 6; }
+
+    old = atomicNand(value, 0x4);
+
+    if old != 0x4 { return 7; }
+    if value != 0xFFFFFFFB { return 8; }
+
+    return 0;
+}

@@ -504,6 +504,26 @@ impl<'scoper> Scoper<'scoper> {
                     self.analyze_local_node(size);
                 }
 
+                AstBuiltin::AtomicRMW {
+                    destination,
+                    value,
+                    ..
+                } => {
+                    self.analyze_local_node(destination);
+                    self.analyze_local_node(value);
+                }
+
+                AstBuiltin::AtomicCompareAndSwap {
+                    destination,
+                    expected,
+                    new_value,
+                    ..
+                } => {
+                    self.analyze_local_node(destination);
+                    self.analyze_local_node(expected);
+                    self.analyze_local_node(new_value);
+                }
+
                 // No envuelven ninguna subexpresión: operan sobre
                 // tipos, no sobre valores.
                 AstBuiltin::Halloc { .. }

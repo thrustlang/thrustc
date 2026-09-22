@@ -1,0 +1,15 @@
+fn main() s32 @public {
+    var atomicRelax counter: u32 = 10;
+
+    var old: u32 = atomicAdd(counter, 5);
+
+    if old != 10 { return 1; }
+    if counter != 15 { return 2; }
+
+    var again: u32 = atomicAdd(counter, 5);
+
+    if again != 15 { return 3; }
+    if counter != 20 { return 4; }
+
+    return 0;
+}

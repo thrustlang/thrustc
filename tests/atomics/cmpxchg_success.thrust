@@ -1,0 +1,12 @@
+fn main() s32 @public {
+    var atomicRelax counter: u32 = 20;
+
+    var expected: u32 = 20;
+    var swapped: bool = atomicCompareAndSwap(counter, expected, 30, atomicSync, atomicRelax);
+
+    if !swapped { return 1; }
+    if expected != 20 { return 2; }
+    if counter != 30 { return 3; }
+
+    return 0;
+}

@@ -57,6 +57,30 @@ pub fn validate_node<'type_checker>(
         | AstBuiltin::AbiAlignOf { .. }
         | AstBuiltin::DeferredCompileTime { .. } => Ok(()),
 
+        AstBuiltin::AtomicRMW {
+            destination,
+            value,
+            ..
+        } => {
+            typechecker.analyze_expr(destination)?;
+            typechecker.analyze_expr(value)?;
+
+            Ok(())
+        }
+
+        AstBuiltin::AtomicCompareAndSwap {
+            destination,
+            expected,
+            new_value,
+            ..
+        } => {
+            typechecker.analyze_expr(destination)?;
+            typechecker.analyze_expr(expected)?;
+            typechecker.analyze_expr(new_value)?;
+
+            Ok(())
+        }
+
         AstBuiltin::ArbitraryArg { span, .. }
             if !typechecker
                 .get_type_context()

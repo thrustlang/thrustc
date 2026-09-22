@@ -1,0 +1,25 @@
+fn main() s32 @public {
+    var atomicRelax value: s32 = 10;
+
+    var old: s32 = atomicSignedMaximum(value, 5);
+
+    if old != 10 { return 1; }
+    if value != 10 { return 2; }
+
+    old = atomicSignedMaximum(value, 20);
+
+    if old != 10 { return 3; }
+    if value != 20 { return 4; }
+
+    old = atomicSignedMinimum(value, 15);
+
+    if old != 20 { return 5; }
+    if value != 15 { return 6; }
+
+    old = atomicSignedMinimum(value, 25);
+
+    if old != 15 { return 7; }
+    if value != 15 { return 8; }
+
+    return 0;
+}

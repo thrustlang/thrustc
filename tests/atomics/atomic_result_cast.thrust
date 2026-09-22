@@ -1,0 +1,22 @@
+fn main() s32 @public {
+    var atomicRelax counter: s64 = 10;
+
+    var old: s64 = atomicAdd(counter, 5);
+
+    if old != 10 { return 1; }
+    if counter != 15 { return 2; }
+
+    var atomicRelax small: s32 = 3;
+    var previous: s32 = atomicSubtract(small, 1);
+
+    if previous != 3 { return 3; }
+    if small != 2 { return 4; }
+
+    var expected: s64 = 15;
+    var flag: bool = atomicCompareAndSwap(counter, expected, 20, atomicSync, atomicRelax);
+
+    if !flag { return 5; }
+    if counter != 20 { return 6; }
+
+    return 0;
+}

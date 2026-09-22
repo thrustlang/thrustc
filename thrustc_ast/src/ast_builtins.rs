@@ -18,6 +18,7 @@
 */
 
 use serde::Serialize;
+use thrustc_atomic_ordering::{ThrustAtomicOrdering, ThrustAtomicRMWOperation};
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
@@ -85,6 +86,20 @@ pub enum AstBuiltin<'compiler_builtin> {
     DeferredCompileTime {
         name: &'compiler_builtin str,
         arguments: Vec<DeferredBuiltinArgument<'compiler_builtin>>,
+        span: Span,
+    },
+    AtomicRMW {
+        operation: ThrustAtomicRMWOperation,
+        destination: std::boxed::Box<Ast<'compiler_builtin>>,
+        value: std::boxed::Box<Ast<'compiler_builtin>>,
+        span: Span,
+    },
+    AtomicCompareAndSwap {
+        destination: std::boxed::Box<Ast<'compiler_builtin>>,
+        expected: std::boxed::Box<Ast<'compiler_builtin>>,
+        new_value: std::boxed::Box<Ast<'compiler_builtin>>,
+        success: ThrustAtomicOrdering,
+        failure: ThrustAtomicOrdering,
         span: Span,
     },
 }

@@ -23,13 +23,18 @@ use inkwell::{
     values::{BasicValueEnum, IntValue, PointerValue},
 };
 use thrustc_ast::traits::AstCodeLocation;
+use thrustc_atomic_ordering::{ThrustAtomicOrdering, ThrustAtomicRMWOperation};
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
 use thrustc_ast::{Ast, ast_builtins::AstBuiltin};
 
 use crate::{
-    abort, codegen, context::LLVMCodeGenContext, traits::AstLLVMGetType, type_cast, typegeneration,
+    abort, codegen,
+    context::{CodeGenLocation, LLVMCodeGenContext},
+    memory,
+    traits::AstLLVMGetType,
+    type_cast, typegeneration,
 };
 
 #[derive(Debug, Clone)]
@@ -78,6 +83,20 @@ pub enum LLVMBuiltin<'ctx> {
     DeferredCompileTime {
         span: Span,
     },
+    AtomicRMW {
+        operation: ThrustAtomicRMWOperation,
+        destination: &'ctx Ast<'ctx>,
+        value: &'ctx Ast<'ctx>,
+        span: Span,
+    },
+    AtomicCompareAndSwap {
+        destination: &'ctx Ast<'ctx>,
+        expected: &'ctx Ast<'ctx>,
+        new_value: &'ctx Ast<'ctx>,
+        success: ThrustAtomicOrdering,
+        failure: ThrustAtomicOrdering,
+        span: Span,
+    },
 }
 
 pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ctx> {
@@ -121,6 +140,32 @@ pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ct
         AstBuiltin::AbiAlignOf { ty, span } => LLVMBuiltin::AbiAlignOf { ty, span: *span },
         AstBuiltin::ArbitraryArg { ty, span } => LLVMBuiltin::ArbitraryArg { ty, span: *span },
         AstBuiltin::ArbitraryArgs { span } => LLVMBuiltin::ArbitraryArgs { span: *span },
+        AstBuiltin::AtomicRMW {
+            operation,
+            destination,
+            value,
+            span,
+        } => LLVMBuiltin::AtomicRMW {
+            operation: *operation,
+            destination,
+            value,
+            span: *span,
+        },
+        AstBuiltin::AtomicCompareAndSwap {
+            destination,
+            expected,
+            new_value,
+            success,
+            failure,
+            span,
+        } => LLVMBuiltin::AtomicCompareAndSwap {
+            destination,
+            expected,
+            new_value,
+            success: *success,
+            failure: *failure,
+            span: *span,
+        },
         AstBuiltin::DeferredCompileTime { span, .. } => {
             LLVMBuiltin::DeferredCompileTime { span: *span }
         }
@@ -355,6 +400,92 @@ pub fn compile<'ctx>(
             .get_mut_variatic_context()
             .get_current_va_list(span)
             .into(),
+        LLVMBuiltin::AtomicRMW {
+            operation,
+            destination,
+            value,
+            span,
+        } => {
+            let destination_type: &Type = destination.get_type_for_llvm();
+
+            context.add_codegen_location(CodeGenLocation::LValue);
+
+            let ptr: PointerValue =
+                codegen::compile_as_ptr_value(context, destination, None).into_pointer_value();
+
+            context.pop_current_codegen_location();
+
+            let value: IntValue =
+                codegen::compile_as_value(context, value, Some(destination_type)).into_int_value();
+
+            let ordering: inkwell::AtomicOrdering =
+                codegen::get_atomic_ordering(context, destination, span);
+
+            let atomic_context: &mut thrustc_llvm_codegen_atomic::context::LLVMAtomicCodeGenContext<'_> =
+                context.get_mut_atomic_context();
+
+            let previous: IntValue = thrustc_llvm_codegen_atomic::generator::generate_atomicrmw(
+                atomic_context,
+                operation.to_llvm(),
+                ptr,
+                value,
+                ordering,
+                span,
+            );
+
+            type_cast::try_smart_cast(context, cast_type, destination_type, previous.into(), span)
+        }
+        LLVMBuiltin::AtomicCompareAndSwap {
+            destination,
+            expected,
+            new_value,
+            success,
+            failure,
+            span,
+        } => {
+            let destination_type: &Type = destination.get_type_for_llvm();
+
+            context.add_codegen_location(CodeGenLocation::LValue);
+
+            let ptr: PointerValue =
+                codegen::compile_as_ptr_value(context, destination, None).into_pointer_value();
+
+            context.pop_current_codegen_location();
+
+            context.add_codegen_location(CodeGenLocation::LValue);
+
+            let expected_ptr: PointerValue =
+                codegen::compile_as_ptr_value(context, expected, None).into_pointer_value();
+
+            context.pop_current_codegen_location();
+
+            let expected_value: BasicValueEnum =
+                memory::load(context, expected_ptr, destination_type, span);
+
+            let new_value: BasicValueEnum =
+                codegen::compile_as_value(context, new_value, Some(destination_type));
+
+            let success: inkwell::AtomicOrdering = success.to_llvm();
+            let failure: inkwell::AtomicOrdering = failure.to_llvm();
+
+            let atomic_context: &mut thrustc_llvm_codegen_atomic::context::LLVMAtomicCodeGenContext<'_> =
+                context.get_mut_atomic_context();
+
+            let flag: IntValue = thrustc_llvm_codegen_atomic::generator::generate_cmpxchg(
+                atomic_context,
+                ptr,
+                expected_ptr,
+                expected_value,
+                new_value,
+                success,
+                failure,
+                span,
+            );
+
+            let bool_type: Type = Type::Bool { span };
+
+            type_cast::try_smart_cast(context, cast_type, &bool_type, flag.into(), span)
+        }
         LLVMBuiltin::DeferredCompileTime { span } => abort::abort_codegen(
             context,
             "Deferred compile-time builtin must be resolved before codegen",

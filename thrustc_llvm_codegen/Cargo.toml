@@ -18,6 +18,7 @@ clang = { workspace = true, optional = true }
 
 thrustc_llvm_abi = { path = "../thrustc_llvm_abi" }
 thrustc_llvm_codegen_variatic = { path = "../thrustc_llvm_codegen_variatic" }
+thrustc_llvm_codegen_atomic = { path = "../thrustc_llvm_codegen_atomic" }
 thrustc_llvm_abi_representation = { path = "../thrustc_llvm_abi_representation" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_llvm_attribute_architecture = { path = "../thrustc_llvm_attribute_architecture" }

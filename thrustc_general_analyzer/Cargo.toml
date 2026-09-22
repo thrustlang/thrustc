@@ -11,6 +11,7 @@ rust-version.workspace = true
 thrustc_constants = { path = "../thrustc_constants" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_ast = { path = "../thrustc_ast" }
+thrustc_atomic_ordering = { path = "../thrustc_atomic_ordering" }
 thrustc_token_type = { path = "../thrustc_token_type" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_directive = { path = "../thrustc_directive" }

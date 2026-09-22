@@ -240,6 +240,24 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
                 linter.analyze_expr(new_size);
                 linter.analyze_expr(size);
             }
+            AstBuiltin::AtomicRMW {
+                destination,
+                value,
+                ..
+            } => {
+                linter.analyze_expr(destination);
+                linter.analyze_expr(value);
+            }
+            AstBuiltin::AtomicCompareAndSwap {
+                destination,
+                expected,
+                new_value,
+                ..
+            } => {
+                linter.analyze_expr(destination);
+                linter.analyze_expr(expected);
+                linter.analyze_expr(new_value);
+            }
             AstBuiltin::Halloc { .. }
             | AstBuiltin::AbiSizeOf { .. }
             | AstBuiltin::BitSizeOf { .. }

@@ -17,7 +17,7 @@
 
 */
 
-use inkwell::AtomicOrdering;
+use inkwell::{AtomicOrdering, AtomicRMWBinOp};
 
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
@@ -47,6 +47,41 @@ impl ThrustAtomicOrdering {
             ThrustAtomicOrdering::AtomicDrop => AtomicOrdering::Release,
             ThrustAtomicOrdering::AtomicSync => AtomicOrdering::AcquireRelease,
             ThrustAtomicOrdering::AtomicStrict => AtomicOrdering::SequentiallyConsistent,
+        }
+    }
+}
+
+#[cfg_attr(feature = "fuzz", derive(Arbitrary))]
+#[derive(Debug, Clone, Copy, Serialize)]
+pub enum ThrustAtomicRMWOperation {
+    Store,
+    Add,
+    Subtract,
+    And,
+    Nand,
+    Or,
+    Xor,
+    SignedMaximum,
+    SignedMinimum,
+    UnsignedMaximum,
+    UnsignedMinimum,
+}
+
+impl ThrustAtomicRMWOperation {
+    #[inline]
+    pub fn to_llvm(self) -> AtomicRMWBinOp {
+        match self {
+            ThrustAtomicRMWOperation::Store => AtomicRMWBinOp::Xchg,
+            ThrustAtomicRMWOperation::Add => AtomicRMWBinOp::Add,
+            ThrustAtomicRMWOperation::Subtract => AtomicRMWBinOp::Sub,
+            ThrustAtomicRMWOperation::And => AtomicRMWBinOp::And,
+            ThrustAtomicRMWOperation::Nand => AtomicRMWBinOp::Nand,
+            ThrustAtomicRMWOperation::Or => AtomicRMWBinOp::Or,
+            ThrustAtomicRMWOperation::Xor => AtomicRMWBinOp::Xor,
+            ThrustAtomicRMWOperation::SignedMaximum => AtomicRMWBinOp::Max,
+            ThrustAtomicRMWOperation::SignedMinimum => AtomicRMWBinOp::Min,
+            ThrustAtomicRMWOperation::UnsignedMaximum => AtomicRMWBinOp::UMax,
+            ThrustAtomicRMWOperation::UnsignedMinimum => AtomicRMWBinOp::UMin,
         }
     }
 }

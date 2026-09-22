@@ -1,0 +1,10 @@
+fn main() s32 @public {
+    var atomicRelax counter: u32 = 20;
+
+    var old: u32 = atomicSubtract(counter, 7);
+
+    if old != 20 { return 1; }
+    if counter != 13 { return 2; }
+
+    return 0;
+}

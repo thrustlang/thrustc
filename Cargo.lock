@@ -1750,6 +1750,7 @@ name = "thrustc_general_analyzer"
 version = "0.2.2"
 dependencies = [
  "thrustc_ast",
+ "thrustc_atomic_ordering",
  "thrustc_attributes",
  "thrustc_code_location",
  "thrustc_constants",
@@ -1967,6 +1968,7 @@ dependencies = [
  "thrustc_llvm_attribute_architecture",
  "thrustc_llvm_attributes",
  "thrustc_llvm_call_conventions",
+ "thrustc_llvm_codegen_atomic",
  "thrustc_llvm_codegen_variatic",
  "thrustc_llvm_target_triple",
  "thrustc_logging",
@@ -1976,6 +1978,20 @@ dependencies = [
  "thrustc_token_type",
  "thrustc_typesystem",
  "uuid",
+]
+
+[[package]]
+name = "thrustc_llvm_codegen_atomic"
+version = "0.2.2"
+dependencies = [
+ "clang",
+ "inkwell",
+ "thrustc_code_location",
+ "thrustc_constants",
+ "thrustc_diagnostician",
+ "thrustc_errors",
+ "thrustc_logging",
+ "thrustc_options",
 ]
 
 [[package]]

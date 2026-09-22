@@ -1184,6 +1184,22 @@ fn pair[A, B](a: A, b: B) A @public {
 }
 """##);
 
+        explanations.insert(CompilationIssueCode::E0056, r##"An atomic operation requires a memory location whose declaration carries an atomic ordering. The read-modify-write builtins (atomicStore, atomicAdd, atomicSubtract, atomicAnd, atomicNand, atomicOr, atomicXor, atomicSignedMaximum, atomicSignedMinimum, atomicUnsignedMaximum, atomicUnsignedMinimum) and atomicCompareAndSwap operate atomically only when the target symbol is declared with one of the atomic ordering modificators.
+
+The atomic ordering modificators are atomicRelax, atomicGrab, atomicDrop, atomicSync, and atomicStrict. atomicNone and atomicFree do not describe an atomic memory operation. Declare the target with an atomic ordering, or use a non-atomic operation.
+
+Incorrect:
+"""
+var counter: u32 = 0;                    // here the error
+var old: u32 = atomicAdd(counter, 1);
+"""
+
+Correct:
+"""
+var atomicRelax counter: u32 = 0;
+var old: u32 = atomicAdd(counter, 1);
+"""##);
+
         explanations.insert(CompilationIssueCode::W0001, r##"An attribute was attached to a declaration kind it does not apply to. Each kind of declaration accepts a fixed set of attributes. An attribute outside that set has no meaning there and is reported as irrelevant. Remove the attribute.
 
 Incorrect:
@@ -1862,6 +1878,7 @@ pub enum CompilationIssueCode {
     E0053,
     E0054,
     E0055,
+    E0056,
 
     W0001,
     W0002,
@@ -2066,6 +2083,9 @@ impl CompilationIssueCode {
             CompilationIssueCode::E0055 => {
                 format!("DUPLICATE TYPE PARAMETER - {}", "E0055".bright_red())
             }
+            CompilationIssueCode::E0056 => {
+                format!("INVALID ATOMIC OPERATION - {}", "E0056".bright_red())
+            }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())
             }
@@ -2233,6 +2253,7 @@ impl CompilationIssueCode {
             "E0053" => Ok(CompilationIssueCode::E0053),
             "E0054" => Ok(CompilationIssueCode::E0054),
             "E0055" => Ok(CompilationIssueCode::E0055),
+            "E0056" => Ok(CompilationIssueCode::E0056),
 
             "W0001" => Ok(CompilationIssueCode::W0001),
             "W0002" => Ok(CompilationIssueCode::W0002),
