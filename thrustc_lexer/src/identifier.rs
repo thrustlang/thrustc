@@ -70,6 +70,7 @@ lazy_static! {
         attributes.insert("@arbitraryArgs", TokenType::Ignore);
         attributes.insert("@hot", TokenType::Hot);
         attributes.insert("@minSize", TokenType::MinSize);
+        attributes.insert("@noArgCount", TokenType::NoArgCount);
         attributes.insert("@alwaysInline", TokenType::AlwaysInline);
         attributes.insert("@noInline", TokenType::NoInline);
         attributes.insert("@inline", TokenType::InlineHint);
@@ -133,6 +134,12 @@ lazy_static! {
             builtins.insert("atomicUnsignedMinimum", TokenType::AtomicUnsignedMinimum);
             builtins.insert("atomicCompareAndSwap", TokenType::AtomicCompareAndSwap);
         }
+
+        builtins.insert("arbitraryArgsStart", TokenType::ArbitraryArgsStart);
+        builtins.insert("arbitraryArgsCopy", TokenType::ArbitraryArgsCopy);
+        builtins.insert("arbitraryArgsEnd", TokenType::ArbitraryArgsEnd);
+        builtins.insert("arbitraryArgFrom", TokenType::ArbitraryArgFrom);
+        builtins.insert("arbitraryArgsCount", TokenType::ArbitraryArgsCount);
 
         builtins
     };

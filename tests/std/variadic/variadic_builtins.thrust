@@ -1,0 +1,39 @@
+/*
+ * Exercises the variadic builtins directly: arbitraryArgs, arbitraryArgsCopy,
+ * arbitraryArgFrom, arbitraryArgsEnd and arbitraryArgsCount. The va_list reads
+ * happen in a separate function through a parameter, which is the reliable
+ * va_arg pattern.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+directive "--disable-warnings=W0020";
+
+fn readPair(args: ptr) s32 {
+    var a: s32 = arbitraryArgFrom(args, s32);
+    var b: s32 = arbitraryArgFrom(args, s32);
+    return a + b;
+}
+
+fn readFirst(args: ptr) s32 {
+    return arbitraryArgFrom(args, s32);
+}
+
+fn sumWithCopy(first: s32) s32 @public @arbitraryArgs {
+    var count: usize = arbitraryArgsCount();
+    var original: ptr = arbitraryArgs();
+    var copy: ptr = arbitraryArgsCopy(original);
+    var sum: s32 = readPair(copy);
+    arbitraryArgsEnd(copy);
+    return sum + count as s32;
+}
+
+fn readDirect(first: s32) s32 @public @arbitraryArgs {
+    var list: ptr = arbitraryArgs();
+    return readFirst(list);
+}
+
+fn main() s32 @public {
+    if sumWithCopy(0, 3, 4) != 9 { return 1; }
+    if readDirect(0, 42) != 42 { return 2; }
+    return 0;
+}

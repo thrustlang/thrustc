@@ -28,6 +28,7 @@ use crate::context::CodeGenLocation;
 use crate::context::LLVMCodeGenContext;
 use crate::traits::AstLLVMGetType;
 use crate::type_cast;
+use crate::typegeneration;
 use crate::types::LLVMFunction;
 
 use inkwell::AddressSpace;
@@ -70,7 +71,19 @@ pub fn compile<'ctx>(
         .find_map(|attribute| thrustc_llvm_attributes::interpret_as_callconvention(attribute));
 
     let mut build_standard_call = || -> BasicValueEnum {
-        let compiled_args: Vec<BasicMetadataValueEnum> = args
+        let has_user_extern: bool = attributes
+            .iter()
+            .any(|attribute| attribute.is_extern_attribute())
+            && !name.contains("__generic_");
+
+        let has_hidden_count: bool = is_variatic
+            && !has_user_extern
+            && !attributes
+                .iter()
+                .any(|attribute| attribute.is_no_arg_count_attribute())
+            && !lowers_variadic_functions;
+
+        let mut compiled_args: Vec<BasicMetadataValueEnum> = args
             .iter()
             .enumerate()
             .map(|(i, expr)| {
@@ -105,6 +118,19 @@ pub fn compile<'ctx>(
                 }
             })
             .collect();
+
+        if has_hidden_count {
+            let variadic_count: usize = args.len().saturating_sub(function_arg_types.len());
+            let count_llvm_type: inkwell::types::BasicTypeEnum<'_> =
+                typegeneration::generate_type(context, &Type::USize { span });
+
+            let count_value: BasicValueEnum<'_> = count_llvm_type
+                .into_int_type()
+                .const_int(variadic_count as u64, false)
+                .into();
+
+            compiled_args.insert(0, count_value.into());
+        }
 
         let ret_value: BasicValueEnum<'_> =
             match llvm_builder.build_call(llvm_function, &compiled_args, "") {

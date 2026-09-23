@@ -1,0 +1,12 @@
+/*
+ * Negative: arbitraryArgFrom cannot read an array type (CString) from a
+ * va_list (E0057); use ptr[char] instead.
+ */
+
+fn readCString(args: ptr) void {
+    var s: CString = arbitraryArgFrom(args, CString);
+}
+
+fn main() s32 @public {
+    return 0;
+}

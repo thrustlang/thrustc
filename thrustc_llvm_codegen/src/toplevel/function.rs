@@ -28,6 +28,7 @@ use inkwell::values::IntValue;
 use inkwell::values::PointerValue;
 use thrustc_ast::Ast;
 use thrustc_ast::traits::AstCodeBlockEntensions;
+use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_code_location::Span;
 use thrustc_entities::Function;
 use thrustc_llvm_attributes::LLVMAttribute;
@@ -109,6 +110,9 @@ pub fn compile_top<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, function: F
         return_type,
         parameters,
         ignore_args,
+        attributes.iter().any(|attribute| attribute.is_extern_attribute())
+            && !name.contains("__generic_"),
+        function.7.has_no_arg_count_attribute(),
         CompilerFunctionVariant::PureFunction,
     );
 
@@ -232,6 +236,25 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
 
     let is_variadic: bool = prototype.is_variadic();
 
+    let lowers_variadic_functions: bool = matches!(
+        codegen.get_context().get_abi(),
+        Some(thrustc_llvm_abi_representation::LLVMABIRepresentation::WebAssemblyABI { .. })
+    );
+
+    let has_extern: bool = prototype
+        .get_attributes()
+        .iter()
+        .any(|attribute| attribute.is_extern_attribute())
+        && !function_name.contains("__generic_");
+
+    let has_no_arg_count: bool = prototype
+        .get_attributes()
+        .iter()
+        .any(|attribute| attribute.is_no_arg_count_attribute());
+
+    let has_hidden_count: bool =
+        is_variadic && !has_extern && !has_no_arg_count && !lowers_variadic_functions;
+
     let abi_configuration: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
         prototype.get_abi_configuration().cloned();
 
@@ -264,13 +287,29 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                 .get_mut_context()
                 .get_mut_variatic_context()
                 .emit_va_start(span);
+
+            if has_hidden_count {
+                let count_value: BasicValueEnum<'_> = function_value
+                    .get_nth_param(0)
+                    .unwrap_or_else(|| {
+                        abort::abort_codegen(
+                            codegen.get_mut_context(),
+                            "Failed to get the hidden variable arguments count parameter!",
+                            span,
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                codegen
+                    .get_mut_context()
+                    .get_mut_variatic_context()
+                    .set_current_va_arg_count(count_value.into_int_value());
+            }
         }
 
         {
-            let lowers_variadic_functions: bool = matches!(
-                codegen.get_context().get_abi(),
-                Some(thrustc_llvm_abi_representation::LLVMABIRepresentation::WebAssemblyABI { .. })
-            );
+            let hidden_count_offset: u32 = if has_hidden_count { 1 } else { 0 };
 
             if has_abi && (!is_variadic || lowers_variadic_functions) {
                 let abi: &thrustc_llvm_abi_representation::LLVMABIRepresentation<'_> =
@@ -350,7 +389,7 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
 
                         let span: Span = parameter.4;
 
-                        if let Some(parameter_value) = function_value.get_nth_param(position) {
+                        if let Some(parameter_value) = function_value.get_nth_param(position + hidden_count_offset) {
                             codegen.get_mut_context().add_parameter(
                                 name,
                                 ascii_name,
@@ -374,7 +413,7 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
 
                     let span: Span = parameter.4;
 
-                    if let Some(parameter_value) = function_value.get_nth_param(position) {
+                    if let Some(parameter_value) = function_value.get_nth_param(position + hidden_count_offset) {
                         codegen.get_mut_context().add_parameter(
                             name,
                             ascii_name,

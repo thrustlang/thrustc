@@ -81,6 +81,68 @@ pub fn validate_node<'type_checker>(
             Ok(())
         }
 
+        AstBuiltin::ArbitraryArgsStart { span }
+            if !typechecker
+                .get_type_context()
+                .is_current_function_variadic() =>
+        {
+            typechecker.add_error_report(CompilationIssue::Error(
+                CompilationIssueCode::E0047,
+                "Variable arguments builtin outside of a variadic function.".into(),
+                "The 'arbitraryArgsStart' builtin is only available inside a variadic function with a body. Add the '@arbitraryArgs' attribute to the function declaration.".into(),
+                None,
+                *span,
+            ));
+
+            Ok(())
+        }
+
+        AstBuiltin::ArbitraryArgsCount { span }
+            if !typechecker
+                .get_type_context()
+                .is_current_function_variadic() =>
+        {
+            typechecker.add_error_report(CompilationIssue::Error(
+                CompilationIssueCode::E0047,
+                "Variable arguments builtin outside of a variadic function.".into(),
+                "The 'arbitraryArgsCount' builtin is only available inside a variadic function with a body. Add the '@arbitraryArgs' attribute to the function declaration.".into(),
+                None,
+                *span,
+            ));
+
+            Ok(())
+        }
+
+        AstBuiltin::ArbitraryArgsCopy { source, .. } => {
+            typechecker.analyze_expr(source)?;
+
+            Ok(())
+        }
+
+        AstBuiltin::ArbitraryArgsEnd { list, .. } => {
+            typechecker.analyze_expr(list)?;
+
+            Ok(())
+        }
+
+        AstBuiltin::ArbitraryArgFrom { list, ty, .. } => {
+            typechecker.analyze_expr(list)?;
+
+            if ty.contains_void_type() || ty.is_void_type() {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    "Cannot use 'void' as a value.".into(),
+                    "You should remove whatever type or value where void type belongs.".into(),
+                    None,
+                    ty.get_span(),
+                ));
+            }
+
+            Ok(())
+        }
+
+        AstBuiltin::ArbitraryArgsStart { .. } | AstBuiltin::ArbitraryArgsCount { .. } => Ok(()),
+
         AstBuiltin::ArbitraryArg { span, .. }
             if !typechecker
                 .get_type_context()

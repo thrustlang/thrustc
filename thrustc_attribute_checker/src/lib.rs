@@ -283,6 +283,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             } => {
                 self.check_irrelevant_attributes(attributes, applicant);
                 self.check_illogical_attributes(attributes, applicant);
+                self.check_variadic_argument_count(attributes);
 
                 if let Some(attr) = attributes.get_attr(ThrustAttributeComparator::Constructor) {
                     if !return_type.is_void_type() {
@@ -662,6 +663,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             ThrustAttributeComparator::Convention,
             ThrustAttributeComparator::Extern,
             ThrustAttributeComparator::Ignore,
+            ThrustAttributeComparator::NoArgCount,
             ThrustAttributeComparator::Public,
             ThrustAttributeComparator::Hot,
             ThrustAttributeComparator::NoUnwind,
@@ -687,6 +689,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             ThrustAttributeComparator::Convention,
             ThrustAttributeComparator::Extern,
             ThrustAttributeComparator::Ignore,
+            ThrustAttributeComparator::NoArgCount,
             ThrustAttributeComparator::Public,
             ThrustAttributeComparator::Hot,
             ThrustAttributeComparator::NoUnwind,
@@ -1056,6 +1059,41 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
         }
 
         repeated_attrs
+    }
+}
+
+impl<'attr_checker> AttributeChecker<'attr_checker> {
+    fn check_variadic_argument_count(
+        &mut self,
+        attributes: &ThrustAttributes,
+    ) {
+        let is_variadic: bool = attributes.has_ignore_attribute();
+
+        if !is_variadic {
+            if let Some(attr) = attributes.get_attr(ThrustAttributeComparator::NoArgCount) {
+                self.add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0013,
+                    "The @noArgCount attribute requires a variadic function.".into(),
+                    "Add the '@arbitraryArgs' attribute or remove '@noArgCount'.".into(),
+                    None,
+                    attr.get_span(),
+                ));
+            }
+
+            return;
+        }
+
+        if attributes.has_no_arg_count_attribute() || attributes.has_extern_attribute() {
+            return;
+        }
+
+        if let Some(attr) = attributes.get_attr(ThrustAttributeComparator::Ignore) {
+            self.add_warning(CompilationIssue::Warning(
+                CompilationIssueCode::W0033,
+                "Variadic function carries a hidden argument count; add @noArgCount if it forwards arbitraryArgs() to an FFI variadic.".into(),
+                attr.get_span(),
+            ));
+        }
     }
 }
 

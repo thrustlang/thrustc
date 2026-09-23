@@ -74,6 +74,14 @@ fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
+        "@noArgCount",
+        CompletionKind::Keyword,
+        "attribute",
+        None,
+    );
+    self::push_item(
+        items,
+        seen,
         "@public",
         CompletionKind::Keyword,
         "attribute",
@@ -540,6 +548,142 @@ fn push_builtins(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         CompletionKind::Function,
         "builtin",
         Some("arbitraryArgs($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "arbitraryArgsStart",
+        CompletionKind::Function,
+        "builtin",
+        Some("arbitraryArgsStart($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "arbitraryArgsCopy",
+        CompletionKind::Function,
+        "builtin",
+        Some("arbitraryArgsCopy($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "arbitraryArgsEnd",
+        CompletionKind::Function,
+        "builtin",
+        Some("arbitraryArgsEnd($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "arbitraryArgFrom",
+        CompletionKind::Function,
+        "builtin",
+        Some("arbitraryArgFrom($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "arbitraryArgsCount",
+        CompletionKind::Function,
+        "builtin",
+        Some("arbitraryArgsCount($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicStore",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicStore($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicAdd",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicAdd($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicSubtract",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicSubtract($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicAnd",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicAnd($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicNand",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicNand($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicOr",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicOr($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicXor",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicXor($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicSignedMaximum",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicSignedMaximum($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicSignedMinimum",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicSignedMinimum($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicUnsignedMaximum",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicUnsignedMaximum($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicUnsignedMinimum",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicUnsignedMinimum($0)"),
+    );
+    self::push_item(
+        items,
+        seen,
+        "atomicCompareAndSwap",
+        CompletionKind::Function,
+        "builtin",
+        Some("atomicCompareAndSwap($0)"),
     );
 
     for builtin in [
@@ -1588,7 +1732,10 @@ fn push_top_level_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
 }
 
 fn is_type_context(prefix: &str, trimmed: &str) -> bool {
-    if trimmed.ends_with(':') || trimmed.ends_with(" as") || trimmed.ends_with(" as ") {
+    if (trimmed.ends_with(':') && !trimmed.ends_with("::"))
+        || trimmed.ends_with(" as")
+        || trimmed.ends_with(" as ")
+    {
         return true;
     }
 

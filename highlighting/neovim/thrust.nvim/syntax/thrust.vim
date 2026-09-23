@@ -38,6 +38,10 @@ syntax keyword thrustBuiltin
     \ halloc memset memmove memcpy
     \ abiSizeOf bitSizeOf abiAlignOf
     \ arbitraryArg arbitraryArgs
+    \ arbitraryArgsStart arbitraryArgsCopy arbitraryArgsEnd arbitraryArgFrom arbitraryArgsCount
+    \ atomicStore atomicAdd atomicSubtract atomicAnd atomicNand
+    \ atomicOr atomicXor atomicSignedMaximum atomicSignedMinimum
+    \ atomicUnsignedMaximum atomicUnsignedMinimum atomicCompareAndSwap
     \ alignOf sizeOf staticAssert compileError compileWarning
     \ file fileLine currentFuncName
     \ isSigned isUnsigned isInteger isFloat isBool isChar
@@ -70,7 +74,7 @@ syntax keyword thrustAtomic
     \ threadInit threadDyn threadExec threadLDyn
 
 syntax match thrustAttribute
-    \ "@\(align\|optFuzzing\|noUnwind\|noReturn\|packed\|heap\|public\|entrypoint\|linkage\|extern\|arbitraryArgs\|hot\|minSize\|alwaysInline\|noInline\|inline\|safeStack\|weakStack\|strongStack\|preciseFloatingPoint\|convention\|pure\|thunk\|cuda\|constructor\|destructor\|if\|elif\|else\|promote\|asmAlignStack\|asmSyntax\|asmThrowErrors\|asmSideEffects\)\>"
+    \ "@\(align\|optFuzzing\|noUnwind\|noReturn\|packed\|heap\|public\|entrypoint\|linkage\|extern\|arbitraryArgs\|noArgCount\|hot\|minSize\|alwaysInline\|noInline\|inline\|safeStack\|weakStack\|strongStack\|preciseFloatingPoint\|convention\|pure\|thunk\|cuda\|constructor\|destructor\|if\|elif\|else\|promote\|asmAlignStack\|asmSyntax\|asmThrowErrors\|asmSideEffects\)\>"
 
 syntax match thrustOperator "\.\.\.\|\.\."
 syntax match thrustOperator "->\|=>"

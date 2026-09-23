@@ -1,0 +1,25 @@
+/*
+ * Exercises vector::forEach over an empty vector with variadic arguments:
+ * the callback must never be invoked and the hidden argument count is 0.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+directive "--disable-warnings=W0020";
+
+import std::collections::vector;
+
+static mut calls: s32 = 0;
+
+fn countCall(value: ptr[s32], args: ptr, count: usize) void {
+    calls = calls + 1;
+}
+
+fn main() s32 @public {
+    var values @dealloc: vector::Vector[s32] = vector::newVector[s32]();
+
+    vector::forEach(ref values, countCall, 5 as s32);
+
+    if calls != 0 { return 1; }
+
+    return 0;
+}

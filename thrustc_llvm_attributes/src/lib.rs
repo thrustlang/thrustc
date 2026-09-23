@@ -38,6 +38,7 @@ pub enum LLVMAttribute<'ctx> {
     Public,
     EntryPoint,
     Ignore,
+    NoArgCount,
     Hot,
     NoInline,
     InlineHint,
@@ -81,6 +82,11 @@ impl LLVMAttribute<'_> {
     #[inline]
     pub fn is_extern_attribute(&self) -> bool {
         matches!(self, LLVMAttribute::Extern(..))
+    }
+
+    #[inline]
+    pub fn is_no_arg_count_attribute(&self) -> bool {
+        matches!(self, LLVMAttribute::NoArgCount)
     }
 
     #[inline]
@@ -180,6 +186,7 @@ pub enum LLVMAttributeComparator {
     Convention,
     Public,
     Ignore,
+    NoArgCount,
     Hot,
     NoInline,
     InlineHint,
@@ -228,6 +235,7 @@ pub fn into_llvm_attribute(attribute: &ThrustAttribute) -> LLVMAttribute<'_> {
         ThrustAttribute::Public(..) => LLVMAttribute::Public,
         ThrustAttribute::EntryPoint(..) => LLVMAttribute::EntryPoint,
         ThrustAttribute::Ignore(..) => LLVMAttribute::Ignore,
+        ThrustAttribute::NoArgCount(..) => LLVMAttribute::NoArgCount,
         ThrustAttribute::Hot(..) => LLVMAttribute::Hot,
         ThrustAttribute::NoInline(..) => LLVMAttribute::NoInline,
         ThrustAttribute::InlineHint(..) => LLVMAttribute::InlineHint,

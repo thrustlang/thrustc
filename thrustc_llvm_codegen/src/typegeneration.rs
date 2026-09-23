@@ -29,6 +29,7 @@ use inkwell::types::BasicTypeEnum;
 use inkwell::types::FunctionType;
 
 use thrustc_ast::Ast;
+use thrustc_code_location::Span;
 use thrustc_llvm_abi::LLVMABIConfiguration;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::DereferenceExtensions;
@@ -52,6 +53,8 @@ pub fn compile_as_function_type<'ctx>(
     kind: &'ctx Type,
     parameters: &'ctx [Ast<'ctx>],
     is_variatic: bool,
+    has_extern: bool,
+    has_no_arg_count: bool,
     variant: CompilerFunctionVariant,
 ) -> (FunctionType<'ctx>, Option<LLVMABIConfiguration<'ctx>>) {
     let llvm_context: &Context = context.get_llvm_context();
@@ -62,9 +65,23 @@ pub fn compile_as_function_type<'ctx>(
         Some(thrustc_llvm_abi_representation::LLVMABIRepresentation::WebAssemblyABI { .. })
     );
 
+    let has_hidden_count: bool =
+        is_variatic && !has_extern && !has_no_arg_count && !lowers_variadic_functions;
+
     let mut standard_type_generation = |parameters: &[Ast<'ctx>], return_kind: &Type| {
         let mut llvm_parameters_types: Vec<BasicMetadataTypeEnum<'ctx>> =
             Vec::with_capacity(parameters.len());
+
+        if has_hidden_count {
+            let hidden_count_ty: BasicTypeEnum<'ctx> = self::generate_type(
+                context,
+                &Type::USize {
+                    span: Span::nothing(),
+                },
+            );
+
+            llvm_parameters_types.push(hidden_count_ty.into());
+        }
 
         for parameter in parameters {
             match parameter {

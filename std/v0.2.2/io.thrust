@@ -37,27 +37,27 @@ static mut stdin: File @public @extern("stdin");
 static mut stdout: File @public @extern("stdout");
 static mut stderr: File @public @extern("stderr");
 
-fn print(fmt: CString) s32 @public @arbitraryArgs {
+fn print(fmt: CString) s32 @public @arbitraryArgs @noArgCount {
     return c::vprintf(fmt, arbitraryArgs());
 }
 
-fn printTo(stream: File, fmt: CString) s32 @public @arbitraryArgs {
+fn printTo(stream: File, fmt: CString) s32 @public @arbitraryArgs @noArgCount {
     return c::vfprintf(stream, fmt, arbitraryArgs());
 }
 
-fn printToBuffer(buffer: ptr, size: usize, fmt: CString) s32 @public @arbitraryArgs {
+fn printToBuffer(buffer: ptr, size: usize, fmt: CString) s32 @public @arbitraryArgs @noArgCount {
     return c::vsnprintf(buffer, size, fmt, arbitraryArgs());
 }
 
-fn scan(fmt: CString) s32 @public @arbitraryArgs {
+fn scan(fmt: CString) s32 @public @arbitraryArgs @noArgCount {
     return c::vscanf(fmt, arbitraryArgs());
 }
 
-fn scanFrom(stream: File, fmt: CString) s32 @public @arbitraryArgs {
+fn scanFrom(stream: File, fmt: CString) s32 @public @arbitraryArgs @noArgCount {
     return c::vfscanf(stream, fmt, arbitraryArgs());
 }
 
-fn scanFromString(text: CString, fmt: CString) s32 @public @arbitraryArgs {
+fn scanFromString(text: CString, fmt: CString) s32 @public @arbitraryArgs @noArgCount {
     return c::vsscanf(text, fmt, arbitraryArgs());
 }
 
@@ -193,7 +193,7 @@ fn writeCharFast(character: s32, stream: File) s32 @public {
     return c::putc(character, stream);
 }
 
-fn printToBufferUnsafe(buffer: ptr, fmt: CString) s32 @public @arbitraryArgs {
+fn printToBufferUnsafe(buffer: ptr, fmt: CString) s32 @public @arbitraryArgs @noArgCount {
     return c::vsprintf(buffer, fmt, arbitraryArgs());
 }
 
@@ -221,7 +221,7 @@ fn closePipe(stream: File) s32 @public {
     return c::pclose(stream);
 }
 
-fn printToFileDescriptor(fd: s32, fmt: CString) s32 @public @arbitraryArgs {
+fn printToFileDescriptor(fd: s32, fmt: CString) s32 @public @arbitraryArgs @noArgCount {
     return c::vdprintf(fd, fmt, arbitraryArgs());
 }
 

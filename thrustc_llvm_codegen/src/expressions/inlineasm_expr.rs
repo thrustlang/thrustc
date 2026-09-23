@@ -55,6 +55,8 @@ pub fn compile<'ctx>(
         kind,
         args,
         false,
+        false,
+        false,
         CompilerFunctionVariant::AssemblerFunction,
     );
 

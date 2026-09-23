@@ -171,9 +171,16 @@ fn compile_gep_property<'ctx>(
 
     let span: Span = source.get_span();
 
-    context.add_codegen_location(CodeGenLocation::LValue);
-    let source_value: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, source, None);
-    context.pop_current_codegen_location();
+    let source_is_pointer: bool = source.get_type_for_llvm().is_ptr_like_type();
+
+    let source_value: BasicValueEnum<'_> = if source_is_pointer {
+        codegen::compile_as_value(context, source, None)
+    } else {
+        context.add_codegen_location(CodeGenLocation::LValue);
+        let source_value: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, source, None);
+        context.pop_current_codegen_location();
+        source_value
+    };
 
     let ptr_value: PointerValue = source_value.into_pointer_value();
     let ptr_type: &Type = source.get_type_for_llvm();

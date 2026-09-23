@@ -219,6 +219,7 @@ impl<'ctx> AttributeBuilder {
                 | LLVMAttribute::Public
                 | LLVMAttribute::EntryPoint
                 | LLVMAttribute::Ignore
+                | LLVMAttribute::NoArgCount
                 | LLVMAttribute::NoReturn
                 | LLVMAttribute::Align(..)
                 | LLVMAttribute::Promote(..)
@@ -391,6 +392,7 @@ impl<'ctx> AttributeBuilder {
                 | LLVMAttribute::Public
                 | LLVMAttribute::EntryPoint
                 | LLVMAttribute::Ignore
+                | LLVMAttribute::NoArgCount
                 | LLVMAttribute::NoReturn
                 | LLVMAttribute::Align(..)
                 | LLVMAttribute::Promote(..)
@@ -429,6 +431,7 @@ impl<'ctx> AttributeBuilder {
                         | LLVMAttribute::Public
                         | LLVMAttribute::EntryPoint
                         | LLVMAttribute::Ignore
+                        | LLVMAttribute::NoArgCount
                         | LLVMAttribute::Hot
                         | LLVMAttribute::NoInline
                         | LLVMAttribute::InlineHint

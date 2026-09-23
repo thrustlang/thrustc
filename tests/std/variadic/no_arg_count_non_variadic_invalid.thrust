@@ -1,0 +1,11 @@
+/*
+ * Negative: @noArgCount is only valid on a variadic function (@arbitraryArgs).
+ */
+
+fn add(a: s32, b: s32) s32 @public @noArgCount {
+    return a + b;
+}
+
+fn main() s32 @public {
+    return 0;
+}

@@ -48,6 +48,7 @@ pub enum ThrustAttribute {
     Public(Span),
     EntryPoint(Span),
     Ignore(Span),
+    NoArgCount(Span),
     Hot(Span),
     NoInline(Span),
     InlineHint(Span),
@@ -97,6 +98,7 @@ pub enum ThrustAttributeComparator {
     Public,
     EntryPoint,
     Ignore,
+    NoArgCount,
     Hot,
     NoInline,
     InlineHint,
@@ -146,6 +148,11 @@ impl ThrustAttribute {
     #[inline]
     pub fn is_ignore_attribute(&self) -> bool {
         matches!(self, ThrustAttribute::Ignore(..))
+    }
+
+    #[inline]
+    pub fn is_no_arg_count_attribute(&self) -> bool {
+        matches!(self, ThrustAttribute::NoArgCount(..))
     }
 
     #[inline]
@@ -264,6 +271,7 @@ impl ThrustAttribute {
             ThrustAttribute::Public(span) => *span,
             ThrustAttribute::EntryPoint(span) => *span,
             ThrustAttribute::Ignore(span) => *span,
+            ThrustAttribute::NoArgCount(span) => *span,
             ThrustAttribute::Hot(span) => *span,
             ThrustAttribute::NoInline(span) => *span,
             ThrustAttribute::InlineHint(span) => *span,
@@ -300,6 +308,7 @@ impl ThrustAttribute {
 pub fn as_attribute(token_type: TokenType, span: Span) -> Option<ThrustAttribute> {
     match token_type {
         TokenType::Ignore => Some(ThrustAttribute::Ignore(span)),
+        TokenType::NoArgCount => Some(ThrustAttribute::NoArgCount(span)),
         TokenType::MinSize => Some(ThrustAttribute::MinSize(span)),
         TokenType::NoInline => Some(ThrustAttribute::NoInline(span)),
         TokenType::AlwaysInline => Some(ThrustAttribute::AlwaysInline(span)),
@@ -347,6 +356,11 @@ impl ThrustAttributesExtensions for ThrustAttributes {
     #[inline]
     fn has_ignore_attribute(&self) -> bool {
         self.iter().any(|attr| attr.is_ignore_attribute())
+    }
+
+    #[inline]
+    fn has_no_arg_count_attribute(&self) -> bool {
+        self.iter().any(|attr| attr.is_no_arg_count_attribute())
     }
 
     #[inline]
@@ -477,6 +491,7 @@ impl ThrustAttributeComparatorExtensions for ThrustAttribute {
             ThrustAttribute::Public(..) => ThrustAttributeComparator::Public,
             ThrustAttribute::EntryPoint(..) => ThrustAttributeComparator::EntryPoint,
             ThrustAttribute::Ignore(..) => ThrustAttributeComparator::Ignore,
+            ThrustAttribute::NoArgCount(..) => ThrustAttributeComparator::NoArgCount,
             ThrustAttribute::Hot(..) => ThrustAttributeComparator::Hot,
             ThrustAttribute::NoInline(..) => ThrustAttributeComparator::NoInline,
             ThrustAttribute::InlineHint(..) => ThrustAttributeComparator::InlineHint,

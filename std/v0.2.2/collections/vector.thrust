@@ -219,20 +219,15 @@ fn next [T] (iterator: ptr[VectorIterator[T]]) optional::Optional[T] @public {
     return optional::some[T](value);
 }
 
-fn forEach [T] (vector: ptr[Vector[T]], action: Fn[T] -> void) void @public {
+fn forEach [T] (vector: ptr[Vector[T]], action: Fn[ptr[T], ptr, usize] -> void) void @public @arbitraryArgs {
+    var count: usize = arbitraryArgsCount();
+    var original: ptr = arbitraryArgs();
     var index: usize = 0;
 
     while index < vector->length {
-        action(vector->data->[index]);
-        index = index + 1;
-    }
-}
-
-fn forEachPtr [T] (vector: ptr[Vector[T]], action: Fn[ptr[T]] -> void) void @public {
-    var index: usize = 0;
-
-    while index < vector->length {
-        action(ref vector->data[index]);
+        var copy: ptr = arbitraryArgsCopy(original);
+        action(ref vector->data[index], copy, count);
+        arbitraryArgsEnd(copy);
         index = index + 1;
     }
 }

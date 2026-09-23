@@ -1200,6 +1200,20 @@ var atomicRelax counter: u32 = 0;
 var old: u32 = atomicAdd(counter, 1);
 """##);
 
+        explanations.insert(CompilationIssueCode::E0057, r##"A variable arguments list can only carry arguments with a scalar or pointer representation. The 'arbitraryArgFrom' builtin reads a value of a given type from a va_list with LLVM's va_arg instruction, which only supports integers, floats and pointers. Structs and arrays have no single va_arg representation, so reading them is rejected.
+
+Use a pointer type to receive a struct or array: pass a pointer and read it with 'ptr' or 'ptr[T]'.
+
+Incorrect:
+"""
+var p: SomeStruct = arbitraryArgFrom(args, SomeStruct);   // here the error
+"""
+
+Correct:
+"""
+var p: ptr[SomeStruct] = arbitraryArgFrom(args, ptr[SomeStruct]);
+"""##);
+
         explanations.insert(CompilationIssueCode::W0001, r##"An attribute was attached to a declaration kind it does not apply to. Each kind of declaration accepts a fixed set of attributes. An attribute outside that set has no meaning there and is reported as irrelevant. Remove the attribute.
 
 Incorrect:
@@ -1818,6 +1832,24 @@ fn size[T](value: T) s32 @public {
 }
 """##);
 
+        explanations.insert(CompilationIssueCode::W0033, r##"A variadic function carries a hidden argument count parameter. The compiler prepends the number of extra arguments passed at the call site so the function body can query it with arbitraryArgsCount(). Functions that forward arbitraryArgs() to an FFI variadic (such as the vprintf family) must not carry this hidden parameter, because their ABI has to stay C-compatible.
+
+Add the @noArgCount attribute to opt out of the hidden argument count.
+
+Incorrect:
+"""
+fn print(fmt: CString) s32 @public @arbitraryArgs {   // here the warning
+    return c::vprintf(fmt, arbitraryArgs());
+}
+"""
+
+Correct:
+"""
+fn print(fmt: CString) s32 @public @arbitraryArgs @noArgCount {
+    return c::vprintf(fmt, arbitraryArgs());
+}
+"""##);
+
         explanations
     };
 }
@@ -1879,6 +1911,7 @@ pub enum CompilationIssueCode {
     E0054,
     E0055,
     E0056,
+    E0057,
 
     W0001,
     W0002,
@@ -1911,6 +1944,7 @@ pub enum CompilationIssueCode {
     W0030,
     W0031,
     W0032,
+    W0033,
 }
 
 #[inline]
@@ -2086,6 +2120,9 @@ impl CompilationIssueCode {
             CompilationIssueCode::E0056 => {
                 format!("INVALID ATOMIC OPERATION - {}", "E0056".bright_red())
             }
+            CompilationIssueCode::E0057 => {
+                format!("INVALID VARIADIC ARGUMENT TYPE - {}", "E0057".bright_red())
+            }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())
             }
@@ -2175,6 +2212,9 @@ impl CompilationIssueCode {
             CompilationIssueCode::W0032 => {
                 format!("UNUSED TYPE PARAMETER - {}", "W0032".bright_yellow())
             }
+            CompilationIssueCode::W0033 => {
+                format!("VARIADIC ARGUMENT COUNT - {}", "W0033".bright_yellow())
+            }
         }
     }
 
@@ -2254,6 +2294,7 @@ impl CompilationIssueCode {
             "E0054" => Ok(CompilationIssueCode::E0054),
             "E0055" => Ok(CompilationIssueCode::E0055),
             "E0056" => Ok(CompilationIssueCode::E0056),
+            "E0057" => Ok(CompilationIssueCode::E0057),
 
             "W0001" => Ok(CompilationIssueCode::W0001),
             "W0002" => Ok(CompilationIssueCode::W0002),
@@ -2286,6 +2327,7 @@ impl CompilationIssueCode {
             "W0030" => Ok(CompilationIssueCode::W0030),
             "W0031" => Ok(CompilationIssueCode::W0031),
             "W0032" => Ok(CompilationIssueCode::W0032),
+            "W0033" => Ok(CompilationIssueCode::W0033),
 
             _ => Err(()),
         }

@@ -97,6 +97,25 @@ pub enum LLVMBuiltin<'ctx> {
         failure: ThrustAtomicOrdering,
         span: Span,
     },
+    ArbitraryArgsStart {
+        span: Span,
+    },
+    ArbitraryArgsCopy {
+        source: &'ctx Ast<'ctx>,
+        span: Span,
+    },
+    ArbitraryArgsEnd {
+        list: &'ctx Ast<'ctx>,
+        span: Span,
+    },
+    ArbitraryArgFrom {
+        list: &'ctx Ast<'ctx>,
+        ty: &'ctx Type,
+        span: Span,
+    },
+    ArbitraryArgsCount {
+        span: Span,
+    },
 }
 
 pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ctx> {
@@ -166,6 +185,21 @@ pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ct
             failure: *failure,
             span: *span,
         },
+        AstBuiltin::ArbitraryArgsStart { span } => LLVMBuiltin::ArbitraryArgsStart { span: *span },
+        AstBuiltin::ArbitraryArgsCopy { source, span } => LLVMBuiltin::ArbitraryArgsCopy {
+            source,
+            span: *span,
+        },
+        AstBuiltin::ArbitraryArgsEnd { list, span } => LLVMBuiltin::ArbitraryArgsEnd {
+            list,
+            span: *span,
+        },
+        AstBuiltin::ArbitraryArgFrom { list, ty, span } => LLVMBuiltin::ArbitraryArgFrom {
+            list,
+            ty,
+            span: *span,
+        },
+        AstBuiltin::ArbitraryArgsCount { span } => LLVMBuiltin::ArbitraryArgsCount { span: *span },
         AstBuiltin::DeferredCompileTime { span, .. } => {
             LLVMBuiltin::DeferredCompileTime { span: *span }
         }
@@ -486,6 +520,47 @@ pub fn compile<'ctx>(
 
             type_cast::try_smart_cast(context, cast_type, &bool_type, flag.into(), span)
         }
+        LLVMBuiltin::ArbitraryArgsStart { span } => context
+            .get_mut_variatic_context()
+            .emit_va_start(span)
+            .into(),
+        LLVMBuiltin::ArbitraryArgsCopy { source, span } => {
+            let source_ptr: PointerValue =
+                codegen::compile_as_value(context, source, None).into_pointer_value();
+
+            context
+                .get_mut_variatic_context()
+                .emit_va_copy(source_ptr, span)
+                .into()
+        }
+        LLVMBuiltin::ArbitraryArgsEnd { list, span } => {
+            let list_ptr: PointerValue =
+                codegen::compile_as_value(context, list, None).into_pointer_value();
+
+            context
+                .get_mut_variatic_context()
+                .emit_va_end_on(list_ptr, span);
+
+            context
+                .get_llvm_context()
+                .ptr_type(inkwell::AddressSpace::default())
+                .const_null()
+                .into()
+        }
+        LLVMBuiltin::ArbitraryArgFrom { list, ty, span } => {
+            let list_ptr: PointerValue =
+                codegen::compile_as_value(context, list, None).into_pointer_value();
+
+            let llvm_ty: BasicTypeEnum = typegeneration::generate_type(context, ty);
+
+            context
+                .get_mut_variatic_context()
+                .emit_va_arg_from(list_ptr, llvm_ty, span)
+        }
+        LLVMBuiltin::ArbitraryArgsCount { span } => context
+            .get_mut_variatic_context()
+            .get_current_va_arg_count(span)
+            .into(),
         LLVMBuiltin::DeferredCompileTime { span } => abort::abort_codegen(
             context,
             "Deferred compile-time builtin must be resolved before codegen",

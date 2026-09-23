@@ -102,4 +102,23 @@ pub enum AstBuiltin<'compiler_builtin> {
         failure: ThrustAtomicOrdering,
         span: Span,
     },
+    ArbitraryArgsStart {
+        span: Span,
+    },
+    ArbitraryArgsCopy {
+        source: std::boxed::Box<Ast<'compiler_builtin>>,
+        span: Span,
+    },
+    ArbitraryArgsEnd {
+        list: std::boxed::Box<Ast<'compiler_builtin>>,
+        span: Span,
+    },
+    ArbitraryArgFrom {
+        list: std::boxed::Box<Ast<'compiler_builtin>>,
+        ty: Type,
+        span: Span,
+    },
+    ArbitraryArgsCount {
+        span: Span,
+    },
 }

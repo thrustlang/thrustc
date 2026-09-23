@@ -106,6 +106,8 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
         return_type,
         parameters,
         false,
+        false,
+        false,
         CompilerFunctionVariant::AssemblerFunction,
     );
 

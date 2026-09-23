@@ -1,0 +1,48 @@
+/*
+ * Exercises vector::forEach with mixed variadic arguments: an integer,
+ * a float, a char pointer and a pointer to a struct are forwarded to the
+ * callback on every iteration through a va_copy.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+directive "--disable-warnings=W0020";
+
+import std::collections::vector;
+
+struct Stats {
+    total: s64,
+    matched: s32
+}
+
+static mut sum: s32 = 0;
+
+fn process(value: ptr[s32], args: ptr, count: usize) void {
+    var factor: s32 = arbitraryArgFrom(args, s32);
+    var offset: f64 = arbitraryArgFrom(args, f64);
+    var label: ptr[char] = arbitraryArgFrom(args, ptr[char]);
+    var stats: ptr[Stats] = arbitraryArgFrom(args, ptr[Stats]);
+
+    sum = sum + value->[0] * factor;
+    stats->total = stats->total + (value->[0] * factor) as s64 + offset as s64;
+
+    if label->[0] != '\0' {
+        stats->matched = stats->matched + 1;
+    }
+}
+
+fn main() s32 @public {
+    var values @dealloc: vector::Vector[s32] = vector::newVector[s32]();
+    vector::push(ref values, 1);
+    vector::push(ref values, 2);
+    vector::push(ref values, 3);
+
+    var stats := new Stats { total: 0, matched: 0 };
+
+    vector::forEach(ref values, process, 10 as s32, 0.0 as f64, "item", ref stats);
+
+    if sum != 60 { return 1; }
+    if stats->total != 60 { return 2; }
+    if stats->matched != 3 { return 3; }
+
+    return 0;
+}

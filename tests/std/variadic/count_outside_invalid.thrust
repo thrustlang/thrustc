@@ -1,0 +1,8 @@
+/*
+ * Negative: arbitraryArgsCount is only available inside a variadic function.
+ */
+
+fn main() s32 @public {
+    var count: usize = arbitraryArgsCount();
+    return 0;
+}

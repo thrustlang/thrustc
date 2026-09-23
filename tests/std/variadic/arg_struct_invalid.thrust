@@ -1,0 +1,16 @@
+/*
+ * Negative: arbitraryArgFrom cannot read a struct type from a va_list (E0057).
+ */
+
+struct Point {
+    x: s32,
+    y: s32
+}
+
+fn readPoint(args: ptr) void {
+    var p: Point = arbitraryArgFrom(args, Point);
+}
+
+fn main() s32 @public {
+    return 0;
+}

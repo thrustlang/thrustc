@@ -1,0 +1,8 @@
+/*
+ * Negative: arbitraryArgsStart is only available inside a variadic function.
+ */
+
+fn main() s32 @public {
+    var list: ptr = arbitraryArgsStart();
+    return 0;
+}

@@ -1509,6 +1509,21 @@ fn resolve_builtin<'parser>(
             failure,
             span,
         },
+        AstBuiltin::ArbitraryArgsStart { span } => AstBuiltin::ArbitraryArgsStart { span },
+        AstBuiltin::ArbitraryArgsCopy { source, span } => AstBuiltin::ArbitraryArgsCopy {
+            source: std::boxed::Box::new(self::resolve_ast(ctx, *source, templates, memo, output)),
+            span,
+        },
+        AstBuiltin::ArbitraryArgsEnd { list, span } => AstBuiltin::ArbitraryArgsEnd {
+            list: std::boxed::Box::new(self::resolve_ast(ctx, *list, templates, memo, output)),
+            span,
+        },
+        AstBuiltin::ArbitraryArgFrom { list, ty, span } => AstBuiltin::ArbitraryArgFrom {
+            list: std::boxed::Box::new(self::resolve_ast(ctx, *list, templates, memo, output)),
+            ty,
+            span,
+        },
+        AstBuiltin::ArbitraryArgsCount { span } => AstBuiltin::ArbitraryArgsCount { span },
         AstBuiltin::DeferredCompileTime {
             name,
             arguments,

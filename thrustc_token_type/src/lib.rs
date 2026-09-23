@@ -87,6 +87,7 @@ pub enum TokenType {
     Ignore,
     Public,
     EntryPoint,
+    NoArgCount,
     MinSize,
     NoInline,
     AlwaysInline,
@@ -214,6 +215,13 @@ pub enum TokenType {
     AtomicUnsignedMaximum,
     AtomicUnsignedMinimum,
     AtomicCompareAndSwap,
+
+    // -- Variadic Builtins --
+    ArbitraryArgsStart,
+    ArbitraryArgsCopy,
+    ArbitraryArgsEnd,
+    ArbitraryArgFrom,
+    ArbitraryArgsCount,
 
     // --- Types ---
     S8,

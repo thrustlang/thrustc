@@ -31,7 +31,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::{
     Type,
-    traits::{TypeExtensions, TypeIsExtensions, TypePointerExtensions},
+    traits::{ConstantTypeExtensions, TypeExtensions, TypeIsExtensions, TypePointerExtensions},
 };
 
 use crate::GeneralAnalyzer;
@@ -295,6 +295,30 @@ pub fn validate_node<'analyzer>(
 
                 Ok(())
             }
+
+            AstBuiltin::ArbitraryArgsStart { .. } => Ok(()),
+
+            AstBuiltin::ArbitraryArgsCopy { source, .. } => {
+                analyzer.analyze_expr(source)?;
+
+                Ok(())
+            }
+
+            AstBuiltin::ArbitraryArgsEnd { list, .. } => {
+                analyzer.analyze_expr(list)?;
+
+                Ok(())
+            }
+
+            AstBuiltin::ArbitraryArgFrom { list, ty, span } => {
+                analyzer.analyze_expr(list)?;
+
+                self::validate_variadic_argument_type(analyzer, ty, *span)?;
+
+                Ok(())
+            }
+
+            AstBuiltin::ArbitraryArgsCount { .. } => Ok(()),
         },
 
         Ast::AsmValue { .. }
@@ -494,6 +518,26 @@ pub fn validate_atomic_integer_operands(
                 value_type
             ),
             "Use an integer value as the atomic operation operand.".into(),
+            None,
+            span,
+        ));
+    }
+
+    Ok(())
+}
+
+pub fn validate_variadic_argument_type(
+    analyzer: &mut GeneralAnalyzer<'_>,
+    ty: &Type,
+    span: Span,
+) -> Result<(), CompilationIssue> {
+    let inner_ty: Type = ty.remove_all_constant_type();
+
+    if inner_ty.is_struct_type() || inner_ty.is_fixed_array_type() || inner_ty.is_array_type() {
+        analyzer.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0057,
+            "The 'arbitraryArgFrom' builtin cannot read a struct or array type from a variable arguments list.".into(),
+            "Use a pointer type such as ptr or ptr[T] to receive a struct or array.".into(),
             None,
             span,
         ));

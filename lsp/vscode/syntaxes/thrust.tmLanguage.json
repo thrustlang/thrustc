@@ -33,7 +33,7 @@
     },
     "attributes": {
       "name": "entity.other.attribute-name.thrust",
-      "match": "@(?:align|optFuzzing|noUnwind|noReturn|packed|heap|dealloc|deallocator|public|entrypoint|linkage|extern|arbitraryArgs|hot|minSize|alwaysInline|noInline|inline|safeStack|weakStack|strongStack|preciseFloatingPoint|convention|pure|thunk|cuda|constructor|destructor|if|elif|else|promote|asmAlignStack|asmSyntax|asmThrowErrors|asmSideEffects)\\b"
+      "match": "@(?:align|optFuzzing|noUnwind|noReturn|packed|heap|dealloc|deallocator|public|entrypoint|linkage|extern|arbitraryArgs|noArgCount|hot|minSize|alwaysInline|noInline|inline|safeStack|weakStack|strongStack|preciseFloatingPoint|convention|pure|thunk|cuda|constructor|destructor|if|elif|else|promote|asmAlignStack|asmSyntax|asmThrowErrors|asmSideEffects)\\b"
     },
     "strings": {
       "patterns": [
@@ -121,7 +121,7 @@
     },
     "builtins": {
       "name": "support.function.builtin.thrust",
-      "match": "\\b(halloc|memset|memmove|memcpy|abiSizeOf|bitSizeOf|abiAlignOf|arbitraryArg|arbitraryArgs|alignOf|sizeOf|staticAssert|compileError|compileWarning|file|fileLine|currentFuncName|isSigned|isUnsigned|isInteger|isFloat|isBool|isChar|isPointer|isArray|isFixedArray|isStruct|isVoid|isConst|isNumeric|isFunction|typeWidth|fieldCount|fixedArraySize|isSameType|isPtrLike|isFixedArrayOfSize|compilerVersion|debugBuild|stringLength|targetOS|targetArch|targetVendor|targetAbi|targetTriple|isLinux|isWindows|isDarwin|isApple|isAix|is64Bit|is32Bit|isBigEndian|isLittleEndian|isX86|isX8664|isArm|isAarch64|isRiscv64|isPpc|isPpc64|isMips64|isSystemz|isLoongarch64|isWasm|isElf|isMachO|isCoff|hasPosixThreads|hasSysvAbi|pointerWidth|isizeWidth|usizeWidth|pointerAlign|maxAlignment|targetCPU|targetCpuFeatures|hasFeature|hostOsName|hostArch|hostEndian|currentTimestamp)\\b\\s*(?=\\()"
+      "match": "\\b(halloc|memset|memmove|memcpy|abiSizeOf|bitSizeOf|abiAlignOf|arbitraryArg|arbitraryArgs|arbitraryArgsStart|arbitraryArgsCopy|arbitraryArgsEnd|arbitraryArgFrom|arbitraryArgsCount|atomicStore|atomicAdd|atomicSubtract|atomicAnd|atomicNand|atomicOr|atomicXor|atomicSignedMaximum|atomicSignedMinimum|atomicUnsignedMaximum|atomicUnsignedMinimum|atomicCompareAndSwap|alignOf|sizeOf|staticAssert|compileError|compileWarning|file|fileLine|currentFuncName|isSigned|isUnsigned|isInteger|isFloat|isBool|isChar|isPointer|isArray|isFixedArray|isStruct|isVoid|isConst|isNumeric|isFunction|typeWidth|fieldCount|fixedArraySize|isSameType|isPtrLike|isFixedArrayOfSize|compilerVersion|debugBuild|stringLength|targetOS|targetArch|targetVendor|targetAbi|targetTriple|isLinux|isWindows|isDarwin|isApple|isAix|is64Bit|is32Bit|isBigEndian|isLittleEndian|isX86|isX8664|isArm|isAarch64|isRiscv64|isPpc|isPpc64|isMips64|isSystemz|isLoongarch64|isWasm|isElf|isMachO|isCoff|hasPosixThreads|hasSysvAbi|pointerWidth|isizeWidth|usizeWidth|pointerAlign|maxAlignment|targetCPU|targetCpuFeatures|hasFeature|hostOsName|hostArch|hostEndian|currentTimestamp)\\b\\s*(?=\\()"
     },
     "constants": {
       "name": "variable.other.constant.thrust",

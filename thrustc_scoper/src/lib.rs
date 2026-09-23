@@ -524,6 +524,21 @@ impl<'scoper> Scoper<'scoper> {
                     self.analyze_local_node(new_value);
                 }
 
+                AstBuiltin::ArbitraryArgsCopy { source, .. } => {
+                    self.analyze_local_node(source);
+                }
+
+                AstBuiltin::ArbitraryArgsEnd { list, .. } => {
+                    self.analyze_local_node(list);
+                }
+
+                AstBuiltin::ArbitraryArgFrom { list, .. } => {
+                    self.analyze_local_node(list);
+                }
+
+                AstBuiltin::ArbitraryArgsStart { .. } => (),
+                AstBuiltin::ArbitraryArgsCount { .. } => (),
+
                 // No envuelven ninguna subexpresión: operan sobre
                 // tipos, no sobre valores.
                 AstBuiltin::Halloc { .. }

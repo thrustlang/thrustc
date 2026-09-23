@@ -258,6 +258,17 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
                 linter.analyze_expr(expected);
                 linter.analyze_expr(new_value);
             }
+            AstBuiltin::ArbitraryArgsCopy { source, .. } => {
+                linter.analyze_expr(source);
+            }
+            AstBuiltin::ArbitraryArgsEnd { list, .. } => {
+                linter.analyze_expr(list);
+            }
+            AstBuiltin::ArbitraryArgFrom { list, .. } => {
+                linter.analyze_expr(list);
+            }
+            AstBuiltin::ArbitraryArgsStart { .. } => (),
+            AstBuiltin::ArbitraryArgsCount { .. } => (),
             AstBuiltin::Halloc { .. }
             | AstBuiltin::AbiSizeOf { .. }
             | AstBuiltin::BitSizeOf { .. }

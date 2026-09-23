@@ -94,6 +94,16 @@ pub fn build_compiler_attributes<'parser>(
                 attributes.push(ThrustAttribute::Public(span));
             }
 
+            TokenType::NoArgCount => {
+                ctx.consume(
+                    TokenType::NoArgCount,
+                    CompilationIssueCode::E0001,
+                    "Expected '@noArgCount' attribute.".into(),
+                )?;
+
+                attributes.push(ThrustAttribute::NoArgCount(span));
+            }
+
             TokenType::AsmSyntax => {
                 ctx.consume(
                     TokenType::AsmSyntax,

@@ -201,6 +201,7 @@ impl TokenTypeAttributesExtensions for TokenType {
         matches!(
             self,
             TokenType::Ignore
+                | TokenType::NoArgCount
                 | TokenType::MinSize
                 | TokenType::NoInline
                 | TokenType::AlwaysInline
@@ -261,6 +262,11 @@ impl TokenTypeBuiltinExtensions for TokenType {
                 | TokenType::AtomicUnsignedMaximum
                 | TokenType::AtomicUnsignedMinimum
                 | TokenType::AtomicCompareAndSwap
+                | TokenType::ArbitraryArgsStart
+                | TokenType::ArbitraryArgsCopy
+                | TokenType::ArbitraryArgsEnd
+                | TokenType::ArbitraryArgFrom
+                | TokenType::ArbitraryArgsCount
         )
     }
 }
@@ -368,6 +374,7 @@ impl std::fmt::Display for TokenType {
             TokenType::Ignore => write!(f, "@arbitraryArgs"),
             TokenType::InlineHint => write!(f, "@inline"),
             TokenType::MinSize => write!(f, "@minSize"),
+            TokenType::NoArgCount => write!(f, "@noArgCount"),
             TokenType::NoInline => write!(f, "@noInline"),
             TokenType::PreciseFloats => write!(f, "@preciseFloatingPoint"),
             TokenType::Public => write!(f, "@public"),
@@ -472,6 +479,13 @@ impl std::fmt::Display for TokenType {
             TokenType::AtomicUnsignedMaximum => write!(f, "atomicUnsignedMaximum"),
             TokenType::AtomicUnsignedMinimum => write!(f, "atomicUnsignedMinimum"),
             TokenType::AtomicCompareAndSwap => write!(f, "atomicCompareAndSwap"),
+
+            // Variadic Builtins
+            TokenType::ArbitraryArgsStart => write!(f, "arbitraryArgsStart"),
+            TokenType::ArbitraryArgsCopy => write!(f, "arbitraryArgsCopy"),
+            TokenType::ArbitraryArgsEnd => write!(f, "arbitraryArgsEnd"),
+            TokenType::ArbitraryArgFrom => write!(f, "arbitraryArgFrom"),
+            TokenType::ArbitraryArgsCount => write!(f, "arbitraryArgsCount"),
 
             // Import
             TokenType::Import => write!(f, "import"),

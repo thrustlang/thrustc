@@ -46,6 +46,7 @@ impl std::fmt::Display for ThrustAttribute {
             ThrustAttribute::MinSize(..) => write!(f, "@minSize"),
             ThrustAttribute::Hot(..) => write!(f, "@hot"),
             ThrustAttribute::Ignore(..) => write!(f, "@arbitraryArgs"),
+            ThrustAttribute::NoArgCount(..) => write!(f, "@noArgCount"),
             ThrustAttribute::NoUnwind(..) => write!(f, "@noUnwind"),
             ThrustAttribute::NoReturn(..) => write!(f, "@noReturn"),
             ThrustAttribute::AsmThrow(..) => write!(f, "@asmThrow"),

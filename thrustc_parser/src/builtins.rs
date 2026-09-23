@@ -70,6 +70,12 @@ pub fn build_compiler_builtin<'parser>(
         }
         TokenType::AtomicCompareAndSwap => self::build_atomic_compare_and_swap(ctx),
 
+        TokenType::ArbitraryArgsStart => self::build_arbitrary_args_start(ctx),
+        TokenType::ArbitraryArgsCopy => self::build_arbitrary_args_copy(ctx),
+        TokenType::ArbitraryArgsEnd => self::build_arbitrary_args_end(ctx),
+        TokenType::ArbitraryArgFrom => self::build_arbitrary_arg_from(ctx),
+        TokenType::ArbitraryArgsCount => self::build_arbitrary_args_count(ctx),
+
         _ => {
             let token: &Token = ctx.advance()?;
             let lexeme: &str = token.get_lexeme();
@@ -116,6 +122,195 @@ pub fn build_atomic_ordering<'parser>(
     ctx.advance()?;
 
     Ok(ordering)
+}
+
+pub fn build_arbitrary_args_start<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let tk: &Token = ctx.consume(
+        TokenType::ArbitraryArgsStart,
+        CompilationIssueCode::E0001,
+        "Expected 'arbitraryArgsStart' keyword.".into(),
+    )?;
+
+    let span: Span = tk.get_span();
+
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    Ok(Ast::Builtin {
+        builtin: AstBuiltin::ArbitraryArgsStart { span },
+        kind: Type::Ptr {
+            subtype: None,
+            address_space: None,
+            span,
+        },
+        span,
+        id: NodeId::new(),
+    })
+}
+
+pub fn build_arbitrary_args_copy<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let tk: &Token = ctx.consume(
+        TokenType::ArbitraryArgsCopy,
+        CompilationIssueCode::E0001,
+        "Expected 'arbitraryArgsCopy' keyword.".into(),
+    )?;
+
+    let span: Span = tk.get_span();
+
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    let source: Ast = expressions::parse_expr(ctx)?;
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    Ok(Ast::Builtin {
+        builtin: AstBuiltin::ArbitraryArgsCopy {
+            source: source.into(),
+            span,
+        },
+        kind: Type::Ptr {
+            subtype: None,
+            address_space: None,
+            span,
+        },
+        span,
+        id: NodeId::new(),
+    })
+}
+
+pub fn build_arbitrary_args_end<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let tk: &Token = ctx.consume(
+        TokenType::ArbitraryArgsEnd,
+        CompilationIssueCode::E0001,
+        "Expected 'arbitraryArgsEnd' keyword.".into(),
+    )?;
+
+    let span: Span = tk.get_span();
+
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    let list: Ast = expressions::parse_expr(ctx)?;
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    Ok(Ast::Builtin {
+        builtin: AstBuiltin::ArbitraryArgsEnd {
+            list: list.into(),
+            span,
+        },
+        kind: Type::Void { span },
+        span,
+        id: NodeId::new(),
+    })
+}
+
+pub fn build_arbitrary_arg_from<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let tk: &Token = ctx.consume(
+        TokenType::ArbitraryArgFrom,
+        CompilationIssueCode::E0001,
+        "Expected 'arbitraryArgFrom' keyword.".into(),
+    )?;
+
+    let span: Span = tk.get_span();
+
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    let list: Ast = expressions::parse_expr(ctx)?;
+
+    ctx.consume(
+        TokenType::Comma,
+        CompilationIssueCode::E0001,
+        "Expected ','.".into(),
+    )?;
+
+    let ty: Type = typegeneration::build_type(ctx, true)?;
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    let kind: Type = ty.clone();
+
+    Ok(Ast::Builtin {
+        builtin: AstBuiltin::ArbitraryArgFrom {
+            list: list.into(),
+            ty,
+            span,
+        },
+        kind,
+        span,
+        id: NodeId::new(),
+    })
+}
+
+pub fn build_arbitrary_args_count<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    let tk: &Token = ctx.consume(
+        TokenType::ArbitraryArgsCount,
+        CompilationIssueCode::E0001,
+        "Expected 'arbitraryArgsCount' keyword.".into(),
+    )?;
+
+    let span: Span = tk.get_span();
+
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    Ok(Ast::Builtin {
+        builtin: AstBuiltin::ArbitraryArgsCount { span },
+        kind: Type::USize { span },
+        span,
+        id: NodeId::new(),
+    })
 }
 
 pub fn build_halloc<'parser>(

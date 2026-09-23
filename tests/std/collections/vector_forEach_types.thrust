@@ -1,0 +1,49 @@
+/*
+ * Exercises vector::forEach monomorphization across different element types:
+ * integers, floats and structs, each forwarding variadic arguments.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+directive "--disable-warnings=W0020";
+
+import std::collections::vector;
+
+struct Item {
+    weight: s32
+}
+
+static mut accum: s32 = 0;
+
+fn onInt(value: ptr[s32], args: ptr, argCount: usize) void {
+    accum = accum + value->[0];
+}
+
+fn onFloat(value: ptr[f64], args: ptr, argCount: usize) void {
+    accum = accum + value->[0] as s32;
+}
+
+fn onItem(value: ptr[Item], args: ptr, argCount: usize) void {
+    accum = accum + value->weight;
+}
+
+fn main() s32 @public {
+    var ints @dealloc: vector::Vector[s32] = vector::newVector[s32]();
+    vector::push(ref ints, 1);
+    vector::push(ref ints, 2);
+
+    var floats @dealloc: vector::Vector[f64] = vector::newVector[f64]();
+    vector::push(ref floats, 1.0);
+    vector::push(ref floats, 2.0);
+
+    var items @dealloc: vector::Vector[Item] = vector::newVector[Item]();
+    vector::push(ref items, new Item { weight: 10 });
+    vector::push(ref items, new Item { weight: 20 });
+
+    vector::forEach(ref ints, onInt, 1 as s32);
+    vector::forEach(ref floats, onFloat, 1 as s32);
+    vector::forEach(ref items, onItem, 1 as s32);
+
+    if accum != 36 { return 1; }
+
+    return 0;
+}

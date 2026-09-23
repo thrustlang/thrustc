@@ -24,6 +24,7 @@ use inkwell::module::Module;
 use inkwell::types::BasicTypeEnum;
 use inkwell::values::BasicValueEnum;
 use inkwell::values::FunctionValue;
+use inkwell::values::IntValue;
 use inkwell::values::PointerValue;
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
@@ -43,6 +44,7 @@ pub struct LLVMVariaticContext<'a, 'ctx> {
     diagnostician: Diagnostician,
     va_list_kind: VaListKind,
     current_va_list: Option<PointerValue<'ctx>>,
+    current_va_arg_count: Option<IntValue<'ctx>>,
 }
 
 impl<'a, 'ctx> LLVMVariaticContext<'a, 'ctx> {
@@ -63,6 +65,7 @@ impl<'a, 'ctx> LLVMVariaticContext<'a, 'ctx> {
             diagnostician: Diagnostician::new(file, options),
             va_list_kind,
             current_va_list: None,
+            current_va_arg_count: None,
         }
     }
 }
@@ -149,8 +152,17 @@ impl<'a, 'ctx> LLVMVariaticContext<'a, 'ctx> {
     pub fn emit_va_arg(&mut self, ty: BasicTypeEnum<'ctx>, span: Span) -> BasicValueEnum<'ctx> {
         let va_list: PointerValue<'ctx> = self.get_current_va_list(span);
 
+        self.emit_va_arg_from(va_list, ty, span)
+    }
+
+    pub fn emit_va_arg_from(
+        &mut self,
+        list: PointerValue<'ctx>,
+        ty: BasicTypeEnum<'ctx>,
+        span: Span,
+    ) -> BasicValueEnum<'ctx> {
         self.llvm_builder
-            .build_va_arg(va_list, ty, "")
+            .build_va_arg(list, ty, "")
             .unwrap_or_else(|_| {
                 crate::abort::abort_variatic_codegen(
                     self,
@@ -160,6 +172,83 @@ impl<'a, 'ctx> LLVMVariaticContext<'a, 'ctx> {
                     line!(),
                 )
             })
+    }
+
+    pub fn emit_va_copy(&mut self, source: PointerValue<'ctx>, span: Span) -> PointerValue<'ctx> {
+        let va_list_type: BasicTypeEnum<'ctx> =
+            self::build_va_list_llvm_type(self.llvm_context, self.va_list_kind);
+
+        let copy: PointerValue<'ctx> = self
+            .llvm_builder
+            .build_alloca(va_list_type, "")
+            .unwrap_or_else(|_| {
+                crate::abort::abort_variatic_codegen(
+                    self,
+                    "Failed to allocate a variable arguments copy!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        let va_copy_intrinsic: FunctionValue<'ctx> = self
+            .llvm_module
+            .get_function("llvm.va_copy")
+            .unwrap_or_else(|| {
+                self.llvm_module.add_function(
+                    "llvm.va_copy",
+                    self.llvm_context.void_type().fn_type(
+                        &[
+                            self.llvm_context.ptr_type(AddressSpace::default()).into(),
+                            self.llvm_context.ptr_type(AddressSpace::default()).into(),
+                        ],
+                        false,
+                    ),
+                    None,
+                )
+            });
+
+        self.llvm_builder
+            .build_call(va_copy_intrinsic, &[copy.into(), source.into()], "")
+            .unwrap_or_else(|_| {
+                crate::abort::abort_variatic_codegen(
+                    self,
+                    "Failed to compile the 'llvm.va_copy' intrinsic call!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        copy
+    }
+
+    pub fn emit_va_end_on(&mut self, list: PointerValue<'ctx>, span: Span) {
+        let va_end_intrinsic: FunctionValue<'ctx> = self
+            .llvm_module
+            .get_function("llvm.va_end")
+            .unwrap_or_else(|| {
+                self.llvm_module.add_function(
+                    "llvm.va_end",
+                    self.llvm_context.void_type().fn_type(
+                        &[self.llvm_context.ptr_type(AddressSpace::default()).into()],
+                        false,
+                    ),
+                    None,
+                )
+            });
+
+        self.llvm_builder
+            .build_call(va_end_intrinsic, &[list.into()], "")
+            .unwrap_or_else(|_| {
+                crate::abort::abort_variatic_codegen(
+                    self,
+                    "Failed to compile the 'llvm.va_end' intrinsic call!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
     }
 }
 
@@ -182,6 +271,23 @@ impl<'a, 'ctx> LLVMVariaticContext<'a, 'ctx> {
     #[inline]
     pub fn unset_current_va_list(&mut self) {
         self.current_va_list = None;
+    }
+
+    #[inline]
+    pub fn set_current_va_arg_count(&mut self, count: IntValue<'ctx>) {
+        self.current_va_arg_count = Some(count);
+    }
+
+    pub fn get_current_va_arg_count(&mut self, span: Span) -> IntValue<'ctx> {
+        self.current_va_arg_count.unwrap_or_else(|| {
+            crate::abort::abort_variatic_codegen(
+                self,
+                "Failed to get the current variable arguments count! The 'arbitraryArgsCount' builtin is only available inside a variadic function with a body.",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        })
     }
 }
 

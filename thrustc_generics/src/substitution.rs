@@ -1043,6 +1043,21 @@ fn substitute_builtin<'ast>(builtin: AstBuiltin<'ast>, env: &TypeEnv) -> AstBuil
             failure,
             span,
         },
+        AstBuiltin::ArbitraryArgsStart { span } => AstBuiltin::ArbitraryArgsStart { span },
+        AstBuiltin::ArbitraryArgsCopy { source, span } => AstBuiltin::ArbitraryArgsCopy {
+            source: std::boxed::Box::new(self::substitute_ast(*source, env)),
+            span,
+        },
+        AstBuiltin::ArbitraryArgsEnd { list, span } => AstBuiltin::ArbitraryArgsEnd {
+            list: std::boxed::Box::new(self::substitute_ast(*list, env)),
+            span,
+        },
+        AstBuiltin::ArbitraryArgFrom { list, ty, span } => AstBuiltin::ArbitraryArgFrom {
+            list: std::boxed::Box::new(self::substitute_ast(*list, env)),
+            ty: self::substitute(&ty, env),
+            span,
+        },
+        AstBuiltin::ArbitraryArgsCount { span } => AstBuiltin::ArbitraryArgsCount { span },
         AstBuiltin::DeferredCompileTime {
             name,
             arguments,
@@ -1423,6 +1438,18 @@ fn collect_unresolved_builtin_hints(
             self::collect_unresolved_ast_hints(expected, out);
             self::collect_unresolved_ast_hints(new_value, out);
         }
+        AstBuiltin::ArbitraryArgFrom { list, ty, .. } => {
+            self::collect_unresolved_type_hints(ty, out);
+            self::collect_unresolved_ast_hints(list, out);
+        }
+        AstBuiltin::ArbitraryArgsCopy { source, .. } => {
+            self::collect_unresolved_ast_hints(source, out);
+        }
+        AstBuiltin::ArbitraryArgsEnd { list, .. } => {
+            self::collect_unresolved_ast_hints(list, out);
+        }
+        AstBuiltin::ArbitraryArgsStart { .. } => (),
+        AstBuiltin::ArbitraryArgsCount { .. } => (),
         AstBuiltin::ArbitraryArgs { .. } => (),
         AstBuiltin::DeferredCompileTime { arguments, .. } => {
             for argument in arguments {

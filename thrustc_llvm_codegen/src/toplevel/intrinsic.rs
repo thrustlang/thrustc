@@ -70,6 +70,8 @@ pub fn compile<'ctx>(
         return_type,
         parameters,
         ignore_args,
+        false,
+        false,
         CompilerFunctionVariant::CompilerIntrinsic,
     );
 
