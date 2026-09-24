@@ -1,0 +1,10 @@
+fn swap [T] (a: T, b: T) T {
+    return b;
+}
+
+fn main() s32 @public {
+    if swap(1, 2) != 2 { return 1; }
+    if swap[u64](3, 4) != 4 { return 2; }
+    if swap[f32](5.0 as f32, 6.0 as f32) as s32 != 6 { return 3; }
+    return 0;
+}

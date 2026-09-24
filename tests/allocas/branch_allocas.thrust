@@ -1,0 +1,24 @@
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0030";
+directive "--disable-warnings=W0021";
+
+fn branchLocals(flag: s32) s32 @public {
+    var base: s32 = 10;
+
+    if flag > 0 {
+        var extra: s32 = base + 5;
+        base = base + extra;
+    } else {
+        var extra: s32 = base * 2;
+        base = base - extra;
+    }
+
+    return base;
+}
+
+fn main() s32 @public {
+    if branchLocals(1) != 25 { return 1; }
+    if branchLocals(-1) != -10 { return 2; }
+    return 0;
+}

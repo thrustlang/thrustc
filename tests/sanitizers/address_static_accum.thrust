@@ -1,0 +1,22 @@
+/*
+ * Sanitizer build with repeated store/load.
+ */
+
+directive "--sanitizer=address";
+directive "--disable-warnings=W0020";
+
+static mut counter: s32 = 0;
+
+fn bump() void {
+    counter = counter + 1;
+}
+
+fn main() s32 @public {
+    bump();
+    bump();
+    bump();
+
+    if counter != 3 { return 1; }
+
+    return 0;
+}

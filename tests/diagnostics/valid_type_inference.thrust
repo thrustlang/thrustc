@@ -1,0 +1,17 @@
+/*
+ * Positive diagnostic: correct type inference compiles without errors.
+ */
+
+fn identity(value: s32) s32 {
+    return value;
+}
+
+fn main() s32 @public {
+    var a: s32 = 5;
+    var b := identity(a);
+    var c := a + b;
+
+    if c != 10 { return 1; }
+
+    return 0;
+}

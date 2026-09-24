@@ -1,0 +1,13 @@
+enum Flags {
+    None: u32 = 0;
+    Read: u32 = 1;
+    Write: u32 = 2;
+    Exec: u32 = 4;
+}
+
+fn main() s32 @public {
+    var combined: u32 = Flags=>Read + Flags=>Write + Flags=>Exec;
+    if combined != 7 { return 1; }
+    if Flags=>None != 0 { return 2; }
+    return 0;
+}

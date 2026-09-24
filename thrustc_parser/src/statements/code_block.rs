@@ -61,11 +61,13 @@ pub fn parse_code_block_stmt<'parser>(
         if statement.is_defer_keyword() {
             post.push(statement);
         } else {
-            if let Some(dealloc) = self::build_dealloc_defer(ctx, &statement)? {
-                post.push(dealloc);
-            }
+            let dealloc: Option<Ast> = self::build_dealloc_defer(ctx, &statement)?;
 
             nodes.push(statement);
+
+            if let Some(dealloc) = dealloc {
+                nodes.push(dealloc);
+            }
         }
     }
 
@@ -100,11 +102,13 @@ pub fn parse_code_block_without_start_stmt<'parser>(
         if statement.is_defer_keyword() {
             post.push(statement);
         } else {
-            if let Some(dealloc) = self::build_dealloc_defer(ctx, &statement)? {
-                post.push(dealloc);
-            }
+            let dealloc: Option<Ast> = self::build_dealloc_defer(ctx, &statement)?;
 
             nodes.push(statement);
+
+            if let Some(dealloc) = dealloc {
+                nodes.push(dealloc);
+            }
         }
     }
 

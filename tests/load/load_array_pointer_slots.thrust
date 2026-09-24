@@ -1,0 +1,18 @@
+/*
+ * load from an array slot holding pointers.
+ */
+
+fn main() s32 @public {
+    var a: s32 = 10;
+    var b: s32 = 20;
+
+    var arr: array[ptr[s32]; 2] = fixed[ref a, ref b];
+
+    var first: ptr[s32] = load arr[0];
+    var second: ptr[s32] = load arr[1];
+
+    if (deref first) != 10 { return 1; }
+    if (deref second) != 20 { return 2; }
+
+    return 0;
+}

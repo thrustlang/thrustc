@@ -1,0 +1,18 @@
+/*
+ * Debug info: integer conversions and casts.
+ */
+
+fn toBytes(value: s64) u32 {
+    var truncated: u32 = value as u32;
+    return truncated;
+}
+
+fn main() s32 @public {
+    var small: u32 = toBytes(300);
+    if small != 300 { return 1; }
+
+    var wide: u64 = 123 as u64;
+    if wide != 123 { return 2; }
+
+    return 0;
+}

@@ -1,0 +1,19 @@
+fn main() s32 @public {
+    var x: s32 = 0xFF;
+    x &= 0x0F;
+    if x != 0x0F { return 1; }
+
+    x |= 0xF0;
+    if x != 0xFF { return 2; }
+
+    x ^= 0x0F;
+    if x != 0xF0 { return 3; }
+
+    x <<= 4;
+    if x != 0xF00 { return 4; }
+
+    x >>= 8;
+    if x != 0xF { return 5; }
+
+    return 0;
+}

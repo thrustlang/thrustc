@@ -1,0 +1,14 @@
+fn bigger [T] (a: T, b: T) T {
+    if a > b {
+        return a;
+    }
+
+    return b;
+}
+
+fn main() s32 @public {
+    if bigger(1, 2) != 2 { return 1; }
+    if bigger(5, 3) != 5 { return 2; }
+    if bigger(7, 7) != 7 { return 3; }
+    return 0;
+}

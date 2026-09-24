@@ -1,0 +1,12 @@
+/*
+ * Compile-time builtins: isPtrLike on pointer and array types.
+ */
+
+fn main() s32 @public {
+    if !isPtrLike(ptr) { return 1; }
+    if !isPtrLike(ptr[u8]) { return 2; }
+    if !isPtrLike(ptr[array[char]]) { return 3; }
+    if isPtrLike(s32) { return 5; }
+    if isPtrLike(bool) { return 6; }
+    return 0;
+}

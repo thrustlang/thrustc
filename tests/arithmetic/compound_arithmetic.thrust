@@ -1,0 +1,18 @@
+fn main() s32 @public {
+    var a: s32 = 100;
+    var b: s32 = 17;
+
+    a -= b;
+    if a != 83 { return 1; }
+
+    a *= 2;
+    if a != 166 { return 2; }
+
+    a /= 2;
+    if a != 83 { return 3; }
+
+    a %= 10;
+    if a != 3 { return 4; }
+
+    return 0;
+}

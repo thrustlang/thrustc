@@ -1,0 +1,21 @@
+/*
+ * WebAssembly ABI: structs with mixed members are passed byval.
+ */
+
+struct Mixed {
+    a: u32,
+    b: f64,
+    c: bool
+}
+
+fn identity(value: Mixed) Mixed @public @convention("C") {
+    return value;
+}
+
+fn consume(value: Mixed) void @public @convention("C") {
+    return;
+}
+
+fn main() s32 @public {
+    return 0;
+}

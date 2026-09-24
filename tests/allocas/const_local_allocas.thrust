@@ -1,0 +1,18 @@
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0030";
+directive "--disable-warnings=W0021";
+
+fn constLocals(seed: s32) s32 @public {
+    const OFFSET: s32 = 100;
+    const SCALE: s32 = 2;
+
+    var local: s32 = seed * SCALE;
+
+    return local + OFFSET;
+}
+
+fn main() s32 @public {
+    if constLocals(5) != 110 { return 1; }
+    return 0;
+}

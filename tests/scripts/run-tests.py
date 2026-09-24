@@ -169,6 +169,7 @@ def should_skip_path(path: Path, tests_dir: Path) -> bool:
         "scripts",
         "build",
         "stdroot",
+        "stress",
     }
 
     relative_parts = path.relative_to(tests_dir).parts

@@ -1,0 +1,12 @@
+struct Box {
+    value: s32
+}
+
+fn main() s32 @public {
+    var box := new Box { value: 41 };
+    var sum: s32 = box->value + 1;
+
+    if sum != 42 { return 1; }
+
+    return 0;
+}

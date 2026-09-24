@@ -1,0 +1,25 @@
+/*
+ * Exercises std::collections::stack push/pop balance.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::stack;
+
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var values := stack::newStack[s32]();
+
+    stack::push(ref values, 1);
+    stack::push(ref values, 2);
+    stack::push(ref values, 3);
+
+    if stack::pop(ref values) != 3 { return 1; }
+    if stack::pop(ref values) != 2 { return 2; }
+    if stack::pop(ref values) != 1 { return 3; }
+    if !stack::isEmpty(ref values) { return 4; }
+
+    stack::dropStack(ref values);
+
+    return 0;
+}

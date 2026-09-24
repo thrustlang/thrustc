@@ -1,0 +1,12 @@
+import "../modules/module_struct.thrust" as structs;
+import "../modules/module_only.thrust" only { stack };
+
+fn main() s32 @public {
+    var v: structs::Vector = new structs::Vector { a: 1, b: 2 };
+
+    if v->a != 1 { return 1; }
+    if v->b != 2 { return 2; }
+    if stack(5) != 5 { return 3; }
+
+    return 0;
+}

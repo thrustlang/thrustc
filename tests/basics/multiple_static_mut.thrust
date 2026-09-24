@@ -1,0 +1,10 @@
+static mut first: s32 = 1;
+static mut second: s32 = 2;
+static mut third: s32 = 3;
+
+fn main() s32 @public {
+    if first != 1 { return 1; }
+    if second != 2 { return 2; }
+    if third != 3 { return 3; }
+    return 0;
+}

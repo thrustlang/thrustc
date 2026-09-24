@@ -1,0 +1,10 @@
+import "../modules/module_only.thrust" as mod;
+
+fn main() s32 @public {
+    var a: s32 = mod::stack(1);
+    var b: s32 = mod::stack(2);
+
+    if a + b != 3 { return 1; }
+
+    return 0;
+}

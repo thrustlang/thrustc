@@ -1,0 +1,11 @@
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(true) var a: s32 = 5; @else var a: s32 = 100;
+
+    count += a;
+
+    if count != 5 { return 1; }
+
+    return 0;
+}

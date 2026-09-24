@@ -1,0 +1,18 @@
+/*
+ * Exercises std::ffi::c::int atoi and strtol.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::ffi::c::int as cint;
+
+fn main() s32 @public {
+    if cint::atoi("123") != 123 { return 1; }
+    if cint::atoi("-17") != -17 { return 2; }
+
+    var end: ptr[ptr] = nullptr;
+    var parsed: s64 = cint::strtol("255", ref end, 10);
+
+    if parsed != 255 { return 3; }
+
+    return 0;
+}

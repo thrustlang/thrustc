@@ -1,0 +1,23 @@
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0024";
+
+import "module_enum.thrust" as enumAlias;
+
+fn pick(value: s32) u32 {
+    if value == 0 {
+        return enumAlias::Status=>Ok;
+    }
+
+    if value == 1 {
+        return enumAlias::Status=>Warning;
+    }
+
+    return enumAlias::Status=>Error;
+}
+
+fn main() s32 @public {
+    if pick(0) != 0 { return 1; }
+    if pick(1) != 1 { return 2; }
+    if pick(2) != 2 { return 3; }
+    return 0;
+}

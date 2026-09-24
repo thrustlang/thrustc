@@ -1,0 +1,22 @@
+enum Digit {
+    Zero: u32 = 0;
+    One: u32 = 1;
+    Two: u32 = 2;
+    Three: u32 = 3;
+    Four: u32 = 4;
+}
+
+fn toDigit(value: u32) u32 {
+    if value == 0 { return Digit=>Zero; }
+    if value == 1 { return Digit=>One; }
+    if value == 2 { return Digit=>Two; }
+    if value == 3 { return Digit=>Three; }
+    return Digit=>Four;
+}
+
+fn main() s32 @public {
+    if toDigit(0) != 0 { return 1; }
+    if toDigit(2) != 2 { return 2; }
+    if toDigit(4) != 4 { return 3; }
+    return 0;
+}

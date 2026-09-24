@@ -1,0 +1,21 @@
+/*
+ * Loop that must be optimizable to a constant via induction variable
+ * elimination. Verifies default optimization does not break correctness.
+ */
+
+fn sumTo(limit: s32) s32 {
+    var total: s32 = 0;
+    var i: s32 = 0;
+
+    while i < limit {
+        total += i;
+        i += 1;
+    }
+
+    return total;
+}
+
+fn main() s32 @public {
+    if sumTo(100) != 4950 { return 1; }
+    return 0;
+}

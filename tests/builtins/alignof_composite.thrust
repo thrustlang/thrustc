@@ -1,0 +1,17 @@
+/*
+ * Compile-time builtins: alignOf on composite types.
+ */
+
+struct triple {
+    a: u8,
+    b: u16,
+    c: u32
+}
+
+fn main() s32 @public {
+    if alignOf(triple) != 4 { return 1; }
+    if sizeOf(triple) != 8 { return 2; }
+    if alignOf(array[u32; 2]) != alignOf(u32) { return 3; }
+    if alignOf(ptr) != sizeOf(ptr) { return 4; }
+    return 0;
+}

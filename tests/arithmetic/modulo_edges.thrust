@@ -1,0 +1,15 @@
+fn main() s32 @public {
+    var value: s32 = 7 % 3;
+    if value != 1 { return 1; }
+
+    value = -7 % 3;
+    if value != -1 { return 2; }
+
+    value = 7 % -3;
+    if value != 1 { return 3; }
+
+    var big: s64 = 1000000000 % 7;
+    if big != 6 { return 4; }
+
+    return 0;
+}

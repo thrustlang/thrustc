@@ -1,0 +1,15 @@
+/*
+ * Debug info: deeply nested expressions.
+ */
+
+fn combine(a: s32, b: s32) s32 {
+    var left: s32 = (a + b) * 2;
+    var right: s32 = (a - b) * 3;
+
+    return left + right;
+}
+
+fn main() s32 @public {
+    if combine(5, 2) != 23 { return 1; }
+    return 0;
+}

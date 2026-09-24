@@ -1,0 +1,16 @@
+struct Wrapper {
+    data: ptr[array[s32; 4]]
+}
+
+fn sum(w: ptr[Wrapper]) s32 {
+    return w->data->[0] + w->data->[1] + w->data->[2] + w->data->[3];
+}
+
+fn main() s32 @public {
+    var arr: array[s32; 4] = fixed[1, 2, 3, 4];
+    var v := new Wrapper { data: ref arr };
+
+    if sum(ref v) != 10 { return 1; }
+
+    return 0;
+}

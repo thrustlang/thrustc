@@ -1,0 +1,12 @@
+/*
+ * Conditional user imports: @if / @else selection with @else branch.
+ */
+
+@if(isWindows()) import "mod_a.thrust" only { from_mod_a };
+@else import "mod_b.thrust" only { from_mod_b };
+
+fn main() s32 @public {
+    if from_mod_b() != 2 { return 1; }
+
+    return 0;
+}

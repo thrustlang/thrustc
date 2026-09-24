@@ -1,0 +1,13 @@
+fn main() s32 @public {
+    var atomicRelax counter: u64 = 100;
+
+    var old: u64 = atomicStore(counter, 0);
+    if old != 100 { return 1; }
+    if counter != 0 { return 2; }
+
+    old = atomicStore(counter, 5);
+    if old != 0 { return 3; }
+    if counter != 5 { return 4; }
+
+    return 0;
+}

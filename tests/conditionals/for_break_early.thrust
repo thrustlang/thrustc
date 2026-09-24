@@ -1,0 +1,15 @@
+fn main() s32 @public {
+    var sum: s32 = 0;
+
+    for var i: s32 = 0; i < 10; i += 1; {
+        if i == 3 {
+            break;
+        }
+
+        sum += i;
+    }
+
+    if sum != 3 { return 1; }
+
+    return 0;
+}

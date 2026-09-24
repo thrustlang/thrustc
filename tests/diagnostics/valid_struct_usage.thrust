@@ -1,0 +1,18 @@
+/*
+ * Positive diagnostic: well-formed struct construction compiles.
+ */
+
+struct Point {
+    x: s32,
+    y: s32
+}
+
+fn main() s32 @public {
+    var p := new Point { x: 3, y: 4 };
+    var q := new Point { y: 1, x: 2 };
+
+    if p->x + q->x != 5 { return 1; }
+    if p->y + q->y != 5 { return 2; }
+
+    return 0;
+}

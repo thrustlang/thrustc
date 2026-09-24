@@ -1,0 +1,19 @@
+/*
+ * Exercises std::float parse helpers on CString inputs.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::float;
+
+fn main() s32 @public {
+    var native: CString = "12.5";
+
+    if float::parse[f64](native) != 12.5 { return 1; }
+    if float::parse[f32](native) as f64 != 12.5 { return 2; }
+
+    var positive: float::ParseF64Result = float::parseF64CString(native);
+    if !(positive->ok) { return 3; }
+    if positive->value != 12.5 { return 4; }
+
+    return 0;
+}

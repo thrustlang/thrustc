@@ -1,0 +1,23 @@
+/*
+ * Debug info: local variable mutation tracked across branches.
+ */
+
+fn classify(flag: s32) s32 {
+    var result: s32 = 0;
+
+    if flag > 0 {
+        result = 10;
+    } else {
+        result = -10;
+    }
+
+    var doubled: s32 = result * 2;
+
+    return doubled;
+}
+
+fn main() s32 @public {
+    if classify(1) != 20 { return 1; }
+    if classify(-1) != -20 { return 2; }
+    return 0;
+}

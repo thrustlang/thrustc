@@ -1,0 +1,16 @@
+fn first() s32 {
+    return 1;
+}
+
+fn second() s32 {
+    return first() + 1;
+}
+
+fn third() s32 {
+    return second() + 1;
+}
+
+fn main() s32 @public {
+    if third() != 3 { return 1; }
+    return 0;
+}

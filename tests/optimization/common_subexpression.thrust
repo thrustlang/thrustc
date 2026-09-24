@@ -1,0 +1,16 @@
+/*
+ * Global value numbering: common subexpression reuse.
+ */
+
+fn compute(a: s32, b: s32) s32 {
+    var common: s32 = a * b;
+    var first: s32 = common + 1;
+    var second: s32 = common + 2;
+
+    return first + second;
+}
+
+fn main() s32 @public {
+    if compute(3, 4) != 27 { return 1; }
+    return 0;
+}

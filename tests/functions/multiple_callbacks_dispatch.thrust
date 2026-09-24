@@ -1,0 +1,17 @@
+fn apply(value: s32, callback: Fn[s32] -> s32) s32 {
+    return callback(value);
+}
+
+fn addOne(value: s32) s32 {
+    return value + 1;
+}
+
+fn addTwo(value: s32) s32 {
+    return value + 2;
+}
+
+fn main() s32 @public {
+    if apply(10, addOne) != 11 { return 1; }
+    if apply(10, addTwo) != 12 { return 2; }
+    return 0;
+}

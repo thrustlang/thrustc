@@ -1,0 +1,9 @@
+fn main() s32 @public {
+    if !(5 > 3) { return 1; }
+    if !(5 >= 5) { return 2; }
+    if !(3 < 5) { return 3; }
+    if !(3 <= 3) { return 4; }
+    if !(4 == 4) { return 5; }
+    if !(4 != 5) { return 6; }
+    return 0;
+}

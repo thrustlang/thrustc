@@ -1,0 +1,14 @@
+fn identity(value: ptr) ptr {
+    return value;
+}
+
+fn main() s32 @public {
+    var a: s32 = 42;
+    var p: ptr[s32] = ref a;
+    var u: ptr = p as ptr;
+
+    var q: ptr = identity(u);
+
+    if q != u { return 1; }
+    return 0;
+}

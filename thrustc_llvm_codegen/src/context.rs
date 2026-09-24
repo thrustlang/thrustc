@@ -32,6 +32,7 @@ use inkwell::values::BasicValueEnum;
 use inkwell::values::GlobalValue;
 use inkwell::values::PointerValue;
 
+use thrustc_ast::Ast;
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::FileOptions;
@@ -89,6 +90,8 @@ pub struct LLVMCodeGenContext<'a, 'ctx> {
     current_function: Option<LLVMFunction<'ctx>>,
     function_stack_protector_ptr: Option<LLVMStackProtectorPointer<'ctx>>,
     variatic_context: LLVMVariaticContext<'a, 'ctx>,
+
+    pending_defer_scopes: Vec<&'ctx [thrustc_ast::Ast<'ctx>]>,
 
     expression_optimizations: LLVMExpressionOptimization,
 
@@ -162,6 +165,8 @@ impl<'a, 'ctx> LLVMCodeGenContext<'a, 'ctx> {
             current_function: None,
             function_stack_protector_ptr: None,
             variatic_context,
+
+            pending_defer_scopes: Vec::with_capacity(u8::MAX as usize),
 
             expression_optimizations: LLVMExpressionOptimization::new(),
 
@@ -320,6 +325,47 @@ impl LLVMCodeGenContext<'_, '_> {
         self.table.end_scope();
 
         self.pop_dbg_block_data();
+    }
+}
+
+impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
+    #[inline]
+    pub fn push_pending_defer_scope(&mut self, scope: &'ctx [Ast<'ctx>]) {
+        self.pending_defer_scopes.push(scope);
+    }
+
+    #[inline]
+    pub fn push_pending_defer_node(&mut self, node: &'ctx Ast<'ctx>) {
+        self.pending_defer_scopes.push(std::slice::from_ref(node));
+    }
+
+    #[inline]
+    pub fn pop_pending_defer_scope(&mut self) {
+        self.pending_defer_scopes.pop();
+    }
+
+    #[inline]
+    pub fn pending_defer_scope_depth(&self) -> usize {
+        self.pending_defer_scopes.len()
+    }
+}
+
+impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
+    #[inline]
+    pub fn take_pending_defer_scopes(&mut self) -> Vec<&'ctx [Ast<'ctx>]> {
+        std::mem::take(&mut self.pending_defer_scopes)
+    }
+
+    #[inline]
+    pub fn set_pending_defer_scopes(&mut self, scopes: Vec<&'ctx [Ast<'ctx>]>) {
+        self.pending_defer_scopes = scopes;
+    }
+}
+
+impl<'ctx> LLVMCodeGenContext<'_, 'ctx> {
+    #[inline]
+    pub fn get_pending_defer_scopes(&self) -> &[&'ctx [Ast<'ctx>]] {
+        &self.pending_defer_scopes
     }
 }
 

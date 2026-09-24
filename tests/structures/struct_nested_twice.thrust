@@ -1,0 +1,17 @@
+struct Inner {
+    value: s32
+}
+
+struct Outer {
+    inner: Inner,
+    extra: s32
+}
+
+fn main() s32 @public {
+    var inner := new Inner { value: 5 };
+    var outer := new Outer { inner: inner, extra: 10 };
+
+    if outer->inner.value + outer->extra != 15 { return 1; }
+
+    return 0;
+}

@@ -1,0 +1,19 @@
+struct Wide {
+    a: u64,
+    b: u64,
+    c: u64,
+    d: u64
+}
+
+fn make() Wide {
+    return new Wide { a: 8, b: 9, c: 10, d: 11 };
+}
+
+fn main() s32 @public {
+    var v := make();
+    if v->a != 8 { return 1; }
+    if v->b != 9 { return 2; }
+    if v->c != 10 { return 3; }
+    if v->d != 11 { return 4; }
+    return 0;
+}

@@ -1,0 +1,24 @@
+/*
+ * Debug info: struct fields and pointer dereferences.
+ */
+
+struct Point {
+    x: s32,
+    y: s32
+}
+
+fn movePoint(p: ptr[Point]) void {
+    p->x = p->x + 1;
+    p->y = p->y + 2;
+}
+
+fn main() s32 @public {
+    var point := new Point { x: 1, y: 1 };
+
+    movePoint(ref point);
+
+    if point->x != 2 { return 1; }
+    if point->y != 3 { return 2; }
+
+    return 0;
+}

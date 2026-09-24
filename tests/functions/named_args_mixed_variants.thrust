@@ -1,0 +1,15 @@
+fn add(a: s32, b: s32) s32 @public {
+    return a + b;
+}
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var x: s32 = add(b = 5, a = 3);
+    var y: s32 = add(1, b = 2);
+    var z: s32 = add(a = 7, b = 8);
+
+    if x != 8 { return 1; }
+    if y != 3 { return 2; }
+    if z != 15 { return 3; }
+
+    return 0;
+}

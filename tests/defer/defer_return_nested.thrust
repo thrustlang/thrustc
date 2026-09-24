@@ -1,0 +1,32 @@
+/*
+ * defer registered in an outer scope must run when a return happens inside a
+ * nested block. Returns 0 on success, non-zero on failure.
+ */
+
+static mut trace: s32 = 0;
+
+fn add(value: s32) void {
+    trace = trace * 10 + value;
+}
+
+fn run(flag: s32) s32 {
+    defer add(1);
+
+    if flag > 0 {
+        return 10;
+    }
+
+    return 20;
+}
+
+fn main() s32 @public {
+    if run(1) != 10 { return 1; }
+    if trace != 1 { return 2; }
+
+    trace = 0;
+
+    if run(0) != 20 { return 3; }
+    if trace != 1 { return 4; }
+
+    return 0;
+}

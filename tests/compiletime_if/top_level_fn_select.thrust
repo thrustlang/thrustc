@@ -1,0 +1,6 @@
+@if(true) fn active() s32 { return 1; } @else fn inactive() s32 { return 100; }
+
+fn main() s32 @public {
+    if active() != 1 { return 1; }
+    return 0;
+}

@@ -1,0 +1,13 @@
+fn main() s32 @public {
+    var small: f32 = 1.5 as f32;
+    var wide: f64 = small as f64;
+    var back: f32 = wide as f32;
+
+    if back as f64 != 1.5 { return 1; }
+
+    var integer: s32 = wide as s32;
+
+    if integer != 1 { return 2; }
+
+    return 0;
+}

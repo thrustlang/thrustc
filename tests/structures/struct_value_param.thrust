@@ -1,0 +1,16 @@
+struct Rect {
+    width: s32,
+    height: s32
+}
+
+fn area(r: Rect) s32 {
+    return r.width * r.height;
+}
+
+fn main() s32 @public {
+    var rect := new Rect { width: 4, height: 5 };
+
+    if area(rect) != 20 { return 1; }
+
+    return 0;
+}

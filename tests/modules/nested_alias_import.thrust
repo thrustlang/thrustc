@@ -1,0 +1,9 @@
+import "module_d.thrust" as nested;
+
+fn main() s32 @public {
+    var value: nested::ext::my::MyU16 = 5;
+
+    if value != 5 { return 1; }
+
+    return 0;
+}

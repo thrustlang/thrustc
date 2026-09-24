@@ -1,0 +1,17 @@
+enum Level {
+    Low: s32 = -1;
+    Medium: s32 = 0;
+    High: s32 = 1;
+}
+
+fn main() s32 @public {
+    if Level=>Low != -1 { return 1; }
+    if Level=>Medium != 0 { return 2; }
+    if Level=>High != 1 { return 3; }
+
+    var value: s32 = Level=>Low;
+    if value < 0 { value = value * -1; }
+    if value != 1 { return 4; }
+
+    return 0;
+}

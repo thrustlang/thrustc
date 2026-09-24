@@ -1,0 +1,20 @@
+/*
+ * Exercises std::math rounding helpers.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::math;
+
+fn main() s32 @public {
+    if math::floorValue(2.0) != 2.0 { return 1; }
+    if math::ceiling(2.0) != 2.0 { return 2; }
+    if math::truncate(2.0) != 2.0 { return 3; }
+    if math::roundValue(2.0) != 2.0 { return 4; }
+    if math::nearestInteger(2.0) != 2.0 { return 5; }
+
+    if math::floorValue(-2.0) != -2.0 { return 6; }
+    if math::ceiling(-2.0) != -2.0 { return 7; }
+    if math::truncate(-2.0) != -2.0 { return 8; }
+
+    return 0;
+}

@@ -1,0 +1,13 @@
+fn add(a: s32, b: s32) s32 {
+    return a + b;
+}
+
+fn main() s32 @public {
+    var x: s32 = add(2, 3);
+    var y: s32 = add(x, 4);
+    var z: s32 = add(y, 5);
+
+    if z != 14 { return 1; }
+
+    return 0;
+}

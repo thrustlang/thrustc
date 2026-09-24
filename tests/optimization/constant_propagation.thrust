@@ -1,0 +1,17 @@
+/*
+ * Constant propagation across a chain of arithmetic operations.
+ */
+
+fn compute() s32 {
+    var a: s32 = 2;
+    var b: s32 = a * 3;
+    var c: s32 = b + 4;
+    var d: s32 = c * 5;
+
+    return d;
+}
+
+fn main() s32 @public {
+    if compute() != 50 { return 1; }
+    return 0;
+}

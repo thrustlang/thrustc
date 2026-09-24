@@ -1,0 +1,9 @@
+fn main() s32 @public {
+    var a: s32 = 12;
+    var b: s32 = 10;
+
+    if !(a > b and b < a) { return 1; }
+    if !(a > b or b > a) { return 2; }
+    if !(!(a == b)) { return 3; }
+    return 0;
+}

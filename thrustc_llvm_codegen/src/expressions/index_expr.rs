@@ -113,7 +113,12 @@ pub fn compile<'ctx>(
         memory::gep_anon(context, ptr_value, ptr_type, &ordered_indexes, span);
 
     if metadata.is_deref() {
+        if context.get_codegen_location().is_direct_behavior() {
+            return ptr.into();
+        }
+
         let element_type: Type = ptr_type.calculate_index_type(1).clone();
+
         return memory::dereference(context, ptr, &element_type, span);
     }
 

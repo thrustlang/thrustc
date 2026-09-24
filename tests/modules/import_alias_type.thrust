@@ -1,0 +1,9 @@
+import "module_b.thrust" as m;
+
+fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
+    var value: m::U8Int = 99;
+
+    if value != 99 { return 1; }
+
+    return 0;
+}

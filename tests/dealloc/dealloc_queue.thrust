@@ -1,0 +1,22 @@
+/*
+ * Exercises @dealloc on std::collections::queue.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::queue;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var values @dealloc: queue::Queue[s32] = queue::newQueue[s32]();
+
+    queue::enqueue(ref values, 5);
+    queue::enqueue(ref values, 6);
+
+    if queue::dequeue(ref values) != 5 { return 1; }
+    if queue::dequeue(ref values) != 6 { return 2; }
+    if !queue::isEmpty(ref values) { return 3; }
+
+    return 0;
+}

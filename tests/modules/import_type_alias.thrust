@@ -1,0 +1,9 @@
+import "../modules/module_only.thrust" as shared;
+
+fn main() s32 @public {
+    var value: shared::StackType = 42;
+
+    if value != 42 { return 1; }
+
+    return 0;
+}

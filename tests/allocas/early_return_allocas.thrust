@@ -1,0 +1,29 @@
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0030";
+directive "--disable-warnings=W0021";
+
+fn earlyReturn(flag: s32) s32 @public {
+    var first: s32 = 10;
+
+    if flag == 0 {
+        return first;
+    }
+
+    var second: s32 = first * 2;
+
+    if flag == 1 {
+        return second;
+    }
+
+    var third: s32 = second + first;
+
+    return third;
+}
+
+fn main() s32 @public {
+    if earlyReturn(0) != 10 { return 1; }
+    if earlyReturn(1) != 20 { return 2; }
+    if earlyReturn(2) != 30 { return 3; }
+    return 0;
+}

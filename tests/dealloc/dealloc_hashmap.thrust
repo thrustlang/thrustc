@@ -1,0 +1,19 @@
+/*
+ * Exercises @dealloc on std::collections::hashmap.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::collections::hashmap;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var map @dealloc: hashmap::HashMap[u64, s32] = hashmap::newHashMap[u64, s32]();
+    var key: u64 = 10;
+
+    if !hashmap::insert(ref map, ref key, 100) { return 1; }
+    if hashmap::getLength(ref map) != 1 { return 2; }
+
+    return 0;
+}

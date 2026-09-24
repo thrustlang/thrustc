@@ -1,0 +1,21 @@
+struct Pair {
+    first: s32,
+    second: s32
+}
+
+fn swap(p: ptr[Pair]) void {
+    var temp: s32 = p->first;
+    p->first = p->second;
+    p->second = temp;
+}
+
+fn main() s32 @public {
+    var pair := new Pair { first: 1, second: 2 };
+
+    swap(ref pair);
+
+    if pair->first != 2 { return 1; }
+    if pair->second != 1 { return 2; }
+
+    return 0;
+}

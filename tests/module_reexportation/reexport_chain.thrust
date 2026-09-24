@@ -1,0 +1,9 @@
+import "reexport_c.thrust" as chain;
+
+fn main() s32 @public {
+    var value: chain::Depth = 11;
+
+    if value != 11 { return 1; }
+
+    return 0;
+}

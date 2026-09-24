@@ -1,0 +1,37 @@
+/*
+ * Exercises std::random with different seeds and repeated calls.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::random;
+
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var bytes: array[u8; 8];
+    var i: usize = 0;
+
+    random::seedRandom(1);
+    var a: u64 = random::randomU64();
+
+    random::seedRandom(1);
+    var b: u64 = random::randomU64();
+
+    if a != b { return 1; }
+
+    random::seedRandom(2);
+    var c: u64 = random::randomU64();
+
+    if a == c { return 2; }
+
+    random::fillRandomBytes(ref bytes as ptr, 8);
+
+    while i < 8 {
+        if bytes->[i] != 0 {
+            return 0;
+        }
+        i = i + 1;
+    }
+
+    return 3;
+}

@@ -1,0 +1,19 @@
+/*
+ * Exercises std::math power and root helpers with negative bases.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::math;
+
+fn closeTo(actual: f64, expected: f64, epsilon: f64) bool {
+    return math::absolute(actual - expected) <= epsilon;
+}
+
+fn main() s32 @public {
+    if !closeTo(math::power(2.0, 0.5), 1.4142135623730951, 0.000000001) { return 1; }
+    if !closeTo(math::hypotenuse(5.0, 12.0), 13.0, 0.000000001) { return 2; }
+    if !closeTo(math::squareRoot(0.25), 0.5, 0.000000001) { return 3; }
+    if !closeTo(math::cubeRoot(8.0), 2.0, 0.000000001) { return 4; }
+
+    return 0;
+}

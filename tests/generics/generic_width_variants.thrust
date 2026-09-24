@@ -1,0 +1,17 @@
+fn identity [T] (value: T) T {
+    return value;
+}
+
+fn main() s32 @public {
+    var a: u8 = identity[u8](200);
+    var b: u16 = identity[u16](60000);
+    var c: u32 = identity[u32](4000000000);
+    var d: u64 = identity[u64](18000000000000000000);
+
+    if a != 200 { return 1; }
+    if b != 60000 { return 2; }
+    if c != 4000000000 { return 3; }
+    if d != 18000000000000000000 { return 4; }
+
+    return 0;
+}

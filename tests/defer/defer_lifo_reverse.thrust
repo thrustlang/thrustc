@@ -1,0 +1,19 @@
+static mut trace: s32 = 0;
+
+fn add(value: s32) void {
+    trace = trace * 10 + value;
+}
+
+fn run() void {
+    defer add(5);
+    defer add(4);
+    defer add(3);
+    defer add(2);
+    defer add(1);
+}
+
+fn main() s32 @public {
+    run();
+    if trace != 12345 { return 1; }
+    return 0;
+}

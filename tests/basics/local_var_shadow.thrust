@@ -1,0 +1,12 @@
+fn main() s32 @public {
+    var value: s32 = 10;
+
+    {
+        var value: s32 = 20;
+        if value != 20 { return 1; }
+    }
+
+    if value != 10 { return 2; }
+
+    return 0;
+}

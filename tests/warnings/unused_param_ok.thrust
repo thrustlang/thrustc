@@ -1,0 +1,13 @@
+/*
+ * Warnings: unused parameter is expected to warn; the test just checks
+ * the program still compiles and runs.
+ */
+
+fn add(a: s32, b: s32) s32 {
+    return b;
+}
+
+fn main() s32 @public {
+    if add(1, 2) != 2 { return 1; }
+    return 0;
+}

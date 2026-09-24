@@ -1,0 +1,23 @@
+static mut trace: s32 = 0;
+
+fn add(value: s32) void {
+    trace = trace * 10 + value;
+}
+
+fn run(flag: s32) s32 {
+    defer add(1);
+
+    if flag <= 0 {
+        return 20;
+    }
+
+    defer add(2);
+
+    return 10;
+}
+
+fn main() s32 @public {
+    if run(1) != 10 { return 1; }
+    if trace != 21 { return 2; }
+    return 0;
+}

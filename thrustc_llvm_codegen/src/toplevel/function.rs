@@ -443,7 +443,14 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
         }
 
         {
+            let saved_defer_scopes: Vec<&[Ast<'ctx>]> =
+                codegen.get_mut_context().take_pending_defer_scopes();
+
             codegen.codegen_block(function_body);
+
+            codegen
+                .get_mut_context()
+                .set_pending_defer_scopes(saved_defer_scopes);
 
             for parameter in function_parameters
                 .iter()

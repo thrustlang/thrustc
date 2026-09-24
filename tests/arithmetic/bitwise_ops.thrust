@@ -1,0 +1,21 @@
+fn main() s32 @public {
+    var left: s32 = 0x5A;
+    var right: s32 = 0x0F;
+
+    var andVal: s32 = left & right;
+    if andVal != 0x0A { return 1; }
+
+    var orVal: s32 = left | right;
+    if orVal != 0x5F { return 2; }
+
+    var xorVal: s32 = left ^ right;
+    if xorVal != 0x55 { return 3; }
+
+    var shl: s32 = 1 << 4;
+    if shl != 16 { return 4; }
+
+    var shr: s32 = 256 >> 4;
+    if shr != 16 { return 5; }
+
+    return 0;
+}

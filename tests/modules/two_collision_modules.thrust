@@ -1,0 +1,8 @@
+import "module_col_a.thrust" as left;
+import "module_col_b.thrust" as right;
+
+fn main() s32 @public {
+    if left::collide(10) != 10 { return 1; }
+    if right::collide(10) != 11 { return 2; }
+    return 0;
+}

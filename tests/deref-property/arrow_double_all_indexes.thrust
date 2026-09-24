@@ -1,0 +1,18 @@
+struct Wrapper {
+    data: ptr[array[s32; 3]]
+}
+
+fn main() s32 @public {
+    var arr: array[s32; 3] = fixed[7, 8, 9];
+    var v := new Wrapper { data: ref arr };
+
+    var first: s32 = v->data->[0];
+    var second: s32 = v->data->[1];
+    var third: s32 = v->data->[2];
+
+    if first != 7 { return 1; }
+    if second != 8 { return 2; }
+    if third != 9 { return 3; }
+
+    return 0;
+}

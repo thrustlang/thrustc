@@ -1,0 +1,20 @@
+/*
+ * Sanitizer build with guarded division under thread sanitizer.
+ */
+
+directive "--sanitizer=thread";
+directive "--disable-warnings=W0020";
+
+fn divide(a: s32, b: s32) s32 {
+    if b == 0 {
+        return 0;
+    }
+
+    return a / b;
+}
+
+fn main() s32 @public {
+    if divide(10, 2) != 5 { return 1; }
+    if divide(10, 0) != 0 { return 2; }
+    return 0;
+}

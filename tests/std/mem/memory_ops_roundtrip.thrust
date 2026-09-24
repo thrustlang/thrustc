@@ -1,0 +1,28 @@
+/*
+ * Exercises std::mem setMemory and compareMemory roundtrip.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+
+fn main() s32 @public {
+    var a := mem::allocateMemory(8);
+    if a == nullptr { return 1; }
+
+    var b := mem::allocateMemory(8);
+    if b == nullptr { return 2; }
+
+    mem::setMemory(a, 0, 8);
+    mem::setMemory(b, 0, 8);
+
+    if mem::compareMemory(a, b, 8) != 0 { return 3; }
+
+    mem::setMemory(a, 1, 4);
+
+    if mem::compareMemory(a, b, 8) == 0 { return 4; }
+
+    mem::freeMemory(a);
+    mem::freeMemory(b);
+
+    return 0;
+}

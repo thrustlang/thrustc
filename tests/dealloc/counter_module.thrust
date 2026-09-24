@@ -1,0 +1,16 @@
+/*
+ * Imported module used by the @dealloc tests. The deallocator records that
+ * it ran by mutating the pointed value.
+ */
+
+struct Counter @public {
+    value: s32
+}
+
+fn newCounter(value: s32) Counter @public {
+    return new Counter { value: value };
+}
+
+fn resetCounter(holder: ptr[Counter]) void @public @deallocator {
+    holder->value = 0;
+}

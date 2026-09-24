@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if '\t' as u8 != 9 { return 1; }
+    if '\r' as u8 != 13 { return 2; }
+    return 0;
+}

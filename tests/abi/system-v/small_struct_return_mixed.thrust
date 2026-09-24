@@ -1,0 +1,17 @@
+struct Triplet {
+    a: u8,
+    b: u8,
+    c: u8
+}
+
+fn make() Triplet {
+    return new Triplet { a: 5, b: 6, c: 7 };
+}
+
+fn main() s32 @public {
+    var v := make();
+    if v->a != 5 { return 1; }
+    if v->b != 6 { return 2; }
+    if v->c != 7 { return 3; }
+    return 0;
+}

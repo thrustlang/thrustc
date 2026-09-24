@@ -1,0 +1,14 @@
+/*
+ * Compile-time builtins: alignOf on primitive types.
+ */
+
+fn main() s32 @public {
+    if alignOf(u8) != 1 { return 1; }
+    if alignOf(u16) != 2 { return 2; }
+    if alignOf(u32) != 4 { return 3; }
+    if alignOf(u64) != 8 { return 4; }
+    if alignOf(f64) != 8 { return 5; }
+    if alignOf(bool) != 1 { return 6; }
+    if alignOf(char) != 1 { return 7; }
+    return 0;
+}

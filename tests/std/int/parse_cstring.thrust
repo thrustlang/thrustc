@@ -1,0 +1,23 @@
+/*
+ * Exercises std::int parse helpers on CString inputs.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::int;
+
+fn main() s32 @public {
+    var native: CString = "255";
+
+    if int::parse[s32](native) != 255 { return 1; }
+    if int::parseWithBase[s32](native, 16) != 597 { return 2; }
+
+    var signed: int::ParseSignedResult = int::parseSignedCString(native);
+    if !(signed->ok) { return 3; }
+    if signed->value != 255 { return 4; }
+
+    var uns: int::ParseUnsignedResult = int::parseUnsignedCString(native);
+    if !(uns->ok) { return 5; }
+    if uns->value != 255 { return 6; }
+
+    return 0;
+}

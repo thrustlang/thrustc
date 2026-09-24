@@ -1,0 +1,25 @@
+struct Small {
+    a: u16,
+    b: u16
+}
+
+struct Large {
+    x: u64,
+    y: u64,
+    z: u64
+}
+
+fn combine(s: Small, l: Large) s32 {
+    if s.a != 3 { return 1; }
+    if s.b != 4 { return 2; }
+    if l.x != 5 { return 3; }
+    if l.y != 6 { return 4; }
+    if l.z != 7 { return 5; }
+    return 0;
+}
+
+fn main() s32 @public {
+    var s := new Small { a: 3, b: 4 };
+    var l := new Large { x: 5, y: 6, z: 7 };
+    return combine(s, l);
+}

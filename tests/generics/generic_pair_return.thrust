@@ -1,0 +1,22 @@
+struct Pair [T] {
+    left: T,
+    right: T
+}
+
+fn makePair [T] (a: T, b: T) Pair [T] {
+    return new Pair [T] { left: a, right: b };
+}
+
+fn main() s32 @public {
+    var p := makePair[s32](3, 4);
+
+    if p->left != 3 { return 1; }
+    if p->right != 4 { return 2; }
+
+    var q := makePair[u64](10, 20);
+
+    if q->left != 10 { return 3; }
+    if q->right != 20 { return 4; }
+
+    return 0;
+}

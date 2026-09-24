@@ -1,0 +1,27 @@
+/*
+ * Debug info: deferred calls with local captures.
+ */
+
+static mut trace: s32 = 0;
+
+fn record(value: s32) void {
+    trace = trace + value;
+}
+
+fn run() s32 {
+    var local: s32 = 10;
+
+    defer record(local);
+
+    local = 20;
+
+    defer record(1);
+
+    return 0;
+}
+
+fn main() s32 @public {
+    if run() != 0 { return 1; }
+    if trace != 21 { return 2; }
+    return 0;
+}

@@ -1,0 +1,18 @@
+/*
+ * Compile-time builtins: abiSizeOf on scalar types.
+ */
+
+fn main() s32 @public {
+    var u8_size: u64 = abiSizeOf(u8);
+    var u16_size: u64 = abiSizeOf(u16);
+    var u32_size: u64 = abiSizeOf(u32);
+    var u64_size: u64 = abiSizeOf(u64);
+    var f64_size: u64 = abiSizeOf(f64);
+
+    if u8_size != 1 { return 1; }
+    if u16_size != 2 { return 2; }
+    if u32_size != 4 { return 3; }
+    if u64_size != 8 { return 4; }
+    if f64_size != 8 { return 5; }
+    return 0;
+}

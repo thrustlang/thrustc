@@ -1,0 +1,9 @@
+fn round(value: u32) u32 {
+    return value;
+}
+
+fn main() s32 @public {
+    if round(0) != 0 { return 1; }
+    if round(4294967295) != 4294967295 { return 2; }
+    return 0;
+}

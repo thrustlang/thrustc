@@ -1,0 +1,14 @@
+/*
+ * Compile-time builtins: isSameType across width variants.
+ */
+
+fn main() s32 @public {
+    if !isSameType(s32, s32) { return 1; }
+    if isSameType(s32, s64) { return 2; }
+    if isSameType(u32, s32) { return 3; }
+    if !isSameType(usize, usize) { return 4; }
+    if isSameType(usize, u64) { return 5; }
+    if !isSameType(f32, f32) { return 6; }
+    if isSameType(f32, f64) { return 7; }
+    return 0;
+}

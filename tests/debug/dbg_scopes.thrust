@@ -1,0 +1,18 @@
+/*
+ * Debug info: multiple function scopes and parameters.
+ */
+
+fn scale(value: s32, factor: s32) s32 {
+    var adjusted: s32 = value * factor;
+    return adjusted + 1;
+}
+
+fn offset(value: s32) s32 {
+    var base: s32 = scale(value, 2);
+    return base - 3;
+}
+
+fn main() s32 @public {
+    if offset(5) != 8 { return 1; }
+    return 0;
+}

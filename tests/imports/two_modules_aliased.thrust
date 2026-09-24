@@ -1,0 +1,10 @@
+import "../modules/module_b.thrust" as first;
+import "../modules/module_c.thrust" as second;
+
+fn main() s32 @public {
+    var value: second::MyU16 = first::pepito as second::MyU16;
+
+    if value != 123 { return 1; }
+
+    return 0;
+}

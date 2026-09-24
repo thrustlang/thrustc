@@ -1,0 +1,9 @@
+fn round(value: u8) u8 {
+    return value;
+}
+
+fn main() s32 @public {
+    if round(0) != 0 { return 1; }
+    if round(255) != 255 { return 2; }
+    return 0;
+}

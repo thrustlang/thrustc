@@ -1,0 +1,8 @@
+const BASE: s32 = 40;
+const STEP: s32 = 2;
+
+fn main() s32 @public {
+    var total: s32 = BASE + STEP;
+    if total != 42 { return 1; }
+    return 0;
+}

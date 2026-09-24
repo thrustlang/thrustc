@@ -1,0 +1,12 @@
+/*
+ * Compile-time builtins: fixedArraySize on primitive element arrays.
+ */
+
+fn main() s32 @public {
+    if fixedArraySize(array[u8; 1]) != 1 { return 1; }
+    if fixedArraySize(array[u16; 2]) != 2 { return 2; }
+    if fixedArraySize(array[u32; 4]) != 4 { return 3; }
+    if fixedArraySize(array[u64; 8]) != 8 { return 4; }
+    if fixedArraySize(array[char; 10]) != 10 { return 5; }
+    return 0;
+}

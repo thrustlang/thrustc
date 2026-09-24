@@ -1,0 +1,13 @@
+fn main() s32 @public {
+    var sum: s32 = 0;
+
+    for var i: s32 = 0; i < 4; i += 1; {
+        for var j: s32 = 0; j < 3; j += 1; {
+            sum = sum + i + j;
+        }
+    }
+
+    if sum != 30 { return 1; }
+
+    return 0;
+}

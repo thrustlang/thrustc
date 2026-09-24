@@ -1,0 +1,17 @@
+fn apply [T] (value: T, callback: Fn[T] -> T) T {
+    return callback(value);
+}
+
+fn double(value: s32) s32 {
+    return value * 2;
+}
+
+fn triple(value: u64) u64 {
+    return value * 3;
+}
+
+fn main() s32 @public {
+    if apply[s32](5, double) != 10 { return 1; }
+    if apply[u64](7, triple) != 21 { return 2; }
+    return 0;
+}

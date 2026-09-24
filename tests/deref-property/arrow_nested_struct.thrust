@@ -1,0 +1,20 @@
+struct Inner {
+    a: s32,
+    b: s32
+}
+
+struct Outer {
+    inner: Inner,
+    c: s32
+}
+
+fn main() s32 @public {
+    var inner := new Inner { a: 2, b: 3 };
+    var outer := new Outer { inner: inner, c: 4 };
+
+    var total: s32 = outer->inner.a + outer->inner.b + outer->c;
+
+    if total != 9 { return 1; }
+
+    return 0;
+}

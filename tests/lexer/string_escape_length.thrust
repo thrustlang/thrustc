@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if stringLength("a\tb") != 3 { return 1; }
+    if stringLength("\n\n") != 2 { return 2; }
+    return 0;
+}

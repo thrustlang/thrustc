@@ -1,0 +1,8 @@
+/* leading */
+fn main() s32 @public {
+    var a: s32 = 5;
+    /* middle */
+    var b: s32 = a + 1; /* trailing */
+    if b != 6 { return 1; }
+    return 0;
+}

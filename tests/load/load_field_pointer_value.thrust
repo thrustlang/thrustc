@@ -1,0 +1,19 @@
+/*
+ * load a pointer stored in a struct field of pointer type.
+ */
+
+struct Holder {
+    pointer: ptr[s32],
+}
+
+fn main() s32 @public {
+    var value: s32 = 5;
+    var holder := new Holder { pointer: ref value };
+
+    var loaded: ptr[s32] = load holder.pointer as ptr[s32];
+
+    if loaded != ref value { return 1; }
+    if (deref loaded) != 5 { return 2; }
+
+    return 0;
+}

@@ -1,0 +1,9 @@
+import "module_struct.thrust" as sv;
+
+fn main() s32 @public {
+    var v: sv::Vector = new sv::Vector { a: 3, b: 4 };
+
+    if v->a + v->b != 7 { return 1; }
+
+    return 0;
+}

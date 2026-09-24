@@ -1,0 +1,9 @@
+fn round(value: s16) s16 {
+    return value;
+}
+
+fn main() s32 @public {
+    if round(-32768) != -32768 { return 1; }
+    if round(32767) != 32767 { return 2; }
+    return 0;
+}

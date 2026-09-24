@@ -1,0 +1,24 @@
+/*
+ * Debug info: char and bool locals.
+ */
+
+fn flags(active: bool) bool {
+    var result: bool = active;
+
+    if result {
+        result = false;
+    }
+
+    return result;
+}
+
+fn letter() char {
+    var ch: char = 'Z';
+    return ch;
+}
+
+fn main() s32 @public {
+    if flags(true) { return 1; }
+    if letter() != 'Z' { return 2; }
+    return 0;
+}

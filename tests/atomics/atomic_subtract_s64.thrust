@@ -1,0 +1,13 @@
+fn main() s32 @public {
+    var atomicRelax counter: s64 = 0;
+
+    var previous: s64 = atomicSubtract(counter, 3);
+    if previous != 0 { return 1; }
+    if counter != -3 { return 2; }
+
+    previous = atomicSubtract(counter, 1);
+    if previous != -3 { return 3; }
+    if counter != -4 { return 4; }
+
+    return 0;
+}

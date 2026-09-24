@@ -1,0 +1,16 @@
+/*
+ * Tail call friendly: recursive accumulator pattern.
+ */
+
+fn accumulate(value: s32, total: s32) s32 {
+    if value == 0 {
+        return total;
+    }
+
+    return accumulate(value - 1, total + value);
+}
+
+fn main() s32 @public {
+    if accumulate(10, 0) != 55 { return 1; }
+    return 0;
+}

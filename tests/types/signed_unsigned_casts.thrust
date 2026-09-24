@@ -1,0 +1,13 @@
+fn main() s32 @public {
+    var a: u16 = 5;
+    var b: s32 = a as s32;
+
+    if b != 5 { return 1; }
+
+    var c: s16 = -3;
+    var d: u32 = c as u32;
+
+    if d != 4294967293 { return 2; }
+
+    return 0;
+}

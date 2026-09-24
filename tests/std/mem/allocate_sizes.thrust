@@ -1,0 +1,23 @@
+/*
+ * Exercises std::mem allocate and free with several sizes.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+
+fn main() s32 @public {
+    var small := mem::allocateMemory(1);
+    if small == nullptr { return 1; }
+
+    var medium := mem::allocateMemory(256);
+    if medium == nullptr { return 2; }
+
+    var large := mem::allocateMemory(4096);
+    if large == nullptr { return 3; }
+
+    mem::freeMemory(small);
+    mem::freeMemory(medium);
+    mem::freeMemory(large);
+
+    return 0;
+}

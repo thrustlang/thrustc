@@ -1,0 +1,20 @@
+/*
+ * Exercises std::optional basic helpers.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::optional;
+
+fn main() s32 @public {
+    var present: optional::Optional[s32] = optional::some[s32](10);
+
+    if !optional::hasValue(ref present) { return 1; }
+    if optional::unwrap(ref present) != 10 { return 2; }
+
+    var empty: optional::Optional[s32] = optional::none[s32]();
+
+    if optional::isSome(ref empty) { return 3; }
+    if !optional::isNone(ref empty) { return 4; }
+
+    return 0;
+}

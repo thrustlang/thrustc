@@ -1,0 +1,17 @@
+/*
+ * Positive diagnostic: casts between compatible numeric types compile.
+ */
+
+fn main() s32 @public {
+    var small: s8 = 100;
+    var wide: s32 = small as s32;
+    var back: s8 = wide as s8;
+    var floating: f64 = wide as f64;
+    var trunc: s32 = floating as s32;
+
+    if back != 100 { return 1; }
+    if floating != 100.0 { return 2; }
+    if trunc != 100 { return 3; }
+
+    return 0;
+}

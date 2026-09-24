@@ -1,0 +1,9 @@
+fn main() s32 @public {
+    var value: s32 = 1_000_000;
+    if value != 1000000 { return 1; }
+
+    var hex: u32 = 0xFF_FF;
+    if hex != 65535 { return 2; }
+
+    return 0;
+}

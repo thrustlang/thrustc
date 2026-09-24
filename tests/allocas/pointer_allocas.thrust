@@ -1,0 +1,22 @@
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0030";
+directive "--disable-warnings=W0021";
+
+fn pointerLocals() s32 @public {
+    var a: s32 = 3;
+    var b: s32 = 4;
+
+    var pa: ptr[s32] = ref a;
+    var pb: ptr[s32] = ref b;
+
+    var sum: s32 = (deref pa) + (deref pb);
+    var product: s32 = (deref pa) * (deref pb);
+
+    return sum + product;
+}
+
+fn main() s32 @public {
+    if pointerLocals() != 19 { return 1; }
+    return 0;
+}

@@ -1,0 +1,15 @@
+fn both(a: bool, b: bool) bool {
+    return a and b;
+}
+
+fn either(a: bool, b: bool) bool {
+    return a or b;
+}
+
+fn main() s32 @public {
+    if !both(true, true) { return 1; }
+    if both(true, false) { return 2; }
+    if !either(false, true) { return 3; }
+    if either(false, false) { return 4; }
+    return 0;
+}

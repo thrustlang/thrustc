@@ -1,0 +1,13 @@
+/*
+ * load of a pointer variable then chained deref in one expression.
+ */
+
+fn main() s32 @public {
+    var a: s32 = 42;
+    var p: ptr[s32] = ref a;
+    var q: ptr[s32] = load p;
+
+    if (deref (load q)) != 42 { return 1; }
+
+    return 0;
+}

@@ -1,0 +1,17 @@
+fn choose(flag: bool, a: s32, b: s32) s32 {
+    if flag {
+        return a;
+    }
+
+    return b;
+}
+
+fn main() s32 @public {
+    var first: s32 = choose(true, 10, 20);
+    var second: s32 = choose(false, 10, 20);
+
+    if first != 10 { return 1; }
+    if second != 20 { return 2; }
+
+    return 0;
+}

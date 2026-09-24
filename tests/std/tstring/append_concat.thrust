@@ -1,0 +1,22 @@
+/*
+ * Exercises std::tstring basic append and length.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::tstring;
+
+fn main() s32 @public {
+    var text := tstring::fromCString("ab");
+
+    tstring::appendCString(ref text, "cd");
+
+    if tstring::len(ref text) != 4 { return 1; }
+
+    var joined := tstring::concat(ref text, ref text);
+    if tstring::len(ref joined) != 8 { return 2; }
+
+    tstring::dropTString(ref text);
+    tstring::dropTString(ref joined);
+
+    return 0;
+}

@@ -1,0 +1,15 @@
+struct Pair64 {
+    first: u64,
+    second: u64
+}
+
+fn check(value: Pair64) s32 {
+    if value.first != 7 { return 1; }
+    if value.second != 9 { return 2; }
+    return 0;
+}
+
+fn main() s32 @public {
+    var v := new Pair64 { first: 7, second: 9 };
+    return check(v);
+}

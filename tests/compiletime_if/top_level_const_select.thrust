@@ -1,0 +1,6 @@
+@if(true) const VALUE: s32 = 5; @else const VALUE: s32 = 100;
+
+fn main() s32 @public {
+    if VALUE != 5 { return 1; }
+    return 0;
+}

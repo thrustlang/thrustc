@@ -1,0 +1,12 @@
+/*
+ * Compile-time builtins: isFixedArrayOfSize checks.
+ */
+
+fn main() s32 @public {
+    if !isFixedArrayOfSize(array[u8; 4], 4) { return 1; }
+    if isFixedArrayOfSize(array[u8; 4], 8) { return 2; }
+    if isFixedArrayOfSize(array[u8], 4) { return 3; }
+    if !isFixedArrayOfSize(array[s64; 2], 2) { return 4; }
+    if isFixedArrayOfSize(array[s64; 2], 1) { return 5; }
+    return 0;
+}

@@ -1,0 +1,14 @@
+struct Wrapper {
+    data: ptr[array[s32; 4]]
+}
+
+fn main() s32 @public {
+    var arr: array[s32; 4] = fixed[10, 20, 30, 40];
+    var v := new Wrapper { data: ref arr };
+
+    var element: s32 = deref v->data[1];
+
+    if element != 20 { return 1; }
+
+    return 0;
+}

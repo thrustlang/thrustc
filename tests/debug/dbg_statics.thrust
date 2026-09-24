@@ -1,0 +1,22 @@
+/*
+ * Debug info: static global read from multiple functions.
+ */
+
+static mut shared: s32 = 100;
+
+fn increment() void {
+    shared = shared + 1;
+}
+
+fn read() s32 {
+    return shared;
+}
+
+fn main() s32 @public {
+    increment();
+    increment();
+
+    if read() != 102 { return 1; }
+
+    return 0;
+}

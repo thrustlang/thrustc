@@ -1,0 +1,26 @@
+/*
+ * Loop with fixed trip count writing into a fixed array.
+ */
+
+fn fill() s32 {
+    var buffer: array[s32; 4];
+    var total: s32 = 0;
+    var i: s32 = 0;
+
+    while i < 4 {
+        buffer[i] = i * 2;
+        i += 1;
+    }
+
+    while i > 0 {
+        i -= 1;
+        total += deref buffer[i];
+    }
+
+    return total;
+}
+
+fn main() s32 @public {
+    if fill() != 12 { return 1; }
+    return 0;
+}

@@ -1,0 +1,12 @@
+type First = u32;
+type Second = First;
+
+fn main() s32 @public {
+    var a: First = 100;
+    var b: Second = a + 1;
+
+    if a != 100 { return 1; }
+    if b != 101 { return 2; }
+
+    return 0;
+}

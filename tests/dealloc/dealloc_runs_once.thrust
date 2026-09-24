@@ -1,0 +1,31 @@
+/*
+ * Exercises @dealloc with @deallocator verifying the deallocator runs.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+static mut droppedCount: s32 = 0;
+
+struct Holder {
+    value: s32
+}
+
+fn dropHolder(holder: ptr[Holder]) void @deallocator {
+    droppedCount = droppedCount + 1;
+}
+
+fn useHolder() s32 {
+    var holder @dealloc: Holder = new Holder { value: 7 };
+
+    return 0;
+}
+
+fn main() s32 @public {
+    if useHolder() != 0 { return 1; }
+    if droppedCount != 1 { return 2; }
+    return 0;
+}

@@ -1,0 +1,19 @@
+/*
+ * Exercises @dealloc with std::mem::freeMemory on raw pointers.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+
+directive "--disable-warnings=W0005";
+directive "--disable-warnings=W0020";
+
+fn main() s32 @public {
+    var first @dealloc(mem::freeMemory): ptr = mem::allocateMemory(16);
+    var second @dealloc(mem::freeMemory): ptr = mem::allocateMemory(32);
+
+    if first == nullptr { return 1; }
+    if second == nullptr { return 2; }
+
+    return 0;
+}

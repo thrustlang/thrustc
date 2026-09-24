@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    var value: s32 = 0xFF + 0b11 + 0o10;
+    if value != 266 { return 1; }
+    return 0;
+}

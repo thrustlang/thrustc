@@ -1,0 +1,8 @@
+fn pack(a: f32, b: s32, c: f64, d: u64) f64 {
+    return a as f64 + b as f64 + c + d as f64;
+}
+
+fn main() s32 @public {
+    if pack(1.5 as f32, 2, 3.5, 4) != 11.0 { return 1; }
+    return 0;
+}

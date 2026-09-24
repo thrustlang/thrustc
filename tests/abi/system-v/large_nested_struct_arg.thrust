@@ -1,0 +1,22 @@
+struct Inner {
+    x: u64,
+    y: u64
+}
+
+struct Outer {
+    inner: Inner,
+    z: u64
+}
+
+fn check(value: Outer) s32 {
+    if value.inner.x != 1 { return 1; }
+    if value.inner.y != 2 { return 2; }
+    if value.z != 3 { return 3; }
+    return 0;
+}
+
+fn main() s32 @public {
+    var inner := new Inner { x: 1, y: 2 };
+    var outer := new Outer { inner: inner, z: 3 };
+    return check(outer);
+}

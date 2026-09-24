@@ -1,0 +1,16 @@
+/*
+ * Dead store elimination: overwriting a local before use.
+ */
+
+fn compute() s32 {
+    var value: s32 = 1;
+    value = 2;
+    value = 3;
+
+    return value;
+}
+
+fn main() s32 @public {
+    if compute() != 3 { return 1; }
+    return 0;
+}

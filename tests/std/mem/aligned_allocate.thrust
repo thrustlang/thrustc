@@ -1,0 +1,18 @@
+/*
+ * Exercises std::mem aligned allocation.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::mem;
+
+fn main() s32 @public {
+    var block := mem::allocateAlignedMemory(64, 128);
+    if block == nullptr { return 1; }
+
+    var usable := mem::getUsableSize(block);
+    if usable < 128 { return 2; }
+
+    mem::freeMemory(block);
+
+    return 0;
+}

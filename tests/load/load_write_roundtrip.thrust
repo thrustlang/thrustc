@@ -1,0 +1,14 @@
+/*
+ * load then compare roundtrip through pointer variables.
+ */
+
+fn main() s32 @public {
+    var a: s32 = 1;
+    var p: ptr[s32] = ref a;
+    var q: ptr[s32] = load p;
+
+    if q != ref a { return 1; }
+    if (deref q) != 1 { return 2; }
+
+    return 0;
+}

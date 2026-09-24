@@ -1,0 +1,19 @@
+fn main() s32 @public {
+    var count: s32 = 0;
+
+    @if(isLinux() && is64Bit()) {
+        count += 1;
+    } @else {
+        count += 100;
+    }
+
+    @if(isWindows() || isDarwin()) {
+        count += 100;
+    } @else {
+        count += 2;
+    }
+
+    if count != 3 { return 1; }
+
+    return 0;
+}

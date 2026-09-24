@@ -1,0 +1,21 @@
+/*
+ * Exercises std::io scanFromString with integer conversions.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+import std::io;
+
+fn main() s32 @public {
+    var a: s32 = 0;
+    var b: s32 = 0;
+
+    if io::scanFromString("7 8", "%d %d", ref a, ref b) != 2 { return 1; }
+    if a != 7 { return 2; }
+    if b != 8 { return 3; }
+
+    var single: s64 = 0;
+    if io::scanFromString("-42", "%lld", ref single) != 1 { return 4; }
+    if single != -42 { return 5; }
+
+    return 0;
+}

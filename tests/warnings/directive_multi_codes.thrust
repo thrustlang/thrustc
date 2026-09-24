@@ -1,0 +1,23 @@
+/*
+ * Warnings disabled via directive accumulate across multiple codes.
+ */
+
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0021";
+directive "--disable-warnings=W0030";
+
+fn helper() s32 {
+    var local: s32 = 4;
+
+    if local != 4 { return 1; }
+
+    return 0;
+}
+
+fn main() s32 @public {
+    var unused: s32 = 3;
+
+    if helper() != 0 { return 1; }
+
+    return 0;
+}

@@ -1,0 +1,15 @@
+fn isEven(value: s32) bool {
+    return value % 2 == 0;
+}
+
+fn isOdd(value: s32) bool {
+    return !isEven(value);
+}
+
+fn main() s32 @public {
+    if !isEven(4) { return 1; }
+    if isEven(3) { return 2; }
+    if !isOdd(3) { return 3; }
+    if isOdd(4) { return 4; }
+    return 0;
+}

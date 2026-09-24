@@ -1,0 +1,15 @@
+struct Pair {
+    left: s32,
+    right: s32
+}
+
+fn main() s32 @public {
+    var a := new Pair { left: 5, right: 6 };
+    var b := new Pair { left: 7, right: 8 };
+
+    var sum: s32 = a->left + a->right + b->left + b->right;
+
+    if sum != 26 { return 1; }
+
+    return 0;
+}

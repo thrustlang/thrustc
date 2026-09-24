@@ -1,0 +1,17 @@
+/*
+ * Positive diagnostic: recursion with a base case compiles and runs.
+ */
+
+fn factorial(value: s32) s32 {
+    if value <= 1 {
+        return 1;
+    }
+
+    return value * factorial(value - 1);
+}
+
+fn main() s32 @public {
+    if factorial(5) != 120 { return 1; }
+    if factorial(0) != 1 { return 2; }
+    return 0;
+}

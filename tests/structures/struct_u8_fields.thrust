@@ -1,0 +1,17 @@
+struct Color {
+    r: u8,
+    g: u8,
+    b: u8
+}
+
+fn brightness(c: Color) s32 {
+    return c.r as s32 + c.g as s32 + c.b as s32;
+}
+
+fn main() s32 @public {
+    var color := new Color { r: 10, g: 20, b: 30 };
+
+    if brightness(color) != 60 { return 1; }
+
+    return 0;
+}
