@@ -27,6 +27,7 @@ use crate::Ast;
 #[cfg(feature = "fuzz")]
 use arbitrary::Arbitrary;
 
+#[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[derive(Debug, Clone, Serialize)]
 pub enum DeferredBuiltinArgument<'compiler_builtin> {
     Type {

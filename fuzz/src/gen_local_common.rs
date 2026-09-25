@@ -16,7 +16,10 @@
 */
 
 use arbitrary::Unstructured;
-use thrustc_ast::ast_metadata::{CastingMetadata, DereferenceMetadata, ReferenceMetadata, ReferenceType};
+use thrustc_ast::ast_metadata::{
+    CastingMetadata, ConstantMetadata, DereferenceMetadata, FunctionParameterMetadata, LocalMetadata,
+    ReferenceMetadata, ReferenceType, StaticMetadata,
+};
 use thrustc_ast::traits::{AstConstantExtensions, AstGetType, AstMemoryExtensions};
 use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
@@ -208,7 +211,7 @@ fn gen_function<'ast>(
             ascii_name: name.to_string(),
             kind: kind.clone(),
             position: i as u32,
-            metadata: crate::parser_decisions::function_parameter_metadata(&kind),
+            metadata: FunctionParameterMetadata::new(kind.is_ptr_like_type()),
             span: u.arbitrary()?,
             id: NodeId::new(),
         });
@@ -511,7 +514,7 @@ fn gen_var<'ast>(
         value,
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: crate::parser_decisions::local_metadata(is_unitialized),
+        metadata: LocalMetadata::new(is_unitialized, true, false, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -537,13 +540,13 @@ fn gen_const<'ast>(
     scope.declare(name, kind.clone(), ReferenceType::Constant, false);
 
     Ok(Ast::Const {
-        name,
-        ascii_name: name,
+        name: name.to_string(),
+        ascii_name: name.to_string(),
         kind,
         value,
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: crate::parser_decisions::constant_metadata(),
+        metadata: ConstantMetadata::new(false, false, false, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -575,13 +578,13 @@ fn gen_static<'ast>(
     scope.declare(name, kind.clone(), ReferenceType::Static, is_unitialized);
 
     Ok(Ast::Static {
-        name,
-        ascii_name: name,
+        name: name.to_string(),
+        ascii_name: name.to_string(),
         kind,
         value,
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: crate::parser_decisions::static_metadata(is_unitialized),
+        metadata: StaticMetadata::new(true, false, is_unitialized, false, false, false, None, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     })
@@ -729,7 +732,7 @@ fn gen_for<'ast>(
         value: Some(init_value),
         attributes: Vec::new(),
         modificators: Vec::new(),
-        metadata: crate::parser_decisions::local_metadata(false),
+        metadata: LocalMetadata::new(false, true, false, None),
         span: u.arbitrary()?,
         id: NodeId::new(),
     });
@@ -978,7 +981,7 @@ fn gen_mutation<'ast>(
 
     Ok(Ast::Mutation {
         source: Box::new(Ast::Reference {
-            name: picked.name,
+            name: picked.name.to_string(),
             kind: kind.clone(),
             metadata: self::reference_metadata_for(&picked),
             span: u.arbitrary()?,
@@ -1454,7 +1457,7 @@ fn gen_deref_of_type<'ast>(
 
     Ok(Some(Ast::Deref {
         value: Box::new(Ast::Reference {
-            name: ptr_var.name,
+            name: ptr_var.name.to_string(),
             kind: ptr_var.kind.clone(),
             metadata: self::reference_metadata_for(&ptr_var),
             span: u.arbitrary()?,
@@ -1489,7 +1492,7 @@ fn gen_reference_of_type<'ast>(
     };
 
     Ok(Ast::Reference {
-        name: picked.name,
+        name: picked.name.to_string(),
         kind: picked.kind.clone(),
         metadata: self::reference_metadata_for(&picked),
         span: u.arbitrary()?,
@@ -1749,7 +1752,7 @@ fn cast_source_type<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrar
 
 fn reference<'ast>(name: &'ast str, kind: Type) -> Ast<'ast> {
     Ast::Reference {
-        name,
+        name: name.to_string(),
         kind: kind.clone(),
         metadata: crate::parser_decisions::reference_metadata(&kind, ReferenceType::Local, false),
         span: thrustc_code_location::Span::nothing(),

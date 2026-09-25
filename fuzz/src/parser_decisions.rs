@@ -16,10 +16,7 @@
 */
 
 use arbitrary::Unstructured;
-use thrustc_ast::ast_metadata::{
-    ConstantMetadata, FunctionParameterMetadata, LocalMetadata, ReferenceMetadata, ReferenceType,
-    StaticMetadata,
-};
+use thrustc_ast::ast_metadata::{ReferenceMetadata, ReferenceType};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::traits::{
     CastTypeExtensions, PrecedenceTypeExtensions, TypePointerExtensions,
@@ -135,35 +132,6 @@ pub fn unary_op_kind<'ast>(
     }
 }
 
-/// Replicates the function parameter metadata decision
-/// (`thrustc_parser::src/toplevel/global_function.rs`).
-#[inline]
-pub fn function_parameter_metadata(kind: &Type) -> FunctionParameterMetadata {
-    FunctionParameterMetadata::new(kind.is_ptr_like_type())
-}
-
-/// Replicates the local variable metadata decision
-/// (`thrustc_parser::src/statements/variable.rs`).
-#[inline]
-pub fn local_metadata(is_unitialized: bool) -> LocalMetadata {
-    LocalMetadata::new(is_unitialized, true, false, None)
-}
-
-/// Replicates the local static metadata decision
-/// (`thrustc_parser::src/statements/local_static.rs`). The fuzzer never emits
-/// the `mut` modifier, so the parser would decide `is_mutable = false`.
-#[inline]
-pub fn static_metadata(is_unitialized: bool) -> StaticMetadata {
-    StaticMetadata::new(true, false, is_unitialized, false, false, false, None, None)
-}
-
-/// Replicates the local constant metadata decision
-/// (`thrustc_parser::src/statements/local_constant.rs`).
-#[inline]
-pub fn constant_metadata() -> ConstantMetadata {
-    ConstantMetadata::new(false, false, false, None)
-}
-
 /// Replicates the reference metadata decision
 /// (`thrustc_parser::src/expressions/reference.rs`), derived from the declared
 /// symbol state tracked by the fuzzer.
@@ -179,16 +147,17 @@ pub fn reference_metadata(
             kind.is_ptr_like_type(),
             ReferenceType::Parameter,
             false,
+            None,
         ),
 
         ReferenceType::Static => {
-            ReferenceMetadata::new(true, false, ReferenceType::Static, is_unitialized)
+            ReferenceMetadata::new(true, false, ReferenceType::Static, is_unitialized, None)
         }
 
         ReferenceType::Constant => {
-            ReferenceMetadata::new(true, false, ReferenceType::Constant, false)
+            ReferenceMetadata::new(true, false, ReferenceType::Constant, false, None)
         }
 
-        _ => ReferenceMetadata::new(true, true, ReferenceType::Local, is_unitialized),
+        _ => ReferenceMetadata::new(true, true, ReferenceType::Local, is_unitialized, None),
     }
 }

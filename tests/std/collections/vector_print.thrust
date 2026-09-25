@@ -66,8 +66,8 @@ fn main() s32 @public {
 
     if vector::getLength(ref v) != 5 { return 1; }
 
-    io::println("-- popBack --");
-    var popped: s32 = vector::popBack(ref v);
+    io::println("-- pop --");
+    var popped: s32 = vector::pop(ref v);
     io::print("popped=%d\n", popped);
     printVector(ref v);
     if popped != 50 { return 2; }

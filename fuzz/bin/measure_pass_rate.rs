@@ -74,6 +74,8 @@ fn measure(
     file: &CompilationUnit,
 ) -> usize {
     let options = CompilerOptions::new();
+    let directives = thrustc_directive::FileDirectives::default();
+    let file_options = thrustc_directive::FileOptions::new(&options, &directives);
     let mut rng = XorShift64::new(seed);
     let mut kept = 0usize;
 
@@ -86,7 +88,7 @@ fn measure(
         };
 
         let failed =
-            SemanticAnalysis::new(std::slice::from_ref(&ast), file, &options).execute(false);
+            SemanticAnalysis::new(std::slice::from_ref(&ast), file, &file_options).execute(false);
 
         let Either::Left(had_errors) = failed else {
             continue;

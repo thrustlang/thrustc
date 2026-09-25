@@ -127,7 +127,7 @@ fn push [T] (vector: ptr[Vector[T]], value: T) void @public {
     vector->length = vector->length + 1;
 }
 
-fn popBack [T] (vector: ptr[Vector[T]]) T @public {
+fn pop [T] (vector: ptr[Vector[T]]) T @public {
     vector->length = vector->length - 1;
 
     return vector->data->[vector->length];

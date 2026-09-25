@@ -30,6 +30,7 @@ thrustc_typesystem = { path = "../thrustc_typesystem"}
 thrustc_token_type = { path = "../thrustc_token_type" }
 thrustc_code_location = { path = "../thrustc_code_location", features = ["fuzz"] }
 thrustc_llvm_abi_representation = { path = "../thrustc_llvm_abi_representation"}
+thrustc_directive = { path = "../thrustc_directive" }
 
 inkwell = { path = "../crates/llvm/inkwell" }
 clang = { path = "../crates/llvm/clang" }

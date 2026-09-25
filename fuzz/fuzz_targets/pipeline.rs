@@ -23,7 +23,7 @@ use arbitrary::{Arbitrary, Unstructured};
 use either::Either;
 use libfuzzer_sys::{Corpus, fuzz_target};
 use std::sync::atomic::{AtomicU32, Ordering};
-use thrustc_ast::{Ast, traits::AstStandardExtensions};
+use thrustc_ast::Ast;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_semantic_analysis::SemanticAnalysis;
 
@@ -53,7 +53,10 @@ fuzz_target!(|data: &[u8]| -> Corpus {
         "pipeline".into(),
     );
 
-    let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &options).execute(false);
+    let directives = thrustc_directive::FileDirectives::default();
+    let file_options = thrustc_directive::FileOptions::new(&options, &directives);
+
+    let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &file_options).execute(false);
 
     let Either::Left(had_errors) = failed else {
         return Corpus::Reject;
@@ -100,5 +103,5 @@ fn save_interesting_ast(ast: &Ast, input_size: usize) {
 }
 
 fn contains_unstable_ast(ast: &Ast) -> bool {
-    ast.is_asm_function() || ast.is_global_asm_keyword()
+    thrustc_fuzz::dumps::contains_unstable_ast(ast)
 }

@@ -34,7 +34,7 @@ fn main() s32 @public {
     if vector::front(ref v) != 10 { return 9; }
     if vector::back(ref v) != 50 { return 10; }
 
-    if vector::popBack(ref v) != 50 { return 11; }
+    if vector::pop(ref v) != 50 { return 11; }
     if vector::getLength(ref v) != 4 { return 12; }
     if vector::back(ref v) != 40 { return 13; }
 

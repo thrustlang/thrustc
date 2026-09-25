@@ -733,11 +733,11 @@ dependencies = [
 
 [[package]]
 name = "thrustc_abi"
-version = "0.2.0"
+version = "0.2.2"
 
 [[package]]
 name = "thrustc_ast"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "arbitrary",
  "colored",
@@ -745,11 +745,12 @@ dependencies = [
  "smallvec",
  "thrustc_ast_external",
  "thrustc_ast_modificators",
+ "thrustc_atomic_ordering",
  "thrustc_attributes",
  "thrustc_code_location",
  "thrustc_errors",
  "thrustc_logging",
- "thrustc_mir",
+ "thrustc_thread_mode",
  "thrustc_token",
  "thrustc_token_type",
  "thrustc_typesystem",
@@ -757,7 +758,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_ast_external"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "arbitrary",
  "serde",
@@ -768,16 +769,17 @@ dependencies = [
 
 [[package]]
 name = "thrustc_ast_modificators"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "arbitrary",
  "serde",
- "thrustc_mir",
+ "thrustc_atomic_ordering",
+ "thrustc_thread_mode",
 ]
 
 [[package]]
 name = "thrustc_ast_verifier"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "thrustc_ast",
  "thrustc_attributes",
@@ -793,14 +795,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "thrustc_atomic_ordering"
+version = "0.2.2"
+dependencies = [
+ "arbitrary",
+ "inkwell",
+ "serde",
+]
+
+[[package]]
 name = "thrustc_attribute_checker"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "thrustc_ast",
  "thrustc_attributes",
  "thrustc_code_location",
  "thrustc_diagnostician",
+ "thrustc_directive",
  "thrustc_errors",
  "thrustc_logging",
  "thrustc_options",
@@ -810,7 +822,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_attributes"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "arbitrary",
@@ -826,7 +838,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_backends"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "inkwell",
  "lazy_static",
@@ -837,7 +849,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_code_location"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "arbitrary",
  "serde",
@@ -859,6 +871,7 @@ dependencies = [
  "thrustc_backends",
  "thrustc_code_location",
  "thrustc_diagnostician",
+ "thrustc_directive",
  "thrustc_lexer",
  "thrustc_llvm_abi",
  "thrustc_llvm_abi_representation",
@@ -872,14 +885,14 @@ dependencies = [
 
 [[package]]
 name = "thrustc_constants"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "const_format",
 ]
 
 [[package]]
 name = "thrustc_diagnostician"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "colored",
  "fastrand",
@@ -891,8 +904,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "thrustc_directive"
+version = "0.2.2"
+dependencies = [
+ "inkwell",
+ "thrustc_backends",
+ "thrustc_code_location",
+ "thrustc_errors",
+ "thrustc_options",
+ "thrustc_token",
+ "thrustc_token_type",
+]
+
+[[package]]
 name = "thrustc_entities"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "smallvec",
@@ -906,24 +932,36 @@ dependencies = [
 
 [[package]]
 name = "thrustc_errors"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "colored",
  "lazy_static",
  "thrustc_code_location",
+ "thrustc_errors_macros",
  "thrustc_logging",
 ]
 
 [[package]]
+name = "thrustc_errors_macros"
+version = "0.2.2"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "thrustc_general_analyzer"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "thrustc_ast",
+ "thrustc_atomic_ordering",
  "thrustc_attributes",
  "thrustc_code_location",
  "thrustc_constants",
  "thrustc_diagnostician",
+ "thrustc_directive",
  "thrustc_errors",
  "thrustc_logging",
  "thrustc_options",
@@ -933,7 +971,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_lexer"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "clipboard",
@@ -953,7 +991,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_linter"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "thrustc_ast",
@@ -961,6 +999,7 @@ dependencies = [
  "thrustc_code_location",
  "thrustc_constants",
  "thrustc_diagnostician",
+ "thrustc_directive",
  "thrustc_entities",
  "thrustc_errors",
  "thrustc_logging",
@@ -972,7 +1011,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_abi"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "inkwell",
  "thrustc_abi",
@@ -985,6 +1024,7 @@ dependencies = [
  "thrustc_llvm_nvidia_cuda_abi",
  "thrustc_llvm_system_v_abi",
  "thrustc_llvm_target_triple",
+ "thrustc_llvm_webassembly_abi",
  "thrustc_logging",
  "thrustc_options",
  "thrustc_typesystem",
@@ -992,7 +1032,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_abi_representation"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "inkwell",
  "thrustc_llvm_target_triple",
@@ -1001,8 +1041,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "thrustc_llvm_attribute_architecture"
+version = "0.2.2"
+dependencies = [
+ "inkwell",
+ "thrustc_llvm_call_conventions",
+ "thrustc_llvm_target_triple",
+]
+
+[[package]]
 name = "thrustc_llvm_attributes"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "inkwell",
@@ -1014,7 +1063,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_call_conventions"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "lazy_static",
@@ -1022,7 +1071,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_codegen"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "either",
@@ -1031,23 +1080,26 @@ dependencies = [
  "libloading",
  "thrustc_ast",
  "thrustc_ast_external",
+ "thrustc_atomic_ordering",
  "thrustc_attributes",
  "thrustc_backends",
  "thrustc_code_location",
  "thrustc_constants",
  "thrustc_diagnostician",
+ "thrustc_directive",
  "thrustc_entities",
  "thrustc_errors",
  "thrustc_llvm_abi",
  "thrustc_llvm_abi_representation",
+ "thrustc_llvm_attribute_architecture",
  "thrustc_llvm_attributes",
  "thrustc_llvm_call_conventions",
+ "thrustc_llvm_codegen_atomic",
  "thrustc_llvm_codegen_variatic",
- "thrustc_llvm_system_v_abi",
  "thrustc_llvm_target_triple",
  "thrustc_logging",
- "thrustc_mir",
  "thrustc_options",
+ "thrustc_thread_mode",
  "thrustc_token",
  "thrustc_token_type",
  "thrustc_typesystem",
@@ -1055,8 +1107,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "thrustc_llvm_codegen_atomic"
+version = "0.2.2"
+dependencies = [
+ "inkwell",
+ "thrustc_code_location",
+ "thrustc_constants",
+ "thrustc_diagnostician",
+ "thrustc_errors",
+ "thrustc_logging",
+ "thrustc_options",
+]
+
+[[package]]
 name = "thrustc_llvm_codegen_variatic"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "inkwell",
  "thrustc_code_location",
@@ -1071,7 +1136,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_nvidia_cuda_abi"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "either",
  "inkwell",
@@ -1088,7 +1153,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_system_v_abi"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "either",
  "inkwell",
@@ -1105,32 +1170,39 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_target_triple"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "inkwell",
 ]
 
 [[package]]
+name = "thrustc_llvm_webassembly_abi"
+version = "0.2.2"
+dependencies = [
+ "either",
+ "inkwell",
+ "thrustc_ast",
+ "thrustc_code_location",
+ "thrustc_constants",
+ "thrustc_diagnostician",
+ "thrustc_errors",
+ "thrustc_llvm_target_triple",
+ "thrustc_logging",
+ "thrustc_options",
+ "thrustc_typesystem",
+]
+
+[[package]]
 name = "thrustc_logging"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "colored",
  "thrustc_constants",
 ]
 
 [[package]]
-name = "thrustc_mir"
-version = "0.2.0"
-dependencies = [
- "arbitrary",
- "inkwell",
- "serde",
- "thrustc_code_location",
-]
-
-[[package]]
 name = "thrustc_options"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "inkwell",
  "libloading",
@@ -1147,7 +1219,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_scoper"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "thrustc_ast",
@@ -1160,12 +1232,13 @@ dependencies = [
 
 [[package]]
 name = "thrustc_semantic_analysis"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "either",
  "thrustc_ast",
  "thrustc_ast_verifier",
  "thrustc_attribute_checker",
+ "thrustc_directive",
  "thrustc_general_analyzer",
  "thrustc_linter",
  "thrustc_options",
@@ -1174,8 +1247,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "thrustc_thread_mode"
+version = "0.2.2"
+dependencies = [
+ "arbitrary",
+ "inkwell",
+ "serde",
+]
+
+[[package]]
 name = "thrustc_token"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "arbitrary",
  "serde",
@@ -1187,7 +1269,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_token_type"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "arbitrary",
  "serde",
@@ -1195,7 +1277,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_typechecker"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "thrustc_ast",
@@ -1204,6 +1286,7 @@ dependencies = [
  "thrustc_code_location",
  "thrustc_constants",
  "thrustc_diagnostician",
+ "thrustc_directive",
  "thrustc_entities",
  "thrustc_errors",
  "thrustc_llvm_target_triple",
@@ -1216,7 +1299,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_typesystem"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "ahash",
  "arbitrary",
@@ -1229,7 +1312,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_utils"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "fastrand",
  "walkdir",

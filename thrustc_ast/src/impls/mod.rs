@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_attributes::ThrustAttributes;
+use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_errors::CompilationIssue;
 use thrustc_token_type::TokenType;
@@ -29,6 +29,7 @@ use thrustc_typesystem::{
 
 use crate::{
     Ast,
+    ast_builtins::AstBuiltin,
     ast_logic_data::{
         ConstructorData, EnumData, EnumDataField, PropertyData, PropertyDataField, StructureData,
     },
@@ -169,11 +170,52 @@ impl AstStandardExtensions for Ast<'_> {
 
     #[inline]
     fn is_unstable_feature(&self) -> bool {
-        matches!(
-            self,
+        match self {
             Ast::AssemblerFunction { .. }
-                | Ast::AssemblerFunctionParameter { .. }
-                | Ast::AsmValue { .. }
+            | Ast::AssemblerFunctionParameter { .. }
+            | Ast::AsmValue { .. }
+            | Ast::GlobalAssembler { .. }
+            | Ast::Embedded { .. }
+            | Ast::ImportC { .. } => true,
+            Ast::Builtin { builtin, .. } => matches!(
+                builtin,
+                AstBuiltin::AtomicRMW { .. } | AstBuiltin::AtomicCompareAndSwap { .. }
+            ),
+            Ast::Call { name, .. } => Self::is_unstable_builtin(name),
+            node => node
+                .get_attributes()
+                .is_some_and(|attrs| attrs.iter().any(Self::is_unstable_attribute)),
+        }
+    }
+
+    #[inline]
+    fn is_unstable_builtin(name: &str) -> bool {
+        matches!(
+            name,
+            "atomicStore"
+                | "atomicAdd"
+                | "atomicSubtract"
+                | "atomicAnd"
+                | "atomicNand"
+                | "atomicOr"
+                | "atomicXor"
+                | "atomicSignedMaximum"
+                | "atomicSignedMinimum"
+                | "atomicUnsignedMaximum"
+                | "atomicUnsignedMinimum"
+                | "atomicCompareAndSwap"
+        )
+    }
+
+    #[inline]
+    fn is_unstable_attribute(attr: &ThrustAttribute) -> bool {
+        matches!(
+            attr,
+            ThrustAttribute::AsmThrow(..)
+                | ThrustAttribute::AsmSyntax(..)
+                | ThrustAttribute::AsmAlignStack(..)
+                | ThrustAttribute::AsmSideEffects(..)
+                | ThrustAttribute::Promote(..)
         )
     }
 

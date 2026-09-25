@@ -36,6 +36,8 @@ fn main() {
         "codegen".into(),
     );
     let options = CompilerOptions::new();
+    let directives = thrustc_directive::FileDirectives::default();
+    let file_options = thrustc_directive::FileOptions::new(&options, &directives);
     let mut rng = XorShift64(seed);
     let want_idx: Option<usize> = std::env::args().nth(3).map(|s| s.parse().unwrap());
 
@@ -46,7 +48,7 @@ fn main() {
             Err(_) => continue,
         };
 
-        let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &options).execute(false);
+        let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &file_options).execute(false);
 
         let Either::Left(had_errors) = failed else { continue };
         if !had_errors {

@@ -279,7 +279,7 @@ fn import_only_context_completes_vector_symbols() {
         self::complete_labels("import std::collections::vector only { p", 0, 40);
 
     assert!(labels.contains(&"push".to_string()));
-    assert!(labels.contains(&"popBack".to_string()));
+    assert!(labels.contains(&"pop".to_string()));
     assert!(labels.iter().all(|label| label.starts_with('p')));
 }
 

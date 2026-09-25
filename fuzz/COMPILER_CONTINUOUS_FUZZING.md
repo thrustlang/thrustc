@@ -9,7 +9,7 @@
 The regular fuzzers (`cargo fuzz-<target>-<mode>`) stop as soon as libFuzzer finds a crash. The **continuous supervisor** works the other way around: it runs a fuzzer in a loop, and each time a crash or panic surfaces it saves the input, records it, and goes back to fuzzing.
 
 > [!IMPORTANT]
-> You need a **nightly** toolchain and **`cargo-fuzz`** to use this (the full list of prerequisites is in [COMPILER_FUZZING.md](../COMPILER_FUZZING.md#prerequisites)). The supervisor and the `reproduce` binary pick up the channel declared in `fuzz/rust-toolchain.toml` automatically — they run `cargo +nightly fuzz run ...` — so you can launch them from the repository root even though it pins a stable toolchain.
+> You need a **nightly** toolchain and **`cargo-fuzz`** to use this (the full list of prerequisites is in [COMPILER_FUZZING.md](../COMPILER_FUZZING.md#prerequisites)). The supervisor and the `reproduce` binary pick up the channel declared in `fuzz/rust-toolchain.toml` automatically. They run `cargo +nightly fuzz run ...`, so you can launch them from the repository root even though it pins a stable toolchain.
 
 ## Requirements
 
@@ -63,7 +63,7 @@ Valid targets: `lexer`, `pipeline`, `llvm-codegen-top-level`, `llvm-codegen-loca
 | `cargo fuzz-continuous-llvm-local-loops-unstable` | `llvm-codegen-local-loops` | unstable |
 | `cargo fuzz-continuous-pipeline-stable` | `pipeline` | stable |
 | `cargo fuzz-continuous-pipeline-unstable` | `pipeline` | unstable |
-| `cargo fuzz-continuous-lexer` | `lexer` | — (universal corpus) |
+| `cargo fuzz-continuous-lexer` | `lexer` | (universal corpus) |
 
 Each shorthand alias is equivalent to `cargo fuzz-continuous run <target> --mode <mode>`.
 
@@ -99,10 +99,10 @@ Change an issue's status. `ignore` makes the supervisor skip that input forever 
 
 Every recorded error lives under `fuzz/backlog/<target>/<issue-id>/` with:
 
-- `input.bin` — the exact crashing input,
-- `ast.txt` — the reconstructed AST dump,
-- `ir.ll` — the generated LLVM IR, or `ir_error.txt` — the panic/error message when IR generation failed,
-- `meta.json` — the metadata (id, target, mode, content hash, discovery time, status, absolute paths).
+- `input.bin`: the exact crashing input,
+- `ast.txt`: the reconstructed AST dump,
+- `ir.ll`: the generated LLVM IR, or `ir_error.txt`: the panic or error message when IR generation failed,
+- `meta.json`: the metadata (id, target, mode, content hash, discovery time, status, absolute paths).
 
 ## The registry log
 
@@ -123,7 +123,7 @@ The human-readable registry is written in a **cascading** format, one indented b
     └─ ir_path       : -
 ```
 
-- `hash` is an FNV-1a content hash of `input.bin`; the `issue-id` derives from it, and that is what makes deduplication work — importing or fuzzing the same input twice never creates a second entry.
+- `hash` is an FNV-1a content hash of `input.bin`; the `issue-id` derives from it, and that is what makes deduplication work. Importing or fuzzing the same input twice never creates a second entry.
 - `mode` is `stable` or `unstable`; `marker` is the crash signature that matched, or `-`.
 - `status` is `open`, `ignored` or `fixed`. Absolute paths point at the payload files inside the backlog.
 

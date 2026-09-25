@@ -154,16 +154,16 @@ Valid targets: `lexer`, `pipeline`, `llvm-codegen-top-level`, `llvm-codegen-loca
 | `cargo fuzz-continuous-llvm-local-loops-unstable` | `llvm-codegen-local-loops` | unstable |
 | `cargo fuzz-continuous-pipeline-stable` | `pipeline` | stable |
 | `cargo fuzz-continuous-pipeline-unstable` | `pipeline` | unstable |
-| `cargo fuzz-continuous-lexer` | `lexer` | — (universal corpus) |
+| `cargo fuzz-continuous-lexer` | `lexer` | (universal corpus) |
 
 ### The registry log
 
 Every recorded error lives in the backlog at `fuzz/backlog/<target>/<issue-id>/` with:
 
-- `input.bin` — the exact crashing input,
-- `ast.txt` — the reconstructed AST dump,
-- `ir.ll` — the generated LLVM IR, or `ir_error.txt` — the panic/error message when IR generation failed,
-- `meta.json` — metadata (id, target, mode, content hash, discovery time, status, absolute paths).
+- `input.bin`: the exact crashing input,
+- `ast.txt`: the reconstructed AST dump,
+- `ir.ll`: the generated LLVM IR, or `ir_error.txt`: the panic or error message when IR generation failed,
+- `meta.json`: metadata (id, target, mode, content hash, discovery time, status, absolute paths).
 
 The registry is a plain text log, one indented block per issue, at `fuzz/fuzz_continuous/<target>.log`:
 
@@ -199,7 +199,7 @@ cargo fuzz-measure-pass-rate
 llvm-codegen-local: 200/200 kept (100.00%)  [seed=0xdecafbad]
 ```
 
-The higher the keep rate, the more of the fuzzing effort actually reaches codegen. A low rate means the generator wastes most samples on ASTs the compiler rejects early — in that case the generator is what needs fixing, not the codegen.
+The higher the keep rate, the more of the fuzzing effort actually reaches codegen. A low rate means the generator wastes most samples on ASTs the compiler rejects early. In that case the generator is what needs fixing, not the codegen.
 
 Because the inputs come from a PRNG seeded with `--seed`, the same command always produces the same inputs. That's what makes before/after comparisons meaningful: you change the generator, run the command, and any change in the number is caused by your edit, not by randomness.
 
@@ -269,7 +269,7 @@ This is the general workflow when a fuzzer finds an issue:
 1. **Create the required directories.** If this is a fresh clone, run one of the `create_fuzzing_dirs` scripts above (see [Corpus directories](#corpus-directories)).
 2. **Run the fuzzer.** Start one of the fuzzing suites (e.g. `cargo +nightly fuzz-llvm-local-unstable`). libFuzzer keeps generating inputs and feeding them to the target until the compiler crashes (a panic, an ICE, an LLVM verification error, an out of memory, etc.). When that happens the fuzzer stops and writes the crashing input under `fuzz/artifacts/<target>/`.
 
-   Alternatively, use the [continuous supervisor](#continuous-fuzzing) (`cargo fuzz-continuous-llvm-local-unstable`), which never stops: it saves each crash automatically — with AST and LLVM IR dumps — and keeps fuzzing. You can inspect the backlog with `cargo fuzz-backlog list`.
+   Alternatively, use the [continuous supervisor](#continuous-fuzzing) (`cargo fuzz-continuous-llvm-local-unstable`), which never stops: it saves each crash automatically, with AST and LLVM IR dumps, and keeps fuzzing. You can inspect the backlog with `cargo fuzz-backlog list`.
 3. **Take the crash artifact.** The crash file is a raw bytes input, the exact data that made the compiler panic.
 4. **Inspect the AST.** Pass the crash file to the `dump-ast` binary that matches the fuzzer that crashed, to reconstruct and print the AST:
    - `cargo fuzz-dump-ast-top-level <crash-file>` for the `pipeline` fuzzer.

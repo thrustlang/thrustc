@@ -1,81 +1,75 @@
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/logos/new%20logo/thrustlang-logo-banner-text-italic.png" alt= "logo" style= "width: 80%; height: 80%;"></img>
 
-# The Thrust Compiler 
+# The Thrust Compiler
 
 <img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
 
-There is a simple guide of standard conventions to follow in order to delivery a good Github commit for the Thrust Compiler (**thrustc**).
+This is a short guide to the commit conventions used for the Thrust Compiler (**thrustc**).
 
 ### Title
 
-It needs to be detailed. It can be include a lot of technical slang. The base of a well designed Github commit title always will be and needs a specific syntax as:
+The title should be clear. It may use technical terms when needed. A good commit title follows this syntax:
 
-#### Title - features
+#### Title for features
 
-Following the syntax:
+Use this syntax:
 
 `feat(...)`
 
 Valid locations:
 
-- `llvm_backend` Any location that usually involucrates the LLVM backend.
-- `llvm_linker_driver` Any location that usually involucrates the compiler LLVM Linker Driver invocation.
-- `gcc_backend` Any location that usually involucrates the GNU Compiler Collection (GCC) backend.
-- `frontend` Any locations that usually involucrates the Abstract Syntax Tree (AST), Lexer, Parser, TypeChecker and we could continue...
-- `project-visual` Any location that usually involucrates general or visual changes of the compiler project available on Github (Examples: README.md, assets, highlighting, banners).
-- `project` Any location that usually involucrates Cargo, Rust Compiler and Github repository changes, Github actions or the conception of a new part of the compiler (Cargo Workspaces).
-- `fuzzing` Any location that usually involucrates the compiler fuzzing suite (`fuzz/`), its corpora and fuzz targets.
-- `doc` Any location that usually involucrates the compiler documentation and guides available on the repository (Examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
-- `abi` Any location that usually involucrates the compiler Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
-- `preprocessador` Any location that usually involucrates the compiler preprocessor and module/import resolution (`thrustc_preprocessor`).
-- `std` Any location that usually involucrates the standard library (`std/`).
-- `lsp` Any location that usually involucrates the language server and editor integration (`thrustc_lsp`, `lsp/`).
+- `llvm_backend` Any change related to the LLVM backend.
+- `llvm_linker_driver` Any change related to the LLVM Linker Driver invocation.
+- `gcc_backend` Any change related to the GNU Compiler Collection (GCC) backend.
+- `frontend` Any change related to the Abstract Syntax Tree (AST), Lexer, Parser or TypeChecker.
+- `project-visual` General or visual changes to the compiler project on Github (examples: README.md, assets, highlighting, banners).
+- `project` Changes to Cargo, the Rust toolchain, the Github repository, Github actions, or the creation of a new part of the compiler (Cargo workspaces).
+- `fuzzing` Any change related to the compiler fuzzing suite (`fuzz/`), its corpora and fuzz targets.
+- `doc` Any change related to the compiler documentation and guides in the repository (examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
+- `abi` Any change related to the Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
+- `preprocessador` Any change related to the preprocessor and module or import resolution (`thrustc_preprocessor`).
+- `std` Any change related to the standard library (`std/`).
+- `lsp` Any change related to the language server and editor integration (`thrustc_lsp`, `lsp/`).
 
 Example:
 
-`feat(llvm_backend)` Adding support for TLS Thread priority.
+`feat(llvm_backend)` Adding support for TLS thread priority.
 
-#### Title - fixes
+#### Title for fixes
 
-Following the syntax:
+Use this syntax:
 
 `fix(...)`
 
 Valid locations:
 
-- `llvm_backend` Any location that usually involucrates the LLVM backend.
-- `llvm_linker_driver` Any location that usually involucrates the compiler LLVM Linker Driver invocation.
-- `gcc_backend` Any location that usually involucrates the GNU Compiler Collection (GCC) backend.
-- `frontend` Any locations that usually involucrates the Abstract Syntax Tree (AST), Lexer, Parser, TypeChecker and we could continue...
-- `project-visual` Any location that usually involucrates general or visual changes of the compiler project available on Github (Examples: README.md, assets, highlighting, banners).
-- `fuzzing` Any location that usually involucrates the compiler fuzzing suite (`fuzz/`), its corpora and fuzz targets.
-- `doc` Any location that usually involucrates the compiler documentation and guides available on the repository (Examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
-- `abi` Any location that usually involucrates the compiler Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
-- `preprocessador` Any location that usually involucrates the compiler preprocessor and module/import resolution (`thrustc_preprocessor`).
-- `std` Any location that usually involucrates the standard library (`std/`).
-- `lsp` Any location that usually involucrates the language server and editor integration (`thrustc_lsp`, `lsp/`).
+- `llvm_backend` Any change related to the LLVM backend.
+- `llvm_linker_driver` Any change related to the LLVM Linker Driver invocation.
+- `gcc_backend` Any change related to the GNU Compiler Collection (GCC) backend.
+- `frontend` Any change related to the Abstract Syntax Tree (AST), Lexer, Parser or TypeChecker.
+- `project-visual` General or visual changes to the compiler project on Github (examples: README.md, assets, highlighting, banners).
+- `fuzzing` Any change related to the compiler fuzzing suite (`fuzz/`), its corpora and fuzz targets.
+- `doc` Any change related to the compiler documentation and guides in the repository (examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
+- `abi` Any change related to the Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
+- `preprocessador` Any change related to the preprocessor and module or import resolution (`thrustc_preprocessor`).
+- `std` Any change related to the standard library (`std/`).
+- `lsp` Any change related to the language server and editor integration (`thrustc_lsp`, `lsp/`).
 
-Any consecutive location written to the next one needs to be follow for a COMMA character `,`.
+When you list more than one location, separate them with a comma `,`.
 
 Example:
 
 `fix(frontend)` Fixing several issues on the abstract syntax analyzer.
 
-#### Title - Combinatory
+#### Combinatory title
 
-In order to create a well disigned combinatory title, you need to use the following syntax:
+To write a combined title, use this syntax:
 
 `(feat(...), fix(...))`
 
-- It needs to be encapsulated for a pair characters PAREN `()`.
-- Each next feature or fix needs to be followed for a COMMA character `,`. 
+- Enclose the whole title in parentheses `()`.
+- Separate each feature or fix with a comma `,`.
 
 ### Description
 
-It needs to be concise, short, but detailed in the same time. It can be include a lot of technical slang.
-
-
-
-
-
-
+Keep the description short and clear. It may use technical terms when needed.

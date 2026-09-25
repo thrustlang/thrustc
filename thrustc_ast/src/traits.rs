@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_attributes::ThrustAttributes;
+use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_errors::CompilationIssue;
 use thrustc_token_type::TokenType;
@@ -86,6 +86,8 @@ pub trait AstStandardExtensions {
     fn is_function_parameter(&self) -> bool;
     fn is_defer_keyword(&self) -> bool;
     fn is_unstable_feature(&self) -> bool;
+    fn is_unstable_builtin(name: &str) -> bool;
+    fn is_unstable_attribute(attr: &ThrustAttribute) -> bool;
     fn is_invalid_ast_node(&self) -> bool;
 }
 

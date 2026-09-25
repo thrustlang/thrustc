@@ -19,6 +19,8 @@
 
 use std::path::PathBuf;
 
+use thrustc_directive::{FileDirectives, FileOptions};
+
 use arbitrary::{Arbitrary, Unstructured};
 use either::Either;
 use inkwell::targets::TargetData;
@@ -28,8 +30,9 @@ use inkwell::{
     module::Module,
     targets::{InitializationConfig, Target, TargetMachine, TargetTriple},
 };
+use thrustc_ast::ast_builtins::{AstBuiltin, DeferredBuiltinArgument};
 use thrustc_ast::traits::AstStandardExtensions;
-use thrustc_ast::Ast;
+use thrustc_ast::{Ast, ModuleExpressionValues};
 use thrustc_backends::{
     llvm::{target::LLVMTarget, LLVMBackend},
     ThrustOptimization,
@@ -83,8 +86,208 @@ pub fn classify(combined: &str) -> Option<&'static str> {
     CRASH_MARKERS.iter().copied().find(|m| combined.contains(m))
 }
 
+/// Returns true if the given AST node is an unstable feature, or if any of its
+/// descendants is. The leaf detection (`is_unstable_feature`) lives in the
+/// compiler's `AstStandardExtensions` trait; the tree walk lives here in the
+/// fuzzer so the compiler itself stays untouched.
 pub fn contains_unstable_ast(ast: &Ast) -> bool {
-    ast.is_asm_function() || ast.is_global_asm_keyword()
+    if ast.is_unstable_feature() {
+        return true;
+    }
+
+    contains_unstable_in_children(ast)
+}
+
+fn contains_unstable_in_children(ast: &Ast) -> bool {
+    match ast {
+        Ast::FixedArray { items, .. } | Ast::Array { items, .. } => {
+            items.iter().any(contains_unstable_ast)
+        }
+        Ast::Index { source, index, .. } => {
+            contains_unstable_ast(&**source) || contains_unstable_ast(&**index)
+        }
+        Ast::Property { source, .. } => contains_unstable_ast(&**source),
+        Ast::If {
+            condition,
+            then_branch,
+            else_if_branch,
+            else_branch,
+            ..
+        } => {
+            contains_unstable_ast(&**condition)
+                || contains_unstable_ast(&**then_branch)
+                || else_if_branch.iter().any(contains_unstable_ast)
+                || else_branch
+                    .as_ref()
+                    .map_or(false, |node| contains_unstable_ast(&**node))
+        }
+        Ast::Elif { condition, block, .. } => {
+            contains_unstable_ast(&**condition) || contains_unstable_ast(&**block)
+        }
+        Ast::Else { block, .. } => contains_unstable_ast(&**block),
+        Ast::CompileTimeIf {
+            condition,
+            then_branch,
+            else_if_branch,
+            else_branch,
+            ..
+        } => {
+            contains_unstable_ast(&**condition)
+                || contains_unstable_ast(&**then_branch)
+                || else_if_branch.iter().any(contains_unstable_ast)
+                || else_branch
+                    .as_ref()
+                    .map_or(false, |node| contains_unstable_ast(&**node))
+        }
+        Ast::For {
+            local,
+            condition,
+            actions,
+            block,
+            ..
+        } => {
+            contains_unstable_ast(&**local)
+                || contains_unstable_ast(&**condition)
+                || contains_unstable_ast(&**actions)
+                || contains_unstable_ast(&**block)
+        }
+        Ast::While {
+            variable,
+            condition,
+            block,
+            ..
+        } => {
+            variable
+                .as_ref()
+                .map_or(false, |node| contains_unstable_ast(&**node))
+                || contains_unstable_ast(&**condition)
+                || contains_unstable_ast(&**block)
+        }
+        Ast::Loop { block, .. } => contains_unstable_ast(&**block),
+        Ast::Block { nodes, post, .. } => {
+            nodes.iter().any(contains_unstable_ast) || post.iter().any(contains_unstable_ast)
+        }
+        Ast::Defer { node, .. } => contains_unstable_ast(&**node),
+        Ast::Enum { data, .. } => data
+            .iter()
+            .any(|(_, _, value)| contains_unstable_ast(value)),
+        Ast::EnumValue { value, .. } => contains_unstable_ast(&**value),
+        Ast::CompilerIntrinsic { parameters, .. } => {
+            parameters.iter().any(contains_unstable_ast)
+        }
+        Ast::AssemblerFunction { parameters, .. } => {
+            parameters.iter().any(contains_unstable_ast)
+        }
+        Ast::Function { parameters, body, .. } => {
+            parameters.iter().any(contains_unstable_ast)
+                || body
+                    .as_ref()
+                    .map_or(false, |node| contains_unstable_ast(&**node))
+        }
+        Ast::Return { expression, .. } => expression
+            .as_ref()
+            .map_or(false, |node| contains_unstable_ast(&**node)),
+        Ast::Static { value, .. } => value
+            .as_ref()
+            .map_or(false, |node| contains_unstable_ast(&**node)),
+        Ast::Const { value, .. } => contains_unstable_ast(&**value),
+        Ast::Var { value, .. } => value
+            .as_ref()
+            .map_or(false, |node| contains_unstable_ast(&**node)),
+        Ast::Mutation { source, value, .. } => {
+            contains_unstable_ast(&**source) || contains_unstable_ast(&**value)
+        }
+        Ast::Address { source, indexes, .. } => {
+            contains_unstable_ast(&**source) || indexes.iter().any(contains_unstable_ast)
+        }
+        Ast::Write { source, write_value, .. } => {
+            contains_unstable_ast(&**source) || contains_unstable_ast(&**write_value)
+        }
+        Ast::Load { source, .. } => contains_unstable_ast(&**source),
+        Ast::Deref { value, .. } => contains_unstable_ast(&**value),
+        Ast::As { from, .. } => contains_unstable_ast(&**from),
+        Ast::GetLocation { expr, .. } => contains_unstable_ast(&**expr),
+        Ast::ModuleExpression { values, .. } => match values {
+            ModuleExpressionValues::Call { arguments, .. } => {
+                arguments.iter().any(contains_unstable_ast)
+            }
+            ModuleExpressionValues::Reference { .. } => false,
+        },
+        Ast::Call { args, .. } => args.iter().any(contains_unstable_ast),
+        Ast::IndirectCall { function, args, .. } => {
+            contains_unstable_ast(&**function) || args.iter().any(contains_unstable_ast)
+        }
+        Ast::AsmValue { args, .. } => args.iter().any(contains_unstable_ast),
+        Ast::BinaryOp { left, right, .. } => {
+            contains_unstable_ast(&**left) || contains_unstable_ast(&**right)
+        }
+        Ast::UnaryOp { node, .. } => contains_unstable_ast(&**node),
+        Ast::Group { node, .. } => contains_unstable_ast(&**node),
+        Ast::Builtin { builtin, .. } => contains_unstable_in_builtin(builtin),
+        Ast::Constructor { data, .. } => data
+            .iter()
+            .any(|(_, value, _, _)| contains_unstable_ast(value)),
+        Ast::CString { .. }
+        | Ast::CNString { .. }
+        | Ast::Char { .. }
+        | Ast::Boolean { .. }
+        | Ast::Integer { .. }
+        | Ast::Float { .. }
+        | Ast::NullPtr { .. }
+        | Ast::GlobalAssembler { .. }
+        | Ast::Embedded { .. }
+        | Ast::Struct { .. }
+        | Ast::CustomType { .. }
+        | Ast::CompilerIntrinsicParameter { .. }
+        | Ast::AssemblerFunctionParameter { .. }
+        | Ast::FunctionParameter { .. }
+        | Ast::Reference { .. }
+        | Ast::Continue { .. }
+        | Ast::Break { .. }
+        | Ast::ContinueAll { .. }
+        | Ast::BreakAll { .. }
+        | Ast::Import { .. }
+        | Ast::ImportC { .. }
+        | Ast::Unreachable { .. }
+        | Ast::Invalid { .. } => false,
+    }
+}
+
+fn contains_unstable_in_builtin(builtin: &AstBuiltin) -> bool {
+    match builtin {
+        AstBuiltin::MemCpy { src, dst, size, .. }
+        | AstBuiltin::MemMove { src, dst, size, .. } => {
+            contains_unstable_ast(&**src)
+                || contains_unstable_ast(&**dst)
+                || contains_unstable_ast(&**size)
+        }
+        AstBuiltin::MemSet { dst, size, .. } => {
+            contains_unstable_ast(&**dst) || contains_unstable_ast(&**size)
+        }
+        AstBuiltin::AtomicRMW { destination, value, .. } => {
+            contains_unstable_ast(&**destination) || contains_unstable_ast(&**value)
+        }
+        AstBuiltin::AtomicCompareAndSwap {
+            destination,
+            expected,
+            new_value,
+            ..
+        } => {
+            contains_unstable_ast(&**destination)
+                || contains_unstable_ast(&**expected)
+                || contains_unstable_ast(&**new_value)
+        }
+        AstBuiltin::ArbitraryArgsCopy { source, .. } => contains_unstable_ast(&**source),
+        AstBuiltin::ArbitraryArgsEnd { list, .. } => contains_unstable_ast(&**list),
+        AstBuiltin::ArbitraryArgFrom { list, .. } => contains_unstable_ast(&**list),
+        AstBuiltin::DeferredCompileTime { arguments, .. } => arguments.iter().any(|arg| match arg {
+            DeferredBuiltinArgument::Value { expression, .. } => {
+                contains_unstable_ast(&**expression)
+            }
+            _ => false,
+        }),
+        _ => false,
+    }
 }
 
 pub fn reconstruct_ast<'a>(target: &str, data: &'a [u8]) -> Result<Ast<'a>, String> {
@@ -117,7 +320,10 @@ pub fn emit_llvm_ir_core<'ast>(ast: &Ast<'ast>) -> Option<String> {
         "codegen".into(),
     );
 
-    let failed = SemanticAnalysis::new(std::slice::from_ref(ast), &file, &options).execute(false);
+    let directives = FileDirectives::default();
+    let file_options = FileOptions::new(&options, &directives);
+
+    let failed = SemanticAnalysis::new(std::slice::from_ref(ast), &file, &file_options).execute(false);
 
     let Either::Left(had_errors) = failed else {
         return None;
@@ -202,6 +408,7 @@ pub fn emit_llvm_ir_core<'ast>(ast: &Ast<'ast>) -> Option<String> {
         target_abi.as_ref(),
         Diagnostician::new(&file, &options),
         &options,
+        &file_options,
         &file,
     );
 

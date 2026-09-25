@@ -404,7 +404,9 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             | Ast::Invalid { .. } => {}
         }
     }
+}
 
+impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
     pub fn codegen_block(&mut self, node: &'ctx Ast) {
         match node {
             Ast::Block {
@@ -453,6 +455,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     }
                 }
 
+                // Clean the pending defer scope
                 while self.context.pending_defer_scope_depth() > stack_depth {
                     self.context.pop_pending_defer_scope();
                 }
@@ -462,7 +465,16 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 block::move_terminator_to_end(self.get_mut_context(), *span);
             }
 
-            node => self.codegen_statement(node),
+            node => {
+                self.get_mut_context().mark_dbg_location(node.get_span());
+
+                if matches!(node, Ast::Defer { .. }) {
+                    self.context.push_pending_defer_node(node);
+                    return;
+                }
+
+                self.codegen_post_executation(node);
+            }
         }
     }
 
@@ -485,17 +497,6 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
             self.context.pop_pending_defer_scope();
         }
-    }
-
-    fn codegen_statement(&mut self, node: &'ctx Ast) {
-        self.get_mut_context().mark_dbg_location(node.get_span());
-
-        if let Ast::Defer { .. } = node {
-            self.context.push_pending_defer_node(node);
-            return;
-        }
-
-        self.codegen_post_executation(node);
     }
 
     fn codegen_post_executation(&mut self, node: &'ctx Ast) {

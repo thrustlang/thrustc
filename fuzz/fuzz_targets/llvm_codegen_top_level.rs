@@ -30,7 +30,6 @@ use inkwell::{
 };
 use libfuzzer_sys::{Corpus, fuzz_target};
 use thrustc_ast::Ast;
-use thrustc_ast::traits::AstStandardExtensions;
 use thrustc_backends::{
     ThrustOptimization,
     llvm::{LLVMBackend, target::LLVMTarget},
@@ -65,7 +64,10 @@ fuzz_target!(|data: &[u8]| -> Corpus {
         "codegen_scoped".into(),
     );
 
-    let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &options).execute(false);
+    let directives = thrustc_directive::FileDirectives::default();
+    let file_options = thrustc_directive::FileOptions::new(&options, &directives);
+
+    let failed = SemanticAnalysis::new(std::slice::from_ref(&ast), &file, &file_options).execute(false);
 
     if let Either::Left(had_errors) = failed
         && !had_errors
@@ -146,6 +148,7 @@ fuzz_target!(|data: &[u8]| -> Corpus {
             target_abi.as_ref(),
             Diagnostician::new(&file, &options),
             &options,
+            &file_options,
             &file,
         );
 
@@ -165,5 +168,5 @@ fuzz_target!(|data: &[u8]| -> Corpus {
 });
 
 fn contains_unstable_ast(ast: &Ast) -> bool {
-    ast.is_asm_function() || ast.is_global_asm_keyword()
+    thrustc_fuzz::dumps::contains_unstable_ast(ast)
 }

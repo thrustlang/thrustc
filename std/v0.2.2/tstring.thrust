@@ -792,7 +792,7 @@ fn pushNullTerminator(text: ptr[TString]) void {
 
 fn removeNullTerminator(text: ptr[TString]) void {
     if vec::getLength[char](ref text.buffer) > 0 {
-        vec::popBack[char](ref text.buffer);
+        vec::pop[char](ref text.buffer);
     }
 }
 
