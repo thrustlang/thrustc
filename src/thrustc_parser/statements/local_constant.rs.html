@@ -22,7 +22,7 @@
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_attributes::ThrustAttributes;
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>thrustc_errors::{CompilationIssue, CompilationIssueCode};
-<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_mir::atomicord::ThrustAtomicOrdering;
+<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_atomic_ordering::ThrustAtomicOrdering;
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>thrustc_parser_context::{Position, traits::TypeContextExtensions};
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_token::{Token, traits::TokenExtensions};
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>thrustc_token_type::TokenType;
@@ -94,14 +94,14 @@
 <a href=#94 id=94 data-nosnippet>94</a>
 <a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">if </span>!ctx.is_main_scope() {
 <a href=#96 id=96 data-nosnippet>96</a>        ctx.get_mut_symbols().new_constant(
-<a href=#97 id=97 data-nosnippet>97</a>            name,
+<a href=#97 id=97 data-nosnippet>97</a>            name.to_string(),
 <a href=#98 id=98 data-nosnippet>98</a>            (const_type.clone(), attributes.clone(), <span class="prelude-val">Some</span>(value.clone())),
 <a href=#99 id=99 data-nosnippet>99</a>            span,
 <a href=#100 id=100 data-nosnippet>100</a>        )<span class="question-mark">?</span>;
 <a href=#101 id=101 data-nosnippet>101</a>
 <a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span>constant: Ast&lt;<span class="lifetime">'_</span>&gt; = Ast::Const {
-<a href=#103 id=103 data-nosnippet>103</a>            name,
-<a href=#104 id=104 data-nosnippet>104</a>            ascii_name,
+<a href=#103 id=103 data-nosnippet>103</a>            name: name.to_string(),
+<a href=#104 id=104 data-nosnippet>104</a>            ascii_name: ascii_name.to_string(),
 <a href=#105 id=105 data-nosnippet>105</a>            kind: const_type,
 <a href=#106 id=106 data-nosnippet>106</a>            value: value.into(),
 <a href=#107 id=107 data-nosnippet>107</a>            attributes,

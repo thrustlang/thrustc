@@ -87,7 +87,7 @@
 <a href=#87 id=87 data-nosnippet>87</a>                String::from(<span class="string">"Expected ';'."</span>),
 <a href=#88 id=88 data-nosnippet>88</a>            )<span class="question-mark">?</span>;
 <a href=#89 id=89 data-nosnippet>89</a>
-<a href=#90 id=90 data-nosnippet>90</a>            data.push((name, field_type, expr));
+<a href=#90 id=90 data-nosnippet>90</a>            data.push((name.to_string(), field_type, expr));
 <a href=#91 id=91 data-nosnippet>91</a>
 <a href=#92 id=92 data-nosnippet>92</a>            <span class="kw">continue</span>;
 <a href=#93 id=93 data-nosnippet>93</a>        } <span class="kw">else </span>{
@@ -107,10 +107,10 @@
 <a href=#107 id=107 data-nosnippet>107</a>
 <a href=#108 id=108 data-nosnippet>108</a>    <span class="kw">if </span>!ctx.is_main_scope() {
 <a href=#109 id=109 data-nosnippet>109</a>        ctx.get_mut_symbols()
-<a href=#110 id=110 data-nosnippet>110</a>            .new_enum(enum_name, (data.clone(), enum_attributes.clone()), span)<span class="question-mark">?</span>;
+<a href=#110 id=110 data-nosnippet>110</a>            .new_enum(enum_name.to_string(), (data.clone(), enum_attributes.clone()), span)<span class="question-mark">?</span>;
 <a href=#111 id=111 data-nosnippet>111</a>
 <a href=#112 id=112 data-nosnippet>112</a>        <span class="prelude-val">Ok</span>(Ast::Enum {
-<a href=#113 id=113 data-nosnippet>113</a>            name: enum_name,
+<a href=#113 id=113 data-nosnippet>113</a>            name: enum_name.to_string(),
 <a href=#114 id=114 data-nosnippet>114</a>            data,
 <a href=#115 id=115 data-nosnippet>115</a>            attributes: enum_attributes,
 <a href=#116 id=116 data-nosnippet>116</a>            kind: Type::Void { span },

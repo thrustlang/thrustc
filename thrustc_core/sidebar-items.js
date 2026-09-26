@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["cleaner","emit","emitters","finisher","interrupt","linkage","print","printers","starter","utils","validate"],"struct":["ThrustCompiler"],"type":["CompileTime"]};
+window.SIDEBAR_ITEMS = {"fn":["contains_sanitizer_kind"],"mod":["cleaner","emit","emitters","finisher","interrupt","linkage","print","printers","starter","utils","validate"],"struct":["ThrustCompiler"],"type":["CompileTime"]};

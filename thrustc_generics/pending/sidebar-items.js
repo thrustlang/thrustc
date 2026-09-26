@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["PENDING_INSTANTIATIONS"],"fn":["drain_pending","has_pending_for","has_pending_instantiations","record_pending"],"struct":["PendingInstantiation"]};
+window.SIDEBAR_ITEMS = {"constant":["PENDING_INSTANTIATIONS"],"fn":["has_pending_for","has_pending_instantiations","pending_module_paths","record_pending","reset_pending_instantiations","take_pending"],"struct":["PendingInstantiation","PendingInstantiations"]};

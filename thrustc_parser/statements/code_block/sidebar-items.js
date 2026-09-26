@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["parse_code_block_stmt","parse_code_block_without_start_stmt"]};
+window.SIDEBAR_ITEMS = {"fn":["build_dealloc_defer","find_local_deallocator","parse_code_block_stmt","parse_code_block_without_start_stmt"]};

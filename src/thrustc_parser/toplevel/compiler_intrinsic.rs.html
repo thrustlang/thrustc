@@ -140,15 +140,15 @@
 <a href=#140 id=140 data-nosnippet>140</a>            IntrinsicParametersTypes(parameters_types);
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a>        ctx.get_mut_symbols().new_compiler_intrinsic(
-<a href=#143 id=143 data-nosnippet>143</a>            name,
+<a href=#143 id=143 data-nosnippet>143</a>            name.to_string(),
 <a href=#144 id=144 data-nosnippet>144</a>            (return_type, intrinsic_parameters_types_repr, has_ignore),
 <a href=#145 id=145 data-nosnippet>145</a>        )<span class="question-mark">?</span>;
 <a href=#146 id=146 data-nosnippet>146</a>
 <a href=#147 id=147 data-nosnippet>147</a>        <span class="prelude-val">Ok</span>(Ast::new_nullptr(span))
 <a href=#148 id=148 data-nosnippet>148</a>    } <span class="kw">else </span>{
 <a href=#149 id=149 data-nosnippet>149</a>        <span class="kw">let </span>ast: Ast&lt;<span class="lifetime">'_</span>&gt; = Ast::CompilerIntrinsic {
-<a href=#150 id=150 data-nosnippet>150</a>            name,
-<a href=#151 id=151 data-nosnippet>151</a>            external_name,
+<a href=#150 id=150 data-nosnippet>150</a>            name: name.to_string(),
+<a href=#151 id=151 data-nosnippet>151</a>            external_name: external_name.to_string(),
 <a href=#152 id=152 data-nosnippet>152</a>            parameters,
 <a href=#153 id=153 data-nosnippet>153</a>            parameters_types,
 <a href=#154 id=154 data-nosnippet>154</a>            return_type,

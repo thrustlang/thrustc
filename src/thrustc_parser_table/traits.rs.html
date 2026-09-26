@@ -22,8 +22,8 @@
 <a href=#22 id=22 data-nosnippet>22</a>    ast_logic_data::{EnumData, EnumDataField, StructureData},
 <a href=#23 id=23 data-nosnippet>23</a>    ast_metadata::{FunctionParameterMetadata, LocalMetadata, StaticMetadata},
 <a href=#24 id=24 data-nosnippet>24</a>};
-<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_errors::CompilationIssue;
-<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>thrustc_code_location::Span;
+<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_code_location::Span;
+<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>thrustc_errors::CompilationIssue;
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 <a href=#28 id=28 data-nosnippet>28</a>
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">pub trait </span>FoundSymbolExtensions {
@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a>}
 <a href=#55 id=55 data-nosnippet>55</a>
 <a href=#56 id=56 data-nosnippet>56</a><span class="kw">pub trait </span>StructSymbolExtensions&lt;<span class="lifetime">'parser</span>&gt; {
-<a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">fn </span>get_data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; StructureData&lt;<span class="lifetime">'parser</span>&gt;;
+<a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">fn </span>get_data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; StructureData;
 <a href=#58 id=58 data-nosnippet>58</a>    <span class="kw">fn </span>get_metadata(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; StructTypeMetadata;
 <a href=#59 id=59 data-nosnippet>59</a>    <span class="kw">fn </span>get_field_type(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;Type&gt;;
 <a href=#60 id=60 data-nosnippet>60</a>
@@ -96,7 +96,7 @@
 <a href=#96 id=96 data-nosnippet>96</a>
 <a href=#97 id=97 data-nosnippet>97</a><span class="kw">pub trait </span>FunctionExtensions {
 <a href=#98 id=98 data-nosnippet>98</a>    <span class="kw">fn </span>get_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Type;
-<a href=#99 id=99 data-nosnippet>99</a>    <span class="kw">fn </span>get_parameter_names(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;<span class="kw-2">&amp;</span>str&gt;;
+<a href=#99 id=99 data-nosnippet>99</a>    <span class="kw">fn </span>get_parameter_names(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;String&gt;;
 <a href=#100 id=100 data-nosnippet>100</a>}
 <a href=#101 id=101 data-nosnippet>101</a>
 <a href=#102 id=102 data-nosnippet>102</a><span class="kw">pub trait </span>FunctionAssemblerExtensions {

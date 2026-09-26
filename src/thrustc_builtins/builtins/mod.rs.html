@@ -82,52 +82,67 @@
 <a href=#82 id=82 data-nosnippet>82</a>    registry.register_function(target::IsDarwin);
 <a href=#83 id=83 data-nosnippet>83</a>    registry.register_function(target::IsApple);
 <a href=#84 id=84 data-nosnippet>84</a>    registry.register_function(target::IsAix);
-<a href=#85 id=85 data-nosnippet>85</a>    registry.register_function(target::Is64Bit);
-<a href=#86 id=86 data-nosnippet>86</a>    registry.register_function(target::Is32Bit);
-<a href=#87 id=87 data-nosnippet>87</a>    registry.register_function(target::IsBigEndian);
-<a href=#88 id=88 data-nosnippet>88</a>    registry.register_function(target::IsLittleEndian);
-<a href=#89 id=89 data-nosnippet>89</a>    registry.register_function(target::IsX86);
-<a href=#90 id=90 data-nosnippet>90</a>    registry.register_function(target::IsX8664);
-<a href=#91 id=91 data-nosnippet>91</a>    registry.register_function(target::IsArm);
-<a href=#92 id=92 data-nosnippet>92</a>    registry.register_function(target::IsAarch64);
-<a href=#93 id=93 data-nosnippet>93</a>    registry.register_function(target::IsRiscv64);
-<a href=#94 id=94 data-nosnippet>94</a>    registry.register_function(target::IsPpc);
-<a href=#95 id=95 data-nosnippet>95</a>    registry.register_function(target::IsPpc64);
-<a href=#96 id=96 data-nosnippet>96</a>    registry.register_function(target::IsMips64);
-<a href=#97 id=97 data-nosnippet>97</a>    registry.register_function(target::IsSystemz);
-<a href=#98 id=98 data-nosnippet>98</a>    registry.register_function(target::IsLoongarch64);
-<a href=#99 id=99 data-nosnippet>99</a>    registry.register_function(target::IsWasm);
-<a href=#100 id=100 data-nosnippet>100</a>    registry.register_function(target::IsElf);
-<a href=#101 id=101 data-nosnippet>101</a>    registry.register_function(target::IsMachO);
-<a href=#102 id=102 data-nosnippet>102</a>    registry.register_function(target::IsCoff);
-<a href=#103 id=103 data-nosnippet>103</a>    registry.register_function(target::HasPosixThreads);
-<a href=#104 id=104 data-nosnippet>104</a>    registry.register_function(target::HasSysvAbi);
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a>    registry.register_function(target::PointerWidth);
-<a href=#107 id=107 data-nosnippet>107</a>    registry.register_function(target::IsizeWidth);
-<a href=#108 id=108 data-nosnippet>108</a>    registry.register_function(target::UsizeWidth);
-<a href=#109 id=109 data-nosnippet>109</a>    registry.register_function(target::PointerAlign);
-<a href=#110 id=110 data-nosnippet>110</a>    registry.register_function(target::MaxAlignment);
-<a href=#111 id=111 data-nosnippet>111</a>    registry.register_function(target::TargetCPU);
-<a href=#112 id=112 data-nosnippet>112</a>    registry.register_function(target::TargetCpuFeatures);
-<a href=#113 id=113 data-nosnippet>113</a>    registry.register_function(target::HasFeature);
-<a href=#114 id=114 data-nosnippet>114</a>
-<a href=#115 id=115 data-nosnippet>115</a>    registry.register_function(host::HostOsName);
-<a href=#116 id=116 data-nosnippet>116</a>    registry.register_function(host::HostArch);
-<a href=#117 id=117 data-nosnippet>117</a>    registry.register_function(host::HostEndian);
-<a href=#118 id=118 data-nosnippet>118</a>    registry.register_function(host::CurrentTimestamp);
-<a href=#119 id=119 data-nosnippet>119</a>
-<a href=#120 id=120 data-nosnippet>120</a>    registry.register_type(BuiltinTypeInfo::new(
-<a href=#121 id=121 data-nosnippet>121</a>        <span class="string">"CString"</span>,
-<a href=#122 id=122 data-nosnippet>122</a>        Type::Array {
-<a href=#123 id=123 data-nosnippet>123</a>            base_type: Type::Char {
-<a href=#124 id=124 data-nosnippet>124</a>                span: Span::nothing(),
-<a href=#125 id=125 data-nosnippet>125</a>            }
-<a href=#126 id=126 data-nosnippet>126</a>            .into(),
-<a href=#127 id=127 data-nosnippet>127</a>            infered_type: <span class="prelude-val">None</span>,
-<a href=#128 id=128 data-nosnippet>128</a>            metadata: ArrayTypeMetadata::new(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>),
-<a href=#129 id=129 data-nosnippet>129</a>            span: Span::nothing(),
-<a href=#130 id=130 data-nosnippet>130</a>        },
-<a href=#131 id=131 data-nosnippet>131</a>    ));
-<a href=#132 id=132 data-nosnippet>132</a>}
+<a href=#85 id=85 data-nosnippet>85</a>    registry.register_function(target::IsUnix);
+<a href=#86 id=86 data-nosnippet>86</a>    registry.register_function(target::IsBSD);
+<a href=#87 id=87 data-nosnippet>87</a>    registry.register_function(target::IsFreeBSD);
+<a href=#88 id=88 data-nosnippet>88</a>    registry.register_function(target::IsNetBSD);
+<a href=#89 id=89 data-nosnippet>89</a>    registry.register_function(target::IsOpenBSD);
+<a href=#90 id=90 data-nosnippet>90</a>    registry.register_function(target::IsAndroid);
+<a href=#91 id=91 data-nosnippet>91</a>    registry.register_function(target::IsIOS);
+<a href=#92 id=92 data-nosnippet>92</a>    registry.register_function(target::IsSolaris);
+<a href=#93 id=93 data-nosnippet>93</a>    registry.register_function(target::IsHaiku);
+<a href=#94 id=94 data-nosnippet>94</a>    registry.register_function(target::IsWasm32);
+<a href=#95 id=95 data-nosnippet>95</a>    registry.register_function(target::IsWasm64);
+<a href=#96 id=96 data-nosnippet>96</a>    registry.register_function(target::Is64Bit);
+<a href=#97 id=97 data-nosnippet>97</a>    registry.register_function(target::Is32Bit);
+<a href=#98 id=98 data-nosnippet>98</a>    registry.register_function(target::IsBigEndian);
+<a href=#99 id=99 data-nosnippet>99</a>    registry.register_function(target::IsLittleEndian);
+<a href=#100 id=100 data-nosnippet>100</a>    registry.register_function(target::IsX86);
+<a href=#101 id=101 data-nosnippet>101</a>    registry.register_function(target::IsX8664);
+<a href=#102 id=102 data-nosnippet>102</a>    registry.register_function(target::IsArm);
+<a href=#103 id=103 data-nosnippet>103</a>    registry.register_function(target::IsAarch64);
+<a href=#104 id=104 data-nosnippet>104</a>    registry.register_function(target::IsRiscv64);
+<a href=#105 id=105 data-nosnippet>105</a>    registry.register_function(target::IsPpc);
+<a href=#106 id=106 data-nosnippet>106</a>    registry.register_function(target::IsPpc64);
+<a href=#107 id=107 data-nosnippet>107</a>    registry.register_function(target::IsMips64);
+<a href=#108 id=108 data-nosnippet>108</a>    registry.register_function(target::IsSystemz);
+<a href=#109 id=109 data-nosnippet>109</a>    registry.register_function(target::IsLoongarch64);
+<a href=#110 id=110 data-nosnippet>110</a>    registry.register_function(target::IsWasm);
+<a href=#111 id=111 data-nosnippet>111</a>    registry.register_function(target::IsElf);
+<a href=#112 id=112 data-nosnippet>112</a>    registry.register_function(target::IsMachO);
+<a href=#113 id=113 data-nosnippet>113</a>    registry.register_function(target::IsCoff);
+<a href=#114 id=114 data-nosnippet>114</a>    registry.register_function(target::HasPosixThreads);
+<a href=#115 id=115 data-nosnippet>115</a>    registry.register_function(target::HasSysvAbi);
+<a href=#116 id=116 data-nosnippet>116</a>
+<a href=#117 id=117 data-nosnippet>117</a>    registry.register_function(target::PointerWidth);
+<a href=#118 id=118 data-nosnippet>118</a>    registry.register_function(target::IsizeWidth);
+<a href=#119 id=119 data-nosnippet>119</a>    registry.register_function(target::UsizeWidth);
+<a href=#120 id=120 data-nosnippet>120</a>    registry.register_function(target::PointerAlign);
+<a href=#121 id=121 data-nosnippet>121</a>    registry.register_function(target::MaxAlignment);
+<a href=#122 id=122 data-nosnippet>122</a>    registry.register_function(target::TargetCPU);
+<a href=#123 id=123 data-nosnippet>123</a>    registry.register_function(target::TargetCpuFeatures);
+<a href=#124 id=124 data-nosnippet>124</a>    registry.register_function(target::HasFeature);
+<a href=#125 id=125 data-nosnippet>125</a>
+<a href=#126 id=126 data-nosnippet>126</a>    registry.register_function(host::HostOsName);
+<a href=#127 id=127 data-nosnippet>127</a>    registry.register_function(host::HostArch);
+<a href=#128 id=128 data-nosnippet>128</a>    registry.register_function(host::HostEndian);
+<a href=#129 id=129 data-nosnippet>129</a>    registry.register_function(host::CurrentTimestamp);
+<a href=#130 id=130 data-nosnippet>130</a>    registry.register_function(host::ProcessorCount);
+<a href=#131 id=131 data-nosnippet>131</a>    registry.register_function(host::PageSize);
+<a href=#132 id=132 data-nosnippet>132</a>    registry.register_function(host::CpuCacheLineSize);
+<a href=#133 id=133 data-nosnippet>133</a>    registry.register_function(host::HostName);
+<a href=#134 id=134 data-nosnippet>134</a>
+<a href=#135 id=135 data-nosnippet>135</a>    registry.register_type(BuiltinTypeInfo::new(
+<a href=#136 id=136 data-nosnippet>136</a>        <span class="string">"CString"</span>,
+<a href=#137 id=137 data-nosnippet>137</a>        Type::Array {
+<a href=#138 id=138 data-nosnippet>138</a>            base_type: Type::Char {
+<a href=#139 id=139 data-nosnippet>139</a>                span: Span::nothing(),
+<a href=#140 id=140 data-nosnippet>140</a>            }
+<a href=#141 id=141 data-nosnippet>141</a>            .into(),
+<a href=#142 id=142 data-nosnippet>142</a>            infered_type: <span class="prelude-val">None</span>,
+<a href=#143 id=143 data-nosnippet>143</a>            metadata: ArrayTypeMetadata::new(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>),
+<a href=#144 id=144 data-nosnippet>144</a>            span: Span::nothing(),
+<a href=#145 id=145 data-nosnippet>145</a>        },
+<a href=#146 id=146 data-nosnippet>146</a>    ));
+<a href=#147 id=147 data-nosnippet>147</a>}
 </code></pre></div></section></main></body></html>

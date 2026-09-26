@@ -17,18 +17,18 @@
 <a href=#17 id=17 data-nosnippet>17</a>
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
-<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{Ast, ast_metadata::CastingMetadata};
+<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{ast_metadata::CastingMetadata, Ast};
 <a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_errors::{CompilationIssue, CompilationIssueCode};
 <a href=#23 id=23 data-nosnippet>23</a>
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>thrustc_token_type::TokenType;
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_typesystem::{
-<a href=#26 id=26 data-nosnippet>26</a>    Type,
-<a href=#27 id=27 data-nosnippet>27</a>    traits::{TypeCodeLocation, VoidTypeExtensions},
+<a href=#26 id=26 data-nosnippet>26</a>    traits::{TypeCodeLocation, VoidTypeExtensions},
+<a href=#27 id=27 data-nosnippet>27</a>    Type,
 <a href=#28 id=28 data-nosnippet>28</a>};
 <a href=#29 id=29 data-nosnippet>29</a>
 <a href=#30 id=30 data-nosnippet>30</a><span class="kw">use crate</span>::{
-<a href=#31 id=31 data-nosnippet>31</a>    TypeChecker, context::TypeCheckerControlContext, type_metadata::TypeCheckerNodeMetadata,
+<a href=#31 id=31 data-nosnippet>31</a>    context::TypeCheckerControlContext, type_metadata::TypeCheckerNodeMetadata, TypeChecker,
 <a href=#32 id=32 data-nosnippet>32</a>};
 <a href=#33 id=33 data-nosnippet>33</a>
 <a href=#34 id=34 data-nosnippet>34</a><span class="kw">pub fn </span>check_type_together(

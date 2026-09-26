@@ -79,7 +79,9 @@
 <a href=#79 id=79 data-nosnippet>79</a>        _args: <span class="kw-2">&amp;</span>[BuiltinArgument],
 <a href=#80 id=80 data-nosnippet>80</a>        context: <span class="kw-2">&amp;mut </span>BuiltinContext&lt;<span class="lifetime">'_</span>&gt;,
 <a href=#81 id=81 data-nosnippet>81</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;BuiltinValue, CompilationIssue&gt; {
-<a href=#82 id=82 data-nosnippet>82</a>        <span class="prelude-val">Ok</span>(BuiltinValue::Bool(context.options.omit_default_optimizations()))
-<a href=#83 id=83 data-nosnippet>83</a>    }
-<a href=#84 id=84 data-nosnippet>84</a>}
+<a href=#82 id=82 data-nosnippet>82</a>        <span class="prelude-val">Ok</span>(BuiltinValue::Bool(
+<a href=#83 id=83 data-nosnippet>83</a>            context.options.omit_default_optimizations(),
+<a href=#84 id=84 data-nosnippet>84</a>        ))
+<a href=#85 id=85 data-nosnippet>85</a>    }
+<a href=#86 id=86 data-nosnippet>86</a>}
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["impls","traits"],"struct":["LLVMTargetTriple"]};
+window.SIDEBAR_ITEMS = {"enum":["LLVMARMABI"],"mod":["impls","traits"],"struct":["LLVMTargetTriple"]};

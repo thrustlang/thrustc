@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build_variable_stmt"]};
+window.SIDEBAR_ITEMS = {"fn":["build_variable_stmt","ensure_deallocator"]};

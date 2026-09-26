@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build_compiletime_declaration","skip_declaration"]};
+window.SIDEBAR_ITEMS = {"fn":["build_compiletime_declaration","expect_known_condition","skip_declaration"]};

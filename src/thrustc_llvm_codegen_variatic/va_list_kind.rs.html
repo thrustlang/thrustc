@@ -146,21 +146,19 @@
 <a href=#146 id=146 data-nosnippet>146</a>            .into(),
 <a href=#147 id=147 data-nosnippet>147</a>
 <a href=#148 id=148 data-nosnippet>148</a>        VaListKind::AAPCSABI =&gt; context
-<a href=#149 id=149 data-nosnippet>149</a>            .struct_type(
-<a href=#150 id=150 data-nosnippet>150</a>                <span class="kw-2">&amp;</span>[context.ptr_type(AddressSpace::default()).into()],
-<a href=#151 id=151 data-nosnippet>151</a>                <span class="bool-val">false</span>,
-<a href=#152 id=152 data-nosnippet>152</a>            )
-<a href=#153 id=153 data-nosnippet>153</a>            .into(),
-<a href=#154 id=154 data-nosnippet>154</a>
-<a href=#155 id=155 data-nosnippet>155</a>        VaListKind::HexagonABI =&gt; context
-<a href=#156 id=156 data-nosnippet>156</a>            .struct_type(
-<a href=#157 id=157 data-nosnippet>157</a>                <span class="kw-2">&amp;</span>[
-<a href=#158 id=158 data-nosnippet>158</a>                    context.ptr_type(AddressSpace::default()).into(),
-<a href=#159 id=159 data-nosnippet>159</a>                    context.ptr_type(AddressSpace::default()).into(),
-<a href=#160 id=160 data-nosnippet>160</a>                    context.ptr_type(AddressSpace::default()).into(),
-<a href=#161 id=161 data-nosnippet>161</a>                ],
-<a href=#162 id=162 data-nosnippet>162</a>                <span class="bool-val">false</span>,
-<a href=#163 id=163 data-nosnippet>163</a>            )
-<a href=#164 id=164 data-nosnippet>164</a>            .into(),
-<a href=#165 id=165 data-nosnippet>165</a>    }
-<a href=#166 id=166 data-nosnippet>166</a>}</code></pre></div></section></main></body></html>
+<a href=#149 id=149 data-nosnippet>149</a>            .struct_type(<span class="kw-2">&amp;</span>[context.ptr_type(AddressSpace::default()).into()], <span class="bool-val">false</span>)
+<a href=#150 id=150 data-nosnippet>150</a>            .into(),
+<a href=#151 id=151 data-nosnippet>151</a>
+<a href=#152 id=152 data-nosnippet>152</a>        VaListKind::HexagonABI =&gt; context
+<a href=#153 id=153 data-nosnippet>153</a>            .struct_type(
+<a href=#154 id=154 data-nosnippet>154</a>                <span class="kw-2">&amp;</span>[
+<a href=#155 id=155 data-nosnippet>155</a>                    context.ptr_type(AddressSpace::default()).into(),
+<a href=#156 id=156 data-nosnippet>156</a>                    context.ptr_type(AddressSpace::default()).into(),
+<a href=#157 id=157 data-nosnippet>157</a>                    context.ptr_type(AddressSpace::default()).into(),
+<a href=#158 id=158 data-nosnippet>158</a>                ],
+<a href=#159 id=159 data-nosnippet>159</a>                <span class="bool-val">false</span>,
+<a href=#160 id=160 data-nosnippet>160</a>            )
+<a href=#161 id=161 data-nosnippet>161</a>            .into(),
+<a href=#162 id=162 data-nosnippet>162</a>    }
+<a href=#163 id=163 data-nosnippet>163</a>}
+</code></pre></div></section></main></body></html>

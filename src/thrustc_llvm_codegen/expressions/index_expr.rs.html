@@ -113,14 +113,19 @@
 <a href=#113 id=113 data-nosnippet>113</a>        memory::gep_anon(context, ptr_value, ptr_type, <span class="kw-2">&amp;</span>ordered_indexes, span);
 <a href=#114 id=114 data-nosnippet>114</a>
 <a href=#115 id=115 data-nosnippet>115</a>    <span class="kw">if </span>metadata.is_deref() {
-<a href=#116 id=116 data-nosnippet>116</a>        <span class="kw">let </span>element_type: Type = ptr_type.calculate_index_type(<span class="number">1</span>).clone();
-<a href=#117 id=117 data-nosnippet>117</a>        <span class="kw">return </span>memory::dereference(context, ptr, <span class="kw-2">&amp;</span>element_type, span);
-<a href=#118 id=118 data-nosnippet>118</a>    }
+<a href=#116 id=116 data-nosnippet>116</a>        <span class="kw">if </span>context.get_codegen_location().is_direct_behavior() {
+<a href=#117 id=117 data-nosnippet>117</a>            <span class="kw">return </span>ptr.into();
+<a href=#118 id=118 data-nosnippet>118</a>        }
 <a href=#119 id=119 data-nosnippet>119</a>
-<a href=#120 id=120 data-nosnippet>120</a>    <span class="kw">if </span>context.get_codegen_location().is_load_behavior() {
-<a href=#121 id=121 data-nosnippet>121</a>        <span class="kw">return </span>memory::load_pointer(context, ptr, span);
-<a href=#122 id=122 data-nosnippet>122</a>    }
-<a href=#123 id=123 data-nosnippet>123</a>
-<a href=#124 id=124 data-nosnippet>124</a>    ptr.into()
-<a href=#125 id=125 data-nosnippet>125</a>}
+<a href=#120 id=120 data-nosnippet>120</a>        <span class="kw">let </span>element_type: Type = ptr_type.calculate_index_type(<span class="number">1</span>).clone();
+<a href=#121 id=121 data-nosnippet>121</a>
+<a href=#122 id=122 data-nosnippet>122</a>        <span class="kw">return </span>memory::dereference(context, ptr, <span class="kw-2">&amp;</span>element_type, span);
+<a href=#123 id=123 data-nosnippet>123</a>    }
+<a href=#124 id=124 data-nosnippet>124</a>
+<a href=#125 id=125 data-nosnippet>125</a>    <span class="kw">if </span>context.get_codegen_location().is_load_behavior() {
+<a href=#126 id=126 data-nosnippet>126</a>        <span class="kw">return </span>memory::load_pointer(context, ptr, span);
+<a href=#127 id=127 data-nosnippet>127</a>    }
+<a href=#128 id=128 data-nosnippet>128</a>
+<a href=#129 id=129 data-nosnippet>129</a>    ptr.into()
+<a href=#130 id=130 data-nosnippet>130</a>}
 </code></pre></div></section></main></body></html>

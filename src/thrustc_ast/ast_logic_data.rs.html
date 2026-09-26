@@ -22,20 +22,20 @@
 <a href=#22 id=22 data-nosnippet>22</a>
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><span class="kw">crate</span>::Ast;
 <a href=#24 id=24 data-nosnippet>24</a>
-<a href=#25 id=25 data-nosnippet>25</a><span class="kw">pub type </span>StructureData&lt;<span class="lifetime">'ctx</span>&gt; = (
-<a href=#26 id=26 data-nosnippet>26</a>    <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str,
-<a href=#27 id=27 data-nosnippet>27</a>    Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str, Type, u32, Span)&gt;,
+<a href=#25 id=25 data-nosnippet>25</a><span class="kw">pub type </span>StructureData = (
+<a href=#26 id=26 data-nosnippet>26</a>    String,
+<a href=#27 id=27 data-nosnippet>27</a>    Vec&lt;(String, Type, u32, Span)&gt;,
 <a href=#28 id=28 data-nosnippet>28</a>    StructTypeMetadata,
 <a href=#29 id=29 data-nosnippet>29</a>    Span,
 <a href=#30 id=30 data-nosnippet>30</a>);
 <a href=#31 id=31 data-nosnippet>31</a>
-<a href=#32 id=32 data-nosnippet>32</a><span class="kw">pub type </span>StructureDataFields&lt;<span class="lifetime">'ctx</span>&gt; = Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str, Type, u32, Span)&gt;;
-<a href=#33 id=33 data-nosnippet>33</a><span class="kw">pub type </span>StructDataField&lt;<span class="lifetime">'ctx</span>&gt; = (usize, <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>(<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str, Type, u32, Span));
+<a href=#32 id=32 data-nosnippet>32</a><span class="kw">pub type </span>StructureDataFields = Vec&lt;(String, Type, u32, Span)&gt;;
+<a href=#33 id=33 data-nosnippet>33</a><span class="kw">pub type </span>StructDataField&lt;<span class="lifetime">'ctx</span>&gt; = (usize, <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>(String, Type, u32, Span));
 <a href=#34 id=34 data-nosnippet>34</a>
-<a href=#35 id=35 data-nosnippet>35</a><span class="kw">pub type </span>EnumData&lt;<span class="lifetime">'ctx</span>&gt; = Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str, Type, Ast&lt;<span class="lifetime">'ctx</span>&gt;)&gt;;
-<a href=#36 id=36 data-nosnippet>36</a><span class="kw">pub type </span>EnumDataField&lt;<span class="lifetime">'ctx</span>&gt; = (<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str, Type, Ast&lt;<span class="lifetime">'ctx</span>&gt;);
+<a href=#35 id=35 data-nosnippet>35</a><span class="kw">pub type </span>EnumData&lt;<span class="lifetime">'ctx</span>&gt; = Vec&lt;(String, Type, Ast&lt;<span class="lifetime">'ctx</span>&gt;)&gt;;
+<a href=#36 id=36 data-nosnippet>36</a><span class="kw">pub type </span>EnumDataField&lt;<span class="lifetime">'ctx</span>&gt; = (String, Type, Ast&lt;<span class="lifetime">'ctx</span>&gt;);
 <a href=#37 id=37 data-nosnippet>37</a>
-<a href=#38 id=38 data-nosnippet>38</a><span class="kw">pub type </span>ConstructorData&lt;<span class="lifetime">'ctx</span>&gt; = Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>str, Ast&lt;<span class="lifetime">'ctx</span>&gt;, Type, u32)&gt;;
+<a href=#38 id=38 data-nosnippet>38</a><span class="kw">pub type </span>ConstructorData&lt;<span class="lifetime">'ctx</span>&gt; = Vec&lt;(String, Ast&lt;<span class="lifetime">'ctx</span>&gt;, Type, u32)&gt;;
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a><span class="kw">pub type </span>PropertyData = Vec&lt;(Type, (Type, u32))&gt;;
 <a href=#41 id=41 data-nosnippet>41</a><span class="kw">pub type </span>PropertyDataField = (Type, (Type, u32));

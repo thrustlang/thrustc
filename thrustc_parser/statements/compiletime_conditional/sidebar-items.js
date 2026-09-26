@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build_compiletime_conditional","evaluate_condition","parse_branch","parse_branch_discarded"]};
+window.SIDEBAR_ITEMS = {"enum":["CompileTimeCondition"],"fn":["build_compiletime_conditional","contains_deferred_builtin","evaluate_condition","parse_branch","parse_branch_discarded","parse_deferred_compiletime_conditional"]};

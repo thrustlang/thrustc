@@ -148,14 +148,19 @@
 <a href=#148 id=148 data-nosnippet>148</a>        };
 <a href=#149 id=149 data-nosnippet>149</a>
 <a href=#150 id=150 data-nosnippet>150</a>        <span class="kw">if </span>!access.is_empty() {
-<a href=#151 id=151 data-nosnippet>151</a>            <span class="kw">crate</span>::module_import::synthesize_only_import(ctx, <span class="kw-2">&amp;</span>access, <span class="kw-2">&amp;</span>only_names, span)<span class="question-mark">?</span>;
-<a href=#152 id=152 data-nosnippet>152</a>        }
-<a href=#153 id=153 data-nosnippet>153</a>    }
-<a href=#154 id=154 data-nosnippet>154</a>
-<a href=#155 id=155 data-nosnippet>155</a>    <span class="prelude-val">Ok</span>(Ast::Import {
-<a href=#156 id=156 data-nosnippet>156</a>        span,
-<a href=#157 id=157 data-nosnippet>157</a>        kind: Type::Void { span },
-<a href=#158 id=158 data-nosnippet>158</a>        id: NodeId::new(),
-<a href=#159 id=159 data-nosnippet>159</a>    })
-<a href=#160 id=160 data-nosnippet>160</a>}
+<a href=#151 id=151 data-nosnippet>151</a>            thrustc_import_synthesis::synthesis::synthesize_only_import(
+<a href=#152 id=152 data-nosnippet>152</a>                <span class="kw-2">&amp;mut </span>ctx.import_context(),
+<a href=#153 id=153 data-nosnippet>153</a>                <span class="kw-2">&amp;</span>access,
+<a href=#154 id=154 data-nosnippet>154</a>                <span class="kw-2">&amp;</span>only_names,
+<a href=#155 id=155 data-nosnippet>155</a>                span,
+<a href=#156 id=156 data-nosnippet>156</a>            )<span class="question-mark">?</span>;
+<a href=#157 id=157 data-nosnippet>157</a>        }
+<a href=#158 id=158 data-nosnippet>158</a>    }
+<a href=#159 id=159 data-nosnippet>159</a>
+<a href=#160 id=160 data-nosnippet>160</a>    <span class="prelude-val">Ok</span>(Ast::Import {
+<a href=#161 id=161 data-nosnippet>161</a>        span,
+<a href=#162 id=162 data-nosnippet>162</a>        kind: Type::Void { span },
+<a href=#163 id=163 data-nosnippet>163</a>        id: NodeId::new(),
+<a href=#164 id=164 data-nosnippet>164</a>    })
+<a href=#165 id=165 data-nosnippet>165</a>}
 </code></pre></div></section></main></body></html>

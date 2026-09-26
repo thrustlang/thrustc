@@ -18,8 +18,8 @@
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use crate</span>::{
-<a href=#21 id=21 data-nosnippet>21</a>    TokenType,
-<a href=#22 id=22 data-nosnippet>22</a>    traits::{TokenTypeAttributesExtensions, TokenTypeBuiltinExtensions, TokenTypeExtensions},
+<a href=#21 id=21 data-nosnippet>21</a>    traits::{TokenTypeAttributesExtensions, TokenTypeBuiltinExtensions, TokenTypeExtensions},
+<a href=#22 id=22 data-nosnippet>22</a>    TokenType,
 <a href=#23 id=23 data-nosnippet>23</a>};
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">impl </span>TokenTypeExtensions <span class="kw">for </span>TokenType {
@@ -201,254 +201,298 @@
 <a href=#201 id=201 data-nosnippet>201</a>        <span class="macro">matches!</span>(
 <a href=#202 id=202 data-nosnippet>202</a>            <span class="self">self</span>,
 <a href=#203 id=203 data-nosnippet>203</a>            TokenType::Ignore
-<a href=#204 id=204 data-nosnippet>204</a>                | TokenType::MinSize
-<a href=#205 id=205 data-nosnippet>205</a>                | TokenType::NoInline
-<a href=#206 id=206 data-nosnippet>206</a>                | TokenType::AlwaysInline
-<a href=#207 id=207 data-nosnippet>207</a>                | TokenType::InlineHint
-<a href=#208 id=208 data-nosnippet>208</a>                | TokenType::Hot
-<a href=#209 id=209 data-nosnippet>209</a>                | TokenType::SafeStack
-<a href=#210 id=210 data-nosnippet>210</a>                | TokenType::WeakStack
-<a href=#211 id=211 data-nosnippet>211</a>                | TokenType::StrongStack
-<a href=#212 id=212 data-nosnippet>212</a>                | TokenType::PreciseFloats
-<a href=#213 id=213 data-nosnippet>213</a>                | TokenType::Heap
-<a href=#214 id=214 data-nosnippet>214</a>                | TokenType::AsmThrow
-<a href=#215 id=215 data-nosnippet>215</a>                | TokenType::AsmSideEffects
-<a href=#216 id=216 data-nosnippet>216</a>                | TokenType::AsmAlignStack
-<a href=#217 id=217 data-nosnippet>217</a>                | TokenType::AsmSyntax
-<a href=#218 id=218 data-nosnippet>218</a>                | TokenType::Packed
-<a href=#219 id=219 data-nosnippet>219</a>                | TokenType::NoUnwind
-<a href=#220 id=220 data-nosnippet>220</a>                | TokenType::NoReturn
-<a href=#221 id=221 data-nosnippet>221</a>                | TokenType::OptFuzzing
-<a href=#222 id=222 data-nosnippet>222</a>                | TokenType::Constructor
-<a href=#223 id=223 data-nosnippet>223</a>                | TokenType::Destructor
-<a href=#224 id=224 data-nosnippet>224</a>                | TokenType::Public
-<a href=#225 id=225 data-nosnippet>225</a>                | TokenType::EntryPoint
-<a href=#226 id=226 data-nosnippet>226</a>                | TokenType::Linkage
-<a href=#227 id=227 data-nosnippet>227</a>                | TokenType::Extern
-<a href=#228 id=228 data-nosnippet>228</a>                | TokenType::Convention
-<a href=#229 id=229 data-nosnippet>229</a>                | TokenType::Pure
-<a href=#230 id=230 data-nosnippet>230</a>                | TokenType::Thunk
-<a href=#231 id=231 data-nosnippet>231</a>                | TokenType::Promote
-<a href=#232 id=232 data-nosnippet>232</a>                | TokenType::Cuda
-<a href=#233 id=233 data-nosnippet>233</a>        )
-<a href=#234 id=234 data-nosnippet>234</a>    }
-<a href=#235 id=235 data-nosnippet>235</a>}
-<a href=#236 id=236 data-nosnippet>236</a>
-<a href=#237 id=237 data-nosnippet>237</a><span class="kw">impl </span>TokenTypeBuiltinExtensions <span class="kw">for </span>TokenType {
-<a href=#238 id=238 data-nosnippet>238</a>    <span class="kw">fn </span>is_builtin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#239 id=239 data-nosnippet>239</a>        <span class="macro">matches!</span>(
-<a href=#240 id=240 data-nosnippet>240</a>            <span class="self">self</span>,
-<a href=#241 id=241 data-nosnippet>241</a>            TokenType::Halloc
-<a href=#242 id=242 data-nosnippet>242</a>                | TokenType::MemCpy
-<a href=#243 id=243 data-nosnippet>243</a>                | TokenType::MemMove
-<a href=#244 id=244 data-nosnippet>244</a>                | TokenType::MemSet
-<a href=#245 id=245 data-nosnippet>245</a>                | TokenType::BitSizeOf
-<a href=#246 id=246 data-nosnippet>246</a>                | TokenType::AbiSizeOf
-<a href=#247 id=247 data-nosnippet>247</a>                | TokenType::AbiAlignOf
-<a href=#248 id=248 data-nosnippet>248</a>                | TokenType::ArbitraryArg
-<a href=#249 id=249 data-nosnippet>249</a>                | TokenType::ArbitraryArgs
-<a href=#250 id=250 data-nosnippet>250</a>        )
-<a href=#251 id=251 data-nosnippet>251</a>    }
-<a href=#252 id=252 data-nosnippet>252</a>}
-<a href=#253 id=253 data-nosnippet>253</a>
-<a href=#254 id=254 data-nosnippet>254</a><span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>TokenType {
-<a href=#255 id=255 data-nosnippet>255</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
-<a href=#256 id=256 data-nosnippet>256</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#257 id=257 data-nosnippet>257</a>            <span class="comment">// Keywords
-<a href=#258 id=258 data-nosnippet>258</a>            </span>TokenType::Break =&gt; <span class="macro">write!</span>(f, <span class="string">"break"</span>),
-<a href=#259 id=259 data-nosnippet>259</a>            TokenType::BreakAll =&gt; <span class="macro">write!</span>(f, <span class="string">"breakall"</span>),
-<a href=#260 id=260 data-nosnippet>260</a>            TokenType::Const =&gt; <span class="macro">write!</span>(f, <span class="string">"const"</span>),
-<a href=#261 id=261 data-nosnippet>261</a>            TokenType::Continue =&gt; <span class="macro">write!</span>(f, <span class="string">"continue"</span>),
-<a href=#262 id=262 data-nosnippet>262</a>            TokenType::ContinueAll =&gt; <span class="macro">write!</span>(f, <span class="string">"continueall"</span>),
-<a href=#263 id=263 data-nosnippet>263</a>            TokenType::Defer =&gt; <span class="macro">write!</span>(f, <span class="string">"defer"</span>),
-<a href=#264 id=264 data-nosnippet>264</a>            TokenType::Elif =&gt; <span class="macro">write!</span>(f, <span class="string">"elif"</span>),
-<a href=#265 id=265 data-nosnippet>265</a>            TokenType::Else =&gt; <span class="macro">write!</span>(f, <span class="string">"else"</span>),
-<a href=#266 id=266 data-nosnippet>266</a>            TokenType::Enum =&gt; <span class="macro">write!</span>(f, <span class="string">"enum"</span>),
-<a href=#267 id=267 data-nosnippet>267</a>            TokenType::False =&gt; <span class="macro">write!</span>(f, <span class="string">"false"</span>),
-<a href=#268 id=268 data-nosnippet>268</a>            TokenType::Intrinsic =&gt; <span class="macro">write!</span>(f, <span class="string">"intrinsic"</span>),
-<a href=#269 id=269 data-nosnippet>269</a>            TokenType::Embedded =&gt; <span class="macro">write!</span>(f, <span class="string">"embedded"</span>),
-<a href=#270 id=270 data-nosnippet>270</a>            TokenType::Fn =&gt; <span class="macro">write!</span>(f, <span class="string">"fn"</span>),
-<a href=#271 id=271 data-nosnippet>271</a>            TokenType::For =&gt; <span class="macro">write!</span>(f, <span class="string">"for"</span>),
-<a href=#272 id=272 data-nosnippet>272</a>            TokenType::If =&gt; <span class="macro">write!</span>(f, <span class="string">"if"</span>),
-<a href=#273 id=273 data-nosnippet>273</a>            TokenType::Loop =&gt; <span class="macro">write!</span>(f, <span class="string">"loop"</span>),
-<a href=#274 id=274 data-nosnippet>274</a>            TokenType::Mut =&gt; <span class="macro">write!</span>(f, <span class="string">"mut"</span>),
-<a href=#275 id=275 data-nosnippet>275</a>            TokenType::New =&gt; <span class="macro">write!</span>(f, <span class="string">"new"</span>),
-<a href=#276 id=276 data-nosnippet>276</a>            TokenType::Return =&gt; <span class="macro">write!</span>(f, <span class="string">"return"</span>),
-<a href=#277 id=277 data-nosnippet>277</a>            TokenType::Struct =&gt; <span class="macro">write!</span>(f, <span class="string">"struct"</span>),
-<a href=#278 id=278 data-nosnippet>278</a>            TokenType::True =&gt; <span class="macro">write!</span>(f, <span class="string">"true"</span>),
-<a href=#279 id=279 data-nosnippet>279</a>            TokenType::Type =&gt; <span class="macro">write!</span>(f, <span class="string">"type"</span>),
-<a href=#280 id=280 data-nosnippet>280</a>            TokenType::While =&gt; <span class="macro">write!</span>(f, <span class="string">"while"</span>),
-<a href=#281 id=281 data-nosnippet>281</a>            TokenType::Write =&gt; <span class="macro">write!</span>(f, <span class="string">"write"</span>),
-<a href=#282 id=282 data-nosnippet>282</a>            TokenType::Var =&gt; <span class="macro">write!</span>(f, <span class="string">"var"</span>),
-<a href=#283 id=283 data-nosnippet>283</a>            TokenType::Static =&gt; <span class="macro">write!</span>(f, <span class="string">"static"</span>),
-<a href=#284 id=284 data-nosnippet>284</a>            TokenType::Asm =&gt; <span class="macro">write!</span>(f, <span class="string">"asm"</span>),
-<a href=#285 id=285 data-nosnippet>285</a>            TokenType::GlobalAsm =&gt; <span class="macro">write!</span>(f, <span class="string">"global_asm"</span>),
-<a href=#286 id=286 data-nosnippet>286</a>
-<a href=#287 id=287 data-nosnippet>287</a>            <span class="comment">// Direct Reference
-<a href=#288 id=288 data-nosnippet>288</a>            </span>TokenType::Reference =&gt; <span class="macro">write!</span>(f, <span class="string">"ref"</span>),
-<a href=#289 id=289 data-nosnippet>289</a>
-<a href=#290 id=290 data-nosnippet>290</a>            <span class="comment">// Types
-<a href=#291 id=291 data-nosnippet>291</a>            </span>TokenType::Address =&gt; <span class="macro">write!</span>(f, <span class="string">"address"</span>),
-<a href=#292 id=292 data-nosnippet>292</a>            TokenType::Bool =&gt; <span class="macro">write!</span>(f, <span class="string">"bool"</span>),
-<a href=#293 id=293 data-nosnippet>293</a>            TokenType::Char =&gt; <span class="macro">write!</span>(f, <span class="string">"char"</span>),
-<a href=#294 id=294 data-nosnippet>294</a>            TokenType::F32 =&gt; <span class="macro">write!</span>(f, <span class="string">"f32"</span>),
-<a href=#295 id=295 data-nosnippet>295</a>            TokenType::F64 =&gt; <span class="macro">write!</span>(f, <span class="string">"f64"</span>),
-<a href=#296 id=296 data-nosnippet>296</a>            TokenType::FX8680 =&gt; <span class="macro">write!</span>(f, <span class="string">"f80"</span>),
-<a href=#297 id=297 data-nosnippet>297</a>            TokenType::F128 =&gt; <span class="macro">write!</span>(f, <span class="string">"f128"</span>),
-<a href=#298 id=298 data-nosnippet>298</a>            TokenType::FPPC128 =&gt; <span class="macro">write!</span>(f, <span class="string">"fppc_128"</span>),
-<a href=#299 id=299 data-nosnippet>299</a>            TokenType::Ptr =&gt; <span class="macro">write!</span>(f, <span class="string">"ptr"</span>),
-<a href=#300 id=300 data-nosnippet>300</a>            TokenType::Array =&gt; <span class="macro">write!</span>(f, <span class="string">"array"</span>),
-<a href=#301 id=301 data-nosnippet>301</a>            TokenType::S8 =&gt; <span class="macro">write!</span>(f, <span class="string">"s8"</span>),
-<a href=#302 id=302 data-nosnippet>302</a>            TokenType::S16 =&gt; <span class="macro">write!</span>(f, <span class="string">"s16"</span>),
-<a href=#303 id=303 data-nosnippet>303</a>            TokenType::S32 =&gt; <span class="macro">write!</span>(f, <span class="string">"s32"</span>),
-<a href=#304 id=304 data-nosnippet>304</a>            TokenType::S64 =&gt; <span class="macro">write!</span>(f, <span class="string">"s64"</span>),
-<a href=#305 id=305 data-nosnippet>305</a>            TokenType::Ssize =&gt; <span class="macro">write!</span>(f, <span class="string">"ssize"</span>),
-<a href=#306 id=306 data-nosnippet>306</a>            TokenType::CString =&gt; <span class="macro">write!</span>(f, <span class="string">"const array[char]"</span>),
-<a href=#307 id=307 data-nosnippet>307</a>            TokenType::CNString =&gt; <span class="macro">write!</span>(f, <span class="string">"const array[char]"</span>),
-<a href=#308 id=308 data-nosnippet>308</a>            TokenType::U8 =&gt; <span class="macro">write!</span>(f, <span class="string">"u8"</span>),
-<a href=#309 id=309 data-nosnippet>309</a>            TokenType::U16 =&gt; <span class="macro">write!</span>(f, <span class="string">"u16"</span>),
-<a href=#310 id=310 data-nosnippet>310</a>            TokenType::U32 =&gt; <span class="macro">write!</span>(f, <span class="string">"u32"</span>),
-<a href=#311 id=311 data-nosnippet>311</a>            TokenType::U64 =&gt; <span class="macro">write!</span>(f, <span class="string">"u64"</span>),
-<a href=#312 id=312 data-nosnippet>312</a>            TokenType::U128 =&gt; <span class="macro">write!</span>(f, <span class="string">"u128"</span>),
-<a href=#313 id=313 data-nosnippet>313</a>            TokenType::Usize =&gt; <span class="macro">write!</span>(f, <span class="string">"usize"</span>),
-<a href=#314 id=314 data-nosnippet>314</a>            TokenType::FnRef =&gt; <span class="macro">write!</span>(f, <span class="string">"Fn"</span>),
-<a href=#315 id=315 data-nosnippet>315</a>            TokenType::Void =&gt; <span class="macro">write!</span>(f, <span class="string">"void"</span>),
-<a href=#316 id=316 data-nosnippet>316</a>
-<a href=#317 id=317 data-nosnippet>317</a>            <span class="comment">// Special
-<a href=#318 id=318 data-nosnippet>318</a>            </span>TokenType::Unreachable =&gt; <span class="macro">write!</span>(f, <span class="string">"unreachable"</span>),
-<a href=#319 id=319 data-nosnippet>319</a>
-<a href=#320 id=320 data-nosnippet>320</a>            <span class="comment">// Modificators
-<a href=#321 id=321 data-nosnippet>321</a>            </span>TokenType::LazyThread =&gt; <span class="macro">write!</span>(f, <span class="string">"lazythread"</span>),
-<a href=#322 id=322 data-nosnippet>322</a>            TokenType::Volatile =&gt; <span class="macro">write!</span>(f, <span class="string">"volatile"</span>),
-<a href=#323 id=323 data-nosnippet>323</a>
-<a href=#324 id=324 data-nosnippet>324</a>            TokenType::AtomNone =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicNone"</span>),
-<a href=#325 id=325 data-nosnippet>325</a>            TokenType::AtomFree =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicFree"</span>),
-<a href=#326 id=326 data-nosnippet>326</a>            TokenType::AtomRelax =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicRelax"</span>),
-<a href=#327 id=327 data-nosnippet>327</a>            TokenType::AtomGrab =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicGrab"</span>),
-<a href=#328 id=328 data-nosnippet>328</a>            TokenType::AtomDrop =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicDrop"</span>),
-<a href=#329 id=329 data-nosnippet>329</a>            TokenType::AtomSync =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicSync"</span>),
-<a href=#330 id=330 data-nosnippet>330</a>            TokenType::AtomStrict =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicStrict"</span>),
-<a href=#331 id=331 data-nosnippet>331</a>
-<a href=#332 id=332 data-nosnippet>332</a>            TokenType::ThreadDynamic =&gt; <span class="macro">write!</span>(f, <span class="string">"threadDyn"</span>),
-<a href=#333 id=333 data-nosnippet>333</a>            TokenType::ThreadExec =&gt; <span class="macro">write!</span>(f, <span class="string">"threadExec"</span>),
-<a href=#334 id=334 data-nosnippet>334</a>            TokenType::ThreadInit =&gt; <span class="macro">write!</span>(f, <span class="string">"threadInit"</span>),
-<a href=#335 id=335 data-nosnippet>335</a>            TokenType::ThreadLDynamic =&gt; <span class="macro">write!</span>(f, <span class="string">"threadLDyn"</span>),
+<a href=#204 id=204 data-nosnippet>204</a>                | TokenType::NoArgCount
+<a href=#205 id=205 data-nosnippet>205</a>                | TokenType::MinSize
+<a href=#206 id=206 data-nosnippet>206</a>                | TokenType::NoInline
+<a href=#207 id=207 data-nosnippet>207</a>                | TokenType::AlwaysInline
+<a href=#208 id=208 data-nosnippet>208</a>                | TokenType::InlineHint
+<a href=#209 id=209 data-nosnippet>209</a>                | TokenType::Hot
+<a href=#210 id=210 data-nosnippet>210</a>                | TokenType::SafeStack
+<a href=#211 id=211 data-nosnippet>211</a>                | TokenType::WeakStack
+<a href=#212 id=212 data-nosnippet>212</a>                | TokenType::StrongStack
+<a href=#213 id=213 data-nosnippet>213</a>                | TokenType::PreciseFloats
+<a href=#214 id=214 data-nosnippet>214</a>                | TokenType::Heap
+<a href=#215 id=215 data-nosnippet>215</a>                | TokenType::AsmThrow
+<a href=#216 id=216 data-nosnippet>216</a>                | TokenType::AsmSideEffects
+<a href=#217 id=217 data-nosnippet>217</a>                | TokenType::AsmAlignStack
+<a href=#218 id=218 data-nosnippet>218</a>                | TokenType::AsmSyntax
+<a href=#219 id=219 data-nosnippet>219</a>                | TokenType::Packed
+<a href=#220 id=220 data-nosnippet>220</a>                | TokenType::NoUnwind
+<a href=#221 id=221 data-nosnippet>221</a>                | TokenType::NoReturn
+<a href=#222 id=222 data-nosnippet>222</a>                | TokenType::OptFuzzing
+<a href=#223 id=223 data-nosnippet>223</a>                | TokenType::Constructor
+<a href=#224 id=224 data-nosnippet>224</a>                | TokenType::Destructor
+<a href=#225 id=225 data-nosnippet>225</a>                | TokenType::Dealloc
+<a href=#226 id=226 data-nosnippet>226</a>                | TokenType::Deallocator
+<a href=#227 id=227 data-nosnippet>227</a>                | TokenType::Public
+<a href=#228 id=228 data-nosnippet>228</a>                | TokenType::EntryPoint
+<a href=#229 id=229 data-nosnippet>229</a>                | TokenType::Linkage
+<a href=#230 id=230 data-nosnippet>230</a>                | TokenType::Extern
+<a href=#231 id=231 data-nosnippet>231</a>                | TokenType::Convention
+<a href=#232 id=232 data-nosnippet>232</a>                | TokenType::Pure
+<a href=#233 id=233 data-nosnippet>233</a>                | TokenType::Thunk
+<a href=#234 id=234 data-nosnippet>234</a>                | TokenType::Promote
+<a href=#235 id=235 data-nosnippet>235</a>                | TokenType::Cuda
+<a href=#236 id=236 data-nosnippet>236</a>        )
+<a href=#237 id=237 data-nosnippet>237</a>    }
+<a href=#238 id=238 data-nosnippet>238</a>}
+<a href=#239 id=239 data-nosnippet>239</a>
+<a href=#240 id=240 data-nosnippet>240</a><span class="kw">impl </span>TokenTypeBuiltinExtensions <span class="kw">for </span>TokenType {
+<a href=#241 id=241 data-nosnippet>241</a>    <span class="kw">fn </span>is_builtin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#242 id=242 data-nosnippet>242</a>        <span class="macro">matches!</span>(
+<a href=#243 id=243 data-nosnippet>243</a>            <span class="self">self</span>,
+<a href=#244 id=244 data-nosnippet>244</a>            TokenType::Halloc
+<a href=#245 id=245 data-nosnippet>245</a>                | TokenType::MemCpy
+<a href=#246 id=246 data-nosnippet>246</a>                | TokenType::MemMove
+<a href=#247 id=247 data-nosnippet>247</a>                | TokenType::MemSet
+<a href=#248 id=248 data-nosnippet>248</a>                | TokenType::BitSizeOf
+<a href=#249 id=249 data-nosnippet>249</a>                | TokenType::AbiSizeOf
+<a href=#250 id=250 data-nosnippet>250</a>                | TokenType::AbiAlignOf
+<a href=#251 id=251 data-nosnippet>251</a>                | TokenType::ArbitraryArg
+<a href=#252 id=252 data-nosnippet>252</a>                | TokenType::ArbitraryArgs
+<a href=#253 id=253 data-nosnippet>253</a>                | TokenType::AtomicStore
+<a href=#254 id=254 data-nosnippet>254</a>                | TokenType::AtomicAdd
+<a href=#255 id=255 data-nosnippet>255</a>                | TokenType::AtomicSubtract
+<a href=#256 id=256 data-nosnippet>256</a>                | TokenType::AtomicAnd
+<a href=#257 id=257 data-nosnippet>257</a>                | TokenType::AtomicNand
+<a href=#258 id=258 data-nosnippet>258</a>                | TokenType::AtomicOr
+<a href=#259 id=259 data-nosnippet>259</a>                | TokenType::AtomicXor
+<a href=#260 id=260 data-nosnippet>260</a>                | TokenType::AtomicSignedMaximum
+<a href=#261 id=261 data-nosnippet>261</a>                | TokenType::AtomicSignedMinimum
+<a href=#262 id=262 data-nosnippet>262</a>                | TokenType::AtomicUnsignedMaximum
+<a href=#263 id=263 data-nosnippet>263</a>                | TokenType::AtomicUnsignedMinimum
+<a href=#264 id=264 data-nosnippet>264</a>                | TokenType::AtomicCompareAndSwap
+<a href=#265 id=265 data-nosnippet>265</a>                | TokenType::ArbitraryArgsStart
+<a href=#266 id=266 data-nosnippet>266</a>                | TokenType::ArbitraryArgsCopy
+<a href=#267 id=267 data-nosnippet>267</a>                | TokenType::ArbitraryArgsEnd
+<a href=#268 id=268 data-nosnippet>268</a>                | TokenType::ArbitraryArgFrom
+<a href=#269 id=269 data-nosnippet>269</a>                | TokenType::ArbitraryArgsCount
+<a href=#270 id=270 data-nosnippet>270</a>        )
+<a href=#271 id=271 data-nosnippet>271</a>    }
+<a href=#272 id=272 data-nosnippet>272</a>}
+<a href=#273 id=273 data-nosnippet>273</a>
+<a href=#274 id=274 data-nosnippet>274</a><span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>TokenType {
+<a href=#275 id=275 data-nosnippet>275</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+<a href=#276 id=276 data-nosnippet>276</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#277 id=277 data-nosnippet>277</a>            <span class="comment">// Keywords
+<a href=#278 id=278 data-nosnippet>278</a>            </span>TokenType::Break =&gt; <span class="macro">write!</span>(f, <span class="string">"break"</span>),
+<a href=#279 id=279 data-nosnippet>279</a>            TokenType::BreakAll =&gt; <span class="macro">write!</span>(f, <span class="string">"breakall"</span>),
+<a href=#280 id=280 data-nosnippet>280</a>            TokenType::Const =&gt; <span class="macro">write!</span>(f, <span class="string">"const"</span>),
+<a href=#281 id=281 data-nosnippet>281</a>            TokenType::Continue =&gt; <span class="macro">write!</span>(f, <span class="string">"continue"</span>),
+<a href=#282 id=282 data-nosnippet>282</a>            TokenType::ContinueAll =&gt; <span class="macro">write!</span>(f, <span class="string">"continueall"</span>),
+<a href=#283 id=283 data-nosnippet>283</a>            TokenType::Defer =&gt; <span class="macro">write!</span>(f, <span class="string">"defer"</span>),
+<a href=#284 id=284 data-nosnippet>284</a>            TokenType::Elif =&gt; <span class="macro">write!</span>(f, <span class="string">"elif"</span>),
+<a href=#285 id=285 data-nosnippet>285</a>            TokenType::Else =&gt; <span class="macro">write!</span>(f, <span class="string">"else"</span>),
+<a href=#286 id=286 data-nosnippet>286</a>            TokenType::Enum =&gt; <span class="macro">write!</span>(f, <span class="string">"enum"</span>),
+<a href=#287 id=287 data-nosnippet>287</a>            TokenType::False =&gt; <span class="macro">write!</span>(f, <span class="string">"false"</span>),
+<a href=#288 id=288 data-nosnippet>288</a>            TokenType::Intrinsic =&gt; <span class="macro">write!</span>(f, <span class="string">"intrinsic"</span>),
+<a href=#289 id=289 data-nosnippet>289</a>            TokenType::Embedded =&gt; <span class="macro">write!</span>(f, <span class="string">"embedded"</span>),
+<a href=#290 id=290 data-nosnippet>290</a>            TokenType::Fn =&gt; <span class="macro">write!</span>(f, <span class="string">"fn"</span>),
+<a href=#291 id=291 data-nosnippet>291</a>            TokenType::For =&gt; <span class="macro">write!</span>(f, <span class="string">"for"</span>),
+<a href=#292 id=292 data-nosnippet>292</a>            TokenType::If =&gt; <span class="macro">write!</span>(f, <span class="string">"if"</span>),
+<a href=#293 id=293 data-nosnippet>293</a>            TokenType::Loop =&gt; <span class="macro">write!</span>(f, <span class="string">"loop"</span>),
+<a href=#294 id=294 data-nosnippet>294</a>            TokenType::Mut =&gt; <span class="macro">write!</span>(f, <span class="string">"mut"</span>),
+<a href=#295 id=295 data-nosnippet>295</a>            TokenType::New =&gt; <span class="macro">write!</span>(f, <span class="string">"new"</span>),
+<a href=#296 id=296 data-nosnippet>296</a>            TokenType::Return =&gt; <span class="macro">write!</span>(f, <span class="string">"return"</span>),
+<a href=#297 id=297 data-nosnippet>297</a>            TokenType::Struct =&gt; <span class="macro">write!</span>(f, <span class="string">"struct"</span>),
+<a href=#298 id=298 data-nosnippet>298</a>            TokenType::True =&gt; <span class="macro">write!</span>(f, <span class="string">"true"</span>),
+<a href=#299 id=299 data-nosnippet>299</a>            TokenType::Type =&gt; <span class="macro">write!</span>(f, <span class="string">"type"</span>),
+<a href=#300 id=300 data-nosnippet>300</a>            TokenType::While =&gt; <span class="macro">write!</span>(f, <span class="string">"while"</span>),
+<a href=#301 id=301 data-nosnippet>301</a>            TokenType::Write =&gt; <span class="macro">write!</span>(f, <span class="string">"write"</span>),
+<a href=#302 id=302 data-nosnippet>302</a>            TokenType::Var =&gt; <span class="macro">write!</span>(f, <span class="string">"var"</span>),
+<a href=#303 id=303 data-nosnippet>303</a>            TokenType::Static =&gt; <span class="macro">write!</span>(f, <span class="string">"static"</span>),
+<a href=#304 id=304 data-nosnippet>304</a>            TokenType::Asm =&gt; <span class="macro">write!</span>(f, <span class="string">"asm"</span>),
+<a href=#305 id=305 data-nosnippet>305</a>            TokenType::GlobalAsm =&gt; <span class="macro">write!</span>(f, <span class="string">"global_asm"</span>),
+<a href=#306 id=306 data-nosnippet>306</a>
+<a href=#307 id=307 data-nosnippet>307</a>            <span class="comment">// Direct Reference
+<a href=#308 id=308 data-nosnippet>308</a>            </span>TokenType::Reference =&gt; <span class="macro">write!</span>(f, <span class="string">"ref"</span>),
+<a href=#309 id=309 data-nosnippet>309</a>
+<a href=#310 id=310 data-nosnippet>310</a>            <span class="comment">// Types
+<a href=#311 id=311 data-nosnippet>311</a>            </span>TokenType::Address =&gt; <span class="macro">write!</span>(f, <span class="string">"address"</span>),
+<a href=#312 id=312 data-nosnippet>312</a>            TokenType::Bool =&gt; <span class="macro">write!</span>(f, <span class="string">"bool"</span>),
+<a href=#313 id=313 data-nosnippet>313</a>            TokenType::Char =&gt; <span class="macro">write!</span>(f, <span class="string">"char"</span>),
+<a href=#314 id=314 data-nosnippet>314</a>            TokenType::F32 =&gt; <span class="macro">write!</span>(f, <span class="string">"f32"</span>),
+<a href=#315 id=315 data-nosnippet>315</a>            TokenType::F64 =&gt; <span class="macro">write!</span>(f, <span class="string">"f64"</span>),
+<a href=#316 id=316 data-nosnippet>316</a>            TokenType::FX8680 =&gt; <span class="macro">write!</span>(f, <span class="string">"f80"</span>),
+<a href=#317 id=317 data-nosnippet>317</a>            TokenType::F128 =&gt; <span class="macro">write!</span>(f, <span class="string">"f128"</span>),
+<a href=#318 id=318 data-nosnippet>318</a>            TokenType::FPPC128 =&gt; <span class="macro">write!</span>(f, <span class="string">"fppc_128"</span>),
+<a href=#319 id=319 data-nosnippet>319</a>            TokenType::Ptr =&gt; <span class="macro">write!</span>(f, <span class="string">"ptr"</span>),
+<a href=#320 id=320 data-nosnippet>320</a>            TokenType::Array =&gt; <span class="macro">write!</span>(f, <span class="string">"array"</span>),
+<a href=#321 id=321 data-nosnippet>321</a>            TokenType::S8 =&gt; <span class="macro">write!</span>(f, <span class="string">"s8"</span>),
+<a href=#322 id=322 data-nosnippet>322</a>            TokenType::S16 =&gt; <span class="macro">write!</span>(f, <span class="string">"s16"</span>),
+<a href=#323 id=323 data-nosnippet>323</a>            TokenType::S32 =&gt; <span class="macro">write!</span>(f, <span class="string">"s32"</span>),
+<a href=#324 id=324 data-nosnippet>324</a>            TokenType::S64 =&gt; <span class="macro">write!</span>(f, <span class="string">"s64"</span>),
+<a href=#325 id=325 data-nosnippet>325</a>            TokenType::Ssize =&gt; <span class="macro">write!</span>(f, <span class="string">"ssize"</span>),
+<a href=#326 id=326 data-nosnippet>326</a>            TokenType::CString =&gt; <span class="macro">write!</span>(f, <span class="string">"const array[char]"</span>),
+<a href=#327 id=327 data-nosnippet>327</a>            TokenType::CNString =&gt; <span class="macro">write!</span>(f, <span class="string">"const array[char]"</span>),
+<a href=#328 id=328 data-nosnippet>328</a>            TokenType::U8 =&gt; <span class="macro">write!</span>(f, <span class="string">"u8"</span>),
+<a href=#329 id=329 data-nosnippet>329</a>            TokenType::U16 =&gt; <span class="macro">write!</span>(f, <span class="string">"u16"</span>),
+<a href=#330 id=330 data-nosnippet>330</a>            TokenType::U32 =&gt; <span class="macro">write!</span>(f, <span class="string">"u32"</span>),
+<a href=#331 id=331 data-nosnippet>331</a>            TokenType::U64 =&gt; <span class="macro">write!</span>(f, <span class="string">"u64"</span>),
+<a href=#332 id=332 data-nosnippet>332</a>            TokenType::U128 =&gt; <span class="macro">write!</span>(f, <span class="string">"u128"</span>),
+<a href=#333 id=333 data-nosnippet>333</a>            TokenType::Usize =&gt; <span class="macro">write!</span>(f, <span class="string">"usize"</span>),
+<a href=#334 id=334 data-nosnippet>334</a>            TokenType::FnRef =&gt; <span class="macro">write!</span>(f, <span class="string">"Fn"</span>),
+<a href=#335 id=335 data-nosnippet>335</a>            TokenType::Void =&gt; <span class="macro">write!</span>(f, <span class="string">"void"</span>),
 <a href=#336 id=336 data-nosnippet>336</a>
-<a href=#337 id=337 data-nosnippet>337</a>            <span class="comment">// Attributes
-<a href=#338 id=338 data-nosnippet>338</a>            </span>TokenType::Linkage =&gt; <span class="macro">write!</span>(f, <span class="string">"@linkage"</span>),
-<a href=#339 id=339 data-nosnippet>339</a>            TokenType::Align =&gt; <span class="macro">write!</span>(f, <span class="string">"@align"</span>),
-<a href=#340 id=340 data-nosnippet>340</a>            TokenType::OptFuzzing =&gt; <span class="macro">write!</span>(f, <span class="string">"@optFuzzing"</span>),
-<a href=#341 id=341 data-nosnippet>341</a>            TokenType::NoUnwind =&gt; <span class="macro">write!</span>(f, <span class="string">"@noUnwind"</span>),
-<a href=#342 id=342 data-nosnippet>342</a>            TokenType::NoReturn =&gt; <span class="macro">write!</span>(f, <span class="string">"@noReturn"</span>),
-<a href=#343 id=343 data-nosnippet>343</a>            TokenType::Packed =&gt; <span class="macro">write!</span>(f, <span class="string">"@packed"</span>),
-<a href=#344 id=344 data-nosnippet>344</a>            TokenType::Thunk =&gt; <span class="macro">writeln!</span>(f, <span class="string">"@thunk"</span>),
-<a href=#345 id=345 data-nosnippet>345</a>            TokenType::Heap =&gt; <span class="macro">write!</span>(f, <span class="string">"@heap"</span>),
-<a href=#346 id=346 data-nosnippet>346</a>            TokenType::AlwaysInline =&gt; <span class="macro">write!</span>(f, <span class="string">"@alwaysInline"</span>),
-<a href=#347 id=347 data-nosnippet>347</a>            TokenType::AsmAlignStack =&gt; <span class="macro">write!</span>(f, <span class="string">"@asmAlignStack"</span>),
-<a href=#348 id=348 data-nosnippet>348</a>            TokenType::AsmSyntax =&gt; <span class="macro">write!</span>(f, <span class="string">"@asmSyntax"</span>),
-<a href=#349 id=349 data-nosnippet>349</a>            TokenType::AsmSideEffects =&gt; <span class="macro">write!</span>(f, <span class="string">"@asmSideEffects"</span>),
-<a href=#350 id=350 data-nosnippet>350</a>            TokenType::AsmThrow =&gt; <span class="macro">write!</span>(f, <span class="string">"@asmThrowErrors"</span>),
-<a href=#351 id=351 data-nosnippet>351</a>            TokenType::Convention =&gt; <span class="macro">write!</span>(f, <span class="string">"@convention"</span>),
-<a href=#352 id=352 data-nosnippet>352</a>            TokenType::Extern =&gt; <span class="macro">write!</span>(f, <span class="string">"@extern"</span>),
-<a href=#353 id=353 data-nosnippet>353</a>            TokenType::Hot =&gt; <span class="macro">write!</span>(f, <span class="string">"@hot"</span>),
-<a href=#354 id=354 data-nosnippet>354</a>            TokenType::Ignore =&gt; <span class="macro">write!</span>(f, <span class="string">"@arbitraryArgs"</span>),
-<a href=#355 id=355 data-nosnippet>355</a>            TokenType::InlineHint =&gt; <span class="macro">write!</span>(f, <span class="string">"@inline"</span>),
-<a href=#356 id=356 data-nosnippet>356</a>            TokenType::MinSize =&gt; <span class="macro">write!</span>(f, <span class="string">"@minSize"</span>),
-<a href=#357 id=357 data-nosnippet>357</a>            TokenType::NoInline =&gt; <span class="macro">write!</span>(f, <span class="string">"@noInline"</span>),
-<a href=#358 id=358 data-nosnippet>358</a>            TokenType::PreciseFloats =&gt; <span class="macro">write!</span>(f, <span class="string">"@preciseFloatingPoint"</span>),
-<a href=#359 id=359 data-nosnippet>359</a>            TokenType::Public =&gt; <span class="macro">write!</span>(f, <span class="string">"@public"</span>),
-<a href=#360 id=360 data-nosnippet>360</a>            TokenType::EntryPoint =&gt; <span class="macro">write!</span>(f, <span class="string">"@entrypoint"</span>),
-<a href=#361 id=361 data-nosnippet>361</a>            TokenType::IfAttribute =&gt; <span class="macro">write!</span>(f, <span class="string">"@if"</span>),
-<a href=#362 id=362 data-nosnippet>362</a>            TokenType::ElifAttribute =&gt; <span class="macro">write!</span>(f, <span class="string">"@elif"</span>),
-<a href=#363 id=363 data-nosnippet>363</a>            TokenType::ElseAttribute =&gt; <span class="macro">write!</span>(f, <span class="string">"@else"</span>),
-<a href=#364 id=364 data-nosnippet>364</a>            TokenType::SafeStack =&gt; <span class="macro">write!</span>(f, <span class="string">"@safeStack"</span>),
-<a href=#365 id=365 data-nosnippet>365</a>            TokenType::StrongStack =&gt; <span class="macro">write!</span>(f, <span class="string">"@strongStack"</span>),
-<a href=#366 id=366 data-nosnippet>366</a>            TokenType::WeakStack =&gt; <span class="macro">write!</span>(f, <span class="string">"@weakStack"</span>),
-<a href=#367 id=367 data-nosnippet>367</a>            TokenType::Pure =&gt; <span class="macro">write!</span>(f, <span class="string">"@pure"</span>),
-<a href=#368 id=368 data-nosnippet>368</a>            TokenType::Cuda =&gt; <span class="macro">write!</span>(f, <span class="string">"@cuda"</span>),
-<a href=#369 id=369 data-nosnippet>369</a>            TokenType::Destructor =&gt; <span class="macro">write!</span>(f, <span class="string">"@destructor"</span>),
-<a href=#370 id=370 data-nosnippet>370</a>            TokenType::Constructor =&gt; <span class="macro">write!</span>(f, <span class="string">"@constructor"</span>),
-<a href=#371 id=371 data-nosnippet>371</a>            TokenType::Promote =&gt; <span class="macro">write!</span>(f, <span class="string">"@promote"</span>),
-<a href=#372 id=372 data-nosnippet>372</a>
-<a href=#373 id=373 data-nosnippet>373</a>            <span class="comment">// Operators, Punctuation, and Special Constructs
-<a href=#374 id=374 data-nosnippet>374</a>            </span>TokenType::Or =&gt; <span class="macro">write!</span>(f, <span class="string">"||"</span>),
-<a href=#375 id=375 data-nosnippet>375</a>            TokenType::And =&gt; <span class="macro">write!</span>(f, <span class="string">"&amp;&amp;"</span>),
-<a href=#376 id=376 data-nosnippet>376</a>            TokenType::Float =&gt; <span class="macro">write!</span>(f, <span class="string">"float"</span>),
-<a href=#377 id=377 data-nosnippet>377</a>            TokenType::Integer =&gt; <span class="macro">write!</span>(f, <span class="string">"integer"</span>),
-<a href=#378 id=378 data-nosnippet>378</a>            TokenType::Addr =&gt; <span class="macro">write!</span>(f, <span class="string">"addr"</span>),
-<a href=#379 id=379 data-nosnippet>379</a>            TokenType::Alloc =&gt; <span class="macro">write!</span>(f, <span class="string">"alloc"</span>),
-<a href=#380 id=380 data-nosnippet>380</a>            TokenType::Arith =&gt; <span class="macro">write!</span>(f, <span class="string">"%"</span>),
-<a href=#381 id=381 data-nosnippet>381</a>            TokenType::Arrow =&gt; <span class="macro">write!</span>(f, <span class="string">"-&gt;"</span>),
-<a href=#382 id=382 data-nosnippet>382</a>            TokenType::FatArrow =&gt; <span class="macro">write!</span>(f, <span class="string">"=&gt;"</span>),
-<a href=#383 id=383 data-nosnippet>383</a>            TokenType::AsmFn =&gt; <span class="macro">write!</span>(f, <span class="string">"asmfn"</span>),
-<a href=#384 id=384 data-nosnippet>384</a>            TokenType::Bang =&gt; <span class="macro">write!</span>(f, <span class="string">"!"</span>),
-<a href=#385 id=385 data-nosnippet>385</a>            TokenType::BangEq =&gt; <span class="macro">write!</span>(f, <span class="string">"!="</span>),
-<a href=#386 id=386 data-nosnippet>386</a>            TokenType::As =&gt; <span class="macro">write!</span>(f, <span class="string">"as"</span>),
-<a href=#387 id=387 data-nosnippet>387</a>            TokenType::Colon =&gt; <span class="macro">write!</span>(f, <span class="string">":"</span>),
-<a href=#388 id=388 data-nosnippet>388</a>            TokenType::ColonColon =&gt; <span class="macro">write!</span>(f, <span class="string">"::"</span>),
-<a href=#389 id=389 data-nosnippet>389</a>            TokenType::Comma =&gt; <span class="macro">write!</span>(f, <span class="string">","</span>),
-<a href=#390 id=390 data-nosnippet>390</a>            TokenType::Deref =&gt; <span class="macro">write!</span>(f, <span class="string">"deref"</span>),
-<a href=#391 id=391 data-nosnippet>391</a>            TokenType::Dot =&gt; <span class="macro">write!</span>(f, <span class="string">"."</span>),
-<a href=#392 id=392 data-nosnippet>392</a>            TokenType::Eof =&gt; <span class="macro">write!</span>(f, <span class="string">"EOF"</span>),
-<a href=#393 id=393 data-nosnippet>393</a>            TokenType::Eq =&gt; <span class="macro">write!</span>(f, <span class="string">"="</span>),
-<a href=#394 id=394 data-nosnippet>394</a>            TokenType::EqEq =&gt; <span class="macro">write!</span>(f, <span class="string">"=="</span>),
-<a href=#395 id=395 data-nosnippet>395</a>            TokenType::Greater =&gt; <span class="macro">write!</span>(f, <span class="string">"&gt;"</span>),
-<a href=#396 id=396 data-nosnippet>396</a>            TokenType::GreaterEq =&gt; <span class="macro">write!</span>(f, <span class="string">"&gt;="</span>),
-<a href=#397 id=397 data-nosnippet>397</a>            TokenType::Identifier =&gt; <span class="macro">write!</span>(f, <span class="string">"identifier"</span>),
-<a href=#398 id=398 data-nosnippet>398</a>            TokenType::Fixed =&gt; <span class="macro">write!</span>(f, <span class="string">"fixed"</span>),
-<a href=#399 id=399 data-nosnippet>399</a>            TokenType::LBrace =&gt; <span class="macro">write!</span>(f, <span class="string">"{{"</span>),
-<a href=#400 id=400 data-nosnippet>400</a>            TokenType::LBracket =&gt; <span class="macro">write!</span>(f, <span class="string">"["</span>),
-<a href=#401 id=401 data-nosnippet>401</a>            TokenType::Less =&gt; <span class="macro">write!</span>(f, <span class="string">"&lt;"</span>),
-<a href=#402 id=402 data-nosnippet>402</a>            TokenType::LessEq =&gt; <span class="macro">write!</span>(f, <span class="string">"&lt;="</span>),
-<a href=#403 id=403 data-nosnippet>403</a>            TokenType::Load =&gt; <span class="macro">write!</span>(f, <span class="string">"load"</span>),
-<a href=#404 id=404 data-nosnippet>404</a>            TokenType::LParen =&gt; <span class="macro">write!</span>(f, <span class="string">"("</span>),
-<a href=#405 id=405 data-nosnippet>405</a>            TokenType::LShift =&gt; <span class="macro">write!</span>(f, <span class="string">"&lt;&lt;"</span>),
-<a href=#406 id=406 data-nosnippet>406</a>            TokenType::Minus =&gt; <span class="macro">write!</span>(f, <span class="string">"-"</span>),
-<a href=#407 id=407 data-nosnippet>407</a>            TokenType::MinusEq =&gt; <span class="macro">write!</span>(f, <span class="string">"-="</span>),
-<a href=#408 id=408 data-nosnippet>408</a>            TokenType::MinusMinus =&gt; <span class="macro">write!</span>(f, <span class="string">"--"</span>),
-<a href=#409 id=409 data-nosnippet>409</a>            TokenType::NullPtr =&gt; <span class="macro">write!</span>(f, <span class="string">"nullptr"</span>),
-<a href=#410 id=410 data-nosnippet>410</a>            TokenType::Pass =&gt; <span class="macro">write!</span>(f, <span class="string">"..."</span>),
-<a href=#411 id=411 data-nosnippet>411</a>            TokenType::Plus =&gt; <span class="macro">write!</span>(f, <span class="string">"+"</span>),
-<a href=#412 id=412 data-nosnippet>412</a>            TokenType::PlusEq =&gt; <span class="macro">write!</span>(f, <span class="string">"+="</span>),
-<a href=#413 id=413 data-nosnippet>413</a>            TokenType::PlusPlus =&gt; <span class="macro">write!</span>(f, <span class="string">"++"</span>),
-<a href=#414 id=414 data-nosnippet>414</a>            TokenType::StarEq =&gt; <span class="macro">write!</span>(f, <span class="string">"*="</span>),
-<a href=#415 id=415 data-nosnippet>415</a>            TokenType::SlashEq =&gt; <span class="macro">write!</span>(f, <span class="string">"/="</span>),
-<a href=#416 id=416 data-nosnippet>416</a>            TokenType::ArithEq =&gt; <span class="macro">write!</span>(f, <span class="string">"%="</span>),
-<a href=#417 id=417 data-nosnippet>417</a>            TokenType::BAndEq =&gt; <span class="macro">write!</span>(f, <span class="string">"&amp;="</span>),
-<a href=#418 id=418 data-nosnippet>418</a>            TokenType::BorEq =&gt; <span class="macro">write!</span>(f, <span class="string">"|="</span>),
-<a href=#419 id=419 data-nosnippet>419</a>            TokenType::XorEq =&gt; <span class="macro">write!</span>(f, <span class="string">"^="</span>),
-<a href=#420 id=420 data-nosnippet>420</a>            TokenType::LShiftEq =&gt; <span class="macro">write!</span>(f, <span class="string">"&lt;&lt;="</span>),
-<a href=#421 id=421 data-nosnippet>421</a>            TokenType::RShiftEq =&gt; <span class="macro">write!</span>(f, <span class="string">"&gt;&gt;="</span>),
-<a href=#422 id=422 data-nosnippet>422</a>            TokenType::Range =&gt; <span class="macro">write!</span>(f, <span class="string">".."</span>),
-<a href=#423 id=423 data-nosnippet>423</a>            TokenType::RBrace =&gt; <span class="macro">write!</span>(f, <span class="string">"}}"</span>),
-<a href=#424 id=424 data-nosnippet>424</a>            TokenType::RBracket =&gt; <span class="macro">write!</span>(f, <span class="string">"]"</span>),
-<a href=#425 id=425 data-nosnippet>425</a>            TokenType::RParen =&gt; <span class="macro">write!</span>(f, <span class="string">")"</span>),
-<a href=#426 id=426 data-nosnippet>426</a>            TokenType::RShift =&gt; <span class="macro">write!</span>(f, <span class="string">"&gt;&gt;"</span>),
-<a href=#427 id=427 data-nosnippet>427</a>            TokenType::SemiColon =&gt; <span class="macro">write!</span>(f, <span class="string">";"</span>),
-<a href=#428 id=428 data-nosnippet>428</a>            TokenType::Slash =&gt; <span class="macro">write!</span>(f, <span class="string">"/"</span>),
-<a href=#429 id=429 data-nosnippet>429</a>            TokenType::Xor =&gt; <span class="macro">write!</span>(f, <span class="string">"^"</span>),
-<a href=#430 id=430 data-nosnippet>430</a>            TokenType::Not =&gt; <span class="macro">write!</span>(f, <span class="string">"~"</span>),
-<a href=#431 id=431 data-nosnippet>431</a>            TokenType::Bor =&gt; <span class="macro">write!</span>(f, <span class="string">"|"</span>),
-<a href=#432 id=432 data-nosnippet>432</a>            TokenType::BAnd =&gt; <span class="macro">write!</span>(f, <span class="string">"&amp;"</span>),
-<a href=#433 id=433 data-nosnippet>433</a>            TokenType::Star =&gt; <span class="macro">write!</span>(f, <span class="string">"*"</span>),
-<a href=#434 id=434 data-nosnippet>434</a>
-<a href=#435 id=435 data-nosnippet>435</a>            <span class="comment">// Builtins
-<a href=#436 id=436 data-nosnippet>436</a>            </span>TokenType::Halloc =&gt; <span class="macro">write!</span>(f, <span class="string">"halloc"</span>),
-<a href=#437 id=437 data-nosnippet>437</a>            TokenType::MemSet =&gt; <span class="macro">write!</span>(f, <span class="string">"memset"</span>),
-<a href=#438 id=438 data-nosnippet>438</a>            TokenType::MemMove =&gt; <span class="macro">write!</span>(f, <span class="string">"memmove"</span>),
-<a href=#439 id=439 data-nosnippet>439</a>            TokenType::MemCpy =&gt; <span class="macro">write!</span>(f, <span class="string">"memcpy"</span>),
-<a href=#440 id=440 data-nosnippet>440</a>            TokenType::AbiSizeOf =&gt; <span class="macro">write!</span>(f, <span class="string">"abiSizeOf"</span>),
-<a href=#441 id=441 data-nosnippet>441</a>            TokenType::BitSizeOf =&gt; <span class="macro">write!</span>(f, <span class="string">"bitSizeOf"</span>),
-<a href=#442 id=442 data-nosnippet>442</a>            TokenType::AbiAlignOf =&gt; <span class="macro">write!</span>(f, <span class="string">"abiAlignOf"</span>),
-<a href=#443 id=443 data-nosnippet>443</a>            TokenType::ArbitraryArg =&gt; <span class="macro">write!</span>(f, <span class="string">"arbitraryArg"</span>),
-<a href=#444 id=444 data-nosnippet>444</a>            TokenType::ArbitraryArgs =&gt; <span class="macro">write!</span>(f, <span class="string">"arbitraryArgs"</span>),
-<a href=#445 id=445 data-nosnippet>445</a>
-<a href=#446 id=446 data-nosnippet>446</a>            <span class="comment">// Import
-<a href=#447 id=447 data-nosnippet>447</a>            </span>TokenType::Import =&gt; <span class="macro">write!</span>(f, <span class="string">"import"</span>),
-<a href=#448 id=448 data-nosnippet>448</a>            TokenType::ImportC =&gt; <span class="macro">write!</span>(f, <span class="string">"importC"</span>),
-<a href=#449 id=449 data-nosnippet>449</a>            TokenType::Only =&gt; <span class="macro">write!</span>(f, <span class="string">"only"</span>),
-<a href=#450 id=450 data-nosnippet>450</a>            TokenType::Directive =&gt; <span class="macro">write!</span>(f, <span class="string">"directive"</span>),
-<a href=#451 id=451 data-nosnippet>451</a>        }
-<a href=#452 id=452 data-nosnippet>452</a>    }
-<a href=#453 id=453 data-nosnippet>453</a>}
+<a href=#337 id=337 data-nosnippet>337</a>            <span class="comment">// Special
+<a href=#338 id=338 data-nosnippet>338</a>            </span>TokenType::Unreachable =&gt; <span class="macro">write!</span>(f, <span class="string">"unreachable"</span>),
+<a href=#339 id=339 data-nosnippet>339</a>
+<a href=#340 id=340 data-nosnippet>340</a>            <span class="comment">// Modificators
+<a href=#341 id=341 data-nosnippet>341</a>            </span>TokenType::LazyThread =&gt; <span class="macro">write!</span>(f, <span class="string">"lazythread"</span>),
+<a href=#342 id=342 data-nosnippet>342</a>            TokenType::Volatile =&gt; <span class="macro">write!</span>(f, <span class="string">"volatile"</span>),
+<a href=#343 id=343 data-nosnippet>343</a>
+<a href=#344 id=344 data-nosnippet>344</a>            TokenType::AtomNone =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicNone"</span>),
+<a href=#345 id=345 data-nosnippet>345</a>            TokenType::AtomFree =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicFree"</span>),
+<a href=#346 id=346 data-nosnippet>346</a>            TokenType::AtomRelax =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicRelax"</span>),
+<a href=#347 id=347 data-nosnippet>347</a>            TokenType::AtomGrab =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicGrab"</span>),
+<a href=#348 id=348 data-nosnippet>348</a>            TokenType::AtomDrop =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicDrop"</span>),
+<a href=#349 id=349 data-nosnippet>349</a>            TokenType::AtomSync =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicSync"</span>),
+<a href=#350 id=350 data-nosnippet>350</a>            TokenType::AtomStrict =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicStrict"</span>),
+<a href=#351 id=351 data-nosnippet>351</a>
+<a href=#352 id=352 data-nosnippet>352</a>            TokenType::ThreadDynamic =&gt; <span class="macro">write!</span>(f, <span class="string">"threadDyn"</span>),
+<a href=#353 id=353 data-nosnippet>353</a>            TokenType::ThreadExec =&gt; <span class="macro">write!</span>(f, <span class="string">"threadExec"</span>),
+<a href=#354 id=354 data-nosnippet>354</a>            TokenType::ThreadInit =&gt; <span class="macro">write!</span>(f, <span class="string">"threadInit"</span>),
+<a href=#355 id=355 data-nosnippet>355</a>            TokenType::ThreadLDynamic =&gt; <span class="macro">write!</span>(f, <span class="string">"threadLDyn"</span>),
+<a href=#356 id=356 data-nosnippet>356</a>
+<a href=#357 id=357 data-nosnippet>357</a>            <span class="comment">// Attributes
+<a href=#358 id=358 data-nosnippet>358</a>            </span>TokenType::Linkage =&gt; <span class="macro">write!</span>(f, <span class="string">"@linkage"</span>),
+<a href=#359 id=359 data-nosnippet>359</a>            TokenType::Align =&gt; <span class="macro">write!</span>(f, <span class="string">"@align"</span>),
+<a href=#360 id=360 data-nosnippet>360</a>            TokenType::OptFuzzing =&gt; <span class="macro">write!</span>(f, <span class="string">"@optFuzzing"</span>),
+<a href=#361 id=361 data-nosnippet>361</a>            TokenType::NoUnwind =&gt; <span class="macro">write!</span>(f, <span class="string">"@noUnwind"</span>),
+<a href=#362 id=362 data-nosnippet>362</a>            TokenType::NoReturn =&gt; <span class="macro">write!</span>(f, <span class="string">"@noReturn"</span>),
+<a href=#363 id=363 data-nosnippet>363</a>            TokenType::Packed =&gt; <span class="macro">write!</span>(f, <span class="string">"@packed"</span>),
+<a href=#364 id=364 data-nosnippet>364</a>            TokenType::Thunk =&gt; <span class="macro">writeln!</span>(f, <span class="string">"@thunk"</span>),
+<a href=#365 id=365 data-nosnippet>365</a>            TokenType::Heap =&gt; <span class="macro">write!</span>(f, <span class="string">"@heap"</span>),
+<a href=#366 id=366 data-nosnippet>366</a>            TokenType::AlwaysInline =&gt; <span class="macro">write!</span>(f, <span class="string">"@alwaysInline"</span>),
+<a href=#367 id=367 data-nosnippet>367</a>            TokenType::AsmAlignStack =&gt; <span class="macro">write!</span>(f, <span class="string">"@asmAlignStack"</span>),
+<a href=#368 id=368 data-nosnippet>368</a>            TokenType::AsmSyntax =&gt; <span class="macro">write!</span>(f, <span class="string">"@asmSyntax"</span>),
+<a href=#369 id=369 data-nosnippet>369</a>            TokenType::AsmSideEffects =&gt; <span class="macro">write!</span>(f, <span class="string">"@asmSideEffects"</span>),
+<a href=#370 id=370 data-nosnippet>370</a>            TokenType::AsmThrow =&gt; <span class="macro">write!</span>(f, <span class="string">"@asmThrowErrors"</span>),
+<a href=#371 id=371 data-nosnippet>371</a>            TokenType::Convention =&gt; <span class="macro">write!</span>(f, <span class="string">"@convention"</span>),
+<a href=#372 id=372 data-nosnippet>372</a>            TokenType::Extern =&gt; <span class="macro">write!</span>(f, <span class="string">"@extern"</span>),
+<a href=#373 id=373 data-nosnippet>373</a>            TokenType::Hot =&gt; <span class="macro">write!</span>(f, <span class="string">"@hot"</span>),
+<a href=#374 id=374 data-nosnippet>374</a>            TokenType::Ignore =&gt; <span class="macro">write!</span>(f, <span class="string">"@arbitraryArgs"</span>),
+<a href=#375 id=375 data-nosnippet>375</a>            TokenType::InlineHint =&gt; <span class="macro">write!</span>(f, <span class="string">"@inline"</span>),
+<a href=#376 id=376 data-nosnippet>376</a>            TokenType::MinSize =&gt; <span class="macro">write!</span>(f, <span class="string">"@minSize"</span>),
+<a href=#377 id=377 data-nosnippet>377</a>            TokenType::NoArgCount =&gt; <span class="macro">write!</span>(f, <span class="string">"@noArgCount"</span>),
+<a href=#378 id=378 data-nosnippet>378</a>            TokenType::NoInline =&gt; <span class="macro">write!</span>(f, <span class="string">"@noInline"</span>),
+<a href=#379 id=379 data-nosnippet>379</a>            TokenType::PreciseFloats =&gt; <span class="macro">write!</span>(f, <span class="string">"@preciseFloatingPoint"</span>),
+<a href=#380 id=380 data-nosnippet>380</a>            TokenType::Public =&gt; <span class="macro">write!</span>(f, <span class="string">"@public"</span>),
+<a href=#381 id=381 data-nosnippet>381</a>            TokenType::EntryPoint =&gt; <span class="macro">write!</span>(f, <span class="string">"@entrypoint"</span>),
+<a href=#382 id=382 data-nosnippet>382</a>            TokenType::IfAttribute =&gt; <span class="macro">write!</span>(f, <span class="string">"@if"</span>),
+<a href=#383 id=383 data-nosnippet>383</a>            TokenType::ElifAttribute =&gt; <span class="macro">write!</span>(f, <span class="string">"@elif"</span>),
+<a href=#384 id=384 data-nosnippet>384</a>            TokenType::ElseAttribute =&gt; <span class="macro">write!</span>(f, <span class="string">"@else"</span>),
+<a href=#385 id=385 data-nosnippet>385</a>            TokenType::SafeStack =&gt; <span class="macro">write!</span>(f, <span class="string">"@safeStack"</span>),
+<a href=#386 id=386 data-nosnippet>386</a>            TokenType::StrongStack =&gt; <span class="macro">write!</span>(f, <span class="string">"@strongStack"</span>),
+<a href=#387 id=387 data-nosnippet>387</a>            TokenType::WeakStack =&gt; <span class="macro">write!</span>(f, <span class="string">"@weakStack"</span>),
+<a href=#388 id=388 data-nosnippet>388</a>            TokenType::Pure =&gt; <span class="macro">write!</span>(f, <span class="string">"@pure"</span>),
+<a href=#389 id=389 data-nosnippet>389</a>            TokenType::Cuda =&gt; <span class="macro">write!</span>(f, <span class="string">"@cuda"</span>),
+<a href=#390 id=390 data-nosnippet>390</a>            TokenType::Destructor =&gt; <span class="macro">write!</span>(f, <span class="string">"@destructor"</span>),
+<a href=#391 id=391 data-nosnippet>391</a>            TokenType::Constructor =&gt; <span class="macro">write!</span>(f, <span class="string">"@constructor"</span>),
+<a href=#392 id=392 data-nosnippet>392</a>            TokenType::Dealloc =&gt; <span class="macro">write!</span>(f, <span class="string">"@dealloc"</span>),
+<a href=#393 id=393 data-nosnippet>393</a>            TokenType::Deallocator =&gt; <span class="macro">write!</span>(f, <span class="string">"@deallocator"</span>),
+<a href=#394 id=394 data-nosnippet>394</a>            TokenType::Promote =&gt; <span class="macro">write!</span>(f, <span class="string">"@promote"</span>),
+<a href=#395 id=395 data-nosnippet>395</a>
+<a href=#396 id=396 data-nosnippet>396</a>            <span class="comment">// Operators, Punctuation, and Special Constructs
+<a href=#397 id=397 data-nosnippet>397</a>            </span>TokenType::Or =&gt; <span class="macro">write!</span>(f, <span class="string">"||"</span>),
+<a href=#398 id=398 data-nosnippet>398</a>            TokenType::And =&gt; <span class="macro">write!</span>(f, <span class="string">"&amp;&amp;"</span>),
+<a href=#399 id=399 data-nosnippet>399</a>            TokenType::Float =&gt; <span class="macro">write!</span>(f, <span class="string">"float"</span>),
+<a href=#400 id=400 data-nosnippet>400</a>            TokenType::Integer =&gt; <span class="macro">write!</span>(f, <span class="string">"integer"</span>),
+<a href=#401 id=401 data-nosnippet>401</a>            TokenType::Addr =&gt; <span class="macro">write!</span>(f, <span class="string">"addr"</span>),
+<a href=#402 id=402 data-nosnippet>402</a>            TokenType::Alloc =&gt; <span class="macro">write!</span>(f, <span class="string">"alloc"</span>),
+<a href=#403 id=403 data-nosnippet>403</a>            TokenType::Arith =&gt; <span class="macro">write!</span>(f, <span class="string">"%"</span>),
+<a href=#404 id=404 data-nosnippet>404</a>            TokenType::Arrow =&gt; <span class="macro">write!</span>(f, <span class="string">"-&gt;"</span>),
+<a href=#405 id=405 data-nosnippet>405</a>            TokenType::FatArrow =&gt; <span class="macro">write!</span>(f, <span class="string">"=&gt;"</span>),
+<a href=#406 id=406 data-nosnippet>406</a>            TokenType::AsmFn =&gt; <span class="macro">write!</span>(f, <span class="string">"asmfn"</span>),
+<a href=#407 id=407 data-nosnippet>407</a>            TokenType::Bang =&gt; <span class="macro">write!</span>(f, <span class="string">"!"</span>),
+<a href=#408 id=408 data-nosnippet>408</a>            TokenType::BangEq =&gt; <span class="macro">write!</span>(f, <span class="string">"!="</span>),
+<a href=#409 id=409 data-nosnippet>409</a>            TokenType::As =&gt; <span class="macro">write!</span>(f, <span class="string">"as"</span>),
+<a href=#410 id=410 data-nosnippet>410</a>            TokenType::Colon =&gt; <span class="macro">write!</span>(f, <span class="string">":"</span>),
+<a href=#411 id=411 data-nosnippet>411</a>            TokenType::ColonColon =&gt; <span class="macro">write!</span>(f, <span class="string">"::"</span>),
+<a href=#412 id=412 data-nosnippet>412</a>            TokenType::Comma =&gt; <span class="macro">write!</span>(f, <span class="string">","</span>),
+<a href=#413 id=413 data-nosnippet>413</a>            TokenType::Deref =&gt; <span class="macro">write!</span>(f, <span class="string">"deref"</span>),
+<a href=#414 id=414 data-nosnippet>414</a>            TokenType::Dot =&gt; <span class="macro">write!</span>(f, <span class="string">"."</span>),
+<a href=#415 id=415 data-nosnippet>415</a>            TokenType::Eof =&gt; <span class="macro">write!</span>(f, <span class="string">"EOF"</span>),
+<a href=#416 id=416 data-nosnippet>416</a>            TokenType::Eq =&gt; <span class="macro">write!</span>(f, <span class="string">"="</span>),
+<a href=#417 id=417 data-nosnippet>417</a>            TokenType::EqEq =&gt; <span class="macro">write!</span>(f, <span class="string">"=="</span>),
+<a href=#418 id=418 data-nosnippet>418</a>            TokenType::Greater =&gt; <span class="macro">write!</span>(f, <span class="string">"&gt;"</span>),
+<a href=#419 id=419 data-nosnippet>419</a>            TokenType::GreaterEq =&gt; <span class="macro">write!</span>(f, <span class="string">"&gt;="</span>),
+<a href=#420 id=420 data-nosnippet>420</a>            TokenType::Identifier =&gt; <span class="macro">write!</span>(f, <span class="string">"identifier"</span>),
+<a href=#421 id=421 data-nosnippet>421</a>            TokenType::Fixed =&gt; <span class="macro">write!</span>(f, <span class="string">"fixed"</span>),
+<a href=#422 id=422 data-nosnippet>422</a>            TokenType::LBrace =&gt; <span class="macro">write!</span>(f, <span class="string">"{{"</span>),
+<a href=#423 id=423 data-nosnippet>423</a>            TokenType::LBracket =&gt; <span class="macro">write!</span>(f, <span class="string">"["</span>),
+<a href=#424 id=424 data-nosnippet>424</a>            TokenType::Less =&gt; <span class="macro">write!</span>(f, <span class="string">"&lt;"</span>),
+<a href=#425 id=425 data-nosnippet>425</a>            TokenType::LessEq =&gt; <span class="macro">write!</span>(f, <span class="string">"&lt;="</span>),
+<a href=#426 id=426 data-nosnippet>426</a>            TokenType::Load =&gt; <span class="macro">write!</span>(f, <span class="string">"load"</span>),
+<a href=#427 id=427 data-nosnippet>427</a>            TokenType::LParen =&gt; <span class="macro">write!</span>(f, <span class="string">"("</span>),
+<a href=#428 id=428 data-nosnippet>428</a>            TokenType::LShift =&gt; <span class="macro">write!</span>(f, <span class="string">"&lt;&lt;"</span>),
+<a href=#429 id=429 data-nosnippet>429</a>            TokenType::Minus =&gt; <span class="macro">write!</span>(f, <span class="string">"-"</span>),
+<a href=#430 id=430 data-nosnippet>430</a>            TokenType::MinusEq =&gt; <span class="macro">write!</span>(f, <span class="string">"-="</span>),
+<a href=#431 id=431 data-nosnippet>431</a>            TokenType::MinusMinus =&gt; <span class="macro">write!</span>(f, <span class="string">"--"</span>),
+<a href=#432 id=432 data-nosnippet>432</a>            TokenType::NullPtr =&gt; <span class="macro">write!</span>(f, <span class="string">"nullptr"</span>),
+<a href=#433 id=433 data-nosnippet>433</a>            TokenType::Pass =&gt; <span class="macro">write!</span>(f, <span class="string">"..."</span>),
+<a href=#434 id=434 data-nosnippet>434</a>            TokenType::Plus =&gt; <span class="macro">write!</span>(f, <span class="string">"+"</span>),
+<a href=#435 id=435 data-nosnippet>435</a>            TokenType::PlusEq =&gt; <span class="macro">write!</span>(f, <span class="string">"+="</span>),
+<a href=#436 id=436 data-nosnippet>436</a>            TokenType::PlusPlus =&gt; <span class="macro">write!</span>(f, <span class="string">"++"</span>),
+<a href=#437 id=437 data-nosnippet>437</a>            TokenType::StarEq =&gt; <span class="macro">write!</span>(f, <span class="string">"*="</span>),
+<a href=#438 id=438 data-nosnippet>438</a>            TokenType::SlashEq =&gt; <span class="macro">write!</span>(f, <span class="string">"/="</span>),
+<a href=#439 id=439 data-nosnippet>439</a>            TokenType::ArithEq =&gt; <span class="macro">write!</span>(f, <span class="string">"%="</span>),
+<a href=#440 id=440 data-nosnippet>440</a>            TokenType::BAndEq =&gt; <span class="macro">write!</span>(f, <span class="string">"&amp;="</span>),
+<a href=#441 id=441 data-nosnippet>441</a>            TokenType::BorEq =&gt; <span class="macro">write!</span>(f, <span class="string">"|="</span>),
+<a href=#442 id=442 data-nosnippet>442</a>            TokenType::XorEq =&gt; <span class="macro">write!</span>(f, <span class="string">"^="</span>),
+<a href=#443 id=443 data-nosnippet>443</a>            TokenType::LShiftEq =&gt; <span class="macro">write!</span>(f, <span class="string">"&lt;&lt;="</span>),
+<a href=#444 id=444 data-nosnippet>444</a>            TokenType::RShiftEq =&gt; <span class="macro">write!</span>(f, <span class="string">"&gt;&gt;="</span>),
+<a href=#445 id=445 data-nosnippet>445</a>            TokenType::Range =&gt; <span class="macro">write!</span>(f, <span class="string">".."</span>),
+<a href=#446 id=446 data-nosnippet>446</a>            TokenType::RBrace =&gt; <span class="macro">write!</span>(f, <span class="string">"}}"</span>),
+<a href=#447 id=447 data-nosnippet>447</a>            TokenType::RBracket =&gt; <span class="macro">write!</span>(f, <span class="string">"]"</span>),
+<a href=#448 id=448 data-nosnippet>448</a>            TokenType::RParen =&gt; <span class="macro">write!</span>(f, <span class="string">")"</span>),
+<a href=#449 id=449 data-nosnippet>449</a>            TokenType::RShift =&gt; <span class="macro">write!</span>(f, <span class="string">"&gt;&gt;"</span>),
+<a href=#450 id=450 data-nosnippet>450</a>            TokenType::SemiColon =&gt; <span class="macro">write!</span>(f, <span class="string">";"</span>),
+<a href=#451 id=451 data-nosnippet>451</a>            TokenType::Slash =&gt; <span class="macro">write!</span>(f, <span class="string">"/"</span>),
+<a href=#452 id=452 data-nosnippet>452</a>            TokenType::Xor =&gt; <span class="macro">write!</span>(f, <span class="string">"^"</span>),
+<a href=#453 id=453 data-nosnippet>453</a>            TokenType::Not =&gt; <span class="macro">write!</span>(f, <span class="string">"~"</span>),
+<a href=#454 id=454 data-nosnippet>454</a>            TokenType::Bor =&gt; <span class="macro">write!</span>(f, <span class="string">"|"</span>),
+<a href=#455 id=455 data-nosnippet>455</a>            TokenType::BAnd =&gt; <span class="macro">write!</span>(f, <span class="string">"&amp;"</span>),
+<a href=#456 id=456 data-nosnippet>456</a>            TokenType::Star =&gt; <span class="macro">write!</span>(f, <span class="string">"*"</span>),
+<a href=#457 id=457 data-nosnippet>457</a>
+<a href=#458 id=458 data-nosnippet>458</a>            <span class="comment">// Builtins
+<a href=#459 id=459 data-nosnippet>459</a>            </span>TokenType::Halloc =&gt; <span class="macro">write!</span>(f, <span class="string">"halloc"</span>),
+<a href=#460 id=460 data-nosnippet>460</a>            TokenType::MemSet =&gt; <span class="macro">write!</span>(f, <span class="string">"memset"</span>),
+<a href=#461 id=461 data-nosnippet>461</a>            TokenType::MemMove =&gt; <span class="macro">write!</span>(f, <span class="string">"memmove"</span>),
+<a href=#462 id=462 data-nosnippet>462</a>            TokenType::MemCpy =&gt; <span class="macro">write!</span>(f, <span class="string">"memcpy"</span>),
+<a href=#463 id=463 data-nosnippet>463</a>            TokenType::AbiSizeOf =&gt; <span class="macro">write!</span>(f, <span class="string">"abiSizeOf"</span>),
+<a href=#464 id=464 data-nosnippet>464</a>            TokenType::BitSizeOf =&gt; <span class="macro">write!</span>(f, <span class="string">"bitSizeOf"</span>),
+<a href=#465 id=465 data-nosnippet>465</a>            TokenType::AbiAlignOf =&gt; <span class="macro">write!</span>(f, <span class="string">"abiAlignOf"</span>),
+<a href=#466 id=466 data-nosnippet>466</a>            TokenType::ArbitraryArg =&gt; <span class="macro">write!</span>(f, <span class="string">"arbitraryArg"</span>),
+<a href=#467 id=467 data-nosnippet>467</a>            TokenType::ArbitraryArgs =&gt; <span class="macro">write!</span>(f, <span class="string">"arbitraryArgs"</span>),
+<a href=#468 id=468 data-nosnippet>468</a>
+<a href=#469 id=469 data-nosnippet>469</a>            <span class="comment">// Atomic Builtins
+<a href=#470 id=470 data-nosnippet>470</a>            </span>TokenType::AtomicStore =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicStore"</span>),
+<a href=#471 id=471 data-nosnippet>471</a>            TokenType::AtomicAdd =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicAdd"</span>),
+<a href=#472 id=472 data-nosnippet>472</a>            TokenType::AtomicSubtract =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicSubtract"</span>),
+<a href=#473 id=473 data-nosnippet>473</a>            TokenType::AtomicAnd =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicAnd"</span>),
+<a href=#474 id=474 data-nosnippet>474</a>            TokenType::AtomicNand =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicNand"</span>),
+<a href=#475 id=475 data-nosnippet>475</a>            TokenType::AtomicOr =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicOr"</span>),
+<a href=#476 id=476 data-nosnippet>476</a>            TokenType::AtomicXor =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicXor"</span>),
+<a href=#477 id=477 data-nosnippet>477</a>            TokenType::AtomicSignedMaximum =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicSignedMaximum"</span>),
+<a href=#478 id=478 data-nosnippet>478</a>            TokenType::AtomicSignedMinimum =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicSignedMinimum"</span>),
+<a href=#479 id=479 data-nosnippet>479</a>            TokenType::AtomicUnsignedMaximum =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicUnsignedMaximum"</span>),
+<a href=#480 id=480 data-nosnippet>480</a>            TokenType::AtomicUnsignedMinimum =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicUnsignedMinimum"</span>),
+<a href=#481 id=481 data-nosnippet>481</a>            TokenType::AtomicCompareAndSwap =&gt; <span class="macro">write!</span>(f, <span class="string">"atomicCompareAndSwap"</span>),
+<a href=#482 id=482 data-nosnippet>482</a>
+<a href=#483 id=483 data-nosnippet>483</a>            <span class="comment">// Variadic Builtins
+<a href=#484 id=484 data-nosnippet>484</a>            </span>TokenType::ArbitraryArgsStart =&gt; <span class="macro">write!</span>(f, <span class="string">"arbitraryArgsStart"</span>),
+<a href=#485 id=485 data-nosnippet>485</a>            TokenType::ArbitraryArgsCopy =&gt; <span class="macro">write!</span>(f, <span class="string">"arbitraryArgsCopy"</span>),
+<a href=#486 id=486 data-nosnippet>486</a>            TokenType::ArbitraryArgsEnd =&gt; <span class="macro">write!</span>(f, <span class="string">"arbitraryArgsEnd"</span>),
+<a href=#487 id=487 data-nosnippet>487</a>            TokenType::ArbitraryArgFrom =&gt; <span class="macro">write!</span>(f, <span class="string">"arbitraryArgFrom"</span>),
+<a href=#488 id=488 data-nosnippet>488</a>            TokenType::ArbitraryArgsCount =&gt; <span class="macro">write!</span>(f, <span class="string">"arbitraryArgsCount"</span>),
+<a href=#489 id=489 data-nosnippet>489</a>
+<a href=#490 id=490 data-nosnippet>490</a>            <span class="comment">// Import
+<a href=#491 id=491 data-nosnippet>491</a>            </span>TokenType::Import =&gt; <span class="macro">write!</span>(f, <span class="string">"import"</span>),
+<a href=#492 id=492 data-nosnippet>492</a>            TokenType::ImportC =&gt; <span class="macro">write!</span>(f, <span class="string">"importC"</span>),
+<a href=#493 id=493 data-nosnippet>493</a>            TokenType::Only =&gt; <span class="macro">write!</span>(f, <span class="string">"only"</span>),
+<a href=#494 id=494 data-nosnippet>494</a>            TokenType::Directive =&gt; <span class="macro">write!</span>(f, <span class="string">"directive"</span>),
+<a href=#495 id=495 data-nosnippet>495</a>        }
+<a href=#496 id=496 data-nosnippet>496</a>    }
+<a href=#497 id=497 data-nosnippet>497</a>}
 </code></pre></div></section></main></body></html>

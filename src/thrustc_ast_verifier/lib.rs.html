@@ -20,13 +20,13 @@
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="attr">#![allow(clippy::collapsible_match)]
 <a href=#21 id=21 data-nosnippet>21</a>
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">use </span>thrustc_ast::{
-<a href=#23 id=23 data-nosnippet>23</a>    Ast,
-<a href=#24 id=24 data-nosnippet>24</a>    ast_builtins::AstBuiltin,
-<a href=#25 id=25 data-nosnippet>25</a>    ast_metadata::ReferenceType,
-<a href=#26 id=26 data-nosnippet>26</a>    traits::{
-<a href=#27 id=27 data-nosnippet>27</a>        AstCodeLocation, AstConstantExtensions, AstExpressionExtensions, AstGetType,
-<a href=#28 id=28 data-nosnippet>28</a>        AstStandardExtensions, AstStatementExtensions,
-<a href=#29 id=29 data-nosnippet>29</a>    },
+<a href=#23 id=23 data-nosnippet>23</a>    ast_builtins::AstBuiltin,
+<a href=#24 id=24 data-nosnippet>24</a>    ast_metadata::ReferenceType,
+<a href=#25 id=25 data-nosnippet>25</a>    traits::{
+<a href=#26 id=26 data-nosnippet>26</a>        AstCodeLocation, AstConstantExtensions, AstExpressionExtensions, AstGetType,
+<a href=#27 id=27 data-nosnippet>27</a>        AstStandardExtensions, AstStatementExtensions,
+<a href=#28 id=28 data-nosnippet>28</a>    },
+<a href=#29 id=29 data-nosnippet>29</a>    Ast,
 <a href=#30 id=30 data-nosnippet>30</a>};
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span>thrustc_diagnostician::Diagnostician;
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span>thrustc_errors::CompilationIssue;
@@ -290,8 +290,8 @@
 <a href=#290 id=290 data-nosnippet>290</a>                <span class="self">self</span>.expected_expression(condition);
 <a href=#291 id=291 data-nosnippet>291</a>                <span class="self">self</span>.analyze_expression(condition);
 <a href=#292 id=292 data-nosnippet>292</a>
-<a href=#293 id=293 data-nosnippet>293</a>                <span class="self">self</span>.expected_expression(actions);
-<a href=#294 id=294 data-nosnippet>294</a>                <span class="self">self</span>.analyze_expression(actions);
+<a href=#293 id=293 data-nosnippet>293</a>                <span class="self">self</span>.expected_statement_or_loose_expression(actions);
+<a href=#294 id=294 data-nosnippet>294</a>                <span class="self">self</span>.analyze_stmt(actions);
 <a href=#295 id=295 data-nosnippet>295</a>
 <a href=#296 id=296 data-nosnippet>296</a>                <span class="self">self</span>.expected_statement_or_loose_expression(block);
 <a href=#297 id=297 data-nosnippet>297</a>                <span class="self">self</span>.analyze_stmt(block);

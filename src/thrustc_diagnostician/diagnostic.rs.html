@@ -19,8 +19,8 @@
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>colored::Colorize;
 <a href=#21 id=21 data-nosnippet>21</a>
-<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_logging::LoggingType;
-<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_code_location::Span;
+<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_code_location::Span;
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_logging::LoggingType;
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use crate</span>::{DiagnosticType, Notificator, position::CodePosition};
 <a href=#26 id=26 data-nosnippet>26</a>
@@ -206,9 +206,9 @@
 <a href=#206 id=206 data-nosnippet>206</a>
 <a href=#207 id=207 data-nosnippet>207</a>        <span class="kw">let </span>span_highlight = <span class="kw">match </span>r#type {
 <a href=#208 id=208 data-nosnippet>208</a>            DiagnosticType::Warning =&gt; span_text.on_yellow().bold(),
-<a href=#209 id=209 data-nosnippet>209</a>            DiagnosticType::Error
-<a href=#210 id=210 data-nosnippet>210</a>            | DiagnosticType::FrontendBug
-<a href=#211 id=211 data-nosnippet>211</a>            | DiagnosticType::BackendBug =&gt; span_text.on_red().bold(),
+<a href=#209 id=209 data-nosnippet>209</a>            DiagnosticType::Error | DiagnosticType::FrontendBug | DiagnosticType::BackendBug =&gt; {
+<a href=#210 id=210 data-nosnippet>210</a>                span_text.on_red().bold()
+<a href=#211 id=211 data-nosnippet>211</a>            }
 <a href=#212 id=212 data-nosnippet>212</a>        };
 <a href=#213 id=213 data-nosnippet>213</a>
 <a href=#214 id=214 data-nosnippet>214</a>        <span class="macro">format!</span>(

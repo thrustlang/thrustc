@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["link_with_clang","link_with_gcc"],"struct":["ClangLinker","GCCLinker"]};
+window.SIDEBAR_ITEMS = {"fn":["add_sanitizer_link_flags","link_with_clang","link_with_gcc","sanitizer_link_name"],"struct":["ClangLinker","GCCLinker"]};

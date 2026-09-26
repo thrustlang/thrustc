@@ -29,8 +29,8 @@
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>ahash::AHashMap <span class="kw">as </span>HashMap;
 <a href=#30 id=30 data-nosnippet>30</a>
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">pub type </span>Struct&lt;<span class="lifetime">'parser</span>&gt; = (
-<a href=#32 id=32 data-nosnippet>32</a>    <span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str,
-<a href=#33 id=33 data-nosnippet>33</a>    Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, Type, u32, Span)&gt;,
+<a href=#32 id=32 data-nosnippet>32</a>    String,
+<a href=#33 id=33 data-nosnippet>33</a>    Vec&lt;(String, Type, u32, Span)&gt;,
 <a href=#34 id=34 data-nosnippet>34</a>    ThrustAttributes,
 <a href=#35 id=35 data-nosnippet>35</a>    StructTypeMetadata,
 <a href=#36 id=36 data-nosnippet>36</a>    Span,
@@ -39,7 +39,7 @@
 <a href=#39 id=39 data-nosnippet>39</a><span class="kw">pub type </span>Function&lt;<span class="lifetime">'parser</span>&gt; = (
 <a href=#40 id=40 data-nosnippet>40</a>    Type,
 <a href=#41 id=41 data-nosnippet>41</a>    FunctionParametersTypes,
-<a href=#42 id=42 data-nosnippet>42</a>    FunctionParameterNames&lt;<span class="lifetime">'parser</span>&gt;,
+<a href=#42 id=42 data-nosnippet>42</a>    FunctionParameterNames,
 <a href=#43 id=43 data-nosnippet>43</a>    bool,
 <a href=#44 id=44 data-nosnippet>44</a>);
 <a href=#45 id=45 data-nosnippet>45</a><span class="kw">pub type </span>AssemblerFunction&lt;<span class="lifetime">'parser</span>&gt; = (Type, AssemblerFunctionParametersTypes, bool);
@@ -49,7 +49,7 @@
 <a href=#49 id=49 data-nosnippet>49</a></span><span class="kw">pub struct </span>FunctionParametersTypes(<span class="kw">pub </span>Vec&lt;Type&gt;);
 <a href=#50 id=50 data-nosnippet>50</a>
 <a href=#51 id=51 data-nosnippet>51</a><span class="attr">#[derive(Debug, Clone)]
-<a href=#52 id=52 data-nosnippet>52</a></span><span class="kw">pub struct </span>FunctionParameterNames&lt;<span class="lifetime">'parser</span>&gt;(<span class="kw">pub </span>Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str&gt;);
+<a href=#52 id=52 data-nosnippet>52</a></span><span class="kw">pub struct </span>FunctionParameterNames(<span class="kw">pub </span>Vec&lt;String&gt;);
 <a href=#53 id=53 data-nosnippet>53</a>
 <a href=#54 id=54 data-nosnippet>54</a><span class="attr">#[derive(Debug, Clone)]
 <a href=#55 id=55 data-nosnippet>55</a></span><span class="kw">pub struct </span>AssemblerFunctionParametersTypes(<span class="kw">pub </span>Vec&lt;Type&gt;);
@@ -80,28 +80,28 @@
 <a href=#80 id=80 data-nosnippet>80</a><span class="kw">pub type </span>LocalSymbol&lt;<span class="lifetime">'parser</span>&gt; = (Type, LocalMetadata, Span);
 <a href=#81 id=81 data-nosnippet>81</a><span class="kw">pub type </span>ParameterSymbol&lt;<span class="lifetime">'parser</span>&gt; = (Type, FunctionParameterMetadata, Span);
 <a href=#82 id=82 data-nosnippet>82</a>
-<a href=#83 id=83 data-nosnippet>83</a><span class="kw">pub type </span>GlobalCustomTypes&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, CustomTypeSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;;
-<a href=#84 id=84 data-nosnippet>84</a><span class="kw">pub type </span>LocalCustomTypes&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, CustomTypeSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
+<a href=#83 id=83 data-nosnippet>83</a><span class="kw">pub type </span>GlobalCustomTypes&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;String, CustomTypeSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;;
+<a href=#84 id=84 data-nosnippet>84</a><span class="kw">pub type </span>LocalCustomTypes&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;String, CustomTypeSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
 <a href=#85 id=85 data-nosnippet>85</a>
-<a href=#86 id=86 data-nosnippet>86</a><span class="kw">pub type </span>GlobalStructs&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, Struct&lt;<span class="lifetime">'parser</span>&gt;&gt;;
-<a href=#87 id=87 data-nosnippet>87</a><span class="kw">pub type </span>LocalStructs&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, Struct&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
+<a href=#86 id=86 data-nosnippet>86</a><span class="kw">pub type </span>GlobalStructs&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;String, Struct&lt;<span class="lifetime">'parser</span>&gt;&gt;;
+<a href=#87 id=87 data-nosnippet>87</a><span class="kw">pub type </span>LocalStructs&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;String, Struct&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
 <a href=#88 id=88 data-nosnippet>88</a>
-<a href=#89 id=89 data-nosnippet>89</a><span class="kw">pub type </span>LocalStatics&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, StaticSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
-<a href=#90 id=90 data-nosnippet>90</a><span class="kw">pub type </span>GlobalStatics&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, StaticSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;;
+<a href=#89 id=89 data-nosnippet>89</a><span class="kw">pub type </span>LocalStatics&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;String, StaticSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
+<a href=#90 id=90 data-nosnippet>90</a><span class="kw">pub type </span>GlobalStatics&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;String, StaticSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;;
 <a href=#91 id=91 data-nosnippet>91</a>
-<a href=#92 id=92 data-nosnippet>92</a><span class="kw">pub type </span>LocalConstants&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, ConstantSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
-<a href=#93 id=93 data-nosnippet>93</a><span class="kw">pub type </span>GlobalConstants&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, ConstantSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;;
+<a href=#92 id=92 data-nosnippet>92</a><span class="kw">pub type </span>LocalConstants&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;String, ConstantSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
+<a href=#93 id=93 data-nosnippet>93</a><span class="kw">pub type </span>GlobalConstants&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;String, ConstantSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;;
 <a href=#94 id=94 data-nosnippet>94</a>
-<a href=#95 id=95 data-nosnippet>95</a><span class="kw">pub type </span>GlobalEnums&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, EnumSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;;
-<a href=#96 id=96 data-nosnippet>96</a><span class="kw">pub type </span>LocalEnums&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, EnumSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
+<a href=#95 id=95 data-nosnippet>95</a><span class="kw">pub type </span>GlobalEnums&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;String, EnumSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;;
+<a href=#96 id=96 data-nosnippet>96</a><span class="kw">pub type </span>LocalEnums&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;String, EnumSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
 <a href=#97 id=97 data-nosnippet>97</a>
 <a href=#98 id=98 data-nosnippet>98</a><span class="kw">pub type </span>Parameters&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;String, ParameterSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;;
 <a href=#99 id=99 data-nosnippet>99</a>
-<a href=#100 id=100 data-nosnippet>100</a><span class="kw">pub type </span>Intrinsics&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, Intrinsic&lt;<span class="lifetime">'parser</span>&gt;&gt;;
+<a href=#100 id=100 data-nosnippet>100</a><span class="kw">pub type </span>Intrinsics&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;String, Intrinsic&lt;<span class="lifetime">'parser</span>&gt;&gt;;
 <a href=#101 id=101 data-nosnippet>101</a>
-<a href=#102 id=102 data-nosnippet>102</a><span class="kw">pub type </span>Functions&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, Function&lt;<span class="lifetime">'parser</span>&gt;&gt;;
-<a href=#103 id=103 data-nosnippet>103</a><span class="kw">pub type </span>AssemblerFunctions&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, AssemblerFunction&lt;<span class="lifetime">'parser</span>&gt;&gt;;
+<a href=#102 id=102 data-nosnippet>102</a><span class="kw">pub type </span>Functions&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;String, Function&lt;<span class="lifetime">'parser</span>&gt;&gt;;
+<a href=#103 id=103 data-nosnippet>103</a><span class="kw">pub type </span>AssemblerFunctions&lt;<span class="lifetime">'parser</span>&gt; = HashMap&lt;String, AssemblerFunction&lt;<span class="lifetime">'parser</span>&gt;&gt;;
 <a href=#104 id=104 data-nosnippet>104</a>
-<a href=#105 id=105 data-nosnippet>105</a><span class="kw">pub type </span>LLIs&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, LLISymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
-<a href=#106 id=106 data-nosnippet>106</a><span class="kw">pub type </span>Locals&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>str, LocalSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
+<a href=#105 id=105 data-nosnippet>105</a><span class="kw">pub type </span>LLIs&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;String, LLISymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
+<a href=#106 id=106 data-nosnippet>106</a><span class="kw">pub type </span>Locals&lt;<span class="lifetime">'parser</span>&gt; = Vec&lt;HashMap&lt;String, LocalSymbol&lt;<span class="lifetime">'parser</span>&gt;&gt;&gt;;
 </code></pre></div></section></main></body></html>

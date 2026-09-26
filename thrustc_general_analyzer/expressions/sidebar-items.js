@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["validate_node"]};
+window.SIDEBAR_ITEMS = {"fn":["validate_atomic_integer_operands","validate_atomic_operation","validate_cmpxchg_orderings","validate_node","validate_variadic_argument_type"]};

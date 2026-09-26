@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["parse_expr","parse_expression"],"mod":["array","asm","builtin_call","call","deref","enum_value","fixed_array","index","load","precedences","property","reference","struct_constructor"]};
+window.SIDEBAR_ITEMS = {"fn":["parse_expr","parse_expression"],"mod":["array","asm","builtin_call","call","deref","enum_value","fixed_array","index","load","precedences","property","qualified","reference","struct_constructor"]};
