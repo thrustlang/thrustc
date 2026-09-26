@@ -345,6 +345,10 @@ fn builtin_completion_uses_real_builtin_names() {
 
     assert!(labels.contains(&"sizeOf".to_string()));
     assert!(labels.contains(&"isLinux".to_string()));
+    assert!(labels.contains(&"isUnix".to_string()));
+    assert!(labels.contains(&"isBSD".to_string()));
+    assert!(labels.contains(&"isAndroid".to_string()));
+    assert!(labels.contains(&"isWasm32".to_string()));
     assert!(labels.contains(&"staticAssert".to_string()));
     assert!(labels.contains(&"memcpy".to_string()));
     assert!(!labels.contains(&"memCpy".to_string()));

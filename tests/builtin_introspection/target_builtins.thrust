@@ -44,5 +44,17 @@ fn main() s32 @public {
     if hasPosixThreads() != true { return 25; }
     if hasSysvAbi() != true { return 26; }
 
+    if isUnix() != true { return 27; }
+    if isBSD() != false { return 28; }
+    if isFreeBSD() != false { return 29; }
+    if isNetBSD() != false { return 30; }
+    if isOpenBSD() != false { return 31; }
+    if isAndroid() != false { return 32; }
+    if isIOS() != false { return 33; }
+    if isSolaris() != false { return 34; }
+    if isHaiku() != false { return 35; }
+    if isWasm32() != false { return 36; }
+    if isWasm64() != false { return 37; }
+
     return 0;
 }

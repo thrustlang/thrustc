@@ -690,6 +690,71 @@ impl LLVMTargetTriple {
 
         windows_arch && (windows_os || windows_abi || windows_env)
     }
+
+    #[inline]
+    pub fn is_bsd_based(&self) -> bool {
+        matches!(
+            self.os.as_str(),
+            "freebsd" | "netbsd" | "openbsd" | "dragonfly"
+        ) || self.os.contains("freebsd")
+            || self.os.contains("netbsd")
+            || self.os.contains("openbsd")
+            || self.os.contains("dragonfly")
+    }
+
+    #[inline]
+    pub fn is_freebsd_os(&self) -> bool {
+        self.os.eq_ignore_ascii_case("freebsd") || self.os.contains("freebsd")
+    }
+
+    #[inline]
+    pub fn is_netbsd_os(&self) -> bool {
+        self.os.eq_ignore_ascii_case("netbsd") || self.os.contains("netbsd")
+    }
+
+    #[inline]
+    pub fn is_openbsd_os(&self) -> bool {
+        self.os.eq_ignore_ascii_case("openbsd") || self.os.contains("openbsd")
+    }
+
+    #[inline]
+    pub fn is_android_os(&self) -> bool {
+        self.os.eq_ignore_ascii_case("android")
+            || self.abi.eq_ignore_ascii_case("android")
+            || self.abi.eq_ignore_ascii_case("androideabi")
+            || self.os.contains("android")
+    }
+
+    #[inline]
+    pub fn is_ios_os(&self) -> bool {
+        matches!(self.os.as_str(), "ios" | "tvos" | "watchos")
+            || self.os.contains("ios")
+            || self.os.contains("tvos")
+            || self.os.contains("watchos")
+    }
+
+    #[inline]
+    pub fn is_solaris_os(&self) -> bool {
+        self.os.eq_ignore_ascii_case("solaris")
+            || self.os.eq_ignore_ascii_case("illumos")
+            || self.os.contains("solaris")
+    }
+
+    #[inline]
+    pub fn is_haiku_os(&self) -> bool {
+        self.os.eq_ignore_ascii_case("haiku") || self.os.contains("haiku")
+    }
+
+    #[inline]
+    pub fn is_unix_based(&self) -> bool {
+        self.is_linux_based()
+            || self.is_darwin_os()
+            || self.is_apple_based()
+            || self.is_os_aix()
+            || self.is_bsd_based()
+            || self.is_solaris_os()
+            || self.is_haiku_os()
+    }
 }
 
 impl LLVMTargetTriple {

@@ -82,6 +82,17 @@ pub fn register_default_builtins(registry: &mut BuiltinRegistry) {
     registry.register_function(target::IsDarwin);
     registry.register_function(target::IsApple);
     registry.register_function(target::IsAix);
+    registry.register_function(target::IsUnix);
+    registry.register_function(target::IsBSD);
+    registry.register_function(target::IsFreeBSD);
+    registry.register_function(target::IsNetBSD);
+    registry.register_function(target::IsOpenBSD);
+    registry.register_function(target::IsAndroid);
+    registry.register_function(target::IsIOS);
+    registry.register_function(target::IsSolaris);
+    registry.register_function(target::IsHaiku);
+    registry.register_function(target::IsWasm32);
+    registry.register_function(target::IsWasm64);
     registry.register_function(target::Is64Bit);
     registry.register_function(target::Is32Bit);
     registry.register_function(target::IsBigEndian);

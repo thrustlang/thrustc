@@ -50,7 +50,7 @@ syntax keyword thrustBuiltin
     \ isSameType isPtrLike isFixedArrayOfSize
     \ compilerVersion debugBuild stringLength
     \ targetOS targetArch targetVendor targetAbi targetTriple
-    \ isLinux isWindows isDarwin isApple isAix
+    \ isLinux isWindows isDarwin isApple isAix isUnix isBSD isFreeBSD isNetBSD isOpenBSD isAndroid isIOS isSolaris isHaiku isWasm32 isWasm64
     \ is64Bit is32Bit isBigEndian isLittleEndian
     \ isX86 isX8664 isArm isAarch64 isRiscv64
     \ isPpc isPpc64 isMips64 isSystemz isLoongarch64

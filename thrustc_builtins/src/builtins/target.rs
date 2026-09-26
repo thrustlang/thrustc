@@ -26,6 +26,7 @@ use crate::context::BuiltinContext;
 use crate::traits::BuiltinFunctionSignature;
 use crate::traits::BuiltinParameter;
 use crate::traits::CompileTimeBuiltinFunction;
+
 use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 
 #[derive(Debug)]
@@ -313,6 +314,334 @@ impl CompileTimeBuiltinFunction for IsAix {
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
         Ok(BuiltinValue::Bool(self::target_triple(context).is_os_aix()))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsUnix;
+
+impl CompileTimeBuiltinFunction for IsUnix {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isUnix"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_unix_based(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsBSD;
+
+impl CompileTimeBuiltinFunction for IsBSD {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isBSD"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_bsd_based(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsFreeBSD;
+
+impl CompileTimeBuiltinFunction for IsFreeBSD {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isFreeBSD"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_freebsd_os(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsNetBSD;
+
+impl CompileTimeBuiltinFunction for IsNetBSD {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isNetBSD"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_netbsd_os(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsOpenBSD;
+
+impl CompileTimeBuiltinFunction for IsOpenBSD {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isOpenBSD"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_openbsd_os(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsAndroid;
+
+impl CompileTimeBuiltinFunction for IsAndroid {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isAndroid"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_android_os(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsIOS;
+
+impl CompileTimeBuiltinFunction for IsIOS {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isIOS"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(self::target_triple(context).is_ios_os()))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsSolaris;
+
+impl CompileTimeBuiltinFunction for IsSolaris {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isSolaris"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_solaris_os(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsHaiku;
+
+impl CompileTimeBuiltinFunction for IsHaiku {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isHaiku"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_haiku_os(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsWasm32;
+
+impl CompileTimeBuiltinFunction for IsWasm32 {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isWasm32"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_wasm32_arch(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct IsWasm64;
+
+impl CompileTimeBuiltinFunction for IsWasm64 {
+    #[inline]
+    fn name(&self) -> &'static str {
+        "isWasm64"
+    }
+
+    #[inline]
+    fn signature(&self) -> BuiltinFunctionSignature {
+        BuiltinFunctionSignature {
+            return_type: Type::Bool {
+                span: Span::nothing(),
+            },
+            parameters: Vec::new(),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        _args: &[BuiltinArgument],
+        context: &mut BuiltinContext<'_>,
+    ) -> Result<BuiltinValue, CompilationIssue> {
+        Ok(BuiltinValue::Bool(
+            self::target_triple(context).is_wasm64_arch(),
+        ))
     }
 }
 
