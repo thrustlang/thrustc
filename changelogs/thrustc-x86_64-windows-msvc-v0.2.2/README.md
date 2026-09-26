@@ -2,6 +2,12 @@
 
 All notable changes to the Thrust Compiler (thrustc) are documented here.
 
+## [thrustc-x86_64-windows-msvc-v0.2.2] - 2026-09-26
+
+### Bug Fixes
+- **frontend**: Fix(frontend) Fixing a rustc fail compilation on windows, regarding builtins. ([`b3849c6`](https://github.com/thrustlang/thrustc/commit/b3849c6d0f21d57c06bf4fb771da778f732c48f0))
+
+
 ## [thrustc-x86_64-linux-ubuntu-v0.2.2] - 2026-09-26
 
 ### Bug Fixes
