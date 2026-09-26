@@ -2,9 +2,9 @@
     ctx: &amp;mut <a class="struct" href="../../struct.ParserContext.html" title="struct thrustc_parser::ParserContext">ParserContext</a>&lt;'parser&gt;,
     access: &amp;[<a class="struct" href="https://doc.rust-lang.org/1.97.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>],
     symbol: &amp;'parser <a class="primitive" href="https://doc.rust-lang.org/1.97.1/std/primitive.str.html">str</a>,
-    span: <a class="struct" href="../../../thrustc_code_location/struct.Span.html" title="struct thrustc_code_location::Span">Span</a>,
+    span: Span,
     type_params: &amp;[<a class="struct" href="https://doc.rust-lang.org/1.97.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>],
-    kind: <a class="enum" href="../../../thrustc_typesystem/enum.Type.html" title="enum thrustc_typesystem::Type">Type</a>,
-    parameters: &amp;[(<a class="struct" href="https://doc.rust-lang.org/1.97.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <a class="enum" href="../../../thrustc_typesystem/enum.Type.html" title="enum thrustc_typesystem::Type">Type</a>, <a class="struct" href="../../../thrustc_code_location/struct.Span.html" title="struct thrustc_code_location::Span">Span</a>)],
-    attributes: <a class="type" href="../../../thrustc_attributes/type.ThrustAttributes.html" title="type thrustc_attributes::ThrustAttributes">ThrustAttributes</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.97.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="../../../thrustc_ast/enum.Ast.html" title="enum thrustc_ast::Ast">Ast</a>&lt;'parser&gt;, <a class="enum" href="../../../thrustc_errors/enum.CompilationIssue.html" title="enum thrustc_errors::CompilationIssue">CompilationIssue</a>&gt;</code></pre></section></div></main></body></html>
+    kind: Type,
+    parameters: &amp;[(<a class="struct" href="https://doc.rust-lang.org/1.97.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, Type, Span)],
+    attributes: ThrustAttributes,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.97.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Ast&lt;'parser&gt;, CompilationIssue&gt;</code></pre></section></div></main></body></html>
