@@ -772,8 +772,6 @@ fn push_builtins(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         "hostEndian",
         "currentTimestamp",
         "processorCount",
-        "pageSize",
-        "cpuCacheLineSize",
         "hostName",
     ] {
         self::push_item(

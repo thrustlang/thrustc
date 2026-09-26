@@ -25,6 +25,7 @@ use crate::builtins::location;
 use crate::context::BuiltinContext;
 use crate::traits::BuiltinFunctionSignature;
 use crate::traits::CompileTimeBuiltinFunction;
+
 use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 
 #[derive(Debug)]
@@ -187,66 +188,6 @@ impl CompileTimeBuiltinFunction for ProcessorCount {
 }
 
 #[derive(Debug)]
-pub struct PageSize;
-
-impl CompileTimeBuiltinFunction for PageSize {
-    #[inline]
-    fn name(&self) -> &'static str {
-        "pageSize"
-    }
-
-    #[inline]
-    fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
-                span: Span::nothing(),
-            },
-            parameters: Vec::new(),
-        }
-    }
-
-    fn evaluate(
-        &self,
-        _args: &[BuiltinArgument],
-        _context: &mut BuiltinContext<'_>,
-    ) -> Result<BuiltinValue, CompilationIssue> {
-        let size: u64 = self::sysconf_positive(libc::_SC_PAGESIZE).unwrap_or(4096);
-
-        Ok(BuiltinValue::Integer(size))
-    }
-}
-
-#[derive(Debug)]
-pub struct CpuCacheLineSize;
-
-impl CompileTimeBuiltinFunction for CpuCacheLineSize {
-    #[inline]
-    fn name(&self) -> &'static str {
-        "cpuCacheLineSize"
-    }
-
-    #[inline]
-    fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
-                span: Span::nothing(),
-            },
-            parameters: Vec::new(),
-        }
-    }
-
-    fn evaluate(
-        &self,
-        _args: &[BuiltinArgument],
-        _context: &mut BuiltinContext<'_>,
-    ) -> Result<BuiltinValue, CompilationIssue> {
-        let size: u64 = self::cache_line_size();
-
-        Ok(BuiltinValue::Integer(size))
-    }
-}
-
-#[derive(Debug)]
 pub struct HostName;
 
 impl CompileTimeBuiltinFunction for HostName {
@@ -268,41 +209,9 @@ impl CompileTimeBuiltinFunction for HostName {
         _args: &[BuiltinArgument],
         _context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        let mut buffer: [u8; 256] = [0; 256];
+        let result: std::ffi::OsString = gethostname::gethostname();
+        let name: String = result.to_string_lossy().to_string();
 
-        let result: libc::c_int = unsafe {
-            libc::gethostname(buffer.as_mut_ptr().cast(), buffer.len())
-        };
-
-        if result != 0 {
-            return Ok(BuiltinValue::CString(Vec::new()));
-        }
-
-        let len: usize = buffer.iter().position(|byte| *byte == 0).unwrap_or(buffer.len());
-
-        Ok(BuiltinValue::CString(buffer[..len].to_vec()))
+        Ok(BuiltinValue::CString(name.into()))
     }
-}
-
-#[inline]
-fn sysconf_positive(name: libc::c_int) -> Option<u64> {
-    let value: libc::c_long = unsafe { libc::sysconf(name) };
-
-    if value > 0 {
-        Some(value as u64)
-    } else {
-        None
-    }
-}
-
-#[cfg(target_os = "linux")]
-#[inline]
-fn cache_line_size() -> u64 {
-    self::sysconf_positive(libc::_SC_LEVEL1_DCACHE_LINESIZE).unwrap_or(64)
-}
-
-#[cfg(not(target_os = "linux"))]
-#[inline]
-fn cache_line_size() -> u64 {
-    64
 }

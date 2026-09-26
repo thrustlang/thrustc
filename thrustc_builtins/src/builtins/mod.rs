@@ -128,8 +128,6 @@ pub fn register_default_builtins(registry: &mut BuiltinRegistry) {
     registry.register_function(host::HostEndian);
     registry.register_function(host::CurrentTimestamp);
     registry.register_function(host::ProcessorCount);
-    registry.register_function(host::PageSize);
-    registry.register_function(host::CpuCacheLineSize);
     registry.register_function(host::HostName);
 
     registry.register_type(BuiltinTypeInfo::new(

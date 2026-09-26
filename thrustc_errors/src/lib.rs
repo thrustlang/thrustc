@@ -1003,7 +1003,7 @@ fn variadic(first: s32) s32 @public @arbitraryArgs {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0048, r##"A builtin that depends on the host platform is not available on the current one. The hostName and sysconf-based builtins only work on systems that provide the underlying service. Use a builtin the platform supports.
+        explanations.insert(CompilationIssueCode::E0048, r##"A builtin that depends on the host platform is not available on the current one. The hostName builtin only works on systems that provide the underlying service. Use a builtin the platform supports.
 
 Incorrect:
 """
