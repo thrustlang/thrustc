@@ -2,9 +2,17 @@
 
 All notable changes to the Thrust Compiler (thrustc) are documented here.
 
-## [Unreleased]
+## [thrustc-x86_64-linux-ubuntu-v0.2.2] - 2026-09-26
 
 ### Bug Fixes
+- Fix(fuzz) Updating the fuzzing suite to works with the current compiler version ([`a13ceea`](https://github.com/thrustlang/thrustc/commit/a13ceeabc15b337f248e862151c8a701c097467a))
+- **llvm_backend**: Fix(llvm_backend) Backend panic when using `->` deref arrow shortcut inside a mutation expression on supposed LValue state. ([`5b33307`](https://github.com/thrustlang/thrustc/commit/5b33307514be9889967a0b1eb044be7aa6502a97))
+- Fix(lsp) Refactoring the lsp for a better code quality and, comprehensible understanding. ([`72517a4`](https://github.com/thrustlang/thrustc/commit/72517a48ca75fc2a032f0770b3ca4e7bd29c65c0))
+- **frontend**: Fix(frontend) Reassembling the generics and import resolution on different crate for a better project layout and frontend. ([`738dbb7`](https://github.com/thrustlang/thrustc/commit/738dbb7059a6f7a750d30fea5dbe2699e2316a0b))
+- **doc**: Fix(doc) Removing unnecesary buzz-words ([`db3b461`](https://github.com/thrustlang/thrustc/commit/db3b461bad368fa0194c185970279761e106c9f4))
+- **project-visual**: Fix(project-visual) Moving release binary variants to compiler releasing ([`f645404`](https://github.com/thrustlang/thrustc/commit/f645404bd9f8b7b4507cc2ccd29bfa170271c4e8))
+- **project-visual**: Fix(project-visual) Moving resources to the root. ([`875e63e`](https://github.com/thrustlang/thrustc/commit/875e63eac2cc13568bbdfc1157b083daebfc3204))
+- **project**: Fix(project) Fixing an old issue in git cliff changelog generation. ([`5b38206`](https://github.com/thrustlang/thrustc/commit/5b38206911939906f59f474dba9c5a3dfc202e87))
 - Fix(lsp) Fixing type suggestion in deteterminate contexts. ([`496baa7`](https://github.com/thrustlang/thrustc/commit/496baa72c1108bc654899f9125858f10572e080e))
 - Fix(lsp) For loop snippet syntax. ([`08f0458`](https://github.com/thrustlang/thrustc/commit/08f045863e0a954d7fcc748d7ce11c0a71cdf312))
 - **abi**: Fix(abi) Simplifying integer bits decision. ([`73e8d40`](https://github.com/thrustlang/thrustc/commit/73e8d40f1a2b750c7ac503ffaca17e6c7bd9e464))
@@ -12,7 +20,19 @@ All notable changes to the Thrust Compiler (thrustc) are documented here.
 - **project-visual**: Fix(project-visual) Adding the prologue for the SYNTAX HIGHLIGHTING markdown. ([`17d0b48`](https://github.com/thrustlang/thrustc/commit/17d0b486b743c2b0655f5010a0cfde716e8f7085))
 
 
+### Documentation
+- **doc**: Feat(doc) Updating LLVM resources to include intrinsic references. ([`5714774`](https://github.com/thrustlang/thrustc/commit/571477406e1b0635b20a49403ad7a809125e72d1))
+- **doc**: Feat(doc) Updating the principal README with torio and spec reference. ([`d210977`](https://github.com/thrustlang/thrustc/commit/d210977c5ceceac60221f1ad2f7bbb281513b9de))
+
+
 ### Features
+- **frontend**: Feat(frontend) Adding more target specific identification builtins. ([`cf390b5`](https://github.com/thrustlang/thrustc/commit/cf390b5e45afd10bb046ada84cc299031d005486))
+- **frontend**: (feat(frontend),feat(llvm_backend)) Introducing function variadic manipulation. ([`47296bb`](https://github.com/thrustlang/thrustc/commit/47296bb0df4ea456cf7c90689ffd33132be1e90e))
+- **frontend**: (feat(frontend),feat(llvm_backend)) Introducing variatic function manipulation. ([`c4ddf32`](https://github.com/thrustlang/thrustc/commit/c4ddf321e54494391d4a7d754a6b7c10b0c823bd))
+- **std**: Feat(std) Adding .env module to the std and tstring quality updates. ([`0972a11`](https://github.com/thrustlang/thrustc/commit/0972a11f28bd0e4045e07967a134cbfb0bca954c))
+- **llvm_backend**: Feat(llvm_backend) Adding experimental and unstable atomic operations. ([`e0b608e`](https://github.com/thrustlang/thrustc/commit/e0b608e50fa3ab7fe14776764ea680e715a3780e))
+- **llvm_backend**: Feat(llvm_backend) Adding experimental and unstable atomics operations along their tests. ([`8328cde`](https://github.com/thrustlang/thrustc/commit/8328cdee07950a28077bd833523310f720ada510))
+- **abi**: Feat(abi) Adding arm fixed abi rule convention, setting the attribute call convention al function declaration. ([`4b8748f`](https://github.com/thrustlang/thrustc/commit/4b8748f99ec0283ab963a893a1815a13ca7950a6))
 - Feat(fuzz) Integrating more relavant test for the current compiler. ([`39e1908`](https://github.com/thrustlang/thrustc/commit/39e19080b5eace6605a4c498030e741ca96e158a))
 - **std**: (feat(std),fix(llvm_backend),fix(frontend)) Implementing Queue , Stack in the std, and fixing various issues regarding generics and imports. ([`daad8e4`](https://github.com/thrustlang/thrustc/commit/daad8e4ba1586932f5b0cb21edac54d3ed2d125a))
 - **std**: (feat(std),fix(abi)) Optional value module and new compiler intrisincs for integer and floating-pointer number. And, also a fix in the SystemV regarding fixed array sized that fits in two registers. ([`c549840`](https://github.com/thrustlang/thrustc/commit/c549840e196062b4abf6e1499eccde4a13035878))
