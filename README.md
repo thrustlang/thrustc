@@ -11,6 +11,17 @@
 
 ## Getting Started
 
+## Torio
+
+You can easily install the compiler toolchain latest version through **Torio**, what is the main Thrust compiler-controller and package manager for the language.
+
+Repository: https://github.com/thrustlang/torio
+
+> [!TIP]  
+> Search and download torio for your system in github releases section.
+
+![torio toolchain install](assets/GettingStarted.gif)
+
 ## Compiled
 
 If you don't want to build the project from scratch, you can check if there are available versions in Github releases.
