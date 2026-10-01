@@ -88,7 +88,19 @@ impl<'parser> Parser<'parser> {
         file_options: &'parser FileOptions<'parser, 'parser>,
         builtins: &'parser mut BuiltinRegistry,
     ) -> (ParserContext<'parser>, bool) {
-        Self { tokens, file }.start_parsing_nodes(modules, options, file_options, builtins)
+        Self { tokens, file }.start_parsing_nodes(modules, options, file_options, builtins, true)
+    }
+
+    #[inline]
+    pub fn parse_for_lsp(
+        tokens: &'parser [Token],
+        modules: &'parser [Module],
+        file: &'parser CompilationUnit,
+        options: &'parser CompilerOptions,
+        file_options: &'parser FileOptions<'parser, 'parser>,
+        builtins: &'parser mut BuiltinRegistry,
+    ) -> (ParserContext<'parser>, bool) {
+        Self { tokens, file }.start_parsing_nodes(modules, options, file_options, builtins, false)
     }
 }
 
@@ -99,6 +111,7 @@ impl<'parser> Parser<'parser> {
         options: &'parser CompilerOptions,
         file_options: &'parser FileOptions<'parser, 'parser>,
         builtins: &'parser mut BuiltinRegistry,
+        verify: bool,
     ) -> (ParserContext<'parser>, bool) {
         let mut ctx: ParserContext = ParserContext::new(
             self.tokens,
@@ -138,7 +151,11 @@ impl<'parser> Parser<'parser> {
 
         thrustc_generics_monomorphization::generics::resolve_generics(&mut ctx.generics_context());
 
-        let throwed_errors: bool = ctx.verify();
+        let throwed_errors: bool = if verify {
+            ctx.verify()
+        } else {
+            ctx.has_reports()
+        };
 
         (ctx, throwed_errors)
     }
@@ -235,6 +252,11 @@ impl<'parser> ParserContext<'parser> {
         }
 
         false
+    }
+
+    #[inline]
+    pub fn has_reports(&self) -> bool {
+        !self.errors.is_empty() || !self.bugs.is_empty()
     }
 }
 
@@ -569,6 +591,21 @@ impl<'parser> ParserContext<'parser> {
     #[inline(always)]
     pub fn get_ast(&self) -> &[Ast<'parser>] {
         &self.ast
+    }
+
+    #[inline(always)]
+    pub fn get_errors(&self) -> &[CompilationIssue] {
+        &self.errors
+    }
+
+    #[inline(always)]
+    pub fn get_warnings(&self) -> &[CompilationIssue] {
+        &self.warnings
+    }
+
+    #[inline(always)]
+    pub fn get_bugs(&self) -> &[CompilationIssue] {
+        &self.bugs
     }
 }
 

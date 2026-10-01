@@ -246,6 +246,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             let Ok(directives) = thrustc_directive::apply_file_directives(&tokens) else {
                 continue;
             };
+
             let file_options: FileOptions<'_, '_> = FileOptions::new(self.options, &directives);
 
             let mut preprocessor: Preprocessor = Preprocessor::new();
@@ -536,8 +537,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let llvm_target_triple: LLVMTargetTriple =
             LLVMTargetTriple::new(llvm_target_triple_formatted.clone());
 
-        let (llvm_cpu_name, llvm_cpu_features): (&str, &str) =
-            llvm_backend.get_cross_target_cpu();
+        let (llvm_cpu_name, llvm_cpu_features): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
         let compiler_optimization: ThrustOptimization = file_options.optimization();
         let llvm_opt: OptimizationLevel = compiler_optimization.to_llvm_opt();
@@ -1087,8 +1087,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let llvm_target_triple: LLVMTargetTriple =
             LLVMTargetTriple::new(llvm_target_triple_formatted.clone());
 
-        let (llvm_cpu_name, llvm_cpu_features): (&str, &str) =
-            llvm_backend.get_cross_target_cpu();
+        let (llvm_cpu_name, llvm_cpu_features): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
         let compiler_optimization: ThrustOptimization = file_options.optimization();
         let llvm_opt: OptimizationLevel = compiler_optimization.to_llvm_opt();

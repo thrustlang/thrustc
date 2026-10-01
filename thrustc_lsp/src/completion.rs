@@ -2341,19 +2341,34 @@ fn push_item(
         return;
     }
 
+    let group: &str = match kind {
+        CompletionKind::Snippet => "13",
+        _ if detail == "attribute" => "12",
+        _ if detail.contains("builtin") => "10",
+        CompletionKind::Field => "01",
+        CompletionKind::Function => "02",
+        CompletionKind::Variable => "03",
+        CompletionKind::Constant => "04",
+        CompletionKind::Struct => "05",
+        CompletionKind::Enum | CompletionKind::EnumMember => "06",
+        CompletionKind::TypeParameter if detail == "type" => "08",
+        CompletionKind::TypeParameter => "07",
+        CompletionKind::Module => "09",
+        CompletionKind::Keyword => "11",
+    };
+    let normalized_label: String = label.to_ascii_lowercase();
+    let sort_text: String = format!("{}_{}", group, normalized_label);
+
     let mut item: Value = serde_json::json!({
         "label": label,
         "kind": kind.as_lsp_value(),
-        "detail": detail
+        "detail": detail,
+        "sortText": sort_text
     });
 
     if let Some(insert_text) = insert_text {
         item["insertText"] = Value::String(insert_text.to_string());
         item["insertTextFormat"] = Value::Number(2.into());
-    }
-
-    if kind == CompletionKind::Snippet {
-        item["sortText"] = Value::String(format!("zzzz_{}", label));
     }
 
     if let Some(documentation) = self::builtin_documentation(label) {
@@ -2365,17 +2380,50 @@ fn push_item(
 
 fn builtin_documentation(label: &str) -> Option<&'static str> {
     let docs: &[(&str, &str)] = &[
-        ("isUnix", "Returns true if the target is a Unix-like platform (Linux, Darwin, BSD, Solaris, AIX, Haiku)."),
-        ("isBSD", "Returns true if the target operating system is a BSD family (FreeBSD, NetBSD, OpenBSD, DragonFly)."),
-        ("isFreeBSD", "Returns true if the target operating system is FreeBSD."),
-        ("isNetBSD", "Returns true if the target operating system is NetBSD."),
-        ("isOpenBSD", "Returns true if the target operating system is OpenBSD."),
-        ("isAndroid", "Returns true if the target is an Android platform."),
-        ("isIOS", "Returns true if the target is an Apple iOS/tvOS/watchOS platform."),
-        ("isSolaris", "Returns true if the target is a Solaris or Illumos platform."),
-        ("isHaiku", "Returns true if the target is the Haiku operating system."),
-        ("isWasm32", "Returns true if the target architecture is WebAssembly 32-bit."),
-        ("isWasm64", "Returns true if the target architecture is WebAssembly 64-bit."),
+        (
+            "isUnix",
+            "Returns true if the target is a Unix-like platform (Linux, Darwin, BSD, Solaris, AIX, Haiku).",
+        ),
+        (
+            "isBSD",
+            "Returns true if the target operating system is a BSD family (FreeBSD, NetBSD, OpenBSD, DragonFly).",
+        ),
+        (
+            "isFreeBSD",
+            "Returns true if the target operating system is FreeBSD.",
+        ),
+        (
+            "isNetBSD",
+            "Returns true if the target operating system is NetBSD.",
+        ),
+        (
+            "isOpenBSD",
+            "Returns true if the target operating system is OpenBSD.",
+        ),
+        (
+            "isAndroid",
+            "Returns true if the target is an Android platform.",
+        ),
+        (
+            "isIOS",
+            "Returns true if the target is an Apple iOS/tvOS/watchOS platform.",
+        ),
+        (
+            "isSolaris",
+            "Returns true if the target is a Solaris or Illumos platform.",
+        ),
+        (
+            "isHaiku",
+            "Returns true if the target is the Haiku operating system.",
+        ),
+        (
+            "isWasm32",
+            "Returns true if the target architecture is WebAssembly 32-bit.",
+        ),
+        (
+            "isWasm64",
+            "Returns true if the target architecture is WebAssembly 64-bit.",
+        ),
     ];
 
     docs.iter()

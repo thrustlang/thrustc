@@ -1,0 +1,127 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+directive "--disable-warnings=W0017";
+directive "--disable-warnings=W0028";
+directive "--disable-warnings=W0030";
+
+intrinsic("llvm.fabs.f32") absF32(value: f32) f32 @public;
+intrinsic("llvm.fabs.f64") absF64(value: f64) f64 @public;
+intrinsic("llvm.copysign.f32") copySignF32(magnitude: f32, sign: f32) f32 @public;
+intrinsic("llvm.copysign.f64") copySignF64(magnitude: f64, sign: f64) f64 @public;
+intrinsic("llvm.minimum.f32") minimumF32(left: f32, right: f32) f32 @public;
+intrinsic("llvm.minimum.f64") minimumF64(left: f64, right: f64) f64 @public;
+intrinsic("llvm.maximum.f32") maximumF32(left: f32, right: f32) f32 @public;
+intrinsic("llvm.maximum.f64") maximumF64(left: f64, right: f64) f64 @public;
+intrinsic("llvm.minnum.f32") minNumF32(left: f32, right: f32) f32 @public;
+intrinsic("llvm.minnum.f64") minNumF64(left: f64, right: f64) f64 @public;
+intrinsic("llvm.maxnum.f32") maxNumF32(left: f32, right: f32) f32 @public;
+intrinsic("llvm.maxnum.f64") maxNumF64(left: f64, right: f64) f64 @public;
+intrinsic("llvm.sqrt.f32") sqrtF32(value: f32) f32 @public;
+intrinsic("llvm.sqrt.f64") sqrtF64(value: f64) f64 @public;
+intrinsic("llvm.fma.f32") fmaF32(left: f32, right: f32, addend: f32) f32 @public;
+intrinsic("llvm.fma.f64") fmaF64(left: f64, right: f64, addend: f64) f64 @public;
+intrinsic("llvm.fmuladd.f32") mulAddF32(left: f32, right: f32, addend: f32) f32 @public;
+intrinsic("llvm.fmuladd.f64") mulAddF64(left: f64, right: f64, addend: f64) f64 @public;
+intrinsic("llvm.floor.f32") floorF32(value: f32) f32 @public;
+intrinsic("llvm.floor.f64") floorF64(value: f64) f64 @public;
+intrinsic("llvm.ceil.f32") ceilF32(value: f32) f32 @public;
+intrinsic("llvm.ceil.f64") ceilF64(value: f64) f64 @public;
+intrinsic("llvm.trunc.f32") truncateF32(value: f32) f32 @public;
+intrinsic("llvm.trunc.f64") truncateF64(value: f64) f64 @public;
+intrinsic("llvm.round.f32") roundF32(value: f32) f32 @public;
+intrinsic("llvm.round.f64") roundF64(value: f64) f64 @public;
+intrinsic("llvm.roundeven.f32") roundEvenF32(value: f32) f32 @public;
+intrinsic("llvm.roundeven.f64") roundEvenF64(value: f64) f64 @public;
+intrinsic("llvm.rint.f32") rintF32(value: f32) f32 @public;
+intrinsic("llvm.rint.f64") rintF64(value: f64) f64 @public;
+intrinsic("llvm.nearbyint.f32") nearbyIntF32(value: f32) f32 @public;
+intrinsic("llvm.nearbyint.f64") nearbyIntF64(value: f64) f64 @public;
+intrinsic("llvm.canonicalize.f32") canonicalizeF32(value: f32) f32 @public;
+intrinsic("llvm.canonicalize.f64") canonicalizeF64(value: f64) f64 @public;
+
+fn absolute [T] (value: T) T @public {
+    staticAssert(isFloat(T), "intrinsics::float::absolute[T] requires a floating-point type");
+
+    @if(isSameType(T, f32)) { return absF32(value) as T; }
+    @else if(isSameType(T, f64)) { return absF64(value) as T; }
+}
+
+fn copySign [T] (magnitude: T, sign: T) T @public {
+    staticAssert(isFloat(T), "intrinsics::float::copySign[T] requires a floating-point type");
+
+    @if(isSameType(T, f32)) { return copySignF32(magnitude, sign) as T; }
+    @else if(isSameType(T, f64)) { return copySignF64(magnitude, sign) as T; }
+}
+
+fn minimum [T] (left: T, right: T) T @public {
+    staticAssert(isFloat(T), "intrinsics::float::minimum[T] requires a floating-point type");
+
+    @if(isSameType(T, f32)) { return minimumF32(left, right) as T; }
+    @else if(isSameType(T, f64)) { return minimumF64(left, right) as T; }
+}
+
+fn maximum [T] (left: T, right: T) T @public {
+    staticAssert(isFloat(T), "intrinsics::float::maximum[T] requires a floating-point type");
+
+    @if(isSameType(T, f32)) { return maximumF32(left, right) as T; }
+    @else if(isSameType(T, f64)) { return maximumF64(left, right) as T; }
+}
+
+fn squareRoot [T] (value: T) T @public {
+    staticAssert(isFloat(T), "intrinsics::float::squareRoot[T] requires a floating-point type");
+
+    @if(isSameType(T, f32)) { return sqrtF32(value) as T; }
+    @else if(isSameType(T, f64)) { return sqrtF64(value) as T; }
+}
+
+fn fusedMultiplyAdd [T] (left: T, right: T, addend: T) T @public {
+    staticAssert(isFloat(T), "intrinsics::float::fusedMultiplyAdd[T] requires a floating-point type");
+
+    @if(isSameType(T, f32)) { return fmaF32(left, right, addend) as T; }
+    @else if(isSameType(T, f64)) { return fmaF64(left, right, addend) as T; }
+}
+
+fn floor [T] (value: T) T @public {
+    staticAssert(isFloat(T), "intrinsics::float::floor[T] requires a floating-point type");
+
+    @if(isSameType(T, f32)) { return floorF32(value) as T; }
+    @else if(isSameType(T, f64)) { return floorF64(value) as T; }
+}
+
+fn ceiling [T] (value: T) T @public {
+    staticAssert(isFloat(T), "intrinsics::float::ceiling[T] requires a floating-point type");
+
+    @if(isSameType(T, f32)) { return ceilF32(value) as T; }
+    @else if(isSameType(T, f64)) { return ceilF64(value) as T; }
+}
+
+fn truncate [T] (value: T) T @public {
+    staticAssert(isFloat(T), "intrinsics::float::truncate[T] requires a floating-point type");
+
+    @if(isSameType(T, f32)) { return truncateF32(value) as T; }
+    @else if(isSameType(T, f64)) { return truncateF64(value) as T; }
+}
+
+fn round [T] (value: T) T @public {
+    staticAssert(isFloat(T), "intrinsics::float::round[T] requires a floating-point type");
+
+    @if(isSameType(T, f32)) { return roundF32(value) as T; }
+    @else if(isSameType(T, f64)) { return roundF64(value) as T; }
+}

@@ -442,10 +442,11 @@ fn completes_local_function_call_arguments() {
 }
 
 #[test]
-fn templates_use_dash_labels_and_low_priority_sort_text() {
+fn completion_items_use_grouped_sort_text() {
     let items: Vec<Value> = self::complete_items("fn main() s32 {\n    \n}\n", 1, 4);
     let mut found_for_keyword: bool = false;
     let mut found_for_loop: bool = false;
+    let mut found_size_of_builtin: bool = false;
 
     for item in items {
         let label: &str = item.get("label").and_then(Value::as_str).unwrap_or("");
@@ -454,7 +455,7 @@ fn templates_use_dash_labels_and_low_priority_sort_text() {
         if label == "for" {
             found_for_keyword = true;
             assert_eq!(kind, 14);
-            assert!(item.get("sortText").is_none());
+            assert_eq!(item.get("sortText").and_then(Value::as_str), Some("11_for"));
         }
 
         if label == "for-loop" {
@@ -462,15 +463,25 @@ fn templates_use_dash_labels_and_low_priority_sort_text() {
             assert_eq!(kind, 15);
             assert_eq!(
                 item.get("sortText").and_then(Value::as_str),
-                Some("zzzz_for-loop")
+                Some("13_for-loop")
             );
             assert_eq!(
                 item.get("insertTextFormat").and_then(Value::as_u64),
                 Some(2)
             );
         }
+
+        if label == "sizeOf" {
+            found_size_of_builtin = true;
+            assert_eq!(kind, 3);
+            assert_eq!(
+                item.get("sortText").and_then(Value::as_str),
+                Some("10_sizeof")
+            );
+        }
     }
 
     assert!(found_for_keyword);
     assert!(found_for_loop);
+    assert!(found_size_of_builtin);
 }

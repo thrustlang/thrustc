@@ -204,10 +204,11 @@ pub fn run() {
                     continue;
                 };
 
+                let result: Value = crate::definition::definition(&documents, &analysis, &payload);
                 let response: Value = serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": id,
-                    "result": null
+                    "result": result
                 });
                 let body: String = response.to_string();
                 let header: String = format!("Content-Length: {}\r\n\r\n", body.len());
@@ -246,10 +247,12 @@ pub fn run() {
                     continue;
                 };
 
+                let result: Value =
+                    crate::document_symbol::document_symbols(&documents, &analysis, &payload);
                 let response: Value = serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": id,
-                    "result": []
+                    "result": result
                 });
                 let body: String = response.to_string();
                 let header: String = format!("Content-Length: {}\r\n\r\n", body.len());

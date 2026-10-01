@@ -19,7 +19,7 @@
 
 use serde_json::Value;
 
-use crate::analysis::{Analysis, CompletionKind};
+use crate::analysis::Analysis;
 use crate::documents::Documents;
 
 pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Value {
@@ -115,10 +115,6 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
                     continue;
                 }
 
-                if symbol.get_kind() != CompletionKind::Function {
-                    continue;
-                }
-
                 detail = Some(symbol.get_detail().to_string());
 
                 break;
@@ -127,10 +123,6 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
     } else {
         for symbol in document_analysis.get_symbols().iter().rev() {
             if symbol.get_name() != reference {
-                continue;
-            }
-
-            if symbol.get_kind() != CompletionKind::Function {
                 continue;
             }
 

@@ -1,13 +1,13 @@
 use serde_json::Value;
 use std::io::Write;
 
-fn hover_result(text: &str, line: u64, character: u64) -> Value {
+fn diagnostics(text: &str) -> Vec<Value> {
     let test_id: u128 = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
         .unwrap_or_default();
     let test_root: std::path::PathBuf = std::env::temp_dir().join(format!(
-        "thrustc_lsp_hover_test_{}_{}",
+        "thrustc_lsp_diagnostics_test_{}_{}",
         std::process::id(),
         test_id
     ));
@@ -17,7 +17,7 @@ fn hover_result(text: &str, line: u64, character: u64) -> Value {
     std::fs::create_dir_all(&temp_home).unwrap();
 
     let uri: String = format!("file://{}", document_path.display());
-    let messages: [Value; 3] = [
+    let messages: [Value; 2] = [
         serde_json::json!({
             "jsonrpc": "2.0",
             "id": 1,
@@ -33,20 +33,6 @@ fn hover_result(text: &str, line: u64, character: u64) -> Value {
                     "languageId": "thrust",
                     "version": 1,
                     "text": text
-                }
-            }
-        }),
-        serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": 2,
-            "method": "textDocument/hover",
-            "params": {
-                "textDocument": {
-                    "uri": uri
-                },
-                "position": {
-                    "line": line,
-                    "character": character
                 }
             }
         }),
@@ -80,7 +66,6 @@ fn hover_result(text: &str, line: u64, character: u64) -> Value {
         String::from_utf8_lossy(&output.stderr)
     );
 
-    let mut responses: Vec<Value> = Vec::with_capacity(8);
     let mut rest: &[u8] = &output.stdout;
 
     while !rest.is_empty() {
@@ -116,75 +101,48 @@ fn hover_result(text: &str, line: u64, character: u64) -> Value {
         let body: &[u8] = &rest[body_start..body_end];
         let response: Value = serde_json::from_slice(body).unwrap();
 
-        responses.push(response);
+        if response.get("method").and_then(Value::as_str) == Some("textDocument/publishDiagnostics")
+        {
+            std::fs::remove_dir_all(&test_root).ok();
+
+            return response
+                .get("params")
+                .and_then(|params| params.get("diagnostics"))
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+        }
+
         rest = &rest[body_end..];
     }
 
     std::fs::remove_dir_all(&test_root).ok();
 
-    for response in responses {
-        if response.get("id").and_then(Value::as_u64) != Some(2) {
-            continue;
-        }
-
-        return response.get("result").cloned().unwrap_or(Value::Null);
-    }
-
-    panic!("hover response was not returned");
+    panic!("diagnostics notification was not returned");
 }
 
 #[test]
-fn hovers_local_function_signature() {
-    let result: Value = self::hover_result(
-        "fn add(a: s32, b: s32) s32 {\n    return a + b;\n}\n\nfn main() s32 {\n    return add(1, 2);\n}\n",
-        5,
-        12,
-    );
-    let value: &str = result
-        .get("contents")
-        .and_then(|contents| contents.get("value"))
-        .and_then(Value::as_str)
-        .unwrap_or("");
+fn valid_document_has_no_diagnostics() {
+    let diagnostics: Vec<Value> = self::diagnostics("fn main() s32 {\n    return 0;\n}\n");
 
-    assert!(value.contains("fn add(a: s32, b: s32) s32"));
+    assert!(diagnostics.is_empty());
 }
 
 #[test]
-fn hovers_imported_function_signature() {
-    let result: Value = self::hover_result(
-        "import std::mem;\n\nfn main() s32 {\n    mem::allocateMemory(64);\n\n    return 0;\n}\n",
-        3,
-        12,
-    );
-    let value: &str = result
-        .get("contents")
-        .and_then(|contents| contents.get("value"))
-        .and_then(Value::as_str)
-        .unwrap_or("");
+fn parser_error_publishes_compiler_diagnostic() {
+    let diagnostics: Vec<Value> = self::diagnostics("fn main() s32 {\n    return 0\n}\n");
 
-    assert!(value.contains("fn allocateMemory(size: usize) ptr"));
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.get("source").and_then(Value::as_str) == Some("thrustc")
+            && diagnostic.get("severity").and_then(Value::as_u64) == Some(1)
+    }));
 }
 
 #[test]
-fn hovers_local_variable_type() {
-    let result: Value = self::hover_result(
-        "fn main() s32 {\n    var value: s32 = 1;\n\n    return value;\n}\n",
-        3,
-        13,
-    );
+fn fallback_reports_unclosed_delimiter() {
+    let diagnostics: Vec<Value> = self::diagnostics("fn main() s32 {\n    /*\n    return 0;\n}\n");
 
-    let value: &str = result
-        .get("contents")
-        .and_then(|contents| contents.get("value"))
-        .and_then(Value::as_str)
-        .unwrap_or("");
-
-    assert!(value.contains("var: s32"));
-}
-
-#[test]
-fn hover_unknown_symbol_returns_null() {
-    let result: Value = self::hover_result("fn main() s32 {\n    return missing;\n}\n", 1, 13);
-
-    assert!(result.is_null());
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.get("message").and_then(Value::as_str) == Some("Unterminated block comment.")
+    }));
 }
