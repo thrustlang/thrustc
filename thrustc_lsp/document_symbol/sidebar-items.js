@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["document_symbols","symbol_to_document_symbol"]};

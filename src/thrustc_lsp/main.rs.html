@@ -19,20 +19,22 @@
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">pub mod </span>analysis;
 <a href=#21 id=21 data-nosnippet>21</a><span class="kw">pub mod </span>completion;
-<a href=#22 id=22 data-nosnippet>22</a><span class="kw">pub mod </span>documents;
-<a href=#23 id=23 data-nosnippet>23</a><span class="kw">pub mod </span>hover;
-<a href=#24 id=24 data-nosnippet>24</a><span class="kw">pub mod </span>server;
-<a href=#25 id=25 data-nosnippet>25</a>
-<a href=#26 id=26 data-nosnippet>26</a><span class="attr">#[cfg(not(target_pointer_width = <span class="string">"64"</span>))]
-<a href=#27 id=27 data-nosnippet>27</a></span><span class="macro">compile_error!</span>(<span class="string">"This compiler requires a 64-bit target."</span>);
-<a href=#28 id=28 data-nosnippet>28</a><span class="attr">#[rustversion::before(<span class="number">1.85</span>)]
-<a href=#29 id=29 data-nosnippet>29</a></span><span class="macro">compile_error!</span>(<span class="string">"This compiler requires Rust 1.85 or newer."</span>);
-<a href=#30 id=30 data-nosnippet>30</a>
-<a href=#31 id=31 data-nosnippet>31</a><span class="attr">#[global_allocator]
-<a href=#32 id=32 data-nosnippet>32</a></span><span class="kw">static </span>GLOBAL: thrustc_heap_allocator::ThrustCompilerHeapAllocator =
-<a href=#33 id=33 data-nosnippet>33</a>    thrustc_heap_allocator::ThrustCompilerHeapAllocator;
-<a href=#34 id=34 data-nosnippet>34</a>
-<a href=#35 id=35 data-nosnippet>35</a><span class="kw">fn </span>main() {
-<a href=#36 id=36 data-nosnippet>36</a>    <span class="self">self</span>::server::run();
-<a href=#37 id=37 data-nosnippet>37</a>}
+<a href=#22 id=22 data-nosnippet>22</a><span class="kw">pub mod </span>definition;
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">pub mod </span>document_symbol;
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">pub mod </span>documents;
+<a href=#25 id=25 data-nosnippet>25</a><span class="kw">pub mod </span>hover;
+<a href=#26 id=26 data-nosnippet>26</a><span class="kw">pub mod </span>server;
+<a href=#27 id=27 data-nosnippet>27</a>
+<a href=#28 id=28 data-nosnippet>28</a><span class="attr">#[cfg(not(target_pointer_width = <span class="string">"64"</span>))]
+<a href=#29 id=29 data-nosnippet>29</a></span><span class="macro">compile_error!</span>(<span class="string">"This compiler requires a 64-bit target."</span>);
+<a href=#30 id=30 data-nosnippet>30</a><span class="attr">#[rustversion::before(<span class="number">1.85</span>)]
+<a href=#31 id=31 data-nosnippet>31</a></span><span class="macro">compile_error!</span>(<span class="string">"This compiler requires Rust 1.85 or newer."</span>);
+<a href=#32 id=32 data-nosnippet>32</a>
+<a href=#33 id=33 data-nosnippet>33</a><span class="attr">#[global_allocator]
+<a href=#34 id=34 data-nosnippet>34</a></span><span class="kw">static </span>GLOBAL: thrustc_heap_allocator::ThrustCompilerHeapAllocator =
+<a href=#35 id=35 data-nosnippet>35</a>    thrustc_heap_allocator::ThrustCompilerHeapAllocator;
+<a href=#36 id=36 data-nosnippet>36</a>
+<a href=#37 id=37 data-nosnippet>37</a><span class="kw">fn </span>main() {
+<a href=#38 id=38 data-nosnippet>38</a>    <span class="self">self</span>::server::run();
+<a href=#39 id=39 data-nosnippet>39</a>}
 </code></pre></div></section></main></body></html>
