@@ -9,6 +9,15 @@ rustflags = [
     "-A", "clippy::new_without_default"
 ]
 
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.i686-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.i586-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
 [alias]
 fuzz-llvm-top-level-stable = "fuzz run llvm-codegen-top-level fuzz/corpus_stable/llvm-codegen-top-level -- -dict=fuzz/thrust-stable.dict -rss_limit_mb=2048 -- --stable"
 fuzz-llvm-top-level-unstable = "fuzz run llvm-codegen-top-level fuzz/corpus_unstable/llvm-codegen-top-level -- -dict=fuzz/thrust-unstable.dict -rss_limit_mb=2048"

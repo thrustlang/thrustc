@@ -6,7 +6,12 @@ license.workspace = true
 version.workspace = true
 rust-version.workspace = true
 
+build = "build.rs"
+
 default-run = "thrustc"
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1.12"
 
 [dependencies]
 rustversion = "1.0.22"
