@@ -53,7 +53,58 @@ pub fn document_symbols(documents: &Documents, analysis: &Analysis, payload: &Va
             continue;
         }
 
-        let item: Value = self::symbol_to_document_symbol(symbol, &lines);
+        let mut children: Vec<Value> = Vec::with_capacity(8);
+
+        match symbol.get_kind() {
+            CompletionKind::Struct => {
+                if let Some(structure) = document_analysis
+                    .get_structures()
+                    .iter()
+                    .find(|structure| structure.get_name() == symbol.get_name())
+                {
+                    for field in structure.get_fields() {
+                        children.push(self::symbol_to_document_symbol(
+                            field,
+                            &lines,
+                            Vec::with_capacity(0),
+                        ));
+                    }
+                }
+            }
+            CompletionKind::Enum => {
+                if let Some(enumeration) = document_analysis
+                    .get_enumerations()
+                    .iter()
+                    .find(|enumeration| enumeration.get_name() == symbol.get_name())
+                {
+                    for value in enumeration.get_values() {
+                        children.push(self::symbol_to_document_symbol(
+                            value,
+                            &lines,
+                            Vec::with_capacity(0),
+                        ));
+                    }
+                }
+            }
+            CompletionKind::Function => {
+                if let Some(function) = document_analysis
+                    .get_functions()
+                    .iter()
+                    .find(|function| function.get_name() == symbol.get_name())
+                {
+                    for parameter in function.get_parameters() {
+                        children.push(self::symbol_to_document_symbol(
+                            parameter,
+                            &lines,
+                            Vec::with_capacity(0),
+                        ));
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        let item: Value = self::symbol_to_document_symbol(symbol, &lines, children);
 
         symbols.push(item);
     }
@@ -61,12 +112,25 @@ pub fn document_symbols(documents: &Documents, analysis: &Analysis, payload: &Va
     Value::Array(symbols)
 }
 
-fn symbol_to_document_symbol(symbol: &Symbol, lines: &[&str]) -> Value {
+fn symbol_to_document_symbol(symbol: &Symbol, lines: &[&str], children: Vec<Value>) -> Value {
     let line: u64 = symbol.get_declaration_line();
     let line_index: usize = line.try_into().unwrap_or(usize::MAX);
     let source_line: &str = lines.get(line_index).copied().unwrap_or_default();
-    let start: usize = source_line.find(symbol.get_name()).unwrap_or(0);
-    let end: usize = start.saturating_add(symbol.get_name().len());
+    let fallback_start: u64 = source_line
+        .find(symbol.get_name())
+        .unwrap_or(0)
+        .try_into()
+        .unwrap_or(u64::MAX);
+    let start: u64 = if symbol.get_declaration_start() == 0 && fallback_start != 0 {
+        fallback_start
+    } else {
+        symbol.get_declaration_start()
+    };
+    let end: u64 = if symbol.get_declaration_end() == 0 {
+        start.saturating_add(symbol.get_name().len().try_into().unwrap_or(u64::MAX))
+    } else {
+        symbol.get_declaration_end()
+    };
     let kind: u64 = match symbol.get_kind() {
         CompletionKind::Function => 12,
         CompletionKind::Field => 8,
@@ -81,7 +145,7 @@ fn symbol_to_document_symbol(symbol: &Symbol, lines: &[&str]) -> Value {
         CompletionKind::TypeParameter => 26,
     };
 
-    serde_json::json!({
+    let mut item: Value = serde_json::json!({
         "name": symbol.get_name(),
         "kind": kind,
         "detail": symbol.get_detail(),
@@ -105,5 +169,11 @@ fn symbol_to_document_symbol(symbol: &Symbol, lines: &[&str]) -> Value {
                 "character": end
             }
         }
-    })
+    });
+
+    if !children.is_empty() {
+        item["children"] = Value::Array(children);
+    }
+
+    item
 }

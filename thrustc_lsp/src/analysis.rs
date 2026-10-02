@@ -25,10 +25,8 @@ use std::path::PathBuf;
 use serde_json::Value;
 use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_builtins::BuiltinRegistry;
-use thrustc_errors::CompilationIssue;
 use thrustc_lexer::Lexer;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_parser::Parser;
 use thrustc_preprocessor::Preprocessor;
 use thrustc_preprocessor::signatures::{Signature, Variant};
 use thrustc_typesystem::type_layout::TargetInfo;
@@ -79,6 +77,8 @@ pub struct Symbol {
     scope_start: u64,
     scope_end: u64,
     declaration_line: u64,
+    declaration_start: u64,
+    declaration_end: u64,
 }
 
 #[derive(Clone, Debug)]
@@ -145,6 +145,8 @@ impl Symbol {
             scope_start,
             scope_end,
             declaration_line,
+            declaration_start: 0,
+            declaration_end: 0,
         }
     }
 }
@@ -178,6 +180,16 @@ impl Symbol {
     #[inline]
     pub fn get_declaration_line(&self) -> u64 {
         self.declaration_line
+    }
+
+    #[inline]
+    pub fn get_declaration_start(&self) -> u64 {
+        self.declaration_start
+    }
+
+    #[inline]
+    pub fn get_declaration_end(&self) -> u64 {
+        self.declaration_end
     }
 
     #[inline]
@@ -230,6 +242,16 @@ impl Symbol {
     #[inline]
     pub fn set_declaration_line(&mut self, declaration_line: u64) {
         self.declaration_line = declaration_line;
+    }
+
+    #[inline]
+    pub fn set_declaration_start(&mut self, declaration_start: u64) {
+        self.declaration_start = declaration_start;
+    }
+
+    #[inline]
+    pub fn set_declaration_end(&mut self, declaration_end: u64) {
+        self.declaration_end = declaration_end;
     }
 }
 
@@ -507,11 +529,7 @@ impl Analysis {
         let uri: &str = document.get_uri();
         let text: &str = document.get_text();
         let document_analysis: DocumentAnalysis = self::analyze_text(uri, text);
-        let mut diagnostics: Vec<Value> = self::analyze_compiler_diagnostics(uri, text);
-
-        if diagnostics.is_empty() {
-            diagnostics = self::analyze_diagnostics(text);
-        }
+        let diagnostics: Vec<Value> = crate::frontend::diagnostics(uri, text);
 
         self.documents.insert(uri.to_string(), document_analysis);
         self.analyzed_documents = self.analyzed_documents.saturating_add(1);
@@ -554,360 +572,6 @@ impl Analysis {
     }
 }
 
-fn analyze_compiler_diagnostics(uri: &str, text: &str) -> Vec<Value> {
-    let mut diagnostics: Vec<Value> = Vec::with_capacity(16);
-    let path: PathBuf = url::Url::parse(uri)
-        .ok()
-        .and_then(|uri| uri.to_file_path().ok())
-        .unwrap_or_else(|| PathBuf::from(uri));
-    let name: String = path.file_name().map_or_else(
-        || "memory.thrust".to_string(),
-        |name| name.to_string_lossy().to_string(),
-    );
-    let base_name: String = path.file_stem().map_or_else(
-        || "memory".to_string(),
-        |name| name.to_string_lossy().to_string(),
-    );
-    let options: CompilerOptions = CompilerOptions::new();
-    let target_info: TargetInfo = TargetInfo::new(
-        options
-            .get_llvm_backend()
-            .get_target()
-            .get_normalized_target_triple()
-            .clone(),
-    );
-    let mut builtins: BuiltinRegistry = thrustc_builtins::default_registry(target_info);
-    let file: CompilationUnit = CompilationUnit::new(name, path, text.to_string(), base_name);
-
-    let Ok(tokens) = Lexer::lex_for_preprocessor(&file, &options) else {
-        return diagnostics;
-    };
-
-    let directives: thrustc_directive::FileDirectives =
-        match thrustc_directive::apply_file_directives(&tokens) {
-            Ok(directives) => directives,
-            Err(error) => {
-                diagnostics.push(self::compilation_issue_to_diagnostic(&error));
-
-                return diagnostics;
-            }
-        };
-    let file_options: thrustc_directive::FileOptions =
-        thrustc_directive::FileOptions::new(&options, &directives);
-    let mut preprocessor: Preprocessor = Preprocessor::new();
-    let Ok(modules) = preprocessor.generate_modules(&tokens, &file_options, &file, &builtins)
-    else {
-        return diagnostics;
-    };
-    let parser_result = Parser::parse_for_lsp(
-        &tokens,
-        modules,
-        &file,
-        &options,
-        &file_options,
-        &mut builtins,
-    );
-    let parser_context = parser_result.0;
-
-    for error in parser_context.get_errors() {
-        diagnostics.push(self::compilation_issue_to_diagnostic(error));
-    }
-
-    for bug in parser_context.get_bugs() {
-        diagnostics.push(self::compilation_issue_to_diagnostic(bug));
-    }
-
-    for warning in parser_context.get_warnings() {
-        diagnostics.push(self::compilation_issue_to_diagnostic(warning));
-    }
-
-    diagnostics
-}
-
-fn compilation_issue_to_diagnostic(issue: &CompilationIssue) -> Value {
-    match issue {
-        CompilationIssue::Error(code, message, help, note, span) => {
-            let line: u32 = span.get_line().saturating_sub(1);
-            let start: u32 = span.get_span_start();
-            let end: u32 = span.get_span_end().max(start.saturating_add(1));
-            let mut diagnostic_message: String =
-                String::with_capacity(message.len() + help.len() + 32);
-
-            diagnostic_message.push_str(message);
-
-            if !help.is_empty() {
-                diagnostic_message.push('\n');
-                diagnostic_message.push_str(help);
-            }
-
-            if let Some(note) = note {
-                diagnostic_message.push('\n');
-                diagnostic_message.push_str(note);
-            }
-
-            serde_json::json!({
-                "range": {
-                    "start": {
-                        "line": line,
-                        "character": start
-                    },
-                    "end": {
-                        "line": line,
-                        "character": end
-                    }
-                },
-                "severity": 1,
-                "code": format!("{:?}", code),
-                "source": "thrustc",
-                "message": diagnostic_message
-            })
-        }
-        CompilationIssue::Warning(code, message, span) => {
-            let line: u32 = span.get_line().saturating_sub(1);
-            let start: u32 = span.get_span_start();
-            let end: u32 = span.get_span_end().max(start.saturating_add(1));
-
-            serde_json::json!({
-                "range": {
-                    "start": {
-                        "line": line,
-                        "character": start
-                    },
-                    "end": {
-                        "line": line,
-                        "character": end
-                    }
-                },
-                "severity": 2,
-                "code": format!("{:?}", code),
-                "source": "thrustc",
-                "message": message
-            })
-        }
-        CompilationIssue::FrontendBug(message, help, span, ..)
-        | CompilationIssue::BackendBug(message, help, span, ..) => {
-            let line: u32 = span.get_line().saturating_sub(1);
-            let start: u32 = span.get_span_start();
-            let end: u32 = span.get_span_end().max(start.saturating_add(1));
-            let mut diagnostic_message: String =
-                String::with_capacity(message.len() + help.len() + 1);
-
-            diagnostic_message.push_str(message);
-
-            if !help.is_empty() {
-                diagnostic_message.push('\n');
-                diagnostic_message.push_str(help);
-            }
-
-            serde_json::json!({
-                "range": {
-                    "start": {
-                        "line": line,
-                        "character": start
-                    },
-                    "end": {
-                        "line": line,
-                        "character": end
-                    }
-                },
-                "severity": 1,
-                "source": "thrustc",
-                "message": diagnostic_message
-            })
-        }
-    }
-}
-
-fn analyze_diagnostics(text: &str) -> Vec<Value> {
-    let mut diagnostics: Vec<Value> = Vec::with_capacity(8);
-    let mut stack: Vec<(char, u64, u64)> = Vec::with_capacity(32);
-    let mut block_comment_start: Option<(u64, u64)> = None;
-    let mut in_string: bool = false;
-    let mut in_char: bool = false;
-    let mut string_start: (u64, u64) = (0, 0);
-    let mut char_start: (u64, u64) = (0, 0);
-
-    for (line_index, line) in text.lines().enumerate() {
-        let line_number: u64 = line_index.try_into().unwrap_or(u64::MAX);
-        let chars: Vec<char> = line.chars().collect();
-        let mut character_index: usize = 0;
-
-        while character_index < chars.len() {
-            let ch: char = chars[character_index];
-            let next: char = chars
-                .get(character_index.saturating_add(1))
-                .copied()
-                .unwrap_or('\0');
-            let character: u64 = character_index.try_into().unwrap_or(u64::MAX);
-
-            if block_comment_start.is_some() {
-                if ch == '*' && next == '/' {
-                    block_comment_start = None;
-                    character_index = character_index.saturating_add(2);
-
-                    continue;
-                }
-
-                character_index = character_index.saturating_add(1);
-
-                continue;
-            }
-
-            if !in_string && !in_char && ch == '/' && next == '/' {
-                break;
-            }
-
-            if !in_string && !in_char && ch == '/' && next == '*' {
-                block_comment_start = Some((line_number, character));
-                character_index = character_index.saturating_add(2);
-
-                continue;
-            }
-
-            if !in_char && ch == '"' {
-                if in_string {
-                    in_string = false;
-                } else {
-                    in_string = true;
-                    string_start = (line_number, character);
-                }
-
-                character_index = character_index.saturating_add(1);
-
-                continue;
-            }
-
-            if !in_string && ch == '\'' {
-                if in_char {
-                    in_char = false;
-                } else {
-                    in_char = true;
-                    char_start = (line_number, character);
-                }
-
-                character_index = character_index.saturating_add(1);
-
-                continue;
-            }
-
-            if in_string || in_char {
-                character_index = character_index.saturating_add(1);
-
-                continue;
-            }
-
-            match ch {
-                '{' | '(' | '[' => stack.push((ch, line_number, character)),
-                '}' | ')' | ']' => {
-                    let expected: char = match ch {
-                        '}' => '{',
-                        ')' => '(',
-                        ']' => '[',
-                        _ => '\0',
-                    };
-
-                    if stack.last().is_some_and(|(open, _, _)| *open == expected) {
-                        stack.pop();
-                    } else {
-                        diagnostics.push(serde_json::json!({
-                            "range": {
-                                "start": {
-                                    "line": line_number,
-                                    "character": character
-                                },
-                                "end": {
-                                    "line": line_number,
-                                    "character": character.saturating_add(1)
-                                }
-                            },
-                            "severity": 1,
-                            "source": "thrustc_lsp",
-                            "message": "Unmatched closing delimiter."
-                        }));
-                    }
-                }
-                _ => {}
-            }
-
-            character_index = character_index.saturating_add(1);
-        }
-    }
-
-    if let Some((line, character)) = block_comment_start {
-        diagnostics.push(serde_json::json!({
-            "range": {
-                "start": {
-                    "line": line,
-                    "character": character
-                },
-                "end": {
-                    "line": line,
-                    "character": character.saturating_add(2)
-                }
-            },
-            "severity": 1,
-            "source": "thrustc_lsp",
-            "message": "Unterminated block comment."
-        }));
-    }
-
-    if in_string {
-        diagnostics.push(serde_json::json!({
-            "range": {
-                "start": {
-                    "line": string_start.0,
-                    "character": string_start.1
-                },
-                "end": {
-                    "line": string_start.0,
-                    "character": string_start.1.saturating_add(1)
-                }
-            },
-            "severity": 1,
-            "source": "thrustc_lsp",
-            "message": "Unterminated string literal."
-        }));
-    }
-
-    if in_char {
-        diagnostics.push(serde_json::json!({
-            "range": {
-                "start": {
-                    "line": char_start.0,
-                    "character": char_start.1
-                },
-                "end": {
-                    "line": char_start.0,
-                    "character": char_start.1.saturating_add(1)
-                }
-            },
-            "severity": 1,
-            "source": "thrustc_lsp",
-            "message": "Unterminated character literal."
-        }));
-    }
-
-    while let Some((_, line, character)) = stack.pop() {
-        diagnostics.push(serde_json::json!({
-            "range": {
-                "start": {
-                    "line": line,
-                    "character": character
-                },
-                "end": {
-                    "line": line,
-                    "character": character.saturating_add(1)
-                }
-            },
-            "severity": 1,
-            "source": "thrustc_lsp",
-            "message": "Unclosed delimiter."
-        }));
-    }
-
-    diagnostics
-}
-
 fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
     let lines: Vec<&str> = text.lines().collect();
     let line_depths: Vec<u64> = self::build_line_depths(&lines);
@@ -940,7 +604,7 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
 
             if !name.is_empty() {
                 let fields: Vec<Symbol> = self::parse_struct_fields(&lines, line_index, end_line);
-                let symbol: Symbol = Symbol::new(
+                let mut symbol: Symbol = Symbol::new(
                     name.clone(),
                     CompletionKind::Struct,
                     "struct".into(),
@@ -950,6 +614,16 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                     total_lines,
                     line_number,
                 );
+                let declaration_start: u64 = raw_line
+                    .find(&name)
+                    .unwrap_or(0)
+                    .try_into()
+                    .unwrap_or(u64::MAX);
+                let declaration_end: u64 =
+                    declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
+
+                symbol.set_declaration_start(declaration_start);
+                symbol.set_declaration_end(declaration_end);
 
                 symbols.push(symbol);
                 structures.push(Structure::new(name, fields));
@@ -962,7 +636,7 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
 
             if !name.is_empty() {
                 let values: Vec<Symbol> = self::parse_enum_values(&lines, line_index, end_line);
-                let symbol: Symbol = Symbol::new(
+                let mut symbol: Symbol = Symbol::new(
                     name.clone(),
                     CompletionKind::Enum,
                     "enum".into(),
@@ -972,6 +646,16 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                     total_lines,
                     line_number,
                 );
+                let declaration_start: u64 = raw_line
+                    .find(&name)
+                    .unwrap_or(0)
+                    .try_into()
+                    .unwrap_or(u64::MAX);
+                let declaration_end: u64 =
+                    declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
+
+                symbol.set_declaration_start(declaration_start);
+                symbol.set_declaration_end(declaration_end);
 
                 symbols.push(symbol);
                 enumerations.push(Enumeration::new(name, values));
@@ -997,7 +681,7 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
 
                 let detail: String = detail.trim().to_string();
                 let insert_text: String = format!("{}($0)", name);
-                let symbol: Symbol = Symbol::new(
+                let mut symbol: Symbol = Symbol::new(
                     name.clone(),
                     CompletionKind::Function,
                     detail,
@@ -1007,6 +691,16 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                     total_lines,
                     line_number,
                 );
+                let declaration_start: u64 = raw_line
+                    .find(&name)
+                    .unwrap_or(0)
+                    .try_into()
+                    .unwrap_or(u64::MAX);
+                let declaration_end: u64 =
+                    declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
+
+                symbol.set_declaration_start(declaration_start);
+                symbol.set_declaration_end(declaration_end);
 
                 symbols.push(symbol);
 
@@ -1030,8 +724,8 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
             };
 
             if !name.is_empty() {
-                symbols.push(Symbol::new(
-                    name,
+                let mut symbol: Symbol = Symbol::new(
+                    name.clone(),
                     CompletionKind::TypeParameter,
                     aliased_type,
                     None,
@@ -1039,7 +733,18 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                     0,
                     total_lines,
                     line_number,
-                ));
+                );
+                let declaration_start: u64 = raw_line
+                    .find(&name)
+                    .unwrap_or(0)
+                    .try_into()
+                    .unwrap_or(u64::MAX);
+                let declaration_end: u64 =
+                    declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
+
+                symbol.set_declaration_start(declaration_start);
+                symbol.set_declaration_end(declaration_end);
+                symbols.push(symbol);
             }
         }
 
@@ -1080,8 +785,8 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                     format!("{}: {}", keyword, type_name)
                 };
 
-                symbols.push(Symbol::new(
-                    name,
+                let mut symbol: Symbol = Symbol::new(
+                    name.clone(),
                     kind,
                     detail,
                     None,
@@ -1089,7 +794,18 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                     scope_start,
                     scope_end,
                     line_number,
-                ));
+                );
+                let declaration_start: u64 = raw_line
+                    .find(&name)
+                    .unwrap_or(0)
+                    .try_into()
+                    .unwrap_or(u64::MAX);
+                let declaration_end: u64 =
+                    declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
+
+                symbol.set_declaration_start(declaration_start);
+                symbol.set_declaration_end(declaration_end);
+                symbols.push(symbol);
             }
         }
 
@@ -1106,16 +822,27 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                 .to_string();
 
             if !imported.is_empty() {
-                symbols.push(Symbol::new(
+                let mut symbol: Symbol = Symbol::new(
                     imported.clone(),
                     CompletionKind::Module,
                     "module".into(),
                     None,
-                    Some(imported),
+                    Some(imported.clone()),
                     0,
                     total_lines,
                     line_number,
-                ));
+                );
+                let declaration_start: u64 = raw_line
+                    .find(&imported)
+                    .unwrap_or(0)
+                    .try_into()
+                    .unwrap_or(u64::MAX);
+                let declaration_end: u64 =
+                    declaration_start.saturating_add(imported.len().try_into().unwrap_or(u64::MAX));
+
+                symbol.set_declaration_start(declaration_start);
+                symbol.set_declaration_end(declaration_end);
+                symbols.push(symbol);
             }
         }
 
@@ -1397,7 +1124,7 @@ fn parse_function_parameters(line: &str, declaration_line: u64, scope_end: u64) 
             continue;
         }
 
-        parameters.push(Symbol::new(
+        let mut symbol: Symbol = Symbol::new(
             name,
             CompletionKind::Variable,
             type_name.clone(),
@@ -1406,7 +1133,18 @@ fn parse_function_parameters(line: &str, declaration_line: u64, scope_end: u64) 
             declaration_line,
             scope_end,
             declaration_line,
-        ));
+        );
+        let declaration_start: u64 = line
+            .find(symbol.get_name())
+            .unwrap_or(0)
+            .try_into()
+            .unwrap_or(u64::MAX);
+        let declaration_end: u64 = declaration_start
+            .saturating_add(symbol.get_name().len().try_into().unwrap_or(u64::MAX));
+
+        symbol.set_declaration_start(declaration_start);
+        symbol.set_declaration_end(declaration_end);
+        parameters.push(symbol);
     }
 
     parameters
@@ -1440,8 +1178,8 @@ fn parse_struct_fields(lines: &[&str], start: usize, end: u64) -> Vec<Symbol> {
         let type_name: String = self::clean_type(ty);
 
         if !name.is_empty() {
-            fields.push(Symbol::new(
-                name,
+            let mut symbol: Symbol = Symbol::new(
+                name.clone(),
                 CompletionKind::Field,
                 type_name.clone(),
                 None,
@@ -1449,7 +1187,18 @@ fn parse_struct_fields(lines: &[&str], start: usize, end: u64) -> Vec<Symbol> {
                 0,
                 u64::MAX,
                 line_number,
-            ));
+            );
+            let declaration_start: u64 = raw_line
+                .find(&name)
+                .unwrap_or(0)
+                .try_into()
+                .unwrap_or(u64::MAX);
+            let declaration_end: u64 =
+                declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
+
+            symbol.set_declaration_start(declaration_start);
+            symbol.set_declaration_end(declaration_end);
+            fields.push(symbol);
         }
 
         line_index = line_index.saturating_add(1);
@@ -1524,8 +1273,8 @@ fn parse_enum_values(lines: &[&str], start: usize, end: u64) -> Vec<Symbol> {
         let name: String = self::clean_identifier(left);
 
         if !name.is_empty() {
-            values.push(Symbol::new(
-                name,
+            let mut symbol: Symbol = Symbol::new(
+                name.clone(),
                 CompletionKind::EnumMember,
                 "enum value".into(),
                 None,
@@ -1533,7 +1282,18 @@ fn parse_enum_values(lines: &[&str], start: usize, end: u64) -> Vec<Symbol> {
                 0,
                 u64::MAX,
                 line_number,
-            ));
+            );
+            let declaration_start: u64 = raw_line
+                .find(&name)
+                .unwrap_or(0)
+                .try_into()
+                .unwrap_or(u64::MAX);
+            let declaration_end: u64 =
+                declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
+
+            symbol.set_declaration_start(declaration_start);
+            symbol.set_declaration_end(declaration_end);
+            values.push(symbol);
         }
 
         line_index = line_index.saturating_add(1);

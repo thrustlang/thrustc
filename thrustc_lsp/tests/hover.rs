@@ -183,6 +183,118 @@ fn hovers_local_variable_type() {
 }
 
 #[test]
+fn hovers_struct_field_type() {
+    let result: Value = self::hover_result(
+        "struct Pair {\n    first: s32,\n}\n\nfn main() s32 {\n    var pair: Pair = new Pair { first: 1 };\n    return pair->first;\n}\n",
+        6,
+        19,
+    );
+    let value: &str = result
+        .get("contents")
+        .and_then(|contents| contents.get("value"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+
+    assert!(value.contains("s32"));
+}
+
+#[test]
+fn hovers_function_parameter_type() {
+    let result: Value = self::hover_result(
+        "fn add(a: s32, b: s32) s32 {\n    return a + b;\n}\n",
+        1,
+        11,
+    );
+    let value: &str = result
+        .get("contents")
+        .and_then(|contents| contents.get("value"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+
+    assert!(value.contains("s32"));
+}
+
+#[test]
+fn hovers_struct_type() {
+    let result: Value = self::hover_result(
+        "struct Pair {\n    first: s32,\n}\n\nfn main() s32 {\n    var pair: Pair = new Pair { first: 1 };\n    return 0;\n}\n",
+        5,
+        15,
+    );
+    let value: &str = result
+        .get("contents")
+        .and_then(|contents| contents.get("value"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+
+    assert!(value.contains("struct"));
+}
+
+#[test]
+fn hovers_enum_type() {
+    let result: Value = self::hover_result(
+        "enum State {\n    Ready: s32 = 0;\n}\n\nfn main() s32 {\n    var state: State = Ready;\n    return 0;\n}\n",
+        5,
+        16,
+    );
+    let value: &str = result
+        .get("contents")
+        .and_then(|contents| contents.get("value"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+
+    assert!(value.contains("enum"));
+}
+
+#[test]
+fn hovers_enum_member() {
+    let result: Value = self::hover_result(
+        "enum State {\n    Ready: s32 = 0;\n}\n\nfn main() s32 {\n    return Ready;\n}\n",
+        5,
+        13,
+    );
+    let value: &str = result
+        .get("contents")
+        .and_then(|contents| contents.get("value"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+
+    assert!(value.contains("enum value"));
+}
+
+#[test]
+fn hovers_constant() {
+    let result: Value = self::hover_result(
+        "const LIMIT: s32 = 10;\n\nfn main() s32 {\n    return LIMIT;\n}\n",
+        3,
+        13,
+    );
+    let value: &str = result
+        .get("contents")
+        .and_then(|contents| contents.get("value"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+
+    assert!(value.contains("const"));
+}
+
+#[test]
+fn hovers_static() {
+    let result: Value = self::hover_result(
+        "static COUNT: s32 = 1;\n\nfn main() s32 {\n    return COUNT;\n}\n",
+        3,
+        13,
+    );
+    let value: &str = result
+        .get("contents")
+        .and_then(|contents| contents.get("value"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+
+    assert!(value.contains("static"));
+}
+
+#[test]
 fn hover_unknown_symbol_returns_null() {
     let result: Value = self::hover_result("fn main() s32 {\n    return missing;\n}\n", 1, 13);
 

@@ -142,6 +142,19 @@ fn document_symbol_returns_top_level_symbols() {
             && symbol.get("kind").and_then(Value::as_u64) == Some(23)
     }));
     assert!(symbols.iter().any(|symbol| {
+        let children: &[Value] = symbol
+            .get("children")
+            .and_then(Value::as_array)
+            .map(Vec::as_slice)
+            .unwrap_or_default();
+
+        symbol.get("name").and_then(Value::as_str) == Some("Point")
+            && children.iter().any(|child| {
+                child.get("name").and_then(Value::as_str) == Some("x")
+                    && child.get("kind").and_then(Value::as_u64) == Some(8)
+            })
+    }));
+    assert!(symbols.iter().any(|symbol| {
         symbol.get("name").and_then(Value::as_str) == Some("main")
             && symbol.get("kind").and_then(Value::as_u64) == Some(12)
     }));
@@ -179,4 +192,274 @@ fn definition_returns_local_variable_location() {
 
     assert_eq!(line, Some(1));
     assert_eq!(character, Some(8));
+}
+
+#[test]
+fn definition_returns_struct_field_location() {
+    let result: Value = self::lsp_result(
+        "struct Pair {\n    first: s32,\n}\n\nfn main() s32 {\n    var pair: Pair = new Pair { first: 1 };\n    return pair->first;\n}\n",
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": ""
+                },
+                "position": {
+                    "line": 6,
+                    "character": 19
+                }
+            }
+        }),
+    );
+    let line: Option<u64> = result
+        .get("range")
+        .and_then(|range| range.get("start"))
+        .and_then(|start| start.get("line"))
+        .and_then(Value::as_u64);
+    let character: Option<u64> = result
+        .get("range")
+        .and_then(|range| range.get("start"))
+        .and_then(|start| start.get("character"))
+        .and_then(Value::as_u64);
+
+    assert_eq!(line, Some(1));
+    assert_eq!(character, Some(4));
+}
+
+#[test]
+fn definition_returns_function_location() {
+    let result: Value = self::lsp_result(
+        "fn add(a: s32, b: s32) s32 {\n    return a + b;\n}\n\nfn main() s32 {\n    return add(1, 2);\n}\n",
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": ""
+                },
+                "position": {
+                    "line": 5,
+                    "character": 12
+                }
+            }
+        }),
+    );
+    let line: Option<u64> = result
+        .get("range")
+        .and_then(|range| range.get("start"))
+        .and_then(|start| start.get("line"))
+        .and_then(Value::as_u64);
+    let character: Option<u64> = result
+        .get("range")
+        .and_then(|range| range.get("start"))
+        .and_then(|start| start.get("character"))
+        .and_then(Value::as_u64);
+
+    assert_eq!(line, Some(0));
+    assert_eq!(character, Some(3));
+}
+
+#[test]
+fn definition_returns_struct_type_location() {
+    let result: Value = self::lsp_result(
+        "struct Pair {\n    first: s32,\n}\n\nfn main() s32 {\n    var pair: Pair = new Pair { first: 1 };\n    return 0;\n}\n",
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": ""
+                },
+                "position": {
+                    "line": 5,
+                    "character": 15
+                }
+            }
+        }),
+    );
+    let line: Option<u64> = result
+        .get("range")
+        .and_then(|range| range.get("start"))
+        .and_then(|start| start.get("line"))
+        .and_then(Value::as_u64);
+    let character: Option<u64> = result
+        .get("range")
+        .and_then(|range| range.get("start"))
+        .and_then(|start| start.get("character"))
+        .and_then(Value::as_u64);
+
+    assert_eq!(line, Some(0));
+    assert_eq!(character, Some(7));
+}
+
+#[test]
+fn definition_returns_enum_type_location() {
+    let result: Value = self::lsp_result(
+        "enum State {\n    Ready: s32 = 0;\n}\n\nfn main() s32 {\n    var state: State = Ready;\n    return 0;\n}\n",
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": ""
+                },
+                "position": {
+                    "line": 5,
+                    "character": 16
+                }
+            }
+        }),
+    );
+    let line: Option<u64> = result
+        .get("range")
+        .and_then(|range| range.get("start"))
+        .and_then(|start| start.get("line"))
+        .and_then(Value::as_u64);
+
+    assert_eq!(line, Some(0));
+}
+
+#[test]
+fn definition_returns_type_alias_location() {
+    let result: Value = self::lsp_result(
+        "type Count = s32;\n\nfn main() s32 {\n    var value: Count = 1;\n    return value;\n}\n",
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": ""
+                },
+                "position": {
+                    "line": 3,
+                    "character": 17
+                }
+            }
+        }),
+    );
+    let line: Option<u64> = result
+        .get("range")
+        .and_then(|range| range.get("start"))
+        .and_then(|start| start.get("line"))
+        .and_then(Value::as_u64);
+
+    assert_eq!(line, Some(0));
+}
+
+#[test]
+fn definition_returns_enum_member_location() {
+    let result: Value = self::lsp_result(
+        "enum State {\n    Ready: s32 = 0;\n}\n\nfn main() s32 {\n    return Ready;\n}\n",
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": ""
+                },
+                "position": {
+                    "line": 5,
+                    "character": 13
+                }
+            }
+        }),
+    );
+    let line: Option<u64> = result
+        .get("range")
+        .and_then(|range| range.get("start"))
+        .and_then(|start| start.get("line"))
+        .and_then(Value::as_u64);
+    let character: Option<u64> = result
+        .get("range")
+        .and_then(|range| range.get("start"))
+        .and_then(|start| start.get("character"))
+        .and_then(Value::as_u64);
+
+    assert_eq!(line, Some(1));
+    assert_eq!(character, Some(4));
+}
+
+#[test]
+fn document_symbol_includes_function_parameters() {
+    let result: Value = self::lsp_result(
+        "fn add(a: s32, b: s32) s32 {\n    return a + b;\n}\n",
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/documentSymbol",
+            "params": {
+                "textDocument": {
+                    "uri": ""
+                }
+            }
+        }),
+    );
+    let symbols: &[Value] = result.as_array().map(Vec::as_slice).unwrap_or_default();
+
+    assert!(symbols.iter().any(|symbol| {
+        let children: &[Value] = symbol
+            .get("children")
+            .and_then(Value::as_array)
+            .map(Vec::as_slice)
+            .unwrap_or_default();
+
+        symbol.get("name").and_then(Value::as_str) == Some("add")
+            && children
+                .iter()
+                .any(|child| child.get("name").and_then(Value::as_str) == Some("a"))
+            && children
+                .iter()
+                .any(|child| child.get("name").and_then(Value::as_str) == Some("b"))
+    }));
+}
+
+#[test]
+fn document_symbol_includes_enum_members_and_global_values() {
+    let result: Value = self::lsp_result(
+        "const LIMIT: s32 = 10;\nstatic COUNT: s32 = 1;\n\nenum State {\n    Ready: s32 = 0;\n    Done: s32 = 1;\n}\n",
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/documentSymbol",
+            "params": {
+                "textDocument": {
+                    "uri": ""
+                }
+            }
+        }),
+    );
+    let symbols: &[Value] = result.as_array().map(Vec::as_slice).unwrap_or_default();
+
+    assert!(
+        symbols
+            .iter()
+            .any(|symbol| symbol.get("name").and_then(Value::as_str) == Some("LIMIT"))
+    );
+    assert!(
+        symbols
+            .iter()
+            .any(|symbol| symbol.get("name").and_then(Value::as_str) == Some("COUNT"))
+    );
+    assert!(symbols.iter().any(|symbol| {
+        let children: &[Value] = symbol
+            .get("children")
+            .and_then(Value::as_array)
+            .map(Vec::as_slice)
+            .unwrap_or_default();
+
+        symbol.get("name").and_then(Value::as_str) == Some("State")
+            && children
+                .iter()
+                .any(|child| child.get("name").and_then(Value::as_str) == Some("Ready"))
+            && children
+                .iter()
+                .any(|child| child.get("name").and_then(Value::as_str) == Some("Done"))
+    }));
 }

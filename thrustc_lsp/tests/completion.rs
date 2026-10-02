@@ -485,3 +485,64 @@ fn completion_items_use_grouped_sort_text() {
     assert!(found_for_loop);
     assert!(found_size_of_builtin);
 }
+
+#[test]
+fn completes_struct_fields_for_explicit_type() {
+    let labels: Vec<String> = self::complete_labels(
+        "struct Pair {\n    first: s32,\n    second: s32,\n}\n\nfn main() s32 {\n    var pair: Pair = new Pair { first: 1, second: 2 };\n    pair->\n}\n",
+        7,
+        10,
+    );
+
+    assert!(labels.contains(&"first".to_string()));
+    assert!(labels.contains(&"second".to_string()));
+}
+
+#[test]
+fn completion_member_fields_does_not_mix_structs() {
+    let labels: Vec<String> = self::complete_labels(
+        "struct Pair {\n    first: s32,\n}\n\nstruct Other {\n    other: s32,\n}\n\nfn main() s32 {\n    var pair: Pair = new Pair { first: 1 };\n    pair->\n}\n",
+        10,
+        10,
+    );
+
+    assert!(labels.contains(&"first".to_string()));
+    assert!(!labels.contains(&"other".to_string()));
+}
+
+#[test]
+fn completes_enum_values_after_fat_arrow() {
+    let labels: Vec<String> = self::complete_labels(
+        "enum State {\n    Ready: s32 = 0;\n    Done: s32 = 1;\n}\n\nfn main() s32 {\n    State =>\n}\n",
+        6,
+        13,
+    );
+
+    assert!(labels.contains(&"Ready".to_string()));
+    assert!(labels.contains(&"Done".to_string()));
+}
+
+#[test]
+fn type_context_includes_local_types() {
+    let labels: Vec<String> = self::complete_labels(
+        "struct Pair {\n    first: s32,\n}\n\nenum State {\n    Ready: s32 = 0;\n}\n\ntype Count = s32;\n\nfn main() s32 {\n    var value: \n}\n",
+        11,
+        15,
+    );
+
+    assert!(labels.contains(&"Pair".to_string()));
+    assert!(labels.contains(&"State".to_string()));
+    assert!(labels.contains(&"Count".to_string()));
+}
+
+#[test]
+fn completion_ignores_fake_declarations_in_comments_and_strings() {
+    let labels: Vec<String> = self::complete_labels(
+        "fn main() s32 {\n    // fn fakeFunction() s32 { return 1; }\n    var text: CString = \"var fakeValue: s32 = 1;\";\n    \n}\n",
+        3,
+        4,
+    );
+
+    assert!(!labels.contains(&"fakeFunction".to_string()));
+    assert!(!labels.contains(&"fakeValue".to_string()));
+}

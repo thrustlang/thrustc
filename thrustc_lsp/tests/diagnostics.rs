@@ -139,10 +139,80 @@ fn parser_error_publishes_compiler_diagnostic() {
 }
 
 #[test]
-fn fallback_reports_unclosed_delimiter() {
+fn lexer_error_publishes_compiler_diagnostic() {
+    let diagnostics: Vec<Value> =
+        self::diagnostics("fn main() s32 {\n    var text: CString = \"open;\n}\n");
+
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.get("source").and_then(Value::as_str) == Some("thrustc")
+            && diagnostic.get("severity").and_then(Value::as_u64) == Some(1)
+    }));
+}
+
+#[test]
+fn lexer_reports_unterminated_block_comment() {
     let diagnostics: Vec<Value> = self::diagnostics("fn main() s32 {\n    /*\n    return 0;\n}\n");
 
     assert!(diagnostics.iter().any(|diagnostic| {
-        diagnostic.get("message").and_then(Value::as_str) == Some("Unterminated block comment.")
+        diagnostic.get("source").and_then(Value::as_str) == Some("thrustc")
+            && diagnostic.get("severity").and_then(Value::as_u64) == Some(1)
     }));
+}
+
+#[test]
+fn lexer_reports_unterminated_character() {
+    let diagnostics: Vec<Value> =
+        self::diagnostics("fn main() s32 {\n    var letter: char = 'a;\n}\n");
+
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.get("source").and_then(Value::as_str) == Some("thrustc")
+            && diagnostic.get("severity").and_then(Value::as_u64) == Some(1)
+    }));
+}
+
+#[test]
+fn parser_reports_extra_closing_brace() {
+    let diagnostics: Vec<Value> = self::diagnostics("fn main() s32 {\n    return 0;\n}\n}\n");
+
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| { diagnostic.get("severity").and_then(Value::as_u64) == Some(1) })
+    );
+}
+
+#[test]
+fn parser_reports_unclosed_function_block() {
+    let diagnostics: Vec<Value> = self::diagnostics("fn main() s32 {\n    return 0;\n");
+
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| { diagnostic.get("severity").and_then(Value::as_u64) == Some(1) })
+    );
+}
+
+#[test]
+fn diagnostics_accept_braces_inside_string() {
+    let diagnostics: Vec<Value> = self::diagnostics(
+        "fn main() s32 {\n    var text: CString = \"{}[]()\";\n    return 0;\n}\n",
+    );
+
+    assert!(diagnostics.is_empty());
+}
+
+#[test]
+fn diagnostics_accept_braces_inside_line_comment() {
+    let diagnostics: Vec<Value> =
+        self::diagnostics("fn main() s32 {\n    // }]) fake delimiters\n    return 0;\n}\n");
+
+    assert!(diagnostics.is_empty());
+}
+
+#[test]
+fn diagnostics_accept_braces_inside_block_comment() {
+    let diagnostics: Vec<Value> =
+        self::diagnostics("fn main() s32 {\n    /* }]) fake delimiters */\n    return 0;\n}\n");
+
+    assert!(diagnostics.is_empty());
 }

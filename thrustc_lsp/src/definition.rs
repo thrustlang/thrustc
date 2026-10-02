@@ -19,7 +19,7 @@
 
 use serde_json::Value;
 
-use crate::analysis::{Analysis, Symbol};
+use crate::analysis::{Analysis, DocumentAnalysis, Symbol};
 use crate::documents::Documents;
 
 pub fn definition(documents: &Documents, analysis: &Analysis, payload: &Value) -> Value {
@@ -105,6 +105,14 @@ pub fn definition(documents: &Documents, analysis: &Analysis, payload: &Value) -
         return self::symbol_location(uri, symbol, &lines);
     }
 
+    if let Some(symbol) = self::find_field_symbol(document_analysis, &reference) {
+        return self::symbol_location(uri, symbol, &lines);
+    }
+
+    if let Some(symbol) = self::find_enum_value_symbol(document_analysis, &reference) {
+        return self::symbol_location(uri, symbol, &lines);
+    }
+
     for (candidate_line_index, candidate_line) in
         lines.iter().enumerate().take(line_index + 1).rev()
     {
@@ -146,12 +154,63 @@ pub fn definition(documents: &Documents, analysis: &Analysis, payload: &Value) -
     Value::Null
 }
 
+fn find_field_symbol<'analysis>(
+    document_analysis: &'analysis DocumentAnalysis,
+    reference: &str,
+) -> Option<&'analysis Symbol> {
+    for structure in document_analysis.get_structures() {
+        let Some(field) = structure
+            .get_fields()
+            .iter()
+            .find(|field| field.get_name() == reference)
+        else {
+            continue;
+        };
+
+        return Some(field);
+    }
+
+    None
+}
+
+fn find_enum_value_symbol<'analysis>(
+    document_analysis: &'analysis DocumentAnalysis,
+    reference: &str,
+) -> Option<&'analysis Symbol> {
+    for enumeration in document_analysis.get_enumerations() {
+        let Some(value) = enumeration
+            .get_values()
+            .iter()
+            .find(|value| value.get_name() == reference)
+        else {
+            continue;
+        };
+
+        return Some(value);
+    }
+
+    None
+}
+
 fn symbol_location(uri: &str, symbol: &Symbol, lines: &[&str]) -> Value {
     let line: u64 = symbol.get_declaration_line();
     let line_index: usize = line.try_into().unwrap_or(usize::MAX);
     let source_line: &str = lines.get(line_index).copied().unwrap_or_default();
-    let start: usize = source_line.find(symbol.get_name()).unwrap_or(0);
-    let end: usize = start.saturating_add(symbol.get_name().len());
+    let fallback_start: u64 = source_line
+        .find(symbol.get_name())
+        .unwrap_or(0)
+        .try_into()
+        .unwrap_or(u64::MAX);
+    let start: u64 = if symbol.get_declaration_start() == 0 && fallback_start != 0 {
+        fallback_start
+    } else {
+        symbol.get_declaration_start()
+    };
+    let end: u64 = if symbol.get_declaration_end() == 0 {
+        start.saturating_add(symbol.get_name().len().try_into().unwrap_or(u64::MAX))
+    } else {
+        symbol.get_declaration_end()
+    };
 
     serde_json::json!({
         "uri": uri,

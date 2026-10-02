@@ -22,6 +22,7 @@ pub mod completion;
 pub mod definition;
 pub mod document_symbol;
 pub mod documents;
+pub mod frontend;
 pub mod hover;
 pub mod server;
 

@@ -19,7 +19,7 @@
 
 use serde_json::Value;
 
-use crate::analysis::Analysis;
+use crate::analysis::{Analysis, DocumentAnalysis};
 use crate::documents::Documents;
 
 pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Value {
@@ -136,6 +136,14 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
         }
     }
 
+    if detail.is_none() {
+        detail = self::find_field_detail(document_analysis, &reference);
+    }
+
+    if detail.is_none() {
+        detail = self::find_enum_value_detail(document_analysis, &reference);
+    }
+
     let Some(detail) = detail else {
         return Value::Null;
     };
@@ -146,4 +154,36 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
             "value": format!("```thrust\n{}\n```", detail)
         }
     })
+}
+
+fn find_field_detail(document_analysis: &DocumentAnalysis, reference: &str) -> Option<String> {
+    for structure in document_analysis.get_structures() {
+        let Some(field) = structure
+            .get_fields()
+            .iter()
+            .find(|field| field.get_name() == reference)
+        else {
+            continue;
+        };
+
+        return Some(field.get_detail().to_string());
+    }
+
+    None
+}
+
+fn find_enum_value_detail(document_analysis: &DocumentAnalysis, reference: &str) -> Option<String> {
+    for enumeration in document_analysis.get_enumerations() {
+        let Some(value) = enumeration
+            .get_values()
+            .iter()
+            .find(|value| value.get_name() == reference)
+        else {
+            continue;
+        };
+
+        return Some(value.get_detail().to_string());
+    }
+
+    None
 }

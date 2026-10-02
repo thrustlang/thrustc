@@ -88,6 +88,26 @@ impl Lexer {
         }
         .start_for_preprocessor()
     }
+
+    pub fn lex_for_lsp(
+        file: &CompilationUnit,
+        options: &CompilerOptions,
+    ) -> Result<Vec<Token>, Vec<CompilationIssue>> {
+        let code: Vec<char> = file.get_unit_content().chars().collect();
+
+        Self {
+            tokens: Vec::with_capacity(PREALLOCATED_TOKENS_CAPACITY),
+            errors: Vec::with_capacity(u8::MAX as usize),
+            code,
+            column: 0,
+            start: 0,
+            current: 0,
+            line: 1,
+            span: (0, 0),
+            diagnostician: Diagnostician::new(file, options),
+        }
+        .start_for_lsp()
+    }
 }
 
 impl Lexer {
@@ -132,6 +152,30 @@ impl Lexer {
 
         if !self.errors.is_empty() {
             return Err(());
+        }
+
+        self.tokens.push(Token {
+            lexeme: String::default(),
+            ascii: String::default(),
+            kind: TokenType::Eof,
+            span: Span::new(self.span()),
+        });
+
+        Ok(std::mem::take(&mut self.tokens))
+    }
+
+    fn start_for_lsp(&mut self) -> Result<Vec<Token>, Vec<CompilationIssue>> {
+        while !self.is_eof() {
+            self.start = self.current;
+            self.start_span();
+
+            if let Err(error) = lex::analyze(self) {
+                self.add_error(error);
+            }
+        }
+
+        if !self.errors.is_empty() {
+            return Err(std::mem::take(&mut self.errors));
         }
 
         self.tokens.push(Token {
