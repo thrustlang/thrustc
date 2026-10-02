@@ -682,7 +682,9 @@ fn main() {
         println!("cargo:rustc-link-lib={}={}", kind.string(), name);
     }
 
-    let sys_lib_kind: LibraryKind = if cfg!(target_feature = "crt-static") {
+    let sys_lib_kind: LibraryKind = if target_env_is("msvc") {
+        LibraryKind::Dynamic
+    } else if cfg!(target_feature = "crt-static") {
         LibraryKind::Static
     } else {
         LibraryKind::Dynamic
