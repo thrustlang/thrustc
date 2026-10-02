@@ -48,25 +48,6 @@ pub enum CompletionKind {
     TypeParameter,
 }
 
-impl CompletionKind {
-    #[inline]
-    pub fn as_lsp_value(self) -> u64 {
-        match self {
-            CompletionKind::Function => 3,
-            CompletionKind::Field => 5,
-            CompletionKind::Variable => 6,
-            CompletionKind::Module => 9,
-            CompletionKind::Enum => 13,
-            CompletionKind::Keyword => 14,
-            CompletionKind::Snippet => 15,
-            CompletionKind::EnumMember => 20,
-            CompletionKind::Constant => 21,
-            CompletionKind::Struct => 22,
-            CompletionKind::TypeParameter => 25,
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct Symbol {
     name: String,
@@ -122,6 +103,25 @@ pub struct DocumentAnalysis {
 pub struct Analysis {
     documents: HashMap<String, DocumentAnalysis>,
     analyzed_documents: usize,
+}
+
+impl CompletionKind {
+    #[inline]
+    pub fn as_lsp_value(self) -> u64 {
+        match self {
+            CompletionKind::Function => 3,
+            CompletionKind::Field => 5,
+            CompletionKind::Variable => 6,
+            CompletionKind::Module => 9,
+            CompletionKind::Enum => 13,
+            CompletionKind::Keyword => 14,
+            CompletionKind::Snippet => 15,
+            CompletionKind::EnumMember => 20,
+            CompletionKind::Constant => 21,
+            CompletionKind::Struct => 22,
+            CompletionKind::TypeParameter => 25,
+        }
+    }
 }
 
 impl Symbol {

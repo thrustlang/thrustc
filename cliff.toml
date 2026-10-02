@@ -29,7 +29,7 @@ conventional_commits = false
 filter_unconventional = false
 split_commits = false
 commit_parsers = [
-  # --- Sintaxis combinatoria: (feat(...), fix(...)) ---
+  # --- Sintaxis combinatoria: (feat(...), refac(...), fix(...)) ---
   { message = "^\\(.*feat\\(frontend\\).*\\)",           group = "Features",      scope = "frontend" },
   { message = "^\\(.*feat\\(llvm_backend\\).*\\)",       group = "Features",      scope = "llvm_backend" },
   { message = "^\\(.*feat\\(gcc_backend\\).*\\)",        group = "Features",      scope = "gcc_backend" },
@@ -40,6 +40,18 @@ commit_parsers = [
   { message = "^\\(.*feat\\(project-visual\\).*\\)",     group = "Documentation", scope = "project-visual" },
   { message = "^\\(.*feat\\(project\\).*\\)",            group = "Project",       scope = "project" },
   { message = "^\\(.*feat\\(doc\\).*\\)",                group = "Documentation", scope = "doc" },
+  { message = "^\\(.*refac\\(frontend\\).*\\)",          group = "Refactoring",   scope = "frontend" },
+  { message = "^\\(.*refac\\(llvm_backend\\).*\\)",      group = "Refactoring",   scope = "llvm_backend" },
+  { message = "^\\(.*refac\\(gcc_backend\\).*\\)",       group = "Refactoring",   scope = "gcc_backend" },
+  { message = "^\\(.*refac\\(llvm_linker_driver\\).*\\)", group = "Refactoring",   scope = "llvm_linker_driver" },
+  { message = "^\\(.*refac\\(abi\\).*\\)",               group = "Refactoring",   scope = "abi" },
+  { message = "^\\(.*refac\\(preprocessador\\).*\\)",    group = "Refactoring",   scope = "preprocessador" },
+  { message = "^\\(.*refac\\(std\\).*\\)",               group = "Refactoring",   scope = "std" },
+  { message = "^\\(.*refac\\(fuzzing\\).*\\)",           group = "Refactoring",   scope = "fuzzing" },
+  { message = "^\\(.*refac\\(project-visual\\).*\\)",    group = "Refactoring",   scope = "project-visual" },
+  { message = "^\\(.*refac\\(project\\).*\\)",           group = "Refactoring",   scope = "project" },
+  { message = "^\\(.*refac\\(doc\\).*\\)",               group = "Refactoring",   scope = "doc" },
+  { message = "^\\(.*refac\\(lsp\\).*\\)",               group = "Refactoring",   scope = "lsp" },
   { message = "^\\(.*fix\\(frontend\\).*\\)",            group = "Bug Fixes",     scope = "frontend" },
   { message = "^\\(.*fix\\(llvm_backend\\).*\\)",        group = "Bug Fixes",     scope = "llvm_backend" },
   { message = "^\\(.*fix\\(gcc_backend\\).*\\)",         group = "Bug Fixes",     scope = "gcc_backend" },
@@ -50,7 +62,7 @@ commit_parsers = [
   { message = "^\\(.*fix\\(project\\).*\\)",             group = "Bug Fixes",     scope = "project" },
   { message = "^\\(.*fix\\(doc\\).*\\)",                 group = "Bug Fixes",     scope = "doc" },
 
-  # --- Sintaxis simple: feat(...) / fix(...) ---
+  # --- Sintaxis simple: feat(...) / refac(...) / fix(...) ---
   { message = "^feat\\(llvm_backend\\)",       group = "Features",      scope = "llvm_backend" },
   { message = "^feat\\(gcc_backend\\)",        group = "Features",      scope = "gcc_backend" },
   { message = "^feat\\(llvm_linker_driver\\)", group = "Features",      scope = "llvm_linker_driver" },
@@ -62,6 +74,19 @@ commit_parsers = [
   { message = "^feat\\(project\\)",            group = "Project",       scope = "project" },
   { message = "^feat\\(doc\\)",                group = "Documentation", scope = "doc" },
   { message = "^feat\\(",                      group = "Features" },
+  { message = "^refac\\(llvm_backend\\)",      group = "Refactoring",   scope = "llvm_backend" },
+  { message = "^refac\\(gcc_backend\\)",       group = "Refactoring",   scope = "gcc_backend" },
+  { message = "^refac\\(llvm_linker_driver\\)", group = "Refactoring",  scope = "llvm_linker_driver" },
+  { message = "^refac\\(abi\\)",               group = "Refactoring",   scope = "abi" },
+  { message = "^refac\\(preprocessador\\)",    group = "Refactoring",   scope = "preprocessador" },
+  { message = "^refac\\(std\\)",               group = "Refactoring",   scope = "std" },
+  { message = "^refac\\(fuzzing\\)",           group = "Refactoring",   scope = "fuzzing" },
+  { message = "^refac\\(frontend\\)",          group = "Refactoring",   scope = "frontend" },
+  { message = "^refac\\(project-visual\\)",    group = "Refactoring",   scope = "project-visual" },
+  { message = "^refac\\(project\\)",           group = "Refactoring",   scope = "project" },
+  { message = "^refac\\(doc\\)",               group = "Refactoring",   scope = "doc" },
+  { message = "^refac\\(lsp\\)",               group = "Refactoring",   scope = "lsp" },
+  { message = "^refac\\(",                     group = "Refactoring" },
   { message = "^fix\\(llvm_backend\\)",        group = "Bug Fixes",     scope = "llvm_backend" },
   { message = "^fix\\(gcc_backend\\)",         group = "Bug Fixes",     scope = "gcc_backend" },
   { message = "^fix\\(llvm_linker_driver\\)",  group = "Bug Fixes",     scope = "llvm_linker_driver" },

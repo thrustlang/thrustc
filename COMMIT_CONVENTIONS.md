@@ -48,6 +48,7 @@ Valid locations:
 - `gcc_backend` Any change related to the GNU Compiler Collection (GCC) backend.
 - `frontend` Any change related to the Abstract Syntax Tree (AST), Lexer, Parser or TypeChecker.
 - `project-visual` General or visual changes to the compiler project on Github (examples: README.md, assets, highlighting, banners).
+- `project` Changes to Cargo, the Rust toolchain, the Github repository, Github actions, or the creation of a new part of the compiler (Cargo workspaces).
 - `fuzzing` Any change related to the compiler fuzzing suite (`fuzz/`), its corpora and fuzz targets.
 - `doc` Any change related to the compiler documentation and guides in the repository (examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
 - `abi` Any change related to the Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
@@ -61,14 +62,38 @@ Example:
 
 `fix(frontend)` Fixing several issues on the abstract syntax analyzer.
 
+#### Title for refactors
+
+Use this syntax:
+
+`refac(...)`
+
+Valid locations:
+
+- `llvm_backend` Any change related to the LLVM backend.
+- `llvm_linker_driver` Any change related to the LLVM Linker Driver invocation.
+- `gcc_backend` Any change related to the GNU Compiler Collection (GCC) backend.
+- `frontend` Any change related to the Abstract Syntax Tree (AST), Lexer, Parser or TypeChecker.
+- `project-visual` General or visual changes to the compiler project on Github (examples: README.md, assets, highlighting, banners).
+- `fuzzing` Any change related to the compiler fuzzing suite (`fuzz/`), its corpora and fuzz targets.
+- `doc` Any change related to the compiler documentation and guides in the repository (examples: CONTRIBUTING.md, COMPILER_DIAGNOSTICS.md, COMPILER_FUZZING.md).
+- `abi` Any change related to the Application Binary Interface (ABI) representation, lowering, calling conventions or target ABI handling.
+- `preprocessador` Any change related to the preprocessor and module or import resolution (`thrustc_preprocessor`).
+- `std` Any change related to the standard library (`std/`).
+- `lsp` Any change related to the language server and editor integration (`thrustc_lsp`, `lsp/`).
+
+Example:
+
+`refac(lsp)` Reorganizing language server analysis structures.
+
 #### Combinatory title
 
 To write a combined title, use this syntax:
 
-`(feat(...), fix(...))`
+`(feat(...), refac(...), fix(...))`
 
 - Enclose the whole title in parentheses `()`.
-- Separate each feature or fix with a comma `,`.
+- Separate each feature, refactor or fix with a comma `,`.
 
 ### Description
 

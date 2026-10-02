@@ -169,7 +169,7 @@ If the lack of a test suite bothers you, that is a real gap, and adding tests is
 
 ## Commits and pull requests
 
-Commit titles follow `COMMIT_CONVENTIONS.md`. The shape is `feat(scope)` or `fix(scope)` (or `(feat(...), fix(...))` when combined), where scope is one of:
+Commit titles follow `COMMIT_CONVENTIONS.md`. The shape is `feat(scope)`, `refac(scope)` or `fix(scope)` (or `(feat(...), refac(...), fix(...))` when combined), where scope is one of:
 
 - `llvm_backend`, the LLVM backend.
 - `llvm_linker_driver`, the linker driver invocation.
@@ -182,6 +182,7 @@ Commit titles follow `COMMIT_CONVENTIONS.md`. The shape is `feat(scope)` or `fix
 - `abi`, ABI representation, lowering, calling conventions, or target ABI handling.
 - `preprocessador`, preprocessor and module/import resolution.
 - `std`, the standard library.
+- `lsp`, the language server and editor integration.
 
 Title first, then a short, specific description. "feat(frontend) Adding support for X" reads better than "Update parser".
 

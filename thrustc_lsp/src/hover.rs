@@ -75,31 +75,9 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
         return Value::Null;
     }
 
-    let mut start: usize = character_index.min(chars.len().saturating_sub(1));
-    let mut end: usize = character_index.min(chars.len());
-
-    if start < chars.len() && !(chars[start] == '_' || chars[start].is_ascii_alphanumeric()) {
-        if start > 0 && (chars[start - 1] == '_' || chars[start - 1].is_ascii_alphanumeric()) {
-            start = start.saturating_sub(1);
-            end = start.saturating_add(1);
-        } else {
-            return Value::Null;
-        }
-    }
-
-    while start > 0
-        && (chars[start - 1] == '_'
-            || chars[start - 1].is_ascii_alphanumeric()
-            || chars[start - 1] == ':')
-    {
-        start = start.saturating_sub(1);
-    }
-
-    while end < chars.len()
-        && (chars[end] == '_' || chars[end].is_ascii_alphanumeric() || chars[end] == ':')
-    {
-        end = end.saturating_add(1);
-    }
+    let Some((start, end)) = self::select_hover_reference_range(&chars, character_index) else {
+        return Value::Null;
+    };
 
     let reference: String = chars[start..end].iter().collect();
     let mut detail: Option<String> = None;
@@ -154,6 +132,36 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
             "value": format!("```thrust\n{}\n```", detail)
         }
     })
+}
+
+fn select_hover_reference_range(chars: &[char], character_index: usize) -> Option<(usize, usize)> {
+    let mut start: usize = character_index.min(chars.len().saturating_sub(1));
+    let mut end: usize = character_index.min(chars.len());
+
+    if start < chars.len() && chars[start] != '_' && !chars[start].is_ascii_alphanumeric() {
+        if start > 0 && (chars[start - 1] == '_' || chars[start - 1].is_ascii_alphanumeric()) {
+            start = start.saturating_sub(1);
+            end = start.saturating_add(1);
+        } else {
+            return None;
+        }
+    }
+
+    while start > 0
+        && (chars[start - 1] == '_'
+            || chars[start - 1].is_ascii_alphanumeric()
+            || chars[start - 1] == ':')
+    {
+        start = start.saturating_sub(1);
+    }
+
+    while end < chars.len()
+        && (chars[end] == '_' || chars[end].is_ascii_alphanumeric() || chars[end] == ':')
+    {
+        end = end.saturating_add(1);
+    }
+
+    Some((start, end))
 }
 
 fn find_field_detail(document_analysis: &DocumentAnalysis, reference: &str) -> Option<String> {

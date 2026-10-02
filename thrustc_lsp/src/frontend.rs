@@ -98,7 +98,7 @@ fn compiler_diagnostics(uri: &str, text: &str) -> Vec<Value> {
         &file_options,
         &mut builtins,
     );
-    let parser_context = parser_result.0;
+    let parser_context: thrustc_parser::ParserContext<'_> = parser_result.0;
 
     for error in parser_context.get_errors() {
         diagnostics.push(self::compilation_issue_to_diagnostic(error));
