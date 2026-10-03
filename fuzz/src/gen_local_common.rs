@@ -493,9 +493,9 @@ fn gen_var<'ast>(
 ) -> arbitrary::Result<Ast<'ast>> {
     let name = crate::names::gen_name(u)?;
 
-    let kind: Type = self::gen_decl_type(u, cfg)?;
+    let kind: Type = self::gen_var_type(u, cfg)?;
 
-    let value = if u.arbitrary()? {
+    let value = if !kind.is_native_vector_type() && u.arbitrary()? {
         Some(Box::new(self::gen_expr_of_type(
             u, scope, cfg, depth, &kind,
         )?))
@@ -1681,6 +1681,29 @@ fn gen_decl_type<'ast>(u: &mut Unstructured<'ast>, cfg: &Config) -> arbitrary::R
         });
     }
     self::gen_scalar_type(u)
+}
+
+fn gen_var_type<'ast>(u: &mut Unstructured<'ast>, cfg: &Config) -> arbitrary::Result<Type> {
+    if cfg.allow_extras && u.int_in_range(0..=3)? == 0 {
+        return self::gen_native_vector_type(u);
+    }
+
+    self::gen_decl_type(u, cfg)
+}
+
+fn gen_native_vector_type<'ast>(u: &mut Unstructured<'ast>) -> arbitrary::Result<Type> {
+    let element_count: u32 = match u.int_in_range(0..=3)? {
+        0 => 2,
+        1 => 4,
+        2 => 8,
+        _ => 16,
+    };
+
+    Ok(Type::NativeVector {
+        element_type: Box::new(self::gen_scalar_type(u)?),
+        element_count,
+        span: u.arbitrary()?,
+    })
 }
 
 fn cast_source_type<'ast>(u: &mut Unstructured<'ast>, target: &Type) -> arbitrary::Result<Type> {

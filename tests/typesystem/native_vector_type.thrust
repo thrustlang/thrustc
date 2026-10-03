@@ -1,0 +1,5 @@
+fn useVector(value: NativeVector[f32; 4]) void @public @extern("use_vector");
+
+fn main() s32 @public {
+    return 0;
+}

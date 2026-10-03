@@ -46,6 +46,7 @@ impl TypeCodeLocation for Type {
             | Type::Void { span }
             | Type::Array { span, .. }
             | Type::FixedArray { span, .. }
+            | Type::NativeVector { span, .. }
             | Type::Const(_, span)
             | Type::Ptr { span, .. }
             | Type::Struct { span, .. }

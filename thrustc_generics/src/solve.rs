@@ -147,6 +147,22 @@ fn unify(declared: &Type, provided: &Type, env: &mut TypeEnv) {
                 self::unify(declared_base, provided_base, env);
             }
         }
+        Type::NativeVector {
+            element_type: declared_element,
+            element_count: declared_count,
+            ..
+        } => {
+            if let Type::NativeVector {
+                element_type: provided_element,
+                element_count: provided_count,
+                ..
+            } = provided
+            {
+                if declared_count == provided_count {
+                    self::unify(declared_element, provided_element, env);
+                }
+            }
+        }
         Type::Struct {
             fields: declared_fields,
             ..

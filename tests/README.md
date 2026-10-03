@@ -73,6 +73,14 @@ Forward extra arguments to the external C linker compiler:
 $ tests/scripts/run-tests.py --no-build --cc-args "-lz"
 ```
 
+Emit compiler artifacts while running a test. This is useful for checking LLVM IR:
+
+```console
+$ tests/scripts/run-tests.py --no-build --filter "typesystem/native_vector_ir_shape.thrust" --emit llvm-ir --keep-dist
+```
+
+Emitted LLVM IR is written under `tests/dist/build/<test-id>/emit/llvm-ir/`.
+
 ## Runner Behavior
 
 The runner discovers test roots by scanning `.thrust` files under `tests/` and selecting files that declare `fn main`.

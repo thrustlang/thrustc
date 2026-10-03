@@ -550,6 +550,12 @@ impl<'scoper> Scoper<'scoper> {
                 | AstBuiltin::DeferredCompileTime { .. } => (),
             },
 
+            Ast::NativeVector { items, .. } => {
+                for item in items.iter() {
+                    self.analyze_local_node(item);
+                }
+            }
+
             Ast::CString { .. }
             | Ast::CNString { .. }
             | Ast::Char { .. }

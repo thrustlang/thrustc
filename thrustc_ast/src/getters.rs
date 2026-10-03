@@ -103,6 +103,7 @@ impl AstGetType for Ast<'_> {
             Ast::Property { kind, .. } => kind,
             Ast::EnumValue { kind, .. } => kind,
             Ast::FixedArray { kind, .. } => kind,
+            Ast::NativeVector { kind, .. } => kind,
             Ast::Array { kind, .. } => kind,
             Ast::Struct { kind, .. } => kind,
             Ast::Enum { kind, .. } => kind,
@@ -178,6 +179,7 @@ impl AstGetType for Ast<'_> {
 
             // Composite types
             Ast::FixedArray { kind, .. } => Ok(kind),
+            Ast::NativeVector { kind, .. } => Ok(kind),
             Ast::Array { kind, .. } => Ok(kind),
             Ast::Constructor { kind, .. } => Ok(kind),
             Ast::Property { kind, .. } => Ok(kind),
@@ -278,6 +280,7 @@ impl AstCodeLocation for Ast<'_> {
 
             // Composite types
             Ast::FixedArray { span, .. } => *span,
+            Ast::NativeVector { span, .. } => *span,
             Ast::Array { span, .. } => *span,
 
             Ast::Struct { span, .. } => *span,

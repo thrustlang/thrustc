@@ -107,6 +107,13 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--emit",
+        action="append",
+        default=[],
+        help="Forward a -emit value to thrustc. Can be repeated.",
+    )
+
+    parser.add_argument(
         "--filter",
         default="",
         help="Only run tests whose relative path contains this text.",
@@ -393,6 +400,9 @@ def compile_test(
 
     command.extend(compiletime_std_args(test_path, root))
 
+    for emit in args.emit:
+        command.extend(["-emit", emit])
+
     if "atomics" in test_path.parts:
         command.extend(["-mode", "unstable"])
 
@@ -500,6 +510,21 @@ def run_test(
         )
 
     if not binary_path.exists():
+
+        if args.emit:
+            return TestResult(
+                path=test_path,
+                kind="positive",
+                passed=True,
+                compile_code=compile_result.returncode,
+                run_code=None,
+                elapsed=elapsed,
+                message="compile emitted artifact",
+                compile_stdout=compile_result.stdout,
+                compile_stderr=compile_result.stderr,
+                run_stdout="",
+                run_stderr="",
+            )
 
         return TestResult(
             path=test_path,

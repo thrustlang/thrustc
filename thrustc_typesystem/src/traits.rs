@@ -30,6 +30,7 @@ pub trait TypeIsExtensions {
     fn is_struct_type(&self) -> bool;
     fn is_fixed_array_type(&self) -> bool;
     fn is_array_type(&self) -> bool;
+    fn is_native_vector_type(&self) -> bool;
     fn is_float_type(&self) -> bool;
     fn is_ptr_type(&self) -> bool;
     fn is_const_type(&self) -> bool;

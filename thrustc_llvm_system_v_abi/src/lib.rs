@@ -323,6 +323,12 @@ impl SystemVABITypeClass {
 
             Type::F128 { .. } | Type::FPPC128 { .. } => SYSTEM_V_ABI_F128,
 
+            Type::NativeVector { .. } if layout.abi_size <= 8 => SYSTEM_V_ABI_F32_F64,
+
+            Type::NativeVector { .. } if layout.abi_size <= 16 => SYSTEM_V_ABI_F128,
+
+            Type::NativeVector { .. } => SYSTEM_V_ABI_STACK,
+
             t if t.is_ptr_like_type() => SYSTEM_V_ABI_ONE_INTEGER,
 
             Type::FixedArray { base_type, .. } => {
@@ -3031,6 +3037,32 @@ pub fn generate_type<'llvm_abi>(
             let array_type: BasicTypeEnum =
                 self::generate_type(llvm_context, abi_context, base_type);
             array_type.array_type(*size).into()
+        }
+
+        Type::NativeVector {
+            element_type,
+            element_count,
+            ..
+        } => {
+            let vector_type: BasicTypeEnum =
+                self::generate_type(llvm_context, abi_context, element_type);
+
+            match vector_type {
+                BasicTypeEnum::FloatType(ty) => ty.vec_type(*element_count).into(),
+                BasicTypeEnum::IntType(ty) => ty.vec_type(*element_count).into(),
+                BasicTypeEnum::PointerType(ty) => ty.vec_type(*element_count).into(),
+
+                any => abort::abort_codegen(
+                    abi_context,
+                    &format!(
+                        "Failed to compile '{:?}' as a native vector element type!",
+                        any
+                    ),
+                    ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                ),
+            }
         }
 
         any => abort::abort_codegen(

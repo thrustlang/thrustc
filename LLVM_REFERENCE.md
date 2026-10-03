@@ -17,3 +17,19 @@ Recurring resources for properly developing the LLVM codegen backend of the comp
 - [X86 Intrinsics](https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/IR/IntrinsicsX86.td) — X86 and x86-64 intrinsic definitions.
 - [NVVM Intrinsics](https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/IR/IntrinsicsNVVM.td) — NVIDIA CUDA and NVPTX intrinsic definitions.
 - [WebAssembly Intrinsics](https://github.com/llvm/llvm-project/blob/main/llvm/include/llvm/IR/IntrinsicsWebAssembly.td) — WebAssembly intrinsic definitions.
+
+## Native Vector Mapping
+
+Thrust ``NativeVector[T; N]`` maps directly to LLVM fixed vector IR. For example:
+
+```thrust
+var value: NativeVector[f32; 4] = native[1.0, 2.0, 3.0, 4.0];
+```
+
+lowers to LLVM values of type:
+
+```llvm
+<4 x float>
+```
+
+Use ``NativeVector`` when an API or intrinsic expects an LLVM vector type. Use ``array[T; N]`` when an LLVM array value is desired instead.

@@ -1,0 +1,6 @@
+fn makeVector() NativeVector[f32; 4] @public @extern("make_vector");
+fn consumeVector(value: NativeVector[f32; 4]) void @public @extern("consume_vector");
+
+fn main() s32 @public {
+    return 0;
+}

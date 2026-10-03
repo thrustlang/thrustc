@@ -86,6 +86,14 @@ pub fn validate_node<'analyzer>(
             Ok(())
         }
 
+        Ast::NativeVector { items, .. } => {
+            for node in items.iter() {
+                analyzer.analyze_expr(node)?;
+            }
+
+            Ok(())
+        }
+
         Ast::Array { items, .. } => {
             for node in items.iter() {
                 analyzer.analyze_expr(node)?;

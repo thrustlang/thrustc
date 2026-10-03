@@ -200,6 +200,15 @@ fn complete_labels_with_files(
 }
 
 #[test]
+fn completes_native_vector_type_and_constructor() {
+    let type_labels: Vec<String> = self::complete_labels("fn main() s32 {\n    var value: \n}\n", 1, 15);
+    let expr_labels: Vec<String> = self::complete_labels("fn main() s32 {\n    \n}\n", 1, 4);
+
+    assert!(type_labels.contains(&"NativeVector".to_string()));
+    assert!(expr_labels.contains(&"native".to_string()));
+}
+
+#[test]
 fn completes_std_module_symbols() {
     let labels: Vec<String> =
         self::complete_labels("import std::mem;\n\nfn main() s32 {\n    mem::\n}\n", 3, 9);

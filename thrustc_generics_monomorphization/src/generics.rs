@@ -650,6 +650,17 @@ fn resolve_children<'parser>(
             span,
             id,
         },
+        Ast::NativeVector {
+            items,
+            kind,
+            span,
+            id,
+        } => Ast::NativeVector {
+            items: self::resolve_node_ast_list(ctx, items, templates, memo, output),
+            kind,
+            span,
+            id,
+        },
         Ast::Array {
             items,
             kind,

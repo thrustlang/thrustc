@@ -27,7 +27,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
     Type,
-    traits::{IndexExtensions, TypeExtensions, TypePointerExtensions},
+    traits::{IndexExtensions, TypeExtensions, TypeIsExtensions, TypePointerExtensions},
 };
 
 use crate::{ParserContext, expressions};
@@ -48,7 +48,9 @@ pub fn build_index<'parser>(
         "Expected ']'.".into(),
     )?;
 
-    let index_type: Type = if deref {
+    let index_type: Type = if index_type.is_native_vector_type() {
+        index_type.calculate_index_type(1).clone()
+    } else if deref {
         index_type.calculate_index_type(1).clone()
     } else {
         let inner_index_type: Type = index_type.calculate_index_type(1).clone();

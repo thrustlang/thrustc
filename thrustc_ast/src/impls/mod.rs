@@ -243,6 +243,7 @@ impl AstAttributeExtensions for Ast<'_> {
 
             // Arrays & Indexing
             Ast::FixedArray { .. } => None,
+            Ast::NativeVector { .. } => None,
             Ast::Array { .. } => None,
             Ast::Index { .. } => None,
 

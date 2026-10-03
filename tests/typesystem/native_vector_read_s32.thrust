@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    var value: NativeVector[s32; 4] = native[1, 2, 3, 4];
+    var x: s32 = value[1];
+    return 0;
+}

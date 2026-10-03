@@ -275,6 +275,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     | Ast::NullPtr { .. }
                     | Ast::GlobalAssembler { .. }
                     | Ast::FixedArray { .. }
+                    | Ast::NativeVector { .. }
                     | Ast::Array { .. }
                     | Ast::Index { .. }
                     | Ast::Embedded { .. }
@@ -355,6 +356,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             | Ast::Float { .. }
             | Ast::NullPtr { .. }
             | Ast::FixedArray { .. }
+            | Ast::NativeVector { .. }
             | Ast::Array { .. }
             | Ast::Index { .. }
             | Ast::Embedded { .. }
@@ -1106,6 +1108,74 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     .get_mut_expressions_optimizations()
                     .denegate_all_expression_optimizations();
 
+                if let Ast::Index {
+                    source: indexed_source,
+                    index,
+                    ..
+                } = source.as_ref()
+                {
+                    if let Type::NativeVector { element_type, .. } = indexed_source.get_type_for_llvm() {
+                        let index_type: Type = Type::U32 { span: *span };
+
+                        self.context.add_codegen_location(CodeGenLocation::LValue);
+                        let ptr: BasicValueEnum =
+                            self::compile_as_ptr_value(self.context, indexed_source, None);
+                        self.context.pop_current_codegen_location();
+
+                        let old_vector: BasicValueEnum = memory::load(
+                            self.context,
+                            ptr.into_pointer_value(),
+                            indexed_source.get_type_for_llvm(),
+                            *span,
+                        );
+
+                        self.context.add_codegen_location(CodeGenLocation::RValue);
+                        let index: inkwell::values::IntValue =
+                            self::compile_as_value(self.context, index, Some(&index_type))
+                                .into_int_value();
+                        self.context.pop_current_codegen_location();
+
+                        let value_type: &Type = value.get_type_for_llvm();
+                        let value: BasicValueEnum =
+                            self::compile_as_value(self.context, value, Some(element_type));
+                        let value: BasicValueEnum = type_cast::try_smart_cast(
+                            self.context,
+                            Some(element_type),
+                            value_type,
+                            value,
+                            *span,
+                        );
+
+                        let new_vector: inkwell::values::VectorValue = self
+                            .context
+                            .get_llvm_builder()
+                            .build_insert_element(
+                                old_vector.into_vector_value(),
+                                value,
+                                index,
+                                "native.vector.write",
+                            )
+                            .unwrap_or_else(|_| {
+                                abort::abort_codegen(
+                                    self.context,
+                                    "Failed to insert native vector element.",
+                                    *span,
+                                    std::path::PathBuf::from(file!()),
+                                    line!(),
+                                )
+                            });
+
+                        memory::store(
+                            self.context,
+                            ptr.into_pointer_value(),
+                            new_vector.into(),
+                            *span,
+                        );
+
+                        return;
+                    }
+                }
+
                 let source_type: &Type = source.get_type_for_llvm();
                 let cast_type: Type =
                     typegeneration::determinate_mutation_target_type(source, source_type);
@@ -1188,6 +1258,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             | Ast::NullPtr { .. }
             | Ast::GlobalAssembler { .. }
             | Ast::FixedArray { .. }
+            | Ast::NativeVector { .. }
             | Ast::Array { .. }
             | Ast::Index { .. }
             | Ast::Embedded { .. }
@@ -1578,6 +1649,10 @@ pub fn compile_as_value<'ctx>(
             items, kind, span, ..
         } => expressions::fixed_array::compile(context, items, kind, *span, cast_type),
 
+        Ast::NativeVector {
+            items, kind, span, ..
+        } => expressions::native_vector::compile(context, items, kind, *span, cast_type),
+
         // Compiles a dynamic array
         Ast::Array {
             items, kind, span, ..
@@ -1707,6 +1782,10 @@ pub fn compile_constant_as_value<'ctx>(
         // Fixed-size array
         Ast::FixedArray { items, span, .. } => {
             expressions::fixed_array::compile_constant(context, items, cast_type, *span)
+        }
+
+        Ast::NativeVector { items, span, .. } => {
+            expressions::native_vector::compile_constant(context, items, cast_type, *span)
         }
 
         // Dynamic-size array

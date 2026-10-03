@@ -44,6 +44,9 @@ impl VoidTypeExtensions for Type {
                 } => contains_void_type_inner_type(inner_type),
                 Type::Struct { fields, .. } => fields.iter().any(contains_void_type_inner_type),
                 Type::FixedArray { base_type, .. } => contains_void_type_inner_type(base_type),
+                Type::NativeVector { element_type, .. } => {
+                    contains_void_type_inner_type(element_type)
+                }
                 Type::Fn {
                     parameter_types,
                     return_type,
@@ -73,6 +76,7 @@ impl VoidTypeExtensions for Type {
                 ..
             } => contains_void_type_inner_type(inner_type),
             Type::FixedArray { base_type, .. } => contains_void_type_inner_type(base_type),
+            Type::NativeVector { element_type, .. } => contains_void_type_inner_type(element_type),
             Type::Struct { fields, .. } => fields.iter().any(contains_void_type_inner_type),
             Type::Fn {
                 parameter_types,
@@ -110,6 +114,9 @@ impl VoidTypeExtensions for Type {
                 } => contains_void_type_inner_type(inner_type),
                 Type::Struct { fields, .. } => fields.iter().any(contains_void_type_inner_type),
                 Type::FixedArray { base_type, .. } => contains_void_type_inner_type(base_type),
+                Type::NativeVector { element_type, .. } => {
+                    contains_void_type_inner_type(element_type)
+                }
                 Type::Fn {
                     parameter_types,
                     return_type,
@@ -139,6 +146,7 @@ impl VoidTypeExtensions for Type {
                 ..
             } => contains_void_type_inner_type(inner_type),
             Type::FixedArray { base_type, .. } => contains_void_type_inner_type(base_type),
+            Type::NativeVector { element_type, .. } => contains_void_type_inner_type(element_type),
             Type::Struct { fields, .. } => fields.iter().any(contains_void_type_inner_type),
             Type::Fn {
                 parameter_types,
@@ -178,6 +186,9 @@ impl VoidTypeExtensions for Type {
                 Type::FixedArray { base_type, .. } => {
                     contains_an_unresolved_type_inner_type(base_type)
                 }
+                Type::NativeVector { element_type, .. } => {
+                    contains_an_unresolved_type_inner_type(element_type)
+                }
                 Type::Fn {
                     parameter_types,
                     return_type,
@@ -210,6 +221,9 @@ impl VoidTypeExtensions for Type {
                 ..
             } => contains_an_unresolved_type_inner_type(inner_type),
             Type::FixedArray { base_type, .. } => contains_an_unresolved_type_inner_type(base_type),
+            Type::NativeVector { element_type, .. } => {
+                contains_an_unresolved_type_inner_type(element_type)
+            }
             Type::Struct { fields, .. } => {
                 fields.iter().any(contains_an_unresolved_type_inner_type)
             }

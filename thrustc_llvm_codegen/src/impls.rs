@@ -69,6 +69,7 @@ impl AstLLVMGetType for Ast<'_> {
 
             // Composite types
             Ast::FixedArray { kind, .. } => kind,
+            Ast::NativeVector { kind, .. } => kind,
             Ast::Array { kind, .. } => kind,
             Ast::Constructor { kind, .. } => kind,
             Ast::Property { kind, .. } => kind,

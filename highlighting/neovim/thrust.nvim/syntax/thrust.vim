@@ -28,7 +28,7 @@ syntax keyword thrustKeyword
     \ alloc address addr load write
     \ ref mut static unreachable intrinsic
     \ embedded import importC only new directive
-    \ asm asmfn global_asm fixed
+    \ asm asmfn global_asm fixed native
 
 syntax keyword thrustBoolean true false
 syntax keyword thrustNull    nullptr
@@ -63,7 +63,7 @@ syntax keyword thrustType
     \ s8 s16 s32 s64 ssize
     \ u8 u16 u32 u64 u128 usize
     \ f32 f64 f128 f80 fppc_128
-    \ bool char ptr array void Fn CString CNString
+    \ bool char ptr array NativeVector void Fn CString CNString
 
 syntax keyword thrustTypeQual const
 

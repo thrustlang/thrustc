@@ -1,0 +1,8 @@
+fn identity(value: NativeVector[f32; 4]) NativeVector[f32; 4] {
+    return value;
+}
+
+fn main() s32 @public {
+    identity(identity(native[1.0, 2.0, 3.0, 4.0]));
+    return 0;
+}

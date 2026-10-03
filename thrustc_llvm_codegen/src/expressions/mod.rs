@@ -27,6 +27,7 @@ pub mod inlineasm_expr;
 pub mod literal_floatingpoint_expr;
 pub mod literal_integer_expr;
 pub mod literal_string_expr;
+pub mod native_vector;
 pub mod struct_expr;
 pub mod struct_property_expr;
 pub mod unary_expr;

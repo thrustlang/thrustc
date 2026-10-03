@@ -200,6 +200,60 @@ pub fn validate_node<'type_checker>(
             Ok(())
         }
 
+        Ast::NativeVector {
+            items, kind, span, ..
+        } => {
+            if kind.is_void_type() {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    "An element is expected for native vector type inference.".into(),
+                    "It must have at least one element.".into(),
+                    None,
+                    *span,
+                ));
+            } else if kind.contains_void_type() {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0019,
+                    "Cannot use 'void' as a value.".into(),
+                    "You should remove whatever type or value where void type belongs.".into(),
+                    None,
+                    kind.get_span(),
+                ));
+            }
+
+            if let Type::NativeVector { element_type, .. } = kind {
+                for node in items.iter() {
+                    let metadata: TypeCheckerNodeMetadata =
+                        TypeCheckerNodeMetadata::new(node.is_totaly_literal_value());
+                    let item_type: &Type = node.get_value_type()?;
+                    let span: Span = node.get_span();
+
+                    {
+                        let control_context: &mut TypeCheckerControlContext =
+                            typechecker.get_mut_control_context();
+
+                        control_context.reset_checking_depth();
+
+                        if let Err(error) = type_checking::check_type_together(
+                            element_type,
+                            item_type,
+                            Some(node),
+                            None,
+                            metadata,
+                            span,
+                            control_context,
+                        ) {
+                            typechecker.add_error_report(error);
+                        }
+                    }
+
+                    typechecker.analyze_expr(node)?;
+                }
+            }
+
+            Ok(())
+        }
+
         Ast::Array {
             items, kind, span, ..
         } => {
@@ -280,6 +334,7 @@ pub fn validate_node<'type_checker>(
 
             if !source_type.is_ptr_like_type()
                 && !source_type.is_fixed_array_type()
+                && !source_type.is_native_vector_type()
                 && !source_type.is_struct_type()
                 && !source_type.is_ptr_struct_type()
             {

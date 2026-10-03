@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_ast::{traits::AstCodeLocation, ModuleExpressionValues};
+use thrustc_ast::{ModuleExpressionValues, traits::AstCodeLocation};
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 
@@ -71,15 +71,20 @@ fn visit_all_types_inner<'ast>(
         Ast::FixedArray {
             items, kind, span, ..
         }
+        | Ast::NativeVector {
+            items, kind, span, ..
+        }
         | Ast::Array {
             items, kind, span, ..
         } => {
             on_type(kind, *span);
+
             for item in items {
                 if let Some(span) = visit_all_types_inner(item, on_type, depth) {
                     return Some(span);
                 }
             }
+
             None
         }
 

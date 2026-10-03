@@ -728,6 +728,30 @@ impl TargetInfo {
                 }
             }
 
+            Type::NativeVector {
+                element_type,
+                element_count,
+                ..
+            } => {
+                let (element_width, element_align) = match self.get_type_layout(element_type) {
+                    either::Either::Left(left) => (left.width, left.align),
+                    either::Either::Right(right) => (right.width, right.align),
+                };
+
+                let width: u32 = element_width.saturating_mul(*element_count);
+                let natural_align: u32 = width.next_power_of_two().min(1024).max(element_align);
+
+                type_info.width = width;
+                type_info.align = natural_align;
+                type_info.alignof = type_info.align / self.i8_width;
+                type_info.sizeof = type_info.width.div_ceil(self.i8_width);
+
+                type_info.compute_abi_size();
+                type_info.compute_abi_align();
+
+                either::Either::Left(type_info)
+            }
+
             Type::Struct {
                 fields, metadata, ..
             } => {

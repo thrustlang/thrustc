@@ -37,7 +37,7 @@ use crate::{
     ParserContext, builtins,
     expressions::{
         self, array, asm, builtin_call, call, deref, enum_value, fixed_array, load, reference,
-        struct_constructor,
+        native_vector, struct_constructor,
     },
     reinterpret,
 };
@@ -51,6 +51,7 @@ pub fn lower_precedence<'parser>(
         TokenType::New => struct_constructor::build_constructor(ctx)?,
 
         TokenType::Fixed => fixed_array::build_fixed_array(ctx)?,
+        TokenType::Native => native_vector::build_native_vector(ctx)?,
         TokenType::LBracket => array::build_array(ctx)?,
         TokenType::Deref => deref::build_dereference(ctx)?,
         TokenType::Load => load::build_load(ctx)?,
@@ -257,7 +258,9 @@ pub fn lower_precedence<'parser>(
             let name: &'parser str = tk.get_lexeme();
             let span: Span = tk.get_span();
 
-            if ctx.get_symbols().has_generic_function(name) {
+            if name == "native" && ctx.check(TokenType::LBracket) {
+                native_vector::build_native_vector_after_name(ctx, span)?
+            } else if ctx.get_symbols().has_generic_function(name) {
                 call::build_generic_call(ctx, name, span)?
             } else if ctx.match_token(TokenType::FatArrow)? {
                 enum_value::build_enum_value(ctx, name, span)?

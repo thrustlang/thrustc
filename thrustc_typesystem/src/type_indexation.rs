@@ -53,6 +53,10 @@ impl IndexExtensions for Type {
                 let decreased_type: u64 = depth.saturating_sub(1);
                 inner_type.get_type_with_depth(decreased_type)
             }
+            Type::NativeVector { element_type, .. } => {
+                let decreased_type: u64 = depth.saturating_sub(1);
+                element_type.get_type_with_depth(decreased_type)
+            }
             Type::Struct { .. } => self,
             Type::S8 { .. }
             | Type::S16 { .. }

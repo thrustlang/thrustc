@@ -78,6 +78,7 @@ fn build_type_inner<'parser>(
 
             match tk_kind {
                 _ if tk_kind.is_array() => self::parse_array_type(ctx, span),
+                _ if tk_kind.is_native_vector() => self::parse_native_vector_type(ctx, span),
                 _ if tk_kind.is_const() => self::parse_constant_type(ctx, span),
                 _ if tk_kind.is_fn_ref() => self::parse_anonymous_function_type(ctx, span),
 
@@ -604,6 +605,53 @@ fn parse_array_type(ctx: &mut ParserContext<'_>, span: Span) -> Result<Type, Com
     Ok(array_ty)
 }
 
+fn parse_native_vector_type(
+    ctx: &mut ParserContext<'_>,
+    span: Span,
+) -> Result<Type, CompilationIssue> {
+    ctx.consume(
+        TokenType::LBracket,
+        CompilationIssueCode::E0019,
+        "Expected '['.".into(),
+    )?;
+
+    let element_type: Type = self::build_type(ctx, false)?;
+
+    ctx.consume(
+        TokenType::SemiColon,
+        CompilationIssueCode::E0001,
+        "Expected ';'.".into(),
+    )?;
+
+    let element_count_expr: Ast = expressions::parse_expr(ctx)?;
+
+    let element_count_value: Option<u64> = {
+        let ctx_ref: &ParserContext<'_> = &*ctx;
+        let mut depth: usize = 0;
+
+        match thrustc_compile_time::fold_resolving(&element_count_expr, &mut |name, span| {
+            self::resolve_constant_value(ctx_ref, name, span, &mut depth)
+        }) {
+            Some(BuiltinValue::Integer(value)) => Some(value),
+            _ => None,
+        }
+    };
+
+    ctx.consume(
+        TokenType::RBracket,
+        CompilationIssueCode::E0001,
+        "Expected ']'.".into(),
+    )?;
+
+    let element_count: u32 = self::check_native_vector_element_count(element_count_value, span)?;
+
+    Ok(Type::NativeVector {
+        element_type: element_type.into(),
+        element_count,
+        span,
+    })
+}
+
 fn parse_pointer_type(
     ctx: &mut ParserContext<'_>,
     mut before_type: Type,
@@ -744,6 +792,41 @@ fn check_fixed_array_size(size: Option<u64>, span: Span) -> Result<u32, Compilat
             CompilationIssueCode::E0001,
             "Array size is too large.".into(),
             "The array size must fit in a unsigned 32-bit integer.".into(),
+            None,
+            span,
+        )
+    })
+}
+
+fn check_native_vector_element_count(
+    element_count: Option<u64>,
+    span: Span,
+) -> Result<u32, CompilationIssue> {
+    let element_count: u64 = element_count.ok_or_else(|| {
+        CompilationIssue::Error(
+            CompilationIssueCode::E0001,
+            "Expected constant integer value as native vector element count.".into(),
+            "You should pass a constant integer expression.".into(),
+            None,
+            span,
+        )
+    })?;
+
+    if element_count == 0 {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0001,
+            "Native vector element count must be greater than zero.".into(),
+            "You should pass a positive integer value.".into(),
+            None,
+            span,
+        ));
+    }
+
+    u32::try_from(element_count).map_err(|_| {
+        CompilationIssue::Error(
+            CompilationIssueCode::E0001,
+            "Native vector element count is too large.".into(),
+            "The element count must fit in a unsigned 32-bit integer.".into(),
             None,
             span,
         )

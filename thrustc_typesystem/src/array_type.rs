@@ -95,9 +95,10 @@ impl TypeArrayEntensions for Type {
             Type::Array { .. } => 22,
             Type::FixedArray { .. } => 23,
             Type::Struct { .. } => 24,
+            Type::NativeVector { .. } => 25,
 
-            Type::Void { .. } => 25,
-            Type::Unresolved { .. } => 26,
+            Type::Void { .. } => 26,
+            Type::Unresolved { .. } => 27,
         }
     }
 }

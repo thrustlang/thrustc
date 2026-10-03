@@ -73,6 +73,11 @@ impl TypeIsExtensions for Type {
     }
 
     #[inline(always)]
+    fn is_native_vector_type(&self) -> bool {
+        matches!(self, Type::NativeVector { .. })
+    }
+
+    #[inline(always)]
     fn is_array_type_with_inference(&self) -> bool {
         matches!(
             self,
@@ -207,9 +212,10 @@ impl TypeIsExtensions for Type {
             Type::Array { .. } => 22,
             Type::FixedArray { .. } => 23,
             Type::Struct { .. } => 24,
+            Type::NativeVector { .. } => 25,
 
-            Type::Void { .. } => 25,
-            Type::Unresolved { .. } => 26,
+            Type::Void { .. } => 26,
+            Type::Unresolved { .. } => 27,
         }
     }
 }
@@ -238,6 +244,7 @@ impl TypeExtensions for Type {
     fn is_value(&self) -> bool {
         self.is_numeric_type()
             || self.is_fixed_array_type()
+            || self.is_native_vector_type()
             || self.is_struct_type()
             || self.is_const_value()
     }
@@ -248,7 +255,10 @@ impl TypeExtensions for Type {
             return inner.is_const_value();
         }
 
-        self.is_numeric_type() || self.is_fixed_array_type() || self.is_struct_type()
+        self.is_numeric_type()
+            || self.is_fixed_array_type()
+            || self.is_native_vector_type()
+            || self.is_struct_type()
     }
 
     #[inline]
@@ -270,6 +280,9 @@ impl TypeExtensions for Type {
                 base_type: element_type,
                 ..
             } => element_type.get_type_with_depth(base_depth - 1),
+            Type::NativeVector { element_type, .. } => {
+                element_type.get_type_with_depth(base_depth - 1)
+            }
             Type::Const(inner_type, ..) => inner_type.get_type_with_depth(base_depth - 1),
             Type::Ptr {
                 subtype: Some(inner_type),
@@ -379,6 +392,14 @@ impl Hash for Type {
                 base_type.hash(state);
                 infered_type.hash(state);
             }
+            Type::NativeVector {
+                element_type,
+                element_count,
+                ..
+            } => {
+                element_type.hash(state);
+                element_count.hash(state);
+            }
             Type::Fn {
                 parameter_types,
                 return_type,
@@ -466,6 +487,18 @@ impl PartialEq for Type {
                     base_type: from, ..
                 },
             ) => target == from,
+            (
+                Type::NativeVector {
+                    element_type: type_a,
+                    element_count: count_a,
+                    ..
+                },
+                Type::NativeVector {
+                    element_type: type_b,
+                    element_count: count_b,
+                    ..
+                },
+            ) => type_a == type_b && count_a == count_b,
             (Type::Const(target, ..), Type::Const(from, ..)) => target == from,
 
             (Type::Char { .. }, Type::Char { .. }) => true,
@@ -557,6 +590,13 @@ impl std::fmt::Display for Type {
             }
             Type::Array { base_type, .. } => {
                 write!(f, "array[{}]", base_type)
+            }
+            Type::NativeVector {
+                element_type,
+                element_count,
+                ..
+            } => {
+                write!(f, "NativeVector[{}; {}]", element_type, element_count)
             }
             Type::Struct {
                 name,

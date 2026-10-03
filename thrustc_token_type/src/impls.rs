@@ -89,6 +89,11 @@ impl TokenTypeExtensions for TokenType {
     }
 
     #[inline]
+    fn is_native_vector(&self) -> bool {
+        matches!(self, TokenType::NativeVector)
+    }
+
+    #[inline]
     fn is_ptr(&self) -> bool {
         matches!(self, TokenType::Ptr)
     }
@@ -140,6 +145,7 @@ impl TokenTypeExtensions for TokenType {
             || self.is_float()
             || self.is_bool()
             || self.is_array()
+            || self.is_native_vector()
             || self.is_ptr()
             || self.is_void()
             || self.is_address()
@@ -293,6 +299,7 @@ impl std::fmt::Display for TokenType {
             TokenType::Loop => write!(f, "loop"),
             TokenType::Mut => write!(f, "mut"),
             TokenType::New => write!(f, "new"),
+            TokenType::Native => write!(f, "native"),
             TokenType::Return => write!(f, "return"),
             TokenType::Struct => write!(f, "struct"),
             TokenType::True => write!(f, "true"),
@@ -318,6 +325,7 @@ impl std::fmt::Display for TokenType {
             TokenType::FPPC128 => write!(f, "fppc_128"),
             TokenType::Ptr => write!(f, "ptr"),
             TokenType::Array => write!(f, "array"),
+            TokenType::NativeVector => write!(f, "NativeVector"),
             TokenType::S8 => write!(f, "s8"),
             TokenType::S16 => write!(f, "s16"),
             TokenType::S32 => write!(f, "s32"),

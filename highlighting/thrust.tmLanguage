@@ -186,7 +186,7 @@
 					<key>name</key>
 					<string>keyword.operator.thrust</string>
 					<key>match</key>
-					<string>\b(as|deref|ref|address|addr|load|write|alloc|fixed|or|and)\b</string>
+					<string>\b(as|deref|ref|address|addr|load|write|alloc|fixed|native|or|and)\b</string>
 				</dict>
 				<dict>
 					<key>name</key>
@@ -214,7 +214,7 @@
 			<key>name</key>
 			<string>storage.type.thrust</string>
 <key>match</key>
-					<string>\b(s8|s16|s32|s64|ssize|u8|u16|u32|u64|u128|usize|f32|f64|f128|f80|fppc_128|bool|char|ptr|array|void|Fn|CString|CNString)\b</string>
+					<string>\b(s8|s16|s32|s64|ssize|u8|u16|u32|u64|u128|usize|f32|f64|f128|f80|fppc_128|bool|char|ptr|array|NativeVector|void|Fn|CString|CNString)\b</string>
 		</dict>
 		<key>builtins</key>
 		<dict>

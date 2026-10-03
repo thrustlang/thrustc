@@ -469,6 +469,14 @@ fn push_types(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     self::push_item(
         items,
         seen,
+        "NativeVector",
+        CompletionKind::TypeParameter,
+        "type",
+        Some("NativeVector[${1:f32}; ${2:4}]"),
+    );
+    self::push_item(
+        items,
+        seen,
         "Fn",
         CompletionKind::TypeParameter,
         "type",
@@ -2222,6 +2230,14 @@ fn push_expression_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) 
         CompletionKind::Keyword,
         "keyword",
         None,
+    );
+    self::push_item(
+        items,
+        seen,
+        "native",
+        CompletionKind::Keyword,
+        "keyword",
+        Some("native[$0]"),
     );
     self::push_item(
         items,

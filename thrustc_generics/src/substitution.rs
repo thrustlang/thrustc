@@ -91,6 +91,15 @@ pub fn substitute(ty: &Type, env: &TypeEnv) -> Type {
             metadata: metadata.clone(),
             span: *span,
         },
+        Type::NativeVector {
+            element_type,
+            element_count,
+            span,
+        } => Type::NativeVector {
+            element_type: std::boxed::Box::new(self::substitute(element_type, env)),
+            element_count: *element_count,
+            span: *span,
+        },
         Type::Fn {
             return_type,
             parameter_types,
@@ -198,6 +207,17 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
             span,
             id,
         } => Ast::FixedArray {
+            items: self::substitute_ast_list(items, env),
+            kind: self::substitute(&kind, env),
+            span,
+            id,
+        },
+        Ast::NativeVector {
+            items,
+            kind,
+            span,
+            id,
+        } => Ast::NativeVector {
             items: self::substitute_ast_list(items, env),
             kind: self::substitute(&kind, env),
             span,
@@ -1151,7 +1171,9 @@ fn collect_unresolved_ast_hints(node: &Ast<'_>, out: &mut std::collections::Hash
                 self::collect_unresolved_ast_hints(arg, out);
             }
         }
-        Ast::FixedArray { items, .. } | Ast::Array { items, .. } => {
+        Ast::FixedArray { items, .. }
+        | Ast::NativeVector { items, .. }
+        | Ast::Array { items, .. } => {
             for item in items.iter() {
                 self::collect_unresolved_ast_hints(item, out);
             }
@@ -1424,7 +1446,9 @@ fn collect_unresolved_builtin_hints(
             self::collect_unresolved_ast_hints(dst, out);
             self::collect_unresolved_ast_hints(size, out);
         }
-        AstBuiltin::AtomicRMW { destination, value, .. } => {
+        AstBuiltin::AtomicRMW {
+            destination, value, ..
+        } => {
             self::collect_unresolved_ast_hints(destination, out);
             self::collect_unresolved_ast_hints(value, out);
         }
@@ -1483,12 +1507,16 @@ pub fn collect_unresolved_type_hints(ty: &Type, out: &mut std::collections::Hash
             }
         }
         Type::FixedArray { base_type, .. } => self::collect_unresolved_type_hints(base_type, out),
+        Type::NativeVector { element_type, .. } => {
+            self::collect_unresolved_type_hints(element_type, out)
+        }
         Type::Array {
             base_type,
             infered_type,
             ..
         } => {
             self::collect_unresolved_type_hints(base_type, out);
+
             if let Some((inner, _)) = infered_type {
                 self::collect_unresolved_type_hints(inner, out);
             }
@@ -1499,6 +1527,7 @@ pub fn collect_unresolved_type_hints(ty: &Type, out: &mut std::collections::Hash
             ..
         } => {
             self::collect_unresolved_type_hints(return_type, out);
+
             for parameter in parameter_types.iter() {
                 self::collect_unresolved_type_hints(parameter, out);
             }

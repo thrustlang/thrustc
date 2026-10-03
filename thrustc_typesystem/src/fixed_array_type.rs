@@ -82,10 +82,11 @@ impl TypeFixedArrayEntensions for Type {
             Type::Array { .. } => 21,
             Type::FixedArray { .. } => 22,
             Type::Struct { .. } => 23,
+            Type::NativeVector { .. } => 24,
 
-            Type::Fn { .. } => 24,
-            Type::Void { .. } => 25,
-            Type::Unresolved { .. } => 26,
+            Type::Fn { .. } => 25,
+            Type::Void { .. } => 26,
+            Type::Unresolved { .. } => 27,
         }
     }
 }

@@ -297,6 +297,15 @@ pub fn generate_type<'ctx>(
             array_type.array_type(*size).into()
         }
 
+        Type::NativeVector {
+            element_type,
+            element_count,
+            ..
+        } => {
+            let vector_type: BasicTypeEnum = self::generate_type(context, element_type);
+            self::generate_native_vector_type(context, vector_type, *element_count, kind.get_span())
+        }
+
         any => abort::abort_codegen(
             context,
             &format!("Failed to compile '{}' as a type!", any),
@@ -397,10 +406,40 @@ pub fn generate_dereference_type<'ctx>(
             array_type.array_type(*size).into()
         }
 
+        Type::NativeVector {
+            element_type,
+            element_count,
+            ..
+        } => {
+            let vector_type: BasicTypeEnum = self::generate_dereference_type(context, element_type);
+            self::generate_native_vector_type(context, vector_type, *element_count, kind.get_span())
+        }
+
         any => abort::abort_codegen(
             context,
             &format!("Failed to compile '{}' as a type!", any),
             any.get_span(),
+            PathBuf::from(file!()),
+            line!(),
+        ),
+    }
+}
+
+fn generate_native_vector_type<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    element_type: BasicTypeEnum<'ctx>,
+    element_count: u32,
+    span: Span,
+) -> BasicTypeEnum<'ctx> {
+    match element_type {
+        BasicTypeEnum::FloatType(ty) => ty.vec_type(element_count).into(),
+        BasicTypeEnum::IntType(ty) => ty.vec_type(element_count).into(),
+        BasicTypeEnum::PointerType(ty) => ty.vec_type(element_count).into(),
+
+        any => abort::abort_codegen(
+            context,
+            &format!("Failed to compile '{:?}' as a native vector element type!", any),
+            span,
             PathBuf::from(file!()),
             line!(),
         ),

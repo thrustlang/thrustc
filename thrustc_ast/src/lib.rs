@@ -112,6 +112,14 @@ pub enum Ast<'ast> {
         id: NodeId,
     },
 
+    // Native LLVM IR Vector
+    NativeVector {
+        items: std::vec::Vec<Ast<'ast>>,
+        kind: Type,
+        span: Span,
+        id: NodeId,
+    },
+
     // Array
     Array {
         items: std::vec::Vec<Ast<'ast>>,

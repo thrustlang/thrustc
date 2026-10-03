@@ -31,6 +31,7 @@ pub trait TokenTypeExtensions {
     fn is_void(&self) -> bool;
     fn is_bool(&self) -> bool;
     fn is_array(&self) -> bool;
+    fn is_native_vector(&self) -> bool;
     fn is_ptr(&self) -> bool;
     fn is_float(&self) -> bool;
     fn is_const(&self) -> bool;

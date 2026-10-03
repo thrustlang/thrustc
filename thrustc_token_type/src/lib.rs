@@ -158,6 +158,7 @@ pub enum TokenType {
     Static,
     New,
     Fixed,
+    Native,
     Import,
     ImportC,
     Only,
@@ -251,6 +252,7 @@ pub enum TokenType {
     Void,
     Addr,
     Array,
+    NativeVector,
 
     FnRef,
 

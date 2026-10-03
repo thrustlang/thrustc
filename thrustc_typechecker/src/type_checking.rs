@@ -289,6 +289,36 @@ pub fn check_type_together(
         }
 
         (
+            Type::NativeVector {
+                element_type: target,
+                element_count: target_count,
+                ..
+            },
+            Type::NativeVector {
+                element_type: provided,
+                element_count: provided_count,
+                ..
+            },
+            None,
+        ) => {
+            if target_count != provided_count {
+                return Err(error);
+            }
+
+            self::check_type_together(
+                target,
+                provided,
+                None,
+                None,
+                metadata,
+                span,
+                control_context,
+            )?;
+
+            Ok(())
+        }
+
+        (
             Type::Ptr { subtype: None, .. },
             Type::Ptr { subtype: None, .. },
             Some(TokenType::EqEq | TokenType::BangEq) | None,

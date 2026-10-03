@@ -22,7 +22,7 @@ use thrustc_ast::{Ast, ast_metadata::IndexMetadata, traits::AstCodeLocation};
 use thrustc_code_location::Span;
 use thrustc_typesystem::{
     Type,
-    traits::{IndexExtensions, InfererTypeExtensions, TypePointerExtensions},
+    traits::{IndexExtensions, InfererTypeExtensions, TypeIsExtensions, TypePointerExtensions},
 };
 
 use crate::{
@@ -38,6 +38,32 @@ pub fn compile<'ctx>(
     index: &'ctx Ast<'ctx>,
     metadata: &IndexMetadata,
 ) -> BasicValueEnum<'ctx> {
+    if source.get_type_for_llvm().is_native_vector_type() {
+        let span: Span = index.get_span();
+        let index_type: Type = Type::U32 { span };
+
+        context.add_codegen_location(CodeGenLocation::RValue);
+
+        let vector: BasicValueEnum = codegen::compile_as_value(context, source, None);
+        let index: IntValue = codegen::compile_as_value(context, index, Some(&index_type))
+            .into_int_value();
+
+        context.pop_current_codegen_location();
+
+        return context
+            .get_llvm_builder()
+            .build_extract_element(vector.into_vector_value(), index, "native.vector.extract")
+            .unwrap_or_else(|_| {
+                crate::abort::abort_codegen(
+                    context,
+                    "Failed to extract native vector element.",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+    }
+
     context.add_codegen_location(CodeGenLocation::RValue);
     let source_value: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, source, None);
     context.pop_current_codegen_location();

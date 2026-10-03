@@ -1562,6 +1562,29 @@ fn generate_type<'abi>(
             .array_type(*size)
             .into(),
 
+        Type::NativeVector {
+            element_type,
+            element_count,
+            ..
+        } => {
+            let vector_type: BasicTypeEnum =
+                self::generate_type(llvm_context, abi_context, element_type);
+
+            match vector_type {
+                BasicTypeEnum::FloatType(ty) => ty.vec_type(*element_count).into(),
+                BasicTypeEnum::IntType(ty) => ty.vec_type(*element_count).into(),
+                BasicTypeEnum::PointerType(ty) => ty.vec_type(*element_count).into(),
+
+                any => abort::abort_codegen(
+                    abi_context,
+                    &format!("Failed to compile '{:?}' as a native vector element type!", any),
+                    ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                ),
+            }
+        }
+
         any => abort::abort_codegen(
             abi_context,
             &format!("Failed to compile '{}' as a WebAssembly ABI type.", any),

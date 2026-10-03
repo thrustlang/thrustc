@@ -57,6 +57,7 @@ fn build_type_inner(ctx: &mut dyn TypeParseContext) -> Result<Type, ()> {
 
             match tk_kind {
                 _ if tk_kind.is_array() => self::parse_array_type(ctx, span),
+                _ if tk_kind.is_native_vector() => self::parse_native_vector_type(ctx, span),
                 _ if tk_kind.is_const() => self::parse_constant_type(ctx, span),
                 _ if tk_kind.is_fn_ref() => self::parse_anonymous_function_type(ctx, span),
 
@@ -371,6 +372,53 @@ fn parse_array_type(ctx: &mut dyn TypeParseContext, span: Span) -> Result<Type, 
     };
 
     Ok(array_ty)
+}
+
+fn parse_native_vector_type(ctx: &mut dyn TypeParseContext, span: Span) -> Result<Type, ()> {
+    ctx.consume(TokenType::LBracket)?;
+
+    let element_type: Type = self::build_type(ctx)?;
+
+    ctx.consume(TokenType::SemiColon)?;
+
+    let element_count_expr: Ast = ctx.parse_constant_expr()?;
+
+    let element_count: u64 = match thrustc_compile_time::fold(&element_count_expr) {
+        Some(BuiltinValue::Integer(value)) => value,
+        _ => {
+            ctx.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Expected constant integer value as native vector element count.".into(),
+                "You should pass a constant integer expression.".into(),
+                None,
+                span,
+            ));
+
+            0
+        }
+    };
+
+    ctx.consume(TokenType::RBracket)?;
+
+    if element_count == 0 {
+        ctx.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0001,
+            "Native vector element count must be greater than zero.".into(),
+            "You should pass a positive integer value.".into(),
+            None,
+            span,
+        ));
+
+        return Err(());
+    }
+
+    let element_count: u32 = u32::try_from(element_count).map_err(|_| ())?;
+
+    Ok(Type::NativeVector {
+        element_type: element_type.into(),
+        element_count,
+        span,
+    })
 }
 
 fn parse_pointer_type(

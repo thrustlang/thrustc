@@ -147,6 +147,13 @@ pub enum Type {
         span: Span,
     },
 
+    // Native LLVM IR Vector Type
+    NativeVector {
+        element_type: std::boxed::Box<Type>,
+        element_count: u32,
+        span: Span,
+    },
+
     // Function Referece
     Fn {
         return_type: std::boxed::Box<Type>,

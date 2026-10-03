@@ -1,0 +1,7 @@
+fn consume(value: NativeVector[s32; 4]) void {
+}
+
+fn main() s32 @public {
+    consume(native[1, 2, 3, 4]);
+    return 0;
+}

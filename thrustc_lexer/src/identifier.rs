@@ -169,6 +169,7 @@ lazy_static! {
         types.insert("char", TokenType::Char);
         types.insert("ptr", TokenType::Ptr);
         types.insert("array", TokenType::Array);
+        types.insert("NativeVector", TokenType::NativeVector);
         types.insert("void", TokenType::Void);
         types.insert("Fn", TokenType::FnRef);
 

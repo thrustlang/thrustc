@@ -1,0 +1,8 @@
+fn consume(value: NativeVector[f32; 4]) void {
+}
+
+fn main() s32 @public {
+    var value: NativeVector[f32; 4] = native[1.0, 2.0, 3.0, 4.0];
+    consume(value);
+    return 0;
+}

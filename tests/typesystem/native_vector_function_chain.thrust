@@ -1,0 +1,11 @@
+fn make() NativeVector[f32; 4] {
+    return native[1.0, 2.0, 3.0, 4.0];
+}
+
+fn consume(value: NativeVector[f32; 4]) void {
+}
+
+fn main() s32 @public {
+    consume(make());
+    return 0;
+}

@@ -33,6 +33,9 @@ impl AstLiteralExtensions for Ast<'_> {
             Ast::FixedArray { items, .. } => {
                 items.iter().all(|item| item.is_totaly_literal_value())
             }
+            Ast::NativeVector { items, .. } => {
+                items.iter().all(|item| item.is_totaly_literal_value())
+            }
             Ast::Array { items, .. } => items.iter().all(|item| item.is_totaly_literal_value()),
 
             Ast::EnumValue { value, .. } => value.is_totaly_literal_value(),
@@ -108,6 +111,7 @@ impl AstLiteralExtensions for Ast<'_> {
                 | Ast::NullPtr { .. }
                 | Ast::Array { .. }
                 | Ast::FixedArray { .. }
+                | Ast::NativeVector { .. }
         )
     }
 

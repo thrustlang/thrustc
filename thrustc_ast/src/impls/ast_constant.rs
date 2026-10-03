@@ -40,6 +40,7 @@ impl AstConstantExtensions for Ast<'_> {
             Ast::Reference { metadata, .. } => metadata.is_constant_ref(),
             Ast::As { metadata, .. } => metadata.is_constant(),
             Ast::FixedArray { items, .. } => items.iter().all(|item| item.is_constant_value()),
+            Ast::NativeVector { items, .. } => items.iter().all(|item| item.is_constant_value()),
             Ast::Array { items, .. } => items.iter().all(|item| item.is_constant_value()),
             Ast::Constructor { data, .. } => {
                 data.iter().all(|(_, node, ..)| node.is_constant_value())

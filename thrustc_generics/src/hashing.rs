@@ -143,6 +143,19 @@ fn type_fingerprint(ty: &Type, output: &mut String) {
 
             output.push(']');
         }
+        Type::NativeVector {
+            element_type,
+            element_count,
+            ..
+        } => {
+            output.push_str("NativeVector[");
+
+            self::type_fingerprint(element_type, output);
+
+            output.push(';');
+            output.push_str(&element_count.to_string());
+            output.push(']');
+        }
         Type::Fn {
             return_type,
             parameter_types,
