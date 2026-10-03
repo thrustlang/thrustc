@@ -785,7 +785,13 @@ fn push_builtins(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
     }
 }
 
-fn try_import_completion(items: &mut Vec<Value>, seen: &mut HashSet<String>, prefix: &str) -> bool {
+fn try_import_completion(
+    items: &mut Vec<Value>,
+    seen: &mut HashSet<String>,
+    uri: &str,
+    document_analysis: Option<&DocumentAnalysis>,
+    prefix: &str,
+) -> bool {
     let line: &str = prefix.trim_start();
     let Some(source) = line.strip_prefix("import") else {
         return false;
@@ -796,10 +802,6 @@ fn try_import_completion(items: &mut Vec<Value>, seen: &mut HashSet<String>, pre
     }
 
     let mut source: &str = source.trim_start();
-
-    if source.starts_with('"') {
-        return true;
-    }
 
     if let Some(only_index) = source.find(" only ") {
         let only_source: &str = &source[only_index + " only ".len()..];
@@ -814,6 +816,19 @@ fn try_import_completion(items: &mut Vec<Value>, seen: &mut HashSet<String>, pre
         }
 
         let module_source: &str = source[..only_index].trim();
+
+        if module_source.starts_with('"') {
+            self::push_local_import_only_symbols(
+                items,
+                seen,
+                uri,
+                document_analysis,
+                module_source,
+                after_open,
+            );
+
+            return true;
+        }
 
         if !module_source.starts_with("std") {
             return true;
@@ -873,6 +888,12 @@ fn try_import_completion(items: &mut Vec<Value>, seen: &mut HashSet<String>, pre
                 None,
             );
         }
+
+        return true;
+    }
+
+    if source.starts_with('"') {
+        self::push_local_import_path_completion(items, seen, uri, source);
 
         return true;
     }
@@ -939,6 +960,205 @@ fn try_import_completion(items: &mut Vec<Value>, seen: &mut HashSet<String>, pre
     }
 
     true
+}
+
+fn push_local_import_path_completion(
+    items: &mut Vec<Value>,
+    seen: &mut HashSet<String>,
+    uri: &str,
+    source: &str,
+) {
+    let Some(path_start) = source.find('"') else {
+        return;
+    };
+    let partial_path: &str = &source[path_start.saturating_add(1)..];
+
+    if partial_path.contains('"') {
+        return;
+    }
+
+    let document_path: std::path::PathBuf = url::Url::parse(uri)
+        .ok()
+        .and_then(|uri| uri.to_file_path().ok())
+        .unwrap_or_else(|| std::path::PathBuf::from(uri));
+    let base_dir: std::path::PathBuf = document_path.parent().map_or_else(
+        || std::path::PathBuf::from("."),
+        std::path::Path::to_path_buf,
+    );
+    let partial: std::path::PathBuf = std::path::PathBuf::from(partial_path);
+    let relative_dir: std::path::PathBuf = partial
+        .parent()
+        .map_or_else(std::path::PathBuf::new, std::path::Path::to_path_buf);
+    let file_prefix: String = partial
+        .file_name()
+        .map_or_else(String::new, |name| name.to_string_lossy().to_string());
+    let search_dir: std::path::PathBuf = base_dir.join(&relative_dir);
+    let Ok(entries) = std::fs::read_dir(search_dir) else {
+        return;
+    };
+
+    for entry in entries.flatten() {
+        let path: std::path::PathBuf = entry.path();
+        let Some(name) = path
+            .file_name()
+            .map(|name| name.to_string_lossy().to_string())
+        else {
+            continue;
+        };
+
+        if !file_prefix.is_empty() && !name.starts_with(&file_prefix) {
+            continue;
+        }
+
+        if path.is_dir() {
+            let label: String = if relative_dir.as_os_str().is_empty() {
+                format!("{}/", name)
+            } else {
+                format!("{}/{}", relative_dir.to_string_lossy(), name)
+            };
+
+            self::push_item(
+                items,
+                seen,
+                &label,
+                CompletionKind::Module,
+                "directory",
+                None,
+            );
+            continue;
+        }
+
+        if !path.extension().is_some_and(|extension| {
+            thrustc_constants::COMPILER_OWN_FILE_EXTENSIONS
+                .contains(&extension.to_str().unwrap_or_default())
+        }) {
+            continue;
+        }
+
+        let label: String = if relative_dir.as_os_str().is_empty() {
+            name
+        } else {
+            format!("{}/{}", relative_dir.to_string_lossy(), name)
+        };
+
+        self::push_item(items, seen, &label, CompletionKind::Module, "file", None);
+    }
+}
+
+fn push_local_import_only_symbols(
+    items: &mut Vec<Value>,
+    seen: &mut HashSet<String>,
+    uri: &str,
+    document_analysis: Option<&DocumentAnalysis>,
+    module_source: &str,
+    after_open: &str,
+) {
+    let mut used: HashSet<String> = HashSet::with_capacity(8);
+    let mut partial: &str = after_open.trim();
+
+    if let Some(comma_index) = partial.rfind(',') {
+        for name in partial[..comma_index].split(',') {
+            let name: &str = name.trim();
+
+            if !name.is_empty() {
+                used.insert(name.to_string());
+            }
+        }
+
+        partial = partial[comma_index.saturating_add(1)..].trim();
+    }
+
+    let import_path: &str = module_source.trim().trim_matches('"');
+    let module_name: String = std::path::Path::new(import_path)
+        .file_stem()
+        .map_or_else(String::new, |name| name.to_string_lossy().to_string());
+    let mut symbols: Vec<Symbol> = Vec::with_capacity(16);
+
+    if let Some(document_analysis) = document_analysis {
+        for module in document_analysis.get_modules() {
+            if module.get_name() != module_name {
+                continue;
+            }
+
+            for symbol in module.get_symbols() {
+                symbols.push(symbol.clone());
+            }
+
+            break;
+        }
+    }
+
+    if symbols.is_empty() {
+        symbols = self::local_import_symbols_from_file(uri, import_path);
+    }
+
+    for symbol in symbols {
+        if used.contains(symbol.get_name()) {
+            continue;
+        }
+
+        if !partial.is_empty() && !symbol.get_name().starts_with(partial) {
+            continue;
+        }
+
+        self::push_symbol(items, seen, &symbol);
+    }
+}
+
+fn local_import_symbols_from_file(uri: &str, import_path: &str) -> Vec<Symbol> {
+    let mut symbols: Vec<Symbol> = Vec::with_capacity(16);
+    let document_path: std::path::PathBuf = url::Url::parse(uri)
+        .ok()
+        .and_then(|uri| uri.to_file_path().ok())
+        .unwrap_or_else(|| std::path::PathBuf::from(uri));
+    let name: String = document_path.file_name().map_or_else(
+        || "memory.thrust".to_string(),
+        |name| name.to_string_lossy().to_string(),
+    );
+    let base_name: String = document_path.file_stem().map_or_else(
+        || "memory".to_string(),
+        |name| name.to_string_lossy().to_string(),
+    );
+    let content: String = format!("import \"{}\";", import_path);
+    let options: thrustc_options::CompilerOptions = thrustc_options::CompilerOptions::new();
+    let target_info: thrustc_typesystem::type_layout::TargetInfo =
+        thrustc_typesystem::type_layout::TargetInfo::new(
+            options
+                .get_llvm_backend()
+                .get_target()
+                .get_normalized_target_triple()
+                .clone(),
+        );
+    let builtins: thrustc_builtins::BuiltinRegistry =
+        thrustc_builtins::default_registry(target_info);
+    let file: thrustc_options::CompilationUnit =
+        thrustc_options::CompilationUnit::new(name, document_path, content, base_name);
+    let Ok(tokens) = thrustc_lexer::Lexer::lex_for_preprocessor(&file, &options) else {
+        return symbols;
+    };
+    let Ok(directives) = thrustc_directive::apply_file_directives(&tokens) else {
+        return symbols;
+    };
+    let file_options: thrustc_directive::FileOptions =
+        thrustc_directive::FileOptions::new(&options, &directives);
+    let mut preprocessor: thrustc_preprocessor::Preprocessor =
+        thrustc_preprocessor::Preprocessor::new();
+    let Ok(modules) = preprocessor.generate_modules(&tokens, &file_options, &file, &builtins)
+    else {
+        return symbols;
+    };
+
+    for module in modules {
+        for symbol in module.get_symbols() {
+            let Some(symbol) = self::convert_import_symbol(symbol) else {
+                continue;
+            };
+
+            symbols.push(symbol);
+        }
+    }
+
+    symbols
 }
 
 pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> Vec<Value> {
@@ -1017,7 +1237,7 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
     let trimmed: &str = prefix.trim_end();
     let last_word: Option<&str> = trimmed.rsplit(char::is_whitespace).next();
 
-    if self::try_import_completion(&mut items, &mut seen, &prefix) {
+    if self::try_import_completion(&mut items, &mut seen, uri, document_analysis, &prefix) {
         return items;
     }
 
@@ -1070,12 +1290,14 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
             self::push_top_level_keywords(&mut items, &mut seen);
             self::push_type_symbols(&mut items, &mut seen, document_analysis);
             self::push_global_symbols(&mut items, &mut seen, document_analysis);
+            self::push_only_imported_symbols(&mut items, &mut seen, document_analysis);
             self::push_top_level_templates(&mut items, &mut seen);
 
             return items;
         }
 
         self::push_visible_symbols(&mut items, &mut seen, document_analysis, line);
+        self::push_only_imported_symbols(&mut items, &mut seen, document_analysis);
         self::push_statement_keywords(&mut items, &mut seen);
         self::push_expression_keywords(&mut items, &mut seen);
         self::push_builtins(&mut items, &mut seen);
@@ -1433,22 +1655,6 @@ fn push_top_level_templates(items: &mut Vec<Value>, seen: &mut HashSet<String>) 
         CompletionKind::Snippet,
         "template",
         Some("static ${1:name}: ${2:type} = ${3:value};"),
-    );
-    self::push_item(
-        items,
-        seen,
-        "import-as",
-        CompletionKind::Snippet,
-        "template",
-        Some("import ${1:std::mem} as ${2:mem};"),
-    );
-    self::push_item(
-        items,
-        seen,
-        "import-only",
-        CompletionKind::Snippet,
-        "template",
-        Some("import ${1:std::mem} only { ${2:symbol} };"),
     );
     self::push_item(
         items,
@@ -1871,6 +2077,10 @@ fn try_module_completion(
             continue;
         };
 
+        if module.is_only_restricted() {
+            return true;
+        }
+
         for submodule in module.get_submodules() {
             self::push_item(
                 items,
@@ -1938,6 +2148,10 @@ fn try_module_type_completion(
         let Some(module) = self::find_imported_module(module, &receiver) else {
             continue;
         };
+
+        if module.is_only_restricted() {
+            return true;
+        }
 
         for symbol in module.get_symbols() {
             let kind: CompletionKind = symbol.get_kind();
@@ -2591,6 +2805,22 @@ fn push_global_symbols(
         }
 
         self::push_symbol(items, seen, symbol);
+    }
+}
+
+fn push_only_imported_symbols(
+    items: &mut Vec<Value>,
+    seen: &mut HashSet<String>,
+    document_analysis: &DocumentAnalysis,
+) {
+    for module in document_analysis.get_modules() {
+        if !module.is_only_restricted() {
+            continue;
+        }
+
+        for symbol in module.get_symbols() {
+            self::push_symbol(items, seen, symbol);
+        }
     }
 }
 

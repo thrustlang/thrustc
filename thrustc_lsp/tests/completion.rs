@@ -2,6 +2,15 @@ use serde_json::Value;
 use std::io::Write;
 
 fn complete_items(text: &str, line: u64, character: u64) -> Vec<Value> {
+    self::complete_items_with_files(text, &[], line, character)
+}
+
+fn complete_items_with_files(
+    text: &str,
+    extra_files: &[(&str, &str)],
+    line: u64,
+    character: u64,
+) -> Vec<Value> {
     let test_id: u128 = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
@@ -15,6 +24,16 @@ fn complete_items(text: &str, line: u64, character: u64) -> Vec<Value> {
     let document_path: std::path::PathBuf = test_root.join("main.thrust");
 
     std::fs::create_dir_all(&temp_home).unwrap();
+
+    for (relative_path, content) in extra_files {
+        let path: std::path::PathBuf = test_root.join(relative_path);
+
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+
+        std::fs::write(path, content).unwrap();
+    }
 
     let uri: String = format!("file://{}", document_path.display());
     let messages: [Value; 3] = [
@@ -149,7 +168,27 @@ fn complete_labels(text: &str, line: u64, character: u64) -> Vec<String> {
     let items: Vec<Value> = self::complete_items(text, line, character);
     let mut labels: Vec<String> = Vec::with_capacity(items.len());
 
-    for item in items {
+    for item in &items {
+        let Some(label) = item.get("label").and_then(Value::as_str) else {
+            continue;
+        };
+
+        labels.push(label.to_string());
+    }
+
+    labels
+}
+
+fn complete_labels_with_files(
+    text: &str,
+    extra_files: &[(&str, &str)],
+    line: u64,
+    character: u64,
+) -> Vec<String> {
+    let items: Vec<Value> = self::complete_items_with_files(text, extra_files, line, character);
+    let mut labels: Vec<String> = Vec::with_capacity(items.len());
+
+    for item in &items {
         let Some(label) = item.get("label").and_then(Value::as_str) else {
             continue;
         };
@@ -185,14 +224,25 @@ fn completes_std_module_alias() {
 }
 
 #[test]
-fn completes_std_module_only_import() {
+fn std_only_import_suggests_direct_symbol() {
+    let labels: Vec<String> = self::complete_labels(
+        "import std::mem only { allocateMemory };\n\nfn main() s32 {\n    \n}\n",
+        3,
+        4,
+    );
+
+    assert!(labels.contains(&"allocateMemory".to_string()));
+}
+
+#[test]
+fn std_only_import_does_not_complete_qualified_module() {
     let labels: Vec<String> = self::complete_labels(
         "import std::mem only { allocateMemory };\n\nfn main() s32 {\n    mem::\n}\n",
         3,
         9,
     );
 
-    assert_eq!(labels, vec!["allocateMemory".to_string()]);
+    assert!(!labels.contains(&"allocateMemory".to_string()));
     assert!(!labels.contains(&"freeMemory".to_string()));
 }
 
@@ -448,7 +498,7 @@ fn completion_items_use_grouped_sort_text() {
     let mut found_for_loop: bool = false;
     let mut found_size_of_builtin: bool = false;
 
-    for item in items {
+    for item in &items {
         let label: &str = item.get("label").and_then(Value::as_str).unwrap_or("");
         let kind: u64 = item.get("kind").and_then(Value::as_u64).unwrap_or(0);
 
@@ -484,6 +534,10 @@ fn completion_items_use_grouped_sort_text() {
     assert!(found_for_keyword);
     assert!(found_for_loop);
     assert!(found_size_of_builtin);
+    assert!(!items.iter().any(|item| {
+        item.get("label").and_then(Value::as_str) == Some("import-as")
+            || item.get("label").and_then(Value::as_str) == Some("import-only")
+    }));
 }
 
 #[test]
@@ -545,4 +599,100 @@ fn completion_ignores_fake_declarations_in_comments_and_strings() {
 
     assert!(!labels.contains(&"fakeFunction".to_string()));
     assert!(!labels.contains(&"fakeValue".to_string()));
+}
+
+#[test]
+fn import_path_completion_suggests_local_thrust_file() {
+    let labels: Vec<String> = self::complete_labels_with_files(
+        "import \"he",
+        &[(
+            "hello.thrust",
+            "fn makeValue() s32 @public {\n    return 1;\n}\n",
+        )],
+        0,
+        10,
+    );
+
+    assert!(labels.contains(&"hello.thrust".to_string()));
+}
+
+#[test]
+fn local_module_completion_suggests_public_symbols() {
+    let module: &str = "fn makeValue() s32 @public {\n    return 1;\n}\nconst LIMIT: s32 @public = 10;\nstatic mut counter: s32 @public @extern(\"counter\") = 1;\ntype Count @public = s32;\nstruct Box @public {\n    value: s32,\n}\nenum State @public {\n    Ready: s32 = 0;\n}\n";
+    let labels: Vec<String> = self::complete_labels_with_files(
+        "import \"hello.thrust\";\n\nfn main() s32 {\n    hello::\n}\n",
+        &[("hello.thrust", module)],
+        3,
+        11,
+    );
+
+    assert!(labels.contains(&"makeValue".to_string()));
+    assert!(labels.contains(&"LIMIT".to_string()));
+    assert!(labels.contains(&"counter".to_string()));
+    assert!(labels.contains(&"Count".to_string()));
+    assert!(labels.contains(&"Box".to_string()));
+    assert!(labels.contains(&"State".to_string()));
+}
+
+#[test]
+fn local_module_alias_completion_suggests_public_symbols() {
+    let module: &str = "fn makeValue() s32 @public {\n    return 1;\n}\nconst LIMIT: s32 @public = 10;\ntype Count @public = s32;\nstruct Box @public {\n    value: s32,\n}\nenum State @public {\n    Ready: s32 = 0;\n}\n";
+    let labels: Vec<String> = self::complete_labels_with_files(
+        "import \"hello.thrust\" as h;\n\nfn main() s32 {\n    h::\n}\n",
+        &[("hello.thrust", module)],
+        3,
+        7,
+    );
+
+    assert!(labels.contains(&"makeValue".to_string()));
+    assert!(labels.contains(&"LIMIT".to_string()));
+    assert!(labels.contains(&"Count".to_string()));
+    assert!(labels.contains(&"Box".to_string()));
+    assert!(labels.contains(&"State".to_string()));
+}
+
+#[test]
+fn local_only_import_suggests_direct_symbol() {
+    let labels: Vec<String> = self::complete_labels_with_files(
+        "import \"hello.thrust\" only { makeValue };\n\nfn main() s32 {\n    \n}\n",
+        &[(
+            "hello.thrust",
+            "fn makeValue() s32 @public {\n    return 1;\n}\nfn other() s32 @public {\n    return 2;\n}\n",
+        )],
+        3,
+        4,
+    );
+
+    assert!(labels.contains(&"makeValue".to_string()));
+}
+
+#[test]
+fn local_only_import_does_not_complete_qualified_module() {
+    let labels: Vec<String> = self::complete_labels_with_files(
+        "import \"hello.thrust\" only { makeValue };\n\nfn main() s32 {\n    hello::\n}\n",
+        &[(
+            "hello.thrust",
+            "fn makeValue() s32 @public {\n    return 1;\n}\n",
+        )],
+        3,
+        11,
+    );
+
+    assert!(!labels.contains(&"makeValue".to_string()));
+}
+
+#[test]
+fn local_only_import_list_suggests_public_symbols() {
+    let labels: Vec<String> = self::complete_labels_with_files(
+        "import \"hello.thrust\" only { ",
+        &[(
+            "hello.thrust",
+            "fn makeValue() s32 @public {\n    return 1;\n}\nconst LIMIT: s32 @public = 10;\n",
+        )],
+        0,
+        30,
+    );
+
+    assert!(labels.contains(&"makeValue".to_string()));
+    assert!(labels.contains(&"LIMIT".to_string()));
 }

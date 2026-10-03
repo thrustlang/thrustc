@@ -87,6 +87,7 @@ pub struct ImportedModule {
     symbols: Vec<Symbol>,
     functions: Vec<Function>,
     submodules: Vec<ImportedModule>,
+    only_restricted: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -369,12 +370,14 @@ impl ImportedModule {
         symbols: Vec<Symbol>,
         functions: Vec<Function>,
         submodules: Vec<ImportedModule>,
+        only_restricted: bool,
     ) -> Self {
         Self {
             name,
             symbols,
             functions,
             submodules,
+            only_restricted,
         }
     }
 }
@@ -403,6 +406,13 @@ impl ImportedModule {
 
 impl ImportedModule {
     #[inline]
+    pub fn is_only_restricted(&self) -> bool {
+        self.only_restricted
+    }
+}
+
+impl ImportedModule {
+    #[inline]
     pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
@@ -420,6 +430,11 @@ impl ImportedModule {
     #[inline]
     pub fn set_submodules(&mut self, submodules: Vec<ImportedModule>) {
         self.submodules = submodules;
+    }
+
+    #[inline]
+    pub fn set_only_restricted(&mut self, only_restricted: bool) {
+        self.only_restricted = only_restricted;
     }
 }
 
@@ -812,6 +827,7 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
         if trimmed.starts_with("import ") {
             let source: &str = trimmed.trim_start_matches("import").trim();
             let source: &str = source.trim_end_matches(';').trim();
+            let has_only: bool = source.contains(" only ");
             let source: &str = source.split(" only ").next().unwrap_or(source);
             let source: &str = source.split(" as ").last().unwrap_or(source);
             let imported: String = source
@@ -821,7 +837,7 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
                 .trim()
                 .to_string();
 
-            if !imported.is_empty() {
+            if !imported.is_empty() && !has_only {
                 let mut symbol: Symbol = Symbol::new(
                     imported.clone(),
                     CompletionKind::Module,
@@ -1246,7 +1262,13 @@ fn convert_imported_module(module: &thrustc_preprocessor::module::Module) -> Imp
         module.get_name().to_string()
     };
 
-    ImportedModule::new(module_name, symbols, functions, submodules)
+    ImportedModule::new(
+        module_name,
+        symbols,
+        functions,
+        submodules,
+        module.get_only().is_some(),
+    )
 }
 
 fn parse_enum_values(lines: &[&str], start: usize, end: u64) -> Vec<Symbol> {
