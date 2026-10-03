@@ -1476,7 +1476,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "colored",
@@ -1500,11 +1500,11 @@ dependencies = [
 
 [[package]]
 name = "thrustc_abi"
-version = "0.2.2"
+version = "0.3.0"
 
 [[package]]
 name = "thrustc_ast"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "arbitrary",
  "clipboard",
@@ -1526,7 +1526,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_ast_external"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "arbitrary",
  "serde",
@@ -1537,7 +1537,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_ast_modificators"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "arbitrary",
  "serde",
@@ -1547,7 +1547,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_ast_verifier"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "thrustc_ast",
  "thrustc_attributes",
@@ -1564,7 +1564,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_atomic_ordering"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "arbitrary",
  "inkwell",
@@ -1573,7 +1573,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_attribute_checker"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "thrustc_ast",
@@ -1590,7 +1590,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_attributes"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "arbitrary",
@@ -1607,7 +1607,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_backends"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "inkwell",
@@ -1619,7 +1619,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_builtins"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "either",
@@ -1635,7 +1635,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_cli"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "colored",
@@ -1653,7 +1653,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_code_location"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "arbitrary",
  "serde",
@@ -1661,7 +1661,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_compile_time"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "thrustc_ast",
  "thrustc_code_location",
@@ -1671,14 +1671,14 @@ dependencies = [
 
 [[package]]
 name = "thrustc_constants"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "const_format",
 ]
 
 [[package]]
 name = "thrustc_core"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "clipboard",
@@ -1716,7 +1716,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_diagnostician"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "colored",
  "fastrand 2.4.1",
@@ -1729,7 +1729,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_directive"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "inkwell",
  "thrustc_backends",
@@ -1742,7 +1742,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_entities"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "smallvec",
@@ -1756,7 +1756,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_errors"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "colored",
@@ -1768,7 +1768,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_errors_macros"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1777,7 +1777,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_general_analyzer"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "thrustc_ast",
  "thrustc_atomic_ordering",
@@ -1795,7 +1795,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_generics"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "thrustc_ast",
@@ -1806,7 +1806,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_generics_monomorphization"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "thrustc_ast",
  "thrustc_attributes",
@@ -1827,7 +1827,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_heap_allocator"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "thrustc_constants",
  "thrustc_logging",
@@ -1835,7 +1835,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_import_synthesis"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "thrustc_ast",
  "thrustc_ast_modificators",
@@ -1855,7 +1855,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_lexer"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "clipboard",
@@ -1875,7 +1875,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_linter"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "thrustc_ast",
@@ -1895,7 +1895,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_abi"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "inkwell",
@@ -1917,7 +1917,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_abi_representation"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "inkwell",
@@ -1928,7 +1928,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_attribute_architecture"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "inkwell",
  "thrustc_llvm_call_conventions",
@@ -1937,7 +1937,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_attributes"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "clang",
@@ -1950,7 +1950,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_call_conventions"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "lazy_static 1.5.0",
@@ -1958,7 +1958,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_call_conventions_checker"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "thrustc_ast",
  "thrustc_attributes",
@@ -1974,7 +1974,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_codegen"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "clang",
@@ -2012,7 +2012,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_codegen_atomic"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "inkwell",
@@ -2026,7 +2026,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_codegen_variatic"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "inkwell",
@@ -2042,7 +2042,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_compiler_intrinsic_checker"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "inkwell",
@@ -2055,7 +2055,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_linker_driver"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "thrustc_backends",
  "thrustc_llvm_target_triple",
@@ -2066,7 +2066,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_nvidia_cuda_abi"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "either",
@@ -2084,7 +2084,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_system_v_abi"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "either",
@@ -2102,7 +2102,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_target_triple"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "inkwell",
@@ -2110,7 +2110,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_llvm_webassembly_abi"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "either",
@@ -2128,7 +2128,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_logging"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "colored",
  "thrustc_constants",
@@ -2136,7 +2136,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_lsp"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "rustversion",
  "serde_json",
@@ -2157,7 +2157,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_options"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "clang",
  "inkwell",
@@ -2175,7 +2175,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_parser"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "either",
@@ -2213,14 +2213,14 @@ dependencies = [
 
 [[package]]
 name = "thrustc_parser_context"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "thrustc_typesystem",
 ]
 
 [[package]]
 name = "thrustc_parser_external_table"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "either",
@@ -2239,7 +2239,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_parser_table"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "either",
@@ -2260,7 +2260,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_preprocessor"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "thrustc_ast",
@@ -2291,7 +2291,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_reader"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "bytecount",
@@ -2302,7 +2302,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_scoper"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "thrustc_ast",
@@ -2315,7 +2315,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_semantic_analysis"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "either",
  "thrustc_ast",
@@ -2331,7 +2331,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_std"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "include_dir",
  "thrustc_constants",
@@ -2340,7 +2340,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_thread_mode"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "arbitrary",
  "inkwell",
@@ -2349,7 +2349,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_token"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "arbitrary",
  "serde",
@@ -2361,7 +2361,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_token_type"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "arbitrary",
  "serde",
@@ -2369,7 +2369,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_typechecker"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "thrustc_ast",
@@ -2391,7 +2391,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_typesystem"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "arbitrary",
@@ -2404,7 +2404,7 @@ dependencies = [
 
 [[package]]
 name = "thrustc_utils"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "fastrand 2.4.1",
  "walkdir",
