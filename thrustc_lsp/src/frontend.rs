@@ -32,7 +32,190 @@ pub fn diagnostics(uri: &str, text: &str) -> Vec<Value> {
     let mut diagnostics: Vec<Value> = self::compiler_diagnostics(uri, text);
 
     if diagnostics.is_empty() {
-        diagnostics = self::lightweight_diagnostics(text);
+        let mut stack: Vec<(char, u64, u64)> = Vec::with_capacity(32);
+        let mut block_comment_start: Option<(u64, u64)> = None;
+        let mut in_string: bool = false;
+        let mut in_char: bool = false;
+        let mut string_start: (u64, u64) = (0, 0);
+        let mut char_start: (u64, u64) = (0, 0);
+
+        for (line_index, line) in text.lines().enumerate() {
+            let line_number: u64 = line_index.try_into().unwrap_or(u64::MAX);
+            let chars: Vec<char> = line.chars().collect();
+            let mut character_index: usize = 0;
+
+            while character_index < chars.len() {
+                let ch: char = chars[character_index];
+                let next: char = chars
+                    .get(character_index.saturating_add(1))
+                    .copied()
+                    .unwrap_or('\0');
+                let character: u64 = character_index.try_into().unwrap_or(u64::MAX);
+
+                if block_comment_start.is_some() {
+                    if ch == '*' && next == '/' {
+                        block_comment_start = None;
+                        character_index = character_index.saturating_add(2);
+
+                        continue;
+                    }
+
+                    character_index = character_index.saturating_add(1);
+
+                    continue;
+                }
+
+                if !in_string && !in_char && ch == '/' && next == '/' {
+                    break;
+                }
+
+                if !in_string && !in_char && ch == '/' && next == '*' {
+                    block_comment_start = Some((line_number, character));
+                    character_index = character_index.saturating_add(2);
+
+                    continue;
+                }
+
+                if !in_char && ch == '"' {
+                    if in_string {
+                        in_string = false;
+                    } else {
+                        in_string = true;
+                        string_start = (line_number, character);
+                    }
+
+                    character_index = character_index.saturating_add(1);
+
+                    continue;
+                }
+
+                if !in_string && ch == '\'' {
+                    if in_char {
+                        in_char = false;
+                    } else {
+                        in_char = true;
+                        char_start = (line_number, character);
+                    }
+
+                    character_index = character_index.saturating_add(1);
+
+                    continue;
+                }
+
+                if in_string || in_char {
+                    character_index = character_index.saturating_add(1);
+
+                    continue;
+                }
+
+                match ch {
+                    '{' | '(' | '[' => stack.push((ch, line_number, character)),
+                    '}' | ')' | ']' => {
+                        let expected: char = match ch {
+                            '}' => '{',
+                            ')' => '(',
+                            ']' => '[',
+                            _ => '\0',
+                        };
+
+                        if stack.last().is_some_and(|(open, ..)| *open == expected) {
+                            stack.pop();
+                        } else {
+                            diagnostics.push(serde_json::json!({
+                                "range": {
+                                    "start": {
+                                        "line": line_number,
+                                        "character": character
+                                    },
+                                    "end": {
+                                        "line": line_number,
+                                        "character": character.saturating_add(1)
+                                    }
+                                },
+                                "severity": 1,
+                                "source": "thrustc_lsp",
+                                "message": "Unmatched closing delimiter."
+                            }));
+                        }
+                    }
+                    _ => {}
+                }
+
+                character_index = character_index.saturating_add(1);
+            }
+        }
+
+        if let Some((line, character)) = block_comment_start {
+            diagnostics.push(serde_json::json!({
+                "range": {
+                    "start": {
+                        "line": line,
+                        "character": character
+                    },
+                    "end": {
+                        "line": line,
+                        "character": character.saturating_add(2)
+                    }
+                },
+                "severity": 1,
+                "source": "thrustc_lsp",
+                "message": "Unterminated block comment."
+            }));
+        }
+
+        if in_string {
+            diagnostics.push(serde_json::json!({
+                "range": {
+                    "start": {
+                        "line": string_start.0,
+                        "character": string_start.1
+                    },
+                    "end": {
+                        "line": string_start.0,
+                        "character": string_start.1.saturating_add(1)
+                    }
+                },
+                "severity": 1,
+                "source": "thrustc_lsp",
+                "message": "Unterminated string literal."
+            }));
+        }
+
+        if in_char {
+            diagnostics.push(serde_json::json!({
+                "range": {
+                    "start": {
+                        "line": char_start.0,
+                        "character": char_start.1
+                    },
+                    "end": {
+                        "line": char_start.0,
+                        "character": char_start.1.saturating_add(1)
+                    }
+                },
+                "severity": 1,
+                "source": "thrustc_lsp",
+                "message": "Unterminated character literal."
+            }));
+        }
+
+        while let Some((_, line, character)) = stack.pop() {
+            diagnostics.push(serde_json::json!({
+                "range": {
+                    "start": {
+                        "line": line,
+                        "character": character
+                    },
+                    "end": {
+                        "line": line,
+                        "character": character.saturating_add(1)
+                    }
+                },
+                "severity": 1,
+                "source": "thrustc_lsp",
+                "message": "Unclosed delimiter."
+            }));
+        }
     }
 
     diagnostics
@@ -207,194 +390,4 @@ fn compilation_issue_to_diagnostic(issue: &CompilationIssue) -> Value {
             })
         }
     }
-}
-
-fn lightweight_diagnostics(text: &str) -> Vec<Value> {
-    let mut diagnostics: Vec<Value> = Vec::with_capacity(8);
-    let mut stack: Vec<(char, u64, u64)> = Vec::with_capacity(32);
-    let mut block_comment_start: Option<(u64, u64)> = None;
-    let mut in_string: bool = false;
-    let mut in_char: bool = false;
-    let mut string_start: (u64, u64) = (0, 0);
-    let mut char_start: (u64, u64) = (0, 0);
-
-    for (line_index, line) in text.lines().enumerate() {
-        let line_number: u64 = line_index.try_into().unwrap_or(u64::MAX);
-        let chars: Vec<char> = line.chars().collect();
-        let mut character_index: usize = 0;
-
-        while character_index < chars.len() {
-            let ch: char = chars[character_index];
-            let next: char = chars
-                .get(character_index.saturating_add(1))
-                .copied()
-                .unwrap_or('\0');
-            let character: u64 = character_index.try_into().unwrap_or(u64::MAX);
-
-            if block_comment_start.is_some() {
-                if ch == '*' && next == '/' {
-                    block_comment_start = None;
-                    character_index = character_index.saturating_add(2);
-
-                    continue;
-                }
-
-                character_index = character_index.saturating_add(1);
-
-                continue;
-            }
-
-            if !in_string && !in_char && ch == '/' && next == '/' {
-                break;
-            }
-
-            if !in_string && !in_char && ch == '/' && next == '*' {
-                block_comment_start = Some((line_number, character));
-                character_index = character_index.saturating_add(2);
-
-                continue;
-            }
-
-            if !in_char && ch == '"' {
-                if in_string {
-                    in_string = false;
-                } else {
-                    in_string = true;
-                    string_start = (line_number, character);
-                }
-
-                character_index = character_index.saturating_add(1);
-
-                continue;
-            }
-
-            if !in_string && ch == '\'' {
-                if in_char {
-                    in_char = false;
-                } else {
-                    in_char = true;
-                    char_start = (line_number, character);
-                }
-
-                character_index = character_index.saturating_add(1);
-
-                continue;
-            }
-
-            if in_string || in_char {
-                character_index = character_index.saturating_add(1);
-
-                continue;
-            }
-
-            match ch {
-                '{' | '(' | '[' => stack.push((ch, line_number, character)),
-                '}' | ')' | ']' => {
-                    let expected: char = match ch {
-                        '}' => '{',
-                        ')' => '(',
-                        ']' => '[',
-                        _ => '\0',
-                    };
-
-                    if stack.last().is_some_and(|(open, _, _)| *open == expected) {
-                        stack.pop();
-                    } else {
-                        diagnostics.push(serde_json::json!({
-                            "range": {
-                                "start": {
-                                    "line": line_number,
-                                    "character": character
-                                },
-                                "end": {
-                                    "line": line_number,
-                                    "character": character.saturating_add(1)
-                                }
-                            },
-                            "severity": 1,
-                            "source": "thrustc_lsp",
-                            "message": "Unmatched closing delimiter."
-                        }));
-                    }
-                }
-                _ => {}
-            }
-
-            character_index = character_index.saturating_add(1);
-        }
-    }
-
-    if let Some((line, character)) = block_comment_start {
-        diagnostics.push(serde_json::json!({
-            "range": {
-                "start": {
-                    "line": line,
-                    "character": character
-                },
-                "end": {
-                    "line": line,
-                    "character": character.saturating_add(2)
-                }
-            },
-            "severity": 1,
-            "source": "thrustc_lsp",
-            "message": "Unterminated block comment."
-        }));
-    }
-
-    if in_string {
-        diagnostics.push(serde_json::json!({
-            "range": {
-                "start": {
-                    "line": string_start.0,
-                    "character": string_start.1
-                },
-                "end": {
-                    "line": string_start.0,
-                    "character": string_start.1.saturating_add(1)
-                }
-            },
-            "severity": 1,
-            "source": "thrustc_lsp",
-            "message": "Unterminated string literal."
-        }));
-    }
-
-    if in_char {
-        diagnostics.push(serde_json::json!({
-            "range": {
-                "start": {
-                    "line": char_start.0,
-                    "character": char_start.1
-                },
-                "end": {
-                    "line": char_start.0,
-                    "character": char_start.1.saturating_add(1)
-                }
-            },
-            "severity": 1,
-            "source": "thrustc_lsp",
-            "message": "Unterminated character literal."
-        }));
-    }
-
-    while let Some((_, line, character)) = stack.pop() {
-        diagnostics.push(serde_json::json!({
-            "range": {
-                "start": {
-                    "line": line,
-                    "character": character
-                },
-                "end": {
-                    "line": line,
-                    "character": character.saturating_add(1)
-                }
-            },
-            "severity": 1,
-            "source": "thrustc_lsp",
-            "message": "Unclosed delimiter."
-        }));
-    }
-
-    diagnostics
 }
