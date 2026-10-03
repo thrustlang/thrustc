@@ -20,7 +20,15 @@ fn main() {
             | ((patch as u64) << 16)
             | (build as u64);
 
-        res.set_icon("assets/thrustlang-logo.ico");
+        let icon_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("assets")
+            .join("thrustlang-logo.ico");
+        res.set_icon(
+            icon_path
+                .to_str()
+                .expect("icon path contains invalid UTF-8"),
+        );
 
         res.set(
             "FileDescription",
