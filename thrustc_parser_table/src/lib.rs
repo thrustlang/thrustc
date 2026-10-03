@@ -139,6 +139,18 @@ impl SymbolTable<'_> {
     pub fn has_global_struct(&self, id: &str) -> bool {
         self.global_structs.contains_key(id)
     }
+
+    #[inline]
+    pub fn has_any_generic(&self) -> bool {
+        !self.generic_functions.is_empty()
+            || !self.generic_structs.is_empty()
+            || !self.generic_custom_types.is_empty()
+    }
+
+    #[inline]
+    pub fn has_in_scope_type_parameters(&self) -> bool {
+        !self.type_parameter_scope.is_empty()
+    }
 }
 
 impl<'parser> SymbolTable<'parser> {
@@ -155,13 +167,6 @@ impl<'parser> SymbolTable<'parser> {
 
 impl SymbolTable<'_> {
     #[inline]
-    pub fn has_any_generic(&self) -> bool {
-        !self.generic_functions.is_empty()
-            || !self.generic_structs.is_empty()
-            || !self.generic_custom_types.is_empty()
-    }
-
-    #[inline]
     pub fn begin_generic_scope(&mut self) {
         self.type_parameter_scope.enter_scope();
     }
@@ -175,15 +180,12 @@ impl SymbolTable<'_> {
     pub fn push_type_parameter(&mut self, name: String, span: Span) {
         self.type_parameter_scope.push_parameter(name, span);
     }
+}
 
+impl SymbolTable<'_> {
     #[inline]
     pub fn resolve_type_parameter(&self, name: &str) -> Option<Span> {
         self.type_parameter_scope.resolve(name)
-    }
-
-    #[inline]
-    pub fn has_in_scope_type_parameters(&self) -> bool {
-        !self.type_parameter_scope.is_empty()
     }
 }
 
@@ -223,16 +225,12 @@ impl<'parser> SymbolTable<'parser> {
 
 impl<'parser> SymbolTable<'parser> {
     #[inline]
-    pub fn iter_generic_functions(
-        &self,
-    ) -> impl Iterator<Item = (&String, &GenericFunctionEntry)> {
+    pub fn iter_generic_functions(&self) -> impl Iterator<Item = (&String, &GenericFunctionEntry)> {
         self.generic_functions.iter()
     }
 
     #[inline]
-    pub fn iter_generic_structs(
-        &self,
-    ) -> impl Iterator<Item = (&String, &GenericStructEntry)> {
+    pub fn iter_generic_structs(&self) -> impl Iterator<Item = (&String, &GenericStructEntry)> {
         self.generic_structs.iter()
     }
 

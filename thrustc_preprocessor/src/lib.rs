@@ -47,6 +47,7 @@ pub struct Preprocessor {
 }
 
 impl Preprocessor {
+    #[inline]
     pub fn new() -> Self {
         Self {
             modules: Vec::with_capacity(u8::MAX as usize),
@@ -74,10 +75,7 @@ impl<'preprocessor> Preprocessor {
         let mut context: PreprocessorContext<'_> =
             PreprocessorContext::new(tokens, options, file, visited, registry, builtins);
 
-        let mut merged: ahash::AHashMap<
-            (std::path::PathBuf, Option<Vec<String>>),
-            usize,
-        > =
+        let mut merged: ahash::AHashMap<(std::path::PathBuf, Option<Vec<String>>), usize> =
             ahash::AHashMap::with_capacity(u8::MAX as usize);
         let mut block_depth: usize = 0;
 
@@ -183,7 +181,9 @@ impl<'preprocessor> Preprocessor {
 
         Ok(())
     }
+}
 
+impl Preprocessor {
     fn merge_active_import(
         &mut self,
         context: &mut PreprocessorContext<'_>,

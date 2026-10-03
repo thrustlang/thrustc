@@ -48,9 +48,7 @@ pub fn build_index<'parser>(
         "Expected ']'.".into(),
     )?;
 
-    let index_type: Type = if index_type.is_native_vector_type() {
-        index_type.calculate_index_type(1).clone()
-    } else if deref {
+    let index_type: Type = if deref || index_type.is_native_vector_type() {
         index_type.calculate_index_type(1).clone()
     } else {
         let inner_index_type: Type = index_type.calculate_index_type(1).clone();

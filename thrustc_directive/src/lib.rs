@@ -25,7 +25,6 @@ use thrustc_backends::llvm::{
     SanitizerConfiguration, SymbolLinkageMergeStrategy,
 };
 use thrustc_backends::{ThrustCodeModel, ThrustOptimization, ThrustRelocMode};
-use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationPhase, CompilerOptions, EmitableUnit, PrintableUnit};
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -698,7 +697,14 @@ pub fn apply_file_directives(tokens: &[Token]) -> Result<FileDirectives, Compila
         }
 
         if let Err(message) = self::apply_directive(spec_token.get_lexeme(), &mut directives) {
-            return Err(self::invalid_directive(message, spec_token.get_span()));
+            return Err(  CompilationIssue::Error(
+                CompilationIssueCode::E0054,
+                message,
+                "Use a file-scoped compiler flag with the same spelling and value format as the CLI."
+                    .into(),
+                None,
+                spec_token.get_span(),
+            ));
         }
     }
 
@@ -1014,17 +1020,6 @@ pub fn combine_warnings_to_disable<'options>(
     }
 
     Cow::Owned(warnings)
-}
-
-fn invalid_directive(message: String, span: Span) -> CompilationIssue {
-    CompilationIssue::Error(
-        CompilationIssueCode::E0054,
-        message,
-        "Use a file-scoped compiler flag with the same spelling and value format as the CLI."
-            .into(),
-        None,
-        span,
-    )
 }
 
 fn is_global_only(flag: &str) -> bool {

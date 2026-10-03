@@ -20,10 +20,12 @@
 use crate::{LLVMTargetTriple, traits::LLVMTargetTripleSupport};
 
 impl LLVMTargetTripleSupport for LLVMTargetTriple {
+    #[inline]
     fn support_80_bits_floating_point(&self) -> bool {
         self.is_x86_arch() || self.is_x86_64_arch()
     }
 
+    #[inline]
     fn support_128_bits_ppc_floating_point(&self) -> bool {
         self.is_ppc64_arch()
     }

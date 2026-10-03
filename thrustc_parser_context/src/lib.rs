@@ -91,7 +91,9 @@ impl ControlContext {
     pub fn reset_sync_position(&mut self) {
         self.synchronous_position.clear();
     }
+}
 
+impl ControlContext {
     #[inline]
     pub fn increase_expression_depth(&mut self) {
         self.expression_depth = self.expression_depth.saturating_add(1);
@@ -106,22 +108,9 @@ impl ControlContext {
     pub fn reset_expression_depth(&mut self) {
         self.expression_depth = 0;
     }
+}
 
-    #[inline]
-    pub fn increase_type_depth(&mut self) {
-        self.type_depth = self.type_depth.saturating_add(1);
-    }
-
-    #[inline]
-    pub fn decrease_type_depth(&mut self) {
-        self.type_depth = self.type_depth.saturating_sub(1);
-    }
-
-    #[inline]
-    pub fn reset_type_depth(&mut self) {
-        self.type_depth = 0;
-    }
-
+impl ControlContext {
     #[inline]
     pub fn increase_block_depth(&mut self) {
         self.block_depth = self.block_depth.saturating_add(1);
@@ -135,6 +124,23 @@ impl ControlContext {
     #[inline]
     pub fn reset_block_depth(&mut self) {
         self.block_depth = 0;
+    }
+}
+
+impl ControlContext {
+    #[inline]
+    pub fn increase_type_depth(&mut self) {
+        self.type_depth = self.type_depth.saturating_add(1);
+    }
+
+    #[inline]
+    pub fn decrease_type_depth(&mut self) {
+        self.type_depth = self.type_depth.saturating_sub(1);
+    }
+
+    #[inline]
+    pub fn reset_type_depth(&mut self) {
+        self.type_depth = 0;
     }
 }
 
@@ -171,6 +177,7 @@ pub struct TypeContext {
 }
 
 impl TypeContext {
+    #[inline]
     pub fn new() -> Self {
         Self {
             infered_types: Vec::with_capacity(u8::MAX as usize),

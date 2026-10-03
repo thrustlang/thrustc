@@ -49,17 +49,9 @@ impl BuiltinRegistry {
             target_info,
         }
     }
+}
 
-    #[inline]
-    pub fn register_function(&mut self, function: impl CompileTimeBuiltinFunction + 'static) {
-        self.functions.insert(function.name(), Box::new(function));
-    }
-
-    #[inline]
-    pub fn register_type(&mut self, info: BuiltinTypeInfo) {
-        self.types.insert(info.name, info);
-    }
-
+impl BuiltinRegistry {
     #[inline]
     pub fn get_function(&self, name: &str) -> Option<&dyn CompileTimeBuiltinFunction> {
         self.functions.get(name).map(|function| function.as_ref())
@@ -69,7 +61,21 @@ impl BuiltinRegistry {
     pub fn get_type(&self, name: &str) -> Option<&Type> {
         self.types.get(name).map(|info| &info.ty)
     }
+}
 
+impl BuiltinRegistry {
+    #[inline]
+    pub fn register_function(&mut self, function: impl CompileTimeBuiltinFunction + 'static) {
+        self.functions.insert(function.name(), Box::new(function));
+    }
+
+    #[inline]
+    pub fn register_type(&mut self, info: BuiltinTypeInfo) {
+        self.types.insert(info.name, info);
+    }
+}
+
+impl BuiltinRegistry {
     pub fn evaluate<'builtin>(
         &mut self,
         name: &str,

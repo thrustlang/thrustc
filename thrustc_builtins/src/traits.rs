@@ -48,7 +48,9 @@ impl BuiltinFunctionSignature {
     pub fn get_parameter_count(&self) -> usize {
         self.parameters.len()
     }
+}
 
+impl BuiltinFunctionSignature {
     #[inline]
     pub fn is_parameter_a_type(&self, index: usize) -> bool {
         self.parameters

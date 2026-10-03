@@ -82,7 +82,6 @@ pub struct WebAssemblyABIFunctionTypeConfiguration<'abi> {
 #[derive(Debug, Clone, Copy)]
 pub enum WebAssemblyABIFunctionParameterConfiguration {
     Value,
-
     Address,
 }
 
@@ -90,9 +89,7 @@ pub enum WebAssemblyABIFunctionParameterConfiguration {
 pub struct WebAssemblyABIContext<'abi> {
     target_info: TargetInfo,
     target_data: &'abi TargetData,
-
     codegen_location: WebAssemblyCodeGenLocation,
-
     diagnostician: Diagnostician,
 }
 
@@ -123,7 +120,9 @@ impl<'abi> WebAssemblyABIContext<'abi> {
     pub fn get_mut_target_info(&mut self) -> &mut TargetInfo {
         &mut self.target_info
     }
+}
 
+impl<'abi> WebAssemblyABIContext<'abi> {
     #[inline]
     pub fn get_target_data(&self) -> &TargetData {
         self.target_data
@@ -313,6 +312,7 @@ pub fn lower_call_prologue<'abi>(
                             line!(),
                         )
                     });
+
                 let scalar_value: BasicValueEnum = llvm_builder
                     .build_load(scalar_type, buffer, "")
                     .unwrap_or_else(|_| {
@@ -1449,9 +1449,7 @@ fn classify_type<'abi>(
 #[derive(Debug)]
 enum SingleScalar<'abi> {
     Empty,
-
     One(&'abi Type),
-
     Multiple,
 }
 
@@ -1577,7 +1575,10 @@ fn generate_type<'abi>(
 
                 any => abort::abort_codegen(
                     abi_context,
-                    &format!("Failed to compile '{:?}' as a native vector element type!", any),
+                    &format!(
+                        "Failed to compile '{:?}' as a native vector element type!",
+                        any
+                    ),
                     ty.get_span(),
                     std::path::PathBuf::from(file!()),
                     line!(),
