@@ -2585,64 +2585,7 @@ fn push_item(
         item["insertTextFormat"] = Value::Number(2.into());
     }
 
-    if let Some(documentation) = self::builtin_documentation(label) {
-        item["documentation"] = Value::String(documentation.to_string());
-    }
-
     items.push(item);
-}
-
-fn builtin_documentation(label: &str) -> Option<&'static str> {
-    let docs: &[(&str, &str)] = &[
-        (
-            "isUnix",
-            "Returns true if the target is a Unix-like platform (Linux, Darwin, BSD, Solaris, AIX, Haiku).",
-        ),
-        (
-            "isBSD",
-            "Returns true if the target operating system is a BSD family (FreeBSD, NetBSD, OpenBSD, DragonFly).",
-        ),
-        (
-            "isFreeBSD",
-            "Returns true if the target operating system is FreeBSD.",
-        ),
-        (
-            "isNetBSD",
-            "Returns true if the target operating system is NetBSD.",
-        ),
-        (
-            "isOpenBSD",
-            "Returns true if the target operating system is OpenBSD.",
-        ),
-        (
-            "isAndroid",
-            "Returns true if the target is an Android platform.",
-        ),
-        (
-            "isIOS",
-            "Returns true if the target is an Apple iOS/tvOS/watchOS platform.",
-        ),
-        (
-            "isSolaris",
-            "Returns true if the target is a Solaris or Illumos platform.",
-        ),
-        (
-            "isHaiku",
-            "Returns true if the target is the Haiku operating system.",
-        ),
-        (
-            "isWasm32",
-            "Returns true if the target architecture is WebAssembly 32-bit.",
-        ),
-        (
-            "isWasm64",
-            "Returns true if the target architecture is WebAssembly 64-bit.",
-        ),
-    ];
-
-    docs.iter()
-        .find(|(name, _)| *name == label)
-        .map(|(_, doc)| *doc)
 }
 
 fn strip_trailing_generic_args(source: &str) -> &str {
