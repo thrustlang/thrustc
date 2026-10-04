@@ -17,5 +17,5 @@ fn two_includes(x: s32) s32 {
     }
     probe_two_includes_1 = probe_two_includes_1 + count_two_includes_1;
     probe_two_includes_1 = probe_two_includes_1 - count_two_includes_1;
-    return (a_value(x) + b_value(x)) as s32;
+    return (a::a_value(x) + b::b_value(x)) as s32;
 }

@@ -16,5 +16,5 @@ fn call_header(x: s32) s32 {
     }
     probe_local_include_1 = probe_local_include_1 + count_local_include_1;
     probe_local_include_1 = probe_local_include_1 - count_local_include_1;
-    return (header_add_one(x)) as s32;
+    return (local_include::header_add_one(x)) as s32;
 }

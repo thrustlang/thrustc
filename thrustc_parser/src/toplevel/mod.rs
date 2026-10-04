@@ -38,7 +38,7 @@ pub mod global_static;
 pub mod global_struct;
 pub mod global_type;
 pub mod import;
-pub mod importc;
+pub mod import_c;
 
 pub fn parse<'parser>(ctx: &mut ParserContext<'parser>) -> Result<Ast<'parser>, CompilationIssue> {
     ctx.get_mut_control_context()
@@ -58,6 +58,7 @@ pub fn parse<'parser>(ctx: &mut ParserContext<'parser>) -> Result<Ast<'parser>, 
         TokenType::Intrinsic => Ok(compiler_intrinsic::build_compiler_intrinsic(ctx, false)?),
         TokenType::GlobalAsm => Ok(global_assembler::build_global_assembler(ctx)?),
         TokenType::Import => Ok(import::build_import(ctx)?),
+        TokenType::ImportC => Ok(import_c::build_import_c(ctx)?),
         TokenType::Embedded => Ok(embedded_value::build_embedded(ctx)?),
         TokenType::Directive => Ok(directive::build_directive(ctx)?),
 
@@ -107,6 +108,9 @@ pub fn parse_forward(ctx: &mut ParserContext) {
             }
             TokenType::AsmFn if !at_block => {
                 let _ = global_assembler_function::build_assembler_function(ctx, true);
+            }
+            TokenType::ImportC if !at_block => {
+                let _ = import_c::build_import_c(ctx);
             }
             TokenType::LBrace => {
                 at_block = true;

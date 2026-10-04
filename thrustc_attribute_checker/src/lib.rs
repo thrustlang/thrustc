@@ -851,7 +851,13 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
         attributes: &ThrustAttributes,
         applicant: AttributeCheckerAttributeApplicant,
     ) {
-        if attributes.has_extern_attribute() && !attributes.has_public_attribute() {
+        if attributes.has_extern_attribute()
+            && !attributes.has_public_attribute()
+            && !matches!(
+                applicant,
+                AttributeCheckerAttributeApplicant::Function { has_body: false, .. }
+            )
+        {
             if let Some(span) = attributes.match_attr(ThrustAttributeComparator::Extern) {
                 self.add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0013,

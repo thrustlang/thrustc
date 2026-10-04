@@ -305,7 +305,7 @@ impl CommandLine {
                     }
                 }
 
-                thrustc_logging::write(OutputIn::Stdout, "Translated C to Thrust.\n");
+                thrustc_logging::write(OutputIn::Stdout, "C successfully translated to Thrust.\n");
 
                 std::process::exit(thrustc_constants::SUCCESFUL_CODE);
             }

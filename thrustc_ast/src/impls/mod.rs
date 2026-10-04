@@ -143,7 +143,7 @@ impl AstStandardExtensions for Ast<'_> {
 
     #[inline]
     fn is_import_keyword(&self) -> bool {
-        matches!(self, Ast::Import { .. })
+        matches!(self, Ast::Import { .. } | Ast::ImportC { .. })
     }
 
     fn is_function_parameter(&self) -> bool {
@@ -375,6 +375,7 @@ impl AstDeclarationExtensions for Ast<'_> {
                 | Ast::AssemblerFunction { .. }
                 | Ast::GlobalAssembler { .. }
                 | Ast::Import { .. }
+                | Ast::ImportC { .. }
                 | Ast::Embedded { .. }
         )
     }

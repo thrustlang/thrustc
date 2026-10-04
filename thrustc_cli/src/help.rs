@@ -806,6 +806,19 @@ pub fn show_help() -> ! {
         &format!(
             "{} {} [{}] {}\n",
             "•".bold(),
+            "--translate-c-to-thrust"
+                .custom_color((141, 141, 142))
+                .bold(),
+            "file.c",
+            "Translate a C source file into a .thrust file and exit. Can be repeated.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
             "--translate-c-include".custom_color((141, 141, 142)).bold(),
             "path/",
             "Add an include directory (-I) for translateC.",
@@ -910,19 +923,6 @@ pub fn show_help() -> ! {
             "--translate-c-output".custom_color((141, 141, 142)).bold(),
             "path/to/file.thrust",
             "Explicit output file path for a single translated C input.",
-        ),
-    );
-
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{} {} [{}] {}\n\n",
-            "•".bold(),
-            "--translate-c-to-thrust"
-                .custom_color((141, 141, 142))
-                .bold(),
-            "file.c",
-            "Translate a C source file into a .thrust file and exit. Can be repeated.",
         ),
     );
 

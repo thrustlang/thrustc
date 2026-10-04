@@ -46,13 +46,19 @@ pub(crate) fn translate_expr(
 
             if let Some(first) = tokens.first() {
                 let spelling: String = first.get_spelling();
-                return Ok(self::normalize_literal_spelling(entity.get_kind(), spelling));
+
+                return Ok(self::normalize_literal_spelling(
+                    entity.get_kind(),
+                    spelling,
+                ));
             }
 
             Ok(String::new())
         }
 
-        clang::EntityKind::DeclRefExpr | clang::EntityKind::MemberRefExpr => {
+        clang::EntityKind::DeclRefExpr => self::translate_decl_ref_expr(entity, span),
+
+        clang::EntityKind::MemberRefExpr => {
             let Some(range) = entity.get_range() else {
                 return Err(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
@@ -145,10 +151,23 @@ pub(crate) fn translate_expr(
             }
 
             let callee: String = self::translate_expr(&children[0], span)?;
+            let expected_parameter_types: Vec<clang::Type<'_>> =
+                self::resolve_call_parameter_types(&children[0]);
             let mut args: Vec<String> = Vec::new();
 
-            for arg in children.iter().skip(1) {
-                args.push(self::translate_expr(arg, span)?);
+            for (index, arg) in children.iter().skip(1).enumerate() {
+                let translated: String = self::translate_expr(arg, span)?;
+
+                if let Some(expected_type) = expected_parameter_types.get(index) {
+                    args.push(self::coerce_call_argument(
+                        arg,
+                        translated,
+                        expected_type,
+                        span,
+                    )?);
+                } else {
+                    args.push(translated);
+                }
             }
 
             Ok(format!("{callee}({})", args.join(", ")))
@@ -224,7 +243,9 @@ pub(crate) fn translate_expr(
                     }
                 }
                 "*" => {
-                    if let Some(pointer_target) = self::translate_pointer_target_expr(operand, span)? {
+                    if let Some(pointer_target) =
+                        self::translate_pointer_target_expr(operand, span)?
+                    {
                         return Ok(pointer_target);
                     }
 
@@ -400,12 +421,165 @@ pub(crate) fn translate_expr(
     }
 }
 
+fn translate_decl_ref_expr(
+    entity: &clang::Entity<'_>,
+    span: Span,
+) -> Result<String, CompilationIssue> {
+    let Some(range) = entity.get_range() else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0110,
+            "C translation failed.".into(),
+            format!(
+                "Missing source range for expression kind {:?}.",
+                entity.get_kind()
+            ),
+            None,
+            span,
+        ));
+    };
+
+    let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
+    let fallback: String = crate::tokens_to_thrust_source(&tokens);
+
+    let Some(reference) = entity.get_reference() else {
+        return Ok(fallback);
+    };
+
+    let Some(reference_location) = reference.get_location() else {
+        return Ok(fallback);
+    };
+
+    let Some(reference_file) = reference_location.get_file_location().file else {
+        return Ok(fallback);
+    };
+
+    let Some(usage_location) = entity.get_location() else {
+        return Ok(fallback);
+    };
+
+    let Some(usage_file) = usage_location.get_expansion_location().file else {
+        return Ok(fallback);
+    };
+
+    let reference_path: std::path::PathBuf = reference_file.get_path();
+    let usage_path: std::path::PathBuf = usage_file.get_path();
+
+    let reference_path: std::path::PathBuf = reference_path
+        .canonicalize()
+        .unwrap_or(reference_path.clone());
+    let usage_path: std::path::PathBuf = usage_path.canonicalize().unwrap_or(usage_path.clone());
+
+    if reference_path == usage_path {
+        return Ok(fallback);
+    }
+
+    let Some(module_stem) = reference_path.file_stem() else {
+        return Ok(fallback);
+    };
+
+    let Some(reference_name) = reference.get_name().or_else(|| entity.get_name()) else {
+        return Ok(fallback);
+    };
+
+    let module_name: String = crate::sanitize_identifier_for_thrust(&module_stem.to_string_lossy());
+    let symbol_name: String = crate::sanitize_identifier_for_thrust(&reference_name);
+
+    Ok(format!("{module_name}::{symbol_name}"))
+}
+
+fn resolve_call_parameter_types<'clang>(
+    entity: &clang::Entity<'clang>,
+) -> Vec<clang::Type<'clang>> {
+    if matches!(
+        entity.get_kind(),
+        clang::EntityKind::ParenExpr | clang::EntityKind::UnexposedExpr
+    ) {
+        let children: Vec<clang::Entity<'clang>> = entity.get_children();
+
+        if children.len() == 1 {
+            return self::resolve_call_parameter_types(&children[0]);
+        }
+    }
+
+    let Some(reference) = entity.get_reference() else {
+        return Vec::new();
+    };
+
+    let Some(arguments) = reference.get_arguments() else {
+        return Vec::new();
+    };
+
+    arguments
+        .into_iter()
+        .filter_map(|argument| argument.get_type())
+        .collect()
+}
+
+fn coerce_call_argument(
+    entity: &clang::Entity<'_>,
+    translated: String,
+    expected_type: &clang::Type<'_>,
+    span: Span,
+) -> Result<String, CompilationIssue> {
+    let thrust_type: String = crate::format_clang_type_thrust(expected_type).map_err(|msg| {
+        CompilationIssue::Error(
+            CompilationIssueCode::E0110,
+            "C translation failed.".into(),
+            format!("Unsupported call parameter type: {msg}"),
+            None,
+            span,
+        )
+    })?;
+
+    if self::is_string_literal_like(entity) {
+        return Ok(format!("({translated}) as {thrust_type}"));
+    }
+
+    let needs_cast: bool = match entity.get_type() {
+        Some(argument_type) => {
+            let match_: bool = {
+                let argument_text: Result<String, String> =
+                    crate::format_clang_type_thrust(&argument_type);
+                let expected_text: Result<String, String> =
+                    crate::format_clang_type_thrust(expected_type);
+
+                match (argument_text, expected_text) {
+                    (Ok(argument_text), Ok(expected_text)) => argument_text == expected_text,
+                    _ => false,
+                }
+            };
+
+            !match_
+        }
+        None => true,
+    };
+
+    if !needs_cast {
+        return Ok(translated);
+    }
+
+    Ok(format!("({translated}) as {thrust_type}"))
+}
+
+fn is_string_literal_like(entity: &clang::Entity<'_>) -> bool {
+    match entity.get_kind() {
+        clang::EntityKind::StringLiteral => true,
+        clang::EntityKind::ParenExpr | clang::EntityKind::UnexposedExpr => entity
+            .get_children()
+            .into_iter()
+            .any(|child| self::is_string_literal_like(&child)),
+        _ => false,
+    }
+}
+
 fn translate_pointer_target_expr(
     entity: &clang::Entity<'_>,
     span: Span,
 ) -> Result<Option<String>, CompilationIssue> {
-    if matches!(entity.get_kind(), clang::EntityKind::ParenExpr | clang::EntityKind::UnexposedExpr)
-    {
+    if matches!(
+        entity.get_kind(),
+        clang::EntityKind::ParenExpr | clang::EntityKind::UnexposedExpr
+    ) {
         let children: Vec<clang::Entity<'_>> = entity.get_children();
 
         if children.len() == 1 && crate::is_supported_expr_kind(children[0].get_kind()) {
@@ -427,6 +601,7 @@ fn translate_pointer_target_expr(
     }
 
     let base: String = self::translate_expr(entity, span)?;
+
     Ok(Some(format!("{base}->[0]")))
 }
 
@@ -457,8 +632,12 @@ fn tokens_to_thrust_source_preserve_member_dot(tokens: &[clang::token::Token<'_>
 
 fn normalize_literal_spelling(kind: clang::EntityKind, spelling: String) -> String {
     match kind {
-        clang::EntityKind::IntegerLiteral => spelling.trim_end_matches(['u', 'U', 'l', 'L']).to_string(),
-        clang::EntityKind::FloatingLiteral => spelling.trim_end_matches(['f', 'F', 'l', 'L']).to_string(),
+        clang::EntityKind::IntegerLiteral => {
+            spelling.trim_end_matches(['u', 'U', 'l', 'L']).to_string()
+        }
+        clang::EntityKind::FloatingLiteral => {
+            spelling.trim_end_matches(['f', 'F', 'l', 'L']).to_string()
+        }
         _ => spelling,
     }
 }

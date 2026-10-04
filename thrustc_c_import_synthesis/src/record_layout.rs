@@ -64,6 +64,21 @@ pub fn build_struct<'clang>(
         return Err("missing struct type".into());
     };
 
+    let llvm_mod: LLVMStructureTypeModificator = LLVMStructureTypeModificator::new(false);
+    let gcc_mod: GCCStructureTypeModificator = GCCStructureTypeModificator::new();
+    let modificator: StructureTypeModificator = StructureTypeModificator::new(llvm_mod, gcc_mod);
+    let metadata: StructTypeMetadata = StructTypeMetadata::new(modificator);
+
+    // Seed the cache before walking fields so self-referential pointer fields do not recurse forever.
+    let placeholder_kind: Type = Type::Struct {
+        name: name.clone(),
+        fields: Vec::new(),
+        metadata,
+        span,
+    };
+
+    struct_cache.insert(canonical, (Vec::new(), placeholder_kind));
+
     let children: Vec<clang::Entity<'clang>> = definition.get_children();
 
     let fields: Vec<clang::Entity<'clang>> = children
@@ -112,11 +127,6 @@ pub fn build_struct<'clang>(
             ),
         ));
     }
-
-    let llvm_mod: LLVMStructureTypeModificator = LLVMStructureTypeModificator::new(false);
-    let gcc_mod: GCCStructureTypeModificator = GCCStructureTypeModificator::new();
-    let modificator: StructureTypeModificator = StructureTypeModificator::new(llvm_mod, gcc_mod);
-    let metadata: StructTypeMetadata = StructTypeMetadata::new(modificator);
 
     let kind: Type = Type::Struct {
         name: name.clone(),

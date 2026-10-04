@@ -17,5 +17,5 @@ fn system_and_local(x: usize) s32 {
     }
     probe_system_and_local_1 = probe_system_and_local_1 + count_system_and_local_1;
     probe_system_and_local_1 = probe_system_and_local_1 - count_system_and_local_1;
-    return (local_size(x)) as s32;
+    return (local_size::local_size(x)) as s32;
 }

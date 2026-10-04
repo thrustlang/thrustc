@@ -19,4 +19,4 @@
 
 pub mod compiletime_conditional;
 pub mod import;
-pub mod importc;
+pub mod import_c;

@@ -103,10 +103,10 @@ impl<'preprocessor> Preprocessor {
             }
 
             if block_depth == 0 && context.check(TokenType::ImportC) {
-                match highmodule_parsing::importc::parse_import_c(&mut context) {
+                match highmodule_parsing::import_c::parse_import_c(&mut context) {
                     Ok(Some(module)) => self.merge_module(&mut merged, module),
                     Ok(None) => (),
-                    Err(()) => return Err(()),
+                    Err(()) => (),
                 }
 
                 continue;
@@ -203,17 +203,17 @@ impl Preprocessor {
             match highmodule_parsing::import::parse_import(context) {
                 Ok(Some(module)) => self.merge_module(merged, module),
                 Ok(None) => (),
-                Err(()) => return Err(()),
+                Err(()) => (),
             }
 
             return Ok(());
         }
 
         if context.check(TokenType::ImportC) {
-            match highmodule_parsing::importc::parse_import_c(context) {
+            match highmodule_parsing::import_c::parse_import_c(context) {
                 Ok(Some(module)) => self.merge_module(merged, module),
                 Ok(None) => (),
-                Err(()) => return Err(()),
+                Err(()) => (),
             }
         }
 

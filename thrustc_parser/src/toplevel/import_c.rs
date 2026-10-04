@@ -44,7 +44,7 @@ pub fn build_import_c<'parser>(
     )?;
 
     let path_span: Span = path_tk.get_span();
-    let path: String = path_tk.get_lexeme().to_string();
+    let path: String = path_tk.get_lexeme().trim().trim_matches('"').to_string();
 
     if ctx.check(TokenType::Only) {
         let only_span: Span = ctx.peek().get_span();
