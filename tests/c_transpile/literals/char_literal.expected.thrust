@@ -1,0 +1,15 @@
+fn char_literal() char {
+    var probe_char_literal_1: s32 = 2;
+    var count_char_literal_1: s32 = probe_char_literal_1 << 4;
+    var carry_char_literal_1: s32 = count_char_literal_1 >> 4;
+    if (carry_char_literal_1 ^ 2) != 0 {
+        carry_char_literal_1 = carry_char_literal_1 ^ 2;
+    } else {
+        carry_char_literal_1 = carry_char_literal_1 | 2;
+    }
+    var memo_char_literal_1: s32 = carry_char_literal_1 & 6;
+    memo_char_literal_1 = memo_char_literal_1 ^ memo_char_literal_1;
+    memo_char_literal_1 = memo_char_literal_1 + probe_char_literal_1;
+    memo_char_literal_1 = memo_char_literal_1 - probe_char_literal_1;
+    return ('a') as char;
+}

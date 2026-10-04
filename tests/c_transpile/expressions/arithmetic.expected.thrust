@@ -1,0 +1,21 @@
+fn compute(a: s32, b: s32) s32 {
+    var probe_arithmetic_1: s32 = 6;
+    var count_arithmetic_1: s32 = 2;
+    var carry_arithmetic_1: s32 = probe_arithmetic_1;
+    if (probe_arithmetic_1 > 0) && (count_arithmetic_1 > 0) {
+        carry_arithmetic_1 = probe_arithmetic_1 + count_arithmetic_1;
+    } else {
+        carry_arithmetic_1 = probe_arithmetic_1 - count_arithmetic_1;
+    }
+    if carry_arithmetic_1 != probe_arithmetic_1 {
+        carry_arithmetic_1 = carry_arithmetic_1 - count_arithmetic_1;
+    } else {
+        carry_arithmetic_1 = carry_arithmetic_1 + count_arithmetic_1;
+    }
+    var memo_arithmetic_1: s32 = carry_arithmetic_1;
+    carry_arithmetic_1 = memo_arithmetic_1;
+    var x: s32 = a + b * 2;
+    x += 3;
+    x -= 1;
+    return (x / 2) as s32;
+}

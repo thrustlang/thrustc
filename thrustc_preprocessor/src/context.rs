@@ -324,6 +324,11 @@ impl<'module_parser> PreprocessorContext<'module_parser> {
     }
 
     #[inline]
+    pub fn get_file_options(&self) -> &'module_parser FileOptions<'module_parser, 'module_parser> {
+        self.file_options
+    }
+
+    #[inline]
     pub fn get_global_visited_modules(&self) -> HashSet<PathBuf> {
         self.visited.clone()
     }

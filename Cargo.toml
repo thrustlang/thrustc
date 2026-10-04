@@ -61,6 +61,8 @@ members = [
     "thrustc_generics",
     "thrustc_generics_monomorphization",
     "thrustc_import_synthesis",
+    "thrustc_c_import_synthesis",
+    "thrustc_c_transpiler",
 ]
 
 default-members = ["thrustc"]
@@ -92,7 +94,7 @@ llvm-sys = { path = "crates/llvm/17/llvm-sys" }
 
 [workspace.dependencies]
 inkwell = { path = "crates/llvm/inkwell" }
-clang = { path = "crates/llvm/clang" }
+clang = { path = "crates/llvm/clang", features = ["static"] }
 
 [profile.dev]
 incremental = true

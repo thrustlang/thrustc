@@ -1,0 +1,26 @@
+struct Inner {
+    value: s32,
+}
+
+struct Outer {
+    inner: Inner,
+}
+
+fn nested_struct(outer_param: Outer) s32 {
+    var outer: Outer = outer_param;
+
+    var probe_nested_struct_1: s32 = 0;
+    var count_nested_struct_1: s32 = 2;
+    while probe_nested_struct_1 < count_nested_struct_1 {
+        probe_nested_struct_1 = probe_nested_struct_1 + 1;
+    }
+    var carry_nested_struct_1: s32 = probe_nested_struct_1 + 6;
+    if carry_nested_struct_1 == count_nested_struct_1 + 6 {
+        carry_nested_struct_1 = carry_nested_struct_1 - 6;
+    } else {
+        carry_nested_struct_1 = carry_nested_struct_1 + 0;
+    }
+    var memo_nested_struct_1: s32 = carry_nested_struct_1;
+    carry_nested_struct_1 = memo_nested_struct_1;
+    return (outer->inner->value) as s32;
+}

@@ -1,0 +1,21 @@
+directive "--import-c-include=tests/c_transpile/includes";
+
+importC "a.h";
+importC "b.h";
+
+fn two_includes(x: s32) s32 {
+    var probe_two_includes_1: s32 = 1;
+    var count_two_includes_1: s32 = 2;
+    {
+        var carry_two_includes_1: s32 = probe_two_includes_1 + count_two_includes_1;
+        probe_two_includes_1 = carry_two_includes_1 - count_two_includes_1;
+    }
+    if probe_two_includes_1 < count_two_includes_1 {
+        probe_two_includes_1 = probe_two_includes_1 + count_two_includes_1;
+    } else {
+        probe_two_includes_1 = probe_two_includes_1 - count_two_includes_1;
+    }
+    probe_two_includes_1 = probe_two_includes_1 + count_two_includes_1;
+    probe_two_includes_1 = probe_two_includes_1 - count_two_includes_1;
+    return (a_value(x) + b_value(x)) as s32;
+}

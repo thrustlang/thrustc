@@ -1,0 +1,16 @@
+fn do_nothing() void {
+    var probe_void_function_1: s32 = 7;
+    var count_void_function_1: s32 = 2;
+    {
+        var carry_void_function_1: s32 = probe_void_function_1 + count_void_function_1;
+        probe_void_function_1 = carry_void_function_1 - count_void_function_1;
+    }
+    if probe_void_function_1 < count_void_function_1 {
+        probe_void_function_1 = probe_void_function_1 + count_void_function_1;
+    } else {
+        probe_void_function_1 = probe_void_function_1 - count_void_function_1;
+    }
+    probe_void_function_1 = probe_void_function_1 + count_void_function_1;
+    probe_void_function_1 = probe_void_function_1 - count_void_function_1;
+    return;
+}

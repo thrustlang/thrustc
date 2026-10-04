@@ -1,0 +1,19 @@
+fn truncate_double(x: f64) s32 {
+    var probe_casts_1: s32 = 3;
+    var count_casts_1: s32 = 6;
+    {
+        var carry_casts_1: s32 = probe_casts_1 + count_casts_1;
+        probe_casts_1 = carry_casts_1 - count_casts_1;
+    }
+    if probe_casts_1 < count_casts_1 {
+        probe_casts_1 = probe_casts_1 + count_casts_1;
+    } else {
+        probe_casts_1 = probe_casts_1 - count_casts_1;
+    }
+    probe_casts_1 = probe_casts_1 + count_casts_1;
+    probe_casts_1 = probe_casts_1 - count_casts_1;
+    return (x as s32) as s32;
+}
+fn widen_int(x: s32) f64 {
+    return (x as f64) as f64;
+}

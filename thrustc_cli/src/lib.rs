@@ -156,6 +156,187 @@ impl CommandLine {
         }
 
         self.validate_extra();
+
+        self.handle_emit_c_bindings_thrust();
+        self.handle_translate_c_to_thrust();
+    }
+}
+
+impl CommandLine {
+    fn handle_emit_c_bindings_thrust(&self) {
+        let Some(header) = self
+            .get_options()
+            .get_emit_c_bindings_options()
+            .thrust()
+            .map(PathBuf::from)
+        else {
+            return;
+        };
+
+        let mut emit_opts: thrustc_c_transpiler::EmitCBindingsOptions =
+            thrustc_c_transpiler::EmitCBindingsOptions::new();
+
+        if let Some(out_dir) = self
+            .get_options()
+            .get_emit_c_bindings_options()
+            .out_dir()
+            .map(PathBuf::from)
+        {
+            emit_opts.set_out_dir(out_dir);
+        }
+
+        if let Some(output) = self
+            .get_options()
+            .get_emit_c_bindings_options()
+            .output()
+            .map(PathBuf::from)
+        {
+            emit_opts.set_output(output);
+        }
+
+        let options: &CompilerOptions = self.get_options();
+        let import_opts: &thrustc_options::ImportCOptions = options.get_import_c_options();
+
+        match thrustc_c_transpiler::emit_c_bindings_thrust(header, import_opts, &emit_opts) {
+            Ok((out_path, contents, warnings)) => {
+                if let Some(parent) = out_path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+
+                let mut open_options: std::fs::OpenOptions = std::fs::File::options();
+
+                open_options.create(true);
+                open_options.truncate(true);
+                open_options.write(true);
+
+                if let Ok(mut file) = open_options.open(&out_path) {
+                    let _ = file.write_all(contents.as_bytes());
+                } else {
+                    thrustc_logging::print_critical_error(
+                        LoggingType::Error,
+                        &format!("Unable to write output '{}'.", out_path.display()),
+                    );
+                }
+
+                for warning in warnings {
+                    if let thrustc_errors::CompilationIssue::Warning(code, message, ..) = warning {
+                        thrustc_logging::print_warning(
+                            LoggingType::Warning,
+                            &format!("{}: {}", code.to_title(), message),
+                        );
+                    }
+                }
+
+                thrustc_logging::write(
+                    OutputIn::Stdout,
+                    &format!("Emitted C bindings to '{}'.\n", out_path.display()),
+                );
+
+                std::process::exit(thrustc_constants::SUCCESFUL_CODE);
+            }
+            Err(message) => {
+                thrustc_logging::print_critical_error(LoggingType::Error, &message);
+            }
+        }
+    }
+}
+
+impl CommandLine {
+    fn handle_translate_c_to_thrust(&self) {
+        if self.get_options().get_translate_c_to_thrust().is_empty() {
+            return;
+        }
+
+        let options: &CompilerOptions = self.get_options();
+        let translate_opts: &thrustc_options::TranslateCOptions = options.get_translate_c_options();
+
+        match thrustc_c_transpiler::translate_c_to_thrust(
+            self.get_options().get_translate_c_to_thrust(),
+            translate_opts,
+        ) {
+            Ok(results) => {
+                for (out_path, contents, issues) in results {
+                    if let Some(parent) = out_path.parent() {
+                        let _ = std::fs::create_dir_all(parent);
+                    }
+
+                    let mut open_options: std::fs::OpenOptions = std::fs::File::options();
+
+                    open_options.create(true);
+                    open_options.truncate(true);
+                    open_options.write(true);
+
+                    if let Ok(mut file) = open_options.open(&out_path) {
+                        let _ = file.write_all(contents.as_bytes());
+                    } else {
+                        thrustc_logging::print_critical_error(
+                            LoggingType::Error,
+                            &format!("Unable to write output '{}'.", out_path.display()),
+                        );
+                    }
+
+                    for issue in issues {
+                        match issue {
+                            thrustc_errors::CompilationIssue::Warning(code, message, ..) => {
+                                thrustc_logging::print_warning(
+                                    LoggingType::Warning,
+                                    &format!("{}: {}\n", code.to_title(), message),
+                                );
+                            }
+                            thrustc_errors::CompilationIssue::Error(
+                                code,
+                                message,
+                                help,
+                                note,
+                                ..,
+                            ) => {
+                                let mut full: String =
+                                    format!("{}: {}\nhelp: {}", code.to_title(), message, help);
+
+                                if let Some(note) = note {
+                                    full.push_str("\nnote: ");
+                                    full.push_str(&note);
+                                }
+
+                                thrustc_logging::print_error(LoggingType::Error, &full);
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+
+                thrustc_logging::write(OutputIn::Stdout, "Translated C to Thrust.\n");
+
+                std::process::exit(thrustc_constants::SUCCESFUL_CODE);
+            }
+
+            Err(issues) => {
+                for issue in issues {
+                    match issue {
+                        thrustc_errors::CompilationIssue::Warning(code, message, ..) => {
+                            thrustc_logging::print_warning(
+                                LoggingType::Warning,
+                                &format!("{}: {}\n", code.to_title(), message),
+                            );
+                        }
+                        thrustc_errors::CompilationIssue::Error(code, message, help, note, ..) => {
+                            let mut full: String =
+                                format!("{}: {}\nhelp: {}", code.to_title(), message, help);
+
+                            if let Some(note) = note {
+                                full.push_str("\nnote: ");
+                                full.push_str(&note);
+                            }
+
+                            thrustc_logging::print_error(LoggingType::Error, &full);
+                        }
+                        _ => {}
+                    }
+                }
+
+                std::process::exit(thrustc_constants::FAILURE_CODE);
+            }
+        }
     }
 }
 
@@ -242,6 +423,232 @@ impl CommandLine {
                 );
 
                 std::process::exit(thrustc_constants::SUCCESFUL_CODE);
+            }
+
+            "--emit-c-bindings-thrust" => {
+                self.advance();
+
+                let header: PathBuf = self.peek().into();
+
+                self.get_mut_options()
+                    .get_mut_emit_c_bindings_options()
+                    .set_thrust(header);
+
+                self.advance();
+            }
+
+            "--emit-c-bindings-out-dir" => {
+                self.advance();
+
+                let dir: PathBuf = self.peek().into();
+
+                self.get_mut_options()
+                    .get_mut_emit_c_bindings_options()
+                    .set_out_dir(dir);
+
+                self.advance();
+            }
+
+            "--emit-c-bindings-output" => {
+                self.advance();
+                let out: PathBuf = self.peek().into();
+                self.get_mut_options()
+                    .get_mut_emit_c_bindings_options()
+                    .set_output(out);
+                self.advance();
+            }
+
+            "--import-c-include" => {
+                self.advance();
+                let path: PathBuf = self.peek().into();
+                self.get_mut_options()
+                    .get_mut_import_c_options()
+                    .add_include_path(path);
+                self.advance();
+            }
+
+            "--import-c-system-include" => {
+                self.advance();
+                let path: PathBuf = self.peek().into();
+                self.get_mut_options()
+                    .get_mut_import_c_options()
+                    .add_system_include_path(path);
+                self.advance();
+            }
+
+            "--import-c-define" => {
+                self.advance();
+                let def: String = self.peek().to_string();
+                self.get_mut_options()
+                    .get_mut_import_c_options()
+                    .add_define(def);
+                self.advance();
+            }
+
+            "--import-c-undef" => {
+                self.advance();
+                let name: String = self.peek().to_string();
+                self.get_mut_options()
+                    .get_mut_import_c_options()
+                    .add_undef(name);
+                self.advance();
+            }
+
+            "--import-c-target" => {
+                self.advance();
+                let target: String = self.peek().to_string();
+                self.get_mut_options()
+                    .get_mut_import_c_options()
+                    .set_target(target);
+                self.advance();
+            }
+
+            "--import-c-sysroot" => {
+                self.advance();
+                let sysroot: PathBuf = self.peek().into();
+                self.get_mut_options()
+                    .get_mut_import_c_options()
+                    .set_sysroot(sysroot);
+                self.advance();
+            }
+
+            "--import-c-std" => {
+                self.advance();
+                let std_: String = self.peek().to_string();
+                self.get_mut_options()
+                    .get_mut_import_c_options()
+                    .set_std(std_);
+                self.advance();
+            }
+
+            "--import-c-arg" => {
+                self.advance();
+                let arg: String = self.peek().to_string();
+                self.get_mut_options()
+                    .get_mut_import_c_options()
+                    .add_arg(arg);
+                self.advance();
+            }
+
+            "--translate-c-include" => {
+                self.advance();
+                let path: PathBuf = self.peek().into();
+                self.get_mut_options()
+                    .get_mut_translate_c_options()
+                    .add_include_path(path);
+                self.advance();
+            }
+
+            "--translate-c-system-include" => {
+                self.advance();
+                let path: PathBuf = self.peek().into();
+                self.get_mut_options()
+                    .get_mut_translate_c_options()
+                    .add_system_include_path(path);
+                self.advance();
+            }
+
+            "--translate-c-define" => {
+                self.advance();
+                let def: String = self.peek().to_string();
+                self.get_mut_options()
+                    .get_mut_translate_c_options()
+                    .add_define(def);
+                self.advance();
+            }
+
+            "--translate-c-undef" => {
+                self.advance();
+
+                let name: String = self.peek().to_string();
+
+                self.get_mut_options()
+                    .get_mut_translate_c_options()
+                    .add_undef(name);
+
+                self.advance();
+            }
+
+            "--translate-c-target" => {
+                self.advance();
+
+                let target: String = self.peek().to_string();
+
+                self.get_mut_options()
+                    .get_mut_translate_c_options()
+                    .set_target(target);
+
+                self.advance();
+            }
+
+            "--translate-c-sysroot" => {
+                self.advance();
+
+                let sysroot: PathBuf = self.peek().into();
+
+                self.get_mut_options()
+                    .get_mut_translate_c_options()
+                    .set_sysroot(sysroot);
+
+                self.advance();
+            }
+
+            "--translate-c-std" => {
+                self.advance();
+
+                let std_: String = self.peek().to_string();
+
+                self.get_mut_options()
+                    .get_mut_translate_c_options()
+                    .set_std(std_);
+
+                self.advance();
+            }
+
+            "--translate-c-arg" => {
+                self.advance();
+
+                let arg: String = self.peek().to_string();
+
+                self.get_mut_options()
+                    .get_mut_translate_c_options()
+                    .add_arg(arg);
+
+                self.advance();
+            }
+
+            "--translate-c-out-dir" => {
+                self.advance();
+
+                let out_dir: PathBuf = self.peek().into();
+
+                self.get_mut_options()
+                    .get_mut_translate_c_options()
+                    .set_out_dir(out_dir);
+
+                self.advance();
+            }
+
+            "--translate-c-output" => {
+                self.advance();
+
+                let output: PathBuf = self.peek().into();
+
+                self.get_mut_options()
+                    .get_mut_translate_c_options()
+                    .set_output(output);
+
+                self.advance();
+            }
+
+            "--translate-c-to-thrust" => {
+                self.advance();
+
+                let input: PathBuf = self.peek().into();
+
+                self.get_mut_options().add_translate_c_to_thrust(input);
+
+                self.advance();
             }
 
             "-build-dir" => {

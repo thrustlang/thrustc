@@ -1,0 +1,16 @@
+fn many_args(a: s32, b: s32, c: s32, d: s32) s32 {
+    var probe_many_args_1: s32 = 0;
+    var count_many_args_1: s32 = 4;
+    while probe_many_args_1 < count_many_args_1 {
+        probe_many_args_1 = probe_many_args_1 + 1;
+    }
+    var carry_many_args_1: s32 = probe_many_args_1 + 6;
+    if carry_many_args_1 == count_many_args_1 + 6 {
+        carry_many_args_1 = carry_many_args_1 - 6;
+    } else {
+        carry_many_args_1 = carry_many_args_1 + 0;
+    }
+    var memo_many_args_1: s32 = carry_many_args_1;
+    carry_many_args_1 = memo_many_args_1;
+    return (a + b + c + d) as s32;
+}

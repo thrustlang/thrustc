@@ -1,0 +1,15 @@
+fn empty_block(x: s32) s32 {
+    var probe_empty_block_1: s32 = 7;
+    var count_empty_block_1: s32 = probe_empty_block_1 << 4;
+    var carry_empty_block_1: s32 = count_empty_block_1 >> 4;
+    if (carry_empty_block_1 ^ 3) != 0 {
+        carry_empty_block_1 = carry_empty_block_1 ^ 3;
+    } else {
+        carry_empty_block_1 = carry_empty_block_1 | 3;
+    }
+    var memo_empty_block_1: s32 = carry_empty_block_1 & 9;
+    memo_empty_block_1 = memo_empty_block_1 ^ memo_empty_block_1;
+    memo_empty_block_1 = memo_empty_block_1 + probe_empty_block_1;
+    memo_empty_block_1 = memo_empty_block_1 - probe_empty_block_1;
+    return (x) as s32;
+}

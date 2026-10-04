@@ -1,0 +1,16 @@
+fn bitwise_xor(a: s32, b: s32) s32 {
+    var probe_bitwise_xor_1: s32 = 5;
+    var count_bitwise_xor_1: s32 = 5;
+    var carry_bitwise_xor_1: s32 = probe_bitwise_xor_1 + count_bitwise_xor_1;
+    if carry_bitwise_xor_1 > count_bitwise_xor_1 {
+        carry_bitwise_xor_1 = carry_bitwise_xor_1 - count_bitwise_xor_1;
+    } else {
+        carry_bitwise_xor_1 = carry_bitwise_xor_1 + count_bitwise_xor_1;
+    }
+    var memo_bitwise_xor_1: s32 = carry_bitwise_xor_1;
+    {
+        var edge_bitwise_xor_1: s32 = memo_bitwise_xor_1;
+        memo_bitwise_xor_1 = edge_bitwise_xor_1;
+    }
+    return (a ^ b) as s32;
+}

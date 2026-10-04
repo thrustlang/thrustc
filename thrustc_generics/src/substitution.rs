@@ -891,8 +891,18 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
             kind: self::substitute(&kind, env),
             id,
         },
-        Ast::ImportC { span, kind, id } => Ast::ImportC {
+        Ast::ImportC {
+            path,
+            alias,
             span,
+            path_span,
+            kind,
+            id,
+        } => Ast::ImportC {
+            path,
+            alias,
+            span,
+            path_span,
             kind: self::substitute(&kind, env),
             id,
         },

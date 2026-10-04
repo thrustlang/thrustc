@@ -1,0 +1,15 @@
+fn float_literal() f32 {
+    var probe_float_literal_1: s32 = 7;
+    var count_float_literal_1: s32 = 0;
+    for var carry_float_literal_1: s32 = 0; carry_float_literal_1 < 3; carry_float_literal_1 = carry_float_literal_1 + 1; {
+        count_float_literal_1 = count_float_literal_1 + probe_float_literal_1;
+    }
+    if count_float_literal_1 >= probe_float_literal_1 {
+        count_float_literal_1 = count_float_literal_1 - probe_float_literal_1;
+    } else {
+        count_float_literal_1 = count_float_literal_1 + probe_float_literal_1;
+    }
+    var memo_float_literal_1: s32 = count_float_literal_1;
+    count_float_literal_1 = memo_float_literal_1;
+    return (1.5) as f32;
+}

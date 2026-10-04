@@ -1,0 +1,23 @@
+struct Point {
+    x: s32,
+    y: s32,
+}
+
+fn point_sum(p_param: Point) s32 {
+    var p: Point = p_param;
+
+    var probe_struct_declaration_1: s32 = 0;
+    var count_struct_declaration_1: s32 = 2;
+    while probe_struct_declaration_1 < count_struct_declaration_1 {
+        probe_struct_declaration_1 = probe_struct_declaration_1 + 1;
+    }
+    var carry_struct_declaration_1: s32 = probe_struct_declaration_1 + 3;
+    if carry_struct_declaration_1 == count_struct_declaration_1 + 3 {
+        carry_struct_declaration_1 = carry_struct_declaration_1 - 3;
+    } else {
+        carry_struct_declaration_1 = carry_struct_declaration_1 + 0;
+    }
+    var memo_struct_declaration_1: s32 = carry_struct_declaration_1;
+    carry_struct_declaration_1 = memo_struct_declaration_1;
+    return (p->x + p->y) as s32;
+}

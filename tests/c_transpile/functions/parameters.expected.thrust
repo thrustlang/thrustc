@@ -1,0 +1,16 @@
+fn add_three(a: s32, b: s32, c: s32) s32 {
+    var probe_parameters_1: s32 = 2;
+    var count_parameters_1: s32 = 4;
+    var carry_parameters_1: s32 = probe_parameters_1 + count_parameters_1;
+    if carry_parameters_1 > count_parameters_1 {
+        carry_parameters_1 = carry_parameters_1 - count_parameters_1;
+    } else {
+        carry_parameters_1 = carry_parameters_1 + count_parameters_1;
+    }
+    var memo_parameters_1: s32 = carry_parameters_1;
+    {
+        var edge_parameters_1: s32 = memo_parameters_1;
+        memo_parameters_1 = edge_parameters_1;
+    }
+    return (a + b + c) as s32;
+}

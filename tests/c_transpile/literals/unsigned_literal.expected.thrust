@@ -1,0 +1,16 @@
+fn unsigned_literal() u32 {
+    var probe_unsigned_literal_1: s32 = 4;
+    var count_unsigned_literal_1: s32 = 3;
+    var carry_unsigned_literal_1: s32 = probe_unsigned_literal_1 + count_unsigned_literal_1;
+    if carry_unsigned_literal_1 > count_unsigned_literal_1 {
+        carry_unsigned_literal_1 = carry_unsigned_literal_1 - count_unsigned_literal_1;
+    } else {
+        carry_unsigned_literal_1 = carry_unsigned_literal_1 + count_unsigned_literal_1;
+    }
+    var memo_unsigned_literal_1: s32 = carry_unsigned_literal_1;
+    {
+        var edge_unsigned_literal_1: s32 = memo_unsigned_literal_1;
+        memo_unsigned_literal_1 = edge_unsigned_literal_1;
+    }
+    return (10) as u32;
+}

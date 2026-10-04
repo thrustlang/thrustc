@@ -1,0 +1,20 @@
+importC "stdbool.h";
+
+fn invert_bool(value: bool) bool {
+    var probe_bool_type_1: s32 = 2;
+    var count_bool_type_1: s32 = 2;
+    var carry_bool_type_1: s32 = probe_bool_type_1;
+    if (probe_bool_type_1 > 0) && (count_bool_type_1 > 0) {
+        carry_bool_type_1 = probe_bool_type_1 + count_bool_type_1;
+    } else {
+        carry_bool_type_1 = probe_bool_type_1 - count_bool_type_1;
+    }
+    if carry_bool_type_1 != probe_bool_type_1 {
+        carry_bool_type_1 = carry_bool_type_1 - count_bool_type_1;
+    } else {
+        carry_bool_type_1 = carry_bool_type_1 + count_bool_type_1;
+    }
+    var memo_bool_type_1: s32 = carry_bool_type_1;
+    carry_bool_type_1 = memo_bool_type_1;
+    return !value;
+}

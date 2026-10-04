@@ -1,0 +1,15 @@
+fn message() const ptr[char] {
+    var probe_string_literal_1: s32 = 2;
+    var count_string_literal_1: s32 = 0;
+    for var carry_string_literal_1: s32 = 0; carry_string_literal_1 < 3; carry_string_literal_1 = carry_string_literal_1 + 1; {
+        count_string_literal_1 = count_string_literal_1 + probe_string_literal_1;
+    }
+    if count_string_literal_1 >= probe_string_literal_1 {
+        count_string_literal_1 = count_string_literal_1 - probe_string_literal_1;
+    } else {
+        count_string_literal_1 = count_string_literal_1 + probe_string_literal_1;
+    }
+    var memo_string_literal_1: s32 = count_string_literal_1;
+    count_string_literal_1 = memo_string_literal_1;
+    return "hello" as const ptr[char];
+}

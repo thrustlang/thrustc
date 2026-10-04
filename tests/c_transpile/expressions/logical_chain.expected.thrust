@@ -1,0 +1,15 @@
+fn logical_chain(a: s32, b: s32, c: s32) s32 {
+    var probe_logical_chain_1: s32 = 6;
+    var count_logical_chain_1: s32 = probe_logical_chain_1 << 2;
+    var carry_logical_chain_1: s32 = count_logical_chain_1 >> 2;
+    if (carry_logical_chain_1 ^ 5) != 0 {
+        carry_logical_chain_1 = carry_logical_chain_1 ^ 5;
+    } else {
+        carry_logical_chain_1 = carry_logical_chain_1 | 5;
+    }
+    var memo_logical_chain_1: s32 = carry_logical_chain_1 & 9;
+    memo_logical_chain_1 = memo_logical_chain_1 ^ memo_logical_chain_1;
+    memo_logical_chain_1 = memo_logical_chain_1 + probe_logical_chain_1;
+    memo_logical_chain_1 = memo_logical_chain_1 - probe_logical_chain_1;
+    return ((((a) != 0) && ((b) != 0)) && ((c) != 0)) as s32;
+}

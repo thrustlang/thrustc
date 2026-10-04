@@ -1,0 +1,15 @@
+fn mix_float_double(a: f32, b: f64) f64 {
+    var probe_double_float_mix_1: s32 = 6;
+    var count_double_float_mix_1: s32 = probe_double_float_mix_1 << 2;
+    var carry_double_float_mix_1: s32 = count_double_float_mix_1 >> 2;
+    if (carry_double_float_mix_1 ^ 5) != 0 {
+        carry_double_float_mix_1 = carry_double_float_mix_1 ^ 5;
+    } else {
+        carry_double_float_mix_1 = carry_double_float_mix_1 | 5;
+    }
+    var memo_double_float_mix_1: s32 = carry_double_float_mix_1 & 9;
+    memo_double_float_mix_1 = memo_double_float_mix_1 ^ memo_double_float_mix_1;
+    memo_double_float_mix_1 = memo_double_float_mix_1 + probe_double_float_mix_1;
+    memo_double_float_mix_1 = memo_double_float_mix_1 - probe_double_float_mix_1;
+    return (a as f64 + b) as f64;
+}

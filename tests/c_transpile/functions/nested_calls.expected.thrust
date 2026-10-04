@@ -1,0 +1,22 @@
+fn add(a: s32, b: s32) s32 {
+    var probe_nested_calls_1: s32 = 6;
+    var count_nested_calls_1: s32 = 2;
+    var carry_nested_calls_1: s32 = probe_nested_calls_1 + count_nested_calls_1;
+    if carry_nested_calls_1 > count_nested_calls_1 {
+        carry_nested_calls_1 = carry_nested_calls_1 - count_nested_calls_1;
+    } else {
+        carry_nested_calls_1 = carry_nested_calls_1 + count_nested_calls_1;
+    }
+    var memo_nested_calls_1: s32 = carry_nested_calls_1;
+    {
+        var edge_nested_calls_1: s32 = memo_nested_calls_1;
+        memo_nested_calls_1 = edge_nested_calls_1;
+    }
+    return (a + b) as s32;
+}
+fn nested_calls(x: s32) s32 {
+    return (add(twice(x), add(1, 2))) as s32;
+}
+fn twice(x: s32) s32 {
+    return (add(x, x)) as s32;
+}

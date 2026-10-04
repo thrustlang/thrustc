@@ -1,0 +1,15 @@
+fn pointer_return(p: ptr[s32]) ptr[s32] {
+    var probe_pointer_return_1: s32 = 3;
+    var count_pointer_return_1: s32 = probe_pointer_return_1 << 2;
+    var carry_pointer_return_1: s32 = count_pointer_return_1 >> 2;
+    if (carry_pointer_return_1 ^ 3) != 0 {
+        carry_pointer_return_1 = carry_pointer_return_1 ^ 3;
+    } else {
+        carry_pointer_return_1 = carry_pointer_return_1 | 3;
+    }
+    var memo_pointer_return_1: s32 = carry_pointer_return_1 & 6;
+    memo_pointer_return_1 = memo_pointer_return_1 ^ memo_pointer_return_1;
+    memo_pointer_return_1 = memo_pointer_return_1 + probe_pointer_return_1;
+    memo_pointer_return_1 = memo_pointer_return_1 - probe_pointer_return_1;
+    return p;
+}

@@ -1,0 +1,20 @@
+directive "--import-c-include=tests/c_transpile/includes";
+
+importC "local_include.h";
+
+fn call_header(x: s32) s32 {
+    var probe_local_include_1: s32 = 5;
+    var count_local_include_1: s32 = 3;
+    {
+        var carry_local_include_1: s32 = probe_local_include_1 + count_local_include_1;
+        probe_local_include_1 = carry_local_include_1 - count_local_include_1;
+    }
+    if probe_local_include_1 < count_local_include_1 {
+        probe_local_include_1 = probe_local_include_1 + count_local_include_1;
+    } else {
+        probe_local_include_1 = probe_local_include_1 - count_local_include_1;
+    }
+    probe_local_include_1 = probe_local_include_1 + count_local_include_1;
+    probe_local_include_1 = probe_local_include_1 - count_local_include_1;
+    return (header_add_one(x)) as s32;
+}

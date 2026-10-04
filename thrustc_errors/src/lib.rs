@@ -1850,6 +1850,59 @@ fn print(fmt: CString) s32 @public @arbitraryArgs @noArgCount {
 }
 """##);
 
+        explanations.insert(
+            CompilationIssueCode::E0100,
+            r##"The compiler failed to import C declarations through `importC`. This typically means Clang reported an error (or fatal error) while parsing the header.
+
+Check the reported header path, include paths, defines, and the C standard. If the header requires system includes, ensure they are available on the machine."##,
+        );
+
+        explanations.insert(
+            CompilationIssueCode::E0110,
+            r##"The compiler failed to translate a C source file into Thrust (`--translate-c-to-thrust`) because the C file contains a construct that the translator does not support yet.
+
+Limit the C input to the supported subset or rewrite the unsupported part."##,
+        );
+
+        explanations.insert(
+            CompilationIssueCode::E0111,
+            r##"Clang reported errors while parsing a C source file in translation mode (`--translate-c-to-thrust`).
+
+Check the input file, include paths, defines, and the C standard."##,
+        );
+
+        explanations.insert(
+            CompilationIssueCode::W0100,
+            r##"Clang emitted a diagnostic while importing a C header with `importC`. These messages are forwarded to help debug include paths, defines, and unsupported constructs."##,
+        );
+
+        explanations.insert(
+            CompilationIssueCode::W0101,
+            r##"A C struct field had no name, so the importer generated a placeholder name such as `field0`. This keeps bindings usable but the field name is invented."##,
+        );
+
+        explanations.insert(
+            CompilationIssueCode::W0102,
+            r##"A C union was skipped because unions are not supported yet by `importC`."##,
+        );
+
+        explanations.insert(
+            CompilationIssueCode::W0103,
+            r##"A C struct was skipped because it contains bitfields, which are not supported yet by `importC`."##,
+        );
+
+        explanations.insert(
+            CompilationIssueCode::W0104,
+            r##"A C declaration was skipped because it could not be represented safely in Thrust (unsupported type, incomplete type, or other unsupported construct)."##,
+        );
+
+        explanations.insert(
+            CompilationIssueCode::W0105,
+            r##"A generated Thrust binding could not preserve the exact bytes of a C macro string literal. The emitter produced a parseable string literal by interpreting the macro bytes as UTF-8 and falling back to lossy replacement for invalid sequences.
+
+The resulting binding is valid Thrust code, but the literal content may differ from the original C macro."##,
+        );
+
         explanations
     };
 }
@@ -1913,6 +1966,13 @@ pub enum CompilationIssueCode {
     E0056,
     E0057,
 
+    // importC / cbindgen
+    E0100,
+
+    // translateC / transpiler
+    E0110,
+    E0111,
+
     W0001,
     W0002,
     W0003,
@@ -1945,6 +2005,14 @@ pub enum CompilationIssueCode {
     W0031,
     W0032,
     W0033,
+
+    // importC / cbindgen
+    W0100,
+    W0101,
+    W0102,
+    W0103,
+    W0104,
+    W0105,
 }
 
 #[inline]
@@ -2123,6 +2191,16 @@ impl CompilationIssueCode {
             CompilationIssueCode::E0057 => {
                 format!("INVALID VARIADIC ARGUMENT TYPE - {}", "E0057".bright_red())
             }
+
+            CompilationIssueCode::E0100 => {
+                format!("C IMPORT FAILED - {}", "E0100".bright_red())
+            }
+            CompilationIssueCode::E0110 => {
+                format!("C TRANSLATION UNSUPPORTED - {}", "E0110".bright_red())
+            }
+            CompilationIssueCode::E0111 => {
+                format!("C TRANSLATION CLANG ERROR - {}", "E0111".bright_red())
+            }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())
             }
@@ -2215,6 +2293,28 @@ impl CompilationIssueCode {
             CompilationIssueCode::W0033 => {
                 format!("VARIADIC ARGUMENT COUNT - {}", "W0033".bright_yellow())
             }
+
+            CompilationIssueCode::W0100 => {
+                format!("C IMPORT CLANG DIAGNOSTIC - {}", "W0100".bright_yellow())
+            }
+            CompilationIssueCode::W0101 => {
+                format!("C IMPORT INVENTED FIELD NAME - {}", "W0101".bright_yellow())
+            }
+            CompilationIssueCode::W0102 => {
+                format!("C IMPORT UNION SKIPPED - {}", "W0102".bright_yellow())
+            }
+            CompilationIssueCode::W0103 => {
+                format!("C IMPORT BITFIELD STRUCT SKIPPED - {}", "W0103".bright_yellow())
+            }
+            CompilationIssueCode::W0104 => {
+                format!("C IMPORT DECLARATION SKIPPED - {}", "W0104".bright_yellow())
+            }
+            CompilationIssueCode::W0105 => {
+                format!(
+                    "C BINDINGS EMIT STRING LOSSY - {}",
+                    "W0105".bright_yellow()
+                )
+            }
         }
     }
 
@@ -2296,6 +2396,11 @@ impl CompilationIssueCode {
             "E0056" => Ok(CompilationIssueCode::E0056),
             "E0057" => Ok(CompilationIssueCode::E0057),
 
+            "E0100" => Ok(CompilationIssueCode::E0100),
+
+            "E0110" => Ok(CompilationIssueCode::E0110),
+            "E0111" => Ok(CompilationIssueCode::E0111),
+
             "W0001" => Ok(CompilationIssueCode::W0001),
             "W0002" => Ok(CompilationIssueCode::W0002),
             "W0003" => Ok(CompilationIssueCode::W0003),
@@ -2328,6 +2433,13 @@ impl CompilationIssueCode {
             "W0031" => Ok(CompilationIssueCode::W0031),
             "W0032" => Ok(CompilationIssueCode::W0032),
             "W0033" => Ok(CompilationIssueCode::W0033),
+
+            "W0100" => Ok(CompilationIssueCode::W0100),
+            "W0101" => Ok(CompilationIssueCode::W0101),
+            "W0102" => Ok(CompilationIssueCode::W0102),
+            "W0103" => Ok(CompilationIssueCode::W0103),
+            "W0104" => Ok(CompilationIssueCode::W0104),
+            "W0105" => Ok(CompilationIssueCode::W0105),
 
             _ => Err(()),
         }

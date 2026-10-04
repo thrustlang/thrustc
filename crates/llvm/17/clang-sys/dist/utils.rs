@@ -1,6 +1,13 @@
 use crate::r#static::logging::{self, LoggingType};
 
 pub fn get_libclang_build_path() -> std::path::PathBuf {
+    if let Ok(override_path) = std::env::var("THRUSTC_LIBCLANG_BUILD_PATH") {
+        let p: std::path::PathBuf = override_path.into();
+        if p.is_dir() {
+            return p;
+        }
+    }
+
     match std::env::consts::FAMILY {
         "unix" => std::path::PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| {
             logging::log(LoggingType::Panic, "Missing $HOME environment variable.\n");

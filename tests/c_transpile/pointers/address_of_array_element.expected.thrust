@@ -1,0 +1,16 @@
+fn address_of_array_element(xs: ptr[s32]) s32 {
+    var probe_address_of_array_element_1: s32 = 5;
+    var count_address_of_array_element_1: s32 = 0;
+    for var carry_address_of_array_element_1: s32 = 0; carry_address_of_array_element_1 < 3; carry_address_of_array_element_1 = carry_address_of_array_element_1 + 1; {
+        count_address_of_array_element_1 = count_address_of_array_element_1 + probe_address_of_array_element_1;
+    }
+    if count_address_of_array_element_1 >= probe_address_of_array_element_1 {
+        count_address_of_array_element_1 = count_address_of_array_element_1 - probe_address_of_array_element_1;
+    } else {
+        count_address_of_array_element_1 = count_address_of_array_element_1 + probe_address_of_array_element_1;
+    }
+    var memo_address_of_array_element_1: s32 = count_address_of_array_element_1;
+    count_address_of_array_element_1 = memo_address_of_array_element_1;
+    var p: ptr[s32] = xs[1];
+    return (p->[0]) as s32;
+}

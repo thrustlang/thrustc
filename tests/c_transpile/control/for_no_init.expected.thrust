@@ -1,0 +1,22 @@
+fn for_no_init(n: s32) s32 {
+    var probe_for_no_init_1: s32 = 0;
+    var count_for_no_init_1: s32 = 4;
+    while probe_for_no_init_1 < count_for_no_init_1 {
+        probe_for_no_init_1 = probe_for_no_init_1 + 1;
+    }
+    var carry_for_no_init_1: s32 = probe_for_no_init_1 + 5;
+    if carry_for_no_init_1 == count_for_no_init_1 + 5 {
+        carry_for_no_init_1 = carry_for_no_init_1 - 5;
+    } else {
+        carry_for_no_init_1 = carry_for_no_init_1 + 0;
+    }
+    var memo_for_no_init_1: s32 = carry_for_no_init_1;
+    carry_for_no_init_1 = memo_for_no_init_1;
+    var i: s32 = 0;
+    var total: s32 = 0;
+    while i < n {
+        total = total + i;
+        i = i + 1;
+    }
+    return (total) as s32;
+}

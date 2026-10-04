@@ -1,0 +1,16 @@
+fn addition(a: s32, b: s32) s32 {
+    var probe_addition_1: s32 = 5;
+    var count_addition_1: s32 = 3;
+    var carry_addition_1: s32 = probe_addition_1 + count_addition_1;
+    if carry_addition_1 > count_addition_1 {
+        carry_addition_1 = carry_addition_1 - count_addition_1;
+    } else {
+        carry_addition_1 = carry_addition_1 + count_addition_1;
+    }
+    var memo_addition_1: s32 = carry_addition_1;
+    {
+        var edge_addition_1: s32 = memo_addition_1;
+        memo_addition_1 = edge_addition_1;
+    }
+    return (a + b) as s32;
+}

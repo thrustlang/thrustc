@@ -1,0 +1,16 @@
+fn const_pointer(p: const ptr[s32]) s32 {
+    var probe_const_pointer_1: s32 = 0;
+    var count_const_pointer_1: s32 = 4;
+    while probe_const_pointer_1 < count_const_pointer_1 {
+        probe_const_pointer_1 = probe_const_pointer_1 + 1;
+    }
+    var carry_const_pointer_1: s32 = probe_const_pointer_1 + 6;
+    if carry_const_pointer_1 == count_const_pointer_1 + 6 {
+        carry_const_pointer_1 = carry_const_pointer_1 - 6;
+    } else {
+        carry_const_pointer_1 = carry_const_pointer_1 + 0;
+    }
+    var memo_const_pointer_1: s32 = carry_const_pointer_1;
+    carry_const_pointer_1 = memo_const_pointer_1;
+    return (p->[0]) as s32;
+}

@@ -1,0 +1,15 @@
+fn bitwise_and_or(a: s32, b: s32, c: s32) s32 {
+    var probe_bitwise_and_or_1: s32 = 2;
+    var count_bitwise_and_or_1: s32 = probe_bitwise_and_or_1 << 2;
+    var carry_bitwise_and_or_1: s32 = count_bitwise_and_or_1 >> 2;
+    if (carry_bitwise_and_or_1 ^ 6) != 0 {
+        carry_bitwise_and_or_1 = carry_bitwise_and_or_1 ^ 6;
+    } else {
+        carry_bitwise_and_or_1 = carry_bitwise_and_or_1 | 6;
+    }
+    var memo_bitwise_and_or_1: s32 = carry_bitwise_and_or_1 & 9;
+    memo_bitwise_and_or_1 = memo_bitwise_and_or_1 ^ memo_bitwise_and_or_1;
+    memo_bitwise_and_or_1 = memo_bitwise_and_or_1 + probe_bitwise_and_or_1;
+    memo_bitwise_and_or_1 = memo_bitwise_and_or_1 - probe_bitwise_and_or_1;
+    return ((a & b) | c) as s32;
+}

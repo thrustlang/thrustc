@@ -1,0 +1,16 @@
+fn division(a: s32, b: s32) s32 {
+    var probe_division_1: s32 = 3;
+    var count_division_1: s32 = 4;
+    var carry_division_1: s32 = probe_division_1 + count_division_1;
+    if carry_division_1 > count_division_1 {
+        carry_division_1 = carry_division_1 - count_division_1;
+    } else {
+        carry_division_1 = carry_division_1 + count_division_1;
+    }
+    var memo_division_1: s32 = carry_division_1;
+    {
+        var edge_division_1: s32 = memo_division_1;
+        memo_division_1 = edge_division_1;
+    }
+    return (a / b) as s32;
+}

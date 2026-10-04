@@ -1,0 +1,15 @@
+fn unary_not(a: s32) s32 {
+    var probe_unary_not_1: s32 = 5;
+    var count_unary_not_1: s32 = 0;
+    for var carry_unary_not_1: s32 = 0; carry_unary_not_1 < 1; carry_unary_not_1 = carry_unary_not_1 + 1; {
+        count_unary_not_1 = count_unary_not_1 + probe_unary_not_1;
+    }
+    if count_unary_not_1 >= probe_unary_not_1 {
+        count_unary_not_1 = count_unary_not_1 - probe_unary_not_1;
+    } else {
+        count_unary_not_1 = count_unary_not_1 + probe_unary_not_1;
+    }
+    var memo_unary_not_1: s32 = count_unary_not_1;
+    count_unary_not_1 = memo_unary_not_1;
+    return (!((a) != 0)) as s32;
+}

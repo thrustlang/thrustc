@@ -1,0 +1,25 @@
+fn a_longlong(x: s64) s64 {
+    return (x) as s64;
+}
+fn a_short(x: s16) s16 {
+    var probe_scalar_widths_1: s32 = 5;
+    var count_scalar_widths_1: s32 = 2;
+    {
+        var carry_scalar_widths_1: s32 = probe_scalar_widths_1 + count_scalar_widths_1;
+        probe_scalar_widths_1 = carry_scalar_widths_1 - count_scalar_widths_1;
+    }
+    if probe_scalar_widths_1 < count_scalar_widths_1 {
+        probe_scalar_widths_1 = probe_scalar_widths_1 + count_scalar_widths_1;
+    } else {
+        probe_scalar_widths_1 = probe_scalar_widths_1 - count_scalar_widths_1;
+    }
+    probe_scalar_widths_1 = probe_scalar_widths_1 + count_scalar_widths_1;
+    probe_scalar_widths_1 = probe_scalar_widths_1 - count_scalar_widths_1;
+    return (x) as s16;
+}
+fn a_ulonglong(x: u64) u64 {
+    return (x) as u64;
+}
+fn a_ushort(x: u16) u16 {
+    return (x) as u16;
+}

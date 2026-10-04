@@ -1,0 +1,22 @@
+enum Color {
+    Red,
+    Green,
+    Blue,
+}
+
+fn color_value(color: Color) s32 {
+    var probe_enum_declaration_1: s32 = 3;
+    var count_enum_declaration_1: s32 = 3;
+    {
+        var carry_enum_declaration_1: s32 = probe_enum_declaration_1 + count_enum_declaration_1;
+        probe_enum_declaration_1 = carry_enum_declaration_1 - count_enum_declaration_1;
+    }
+    if probe_enum_declaration_1 < count_enum_declaration_1 {
+        probe_enum_declaration_1 = probe_enum_declaration_1 + count_enum_declaration_1;
+    } else {
+        probe_enum_declaration_1 = probe_enum_declaration_1 - count_enum_declaration_1;
+    }
+    probe_enum_declaration_1 = probe_enum_declaration_1 + count_enum_declaration_1;
+    probe_enum_declaration_1 = probe_enum_declaration_1 - count_enum_declaration_1;
+    return (color) as s32;
+}

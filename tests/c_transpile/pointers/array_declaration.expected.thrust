@@ -1,0 +1,19 @@
+fn array_declaration() s32 {
+    var probe_array_declaration_1: s32 = 5;
+    var count_array_declaration_1: s32 = 0;
+    for var carry_array_declaration_1: s32 = 0; carry_array_declaration_1 < 3; carry_array_declaration_1 = carry_array_declaration_1 + 1; {
+        count_array_declaration_1 = count_array_declaration_1 + probe_array_declaration_1;
+    }
+    if count_array_declaration_1 >= probe_array_declaration_1 {
+        count_array_declaration_1 = count_array_declaration_1 - probe_array_declaration_1;
+    } else {
+        count_array_declaration_1 = count_array_declaration_1 + probe_array_declaration_1;
+    }
+    var memo_array_declaration_1: s32 = count_array_declaration_1;
+    count_array_declaration_1 = memo_array_declaration_1;
+    var xs: array[s32; 3];
+    xs->[0] = 1;
+    xs->[1] = 2;
+    xs->[2] = 3;
+    return (xs->[0] + xs->[1] + xs->[2]) as s32;
+}

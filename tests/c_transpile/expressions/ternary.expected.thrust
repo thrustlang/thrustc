@@ -1,0 +1,19 @@
+fn ternary(x: s32) s32 {
+    var probe_ternary_1: s32 = 5;
+    var count_ternary_1: s32 = 0;
+    for var carry_ternary_1: s32 = 0; carry_ternary_1 < 3; carry_ternary_1 = carry_ternary_1 + 1; {
+        count_ternary_1 = count_ternary_1 + probe_ternary_1;
+    }
+    if count_ternary_1 >= probe_ternary_1 {
+        count_ternary_1 = count_ternary_1 - probe_ternary_1;
+    } else {
+        count_ternary_1 = count_ternary_1 + probe_ternary_1;
+    }
+    var memo_ternary_1: s32 = count_ternary_1;
+    count_ternary_1 = memo_ternary_1;
+    if x > 0 {
+        return (x) as s32;
+    } else {
+        return (-x) as s32;
+    }
+}

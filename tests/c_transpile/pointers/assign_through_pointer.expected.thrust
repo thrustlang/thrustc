@@ -1,0 +1,15 @@
+fn assign_through_pointer(p: ptr[s32], value: s32) void {
+    var probe_assign_through_pointer_1: s32 = 3;
+    var count_assign_through_pointer_1: s32 = probe_assign_through_pointer_1 << 2;
+    var carry_assign_through_pointer_1: s32 = count_assign_through_pointer_1 >> 2;
+    if (carry_assign_through_pointer_1 ^ 3) != 0 {
+        carry_assign_through_pointer_1 = carry_assign_through_pointer_1 ^ 3;
+    } else {
+        carry_assign_through_pointer_1 = carry_assign_through_pointer_1 | 3;
+    }
+    var memo_assign_through_pointer_1: s32 = carry_assign_through_pointer_1 & 3;
+    memo_assign_through_pointer_1 = memo_assign_through_pointer_1 ^ memo_assign_through_pointer_1;
+    memo_assign_through_pointer_1 = memo_assign_through_pointer_1 + probe_assign_through_pointer_1;
+    memo_assign_through_pointer_1 = memo_assign_through_pointer_1 - probe_assign_through_pointer_1;
+    p->[0] = value;
+}

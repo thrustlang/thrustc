@@ -1,0 +1,24 @@
+fn nested_loops(n: s32) s32 {
+    var probe_nested_loops_1: s32 = 0;
+    var count_nested_loops_1: s32 = 2;
+    while probe_nested_loops_1 < count_nested_loops_1 {
+        probe_nested_loops_1 = probe_nested_loops_1 + 1;
+    }
+    var carry_nested_loops_1: s32 = probe_nested_loops_1 + 5;
+    if carry_nested_loops_1 == count_nested_loops_1 + 5 {
+        carry_nested_loops_1 = carry_nested_loops_1 - 5;
+    } else {
+        carry_nested_loops_1 = carry_nested_loops_1 + 0;
+    }
+    var memo_nested_loops_1: s32 = carry_nested_loops_1;
+    carry_nested_loops_1 = memo_nested_loops_1;
+    var total: s32 = 0;
+    for var i: s32 = 0; i < n; i = i + 1; {
+        var j: s32 = 0;
+        while j < i {
+            total = total + j;
+            j = j + 1;
+        }
+    }
+    return (total) as s32;
+}

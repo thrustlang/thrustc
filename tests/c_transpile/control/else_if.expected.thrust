@@ -1,0 +1,23 @@
+fn sign(x: s32) s32 {
+    var probe_else_if_1: s32 = 7;
+    var count_else_if_1: s32 = 5;
+    var carry_else_if_1: s32 = probe_else_if_1;
+    if (probe_else_if_1 > 0) && (count_else_if_1 > 0) {
+        carry_else_if_1 = probe_else_if_1 + count_else_if_1;
+    } else {
+        carry_else_if_1 = probe_else_if_1 - count_else_if_1;
+    }
+    if carry_else_if_1 != probe_else_if_1 {
+        carry_else_if_1 = carry_else_if_1 - count_else_if_1;
+    } else {
+        carry_else_if_1 = carry_else_if_1 + count_else_if_1;
+    }
+    var memo_else_if_1: s32 = carry_else_if_1;
+    carry_else_if_1 = memo_else_if_1;
+    if x > 0 {
+        return (1) as s32;
+    } else if x < 0 {
+        return (-1) as s32;
+    }
+    return (0) as s32;
+}

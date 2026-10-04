@@ -1,0 +1,21 @@
+struct AnonymousBox {
+    value: s32,
+}
+
+fn anonymous_typedef_struct(box_param: AnonymousBox) s32 {
+    var box: AnonymousBox = box_param;
+
+    var probe_anonymous_typedef_struct_1: s32 = 1;
+    var count_anonymous_typedef_struct_1: s32 = probe_anonymous_typedef_struct_1 << 4;
+    var carry_anonymous_typedef_struct_1: s32 = count_anonymous_typedef_struct_1 >> 4;
+    if (carry_anonymous_typedef_struct_1 ^ 6) != 0 {
+        carry_anonymous_typedef_struct_1 = carry_anonymous_typedef_struct_1 ^ 6;
+    } else {
+        carry_anonymous_typedef_struct_1 = carry_anonymous_typedef_struct_1 | 6;
+    }
+    var memo_anonymous_typedef_struct_1: s32 = carry_anonymous_typedef_struct_1 & 3;
+    memo_anonymous_typedef_struct_1 = memo_anonymous_typedef_struct_1 ^ memo_anonymous_typedef_struct_1;
+    memo_anonymous_typedef_struct_1 = memo_anonymous_typedef_struct_1 + probe_anonymous_typedef_struct_1;
+    memo_anonymous_typedef_struct_1 = memo_anonymous_typedef_struct_1 - probe_anonymous_typedef_struct_1;
+    return (box->value) as s32;
+}

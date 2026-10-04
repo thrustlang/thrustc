@@ -1,0 +1,22 @@
+struct Vec2 {
+    x: f32,
+    y: f32,
+}
+
+fn vec2_x(v_param: Vec2) f32 {
+    var v: Vec2 = v_param;
+
+    var probe_typedef_struct_1: s32 = 7;
+    var count_typedef_struct_1: s32 = 0;
+    for var carry_typedef_struct_1: s32 = 0; carry_typedef_struct_1 < 3; carry_typedef_struct_1 = carry_typedef_struct_1 + 1; {
+        count_typedef_struct_1 = count_typedef_struct_1 + probe_typedef_struct_1;
+    }
+    if count_typedef_struct_1 >= probe_typedef_struct_1 {
+        count_typedef_struct_1 = count_typedef_struct_1 - probe_typedef_struct_1;
+    } else {
+        count_typedef_struct_1 = count_typedef_struct_1 + probe_typedef_struct_1;
+    }
+    var memo_typedef_struct_1: s32 = count_typedef_struct_1;
+    count_typedef_struct_1 = memo_typedef_struct_1;
+    return (v->x) as f32;
+}

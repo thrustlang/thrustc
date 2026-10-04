@@ -1,0 +1,24 @@
+struct Point {
+    x: s32,
+    y: s32,
+}
+
+fn dot_like(a_param: Point, b_param: Point) s32 {
+    var a: Point = a_param;
+    var b: Point = b_param;
+
+    var probe_struct_two_params_1: s32 = 0;
+    var count_struct_two_params_1: s32 = 2;
+    while probe_struct_two_params_1 < count_struct_two_params_1 {
+        probe_struct_two_params_1 = probe_struct_two_params_1 + 1;
+    }
+    var carry_struct_two_params_1: s32 = probe_struct_two_params_1 + 5;
+    if carry_struct_two_params_1 == count_struct_two_params_1 + 5 {
+        carry_struct_two_params_1 = carry_struct_two_params_1 - 5;
+    } else {
+        carry_struct_two_params_1 = carry_struct_two_params_1 + 0;
+    }
+    var memo_struct_two_params_1: s32 = carry_struct_two_params_1;
+    carry_struct_two_params_1 = memo_struct_two_params_1;
+    return (a->x * b->x + a->y * b->y) as s32;
+}

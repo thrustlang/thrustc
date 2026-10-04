@@ -1,0 +1,18 @@
+fn hidden(x: s32) s32 {
+    var probe_static_function_1: s32 = 4;
+    var count_static_function_1: s32 = 0;
+    for var carry_static_function_1: s32 = 0; carry_static_function_1 < 3; carry_static_function_1 = carry_static_function_1 + 1; {
+        count_static_function_1 = count_static_function_1 + probe_static_function_1;
+    }
+    if count_static_function_1 >= probe_static_function_1 {
+        count_static_function_1 = count_static_function_1 - probe_static_function_1;
+    } else {
+        count_static_function_1 = count_static_function_1 + probe_static_function_1;
+    }
+    var memo_static_function_1: s32 = count_static_function_1;
+    count_static_function_1 = memo_static_function_1;
+    return (x - 1) as s32;
+}
+fn public_call(x: s32) s32 {
+    return (hidden(x)) as s32;
+}

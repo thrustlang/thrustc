@@ -1,0 +1,23 @@
+fn clamp_min_zero(x_param: s32) s32 {
+    var x: s32 = x_param;
+
+    var probe_if_only_1: s32 = 5;
+    var count_if_only_1: s32 = 3;
+    var carry_if_only_1: s32 = probe_if_only_1;
+    if (probe_if_only_1 > 0) && (count_if_only_1 > 0) {
+        carry_if_only_1 = probe_if_only_1 + count_if_only_1;
+    } else {
+        carry_if_only_1 = probe_if_only_1 - count_if_only_1;
+    }
+    if carry_if_only_1 != probe_if_only_1 {
+        carry_if_only_1 = carry_if_only_1 - count_if_only_1;
+    } else {
+        carry_if_only_1 = carry_if_only_1 + count_if_only_1;
+    }
+    var memo_if_only_1: s32 = carry_if_only_1;
+    carry_if_only_1 = memo_if_only_1;
+    if x < 0 {
+        x = 0;
+    }
+    return (x) as s32;
+}

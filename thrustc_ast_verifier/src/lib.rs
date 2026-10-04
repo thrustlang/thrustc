@@ -144,6 +144,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 Ast::GlobalAssembler { .. }
                 | Ast::CustomType { .. }
                 | Ast::Import { .. }
+                | Ast::ImportC { .. }
                 | Ast::Embedded { .. }
                 | Ast::Struct { .. } => {}
 

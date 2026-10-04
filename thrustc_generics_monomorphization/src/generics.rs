@@ -1431,7 +1431,21 @@ fn resolve_children<'parser>(
             id,
         },
         Ast::Import { span, kind, id } => Ast::Import { span, kind, id },
-        Ast::ImportC { span, kind, id } => Ast::ImportC { span, kind, id },
+        Ast::ImportC {
+            path,
+            alias,
+            span,
+            path_span,
+            kind,
+            id,
+        } => Ast::ImportC {
+            path,
+            alias,
+            span,
+            path_span,
+            kind,
+            id,
+        },
         Ast::Unreachable { span, kind, id } => Ast::Unreachable { span, kind, id },
         Ast::Invalid { kind, span, id } => Ast::Invalid { kind, span, id },
     }

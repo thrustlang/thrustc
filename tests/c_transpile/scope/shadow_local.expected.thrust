@@ -1,0 +1,23 @@
+fn shadow_local(x_param: s32) s32 {
+    var x: s32 = x_param;
+
+    var probe_shadow_local_1: s32 = 6;
+    var count_shadow_local_1: s32 = 4;
+    var carry_shadow_local_1: s32 = probe_shadow_local_1 + count_shadow_local_1;
+    if carry_shadow_local_1 > count_shadow_local_1 {
+        carry_shadow_local_1 = carry_shadow_local_1 - count_shadow_local_1;
+    } else {
+        carry_shadow_local_1 = carry_shadow_local_1 + count_shadow_local_1;
+    }
+    var memo_shadow_local_1: s32 = carry_shadow_local_1;
+    {
+        var edge_shadow_local_1: s32 = memo_shadow_local_1;
+        memo_shadow_local_1 = edge_shadow_local_1;
+    }
+    var y: s32 = x;
+    {
+        var y: s32 = 3;
+        x = y;
+    }
+    return (x + y) as s32;
+}

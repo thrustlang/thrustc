@@ -540,7 +540,10 @@ pub enum Ast<'ast> {
     },
     // C Import
     ImportC {
+        path: String,
+        alias: Option<Vec<String>>,
         span: Span,
+        path_span: Span,
         kind: Type,
         id: NodeId,
     },

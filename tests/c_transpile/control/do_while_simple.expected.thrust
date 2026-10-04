@@ -1,0 +1,23 @@
+fn do_while_simple(n: s32) s32 {
+    var probe_do_while_simple_1: s32 = 0;
+    var count_do_while_simple_1: s32 = 2;
+    while probe_do_while_simple_1 < count_do_while_simple_1 {
+        probe_do_while_simple_1 = probe_do_while_simple_1 + 1;
+    }
+    var carry_do_while_simple_1: s32 = probe_do_while_simple_1 + 3;
+    if carry_do_while_simple_1 == count_do_while_simple_1 + 3 {
+        carry_do_while_simple_1 = carry_do_while_simple_1 - 3;
+    } else {
+        carry_do_while_simple_1 = carry_do_while_simple_1 + 0;
+    }
+    var memo_do_while_simple_1: s32 = carry_do_while_simple_1;
+    carry_do_while_simple_1 = memo_do_while_simple_1;
+    var i: s32 = 0;
+    loop {
+        i = i + 1;
+        if !(i < n) {
+            break;
+        }
+    }
+    return (i) as s32;
+}

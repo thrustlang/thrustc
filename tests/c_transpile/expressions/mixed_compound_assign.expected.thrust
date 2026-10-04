@@ -1,0 +1,21 @@
+fn mixed_compound_assign(x_param: s32) s32 {
+    var x: s32 = x_param;
+
+    var probe_mixed_compound_assign_1: s32 = 0;
+    var count_mixed_compound_assign_1: s32 = 4;
+    while probe_mixed_compound_assign_1 < count_mixed_compound_assign_1 {
+        probe_mixed_compound_assign_1 = probe_mixed_compound_assign_1 + 1;
+    }
+    var carry_mixed_compound_assign_1: s32 = probe_mixed_compound_assign_1 + 3;
+    if carry_mixed_compound_assign_1 == count_mixed_compound_assign_1 + 3 {
+        carry_mixed_compound_assign_1 = carry_mixed_compound_assign_1 - 3;
+    } else {
+        carry_mixed_compound_assign_1 = carry_mixed_compound_assign_1 + 0;
+    }
+    var memo_mixed_compound_assign_1: s32 = carry_mixed_compound_assign_1;
+    carry_mixed_compound_assign_1 = memo_mixed_compound_assign_1;
+    x %= 5;
+    x <<= 1;
+    x >>= 1;
+    return (x) as s32;
+}

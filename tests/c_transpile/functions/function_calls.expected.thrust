@@ -1,0 +1,19 @@
+fn inc(x: s32) s32 {
+    var probe_function_calls_1: s32 = 4;
+    var count_function_calls_1: s32 = 4;
+    {
+        var carry_function_calls_1: s32 = probe_function_calls_1 + count_function_calls_1;
+        probe_function_calls_1 = carry_function_calls_1 - count_function_calls_1;
+    }
+    if probe_function_calls_1 < count_function_calls_1 {
+        probe_function_calls_1 = probe_function_calls_1 + count_function_calls_1;
+    } else {
+        probe_function_calls_1 = probe_function_calls_1 - count_function_calls_1;
+    }
+    probe_function_calls_1 = probe_function_calls_1 + count_function_calls_1;
+    probe_function_calls_1 = probe_function_calls_1 - count_function_calls_1;
+    return (x + 1) as s32;
+}
+fn use_inc(y: s32) s32 {
+    return (inc(y)) as s32;
+}

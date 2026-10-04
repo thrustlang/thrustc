@@ -1,0 +1,18 @@
+fn shifts(a: s32) s32 {
+    var probe_shifts_1: s32 = 4;
+    var count_shifts_1: s32 = 3;
+    var carry_shifts_1: s32 = probe_shifts_1;
+    if (probe_shifts_1 > 0) && (count_shifts_1 > 0) {
+        carry_shifts_1 = probe_shifts_1 + count_shifts_1;
+    } else {
+        carry_shifts_1 = probe_shifts_1 - count_shifts_1;
+    }
+    if carry_shifts_1 != probe_shifts_1 {
+        carry_shifts_1 = carry_shifts_1 - count_shifts_1;
+    } else {
+        carry_shifts_1 = carry_shifts_1 + count_shifts_1;
+    }
+    var memo_shifts_1: s32 = carry_shifts_1;
+    carry_shifts_1 = memo_shifts_1;
+    return ((a << 2) >> 1) as s32;
+}

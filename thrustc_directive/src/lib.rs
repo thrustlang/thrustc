@@ -66,6 +66,15 @@ pub struct FileDirectives {
     disable_all_warnings: bool,
     no_obfuscate_archive_names: bool,
     no_obfuscate_ir: bool,
+
+    import_c_include_paths: Vec<std::path::PathBuf>,
+    import_c_system_include_paths: Vec<std::path::PathBuf>,
+    import_c_defines: Vec<String>,
+    import_c_undefs: Vec<String>,
+    import_c_target: Option<String>,
+    import_c_sysroot: Option<std::path::PathBuf>,
+    import_c_std: Option<String>,
+    import_c_args: Vec<String>,
 }
 
 impl FileDirectives {
@@ -733,6 +742,74 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
     }
 
     match flag {
+        "--import-c-include" => {
+            let value: &str = value
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
+
+            directives
+                .import_c_include_paths
+                .push(std::path::PathBuf::from(value));
+        }
+
+        "--import-c-system-include" => {
+            let value: &str = value
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
+
+            directives
+                .import_c_system_include_paths
+                .push(std::path::PathBuf::from(value));
+        }
+
+        "--import-c-define" => {
+            let value: &str = value
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
+
+            directives.import_c_defines.push(value.to_string());
+        }
+
+        "--import-c-undef" => {
+            let value: &str = value
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
+
+            directives.import_c_undefs.push(value.to_string());
+        }
+
+        "--import-c-target" => {
+            let value: &str = value
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
+
+            directives.import_c_target = Some(value.to_string());
+        }
+
+        "--import-c-sysroot" => {
+            let value: &str = value
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
+
+            directives.import_c_sysroot = Some(std::path::PathBuf::from(value));
+        }
+
+        "--import-c-std" => {
+            let value: &str = value
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
+
+            directives.import_c_std = Some(value.to_string());
+        }
+
+        "--import-c-arg" => {
+            let value: &str = value
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
+
+            directives.import_c_args.push(value.to_string());
+        }
+
         "-opt" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
@@ -998,6 +1075,49 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
     }
 
     Ok(())
+}
+
+pub fn combine_import_c_options(
+    options: &FileOptions<'_, '_>,
+) -> thrustc_options::ImportCOptions {
+    let mut combined: thrustc_options::ImportCOptions =
+        options.global().get_import_c_options().clone();
+
+    let directives: &FileDirectives = options.directives();
+
+    for path in directives.import_c_include_paths.iter().cloned() {
+        combined.add_include_path(path);
+    }
+
+    for path in directives.import_c_system_include_paths.iter().cloned() {
+        combined.add_system_include_path(path);
+    }
+
+    for def in directives.import_c_defines.iter().cloned() {
+        combined.add_define(def);
+    }
+
+    for und in directives.import_c_undefs.iter().cloned() {
+        combined.add_undef(und);
+    }
+
+    if let Some(target) = directives.import_c_target.as_ref().cloned() {
+        combined.set_target(target);
+    }
+
+    if let Some(sysroot) = directives.import_c_sysroot.as_ref().cloned() {
+        combined.set_sysroot(sysroot);
+    }
+
+    if let Some(std_) = directives.import_c_std.as_ref().cloned() {
+        combined.set_std(std_);
+    }
+
+    for arg in directives.import_c_args.iter().cloned() {
+        combined.add_arg(arg);
+    }
+
+    combined
 }
 
 pub fn combine_warnings_to_disable<'options>(

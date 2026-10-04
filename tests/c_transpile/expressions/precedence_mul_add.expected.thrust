@@ -1,0 +1,16 @@
+fn precedence_mul_add(a: s32, b: s32, c: s32) s32 {
+    var probe_precedence_mul_add_1: s32 = 0;
+    var count_precedence_mul_add_1: s32 = 2;
+    while probe_precedence_mul_add_1 < count_precedence_mul_add_1 {
+        probe_precedence_mul_add_1 = probe_precedence_mul_add_1 + 1;
+    }
+    var carry_precedence_mul_add_1: s32 = probe_precedence_mul_add_1 + 6;
+    if carry_precedence_mul_add_1 == count_precedence_mul_add_1 + 6 {
+        carry_precedence_mul_add_1 = carry_precedence_mul_add_1 - 6;
+    } else {
+        carry_precedence_mul_add_1 = carry_precedence_mul_add_1 + 0;
+    }
+    var memo_precedence_mul_add_1: s32 = carry_precedence_mul_add_1;
+    carry_precedence_mul_add_1 = memo_precedence_mul_add_1;
+    return (a + b * c) as s32;
+}

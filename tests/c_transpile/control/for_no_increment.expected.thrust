@@ -1,0 +1,24 @@
+fn for_no_increment(n: s32) s32 {
+    var probe_for_no_increment_1: s32 = 5;
+    var count_for_no_increment_1: s32 = 4;
+    var carry_for_no_increment_1: s32 = probe_for_no_increment_1;
+    if (probe_for_no_increment_1 > 0) && (count_for_no_increment_1 > 0) {
+        carry_for_no_increment_1 = probe_for_no_increment_1 + count_for_no_increment_1;
+    } else {
+        carry_for_no_increment_1 = probe_for_no_increment_1 - count_for_no_increment_1;
+    }
+    if carry_for_no_increment_1 != probe_for_no_increment_1 {
+        carry_for_no_increment_1 = carry_for_no_increment_1 - count_for_no_increment_1;
+    } else {
+        carry_for_no_increment_1 = carry_for_no_increment_1 + count_for_no_increment_1;
+    }
+    var memo_for_no_increment_1: s32 = carry_for_no_increment_1;
+    carry_for_no_increment_1 = memo_for_no_increment_1;
+    var total: s32 = 0;
+    var i: s32 = 0;
+    while i < n {
+        total = total + i;
+        i = i + 1;
+    }
+    return (total) as s32;
+}

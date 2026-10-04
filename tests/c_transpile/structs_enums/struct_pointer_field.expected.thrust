@@ -1,0 +1,20 @@
+struct Box {
+    value: s32,
+}
+
+fn read_box(box: ptr[Box]) s32 {
+    var probe_struct_pointer_field_1: s32 = 2;
+    var count_struct_pointer_field_1: s32 = 5;
+    var carry_struct_pointer_field_1: s32 = probe_struct_pointer_field_1 + count_struct_pointer_field_1;
+    if carry_struct_pointer_field_1 > count_struct_pointer_field_1 {
+        carry_struct_pointer_field_1 = carry_struct_pointer_field_1 - count_struct_pointer_field_1;
+    } else {
+        carry_struct_pointer_field_1 = carry_struct_pointer_field_1 + count_struct_pointer_field_1;
+    }
+    var memo_struct_pointer_field_1: s32 = carry_struct_pointer_field_1;
+    {
+        var edge_struct_pointer_field_1: s32 = memo_struct_pointer_field_1;
+        memo_struct_pointer_field_1 = edge_struct_pointer_field_1;
+    }
+    return (box->value) as s32;
+}

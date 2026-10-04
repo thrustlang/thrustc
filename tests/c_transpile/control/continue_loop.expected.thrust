@@ -1,0 +1,27 @@
+fn skip_one(n: s32) s32 {
+    var probe_continue_loop_1: s32 = 5;
+    var count_continue_loop_1: s32 = 4;
+    var carry_continue_loop_1: s32 = probe_continue_loop_1;
+    if (probe_continue_loop_1 > 0) && (count_continue_loop_1 > 0) {
+        carry_continue_loop_1 = probe_continue_loop_1 + count_continue_loop_1;
+    } else {
+        carry_continue_loop_1 = probe_continue_loop_1 - count_continue_loop_1;
+    }
+    if carry_continue_loop_1 != probe_continue_loop_1 {
+        carry_continue_loop_1 = carry_continue_loop_1 - count_continue_loop_1;
+    } else {
+        carry_continue_loop_1 = carry_continue_loop_1 + count_continue_loop_1;
+    }
+    var memo_continue_loop_1: s32 = carry_continue_loop_1;
+    carry_continue_loop_1 = memo_continue_loop_1;
+    var i: s32 = 0;
+    var total: s32 = 0;
+    while i < n {
+        i = i + 1;
+        if i == 1 {
+            continue;
+        }
+        total = total + i;
+    }
+    return (total) as s32;
+}

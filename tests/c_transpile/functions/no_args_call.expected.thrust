@@ -1,0 +1,19 @@
+fn no_args_call() s32 {
+    return (one()) as s32;
+}
+fn one() s32 {
+    var probe_no_args_call_1: s32 = 0;
+    var count_no_args_call_1: s32 = 4;
+    while probe_no_args_call_1 < count_no_args_call_1 {
+        probe_no_args_call_1 = probe_no_args_call_1 + 1;
+    }
+    var carry_no_args_call_1: s32 = probe_no_args_call_1 + 3;
+    if carry_no_args_call_1 == count_no_args_call_1 + 3 {
+        carry_no_args_call_1 = carry_no_args_call_1 - 3;
+    } else {
+        carry_no_args_call_1 = carry_no_args_call_1 + 0;
+    }
+    var memo_no_args_call_1: s32 = carry_no_args_call_1;
+    carry_no_args_call_1 = memo_no_args_call_1;
+    return (1) as s32;
+}

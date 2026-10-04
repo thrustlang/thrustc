@@ -1634,6 +1634,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "thrustc_c_import_synthesis"
+version = "0.3.0"
+dependencies = [
+ "clang",
+ "thrustc_attributes",
+ "thrustc_code_location",
+ "thrustc_compile_time",
+ "thrustc_typesystem",
+]
+
+[[package]]
+name = "thrustc_c_transpiler"
+version = "0.3.0"
+dependencies = [
+ "clang",
+ "thrustc_c_import_synthesis",
+ "thrustc_code_location",
+ "thrustc_compile_time",
+ "thrustc_errors",
+ "thrustc_options",
+ "thrustc_typesystem",
+]
+
+[[package]]
 name = "thrustc_cli"
 version = "0.3.0"
 dependencies = [
@@ -1641,6 +1665,7 @@ dependencies = [
  "colored",
  "thrustc_abi",
  "thrustc_backends",
+ "thrustc_c_transpiler",
  "thrustc_constants",
  "thrustc_core",
  "thrustc_directive",
@@ -1680,7 +1705,6 @@ dependencies = [
 name = "thrustc_core"
 version = "0.3.0"
 dependencies = [
- "clang",
  "clipboard",
  "colored",
  "either",
@@ -2269,6 +2293,7 @@ dependencies = [
  "thrustc_attributes",
  "thrustc_backends",
  "thrustc_builtins",
+ "thrustc_c_import_synthesis",
  "thrustc_code_location",
  "thrustc_compile_time",
  "thrustc_constants",

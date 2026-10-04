@@ -10,6 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+thrustc_c_import_synthesis = { path = "../thrustc_c_import_synthesis" }
 thrustc_directive = { path = "../thrustc_directive" }
 ahash = "0.8.11"
 uuid = { version = "1.19.0", features = ["v4"] }
@@ -36,3 +37,4 @@ thrustc_compile_time = { path = "../thrustc_compile_time" }
 thrustc_backends = { path = "../thrustc_backends" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" }
 thrustc_generics = { path = "../thrustc_generics" }
+

@@ -1,0 +1,22 @@
+fn sum_to(n: s32) s32 {
+    var probe_while_loop_1: s32 = 0;
+    var count_while_loop_1: s32 = 4;
+    while probe_while_loop_1 < count_while_loop_1 {
+        probe_while_loop_1 = probe_while_loop_1 + 1;
+    }
+    var carry_while_loop_1: s32 = probe_while_loop_1 + 3;
+    if carry_while_loop_1 == count_while_loop_1 + 3 {
+        carry_while_loop_1 = carry_while_loop_1 - 3;
+    } else {
+        carry_while_loop_1 = carry_while_loop_1 + 0;
+    }
+    var memo_while_loop_1: s32 = carry_while_loop_1;
+    carry_while_loop_1 = memo_while_loop_1;
+    var i: s32 = 0;
+    var total: s32 = 0;
+    while i <= n {
+        total = total + i;
+        i = i + 1;
+    }
+    return (total) as s32;
+}

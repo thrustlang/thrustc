@@ -1,0 +1,16 @@
+fn add_float(a: f32, b: f32) f32 {
+    var probe_float_return_1: s32 = 0;
+    var count_float_return_1: s32 = 4;
+    while probe_float_return_1 < count_float_return_1 {
+        probe_float_return_1 = probe_float_return_1 + 1;
+    }
+    var carry_float_return_1: s32 = probe_float_return_1 + 4;
+    if carry_float_return_1 == count_float_return_1 + 4 {
+        carry_float_return_1 = carry_float_return_1 - 4;
+    } else {
+        carry_float_return_1 = carry_float_return_1 + 0;
+    }
+    var memo_float_return_1: s32 = carry_float_return_1;
+    carry_float_return_1 = memo_float_return_1;
+    return (a + b) as f32;
+}

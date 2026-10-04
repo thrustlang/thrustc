@@ -1,0 +1,19 @@
+fn switch_simple(x: s32) s32 {
+    var probe_switch_simple_1: s32 = 7;
+    var count_switch_simple_1: s32 = 0;
+    for var carry_switch_simple_1: s32 = 0; carry_switch_simple_1 < 1; carry_switch_simple_1 = carry_switch_simple_1 + 1; {
+        count_switch_simple_1 = count_switch_simple_1 + probe_switch_simple_1;
+    }
+    if count_switch_simple_1 >= probe_switch_simple_1 {
+        count_switch_simple_1 = count_switch_simple_1 - probe_switch_simple_1;
+    } else {
+        count_switch_simple_1 = count_switch_simple_1 + probe_switch_simple_1;
+    }
+    var memo_switch_simple_1: s32 = count_switch_simple_1;
+    count_switch_simple_1 = memo_switch_simple_1;
+    if x == 1 {
+        return (10) as s32;
+    } else {
+        return (0) as s32;
+    }
+}

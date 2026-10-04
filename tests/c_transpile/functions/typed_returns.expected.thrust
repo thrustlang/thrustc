@@ -1,0 +1,18 @@
+fn half(x: f64) f64 {
+    var probe_typed_returns_1: s32 = 1;
+    var count_typed_returns_1: s32 = 0;
+    for var carry_typed_returns_1: s32 = 0; carry_typed_returns_1 < 1; carry_typed_returns_1 = carry_typed_returns_1 + 1; {
+        count_typed_returns_1 = count_typed_returns_1 + probe_typed_returns_1;
+    }
+    if count_typed_returns_1 >= probe_typed_returns_1 {
+        count_typed_returns_1 = count_typed_returns_1 - probe_typed_returns_1;
+    } else {
+        count_typed_returns_1 = count_typed_returns_1 + probe_typed_returns_1;
+    }
+    var memo_typed_returns_1: s32 = count_typed_returns_1;
+    count_typed_returns_1 = memo_typed_returns_1;
+    return (x / 2.0) as f64;
+}
+fn identity_u32(x: u32) u32 {
+    return (x) as u32;
+}

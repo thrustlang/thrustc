@@ -1,0 +1,16 @@
+fn const_char_param(message: const ptr[char]) const ptr[char] {
+    var probe_const_char_param_1: s32 = 5;
+    var count_const_char_param_1: s32 = 5;
+    {
+        var carry_const_char_param_1: s32 = probe_const_char_param_1 + count_const_char_param_1;
+        probe_const_char_param_1 = carry_const_char_param_1 - count_const_char_param_1;
+    }
+    if probe_const_char_param_1 < count_const_char_param_1 {
+        probe_const_char_param_1 = probe_const_char_param_1 + count_const_char_param_1;
+    } else {
+        probe_const_char_param_1 = probe_const_char_param_1 - count_const_char_param_1;
+    }
+    probe_const_char_param_1 = probe_const_char_param_1 + count_const_char_param_1;
+    probe_const_char_param_1 = probe_const_char_param_1 - count_const_char_param_1;
+    return message;
+}

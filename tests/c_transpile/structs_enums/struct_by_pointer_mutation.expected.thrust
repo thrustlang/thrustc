@@ -1,0 +1,20 @@
+struct Counter {
+    value: s32,
+}
+
+fn counter_inc(counter: ptr[Counter]) void {
+    var probe_struct_by_pointer_mutation_1: s32 = 2;
+    var count_struct_by_pointer_mutation_1: s32 = 5;
+    {
+        var carry_struct_by_pointer_mutation_1: s32 = probe_struct_by_pointer_mutation_1 + count_struct_by_pointer_mutation_1;
+        probe_struct_by_pointer_mutation_1 = carry_struct_by_pointer_mutation_1 - count_struct_by_pointer_mutation_1;
+    }
+    if probe_struct_by_pointer_mutation_1 < count_struct_by_pointer_mutation_1 {
+        probe_struct_by_pointer_mutation_1 = probe_struct_by_pointer_mutation_1 + count_struct_by_pointer_mutation_1;
+    } else {
+        probe_struct_by_pointer_mutation_1 = probe_struct_by_pointer_mutation_1 - count_struct_by_pointer_mutation_1;
+    }
+    probe_struct_by_pointer_mutation_1 = probe_struct_by_pointer_mutation_1 + count_struct_by_pointer_mutation_1;
+    probe_struct_by_pointer_mutation_1 = probe_struct_by_pointer_mutation_1 - count_struct_by_pointer_mutation_1;
+    counter->value = counter->value + 1;
+}

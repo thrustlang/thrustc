@@ -1,0 +1,18 @@
+[package]
+name = "thrustc_c_import_synthesis"
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+clang = { workspace = true }
+
+thrustc_attributes = { path = "../thrustc_attributes" }
+thrustc_code_location = { path = "../thrustc_code_location" }
+thrustc_compile_time = { path = "../thrustc_compile_time" }
+thrustc_typesystem = { path = "../thrustc_typesystem" }

@@ -1,0 +1,18 @@
+fn assignment(x: s32) s32 {
+    var probe_assignment_1: s32 = 0;
+    var count_assignment_1: s32 = 2;
+    while probe_assignment_1 < count_assignment_1 {
+        probe_assignment_1 = probe_assignment_1 + 1;
+    }
+    var carry_assignment_1: s32 = probe_assignment_1 + 6;
+    if carry_assignment_1 == count_assignment_1 + 6 {
+        carry_assignment_1 = carry_assignment_1 - 6;
+    } else {
+        carry_assignment_1 = carry_assignment_1 + 0;
+    }
+    var memo_assignment_1: s32 = carry_assignment_1;
+    carry_assignment_1 = memo_assignment_1;
+    var y: s32 = 0;
+    y = x;
+    return (y) as s32;
+}

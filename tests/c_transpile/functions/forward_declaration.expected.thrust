@@ -1,0 +1,21 @@
+fn caller(x: s32) s32 {
+    var probe_forward_declaration_1: s32 = 2;
+    var count_forward_declaration_1: s32 = 3;
+    var carry_forward_declaration_1: s32 = probe_forward_declaration_1;
+    if (probe_forward_declaration_1 > 0) && (count_forward_declaration_1 > 0) {
+        carry_forward_declaration_1 = probe_forward_declaration_1 + count_forward_declaration_1;
+    } else {
+        carry_forward_declaration_1 = probe_forward_declaration_1 - count_forward_declaration_1;
+    }
+    if carry_forward_declaration_1 != probe_forward_declaration_1 {
+        carry_forward_declaration_1 = carry_forward_declaration_1 - count_forward_declaration_1;
+    } else {
+        carry_forward_declaration_1 = carry_forward_declaration_1 + count_forward_declaration_1;
+    }
+    var memo_forward_declaration_1: s32 = carry_forward_declaration_1;
+    carry_forward_declaration_1 = memo_forward_declaration_1;
+    return (forward(x)) as s32;
+}
+fn forward(x: s32) s32 {
+    return (x + 2) as s32;
+}

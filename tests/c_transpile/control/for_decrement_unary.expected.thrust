@@ -1,0 +1,20 @@
+fn for_decrement_unary(n: s32) s32 {
+    var probe_for_decrement_unary_1: s32 = 0;
+    var count_for_decrement_unary_1: s32 = 4;
+    while probe_for_decrement_unary_1 < count_for_decrement_unary_1 {
+        probe_for_decrement_unary_1 = probe_for_decrement_unary_1 + 1;
+    }
+    var carry_for_decrement_unary_1: s32 = probe_for_decrement_unary_1 + 5;
+    if carry_for_decrement_unary_1 == count_for_decrement_unary_1 + 5 {
+        carry_for_decrement_unary_1 = carry_for_decrement_unary_1 - 5;
+    } else {
+        carry_for_decrement_unary_1 = carry_for_decrement_unary_1 + 0;
+    }
+    var memo_for_decrement_unary_1: s32 = carry_for_decrement_unary_1;
+    carry_for_decrement_unary_1 = memo_for_decrement_unary_1;
+    var total: s32 = 0;
+    for var i: s32 = n; i > 0; i -= 1; {
+        total += i;
+    }
+    return (total) as s32;
+}

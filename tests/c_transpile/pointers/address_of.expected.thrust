@@ -1,0 +1,18 @@
+fn read_address() s32 {
+    var probe_address_of_1: s32 = 0;
+    var count_address_of_1: s32 = 2;
+    while probe_address_of_1 < count_address_of_1 {
+        probe_address_of_1 = probe_address_of_1 + 1;
+    }
+    var carry_address_of_1: s32 = probe_address_of_1 + 2;
+    if carry_address_of_1 == count_address_of_1 + 2 {
+        carry_address_of_1 = carry_address_of_1 - 2;
+    } else {
+        carry_address_of_1 = carry_address_of_1 + 0;
+    }
+    var memo_address_of_1: s32 = carry_address_of_1;
+    carry_address_of_1 = memo_address_of_1;
+    var x: s32 = 7;
+    var p: ptr[s32] = ref x;
+    return (p->[0]) as s32;
+}

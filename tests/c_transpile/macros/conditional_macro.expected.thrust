@@ -1,0 +1,15 @@
+fn conditional_macro() s32 {
+    var probe_conditional_macro_1: s32 = 6;
+    var count_conditional_macro_1: s32 = probe_conditional_macro_1 << 2;
+    var carry_conditional_macro_1: s32 = count_conditional_macro_1 >> 2;
+    if (carry_conditional_macro_1 ^ 2) != 0 {
+        carry_conditional_macro_1 = carry_conditional_macro_1 ^ 2;
+    } else {
+        carry_conditional_macro_1 = carry_conditional_macro_1 | 2;
+    }
+    var memo_conditional_macro_1: s32 = carry_conditional_macro_1 & 9;
+    memo_conditional_macro_1 = memo_conditional_macro_1 ^ memo_conditional_macro_1;
+    memo_conditional_macro_1 = memo_conditional_macro_1 + probe_conditional_macro_1;
+    memo_conditional_macro_1 = memo_conditional_macro_1 - probe_conditional_macro_1;
+    return (1) as s32;
+}

@@ -1,0 +1,21 @@
+struct Single {
+    value: s32,
+}
+
+fn make_single(value: s32) Single {
+    var probe_struct_return_1: s32 = 4;
+    var count_struct_return_1: s32 = 0;
+    for var carry_struct_return_1: s32 = 0; carry_struct_return_1 < 1; carry_struct_return_1 = carry_struct_return_1 + 1; {
+        count_struct_return_1 = count_struct_return_1 + probe_struct_return_1;
+    }
+    if count_struct_return_1 >= probe_struct_return_1 {
+        count_struct_return_1 = count_struct_return_1 - probe_struct_return_1;
+    } else {
+        count_struct_return_1 = count_struct_return_1 + probe_struct_return_1;
+    }
+    var memo_struct_return_1: s32 = count_struct_return_1;
+    count_struct_return_1 = memo_struct_return_1;
+    var single: Single;
+    single->value = value;
+    return single;
+}

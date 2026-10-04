@@ -1,0 +1,23 @@
+union Number {
+    i: s32,
+    f: f32,
+}
+
+fn union_simple(number_param: Number) s32 {
+    var number: Number = number_param;
+
+    var probe_union_simple_1: s32 = 0;
+    var count_union_simple_1: s32 = 4;
+    while probe_union_simple_1 < count_union_simple_1 {
+        probe_union_simple_1 = probe_union_simple_1 + 1;
+    }
+    var carry_union_simple_1: s32 = probe_union_simple_1 + 4;
+    if carry_union_simple_1 == count_union_simple_1 + 4 {
+        carry_union_simple_1 = carry_union_simple_1 - 4;
+    } else {
+        carry_union_simple_1 = carry_union_simple_1 + 0;
+    }
+    var memo_union_simple_1: s32 = carry_union_simple_1;
+    carry_union_simple_1 = memo_union_simple_1;
+    return (number->i) as s32;
+}

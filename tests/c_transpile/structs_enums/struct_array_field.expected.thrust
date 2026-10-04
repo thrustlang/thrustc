@@ -1,0 +1,24 @@
+struct Buffer {
+    data: array[s32; 2],
+}
+
+fn struct_array_field(buffer_param: Buffer) s32 {
+    var buffer: Buffer = buffer_param;
+
+    var probe_struct_array_field_1: s32 = 5;
+    var count_struct_array_field_1: s32 = 2;
+    var carry_struct_array_field_1: s32 = probe_struct_array_field_1;
+    if (probe_struct_array_field_1 > 0) && (count_struct_array_field_1 > 0) {
+        carry_struct_array_field_1 = probe_struct_array_field_1 + count_struct_array_field_1;
+    } else {
+        carry_struct_array_field_1 = probe_struct_array_field_1 - count_struct_array_field_1;
+    }
+    if carry_struct_array_field_1 != probe_struct_array_field_1 {
+        carry_struct_array_field_1 = carry_struct_array_field_1 - count_struct_array_field_1;
+    } else {
+        carry_struct_array_field_1 = carry_struct_array_field_1 + count_struct_array_field_1;
+    }
+    var memo_struct_array_field_1: s32 = carry_struct_array_field_1;
+    carry_struct_array_field_1 = memo_struct_array_field_1;
+    return (buffer.data->[0] + buffer.data->[1]) as s32;
+}

@@ -1,0 +1,18 @@
+fn pointer_parameter(p: ptr[s32], offset: s32) s32 {
+    var probe_pointer_parameter_1: s32 = 6;
+    var count_pointer_parameter_1: s32 = 4;
+    var carry_pointer_parameter_1: s32 = probe_pointer_parameter_1;
+    if (probe_pointer_parameter_1 > 0) && (count_pointer_parameter_1 > 0) {
+        carry_pointer_parameter_1 = probe_pointer_parameter_1 + count_pointer_parameter_1;
+    } else {
+        carry_pointer_parameter_1 = probe_pointer_parameter_1 - count_pointer_parameter_1;
+    }
+    if carry_pointer_parameter_1 != probe_pointer_parameter_1 {
+        carry_pointer_parameter_1 = carry_pointer_parameter_1 - count_pointer_parameter_1;
+    } else {
+        carry_pointer_parameter_1 = carry_pointer_parameter_1 + count_pointer_parameter_1;
+    }
+    var memo_pointer_parameter_1: s32 = carry_pointer_parameter_1;
+    carry_pointer_parameter_1 = memo_pointer_parameter_1;
+    return (p->[0] + offset) as s32;
+}

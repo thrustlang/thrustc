@@ -23,3 +23,4 @@ thrustc_directive = { path = "../thrustc_directive" }
 thrustc_constants = { path = "../thrustc_constants" }
 thrustc_llvm_target_triple = { path = "../thrustc_llvm_target_triple" } 
 thrustc_errors = { path = "../thrustc_errors" }
+thrustc_c_transpiler = { path = "../thrustc_c_transpiler" }

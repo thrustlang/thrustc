@@ -1,0 +1,19 @@
+fn for_increment_unary(n: s32) s32 {
+    var probe_for_increment_unary_1: s32 = 4;
+    var count_for_increment_unary_1: s32 = probe_for_increment_unary_1 << 2;
+    var carry_for_increment_unary_1: s32 = count_for_increment_unary_1 >> 2;
+    if (carry_for_increment_unary_1 ^ 2) != 0 {
+        carry_for_increment_unary_1 = carry_for_increment_unary_1 ^ 2;
+    } else {
+        carry_for_increment_unary_1 = carry_for_increment_unary_1 | 2;
+    }
+    var memo_for_increment_unary_1: s32 = carry_for_increment_unary_1 & 6;
+    memo_for_increment_unary_1 = memo_for_increment_unary_1 ^ memo_for_increment_unary_1;
+    memo_for_increment_unary_1 = memo_for_increment_unary_1 + probe_for_increment_unary_1;
+    memo_for_increment_unary_1 = memo_for_increment_unary_1 - probe_for_increment_unary_1;
+    var total: s32 = 0;
+    for var i: s32 = 0; i < n; i += 1; {
+        total += i;
+    }
+    return (total) as s32;
+}

@@ -1,0 +1,21 @@
+directive "--import-c-include=tests/c_transpile/includes";
+
+importC "local_size.h";
+importC "stddef.h";
+
+fn system_and_local(x: usize) s32 {
+    var probe_system_and_local_1: s32 = 3;
+    var count_system_and_local_1: s32 = 5;
+    {
+        var carry_system_and_local_1: s32 = probe_system_and_local_1 + count_system_and_local_1;
+        probe_system_and_local_1 = carry_system_and_local_1 - count_system_and_local_1;
+    }
+    if probe_system_and_local_1 < count_system_and_local_1 {
+        probe_system_and_local_1 = probe_system_and_local_1 + count_system_and_local_1;
+    } else {
+        probe_system_and_local_1 = probe_system_and_local_1 - count_system_and_local_1;
+    }
+    probe_system_and_local_1 = probe_system_and_local_1 + count_system_and_local_1;
+    probe_system_and_local_1 = probe_system_and_local_1 - count_system_and_local_1;
+    return (local_size(x)) as s32;
+}

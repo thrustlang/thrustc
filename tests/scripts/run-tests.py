@@ -18,6 +18,7 @@
 #
 
 import argparse
+import difflib
 import os
 import re
 import shutil
@@ -175,6 +176,7 @@ def should_skip_path(path: Path, tests_dir: Path) -> bool:
         "dist",
         "scripts",
         "build",
+        "c_transpile",
         "stdroot",
         "stress",
     }
@@ -213,6 +215,27 @@ def discover_test_roots(tests_dir: Path, filter_text: str) -> list[Path]:
             continue
 
         if has_main_function(path):
+            test_roots.append(path)
+
+    return test_roots
+
+
+def discover_c_transpile_tests(tests_dir: Path, filter_text: str) -> list[Path]:
+
+    test_roots: list[Path] = []
+    root = tests_dir / "c_transpile"
+
+    if not root.exists():
+        return test_roots
+
+    for path in sorted(root.rglob("*.c")):
+
+        relative = path.relative_to(tests_dir).as_posix()
+
+        if filter_text and filter_text not in relative:
+            continue
+
+        if path.with_suffix(".expected.thrust").exists():
             test_roots.append(path)
 
     return test_roots
@@ -422,6 +445,61 @@ def compile_test(
     return result, binary_path, dependencies
 
 
+def compile_translated_output(
+    source_test_path: Path,
+    translated_path: Path,
+    compiler: Path,
+    root: Path,
+    args: argparse.Namespace,
+) -> subprocess.CompletedProcess[str]:
+
+    identifier = test_identifier(source_test_path, root) + "__translated"
+    build_dir = dist_root(root) / "build" / identifier
+    command: list[str] = [
+        str(compiler),
+        "-build-dir",
+        str(build_dir),
+        "-emit",
+        "ast",
+    ]
+
+    command.extend(compiletime_std_args(source_test_path, root))
+    command.append(str(translated_path))
+
+    return subprocess.run(
+        command,
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=args.compile_timeout,
+    )
+
+
+def should_skip_translated_compile_check(translated_path: Path) -> bool:
+
+    content = read_text(translated_path)
+
+    for line in content.splitlines():
+        stripped = line.strip()
+
+        if stripped.startswith("directive "):
+            return True
+
+        if stripped.startswith("importC "):
+            return True
+
+        if stripped.startswith("union "):
+            return True
+
+        if stripped.startswith("enum "):
+            return True
+
+        if stripped.startswith("deref ") and " = " in stripped:
+            return True
+
+    return False
+
+
 def run_binary(
     binary_path: Path,
     root: Path,
@@ -582,6 +660,153 @@ def run_test(
     )
 
 
+def run_c_transpile_test(
+    test_path: Path,
+    compiler: Path,
+    root: Path,
+    args: argparse.Namespace,
+) -> TestResult:
+
+    start = time.monotonic()
+    identifier = test_identifier(test_path, root)
+    output_dir = dist_root(root) / "c_transpile" / identifier
+    expected_path = test_path.with_suffix(".expected.thrust")
+    output_path = output_dir / test_path.with_suffix(".thrust").name
+    command = [
+        str(compiler),
+        "--translate-c-to-thrust",
+        str(test_path),
+        "--translate-c-out-dir",
+        str(output_dir),
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=args.compile_timeout,
+        )
+    except subprocess.TimeoutExpired as error:
+
+        elapsed = time.monotonic() - start
+
+        return TestResult(
+            path=test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=-1,
+            run_code=None,
+            elapsed=elapsed,
+            message=f"translate timeout after {args.compile_timeout:.2f}s",
+            compile_stdout=timeout_output(error.stdout),
+            compile_stderr=timeout_output(error.stderr),
+            run_stdout="",
+            run_stderr="",
+        )
+
+    elapsed = time.monotonic() - start
+
+    if result.returncode != 0:
+
+        return TestResult(
+            path=test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=result.returncode,
+            run_code=None,
+            elapsed=elapsed,
+            message="translate failed",
+            compile_stdout=result.stdout,
+            compile_stderr=result.stderr,
+            run_stdout="",
+            run_stderr="",
+        )
+
+    if not output_path.exists():
+
+        return TestResult(
+            path=test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=result.returncode,
+            run_code=None,
+            elapsed=elapsed,
+            message=f"missing output: {output_path.name}",
+            compile_stdout=result.stdout,
+            compile_stderr=result.stderr,
+            run_stdout="",
+            run_stderr="",
+        )
+
+    expected = read_text(expected_path)
+    actual = read_text(output_path)
+
+    if actual != expected:
+
+        diff = "".join(difflib.unified_diff(
+            expected.splitlines(keepends=True),
+            actual.splitlines(keepends=True),
+            fromfile=expected_path.name,
+            tofile=output_path.name,
+        ))
+
+        return TestResult(
+            path=test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=result.returncode,
+            run_code=None,
+            elapsed=elapsed,
+            message="translated output differs",
+            compile_stdout=result.stdout,
+            compile_stderr=result.stderr,
+            run_stdout=diff,
+            run_stderr="",
+        )
+
+    if not should_skip_translated_compile_check(output_path):
+
+        translated_compile_result = compile_translated_output(
+            test_path,
+            output_path,
+            compiler,
+            root,
+            args,
+        )
+
+        if translated_compile_result.returncode != 0:
+
+            return TestResult(
+                path=test_path,
+                kind="c-transpile",
+                passed=False,
+                compile_code=translated_compile_result.returncode,
+                run_code=None,
+                elapsed=elapsed,
+                message="translated output does not parse",
+                compile_stdout=translated_compile_result.stdout,
+                compile_stderr=translated_compile_result.stderr,
+                run_stdout="",
+                run_stderr="",
+            )
+
+    return TestResult(
+        path=test_path,
+        kind="c-transpile",
+        passed=True,
+        compile_code=result.returncode,
+        run_code=None,
+        elapsed=elapsed,
+        message="ok",
+        compile_stdout=result.stdout,
+        compile_stderr=result.stderr,
+        run_stdout="",
+        run_stderr="",
+    )
+
+
 def prepare_dist(root: Path) -> None:
 
     dist = dist_root(root)
@@ -661,6 +886,7 @@ def print_summary(results: list[TestResult], root: Path) -> None:
     failed = total - passed
     positives = sum(1 for result in results if result.kind == "positive")
     negatives = sum(1 for result in results if result.kind == "negative")
+    c_transpiles = sum(1 for result in results if result.kind == "c-transpile")
 
     print("\nTest report", flush=True)
     print(f"total: {total}", flush=True)
@@ -668,6 +894,7 @@ def print_summary(results: list[TestResult], root: Path) -> None:
     print(f"failed: {failed}", flush=True)
     print(f"positive: {positives}", flush=True)
     print(f"negative: {negatives}", flush=True)
+    print(f"c-transpile: {c_transpiles}", flush=True)
 
     failures = [result for result in results if not result.passed]
 
@@ -697,8 +924,9 @@ def main() -> int:
         return 1
 
     test_roots = discover_test_roots(tests_dir, args.filter)
+    c_transpile_roots = discover_c_transpile_tests(tests_dir, args.filter)
 
-    if not test_roots:
+    if not test_roots and not c_transpile_roots:
         print("no tests found", file=sys.stderr)
         return 1
 
@@ -720,6 +948,21 @@ def main() -> int:
 
             if args.fail_fast and not result.passed:
                 break
+
+        if not (args.fail_fast and results and not results[-1].passed):
+
+            for test_path in c_transpile_roots:
+
+                print_running_test(test_path, root)
+
+                result = run_c_transpile_test(test_path, compiler, root, args)
+
+                results.append(result)
+
+                print_test_result(result, root)
+
+                if args.fail_fast and not result.passed:
+                    break
 
         print_summary(results, root)
 

@@ -1,0 +1,16 @@
+fn array_param_decay(xs: ptr[s32]) s32 {
+    var probe_array_param_decay_1: s32 = 0;
+    var count_array_param_decay_1: s32 = 2;
+    while probe_array_param_decay_1 < count_array_param_decay_1 {
+        probe_array_param_decay_1 = probe_array_param_decay_1 + 1;
+    }
+    var carry_array_param_decay_1: s32 = probe_array_param_decay_1 + 2;
+    if carry_array_param_decay_1 == count_array_param_decay_1 + 2 {
+        carry_array_param_decay_1 = carry_array_param_decay_1 - 2;
+    } else {
+        carry_array_param_decay_1 = carry_array_param_decay_1 + 0;
+    }
+    var memo_array_param_decay_1: s32 = carry_array_param_decay_1;
+    carry_array_param_decay_1 = memo_array_param_decay_1;
+    return (xs->[2]) as s32;
+}

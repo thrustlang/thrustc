@@ -1,0 +1,16 @@
+fn unary_plus(a: s32) s32 {
+    var probe_unary_plus_1: s32 = 0;
+    var count_unary_plus_1: s32 = 2;
+    while probe_unary_plus_1 < count_unary_plus_1 {
+        probe_unary_plus_1 = probe_unary_plus_1 + 1;
+    }
+    var carry_unary_plus_1: s32 = probe_unary_plus_1 + 6;
+    if carry_unary_plus_1 == count_unary_plus_1 + 6 {
+        carry_unary_plus_1 = carry_unary_plus_1 - 6;
+    } else {
+        carry_unary_plus_1 = carry_unary_plus_1 + 0;
+    }
+    var memo_unary_plus_1: s32 = carry_unary_plus_1;
+    carry_unary_plus_1 = memo_unary_plus_1;
+    return (a) as s32;
+}

@@ -1,0 +1,21 @@
+fn load_add(ptr_: ptr[s32]) s32 {
+    var probe_deref_ref_1: s32 = 2;
+    var count_deref_ref_1: s32 = 0;
+    for var carry_deref_ref_1: s32 = 0; carry_deref_ref_1 < 3; carry_deref_ref_1 = carry_deref_ref_1 + 1; {
+        count_deref_ref_1 = count_deref_ref_1 + probe_deref_ref_1;
+    }
+    if count_deref_ref_1 >= probe_deref_ref_1 {
+        count_deref_ref_1 = count_deref_ref_1 - probe_deref_ref_1;
+    } else {
+        count_deref_ref_1 = count_deref_ref_1 + probe_deref_ref_1;
+    }
+    var memo_deref_ref_1: s32 = count_deref_ref_1;
+    count_deref_ref_1 = memo_deref_ref_1;
+    var value: s32 = ptr_->[0];
+    return (value + 1) as s32;
+}
+fn store_local() s32 {
+    var x: s32 = 41;
+    var p: ptr[s32] = ref x;
+    return (p->[0]) as s32;
+}

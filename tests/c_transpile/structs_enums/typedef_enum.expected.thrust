@@ -1,0 +1,23 @@
+enum Mode {
+    ModeA,
+    ModeB,
+}
+
+fn mode_b() s32 {
+    var probe_typedef_enum_1: s32 = 5;
+    var count_typedef_enum_1: s32 = 4;
+    var carry_typedef_enum_1: s32 = probe_typedef_enum_1;
+    if (probe_typedef_enum_1 > 0) && (count_typedef_enum_1 > 0) {
+        carry_typedef_enum_1 = probe_typedef_enum_1 + count_typedef_enum_1;
+    } else {
+        carry_typedef_enum_1 = probe_typedef_enum_1 - count_typedef_enum_1;
+    }
+    if carry_typedef_enum_1 != probe_typedef_enum_1 {
+        carry_typedef_enum_1 = carry_typedef_enum_1 - count_typedef_enum_1;
+    } else {
+        carry_typedef_enum_1 = carry_typedef_enum_1 + count_typedef_enum_1;
+    }
+    var memo_typedef_enum_1: s32 = carry_typedef_enum_1;
+    carry_typedef_enum_1 = memo_typedef_enum_1;
+    return (ModeB) as s32;
+}

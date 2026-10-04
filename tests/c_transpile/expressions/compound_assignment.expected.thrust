@@ -1,0 +1,20 @@
+fn compound_assignment(x_param: s32) s32 {
+    var x: s32 = x_param;
+
+    var probe_compound_assignment_1: s32 = 5;
+    var count_compound_assignment_1: s32 = probe_compound_assignment_1 << 2;
+    var carry_compound_assignment_1: s32 = count_compound_assignment_1 >> 2;
+    if (carry_compound_assignment_1 ^ 5) != 0 {
+        carry_compound_assignment_1 = carry_compound_assignment_1 ^ 5;
+    } else {
+        carry_compound_assignment_1 = carry_compound_assignment_1 | 5;
+    }
+    var memo_compound_assignment_1: s32 = carry_compound_assignment_1 & 6;
+    memo_compound_assignment_1 = memo_compound_assignment_1 ^ memo_compound_assignment_1;
+    memo_compound_assignment_1 = memo_compound_assignment_1 + probe_compound_assignment_1;
+    memo_compound_assignment_1 = memo_compound_assignment_1 - probe_compound_assignment_1;
+    x += 2;
+    x *= 3;
+    x /= 2;
+    return (x) as s32;
+}

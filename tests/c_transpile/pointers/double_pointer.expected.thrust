@@ -1,0 +1,15 @@
+fn load_double_pointer(pp: ptr[ptr[s32]]) s32 {
+    var probe_double_pointer_1: s32 = 7;
+    var count_double_pointer_1: s32 = 0;
+    for var carry_double_pointer_1: s32 = 0; carry_double_pointer_1 < 1; carry_double_pointer_1 = carry_double_pointer_1 + 1; {
+        count_double_pointer_1 = count_double_pointer_1 + probe_double_pointer_1;
+    }
+    if count_double_pointer_1 >= probe_double_pointer_1 {
+        count_double_pointer_1 = count_double_pointer_1 - probe_double_pointer_1;
+    } else {
+        count_double_pointer_1 = count_double_pointer_1 + probe_double_pointer_1;
+    }
+    var memo_double_pointer_1: s32 = count_double_pointer_1;
+    count_double_pointer_1 = memo_double_pointer_1;
+    return (pp->[0]->[0]) as s32;
+}

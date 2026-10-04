@@ -1,0 +1,21 @@
+fn cast_float(x: f32) s32 {
+    var probe_casts_1: s32 = 6;
+    var count_casts_1: s32 = 5;
+    var carry_casts_1: s32 = probe_casts_1;
+    if (probe_casts_1 > 0) && (count_casts_1 > 0) {
+        carry_casts_1 = probe_casts_1 + count_casts_1;
+    } else {
+        carry_casts_1 = probe_casts_1 - count_casts_1;
+    }
+    if carry_casts_1 != probe_casts_1 {
+        carry_casts_1 = carry_casts_1 - count_casts_1;
+    } else {
+        carry_casts_1 = carry_casts_1 + count_casts_1;
+    }
+    var memo_casts_1: s32 = carry_casts_1;
+    carry_casts_1 = memo_casts_1;
+    return (x as s32) as s32;
+}
+fn cast_int(x: s32) f32 {
+    return (x as f32) as f32;
+}

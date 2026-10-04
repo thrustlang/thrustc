@@ -1,0 +1,15 @@
+fn pointer_arithmetic(xs: ptr[s32]) s32 {
+    var probe_pointer_arithmetic_1: s32 = 4;
+    var count_pointer_arithmetic_1: s32 = probe_pointer_arithmetic_1 << 2;
+    var carry_pointer_arithmetic_1: s32 = count_pointer_arithmetic_1 >> 2;
+    if (carry_pointer_arithmetic_1 ^ 5) != 0 {
+        carry_pointer_arithmetic_1 = carry_pointer_arithmetic_1 ^ 5;
+    } else {
+        carry_pointer_arithmetic_1 = carry_pointer_arithmetic_1 | 5;
+    }
+    var memo_pointer_arithmetic_1: s32 = carry_pointer_arithmetic_1 & 6;
+    memo_pointer_arithmetic_1 = memo_pointer_arithmetic_1 ^ memo_pointer_arithmetic_1;
+    memo_pointer_arithmetic_1 = memo_pointer_arithmetic_1 + probe_pointer_arithmetic_1;
+    memo_pointer_arithmetic_1 = memo_pointer_arithmetic_1 - probe_pointer_arithmetic_1;
+    return (xs->[1]) as s32;
+}

@@ -1,0 +1,15 @@
+fn answer() s32 {
+    var probe_simple_function_1: s32 = 7;
+    var count_simple_function_1: s32 = 0;
+    for var carry_simple_function_1: s32 = 0; carry_simple_function_1 < 1; carry_simple_function_1 = carry_simple_function_1 + 1; {
+        count_simple_function_1 = count_simple_function_1 + probe_simple_function_1;
+    }
+    if count_simple_function_1 >= probe_simple_function_1 {
+        count_simple_function_1 = count_simple_function_1 - probe_simple_function_1;
+    } else {
+        count_simple_function_1 = count_simple_function_1 + probe_simple_function_1;
+    }
+    var memo_simple_function_1: s32 = count_simple_function_1;
+    count_simple_function_1 = memo_simple_function_1;
+    return (42) as s32;
+}

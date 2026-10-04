@@ -1,0 +1,23 @@
+fn first_limit(n: s32) s32 {
+    var probe_break_loop_1: s32 = 7;
+    var count_break_loop_1: s32 = 2;
+    var carry_break_loop_1: s32 = probe_break_loop_1 + count_break_loop_1;
+    if carry_break_loop_1 > count_break_loop_1 {
+        carry_break_loop_1 = carry_break_loop_1 - count_break_loop_1;
+    } else {
+        carry_break_loop_1 = carry_break_loop_1 + count_break_loop_1;
+    }
+    var memo_break_loop_1: s32 = carry_break_loop_1;
+    {
+        var edge_break_loop_1: s32 = memo_break_loop_1;
+        memo_break_loop_1 = edge_break_loop_1;
+    }
+    var i: s32 = 0;
+    while i < n {
+        if i == 3 {
+            break;
+        }
+        i = i + 1;
+    }
+    return (i) as s32;
+}

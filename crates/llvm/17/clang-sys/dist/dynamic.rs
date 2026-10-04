@@ -6,6 +6,7 @@ use std::io::{self, Error, ErrorKind, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use super::common;
+use crate::r#static::utils;
 
 //================================================
 // Validation
@@ -191,7 +192,43 @@ fn search_libclang_directories(runtime: bool) -> Result<Vec<(PathBuf, String, Ve
 /// Finds the "best" `libclang` shared library and returns the directory and
 /// filename of that library.
 pub fn find(runtime: bool) -> Result<(PathBuf, String), String> {
-    search_libclang_directories(runtime)?
+    let found = search_libclang_directories(runtime)?;
+
+    let mut preferred_dirs: Vec<PathBuf> = vec![];
+
+    if let Ok(path) = env::var("LIBCLANG_PATH") {
+        preferred_dirs.extend(env::split_paths(&path));
+    }
+
+    if let Ok(path) = env::var("THRUSTC_LIBCLANG_BUILD_PATH") {
+        let directory = PathBuf::from(path).join("lib");
+        if directory.is_dir() {
+            preferred_dirs.push(directory);
+        }
+    }
+
+    let thrust_managed_dir = utils::get_libclang_build_path().join("lib");
+    if thrust_managed_dir.is_dir() {
+        preferred_dirs.push(thrust_managed_dir);
+    }
+
+    let preferred: Vec<(PathBuf, String, Vec<u32>)> = preferred_dirs
+        .iter()
+        .flat_map(|preferred_dir| {
+            found
+                .iter()
+                .filter(move |(dir, _, _)| dir == preferred_dir)
+                .cloned()
+        })
+        .collect();
+
+    let candidates: Vec<(PathBuf, String, Vec<u32>)> = if preferred.is_empty() {
+        found
+    } else {
+        preferred
+    };
+
+    candidates
         .iter()
         // We want to find the `libclang` shared library with the highest
         // version number, hence `max_by_key` below.

@@ -1,0 +1,16 @@
+fn array_indexing(xs: ptr[s32], i: s32) s32 {
+    var probe_array_indexing_1: s32 = 4;
+    var count_array_indexing_1: s32 = 4;
+    var carry_array_indexing_1: s32 = probe_array_indexing_1 + count_array_indexing_1;
+    if carry_array_indexing_1 > count_array_indexing_1 {
+        carry_array_indexing_1 = carry_array_indexing_1 - count_array_indexing_1;
+    } else {
+        carry_array_indexing_1 = carry_array_indexing_1 + count_array_indexing_1;
+    }
+    var memo_array_indexing_1: s32 = carry_array_indexing_1;
+    {
+        var edge_array_indexing_1: s32 = memo_array_indexing_1;
+        memo_array_indexing_1 = edge_array_indexing_1;
+    }
+    return (xs->[i]) as s32;
+}

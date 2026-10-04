@@ -37,11 +37,50 @@ pub fn build_import_c<'parser>(
 
     let span: Span = tk.get_span();
 
-    ctx.consume_these(
+    let path_tk: &Token = ctx.consume_these(
         &[TokenType::CString, TokenType::CNString],
         CompilationIssueCode::E0001,
         "Expected string literal.".into(),
     )?;
+
+    let path_span: Span = path_tk.get_span();
+    let path: String = path_tk.get_lexeme().to_string();
+
+    if ctx.check(TokenType::Only) {
+        let only_span: Span = ctx.peek().get_span();
+
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0001,
+            "'only' is not supported by 'importC'.".into(),
+            "Remove the 'only { ... }' clause. 'importC' imports declarations from the header, it does not support selective import.".into(),
+            None,
+            only_span,
+        ));
+    }
+
+    let mut alias: Option<Vec<String>> = None;
+
+    if ctx.match_token(TokenType::As)? {
+        let alias_tk: &Token = ctx.consume(
+            TokenType::Identifier,
+            CompilationIssueCode::E0001,
+            "Expected identifier for the C import alias.".into(),
+        )?;
+
+        let mut alias_parts: Vec<String> = vec![alias_tk.get_lexeme().to_string()];
+
+        while ctx.match_token(TokenType::ColonColon)? {
+            let part_tk: &Token = ctx.consume(
+                TokenType::Identifier,
+                CompilationIssueCode::E0001,
+                "Expected identifier after the path separator.".into(),
+            )?;
+
+            alias_parts.push(part_tk.get_lexeme().to_string());
+        }
+
+        alias = Some(alias_parts);
+    }
 
     ctx.consume(
         TokenType::SemiColon,
@@ -50,7 +89,10 @@ pub fn build_import_c<'parser>(
     )?;
 
     Ok(Ast::ImportC {
+        path,
+        alias,
         span,
+        path_span,
         kind: Type::Void { span },
         id: NodeId::new(),
     })

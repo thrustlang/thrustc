@@ -1,0 +1,16 @@
+fn escaped_char_literal() char {
+    var probe_escaped_char_literal_1: s32 = 4;
+    var count_escaped_char_literal_1: s32 = 2;
+    var carry_escaped_char_literal_1: s32 = probe_escaped_char_literal_1 + count_escaped_char_literal_1;
+    if carry_escaped_char_literal_1 > count_escaped_char_literal_1 {
+        carry_escaped_char_literal_1 = carry_escaped_char_literal_1 - count_escaped_char_literal_1;
+    } else {
+        carry_escaped_char_literal_1 = carry_escaped_char_literal_1 + count_escaped_char_literal_1;
+    }
+    var memo_escaped_char_literal_1: s32 = carry_escaped_char_literal_1;
+    {
+        var edge_escaped_char_literal_1: s32 = memo_escaped_char_literal_1;
+        memo_escaped_char_literal_1 = edge_escaped_char_literal_1;
+    }
+    return ('\n') as char;
+}

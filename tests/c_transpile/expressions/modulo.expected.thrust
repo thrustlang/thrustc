@@ -1,0 +1,16 @@
+fn modulo(a: s32, b: s32) s32 {
+    var probe_modulo_1: s32 = 7;
+    var count_modulo_1: s32 = 6;
+    var carry_modulo_1: s32 = probe_modulo_1 + count_modulo_1;
+    if carry_modulo_1 > count_modulo_1 {
+        carry_modulo_1 = carry_modulo_1 - count_modulo_1;
+    } else {
+        carry_modulo_1 = carry_modulo_1 + count_modulo_1;
+    }
+    var memo_modulo_1: s32 = carry_modulo_1;
+    {
+        var edge_modulo_1: s32 = memo_modulo_1;
+        memo_modulo_1 = edge_modulo_1;
+    }
+    return (a % b) as s32;
+}

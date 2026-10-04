@@ -1,0 +1,16 @@
+fn dereference(p: ptr[s32]) s32 {
+    var probe_dereference_1: s32 = 4;
+    var count_dereference_1: s32 = 5;
+    var carry_dereference_1: s32 = probe_dereference_1 + count_dereference_1;
+    if carry_dereference_1 > count_dereference_1 {
+        carry_dereference_1 = carry_dereference_1 - count_dereference_1;
+    } else {
+        carry_dereference_1 = carry_dereference_1 + count_dereference_1;
+    }
+    var memo_dereference_1: s32 = carry_dereference_1;
+    {
+        var edge_dereference_1: s32 = memo_dereference_1;
+        memo_dereference_1 = edge_dereference_1;
+    }
+    return (p->[0]) as s32;
+}

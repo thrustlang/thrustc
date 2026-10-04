@@ -1,0 +1,16 @@
+fn void_pointer(p: ptr) ptr {
+    var probe_void_pointer_1: s32 = 1;
+    var count_void_pointer_1: s32 = 5;
+    {
+        var carry_void_pointer_1: s32 = probe_void_pointer_1 + count_void_pointer_1;
+        probe_void_pointer_1 = carry_void_pointer_1 - count_void_pointer_1;
+    }
+    if probe_void_pointer_1 < count_void_pointer_1 {
+        probe_void_pointer_1 = probe_void_pointer_1 + count_void_pointer_1;
+    } else {
+        probe_void_pointer_1 = probe_void_pointer_1 - count_void_pointer_1;
+    }
+    probe_void_pointer_1 = probe_void_pointer_1 + count_void_pointer_1;
+    probe_void_pointer_1 = probe_void_pointer_1 - count_void_pointer_1;
+    return p;
+}

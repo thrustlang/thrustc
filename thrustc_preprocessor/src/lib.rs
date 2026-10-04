@@ -102,6 +102,16 @@ impl<'preprocessor> Preprocessor {
                 continue;
             }
 
+            if block_depth == 0 && context.check(TokenType::ImportC) {
+                match highmodule_parsing::importc::parse_import_c(&mut context) {
+                    Ok(Some(module)) => self.merge_module(&mut merged, module),
+                    Ok(None) => (),
+                    Err(()) => return Err(()),
+                }
+
+                continue;
+            }
+
             if block_depth == 0 && context.check(TokenType::IfAttribute) {
                 self.handle_conditional_imports(&mut context, &mut merged)?;
 
@@ -189,14 +199,22 @@ impl Preprocessor {
         context: &mut PreprocessorContext<'_>,
         merged: &mut ahash::AHashMap<(std::path::PathBuf, Option<Vec<String>>), usize>,
     ) -> Result<(), ()> {
-        if !context.check(TokenType::Import) {
+        if context.check(TokenType::Import) {
+            match highmodule_parsing::import::parse_import(context) {
+                Ok(Some(module)) => self.merge_module(merged, module),
+                Ok(None) => (),
+                Err(()) => return Err(()),
+            }
+
             return Ok(());
         }
 
-        match highmodule_parsing::import::parse_import(context) {
-            Ok(Some(module)) => self.merge_module(merged, module),
-            Ok(None) => (),
-            Err(()) => return Err(()),
+        if context.check(TokenType::ImportC) {
+            match highmodule_parsing::importc::parse_import_c(context) {
+                Ok(Some(module)) => self.merge_module(merged, module),
+                Ok(None) => (),
+                Err(()) => return Err(()),
+            }
         }
 
         Ok(())

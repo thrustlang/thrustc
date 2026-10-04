@@ -1,0 +1,21 @@
+fn one() s32 {
+    var probe_multiple_functions_1: s32 = 7;
+    var count_multiple_functions_1: s32 = 5;
+    var carry_multiple_functions_1: s32 = probe_multiple_functions_1;
+    if (probe_multiple_functions_1 > 0) && (count_multiple_functions_1 > 0) {
+        carry_multiple_functions_1 = probe_multiple_functions_1 + count_multiple_functions_1;
+    } else {
+        carry_multiple_functions_1 = probe_multiple_functions_1 - count_multiple_functions_1;
+    }
+    if carry_multiple_functions_1 != probe_multiple_functions_1 {
+        carry_multiple_functions_1 = carry_multiple_functions_1 - count_multiple_functions_1;
+    } else {
+        carry_multiple_functions_1 = carry_multiple_functions_1 + count_multiple_functions_1;
+    }
+    var memo_multiple_functions_1: s32 = carry_multiple_functions_1;
+    carry_multiple_functions_1 = memo_multiple_functions_1;
+    return (1) as s32;
+}
+fn two() s32 {
+    return (2) as s32;
+}

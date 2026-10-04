@@ -669,6 +669,265 @@ pub fn show_help() -> ! {
 
     thrustc_logging::write(
         thrustc_logging::OutputIn::Stderr,
+        "\nC transpiler flags:\n\n",
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--emit-c-bindings-thrust"
+                .custom_color((141, 141, 142))
+                .bold(),
+            "header.h",
+            "Emit C bindings as a .thrust file and exit.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--emit-c-bindings-out-dir"
+                .custom_color((141, 141, 142))
+                .bold(),
+            "out/",
+            "Directory where generated bindings will be written.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n\n",
+            "•".bold(),
+            "--emit-c-bindings-output"
+                .custom_color((141, 141, 142))
+                .bold(),
+            "path/to/file.thrust",
+            "Explicit output file path for generated bindings.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--import-c-include".custom_color((141, 141, 142)).bold(),
+            "path/",
+            "Add an include directory (-I) for importC.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--import-c-system-include"
+                .custom_color((141, 141, 142))
+                .bold(),
+            "path/",
+            "Add a system include directory (-isystem) for importC.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--import-c-define".custom_color((141, 141, 142)).bold(),
+            "NAME[=VALUE]",
+            "Define a macro (-D) for importC.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--import-c-undef".custom_color((141, 141, 142)).bold(),
+            "NAME",
+            "Undefine a macro (-U) for importC.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--import-c-target".custom_color((141, 141, 142)).bold(),
+            "triple",
+            "Set the clang target triple for importC (--target=...).",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--import-c-sysroot".custom_color((141, 141, 142)).bold(),
+            "path/",
+            "Set the clang sysroot for importC (--sysroot=...).",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--import-c-std".custom_color((141, 141, 142)).bold(),
+            "c11|gnu11|c99|...",
+            "Set the C standard for importC (-std=...).",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n\n",
+            "•".bold(),
+            "--import-c-arg".custom_color((141, 141, 142)).bold(),
+            "<clang-arg>",
+            "Append a raw clang argument for importC.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--translate-c-include".custom_color((141, 141, 142)).bold(),
+            "path/",
+            "Add an include directory (-I) for translateC.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--translate-c-system-include"
+                .custom_color((141, 141, 142))
+                .bold(),
+            "path/",
+            "Add a system include directory (-isystem) for translateC.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--translate-c-define".custom_color((141, 141, 142)).bold(),
+            "NAME[=VALUE]",
+            "Define a macro (-D) for translateC.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--translate-c-undef".custom_color((141, 141, 142)).bold(),
+            "NAME",
+            "Undefine a macro (-U) for translateC.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--translate-c-target".custom_color((141, 141, 142)).bold(),
+            "triple",
+            "Set the clang target triple for translateC (--target=...).",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--translate-c-sysroot".custom_color((141, 141, 142)).bold(),
+            "path/",
+            "Set the clang sysroot for translateC (--sysroot=...).",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--translate-c-std".custom_color((141, 141, 142)).bold(),
+            "c11|gnu11|c99|...",
+            "Set the C standard for translateC (-std=...).",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--translate-c-arg".custom_color((141, 141, 142)).bold(),
+            "<clang-arg>",
+            "Append a raw clang argument for translateC.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--translate-c-out-dir".custom_color((141, 141, 142)).bold(),
+            "out/",
+            "Directory where translated .thrust files will be written.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
+            "--translate-c-output".custom_color((141, 141, 142)).bold(),
+            "path/to/file.thrust",
+            "Explicit output file path for a single translated C input.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n\n",
+            "•".bold(),
+            "--translate-c-to-thrust"
+                .custom_color((141, 141, 142))
+                .bold(),
+            "file.c",
+            "Translate a C source file into a .thrust file and exit. Can be repeated.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
         "\nWarning compiler flags:\n\n",
     );
 

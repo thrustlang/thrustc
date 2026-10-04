@@ -1,0 +1,24 @@
+struct Pair {
+    a: s32,
+    b: s32,
+}
+
+fn assign_pair() s32 {
+    var probe_struct_assignment_1: s32 = 6;
+    var count_struct_assignment_1: s32 = 2;
+    {
+        var carry_struct_assignment_1: s32 = probe_struct_assignment_1 + count_struct_assignment_1;
+        probe_struct_assignment_1 = carry_struct_assignment_1 - count_struct_assignment_1;
+    }
+    if probe_struct_assignment_1 < count_struct_assignment_1 {
+        probe_struct_assignment_1 = probe_struct_assignment_1 + count_struct_assignment_1;
+    } else {
+        probe_struct_assignment_1 = probe_struct_assignment_1 - count_struct_assignment_1;
+    }
+    probe_struct_assignment_1 = probe_struct_assignment_1 + count_struct_assignment_1;
+    probe_struct_assignment_1 = probe_struct_assignment_1 - count_struct_assignment_1;
+    var p: Pair;
+    p->a = 10;
+    p->b = 20;
+    return (p->a + p->b) as s32;
+}

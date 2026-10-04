@@ -1,0 +1,15 @@
+fn object_macro() s32 {
+    var probe_object_macro_1: s32 = 6;
+    var count_object_macro_1: s32 = probe_object_macro_1 << 4;
+    var carry_object_macro_1: s32 = count_object_macro_1 >> 4;
+    if (carry_object_macro_1 ^ 6) != 0 {
+        carry_object_macro_1 = carry_object_macro_1 ^ 6;
+    } else {
+        carry_object_macro_1 = carry_object_macro_1 | 6;
+    }
+    var memo_object_macro_1: s32 = carry_object_macro_1 & 6;
+    memo_object_macro_1 = memo_object_macro_1 ^ memo_object_macro_1;
+    memo_object_macro_1 = memo_object_macro_1 + probe_object_macro_1;
+    memo_object_macro_1 = memo_object_macro_1 - probe_object_macro_1;
+    return (10) as s32;
+}

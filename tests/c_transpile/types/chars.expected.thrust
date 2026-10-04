@@ -1,0 +1,19 @@
+fn echo_char(c: char) char {
+    var probe_chars_1: s32 = 2;
+    var count_chars_1: s32 = 5;
+    var carry_chars_1: s32 = probe_chars_1 + count_chars_1;
+    if carry_chars_1 > count_chars_1 {
+        carry_chars_1 = carry_chars_1 - count_chars_1;
+    } else {
+        carry_chars_1 = carry_chars_1 + count_chars_1;
+    }
+    var memo_chars_1: s32 = carry_chars_1;
+    {
+        var edge_chars_1: s32 = memo_chars_1;
+        memo_chars_1 = edge_chars_1;
+    }
+    return (c) as char;
+}
+fn echo_uchar(c: u8) u8 {
+    return (c) as u8;
+}

@@ -124,6 +124,12 @@ fn run_command(name: &str, path: &str, arguments: &[&str]) -> Option<String> {
 /// Executes the `llvm-config` command and returns the `stdout` output if the
 /// command was successfully executed (errors are added to `COMMAND_ERRORS`).
 pub fn run_llvm_config(arguments: &[&str]) -> Option<String> {
+    if let Ok(path) = env::var("LLVM_CONFIG_PATH") {
+        if !path.is_empty() {
+            return run_command("llvm-config", &path, arguments);
+        }
+    }
+
     let llvm_config_path: PathBuf = utils::get_libclang_build_path()
         .join("bin")
         .join(utils::get_llvm_config_os_termination());
@@ -271,6 +277,24 @@ fn search_directories(directory: &Path, filenames: &[String]) -> Vec<(PathBuf, S
 pub fn search_libclang_directories(filenames: &[String]) -> Vec<(PathBuf, String)> {
     let mut found: Vec<(PathBuf, String)> = vec![];
 
+    if let Ok(path) = env::var("LIBCLANG_PATH") {
+        for directory in env::split_paths(&path) {
+            found.extend(search_directories(&directory, filenames));
+        }
+    }
+
+    if let Ok(path) = env::var("THRUSTC_LIBCLANG_BUILD_PATH") {
+        let directory = PathBuf::from(path).join("lib");
+        if directory.is_dir() {
+            found.extend(search_directories(&directory, filenames));
+        }
+    }
+
+    let thrust_clang_build_lib_folder = utils::get_libclang_build_path().join("lib");
+    if thrust_clang_build_lib_folder.is_dir() {
+        found.extend(search_directories(&thrust_clang_build_lib_folder, filenames));
+    }
+
     // Search the `bin` and `lib` directories in the directory returned by
     // `llvm-config --prefix`.
     if let Some(output) = run_llvm_config(&["--prefix"]) {
@@ -300,39 +324,35 @@ pub fn search_libclang_directories(filenames: &[String]) -> Vec<(PathBuf, String
 
     // Determine the `libclang` directory patterns.
 
-    let thrust_clang_build_lib_folder: &str =
-        &format!("{}", utils::get_libclang_build_path().join("lib").display());
-
-    let mut directories: Vec<&str> = if target_os!("haiku") {
-        DIRECTORIES_HAIKU.into()
+    let directories: Vec<String> = if target_os!("haiku") {
+        DIRECTORIES_HAIKU.iter().map(|d| d.to_string()).collect()
     } else if target_os!("linux") || target_os!("freebsd") {
-        DIRECTORIES_LINUX.into()
+        DIRECTORIES_LINUX.iter().map(|d| d.to_string()).collect()
     } else if target_os!("macos") {
-        DIRECTORIES_MACOS.into()
+        DIRECTORIES_MACOS.iter().map(|d| d.to_string()).collect()
     } else if target_os!("windows") {
         let msvc = target_env!("msvc");
         DIRECTORIES_WINDOWS
             .iter()
             .filter(|d| d.1 || !msvc)
-            .map(|d| d.0)
+            .map(|d| d.0.to_string())
             .collect()
     } else if target_os!("illumos") {
-        DIRECTORIES_ILLUMOS.into()
+        DIRECTORIES_ILLUMOS.iter().map(|d| d.to_string()).collect()
     } else {
         vec![]
     };
 
-    directories.push(thrust_clang_build_lib_folder);
-
     // We use temporary directories when testing the build script so we'll
     // remove the prefixes that make the directories absolute.
-    let directories: Vec<&str> = if test!() {
+    let directories: Vec<String> = if test!() {
         directories
             .iter()
             .map(|d| {
                 d.strip_prefix('/')
                     .or_else(|| d.strip_prefix("C:\\"))
                     .unwrap_or(d)
+                    .to_string()
             })
             .collect::<Vec<_>>()
     } else {

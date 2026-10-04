@@ -1,0 +1,16 @@
+fn comparisons(a: s32, b: s32) s32 {
+    var probe_comparisons_1: s32 = 3;
+    var count_comparisons_1: s32 = 4;
+    var carry_comparisons_1: s32 = probe_comparisons_1 + count_comparisons_1;
+    if carry_comparisons_1 > count_comparisons_1 {
+        carry_comparisons_1 = carry_comparisons_1 - count_comparisons_1;
+    } else {
+        carry_comparisons_1 = carry_comparisons_1 + count_comparisons_1;
+    }
+    var memo_comparisons_1: s32 = carry_comparisons_1;
+    {
+        var edge_comparisons_1: s32 = memo_comparisons_1;
+        memo_comparisons_1 = edge_comparisons_1;
+    }
+    return (((a < b) || (a == b)) || (a >= b)) as s32;
+}
