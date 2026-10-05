@@ -819,7 +819,7 @@ impl CompilerOptions {
     }
 
     #[inline]
-    pub fn get_translate_c_to_thrust(&self) -> &[PathBuf] {
+    pub fn get_translate_c_to_thrust_inputs(&self) -> &[PathBuf] {
         self.translate_c_to_thrust.as_slice()
     }
 }

@@ -68,7 +68,7 @@ pub fn lower_precedence<'parser>(
             let span: Span = lparen_tk.get_span();
 
             let expr: Ast = expressions::parse_expr(ctx)?;
-            let expr_type: &Type = expr.get_value_type()?;
+            let expr_type: Type = expr.get_value_type()?.clone();
 
             ctx.consume(
                 TokenType::RParen,
@@ -76,9 +76,45 @@ pub fn lower_precedence<'parser>(
                 "Expected ')'.".into(),
             )?;
 
+            if ctx.match_token(TokenType::PlusPlus)? || ctx.match_token(TokenType::MinusMinus)? {
+                let operator_tk: &Token = ctx.previous();
+                let operator: TokenType = operator_tk.kind;
+                let operator_span: Span = operator_tk.get_span();
+
+                let place: Ast = match expr {
+                    Ast::Reference { .. }
+                    | Ast::Deref { .. }
+                    | Ast::Index { .. }
+                    | Ast::Property { .. } => expr,
+
+                    _ => {
+                        ctx.leave_expression();
+
+                        return Err(CompilationIssue::Error(
+                            CompilationIssueCode::E0001,
+                            "Increment/decrement after parentheses requires a mutable place.".into(),
+                            "Use (place)++ with a variable, deref, index or property.".into(),
+                            None,
+                            operator_span,
+                        ));
+                    }
+                };
+
+                ctx.leave_expression();
+
+                return Ok(Ast::UnaryOp {
+                    operator,
+                    node: place.into(),
+                    kind: expr_type,
+                    before: false,
+                    span: operator_span,
+                    id: NodeId::new(),
+                });
+            }
+
             Ast::Group {
-                node: expr.clone().into(),
-                kind: expr_type.clone(),
+                node: expr.into(),
+                kind: expr_type,
                 span,
                 id: NodeId::new(),
             }

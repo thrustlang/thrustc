@@ -1,0 +1,9 @@
+fn bump_element(a: ptr[s32], i: s32) s32 {
+    (a->[i])++;
+    return (a->[i]) as s32;
+}
+fn element_old(a: ptr[s32], i_param: s32) s32 {
+    var i: s32 = i_param;
+
+    return (a->[i++]) as s32;
+}

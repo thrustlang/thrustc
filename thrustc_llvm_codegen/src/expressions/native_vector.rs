@@ -67,11 +67,14 @@ pub fn compile<'ctx>(
             )
         });
 
-        let index: IntValue = context.get_llvm_context().i32_type().const_int(index, false);
+        let index: IntValue = context
+            .get_llvm_context()
+            .i32_type()
+            .const_int(index, false);
 
         vector = context
             .get_llvm_builder()
-            .build_insert_element(vector, value, index, "native.vector.insert")
+            .build_insert_element(vector, value, index, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
                     context,

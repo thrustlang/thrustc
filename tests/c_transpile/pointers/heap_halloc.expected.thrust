@@ -1,0 +1,8 @@
+fn heap_halloc() s32 {
+    var p: ptr[s32] = halloc(s32);
+    p->[0] = 41;
+    var q: ptr[f64] = halloc(array[f64; 4]) as ptr[f64];
+    q->[0] = 1.0;
+    var total: s32 = p->[0] + q->[0] as s32;
+    return (total) as s32;
+}

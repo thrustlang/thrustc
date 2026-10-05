@@ -1,0 +1,22 @@
+/*
+ * Prefix and postfix inc/dec on parenthesized plain locals.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+fn main() s32 @public {
+    var i: s32 = 0;
+
+    ++(i);
+
+    if i != 1 { return 1; }
+
+    --(i);
+
+    if i != 0 { return 2; }
+
+    (i)++;
+
+    if i != 1 { return 3; }
+
+    return 0;
+}

@@ -1,0 +1,9 @@
+fn post_pre_inc_dec(start_param: s32) s32 {
+    var start: s32 = start_param;
+
+    var x_post_pre_inc_dec_1: s32 = start++;
+    var y_post_pre_inc_dec_1: s32 = ++start;
+    start++;
+    --start;
+    return (x_post_pre_inc_dec_1 + y_post_pre_inc_dec_1 + start) as s32;
+}

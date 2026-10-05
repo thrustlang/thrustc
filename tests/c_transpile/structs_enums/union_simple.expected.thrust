@@ -1,4 +1,4 @@
-union Number {
+struct Number {
     i: s32,
     f: f32,
 }

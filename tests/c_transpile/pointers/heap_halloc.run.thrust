@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if heap_halloc() != 42 { return 1; }
+
+    return 0;
+}

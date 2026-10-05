@@ -19,7 +19,7 @@
 
 use thrustc_ast::{Ast, NodeId, traits::AstGetType};
 use thrustc_code_location::Span;
-use thrustc_errors::CompilationIssue;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, traits::CastTypeExtensions};
@@ -101,14 +101,50 @@ pub fn unary_precedence<'parser>(
         let span: Span = operator_tk.get_span();
 
         let expr: Ast = expressions::parse_expr(ctx)?;
-        let expr_type: Type = expr.get_value_type()?.clone();
+
+        let target: Ast = match expr {
+            Ast::Group { node, .. } => {
+                let inner: Ast = *node;
+
+                match inner {
+                    Ast::Reference { .. }
+                    | Ast::Deref { .. }
+                    | Ast::Index { .. }
+                    | Ast::Property { .. } => inner,
+
+                    _ => {
+                        return Err(CompilationIssue::Error(
+                            CompilationIssueCode::E0001,
+                            "Increment requires a mutable place.".into(),
+                            "Use ++i for a plain variable or ++(place) for a deref, index or property.".into(),
+                            None,
+                            span,
+                        ));
+                    }
+                }
+            }
+
+            Ast::Reference { .. } => expr,
+
+            _ => {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0001,
+                    "Increment requires a mutable place.".into(),
+                    "Use ++i for a plain variable or ++(place) for a deref, index or property.".into(),
+                    None,
+                    span,
+                ));
+            }
+        };
+
+        let target_type: Type = target.get_value_type()?.clone();
 
         ctx.leave_expression();
 
         return Ok(Ast::UnaryOp {
             operator,
-            node: expr.into(),
-            kind: expr_type,
+            node: target.into(),
+            kind: target_type,
             before: true,
             span,
             id: NodeId::new(),
@@ -121,14 +157,50 @@ pub fn unary_precedence<'parser>(
         let span: Span = operator_tk.get_span();
 
         let expr: Ast = expressions::parse_expr(ctx)?;
-        let expr_type: Type = expr.get_value_type()?.clone();
+
+        let target: Ast = match expr {
+            Ast::Group { node, .. } => {
+                let inner: Ast = *node;
+
+                match inner {
+                    Ast::Reference { .. }
+                    | Ast::Deref { .. }
+                    | Ast::Index { .. }
+                    | Ast::Property { .. } => inner,
+
+                    _ => {
+                        return Err(CompilationIssue::Error(
+                            CompilationIssueCode::E0001,
+                            "Decrement requires a mutable place.".into(),
+                            "Use --i for a plain variable or --(place) for a deref, index or property.".into(),
+                            None,
+                            span,
+                        ));
+                    }
+                }
+            }
+
+            Ast::Reference { .. } => expr,
+
+            _ => {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0001,
+                    "Decrement requires a mutable place.".into(),
+                    "Use --i for a plain variable or --(place) for a deref, index or property.".into(),
+                    None,
+                    span,
+                ));
+            }
+        };
+
+        let target_type: Type = target.get_value_type()?.clone();
 
         ctx.leave_expression();
 
         return Ok(Ast::UnaryOp {
             operator,
-            node: expr.into(),
-            kind: expr_type,
+            node: target.into(),
+            kind: target_type,
             before: true,
             span,
             id: NodeId::new(),

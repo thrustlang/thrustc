@@ -27,7 +27,8 @@ use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::abort;
 use crate::codegen;
-use crate::context::LLVMCodeGenContext;
+use crate::context::{CodeGenLocation, LLVMCodeGenContext};
+use crate::memory;
 use crate::memory::SymbolAllocated;
 use crate::type_cast;
 
@@ -60,7 +61,7 @@ pub fn compile<'ctx>(
             context, name, unary.0, kind, *span, before, cast_type,
         ),
         (TokenType::PlusPlus | TokenType::MinusMinus, _, expr) => {
-            self::compile_increment_decrement(context, unary.0, expr, cast_type)
+            self::compile_increment_decrement(context, unary.0, expr, before, cast_type)
         }
 
         (TokenType::Bang, _, expr) => self::compile_logical_negation(context, expr, cast_type),
@@ -292,6 +293,7 @@ fn compile_increment_decrement<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     operator: &TokenType,
     expression: &'ctx Ast,
+    before: bool,
     cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder = context.get_llvm_builder();
@@ -393,7 +395,49 @@ fn compile_increment_decrement<'ctx>(
                 ),
             };
 
-            type_cast::try_smart_cast(context, cast_type, kind, result, span)
+            context.add_codegen_location(CodeGenLocation::LValue);
+
+            let address: BasicValueEnum = match expression {
+                Ast::Deref { value, .. } => {
+                    let inner: BasicValueEnum =
+                        codegen::compile_as_value(context, value, cast_type);
+
+                    if inner.is_pointer_value() {
+                        inner
+                    } else {
+                        codegen::compile_as_ptr_value(context, value, cast_type)
+                    }
+                }
+
+                _ => codegen::compile_as_ptr_value(context, expression, cast_type),
+            };
+
+            context.pop_current_codegen_location();
+
+            if address.is_pointer_value() {
+                memory::store(
+                    context,
+                    address.into_pointer_value(),
+                    result,
+                    span,
+                );
+            } else {
+                abort::abort_codegen(
+                    context,
+                    "Failed to store the increment/decrement result!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            }
+
+            let emitted: BasicValueEnum = if before {
+                result
+            } else {
+                old_value.into()
+            };
+
+            type_cast::try_smart_cast(context, cast_type, kind, emitted, span)
         }
         _ => {
             let old_value: FloatValue = value.into_float_value();
@@ -435,7 +479,49 @@ fn compile_increment_decrement<'ctx>(
                 ),
             };
 
-            type_cast::try_smart_cast(context, cast_type, kind, result, span)
+            context.add_codegen_location(CodeGenLocation::LValue);
+
+            let address: BasicValueEnum = match expression {
+                Ast::Deref { value, .. } => {
+                    let inner: BasicValueEnum =
+                        codegen::compile_as_value(context, value, cast_type);
+
+                    if inner.is_pointer_value() {
+                        inner
+                    } else {
+                        codegen::compile_as_ptr_value(context, value, cast_type)
+                    }
+                }
+
+                _ => codegen::compile_as_ptr_value(context, expression, cast_type),
+            };
+
+            context.pop_current_codegen_location();
+
+            if address.is_pointer_value() {
+                memory::store(
+                    context,
+                    address.into_pointer_value(),
+                    result,
+                    span,
+                );
+            } else {
+                abort::abort_codegen(
+                    context,
+                    "Failed to compile the operation!",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                );
+            }
+
+            let emitted: BasicValueEnum = if before {
+                result
+            } else {
+                old_value.into()
+            };
+
+            type_cast::try_smart_cast(context, cast_type, kind, emitted, span)
         }
     }
 }

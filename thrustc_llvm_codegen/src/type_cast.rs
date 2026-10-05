@@ -77,17 +77,43 @@ pub fn compile_int_cast<'ctx>(
         return None;
     }
 
-    let is_signed: bool =
-        target_type.is_signed_integer_type() || from_type.is_signed_integer_type();
+    let cast_type: BasicTypeEnum<'_> = typegeneration::generate_type(context, &target_type);
 
-    if is_signed {
-        let cast_type: BasicTypeEnum<'_> = typegeneration::generate_type(context, &target_type);
+    let int_value: IntValue<'_> = from_value.into_int_value();
+    let int_type: IntType<'_> = cast_type.into_int_type();
 
-        let int_value: IntValue<'_> = from_value.into_int_value();
-        let int_type: IntType<'_> = cast_type.into_int_type();
+    let from_width: u32 = int_value.get_type().get_bit_width();
+    let to_width: u32 = int_type.get_bit_width();
 
-        let casted_value: IntValue<'_> = llvm_builder
-            .build_int_cast_sign_flag(int_value, int_type, true, "")
+    let casted_value: IntValue<'_> = if from_width < to_width {
+        if from_type.is_signed_integer_type() {
+            llvm_builder
+                .build_int_s_extend(int_value, int_type, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to cast integer!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                })
+        } else {
+            llvm_builder
+                .build_int_z_extend(int_value, int_type, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        context,
+                        "Failed to cast integer!",
+                        span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                })
+        }
+    } else if from_width > to_width {
+        llvm_builder
+            .build_int_truncate(int_value, int_type, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
                     context,
@@ -96,16 +122,9 @@ pub fn compile_int_cast<'ctx>(
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
-            });
-
-        Some(casted_value.into())
+            })
     } else {
-        let cast_type: BasicTypeEnum<'_> = typegeneration::generate_type(context, &target_type);
-
-        let int_value: IntValue<'_> = from_value.into_int_value();
-        let int_type: IntType<'_> = cast_type.into_int_type();
-
-        let casted_value: IntValue<'_> = llvm_builder
+        llvm_builder
             .build_int_cast(int_value, int_type, "")
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
@@ -115,10 +134,10 @@ pub fn compile_int_cast<'ctx>(
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
-            });
+            })
+    };
 
-        Some(casted_value.into())
-    }
+    Some(casted_value.into())
 }
 
 /* ######################################################################
@@ -252,20 +271,72 @@ pub fn compile_type_cast<'ctx>(
             let int_value: IntValue<'_> = value.into_int_value();
             let cast_type: IntType<'_> = cast.into_int_type();
 
-            let casted_value: IntValue<'_> = llvm_builder
-                .build_int_cast(int_value, cast_type, "")
-                .unwrap_or_else(|_| {
-                    abort::abort_codegen(
-                        context,
-                        &format!(
-                            "Failed to cast '{}' type to '{}' type.",
-                            from_type, target_type
-                        ),
-                        expr.get_span(),
-                        std::path::PathBuf::from(file!()),
-                        line!(),
-                    );
-                });
+            let from_width: u32 = int_value.get_type().get_bit_width();
+            let to_width: u32 = cast_type.get_bit_width();
+
+            let casted_value: IntValue<'_> = if from_width < to_width {
+                if from_type.is_signed_integer_type() {
+                    llvm_builder
+                        .build_int_s_extend(int_value, cast_type, "")
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                context,
+                                &format!(
+                                    "Failed to cast '{}' type to '{}' type.",
+                                    from_type, target_type
+                                ),
+                                expr.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            );
+                        })
+                } else {
+                    llvm_builder
+                        .build_int_z_extend(int_value, cast_type, "")
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                context,
+                                &format!(
+                                    "Failed to cast '{}' type to '{}' type.",
+                                    from_type, target_type
+                                ),
+                                expr.get_span(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            );
+                        })
+                }
+            } else if from_width > to_width {
+                llvm_builder
+                    .build_int_truncate(int_value, cast_type, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            &format!(
+                                "Failed to cast '{}' type to '{}' type.",
+                                from_type, target_type
+                            ),
+                            expr.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    })
+            } else {
+                llvm_builder
+                    .build_int_cast(int_value, cast_type, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            context,
+                            &format!(
+                                "Failed to cast '{}' type to '{}' type.",
+                                from_type, target_type
+                            ),
+                            expr.get_span(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    })
+            };
 
             return casted_value.into();
         } else if value.is_float_value() && cast.is_float_type() {

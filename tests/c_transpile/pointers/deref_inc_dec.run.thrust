@@ -1,0 +1,15 @@
+fn main() s32 @public {
+    var v: s32 = 10;
+    var p: ptr[s32] = ref v;
+
+    if bump_deref(p) != 12 { return 1; }
+    if v != 12 { return 2; }
+
+    var w: s32 = 20;
+    var q: ptr[s32] = ref w;
+
+    if fetch_old(q) != 20 { return 3; }
+    if w != 21 { return 4; }
+
+    return 0;
+}

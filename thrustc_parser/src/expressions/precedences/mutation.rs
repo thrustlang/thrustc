@@ -19,7 +19,7 @@
 
 use thrustc_ast::{Ast, NodeId, traits::AstGetType};
 use thrustc_code_location::Span;
-use thrustc_errors::CompilationIssue;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, traits::PrecedenceTypeExtensions};
@@ -50,6 +50,20 @@ pub fn equal_precedence<'parser>(
     {
         let operator_tk = ctx.previous();
         let span: Span = ctx.previous().get_span();
+
+        if operator_tk.get_type() != TokenType::Eq
+            && matches!(expression, Ast::Group { .. } | Ast::Deref { .. })
+        {
+            ctx.leave_expression();
+
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Compound assignment requires a plain mutable place.".into(),
+                "Remove the parentheses or use ++(place) for a deref place.".into(),
+                None,
+                span,
+            ));
+        }
 
         let expr: Ast = expressions::parse_expr(ctx)?;
 

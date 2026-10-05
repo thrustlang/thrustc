@@ -1,0 +1,3 @@
+fn size_anon() usize {
+    return (8) as usize;
+}

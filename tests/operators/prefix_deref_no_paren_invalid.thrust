@@ -1,0 +1,13 @@
+/*
+ * Negative: bare prefix ++ on a deref place must not parse.
+ * Parenthesized ++(deref p) is required.
+ */
+
+fn main() s32 @public {
+    var x: s32 = 10;
+    var p: ptr[s32] = ref x;
+
+    ++deref p;
+
+    return 0;
+}

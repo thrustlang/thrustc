@@ -1,0 +1,14 @@
+/*
+ * Negative: compound assignment on parenthesized or deref places
+ * must not parse (it never stored). Use x += 1 or ++(deref p).
+ */
+
+fn main() s32 @public {
+    var x: s32 = 10;
+    var p: ptr[s32] = ref x;
+
+    (x) += 1;
+    (deref p) += 1;
+
+    return 0;
+}

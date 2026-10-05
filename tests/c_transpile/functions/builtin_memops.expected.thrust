@@ -1,0 +1,8 @@
+fn builtin_memops(n: s32) s32 {
+    var buf: array[u8; 16];
+    memset(buf as ptr[u8], (0) as u8, (16) as u64);
+    buf->[0] = 5;
+    memcpy(buf as ptr[u8], buf as ptr[u8], (n) as s32);
+    memmove(buf as ptr[u8], buf as ptr[u8], ((abiSizeOf(array[u8; 16]))) as u64);
+    return (buf->[0]) as s32;
+}

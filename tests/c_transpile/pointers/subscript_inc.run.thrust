@@ -1,0 +1,15 @@
+fn main() s32 @public {
+    var v: s32 = 10;
+    var p: ptr[s32] = ref v;
+
+    if element_old(p, 0) != 10 { return 1; }
+    if v != 10 { return 2; }
+
+    var w: s32 = 20;
+    var q: ptr[s32] = ref w;
+
+    if bump_element(q, 0) != 21 { return 3; }
+    if w != 21 { return 4; }
+
+    return 0;
+}

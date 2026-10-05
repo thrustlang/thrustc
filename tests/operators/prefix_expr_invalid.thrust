@@ -1,0 +1,12 @@
+/*
+ * Negative: prefix ++ on a parenthesized non-place must not parse.
+ */
+
+fn main() s32 @public {
+    var a: s32 = 1;
+    var b: s32 = 2;
+
+    ++(a + b);
+
+    return 0;
+}

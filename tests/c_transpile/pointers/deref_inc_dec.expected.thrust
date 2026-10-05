@@ -1,0 +1,9 @@
+fn bump_deref(p: ptr[s32]) s32 {
+    (p->[0])++;
+    ++(p->[0]);
+    return (p->[0]) as s32;
+}
+fn fetch_old(p: ptr[s32]) s32 {
+    var old_deref_inc_dec_1: s32 = (p->[0])++;
+    return (old_deref_inc_dec_1) as s32;
+}

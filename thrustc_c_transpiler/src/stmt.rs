@@ -20,7 +20,7 @@
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
-use crate::expr;
+use crate::location::Location;
 
 type SwitchSegment = (Vec<Option<String>>, Vec<String>, bool);
 
@@ -30,22 +30,30 @@ pub(crate) fn translate_stmt(
     span: Span,
     function_return_type: Option<&str>,
     loop_continue_action: Option<&str>,
-) -> Result<Vec<String>, CompilationIssue> {
+    ctx: &mut crate::macros::MacroContext<'_>,
+) -> Vec<String> {
+    let prefix: String = crate::macros::expansion_prefix(entity);
     let indent_str: String = "    ".repeat(indent);
 
+    if let Some(call) = crate::macros::try_outline_statement_macro(ctx, entity, span) {
+        return vec![format!("{indent_str}{call};")];
+    }
+
     match entity.get_kind() {
-        clang::EntityKind::NullStmt => Ok(Vec::new()),
+        clang::EntityKind::NullStmt => Vec::new(),
         clang::EntityKind::ReturnStmt => {
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             if let Some(expr) = children.first() {
                 if expr.get_kind() == clang::EntityKind::ConditionalOperator {
                     let expected_return_type: &str = function_return_type.unwrap_or("void");
+
                     return self::translate_conditional_return(
                         expr,
                         indent,
                         span,
                         expected_return_type,
+                        ctx,
                     );
                 }
 
@@ -53,63 +61,85 @@ pub(crate) fn translate_stmt(
                     expr,
                     span,
                     function_return_type.unwrap_or("void"),
-                )?;
-                Ok(vec![format!("{indent_str}return {value};")])
+                    ctx,
+                );
+                vec![format!("{indent_str}return {value};")]
             } else {
-                Ok(vec![format!("{indent_str}return;")])
+                vec![format!("{indent_str}return;")]
             }
         }
 
-        clang::EntityKind::BreakStmt => Ok(vec![format!("{indent_str}break;")]),
+        clang::EntityKind::BreakStmt => vec![format!("{indent_str}break;")],
         clang::EntityKind::ContinueStmt => {
             if let Some(action) = loop_continue_action {
-                Ok(vec![
+                vec![
                     format!("{indent_str}{action};"),
                     format!("{indent_str}continue;"),
-                ])
+                ]
             } else {
-                Ok(vec![format!("{indent_str}continue;")])
+                vec![format!("{indent_str}continue;")]
             }
         }
 
         clang::EntityKind::DeclStmt => {
             let mut lines: Vec<String> = Vec::new();
 
-            for decl in entity.get_children() {
-                if decl.get_kind() != clang::EntityKind::VarDecl {
-                    continue;
-                }
+            let var_decls: Vec<clang::Entity<'_>> = entity
+                .get_children()
+                .into_iter()
+                .filter(|decl| decl.get_kind() == clang::EntityKind::VarDecl)
+                .collect();
 
+            let decl_iter = var_decls.into_iter();
+
+            for decl in decl_iter {
                 let Some(name) = decl.get_name() else {
-                    return Err(CompilationIssue::Error(
+                    return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        "C translation failed.".into(),
-                        "Encountered a local variable without a name.".into(),
+                        format!(
+                            "C translation failed:\n{prefix}Encountered a local variable without a name."
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
                     ));
                 };
 
                 let Some(var_ty) = decl.get_type() else {
-                    return Err(CompilationIssue::Error(
+                    return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        "C translation failed.".into(),
-                        format!("Missing type for local variable '{name}'."),
+                        {
+                            let detail: String =
+                                format!("Missing type for local variable '{name}'.");
+
+                            format!("C translation failed:\n{prefix}{detail}")
+                        },
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
                     ));
                 };
 
                 let ty_text: String = {
-                    let ty_text: String = crate::format_clang_type_thrust(&var_ty).map_err(|msg| {
-                        CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            "C translation failed.".into(),
-                            format!("Unsupported type for local variable '{name}': {msg}"),
-                            None,
-                            span,
-                        )
-                    })?;
+                    let ty_text: String =
+                        match crate::type_format::format_clang_type_thrust(&var_ty) {
+                            Ok(text) => text,
+                            Err(msg) => {
+                                let detail: String = format!(
+                                    "Unsupported type for local variable '{name}': {msg}"
+                                );
+
+                                return ctx.get_mut_transpiler_context().fail(
+                                    CompilationIssue::Error(
+                                        CompilationIssueCode::E0110,
+                                        format!("C translation failed:\n{prefix}{detail}"),
+                                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                                        None,
+                                        span,
+                                    ),
+                                );
+                            }
+                        };
 
                     if var_ty.is_const_qualified() {
                         if let Some(stripped) = ty_text.strip_prefix("const ") {
@@ -122,13 +152,26 @@ pub(crate) fn translate_stmt(
                     }
                 };
 
-                let name: String = crate::sanitize_identifier_for_thrust(&name);
-                let init_entity: Option<clang::Entity<'_>> = crate::top_level::find_var_initializer(&decl);
-                let init: Option<String> = init_entity
-                    .map(|initializer| {
-                        crate::top_level::translate_global_initializer(&initializer, &var_ty, span)
-                    })
-                    .transpose()?;
+                let name: String = {
+                    let __sanitized: String = name.to_string();
+
+                    match __sanitized.as_str() {
+                        "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
+                        | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for"
+                        | "if" | "import" | "importC" | "load" | "loop" | "ptr" | "ref"
+                        | "return" | "struct" | "true" | "type" | "union" | "var" | "void"
+                        | "while" => format!("{__sanitized}_"),
+
+                        _ => __sanitized,
+                    }
+                };
+
+                let init_entity: Option<clang::Entity<'_>> =
+                    crate::top_level::find_var_initializer(&decl);
+
+                let init: Option<String> = init_entity.map(|initializer| {
+                    crate::top_level::translate_global_initializer(&initializer, &var_ty, span, ctx)
+                });
 
                 if let Some(init) = init {
                     lines.push(format!("{indent_str}var {name}: {ty_text} = {init};"));
@@ -137,23 +180,24 @@ pub(crate) fn translate_stmt(
                 }
             }
 
-            Ok(lines)
+            lines
         }
 
         clang::EntityKind::IfStmt => {
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             if children.len() < 2 {
-                return Err(CompilationIssue::Error(
+                return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    "C translation failed.".into(),
-                    "Malformed if statement.".into(),
+                    format!("C translation failed:\n{prefix}Malformed if statement."),
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
                 ));
             }
 
-            let cond: String = crate::expr::translate_condition_expr(&children[0], span)?;
+            let cond: String =
+                crate::expr::translate_condition_expr(&children[0], span, Location::RValue, ctx);
 
             let then_lines: Vec<String> =
                 if children[1].get_kind() == clang::EntityKind::CompoundStmt {
@@ -166,7 +210,8 @@ pub(crate) fn translate_stmt(
                             span,
                             function_return_type,
                             loop_continue_action,
-                        )?;
+                            ctx,
+                        );
 
                         out.extend(lines);
                     }
@@ -179,7 +224,8 @@ pub(crate) fn translate_stmt(
                         span,
                         function_return_type,
                         loop_continue_action,
-                    )?;
+                        ctx,
+                    );
 
                     if lines.is_empty() {
                         lines.push("    ".repeat(indent + 1));
@@ -201,7 +247,8 @@ pub(crate) fn translate_stmt(
                         span,
                         function_return_type,
                         loop_continue_action,
-                    )?;
+                        ctx,
+                    );
                     if let Some(first) = nested.first() {
                         lines.push(format!("{indent_str}}} else {}", first.trim_start()));
                         lines.extend(nested.into_iter().skip(1));
@@ -218,7 +265,8 @@ pub(crate) fn translate_stmt(
                                     span,
                                     function_return_type,
                                     loop_continue_action,
-                                )?;
+                                    ctx,
+                                );
 
                                 out.extend(body);
                             }
@@ -231,7 +279,8 @@ pub(crate) fn translate_stmt(
                                 span,
                                 function_return_type,
                                 loop_continue_action,
-                            )?;
+                                ctx,
+                            );
 
                             if body.is_empty() {
                                 body.push("    ".repeat(indent + 1));
@@ -248,52 +297,59 @@ pub(crate) fn translate_stmt(
                 lines.push(format!("{indent_str}}}"));
             }
 
-            Ok(lines)
+            lines
         }
 
         clang::EntityKind::WhileStmt => {
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             if children.len() < 2 {
-                return Err(CompilationIssue::Error(
+                return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    "C translation failed.".into(),
-                    "Malformed while statement.".into(),
+                    format!("C translation failed:\n{prefix}Malformed while statement."),
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
                 ));
             }
 
-            let cond: String = crate::expr::translate_condition_expr(&children[0], span)?;
+            let cond: String =
+                crate::expr::translate_condition_expr(&children[0], span, Location::RValue, ctx);
 
-            let body_lines: Vec<String> = if children[1].get_kind()
-                == clang::EntityKind::CompoundStmt
-            {
-                let mut out: Vec<String> = Vec::new();
+            let body_lines: Vec<String> =
+                if children[1].get_kind() == clang::EntityKind::CompoundStmt {
+                    let mut out: Vec<String> = Vec::new();
 
-                for child in children[1].get_children() {
-                    let lines: Vec<String> =
-                        self::translate_stmt(&child, indent + 1, span, function_return_type, None)?;
+                    for child in children[1].get_children() {
+                        let lines: Vec<String> = self::translate_stmt(
+                            &child,
+                            indent + 1,
+                            span,
+                            function_return_type,
+                            None,
+                            ctx,
+                        );
 
-                    out.extend(lines);
-                }
+                        out.extend(lines);
+                    }
 
-                out
-            } else {
-                let mut lines: Vec<String> = self::translate_stmt(
-                    &children[1],
-                    indent + 1,
-                    span,
-                    function_return_type,
-                    None,
-                )?;
+                    out
+                } else {
+                    let mut lines: Vec<String> = self::translate_stmt(
+                        &children[1],
+                        indent + 1,
+                        span,
+                        function_return_type,
+                        None,
+                        ctx,
+                    );
 
-                if lines.is_empty() {
-                    lines.push("    ".repeat(indent + 1));
-                }
+                    if lines.is_empty() {
+                        lines.push("    ".repeat(indent + 1));
+                    }
 
-                lines
-            };
+                    lines
+                };
 
             let mut lines: Vec<String> = Vec::new();
 
@@ -301,52 +357,59 @@ pub(crate) fn translate_stmt(
             lines.extend(body_lines);
             lines.push(format!("{indent_str}}}"));
 
-            Ok(lines)
+            lines
         }
 
         clang::EntityKind::DoStmt => {
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             if children.len() < 2 {
-                return Err(CompilationIssue::Error(
+                return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    "C translation failed.".into(),
-                    "Malformed do-while statement.".into(),
+                    format!("C translation failed:\n{prefix}Malformed do-while statement."),
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
                 ));
             }
 
-            let body_lines: Vec<String> = if children[0].get_kind()
-                == clang::EntityKind::CompoundStmt
-            {
-                let mut out: Vec<String> = Vec::new();
+            let body_lines: Vec<String> =
+                if children[0].get_kind() == clang::EntityKind::CompoundStmt {
+                    let mut out: Vec<String> = Vec::new();
 
-                for child in children[0].get_children() {
-                    let lines: Vec<String> =
-                        self::translate_stmt(&child, indent + 1, span, function_return_type, None)?;
+                    for child in children[0].get_children() {
+                        let lines: Vec<String> = self::translate_stmt(
+                            &child,
+                            indent + 1,
+                            span,
+                            function_return_type,
+                            None,
+                            ctx,
+                        );
 
-                    out.extend(lines);
-                }
+                        out.extend(lines);
+                    }
 
-                out
-            } else {
-                let mut lines: Vec<String> = self::translate_stmt(
-                    &children[0],
-                    indent + 1,
-                    span,
-                    function_return_type,
-                    None,
-                )?;
+                    out
+                } else {
+                    let mut lines: Vec<String> = self::translate_stmt(
+                        &children[0],
+                        indent + 1,
+                        span,
+                        function_return_type,
+                        None,
+                        ctx,
+                    );
 
-                if lines.is_empty() {
-                    lines.push("    ".repeat(indent + 1));
-                }
+                    if lines.is_empty() {
+                        lines.push("    ".repeat(indent + 1));
+                    }
 
-                lines
-            };
+                    lines
+                };
 
-            let cond: String = crate::expr::translate_condition_expr(&children[1], span)?;
+            let cond: String =
+                crate::expr::translate_condition_expr(&children[1], span, Location::RValue, ctx);
 
             let mut lines: Vec<String> = Vec::new();
 
@@ -358,7 +421,7 @@ pub(crate) fn translate_stmt(
             lines.push(format!("{}}}", "    ".repeat(indent + 1)));
             lines.push(format!("{indent_str}}}"));
 
-            Ok(lines)
+            lines
         }
 
         clang::EntityKind::SwitchStmt => self::translate_switch_stmt(
@@ -367,22 +430,30 @@ pub(crate) fn translate_stmt(
             span,
             function_return_type,
             loop_continue_action,
+            ctx,
         ),
 
         clang::EntityKind::ForStmt => {
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             if children.is_empty() {
-                return Err(CompilationIssue::Error(
+                return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    "C translation failed.".into(),
-                    "Unsupported for statement shape.".into(),
+                    format!("C translation failed:\n{prefix}Unsupported for statement shape."),
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
                 ));
             }
 
-            let body_node: &clang::Entity<'_> = children.last().unwrap();
+            let body_node: &clang::Entity<'_> = children.last().unwrap_or_else(|| {
+                crate::context::TranspilerContext::abort_transpilation(
+                    "For statement without body node in clang AST.",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
             let header_nodes: &[clang::Entity<'_>] = &children[..children.len() - 1];
 
             let normalized_header_nodes: Vec<Option<&clang::Entity<'_>>> = header_nodes
@@ -397,10 +468,10 @@ pub(crate) fn translate_stmt(
                 .collect();
 
             if normalized_header_nodes.len() > 3 {
-                return Err(CompilationIssue::Error(
+                return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    "C translation failed.".into(),
-                    "Unsupported for statement shape.".into(),
+                    format!("C translation failed:\n{prefix}Unsupported for statement shape."),
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
                 ));
@@ -413,19 +484,27 @@ pub(crate) fn translate_stmt(
             ) = match normalized_header_nodes.as_slice() {
                 [] => (None, None, None),
                 [first] => (*first, None, None),
-                [first, second] if first.is_some_and(|node| node.get_kind() == clang::EntityKind::DeclStmt) => {
+                [first, second]
+                    if first.is_some_and(|node| node.get_kind() == clang::EntityKind::DeclStmt) =>
+                {
                     (*first, *second, None)
                 }
                 [first, second] => (None, *first, *second),
                 [first, second, third] => (*first, *second, *third),
-                _ => unreachable!(),
+
+                _ => crate::context::TranspilerContext::abort_transpilation(
+                    "For statement header exceeds three nodes.",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                ),
             };
 
             let mut init_prefix_lines: Vec<String> = Vec::new();
             let mut init_header_text: Option<String> = None;
 
-            if let Some(node) = init_node {
-                if node.get_kind() == clang::EntityKind::DeclStmt {
+            match init_node {
+                Some(node) if node.get_kind() == clang::EntityKind::DeclStmt => {
                     let decls: Vec<clang::Entity<'_>> = node
                         .get_children()
                         .into_iter()
@@ -433,61 +512,99 @@ pub(crate) fn translate_stmt(
                         .collect();
 
                     if decls.is_empty() {
-                        return Err(CompilationIssue::Error(
+                        return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            "C translation failed.".into(),
-                            "Unsupported for-loop initializer.".into(),
+                            format!(
+                                "C translation failed:\n{prefix}Unsupported for-loop initializer."
+                            ),
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
                         ));
                     }
 
                     if decls.len() > 1 {
-                        return Err(CompilationIssue::Error(
+                        return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            "C translation failed.".into(),
-                            "For-loops with multiple initializer declarations are not supported yet."
-                                .into(),
+                            format!(
+                                "C translation failed:\n{prefix}For-loops with multiple initializer declarations are not supported yet."
+                            ),
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
                         ));
                     }
 
-                    let var: &clang::Entity<'_> = decls.first().unwrap();
+                    let var: &clang::Entity<'_> =
+                        decls.first().unwrap_or_else(|| {
+                            crate::context::TranspilerContext::abort_transpilation(
+                                "For-loop initializer without variable declaration.",
+                                span,
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
 
                     let Some(name) = var.get_name() else {
-                        return Err(CompilationIssue::Error(
+                        return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            "C translation failed.".into(),
-                            "For-loop initializer variable has no name.".into(),
+                            format!(
+                                "C translation failed:\n{prefix}For-loop initializer variable has no name."
+                            ),
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
                         ));
                     };
 
                     let Some(var_ty) = var.get_type() else {
-                        return Err(CompilationIssue::Error(
+                        return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            "C translation failed.".into(),
-                            "For-loop initializer variable has no type.".into(),
+                            format!(
+                                "C translation failed:\n{prefix}For-loop initializer variable has no type."
+                            ),
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
                         ));
                     };
 
-                    let name: String = crate::sanitize_identifier_for_thrust(&name);
+                    let name: String = {
+                        let __sanitized: String = name.to_string();
+
+                        match __sanitized.as_str() {
+                            "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
+                            | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for"
+                            | "if" | "import" | "importC" | "load" | "loop" | "ptr" | "ref"
+                            | "return" | "struct" | "true" | "type" | "union" | "var" | "void"
+                            | "while" => format!("{__sanitized}_"),
+
+                            _ => __sanitized,
+                        }
+                    };
 
                     let ty_text: String = {
                         let ty_text: String =
-                            crate::format_clang_type_thrust(&var_ty).map_err(|msg| {
-                                CompilationIssue::Error(
-                                    CompilationIssueCode::E0110,
-                                    "C translation failed.".into(),
-                                    format!("Unsupported for-loop initializer type: {msg}"),
-                                    None,
-                                    span,
-                                )
-                            })?;
+                            match crate::type_format::format_clang_type_thrust(&var_ty) {
+                                Ok(text) => text,
+                                Err(msg) => {
+                                    let detail: String = format!(
+                                        "Unsupported for-loop initializer type: {msg}"
+                                    );
+
+                                    return ctx.get_mut_transpiler_context().fail(
+                                        CompilationIssue::Error(
+                                            CompilationIssueCode::E0110,
+                                            format!(
+                                                "C translation failed:\n{prefix}{detail}"
+                                            ),
+                                            "Rewrite the C input to avoid the unsupported construct.".into(),
+                                            None,
+                                            span,
+                                        ),
+                                    );
+                                }
+                            };
 
                         if var_ty.is_const_qualified() {
                             if let Some(stripped) = ty_text.strip_prefix("const ") {
@@ -500,99 +617,116 @@ pub(crate) fn translate_stmt(
                         }
                     };
 
-                    let init_expr: Option<clang::Entity<'_>> = crate::top_level::find_var_initializer(var);
+                    let init_expr: Option<clang::Entity<'_>> =
+                        crate::top_level::find_var_initializer(var);
 
                     if let Some(init_expr) = init_expr {
-                        let init_value: String =
-                            crate::top_level::translate_global_initializer(&init_expr, &var_ty, span)?;
+                        let init_value: String = crate::top_level::translate_global_initializer(
+                            &init_expr, &var_ty, span, ctx,
+                        );
 
                         init_header_text = Some(format!("var {name}: {ty_text} = {init_value}"));
                     } else {
                         init_header_text = Some(format!("var {name}: {ty_text}"));
                     }
-                } else if crate::is_supported_expr_kind(node.get_kind()) {
-                    let init_text: String = crate::expr::translate_expr(node, span)?;
+                }
+
+                Some(node) if crate::clang_util::is_supported_expr_kind(node.get_kind()) => {
+                    let init_text: String =
+                        crate::expr::translate_expr(node, span, Location::RValue, ctx);
 
                     init_prefix_lines.push(format!("{indent_str}{init_text};"));
-                } else {
-                    return Err(CompilationIssue::Error(
+                }
+
+                Some(_) => {
+                    return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        "C translation failed.".into(),
-                        "Unsupported for-loop initializer.".into(),
+                        format!("C translation failed:\n{prefix}Unsupported for-loop initializer."),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
                     ));
                 }
+
+                None => {}
             }
 
-            let cond_text: String = if let Some(node) = cond_node {
-                crate::expr::translate_condition_expr(node, span)?
-            } else {
-                String::new()
-            };
+            let cond_text: String = cond_node
+                .map(|node| crate::expr::translate_condition_expr(node, span, Location::RValue, ctx))
+                .unwrap_or_default();
 
             let inc_text: String = if let Some(node) = inc_node {
                 let kind: clang::EntityKind = node.get_kind();
 
                 if kind == clang::EntityKind::UnaryOperator {
                     let Some(range) = node.get_range() else {
-                        return Err(CompilationIssue::Error(
+                        return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            "C translation failed.".into(),
-                            "Unable to translate for-loop increment.".into(),
+                            format!(
+                                "C translation failed:\n{prefix}Unable to translate for-loop increment{}.",
+                                crate::macros::origin_note(node)
+                            ),
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
                         ));
                     };
 
-                    let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
-                    let spellings: Vec<String> = tokens
-                        .into_iter()
-                        .map(|token| token.get_spelling())
-                        .collect();
+                    let spellings: Vec<String> = crate::macro_lex::range_spellings(&range, node);
 
                     if spellings.contains(&"++".to_string())
                         || spellings.contains(&"--".to_string())
                     {
-                        let operand = node
+                        let Some(operand) = node
                             .get_children()
                             .into_iter()
-                            .find(|child| crate::is_supported_expr_kind(child.get_kind()))
-                            .ok_or_else(|| {
+                            .find(|child| {
+                                crate::clang_util::is_supported_expr_kind(child.get_kind())
+                            })
+                        else {
+                            return ctx.get_mut_transpiler_context().fail(
                                 CompilationIssue::Error(
                                     CompilationIssueCode::E0110,
-                                    "C translation failed.".into(),
-                                    "Unsupported for-loop increment.".into(),
+                                    format!("C translation failed:\n{prefix}Unsupported for-loop increment{}.", crate::macros::origin_note(node)),
+                                    "Rewrite the C input to avoid the unsupported construct.".into(),
                                     None,
                                     span,
-                                )
-                            })?;
+                                ),
+                            );
+                        };
 
-                        let name: String = crate::expr::translate_expr(&operand, span)?;
+                        let name: String =
+                            crate::expr::translate_expr(&operand, span, Location::RValue, ctx);
 
                         if spellings.contains(&"++".to_string()) {
                             format!("{name} += 1")
                         } else {
                             format!("{name} -= 1")
                         }
-                    } else if crate::is_supported_expr_kind(kind) {
-                        expr::translate_expr(node, span)?
+                    } else if crate::clang_util::is_supported_expr_kind(kind) {
+                        crate::expr::translate_expr(node, span, Location::RValue, ctx)
                     } else {
-                        return Err(CompilationIssue::Error(
+                        return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            "C translation failed.".into(),
-                            "Unsupported for-loop increment.".into(),
+                            format!(
+                                "C translation failed:\n{prefix}Unsupported for-loop increment{}.",
+                                crate::macros::origin_note(node)
+                            ),
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
                         ));
                     }
-                } else if crate::is_supported_expr_kind(kind) {
-                    expr::translate_expr(node, span)?
+                } else if crate::clang_util::is_supported_expr_kind(kind) {
+                    crate::expr::translate_expr(node, span, Location::RValue, ctx)
                 } else {
-                    return Err(CompilationIssue::Error(
+                    return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        "C translation failed.".into(),
-                        "Unsupported for-loop increment.".into(),
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported for-loop increment{}.",
+                            crate::macros::origin_note(node)
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
                     ));
@@ -618,7 +752,8 @@ pub(crate) fn translate_stmt(
                         span,
                         function_return_type,
                         body_continue_action,
-                    )?;
+                        ctx,
+                    );
 
                     out.extend(lines);
                 }
@@ -631,7 +766,8 @@ pub(crate) fn translate_stmt(
                     span,
                     function_return_type,
                     body_continue_action,
-                )?;
+                    ctx,
+                );
 
                 if lines.is_empty() {
                     lines.push("    ".repeat(indent + 1));
@@ -655,7 +791,7 @@ pub(crate) fn translate_stmt(
                     lines.extend(body_lines);
                     lines.push(format!("{indent_str}}}"));
 
-                    return Ok(lines);
+                    return lines;
                 }
 
                 lines.push(format!(
@@ -664,7 +800,7 @@ pub(crate) fn translate_stmt(
                 lines.extend(body_lines);
                 lines.push(format!("{indent_str}}}"));
 
-                return Ok(lines);
+                return lines;
             }
 
             lines.extend(init_prefix_lines);
@@ -674,7 +810,7 @@ pub(crate) fn translate_stmt(
                 lines.extend(body_lines);
                 lines.push(format!("{indent_str}}}"));
 
-                return Ok(lines);
+                return lines;
             }
 
             if !cond_text.is_empty() && !inc_text.is_empty() {
@@ -683,7 +819,7 @@ pub(crate) fn translate_stmt(
                 lines.push(format!("{}{};", "    ".repeat(indent + 1), inc_text));
                 lines.push(format!("{indent_str}}}"));
 
-                return Ok(lines);
+                return lines;
             }
 
             if !cond_text.is_empty() && inc_text.is_empty() {
@@ -691,7 +827,7 @@ pub(crate) fn translate_stmt(
                 lines.extend(body_lines);
                 lines.push(format!("{indent_str}}}"));
 
-                return Ok(lines);
+                return lines;
             }
 
             if cond_text.is_empty() && !inc_text.is_empty() {
@@ -700,10 +836,10 @@ pub(crate) fn translate_stmt(
                 lines.push(format!("{}{};", "    ".repeat(indent + 1), inc_text));
                 lines.push(format!("{indent_str}}}"));
 
-                return Ok(lines);
+                return lines;
             }
 
-            Ok(body_lines)
+            body_lines
         }
 
         clang::EntityKind::CompoundStmt => {
@@ -716,7 +852,8 @@ pub(crate) fn translate_stmt(
                     span,
                     function_return_type,
                     loop_continue_action,
-                )?;
+                    ctx,
+                );
 
                 body_lines.extend(lines);
             }
@@ -726,18 +863,24 @@ pub(crate) fn translate_stmt(
             lines.extend(body_lines);
             lines.push(format!("{indent_str}}}"));
 
-            Ok(lines)
+            lines
         }
 
         _ => {
-            if crate::is_supported_expr_kind(entity.get_kind()) {
-                let expr: String = crate::expr::translate_expr(entity, span)?;
-                Ok(vec![format!("{indent_str}{expr};")])
+            if crate::clang_util::is_supported_expr_kind(entity.get_kind()) {
+                let expr: String = crate::expr::translate_expr(entity, span, Location::RValue, ctx);
+
+                vec![format!("{indent_str}{expr};")]
             } else {
-                Err(CompilationIssue::Error(
+                ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    "C translation failed.".into(),
-                    format!("Unsupported statement kind: {:?}", entity.get_kind()),
+                    {
+                        let detail: String =
+                            format!("Unsupported statement kind: {:?}", entity.get_kind());
+
+                        format!("C translation failed:\n{prefix}{detail}")
+                    },
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
                 ))
@@ -752,21 +895,23 @@ fn translate_switch_stmt(
     span: Span,
     function_return_type: Option<&str>,
     loop_continue_action: Option<&str>,
-) -> Result<Vec<String>, CompilationIssue> {
+    ctx: &mut crate::macros::MacroContext<'_>,
+) -> Vec<String> {
+    let prefix: String = crate::macros::expansion_prefix(entity);
     let indent_str: String = "    ".repeat(indent);
     let children: Vec<clang::Entity<'_>> = entity.get_children();
 
     if children.len() < 2 {
-        return Err(CompilationIssue::Error(
+        return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
             CompilationIssueCode::E0110,
-            "C translation failed.".into(),
-            "Malformed switch statement.".into(),
+            format!("C translation failed:\n{prefix}Malformed switch statement."),
+            "Rewrite the C input to avoid the unsupported construct.".into(),
             None,
             span,
         ));
     }
 
-    let cond: String = crate::expr::translate_expr(&children[0], span)?;
+    let cond: String = crate::expr::translate_expr(&children[0], span, Location::RValue, ctx);
 
     let body_items: Vec<clang::Entity<'_>> =
         if children[1].get_kind() == clang::EntityKind::CompoundStmt {
@@ -793,7 +938,8 @@ fn translate_switch_stmt(
                     span,
                     function_return_type,
                     loop_continue_action,
-                )?;
+                    ctx,
+                );
             }
 
             self::collect_switch_labels_and_body(
@@ -801,13 +947,15 @@ fn translate_switch_stmt(
                 span,
                 &mut current_labels,
                 &mut current_body_nodes,
-            )?;
+                ctx,
+            );
         } else if current_labels.is_empty() {
-            return Err(CompilationIssue::Error(
+            return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
-                "C translation failed.".into(),
-                "Switch statement contains unlabeled statements before the first case/default."
-                    .into(),
+                format!(
+                    "C translation failed:\n{prefix}Switch statement contains unlabeled statements before the first case/default."
+                ),
+                "Rewrite the C input to avoid the unsupported construct.".into(),
                 None,
                 span,
             ));
@@ -825,14 +973,17 @@ fn translate_switch_stmt(
             span,
             function_return_type,
             loop_continue_action,
-        )?;
+            ctx,
+        );
     }
 
     if segments.is_empty() {
-        return Err(CompilationIssue::Error(
+        return ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
             CompilationIssueCode::E0110,
-            "C translation failed.".into(),
-            "Switch statement has no translatable branches.".into(),
+            format!(
+                "C translation failed:\n{prefix}Switch statement has no translatable branches."
+            ),
+            "Rewrite the C input to avoid the unsupported construct.".into(),
             None,
             span,
         ));
@@ -843,18 +994,29 @@ fn translate_switch_stmt(
     let mut branch_bodies: Vec<(Option<String>, Vec<String>)> = Vec::new();
     let mut default_body: Option<Vec<String>> = None;
 
-    for (segment_index, (labels, _, _)) in segments.iter().enumerate() {
-        let mut merged_body: Vec<String> = Vec::new();
+    let segment_iter = segments.iter().enumerate();
 
-        for (_, body, terminates_segment) in segments.iter().skip(segment_index) {
-            merged_body.extend(body.iter().cloned());
+    for (segment_index, (labels, _, _)) in segment_iter {
+        let remaining: usize = segments.len().saturating_sub(segment_index);
 
-            if *terminates_segment {
-                break;
-            }
-        }
+        let take_count: usize = segments
+            .iter()
+            .skip(segment_index)
+            .position(|(_, _, terminates_segment)| *terminates_segment)
+            .map(|pos| pos.saturating_add(1))
+            .unwrap_or(remaining);
 
-        for label in labels.iter() {
+        let merged_iter = segments
+            .iter()
+            .skip(segment_index)
+            .take(take_count)
+            .flat_map(|(_, body, _)| body.iter().cloned());
+
+        let merged_body: Vec<String> = merged_iter.collect();
+
+        let label_iter: std::slice::Iter<'_, Option<String>> = labels.iter();
+
+        for label in label_iter {
             if let Some(value) = label {
                 branch_bodies.push((Some(value.clone()), merged_body.clone()));
             } else {
@@ -887,9 +1049,70 @@ fn translate_switch_stmt(
 
     lines.push(format!("{indent_str}}}"));
 
-    Ok(lines)
+    lines
 }
 
+fn collect_switch_labels_and_body<'stmt>(
+    entity: &clang::Entity<'stmt>,
+    span: Span,
+    labels: &mut Vec<Option<String>>,
+    body_nodes: &mut Vec<clang::Entity<'stmt>>,
+    macro_ctx: &mut crate::macros::MacroContext<'_>,
+) {
+    let prefix: String = crate::macros::expansion_prefix(entity);
+
+    if entity.get_kind() == clang::EntityKind::CaseStmt {
+        let children: Vec<clang::Entity<'_>> = entity.get_children();
+
+        if children.is_empty() {
+            return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                format!("C translation failed:\n{prefix}Malformed case statement."),
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
+        }
+
+        let value: String = crate::expr::translate_expr(&children[0], span, Location::RValue, macro_ctx);
+
+        labels.push(Some(value));
+
+        for child in children.iter().skip(1) {
+            if matches!(
+                child.get_kind(),
+                clang::EntityKind::CaseStmt | clang::EntityKind::DefaultStmt
+            ) {
+                self::collect_switch_labels_and_body(child, span, labels, body_nodes, macro_ctx);
+            } else {
+                body_nodes.push(*child);
+            }
+        }
+
+        return;
+    }
+
+    if entity.get_kind() == clang::EntityKind::DefaultStmt {
+        labels.push(None);
+
+        for child in entity.get_children() {
+            if matches!(
+                child.get_kind(),
+                clang::EntityKind::CaseStmt | clang::EntityKind::DefaultStmt
+            ) {
+                self::collect_switch_labels_and_body(&child, span, labels, body_nodes, macro_ctx);
+            } else {
+                body_nodes.push(child);
+            }
+        }
+
+        return;
+    }
+
+    body_nodes.push(*entity);
+}
+
+#[allow(clippy::too_many_arguments)]
 fn push_switch_segment<'stmt>(
     segments: &mut Vec<SwitchSegment>,
     current_labels: &mut Vec<Option<String>>,
@@ -898,7 +1121,8 @@ fn push_switch_segment<'stmt>(
     span: Span,
     function_return_type: Option<&str>,
     loop_continue_action: Option<&str>,
-) -> Result<(), CompilationIssue> {
+    ctx: &mut crate::macros::MacroContext<'_>,
+) {
     let terminates_segment: bool = current_body_nodes.last().is_some_and(|node| {
         matches!(
             node.get_kind(),
@@ -926,7 +1150,8 @@ fn push_switch_segment<'stmt>(
             span,
             function_return_type,
             loop_continue_action,
-        )?;
+            ctx,
+        );
 
         body_lines.extend(translated);
     }
@@ -938,122 +1163,31 @@ fn push_switch_segment<'stmt>(
     ));
 
     current_body_nodes.clear();
-
-    Ok(())
-}
-
-fn collect_switch_labels_and_body<'stmt>(
-    entity: &clang::Entity<'stmt>,
-    span: Span,
-    labels: &mut Vec<Option<String>>,
-    body_nodes: &mut Vec<clang::Entity<'stmt>>,
-) -> Result<(), CompilationIssue> {
-    if entity.get_kind() == clang::EntityKind::CaseStmt {
-        let children: Vec<clang::Entity<'_>> = entity.get_children();
-
-        if children.is_empty() {
-            return Err(CompilationIssue::Error(
-                CompilationIssueCode::E0110,
-                "C translation failed.".into(),
-                "Malformed case statement.".into(),
-                None,
-                span,
-            ));
-        }
-
-        let value: String = crate::expr::translate_expr(&children[0], span)?;
-        labels.push(Some(value));
-
-        for child in children.iter().skip(1) {
-            if matches!(
-                child.get_kind(),
-                clang::EntityKind::CaseStmt | clang::EntityKind::DefaultStmt
-            ) {
-                self::collect_switch_labels_and_body(child, span, labels, body_nodes)?;
-            } else {
-                body_nodes.push(*child);
-            }
-        }
-
-        return Ok(());
-    }
-
-    if entity.get_kind() == clang::EntityKind::DefaultStmt {
-        labels.push(None);
-
-        for child in entity.get_children() {
-            if matches!(
-                child.get_kind(),
-                clang::EntityKind::CaseStmt | clang::EntityKind::DefaultStmt
-            ) {
-                self::collect_switch_labels_and_body(&child, span, labels, body_nodes)?;
-            } else {
-                body_nodes.push(child);
-            }
-        }
-
-        return Ok(());
-    }
-
-    body_nodes.push(*entity);
-
-    Ok(())
-}
-
-fn translate_conditional_return(
-    entity: &clang::Entity<'_>,
-    indent: usize,
-    span: Span,
-    expected_return_type: &str,
-) -> Result<Vec<String>, CompilationIssue> {
-    let indent_str: String = "    ".repeat(indent);
-    let child_indent_str: String = "    ".repeat(indent + 1);
-    let children: Vec<clang::Entity<'_>> = entity.get_children();
-
-    if children.len() < 3 {
-        return Err(CompilationIssue::Error(
-            CompilationIssueCode::E0110,
-            "C translation failed.".into(),
-            "Malformed conditional operator.".into(),
-            None,
-            span,
-        ));
-    }
-
-    let cond: String = crate::expr::translate_condition_expr(&children[0], span)?;
-    let then_expr: String = self::translate_return_expr(&children[1], span, expected_return_type)?;
-    let else_expr: String = self::translate_return_expr(&children[2], span, expected_return_type)?;
-
-    Ok(vec![
-        format!("{indent_str}if {cond} {{"),
-        format!("{child_indent_str}return {then_expr};"),
-        format!("{indent_str}}} else {{"),
-        format!("{child_indent_str}return {else_expr};"),
-        format!("{indent_str}}}"),
-    ])
 }
 
 fn translate_return_expr(
     entity: &clang::Entity<'_>,
     span: Span,
     expected_return_type: &str,
-) -> Result<String, CompilationIssue> {
+    macro_ctx: &mut crate::macros::MacroContext<'_>,
+) -> String {
     if matches!(
         expected_return_type,
         "s8" | "s16" | "s32" | "s64" | "ssize" | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-    ) && self::expression_produces_condition(entity)
+    ) && crate::stmt_analysis::expression_produces_condition(entity)
     {
-        let condition: String = crate::expr::translate_condition_expr(entity, span)?;
+        let condition: String =
+            crate::expr::translate_condition_expr(entity, span, Location::RValue, macro_ctx);
 
-        return Ok(format!("({condition}) as {expected_return_type}"));
+        return format!("({condition}) as {expected_return_type}");
     }
 
-    let value: String = crate::expr::translate_expr(entity, span)?;
+    let value: String = crate::expr::translate_expr(entity, span, Location::RValue, macro_ctx);
 
     if expected_return_type.contains("ptr[char]")
         && (value.starts_with('"') || value.starts_with("n#\""))
     {
-        return Ok(format!("{value} as {expected_return_type}"));
+        return format!("{value} as {expected_return_type}");
     }
 
     if matches!(
@@ -1072,34 +1206,43 @@ fn translate_return_expr(
             | "f32"
             | "f64"
     ) {
-        return Ok(format!("({value}) as {expected_return_type}"));
+        return format!("({value}) as {expected_return_type}");
     }
 
-    Ok(value)
+    value
 }
 
-fn expression_produces_condition(entity: &clang::Entity<'_>) -> bool {
-    match entity.get_kind() {
-        clang::EntityKind::ConditionalOperator => true,
-        clang::EntityKind::UnaryOperator => entity.get_range().is_some_and(|range| {
-            range
-                .tokenize()
-                .iter()
-                .any(|token| token.get_spelling() == "!")
-        }),
-        clang::EntityKind::BinaryOperator | clang::EntityKind::CompoundAssignOperator => {
-            let children: Vec<clang::Entity<'_>> = entity.get_children();
+fn translate_conditional_return(
+    entity: &clang::Entity<'_>,
+    indent: usize,
+    span: Span,
+    expected_return_type: &str,
+    macro_ctx: &mut crate::macros::MacroContext<'_>,
+) -> Vec<String> {
+    let prefix: String = crate::macros::expansion_prefix(entity);
+    let indent_str: String = "    ".repeat(indent);
+    let child_indent_str: String = "    ".repeat(indent + 1);
+    let children: Vec<clang::Entity<'_>> = entity.get_children();
 
-            if children.len() < 2 {
-                return false;
-            }
-
-            crate::extract_binary_operator(entity, &children[0], &children[1])
-                .map(|op| matches!(op, "&&" | "||" | "==" | "!=" | "<" | "<=" | ">" | ">="))
-                .unwrap_or(false)
-        }
-        _ => entity
-            .get_type()
-            .is_some_and(|ty| ty.get_canonical_type().get_kind() == clang::TypeKind::Bool),
+    if children.len() < 3 {
+        return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
+            CompilationIssueCode::E0110,
+            format!("C translation failed:\n{prefix}Malformed conditional operator."),
+            "Rewrite the C input to avoid the unsupported construct.".into(),
+            None,
+            span,
+        ));
     }
+
+    let cond: String = crate::expr::translate_condition_expr(&children[0], span, Location::RValue, macro_ctx);
+    let then_expr: String = self::translate_return_expr(&children[1], span, expected_return_type, macro_ctx);
+    let else_expr: String = self::translate_return_expr(&children[2], span, expected_return_type, macro_ctx);
+
+    vec![
+        format!("{indent_str}if {cond} {{"),
+        format!("{child_indent_str}return {then_expr};"),
+        format!("{indent_str}}} else {{"),
+        format!("{child_indent_str}return {else_expr};"),
+        format!("{indent_str}}}"),
+    ]
 }

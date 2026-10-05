@@ -29,8 +29,8 @@ use thrustc_ast::traits::{
 };
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
-use thrustc_typesystem::traits::TypeIsExtensions;
 use thrustc_typesystem::traits::TypePointerExtensions;
+use thrustc_typesystem::traits::{IndexExtensions, TypeIsExtensions};
 
 use crate::context::{CodeGenLocation, LLVMCodeGenContext};
 use crate::traits::AstLLVMGetType;
@@ -179,6 +179,7 @@ fn compile_gep_property<'ctx>(
         context.add_codegen_location(CodeGenLocation::LValue);
         let source_value: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, source, None);
         context.pop_current_codegen_location();
+
         source_value
     };
 
@@ -222,7 +223,17 @@ fn compile_gep_property<'ctx>(
     }
 
     if context.get_codegen_location().is_load_behavior() {
-        return memory::load_pointer(context, address, span);
+        let element_type: Type = ptr_type.calculate_index_type(1).clone();
+
+        if element_type.is_ptr_like_type()
+            && !element_type.is_struct_type()
+            && !element_type.is_fixed_array_type()
+            && !element_type.is_array_type_with_inference()
+        {
+            return memory::load_pointer(context, address, span);
+        } else {
+            return address.into();
+        }
     }
 
     address.into()

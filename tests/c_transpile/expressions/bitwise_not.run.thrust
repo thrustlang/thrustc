@@ -1,0 +1,7 @@
+fn main() s32 @public {
+    if flip_mask(5) != 4294967290 { return 1; }
+    if flip_byte(0) != -1 { return 2; }
+    if flip_byte(255) != -256 { return 3; }
+
+    return 0;
+}

@@ -15,6 +15,8 @@ clang = { workspace = true }
 thrustc_c_import_synthesis = { path = "../thrustc_c_import_synthesis" }
 thrustc_compile_time = { path = "../thrustc_compile_time" }
 thrustc_code_location = { path = "../thrustc_code_location" }
+thrustc_constants = { path = "../thrustc_constants" }
 thrustc_errors = { path = "../thrustc_errors" }
+thrustc_logging = { path = "../thrustc_logging" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }

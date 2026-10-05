@@ -1,0 +1,9 @@
+fn size_int() usize {
+    return (4) as usize;
+}
+fn size_long() usize {
+    return (8) as usize;
+}
+fn size_var(x: s32) usize {
+    return ((abiSizeOf(s32)) as usize) as usize;
+}

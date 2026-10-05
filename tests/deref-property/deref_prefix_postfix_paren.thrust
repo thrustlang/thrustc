@@ -1,0 +1,22 @@
+/*
+ * Prefix and postfix inc/dec on parenthesized deref places.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+fn main() s32 @public {
+    var x: s32 = 10;
+    var p: ptr[s32] = ref x;
+
+    var y: s32 = ++(deref p);
+
+    if y != 11 { return 1; }
+    if x != 11 { return 2; }
+
+    var z: s32 = (deref p)++;
+
+    if z != 11 { return 3; }
+    if x != 12 { return 4; }
+    if (deref p) != 12 { return 5; }
+
+    return 0;
+}

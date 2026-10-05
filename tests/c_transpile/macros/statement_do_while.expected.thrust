@@ -1,0 +1,21 @@
+struct SmallSet {
+    slots: array[s32; 4],
+}
+
+fn statement_do_while() s32 {
+    var set: SmallSet;
+    set.slots->[0] = 7;
+    set.slots->[3] = 9;
+    MY_ZERO(ref set);
+    return (set.slots->[0] + set.slots->[3]) as s32;
+}
+fn MY_ZERO[T1](s: T1) void @alwaysInline {
+    var i: u32;
+    var arr: ptr[SmallSet] = (s);
+    i = 0;
+    while i < abiSizeOf(SmallSet) / abiSizeOf(s32) {
+        arr.slots->[i] = 0;
+        i += 1;
+    }
+}
+

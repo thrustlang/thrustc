@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if builtin_memops(4) != 5 { return 1; }
+
+    return 0;
+}

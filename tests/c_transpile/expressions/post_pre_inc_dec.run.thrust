@@ -1,0 +1,6 @@
+fn main() s32 @public {
+    if post_pre_inc_dec(10) != 34 { return 1; }
+    if post_pre_inc_dec(0) != 4 { return 2; }
+
+    return 0;
+}

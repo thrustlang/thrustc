@@ -50,9 +50,23 @@ pub fn collect_diagnostics(
         let severity: Severity = diagnostic.get_severity();
         let text: String = diagnostic.get_text();
 
+        let expansion = diagnostic.get_location().get_expansion_location();
+
+        let prefix: String = expansion
+            .file
+            .map(|file| {
+                format!(
+                    "{}:{}:{}: ",
+                    file.get_path().display(),
+                    expansion.line,
+                    expansion.column
+                )
+            })
+            .unwrap_or_default();
+
         diagnostics.push(CImportDiagnostic::new(
             CImportDiagnosticKind::ClangDiagnostic,
-            format!("{:?}: {text}", severity),
+            format!("{prefix}{severity:?}: {text}"),
         ));
 
         if matches!(severity, Severity::Error | Severity::Fatal) {

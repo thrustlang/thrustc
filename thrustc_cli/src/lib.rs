@@ -164,179 +164,24 @@ impl CommandLine {
 
 impl CommandLine {
     fn handle_emit_c_bindings_thrust(&self) {
-        let Some(header) = self
-            .get_options()
-            .get_emit_c_bindings_options()
-            .thrust()
-            .map(PathBuf::from)
-        else {
-            return;
-        };
+        let emit_bindings: &thrustc_options::EmitCBindingsOptions =
+            self.get_options().get_emit_c_bindings_options();
 
-        let mut emit_opts: thrustc_c_transpiler::EmitCBindingsOptions =
-            thrustc_c_transpiler::EmitCBindingsOptions::new();
-
-        if let Some(out_dir) = self
-            .get_options()
-            .get_emit_c_bindings_options()
-            .out_dir()
-            .map(PathBuf::from)
-        {
-            emit_opts.set_out_dir(out_dir);
-        }
-
-        if let Some(output) = self
-            .get_options()
-            .get_emit_c_bindings_options()
-            .output()
-            .map(PathBuf::from)
-        {
-            emit_opts.set_output(output);
-        }
-
-        let options: &CompilerOptions = self.get_options();
-        let import_opts: &thrustc_options::ImportCOptions = options.get_import_c_options();
-
-        match thrustc_c_transpiler::emit_c_bindings_thrust(header, import_opts, &emit_opts) {
-            Ok((out_path, contents, warnings)) => {
-                if let Some(parent) = out_path.parent() {
-                    let _ = std::fs::create_dir_all(parent);
-                }
-
-                let mut open_options: std::fs::OpenOptions = std::fs::File::options();
-
-                open_options.create(true);
-                open_options.truncate(true);
-                open_options.write(true);
-
-                if let Ok(mut file) = open_options.open(&out_path) {
-                    let _ = file.write_all(contents.as_bytes());
-                } else {
-                    thrustc_logging::print_critical_error(
-                        LoggingType::Error,
-                        &format!("Unable to write output '{}'.", out_path.display()),
-                    );
-                }
-
-                for warning in warnings {
-                    if let thrustc_errors::CompilationIssue::Warning(code, message, ..) = warning {
-                        thrustc_logging::print_warning(
-                            LoggingType::Warning,
-                            &format!("{}: {}", code.to_title(), message),
-                        );
-                    }
-                }
-
-                thrustc_logging::write(
-                    OutputIn::Stdout,
-                    &format!("Emitted C bindings to '{}'.\n", out_path.display()),
-                );
-
-                std::process::exit(thrustc_constants::SUCCESFUL_CODE);
-            }
-            Err(message) => {
-                thrustc_logging::print_critical_error(LoggingType::Error, &message);
-            }
-        }
+        thrustc_c_transpiler::entrypoint::handle_emit_c_bindings_thrust(
+            emit_bindings.thrust().map(PathBuf::from),
+            emit_bindings.out_dir().map(PathBuf::from),
+            emit_bindings.output().map(PathBuf::from),
+            self.get_options().get_import_c_options(),
+        );
     }
 }
 
 impl CommandLine {
     fn handle_translate_c_to_thrust(&self) {
-        if self.get_options().get_translate_c_to_thrust().is_empty() {
-            return;
-        }
-
-        let options: &CompilerOptions = self.get_options();
-        let translate_opts: &thrustc_options::TranslateCOptions = options.get_translate_c_options();
-
-        match thrustc_c_transpiler::translate_c_to_thrust(
-            self.get_options().get_translate_c_to_thrust(),
-            translate_opts,
-        ) {
-            Ok(results) => {
-                for (out_path, contents, issues) in results {
-                    if let Some(parent) = out_path.parent() {
-                        let _ = std::fs::create_dir_all(parent);
-                    }
-
-                    let mut open_options: std::fs::OpenOptions = std::fs::File::options();
-
-                    open_options.create(true);
-                    open_options.truncate(true);
-                    open_options.write(true);
-
-                    if let Ok(mut file) = open_options.open(&out_path) {
-                        let _ = file.write_all(contents.as_bytes());
-                    } else {
-                        thrustc_logging::print_critical_error(
-                            LoggingType::Error,
-                            &format!("Unable to write output '{}'.", out_path.display()),
-                        );
-                    }
-
-                    for issue in issues {
-                        match issue {
-                            thrustc_errors::CompilationIssue::Warning(code, message, ..) => {
-                                thrustc_logging::print_warning(
-                                    LoggingType::Warning,
-                                    &format!("{}: {}\n", code.to_title(), message),
-                                );
-                            }
-                            thrustc_errors::CompilationIssue::Error(
-                                code,
-                                message,
-                                help,
-                                note,
-                                ..,
-                            ) => {
-                                let mut full: String =
-                                    format!("{}: {}\nhelp: {}", code.to_title(), message, help);
-
-                                if let Some(note) = note {
-                                    full.push_str("\nnote: ");
-                                    full.push_str(&note);
-                                }
-
-                                thrustc_logging::print_error(LoggingType::Error, &full);
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-
-                thrustc_logging::write(OutputIn::Stdout, "C successfully translated to Thrust.\n");
-
-                std::process::exit(thrustc_constants::SUCCESFUL_CODE);
-            }
-
-            Err(issues) => {
-                for issue in issues {
-                    match issue {
-                        thrustc_errors::CompilationIssue::Warning(code, message, ..) => {
-                            thrustc_logging::print_warning(
-                                LoggingType::Warning,
-                                &format!("{}: {}\n", code.to_title(), message),
-                            );
-                        }
-                        thrustc_errors::CompilationIssue::Error(code, message, help, note, ..) => {
-                            let mut full: String =
-                                format!("{}: {}\nhelp: {}", code.to_title(), message, help);
-
-                            if let Some(note) = note {
-                                full.push_str("\nnote: ");
-                                full.push_str(&note);
-                            }
-
-                            thrustc_logging::print_error(LoggingType::Error, &full);
-                        }
-                        _ => {}
-                    }
-                }
-
-                std::process::exit(thrustc_constants::FAILURE_CODE);
-            }
-        }
+        thrustc_c_transpiler::entrypoint::handle_translate_c_to_thrust(
+            self.get_options().get_translate_c_to_thrust_inputs(),
+            self.get_options().get_translate_c_options(),
+        );
     }
 }
 

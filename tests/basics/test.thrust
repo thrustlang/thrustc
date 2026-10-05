@@ -1,22 +1,17 @@
-fn writeCell(rows: ptr[s32]) void {
-    rows->[(1 * 2) + 0] = 7;
+struct SmallSet {
+    slots: array[s32; 4],
 }
 
-fn pick(rows: ptr[s32]) s32 {
-    return rows->[(0 * 2) + 1];
+fn probe_hand() s32 {
+    var set: SmallSet;
+    set.slots->[0] = 7;
+    set.slots->[3] = 9;
+    return (set.slots->[0] + set.slots->[3]) as s32;
 }
 
 fn main() s32 @public {
-    var rows: array[array[s32; 2]; 2] = fixed[
-        fixed[1, 2],
-        fixed[3, 4]
-    ];
-
-    if pick(ref rows[0][0]) != 2 { return 1; }
-
-    writeCell(ref rows[0][0]);
-
-    if rows[1]->[0] != 7 { return 2; }
-
+    if probe_hand() != 16 {
+        return 1;
+    }
     return 0;
 }

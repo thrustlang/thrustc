@@ -22,7 +22,10 @@ use thrustc_ast::{Ast, ast_metadata::IndexMetadata, traits::AstCodeLocation};
 use thrustc_code_location::Span;
 use thrustc_typesystem::{
     Type,
-    traits::{IndexExtensions, InfererTypeExtensions, TypeIsExtensions, TypePointerExtensions},
+    traits::{
+        ConstantTypeExtensions, IndexExtensions, InfererTypeExtensions, TypeIsExtensions,
+        TypePointerExtensions,
+    },
 };
 
 use crate::{
@@ -38,7 +41,9 @@ pub fn compile<'ctx>(
     index: &'ctx Ast<'ctx>,
     metadata: &IndexMetadata,
 ) -> BasicValueEnum<'ctx> {
-    if source.get_type_for_llvm().is_native_vector_type() {
+    let source_type: Type = source.get_type_for_llvm().remove_all_constant_type();
+
+    if source_type.is_native_vector_type() {
         let span: Span = index.get_span();
         let index_type: Type = Type::U32 { span };
 
@@ -50,9 +55,9 @@ pub fn compile<'ctx>(
 
         context.pop_current_codegen_location();
 
-        return context
+        context
             .get_llvm_builder()
-            .build_extract_element(vector.into_vector_value(), index, "native.vector.extract")
+            .build_extract_element(vector.into_vector_value(), index, "")
             .unwrap_or_else(|_| {
                 crate::abort::abort_codegen(
                     context,
@@ -61,106 +66,105 @@ pub fn compile<'ctx>(
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
-            });
-    }
-
-    context.add_codegen_location(CodeGenLocation::RValue);
-    let source_value: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, source, None);
-    context.pop_current_codegen_location();
-
-    let ptr_value: PointerValue<'_> = source_value.into_pointer_value();
-
-    let mut ptr_type: &Type = source.get_type_for_llvm();
-    let infered_inner_type: Type = ptr_type.get_inferer_inner_type();
-
-    let ordered_indexes: Vec<IntValue> = {
-        let span: Span = index.get_span();
-
-        let has_inferer_inner_type: bool = ptr_type.has_infered_inner_type();
-
-        if has_inferer_inner_type {
-            ptr_type = &infered_inner_type;
-        }
-
-        let is_ptr_aggv_type: bool = ptr_type.is_ptr_fixed_array_type();
-        let is_ptr_like_type: bool = ptr_type.is_ptr_like_type();
-
+            })
+    } else {
         context.add_codegen_location(CodeGenLocation::RValue);
-
-        let indexes: Vec<IntValue> = if is_ptr_aggv_type {
-            let base_type: Type = Type::U32 { span };
-
-            let base: IntValue = expressions::literal_integer_expr::compile(
-                context,
-                &base_type,
-                0,
-                index.get_span(),
-            );
-
-            let depth_type: Type = Type::U32 { span };
-
-            let depth: IntValue =
-                codegen::compile_as_value(context, index, Some(&depth_type)).into_int_value();
-
-            vec![base, depth]
-        } else if is_ptr_like_type {
-            let base_type: Type = Type::U64 { span };
-
-            let base: IntValue =
-                codegen::compile_as_value(context, index, Some(&base_type)).into_int_value();
-
-            vec![base]
-        } else {
-            let base_type: Type = Type::U32 { span };
-
-            let base: IntValue = expressions::literal_integer_expr::compile(
-                context,
-                &base_type,
-                0,
-                index.get_span(),
-            );
-
-            let depth_type: Type = Type::U32 { span };
-
-            let depth: IntValue =
-                codegen::compile_as_value(context, index, Some(&depth_type)).into_int_value();
-
-            vec![base, depth]
-        };
-
+        let source_value: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, source, None);
         context.pop_current_codegen_location();
 
-        indexes
-    };
+        let ptr_value: PointerValue<'_> = source_value.into_pointer_value();
+        let mut ptr_type: &Type = &source_type;
+        let infered_inner_type: Type = ptr_type.get_inferer_inner_type();
 
-    let span: Span = source.get_span();
+        let ordered_indexes: Vec<IntValue> = {
+            let span: Span = index.get_span();
 
-    let ptr: PointerValue<'_> =
-        memory::gep_anon(context, ptr_value, ptr_type, &ordered_indexes, span);
+            let has_inferer_inner_type: bool = ptr_type.has_infered_inner_type();
 
-    if metadata.is_deref() {
-        if context.get_codegen_location().is_direct_behavior() {
-            return ptr.into();
+            if has_inferer_inner_type {
+                ptr_type = &infered_inner_type;
+            }
+
+            let is_ptr_aggv_type: bool = ptr_type.is_ptr_fixed_array_type();
+            let is_ptr_like_type: bool = ptr_type.is_ptr_like_type();
+
+            context.add_codegen_location(CodeGenLocation::RValue);
+
+            let indexes: Vec<IntValue> = if is_ptr_aggv_type {
+                let base_type: Type = Type::U32 { span };
+
+                let base: IntValue = expressions::literal_integer_expr::compile(
+                    context,
+                    &base_type,
+                    0,
+                    index.get_span(),
+                );
+
+                let depth_type: Type = Type::U32 { span };
+
+                let depth: IntValue =
+                    codegen::compile_as_value(context, index, Some(&depth_type)).into_int_value();
+
+                vec![base, depth]
+            } else if is_ptr_like_type {
+                let base_type: Type = Type::U64 { span };
+
+                let base: IntValue =
+                    codegen::compile_as_value(context, index, Some(&base_type)).into_int_value();
+
+                vec![base]
+            } else {
+                let base_type: Type = Type::U32 { span };
+
+                let base: IntValue = expressions::literal_integer_expr::compile(
+                    context,
+                    &base_type,
+                    0,
+                    index.get_span(),
+                );
+
+                let depth_type: Type = Type::U32 { span };
+
+                let depth: IntValue =
+                    codegen::compile_as_value(context, index, Some(&depth_type)).into_int_value();
+
+                vec![base, depth]
+            };
+
+            context.pop_current_codegen_location();
+
+            indexes
+        };
+
+        let span: Span = source.get_span();
+
+        let ptr: PointerValue<'_> =
+            memory::gep_anon(context, ptr_value, ptr_type, &ordered_indexes, span);
+
+        if metadata.is_deref() {
+            if context.get_codegen_location().is_direct_behavior() {
+                return ptr.into();
+            }
+
+            let element_type: Type = ptr_type.calculate_index_type(1).clone();
+
+            return memory::dereference(context, ptr, &element_type, span);
         }
 
-        let element_type: Type = ptr_type.calculate_index_type(1).clone();
+        if context.get_codegen_location().is_load_behavior() {
+            let element_type: Type = ptr_type.calculate_index_type(1).clone();
 
-        return memory::dereference(context, ptr, &element_type, span);
-    }
-
-    if context.get_codegen_location().is_load_behavior() {
-        let element_type: Type = ptr_type.calculate_index_type(1).clone();
-
-        if element_type.is_ptr_like_type()
-            && !element_type.is_struct_type()
-            && !element_type.is_fixed_array_type()
-            && !element_type.is_array_type_with_inference()
-        {
-            return memory::load_pointer(context, ptr, span);
-        } else {
-            return ptr.into();
+            if element_type.is_ptr_like_type()
+                && !element_type.is_struct_type()
+                && !element_type.is_fixed_array_type()
+                && !element_type.is_array_type_with_inference()
+            {
+                return memory::load_pointer(context, ptr, span);
+            } else {
+                return ptr.into();
+            }
         }
-    }
 
-    ptr.into()
+        ptr.into()
+    }
 }
