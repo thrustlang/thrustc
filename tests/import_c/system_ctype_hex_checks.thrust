@@ -1,0 +1,9 @@
+importC "ctype.h" as ctypeh;
+
+fn main() s32 @public {
+    if ctypeh::isxdigit('f' as s32) == 0 { return 1; }
+    if ctypeh::isxdigit('9' as s32) == 0 { return 2; }
+    if ctypeh::isxdigit('G' as s32) != 0 { return 3; }
+
+    return 0;
+}

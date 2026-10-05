@@ -946,6 +946,7 @@ pub enum SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi> {
 #[derive(Debug, Clone)]
 pub struct SystemVABIFunctionTypeConfiguration<'llvm_abi> {
     parameter_types: Vec<SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi>>,
+    return_type: Option<SystemVABIType<'llvm_abi>>,
     is_memory_return: bool,
     is_variatic: bool,
 }
@@ -955,6 +956,7 @@ impl<'llvm_abi> SystemVABIFunctionTypeConfiguration<'llvm_abi> {
     pub fn new(is_variatic: bool, is_memory_return: bool) -> Self {
         Self {
             parameter_types: Vec::new(),
+            return_type: None,
             is_variatic,
             is_memory_return,
         }
@@ -980,12 +982,24 @@ impl SystemVABIFunctionTypeConfiguration<'_> {
     pub fn is_memory_return(&self) -> bool {
         self.is_memory_return
     }
+
+    #[inline]
+    pub fn return_type(&self) -> Option<&SystemVABIType<'_>> {
+        self.return_type.as_ref()
+    }
 }
 
 impl SystemVABIFunctionTypeConfiguration<'_> {
     #[inline]
     pub fn set_memory_return(&mut self, value: bool) {
         self.is_memory_return = value
+    }
+}
+
+impl<'llvm_abi> SystemVABIFunctionTypeConfiguration<'llvm_abi> {
+    #[inline]
+    pub fn set_return_type(&mut self, return_type: Option<SystemVABIType<'llvm_abi>>) {
+        self.return_type = return_type;
     }
 }
 
@@ -2105,6 +2119,85 @@ pub fn lower_system_v_call_epilogue<'llvm_abi>(
     let function_value: FunctionValue<'_> = callsite.get_called_fn_value();
     let is_void_type: bool = function_value.get_type().get_return_type().is_none();
 
+    if let Some(SystemVABIType::Coerce(original_ty, _)) = configuration.return_type() {
+        let returned_value: BasicValueEnum<'_> = callsite.try_as_basic_value().left().unwrap_or_else(|| {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to compile lower a function call!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+        let original_llvm_ty: BasicTypeEnum<'_> =
+            self::generate_type(llvm_context, abi_context, original_ty);
+
+        let ptr: PointerValue<'_> = llvm_builder.build_alloca(original_llvm_ty, "").unwrap_or_else(|_| {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to allocate memory for a coerced return value in System V ABI!",
+                original_ty.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+        let alignment: u32 = abi_context
+            .get_target_data()
+            .get_preferred_alignment(&original_llvm_ty);
+
+        let store_instruction: InstructionValue<'_> = llvm_builder
+            .build_store(ptr, returned_value)
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to store a coerced return value in memory for System V ABI!",
+                    original_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        store_instruction
+            .set_alignment(alignment)
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to set alignment to an instruction!",
+                    original_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        let loaded_value: BasicValueEnum<'_> = llvm_builder
+            .build_load(original_llvm_ty, ptr, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to load a coerced return value from memory for System V ABI!",
+                    original_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        if let Some(instruction) = loaded_value.as_instruction_value() {
+            instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to set alignment to an instruction!",
+                    original_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+        }
+
+        return loaded_value;
+    }
+
     if configuration.is_memory_return() && is_void_type {
         let memory_ptr_arg: BasicMetadataValueEnum<'_> =
             *lowered_args.first().unwrap_or_else(|| {
@@ -2227,6 +2320,119 @@ pub fn lower_function_terminator<'llvm_abi>(
     return_value: Option<BasicValueEnum<'llvm_abi>>,
     span: Span,
 ) -> bool {
+    if let Some(SystemVABIType::Coerce(original_ty, coerced_width_bits)) = configuration.return_type() {
+        let Some(return_value) = return_value else {
+            return false;
+        };
+
+        let original_llvm_ty: BasicTypeEnum<'_> =
+            self::generate_type(llvm_context, abi_context, original_ty);
+
+        let ptr: PointerValue<'_> = llvm_builder.build_alloca(original_llvm_ty, "").unwrap_or_else(|_| {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to allocate memory for a coerced return value in System V ABI!",
+                original_ty.get_span(),
+                std::path::PathBuf::from(file!()),
+                line!(),
+            )
+        });
+
+        let alignment: u32 = abi_context
+            .get_target_data()
+            .get_preferred_alignment(&original_llvm_ty);
+
+        let source_value: BasicValueEnum<'_> = if return_value.is_pointer_value() {
+            let loaded_value: BasicValueEnum<'_> = llvm_builder
+                .build_load(original_llvm_ty, return_value.into_pointer_value(), "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to load a pointed coerced return value for System V ABI!",
+                        original_ty.get_span(),
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+
+            if let Some(instruction) = loaded_value.as_instruction_value() {
+                instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to set alignment to an instruction!",
+                        original_ty.get_span(),
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+            }
+
+            loaded_value
+        } else {
+            return_value
+        };
+
+        let store_instruction: InstructionValue<'_> = llvm_builder
+            .build_store(ptr, source_value)
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to store a coerced return value in memory for System V ABI!",
+                    original_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        store_instruction
+            .set_alignment(alignment)
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to set alignment to an instruction!",
+                    original_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        let coerced_value: BasicValueEnum<'_> = llvm_builder
+            .build_load(llvm_context.custom_width_int_type(*coerced_width_bits), ptr, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to load a coerced integer return value from memory for System V ABI!",
+                    original_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        if let Some(instruction) = coerced_value.as_instruction_value() {
+            instruction.set_alignment(alignment).unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to set alignment to an instruction!",
+                    original_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+        }
+
+        if llvm_builder.build_return(Some(&coerced_value)).is_err() {
+            abort::abort_codegen(
+                abi_context,
+                "Failed to compile a function terminator!",
+                span,
+                std::path::PathBuf::from(file!()),
+                line!(),
+            );
+        }
+
+        return true;
+    }
+
     if configuration.is_memory_return() {
         if let Some(return_value) = return_value {
             let is_ptr_value: bool = return_value.is_pointer_value();
@@ -2463,21 +2669,17 @@ pub fn generate_function_type<'llvm_abi>(
     let mut abi_return_ty: SystemVABIType = SystemVABIType::Ignore;
 
     if !return_type.is_void_type() {
-        let abi_return_ty_: SystemVABIType =
-            if return_type.is_struct_type() || return_type.is_fixed_array_type() {
-                SystemVABIType::Same(return_type)
-            } else {
-                let return_ty_classes: [SystemVABITypeClass; 8] =
-                    SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
+        let return_ty_classes: [SystemVABITypeClass; 8] =
+            SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
 
-                SystemVABIType::class_to_general_abi_strategy(
-                    abi_context,
-                    &return_ty_classes,
-                    return_type,
-                )
-            };
+        let abi_return_ty_: SystemVABIType = SystemVABIType::class_to_general_abi_strategy(
+            abi_context,
+            &return_ty_classes,
+            return_type,
+        );
 
         abi_return_ty = abi_return_ty_;
+        configuration.set_return_type(Some(abi_return_ty.clone()));
 
         if abi_return_ty.is_to_memory() {
             is_memory_return = true;

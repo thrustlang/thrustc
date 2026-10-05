@@ -1,0 +1,10 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "pointer_types.h" as ptrs;
+
+fn main() s32 @public {
+    if sizeOf(ptrs::LocalPointerInnerPtr) != sizeOf(ptr) { return 1; }
+    if sizeOf(ptrs::LocalPointerInnerConstPtr) != sizeOf(ptr) { return 2; }
+
+    return 0;
+}

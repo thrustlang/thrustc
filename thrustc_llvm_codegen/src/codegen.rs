@@ -1070,19 +1070,21 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 span,
                 ..
             } => {
-                if kind.is_integer_type() {
+                let ty: Type = kind.remove_all_constant_type();
+
+                if ty.is_integer_type() {
                     expressions::binaryop::integer_operation::compile(
                         self.context,
                         (left, operator, right, *span),
                         None,
                     );
-                } else if kind.is_float_type() {
+                } else if ty.is_float_type() {
                     expressions::binaryop::floatingpoint_operation::compile(
                         self.context,
                         (left, operator, right, *span),
                         None,
                     );
-                } else if kind.is_bool_type() {
+                } else if ty.is_bool_type() {
                     expressions::binaryop::boolean_operation::compile(
                         self.context,
                         (left, operator, right, *span),
@@ -1114,7 +1116,9 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     ..
                 } = source.as_ref()
                 {
-                    if let Type::NativeVector { element_type, .. } = indexed_source.get_type_for_llvm() {
+                    if let Type::NativeVector { element_type, .. } =
+                        indexed_source.get_type_for_llvm()
+                    {
                         let index_type: Type = Type::U32 { span: *span };
 
                         self.context.add_codegen_location(CodeGenLocation::LValue);
@@ -1331,6 +1335,8 @@ pub fn compile_as_value<'ctx>(
     expr: &'ctx Ast,
     cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
+    let cast_type: Option<Type> = cast_type.map(|ty| ty.remove_all_constant_type());
+
     match expr {
         // Literal Expressions
         Ast::Float {
@@ -1339,14 +1345,19 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
-            let ty: Type = type_cast::select_ssa_float_type(cast_type, float_ty);
+            let ty: Type = type_cast::select_ssa_float_type(cast_type.as_ref(), float_ty);
 
             let float_value: BasicValueEnum =
                 expressions::literal_floatingpoint_expr::compile(context, &ty, *value, *span)
                     .into();
 
-            let auto_casted_value: BasicValueEnum<'_> =
-                type_cast::try_smart_cast(context, cast_type, float_ty, float_value, *span);
+            let auto_casted_value: BasicValueEnum<'_> = type_cast::try_smart_cast(
+                context,
+                cast_type.as_ref(),
+                float_ty,
+                float_value,
+                *span,
+            );
 
             auto_casted_value
         }
@@ -1357,13 +1368,18 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
-            let ty: Type = type_cast::select_ssa_integer_type(cast_type, integer_ty);
+            let ty: Type = type_cast::select_ssa_integer_type(cast_type.as_ref(), integer_ty);
 
             let int_value: BasicValueEnum =
                 expressions::literal_integer_expr::compile(context, &ty, *value, *span).into();
 
-            let auto_casted_value: BasicValueEnum<'_> =
-                type_cast::try_smart_cast(context, cast_type, integer_ty, int_value, *span);
+            let auto_casted_value: BasicValueEnum<'_> = type_cast::try_smart_cast(
+                context,
+                cast_type.as_ref(),
+                integer_ty,
+                int_value,
+                *span,
+            );
 
             auto_casted_value
         }
@@ -1404,9 +1420,9 @@ pub fn compile_as_value<'ctx>(
             ..
         } => {
             let value: BasicValueEnum<'_> =
-                expressions::call_expr::compile(context, name, args, kind, cast_type);
+                expressions::call_expr::compile(context, name, args, kind, cast_type.as_ref());
 
-            type_cast::try_smart_cast(context, cast_type, kind, value, *span)
+            type_cast::try_smart_cast(context, cast_type.as_ref(), kind, value, *span)
         }
 
         // Function
@@ -1423,12 +1439,12 @@ pub fn compile_as_value<'ctx>(
             args,
             function_type,
             *span,
-            cast_type,
+            cast_type.as_ref(),
         ),
 
         // Expressions
         // Compiles a grouped expression (e.g., parenthesized)
-        Ast::Group { node, .. } => self::compile_as_value(context, node, cast_type),
+        Ast::Group { node, .. } => self::compile_as_value(context, node, cast_type.as_ref()),
 
         Ast::BinaryOp {
             left,
@@ -1437,32 +1453,38 @@ pub fn compile_as_value<'ctx>(
             kind: binaryop_type,
             span,
             ..
-        } => match binaryop_type {
-            t if t.is_float_type() => expressions::binaryop::floatingpoint_operation::compile(
-                context,
-                (left, operator, right, *span),
-                cast_type,
-            ),
-            t if t.is_integer_type() => expressions::binaryop::integer_operation::compile(
-                context,
-                (left, operator, right, *span),
-                cast_type,
-            ),
-            t if t.is_bool_type() => expressions::binaryop::boolean_operation::compile(
-                context,
-                (left, operator, right, *span),
-            ),
+        } => {
+            let ty: Type = binaryop_type.remove_all_constant_type();
 
-            _ => {
-                abort::abort_codegen(
+            let value: BasicValueEnum<'_> = match ty {
+                t if t.is_float_type() => expressions::binaryop::floatingpoint_operation::compile(
                     context,
-                    "Can't be compiled as binary operation!.",
-                    *span,
-                    std::path::PathBuf::from(file!()),
-                    line!(),
-                );
-            }
-        },
+                    (left, operator, right, *span),
+                    cast_type.as_ref(),
+                ),
+                t if t.is_integer_type() => expressions::binaryop::integer_operation::compile(
+                    context,
+                    (left, operator, right, *span),
+                    cast_type.as_ref(),
+                ),
+                t if t.is_bool_type() => expressions::binaryop::boolean_operation::compile(
+                    context,
+                    (left, operator, right, *span),
+                ),
+
+                _ => {
+                    abort::abort_codegen(
+                        context,
+                        "Can't be compiled as binary operation!.",
+                        *span,
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    );
+                }
+            };
+
+            value
+        }
 
         Ast::UnaryOp {
             operator,
@@ -1470,13 +1492,19 @@ pub fn compile_as_value<'ctx>(
             node,
             before,
             ..
-        } => expressions::unary_expr::compile(context, (operator, kind, node), *before, cast_type),
+        } => expressions::unary_expr::compile(
+            context,
+            (operator, kind, node),
+            *before,
+            cast_type.as_ref(),
+        ),
 
         // Direct Reference
         Ast::GetLocation { expr, .. } => {
             context.add_codegen_location(CodeGenLocation::LValue);
 
-            let value: BasicValueEnum<'_> = self::compile_as_ptr_value(context, expr, cast_type);
+            let value: BasicValueEnum<'_> =
+                self::compile_as_ptr_value(context, expr, cast_type.as_ref());
 
             context.pop_current_codegen_location();
 
@@ -1496,7 +1524,13 @@ pub fn compile_as_value<'ctx>(
             if matches!(symbol, SymbolAllocated::Function { .. }) {
                 let function_pointer: BasicValueEnum<'_> = symbol.get_ptr_value().into();
 
-                return type_cast::try_smart_cast(context, cast_type, ty, function_pointer, *span);
+                return type_cast::try_smart_cast(
+                    context,
+                    cast_type.as_ref(),
+                    ty,
+                    function_pointer,
+                    *span,
+                );
             }
 
             let atomic_config: Option<LLVMAtomicModificators> =
@@ -1512,7 +1546,7 @@ pub fn compile_as_value<'ctx>(
                 context.pop_atomic_modificators();
             }
 
-            type_cast::try_smart_cast(context, cast_type, ty, value, *span)
+            type_cast::try_smart_cast(context, cast_type.as_ref(), ty, value, *span)
         }
 
         // Compiles property access (e.g., struct field or array)
@@ -1561,7 +1595,8 @@ pub fn compile_as_value<'ctx>(
                 };
 
                 let deref_value: BasicValueEnum = if dereference_pointer.is_pointer_value() {
-                    let deref_metadata = metadata.get_llvm_metadata();
+                    let deref_metadata: thrustc_ast::ast_metadata::LLVMDereferenceMetadata =
+                        metadata.get_llvm_metadata();
 
                     let atomic_config: LLVMAtomicModificators = LLVMAtomicModificators::new(
                         deref_metadata.volatile,
@@ -1584,11 +1619,11 @@ pub fn compile_as_value<'ctx>(
                     dereference_pointer
                 };
 
-                type_cast::try_smart_cast(context, cast_type, kind, deref_value, *span)
+                type_cast::try_smart_cast(context, cast_type.as_ref(), kind, deref_value, *span)
             } else {
                 let value: BasicValueEnum = self::compile_as_value(context, value, Some(kind));
 
-                type_cast::try_smart_cast(context, cast_type, kind, value, *span)
+                type_cast::try_smart_cast(context, cast_type.as_ref(), kind, value, *span)
             }
         }
 
@@ -1640,23 +1675,23 @@ pub fn compile_as_value<'ctx>(
                 self::compile_as_value(context, source, Some(kind))
             };
 
-            type_cast::try_smart_cast(context, cast_type, kind, loaded_value, *span)
+            type_cast::try_smart_cast(context, cast_type.as_ref(), kind, loaded_value, *span)
         }
 
         // Array Operations
         // Compiles a fixed-size array
         Ast::FixedArray {
             items, kind, span, ..
-        } => expressions::fixed_array::compile(context, items, kind, *span, cast_type),
+        } => expressions::fixed_array::compile(context, items, kind, *span, cast_type.as_ref()),
 
         Ast::NativeVector {
             items, kind, span, ..
-        } => expressions::native_vector::compile(context, items, kind, *span, cast_type),
+        } => expressions::native_vector::compile(context, items, kind, *span, cast_type.as_ref()),
 
         // Compiles a dynamic array
         Ast::Array {
             items, kind, span, ..
-        } => expressions::array_expr::compile(context, items, kind, *span, cast_type),
+        } => expressions::array_expr::compile(context, items, kind, *span, cast_type.as_ref()),
 
         // Compiles a struct constructor
         Ast::Constructor {
@@ -1690,7 +1725,12 @@ pub fn compile_as_value<'ctx>(
 
         // Enum Value Access
         Ast::EnumValue { value, .. } => {
-            let cast_type: &Type = cast_type.unwrap_or(value.get_type_for_llvm());
+            let cast_type: &Type = if let Some(cast_type) = cast_type.as_ref() {
+                cast_type
+            } else {
+                value.get_type_for_llvm()
+            };
+
             codegen::compile_constant_as_value(context, value, cast_type)
         }
 
@@ -1700,7 +1740,8 @@ pub fn compile_as_value<'ctx>(
             ..
         } => {
             let llvm_builtin: LLVMBuiltin = compiler_builtins::into_llvm_builtin(thrust_builtin);
-            compiler_builtins::compile(context, llvm_builtin, cast_type)
+
+            compiler_builtins::compile(context, llvm_builtin, cast_type.as_ref())
         }
 
         // Fallback, Unknown expressions or statements
@@ -1721,6 +1762,8 @@ pub fn compile_constant_as_value<'ctx>(
     ast: &'ctx Ast,
     cast_type: &Type,
 ) -> BasicValueEnum<'ctx> {
+    let cast_type: Type = cast_type.remove_all_constant_type();
+
     match ast {
         // Handle integer literals
         Ast::NullPtr { .. } => context
@@ -1743,14 +1786,14 @@ pub fn compile_constant_as_value<'ctx>(
             span,
             ..
         } => {
-            let ty: Type = type_cast::select_ssa_float_type(Some(cast_type), float_ty);
+            let ty: Type = type_cast::select_ssa_float_type(Some(&cast_type), float_ty);
 
             let float_value: BasicValueEnum =
                 expressions::literal_floatingpoint_expr::compile(context, &ty, *value, *span)
                     .into();
 
             let auto_casted_value: BasicValueEnum<'_> =
-                type_cast::try_smart_constant_cast(context, cast_type, &ty, float_value);
+                type_cast::try_smart_constant_cast(context, &cast_type, &ty, float_value);
 
             auto_casted_value
         }
@@ -1761,13 +1804,13 @@ pub fn compile_constant_as_value<'ctx>(
             span,
             ..
         } => {
-            let ty: Type = type_cast::select_ssa_integer_type(Some(cast_type), integer_ty);
+            let ty: Type = type_cast::select_ssa_integer_type(Some(&cast_type), integer_ty);
 
             let int_value: BasicValueEnum =
                 expressions::literal_integer_expr::compile(context, &ty, *value, *span).into();
 
             let auto_casted_value: BasicValueEnum<'_> =
-                type_cast::try_smart_constant_cast(context, cast_type, &ty, int_value);
+                type_cast::try_smart_constant_cast(context, &cast_type, &ty, int_value);
 
             auto_casted_value
         }
@@ -1781,16 +1824,16 @@ pub fn compile_constant_as_value<'ctx>(
 
         // Fixed-size array
         Ast::FixedArray { items, span, .. } => {
-            expressions::fixed_array::compile_constant(context, items, cast_type, *span)
+            expressions::fixed_array::compile_constant(context, items, &cast_type, *span)
         }
 
         Ast::NativeVector { items, span, .. } => {
-            expressions::native_vector::compile_constant(context, items, cast_type, *span)
+            expressions::native_vector::compile_constant(context, items, &cast_type, *span)
         }
 
         // Dynamic-size array
         Ast::Array { items, span, .. } => {
-            expressions::array_expr::compile_const(context, items, cast_type, *span)
+            expressions::array_expr::compile_const(context, items, &cast_type, *span)
         }
 
         Ast::CString { bytes, span, .. } => {
@@ -1840,7 +1883,7 @@ pub fn compile_constant_as_value<'ctx>(
             .get_symbol_value(context),
 
         // Grouped expression compilation
-        Ast::Group { node, .. } => codegen::compile_constant_as_value(context, node, cast_type),
+        Ast::Group { node, .. } => codegen::compile_constant_as_value(context, node, &cast_type),
 
         // Binary operation dispatch
         Ast::BinaryOp {
@@ -1851,27 +1894,29 @@ pub fn compile_constant_as_value<'ctx>(
             span,
             ..
         } => {
-            if binaryop_type.is_integer_type() {
+            let ty: Type = binaryop_type.remove_all_constant_type();
+
+            if ty.is_integer_type() {
                 return expressions::binaryop::integer_operation::compile_constant(
                     context,
                     (left, operator, right, *span),
-                    cast_type,
+                    &cast_type,
                 );
             }
 
-            if binaryop_type.is_bool_type() {
+            if ty.is_bool_type() {
                 return expressions::binaryop::boolean_operation::compile_constant(
                     context,
                     (left, operator, right, *span),
-                    cast_type,
+                    &cast_type,
                 );
             }
 
-            if binaryop_type.is_float_type() {
+            if ty.is_float_type() {
                 return expressions::binaryop::floatingpoint_operation::compile_constant(
                     context,
                     (left, operator, right, *span),
-                    cast_type,
+                    &cast_type,
                 );
             }
 
@@ -1890,7 +1935,7 @@ pub fn compile_constant_as_value<'ctx>(
             node,
             kind,
             ..
-        } => unary_expr::compile_const(context, (operator, kind, node), cast_type),
+        } => unary_expr::compile_const(context, (operator, kind, node), &cast_type),
 
         // Direct Reference
         Ast::GetLocation { expr, .. } => codegen::compile_as_ptr_value(context, expr, None),
@@ -1898,12 +1943,13 @@ pub fn compile_constant_as_value<'ctx>(
         // Builtins
         Ast::Builtin { builtin, .. } => {
             let llvm_builtin: LLVMBuiltin<'_> = compiler_builtins::into_llvm_builtin(builtin);
-            compiler_builtins::compile(context, llvm_builtin, Some(cast_type))
+
+            compiler_builtins::compile(context, llvm_builtin, Some(&cast_type))
         }
 
         // Enum Value Access
         Ast::EnumValue { value, .. } => {
-            codegen::compile_constant_as_value(context, value, cast_type)
+            codegen::compile_constant_as_value(context, value, &cast_type)
         }
 
         // Fallback for unsupported AST nodes

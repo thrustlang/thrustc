@@ -1,0 +1,13 @@
+importC "ctype.h" as ctypeh;
+importC "stdlib.h" as cstdlib;
+importC "string.h" as cstring;
+
+fn main() s32 @public {
+    var parsed: s32 = cstdlib::atoi("72" as const ptr[char]);
+
+    if parsed != 72 { return 1; }
+    if ctypeh::isdigit('7' as s32) == 0 { return 2; }
+    if cstring::strlen("72" as const ptr[char]) != 2 { return 3; }
+
+    return 0;
+}

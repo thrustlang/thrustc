@@ -1,0 +1,9 @@
+importC "stdint.h" as cstdint;
+
+fn main() s32 @public {
+    if sizeOf(cstdint::int16_t) != 2 { return 1; }
+    if sizeOf(cstdint::uint32_t) < 4 { return 2; }
+    if sizeOf(cstdint::int64_t) < 8 { return 3; }
+
+    return 0;
+}

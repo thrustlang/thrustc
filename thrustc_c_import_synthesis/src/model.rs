@@ -19,11 +19,13 @@
 
 use thrustc_compile_time::BuiltinValue;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::type_metadata::StructTypeMetadata;
 
 #[derive(Debug)]
 pub struct CImportedFunction {
     name: String,
     external_name: String,
+    convention: String,
     return_type: Type,
     parameter_types: Vec<Type>,
     parameter_names: Vec<String>,
@@ -34,6 +36,7 @@ pub struct CImportedFunction {
 pub struct CImportedStruct {
     name: String,
     fields: Vec<(String, Type)>,
+    metadata: StructTypeMetadata,
 }
 
 #[derive(Debug)]
@@ -50,6 +53,14 @@ pub struct CImportedTypedef {
 }
 
 #[derive(Debug)]
+pub struct CImportedStatic {
+    name: String,
+    external_name: String,
+    kind: Type,
+    is_mutable: bool,
+}
+
+#[derive(Debug)]
 pub struct CImportedConstant {
     name: String,
     kind: Type,
@@ -61,6 +72,7 @@ impl CImportedFunction {
     pub fn new(
         name: String,
         external_name: String,
+        convention: String,
         return_type: Type,
         parameter_types: Vec<Type>,
         parameter_names: Vec<String>,
@@ -69,6 +81,7 @@ impl CImportedFunction {
         Self {
             name,
             external_name,
+            convention,
             return_type,
             parameter_types,
             parameter_names,
@@ -79,8 +92,12 @@ impl CImportedFunction {
 
 impl CImportedStruct {
     #[inline]
-    pub fn new(name: String, fields: Vec<(String, Type)>) -> Self {
-        Self { name, fields }
+    pub fn new(name: String, fields: Vec<(String, Type)>, metadata: StructTypeMetadata) -> Self {
+        Self {
+            name,
+            fields,
+            metadata,
+        }
     }
 }
 
@@ -102,6 +119,18 @@ impl CImportedTypedef {
     }
 }
 
+impl CImportedStatic {
+    #[inline]
+    pub fn new(name: String, external_name: String, kind: Type, is_mutable: bool) -> Self {
+        Self {
+            name,
+            external_name,
+            kind,
+            is_mutable,
+        }
+    }
+}
+
 impl CImportedConstant {
     #[inline]
     pub fn new(name: String, kind: Type, value: BuiltinValue) -> Self {
@@ -118,6 +147,11 @@ impl CImportedFunction {
     #[inline]
     pub fn external_name(&self) -> &str {
         &self.external_name
+    }
+
+    #[inline]
+    pub fn convention(&self) -> &str {
+        &self.convention
     }
 
     #[inline]
@@ -150,6 +184,11 @@ impl CImportedStruct {
     #[inline]
     pub fn fields(&self) -> &[(String, Type)] {
         &self.fields
+    }
+
+    #[inline]
+    pub fn metadata(&self) -> &StructTypeMetadata {
+        &self.metadata
     }
 }
 
@@ -196,5 +235,27 @@ impl CImportedConstant {
     #[inline]
     pub fn value(&self) -> &BuiltinValue {
         &self.value
+    }
+}
+
+impl CImportedStatic {
+    #[inline]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    #[inline]
+    pub fn external_name(&self) -> &str {
+        &self.external_name
+    }
+
+    #[inline]
+    pub fn kind(&self) -> &Type {
+        &self.kind
+    }
+
+    #[inline]
+    pub fn is_mutable(&self) -> bool {
+        self.is_mutable
     }
 }

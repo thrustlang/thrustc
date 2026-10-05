@@ -1,0 +1,14 @@
+directive "--import-c-include=tests/import_c/helpers/transitive";
+
+importC "a_root.h";
+
+fn main() s32 @public {
+    if a_root::TRANSITIVE_A_ROOT != 12 { return 1; }
+    if a_root::TRANSITIVE_A_LEAF != 5 { return 2; }
+
+    var leaf: a_root::TransitiveLeafA = new a_root::TransitiveLeafA { value: 6 };
+
+    if leaf->value != 6 { return 3; }
+
+    return 0;
+}

@@ -1,0 +1,6 @@
+fn main() s32 @public {
+    if compute(4, 6) != 9 { return 1; }
+    if compute(1, 1) != 2 { return 2; }
+
+    return 0;
+}

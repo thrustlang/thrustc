@@ -1,0 +1,10 @@
+importC "stdio.h" as cstdio;
+
+fn main() s32 @public {
+    var written: s32 = cstdio::putchar('Z' as s32);
+
+    if written != 'Z' as s32 { return 1; }
+    if cstdio::EOF >= 0 { return 2; }
+
+    return 0;
+}

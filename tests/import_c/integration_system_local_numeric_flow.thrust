@@ -1,0 +1,18 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "numeric_macros.h";
+importC "stdlib.h" as cstdlib;
+
+fn normalize(value: s32) s32 {
+    return cstdlib::abs(value);
+}
+
+fn main() s32 @public {
+    var total: s32 =
+        normalize(numeric_macros::LOCAL_NEGATIVE as s32) + numeric_macros::LOCAL_UNSIGNED as s32;
+
+    if total != 20 { return 1; }
+    if numeric_macros::LOCAL_HEX as s32 - total != 22 { return 2; }
+
+    return 0;
+}

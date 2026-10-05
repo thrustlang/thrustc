@@ -32,12 +32,33 @@ use thrustc_token::Token;
 use std::path::Path;
 use std::path::PathBuf;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImportCScope {
+    MainOnly,
+    TransitiveNoSystem,
+    TransitiveAll,
+}
+
+impl ImportCScope {
+    #[inline]
+    pub fn to_str(scope: &str) -> Option<Self> {
+        match scope {
+            "main-only" => Some(Self::MainOnly),
+            "transitive-no-system" => Some(Self::TransitiveNoSystem),
+            "transitive-all" => Some(Self::TransitiveAll),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ImportCOptions {
     include_paths: Vec<PathBuf>,
     system_include_paths: Vec<PathBuf>,
     defines: Vec<String>,
     undefs: Vec<String>,
+    import_scope: ImportCScope,
+    import_scope_overridden: bool,
     target: Option<String>,
     sysroot: Option<PathBuf>,
     std: Option<String>,
@@ -52,6 +73,8 @@ impl ImportCOptions {
             system_include_paths: Vec::new(),
             defines: Vec::new(),
             undefs: Vec::new(),
+            import_scope: ImportCScope::TransitiveNoSystem,
+            import_scope_overridden: false,
             target: None,
             sysroot: None,
             std: None,
@@ -79,6 +102,16 @@ impl ImportCOptions {
     #[inline]
     pub fn undefs(&self) -> &[String] {
         self.undefs.as_slice()
+    }
+
+    #[inline]
+    pub fn import_scope(&self) -> ImportCScope {
+        self.import_scope
+    }
+
+    #[inline]
+    pub fn import_scope_overridden(&self) -> bool {
+        self.import_scope_overridden
     }
 
     #[inline]
@@ -121,6 +154,12 @@ impl ImportCOptions {
     #[inline]
     pub fn add_undef(&mut self, name: String) {
         self.undefs.push(name);
+    }
+
+    #[inline]
+    pub fn set_import_scope(&mut self, import_scope: ImportCScope) {
+        self.import_scope = import_scope;
+        self.import_scope_overridden = true;
     }
 
     #[inline]

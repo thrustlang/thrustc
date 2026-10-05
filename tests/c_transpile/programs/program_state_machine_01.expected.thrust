@@ -1,0 +1,49 @@
+static finish_bonus_01: const s32 @public @extern("finish_bonus_01") = 5;
+static mut transitions_01: s32 = 0;
+
+fn advance_state_01(state: s32, token: s32) s32 {
+    if state == 0 {
+        transitions_01 += 1;
+        if token > 2 {
+            return (1) as s32;
+        } else {
+            return (0) as s32;
+        }
+    }
+    if state == 1 {
+        transitions_01 += 1;
+        if token == 0 {
+            return (2) as s32;
+        } else {
+            return (1) as s32;
+        }
+    }
+    transitions_01 += 1;
+    if token > 1 {
+        return (1) as s32;
+    } else {
+        return (2) as s32;
+    }
+}
+fn main() s32 @public {
+    var inputs: array[s32; 8] = fixed[3, 4, 1, 0, 2, 5, 0, 1];
+    var state: s32 = 0;
+    var score: s32 = 0;
+    for var i: s32 = 0; i < 8; i += 1; {
+        state = advance_state_01(state, inputs->[i]);
+        score += state + inputs->[i];
+        if state == 2 {
+            score += finish_bonus_01;
+        }
+    }
+    if transitions_01 != 8 {
+        return (1) as s32;
+    }
+    if score <= 20 {
+        return (2) as s32;
+    }
+    if state == 0 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}

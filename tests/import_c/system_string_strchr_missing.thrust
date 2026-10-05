@@ -1,0 +1,10 @@
+importC "string.h" as cstring;
+
+fn main() s32 @public {
+    var pos: const ptr[char] = cstring::strchr("thrust" as const ptr[char], 'h' as s32);
+
+    if pos->[0] != 'h' { return 1; }
+    if cstring::strlen(pos) != 5 { return 2; }
+
+    return 0;
+}

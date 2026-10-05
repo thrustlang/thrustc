@@ -30,6 +30,7 @@ from pathlib import Path
 
 
 IMPORT_PATH_RE = re.compile(r'import\s+"([^"]+)"')
+IMPORT_C_RE = re.compile(r'^\s*importC\b', re.MULTILINE)
 MAIN_FUNCTION_RE = re.compile(r'^\s*fn\s+main\b', re.MULTILINE)
 STD_MATH_RE = re.compile(r'import\s+std::(?:math|ffi::c::math)\b')
 FLOAT_VALUE_RE = re.compile(r'\bf(?:32|64)\b|\b\d+\.\d+')
@@ -115,9 +116,22 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--compiler-arg",
+        action="append",
+        default=[],
+        help="Forward a raw argument directly to thrustc. Can be repeated.",
+    )
+
+    parser.add_argument(
         "--filter",
         default="",
         help="Only run tests whose relative path contains this text.",
+    )
+
+    parser.add_argument(
+        "--exclude-only",
+        default="",
+        help="Exclude tests whose relative path contains this text.",
     )
 
     parser.add_argument(
@@ -200,7 +214,11 @@ def has_main_function(path: Path) -> bool:
     return MAIN_FUNCTION_RE.search(read_text(path)) is not None
 
 
-def discover_test_roots(tests_dir: Path, filter_text: str) -> list[Path]:
+def discover_test_roots(
+    tests_dir: Path,
+    filter_text: str,
+    exclude_text: str,
+) -> list[Path]:
 
     test_roots: list[Path] = []
 
@@ -214,13 +232,20 @@ def discover_test_roots(tests_dir: Path, filter_text: str) -> list[Path]:
         if filter_text and filter_text not in relative:
             continue
 
+        if exclude_text and exclude_text in relative:
+            continue
+
         if has_main_function(path):
             test_roots.append(path)
 
     return test_roots
 
 
-def discover_c_transpile_tests(tests_dir: Path, filter_text: str) -> list[Path]:
+def discover_c_transpile_tests(
+    tests_dir: Path,
+    filter_text: str,
+    exclude_text: str,
+) -> list[Path]:
 
     test_roots: list[Path] = []
     root = tests_dir / "c_transpile"
@@ -233,6 +258,9 @@ def discover_c_transpile_tests(tests_dir: Path, filter_text: str) -> list[Path]:
         relative = path.relative_to(tests_dir).as_posix()
 
         if filter_text and filter_text not in relative:
+            continue
+
+        if exclude_text and exclude_text in relative:
             continue
 
         if path.with_suffix(".expected.thrust").exists():
@@ -298,6 +326,96 @@ def discover_user_dependencies(root_file: Path) -> list[Path]:
     visit(root_file.resolve())
 
     return dependencies
+
+
+def uses_import_c(test_path: Path) -> bool:
+
+    return IMPORT_C_RE.search(read_text(test_path)) is not None
+
+
+def detect_clang_system_include_dirs() -> list[str]:
+
+    include_dirs: list[str] = []
+
+    for command in ("clang", "clang-17", "clang-18"):
+
+        try:
+            result = subprocess.run(
+                [command, "-E", "-x", "c", "-", "-v"],
+                input="",
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            continue
+
+        output = result.stderr or ""
+        lines = output.splitlines()
+        in_search_list = False
+
+        for line in lines:
+            stripped = line.strip()
+
+            if stripped == "#include <...> search starts here:":
+                in_search_list = True
+                continue
+
+            if stripped == "End of search list.":
+                in_search_list = False
+                break
+
+            if not in_search_list:
+                continue
+
+            normalized = stripped.replace(" (framework directory)", "").strip()
+
+            if not normalized:
+                continue
+
+            path = Path(normalized)
+
+            if path.is_dir():
+                resolved = str(path.resolve())
+
+                if resolved not in include_dirs:
+                    include_dirs.append(resolved)
+
+        if include_dirs:
+            return include_dirs
+
+    for command in ("clang", "clang-17", "clang-18"):
+
+        try:
+            result = subprocess.run(
+                [command, "-print-resource-dir"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            continue
+
+        if result.returncode != 0:
+            continue
+
+        resource_dir = result.stdout.strip()
+
+        if not resource_dir:
+            continue
+
+        include_dir = Path(resource_dir) / "include"
+
+        if include_dir.is_dir():
+            resolved = str(include_dir.resolve())
+
+            if resolved not in include_dirs:
+                include_dirs.append(resolved)
+
+            if include_dirs:
+                return include_dirs
+
+    return include_dirs
 
 
 def needs_math_linkage(files: list[Path]) -> bool:
@@ -408,6 +526,7 @@ def compile_test(
     dependencies = discover_user_dependencies(test_path)
     files = [test_path.resolve(), *dependencies]
     auto_cc_args: list[str] = []
+    import_c_test: bool = uses_import_c(test_path)
 
     auto_cc_args.extend(["-o", str(binary_path)])
 
@@ -423,11 +542,17 @@ def compile_test(
 
     command.extend(compiletime_std_args(test_path, root))
 
+    command.extend(args.compiler_arg)
+
     for emit in args.emit:
         command.extend(["-emit", emit])
 
-    if "atomics" in test_path.parts:
+    if "atomics" in test_path.parts or import_c_test:
         command.extend(["-mode", "unstable"])
+
+    if import_c_test:
+        for include_dir in detect_clang_system_include_dirs():
+            command.extend(["--import-c-system-include", include_dir])
 
     command.extend(str(path) for path in files)
 
@@ -475,6 +600,61 @@ def compile_translated_output(
     )
 
 
+def compile_runtime_driver(
+    source_test_path: Path,
+    driver_path: Path,
+    compiler: Path,
+    root: Path,
+    args: argparse.Namespace,
+    identifier: str,
+) -> tuple[subprocess.CompletedProcess[str], Path]:
+
+    build_dir = dist_root(root) / "build" / identifier
+    binary_path = dist_root(root) / "bin" / identifier
+    dependencies = discover_user_dependencies(driver_path)
+    files = [driver_path.resolve(), *dependencies]
+    auto_cc_args: list[str] = ["-o", str(binary_path)]
+    import_c_test = any(uses_import_c(path) for path in files if path.exists())
+
+    if needs_math_linkage(files):
+        auto_cc_args.append("-lm")
+
+    cc_args = merge_cc_args(auto_cc_args, args.cc_args)
+    command: list[str] = [
+        str(compiler),
+        "-build-dir",
+        str(build_dir),
+        "-std",
+        str(root / "std"),
+    ]
+
+    command.extend(args.compiler_arg)
+
+    for emit in args.emit:
+        command.extend(["-emit", emit])
+
+    if import_c_test:
+        command.extend(["-mode", "unstable"])
+
+        for include_dir in detect_clang_system_include_dirs():
+            command.extend(["--import-c-system-include", include_dir])
+
+    command.extend(str(path) for path in files)
+
+    if cc_args:
+        command.extend(["-cc-args", cc_args])
+
+    result = subprocess.run(
+        command,
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=args.compile_timeout,
+    )
+
+    return result, binary_path
+
+
 def should_skip_translated_compile_check(translated_path: Path) -> bool:
 
     content = read_text(translated_path)
@@ -498,6 +678,144 @@ def should_skip_translated_compile_check(translated_path: Path) -> bool:
             return True
 
     return False
+
+
+def runtime_driver_path_for_c_transpile(test_path: Path) -> Path:
+
+    return test_path.with_suffix(".run.thrust")
+
+
+def materialize_c_transpile_runtime_driver(
+    test_path: Path,
+    translated_path: Path,
+    output_dir: Path,
+) -> Path:
+
+    source_driver_path = runtime_driver_path_for_c_transpile(test_path)
+    materialized_driver_path = output_dir / source_driver_path.name
+
+    translated_source = read_text(translated_path)
+    driver_source = read_text(source_driver_path)
+    materialized_driver_path.write_text(
+        translated_source + "\n\n" + driver_source,
+        encoding="utf-8",
+    )
+
+    return materialized_driver_path
+
+
+def run_translated_runtime(
+    source_test_path: Path,
+    translated_root: Path,
+    compiler: Path,
+    root: Path,
+    args: argparse.Namespace,
+    identifier: str,
+    start: float,
+) -> TestResult:
+
+    runtime_identifier = identifier + "__translated_runtime"
+
+    try:
+        runtime_compile_result, runtime_binary_path = compile_runtime_driver(
+            source_test_path,
+            translated_root,
+            compiler,
+            root,
+            args,
+            runtime_identifier,
+        )
+    except subprocess.TimeoutExpired as error:
+
+        elapsed = time.monotonic() - start
+
+        return TestResult(
+            path=source_test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=-1,
+            run_code=None,
+            elapsed=elapsed,
+            message=f"translated program compile timeout after {args.compile_timeout:.2f}s",
+            compile_stdout=timeout_output(error.stdout),
+            compile_stderr=timeout_output(error.stderr),
+            run_stdout="",
+            run_stderr="",
+        )
+
+    if runtime_compile_result.returncode != 0:
+
+        elapsed = time.monotonic() - start
+
+        return TestResult(
+            path=source_test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=runtime_compile_result.returncode,
+            run_code=None,
+            elapsed=elapsed,
+            message="translated program failed to compile",
+            compile_stdout=runtime_compile_result.stdout,
+            compile_stderr=runtime_compile_result.stderr,
+            run_stdout="",
+            run_stderr="",
+        )
+
+    if not runtime_binary_path.exists():
+
+        elapsed = time.monotonic() - start
+
+        return TestResult(
+            path=source_test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=runtime_compile_result.returncode,
+            run_code=None,
+            elapsed=elapsed,
+            message="translated program binary was not generated",
+            compile_stdout=runtime_compile_result.stdout,
+            compile_stderr=runtime_compile_result.stderr,
+            run_stdout="",
+            run_stderr="",
+        )
+
+    try:
+        runtime_run_result = run_binary(runtime_binary_path, root, runtime_identifier, args)
+    except subprocess.TimeoutExpired as error:
+
+        elapsed = time.monotonic() - start
+
+        return TestResult(
+            path=source_test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=runtime_compile_result.returncode,
+            run_code=-1,
+            elapsed=elapsed,
+            message=f"translated program runtime timeout after {args.run_timeout:.2f}s",
+            compile_stdout=runtime_compile_result.stdout,
+            compile_stderr=runtime_compile_result.stderr,
+            run_stdout=timeout_output(error.stdout),
+            run_stderr=timeout_output(error.stderr),
+        )
+
+    elapsed = time.monotonic() - start
+    passed = runtime_run_result.returncode == 0
+    message = "ok" if passed else "translated program runtime failure, expected 0"
+
+    return TestResult(
+        path=source_test_path,
+        kind="c-transpile",
+        passed=passed,
+        compile_code=runtime_compile_result.returncode,
+        run_code=runtime_run_result.returncode,
+        elapsed=elapsed,
+        message=message,
+        compile_stdout=runtime_compile_result.stdout,
+        compile_stderr=runtime_compile_result.stderr,
+        run_stdout=runtime_run_result.stdout,
+        run_stderr=runtime_run_result.stderr,
+    )
 
 
 def run_binary(
@@ -792,18 +1110,136 @@ def run_c_transpile_test(
                 run_stderr="",
             )
 
+    if has_main_function(output_path):
+        return run_translated_runtime(
+            test_path,
+            output_path,
+            compiler,
+            root,
+            args,
+            identifier,
+            start,
+        )
+
+    runtime_driver_source_path = runtime_driver_path_for_c_transpile(test_path)
+
+    if not runtime_driver_source_path.exists():
+        return TestResult(
+            path=test_path,
+            kind="c-transpile",
+            passed=True,
+            compile_code=result.returncode,
+            run_code=None,
+            elapsed=elapsed,
+            message="ok",
+            compile_stdout=result.stdout,
+            compile_stderr=result.stderr,
+            run_stdout="",
+            run_stderr="",
+        )
+
+    runtime_driver_path = materialize_c_transpile_runtime_driver(
+        test_path,
+        output_path,
+        output_dir,
+    )
+    runtime_identifier = identifier + "__runtime"
+
+    try:
+        runtime_compile_result, runtime_binary_path = compile_runtime_driver(
+            test_path,
+            runtime_driver_path,
+            compiler,
+            root,
+            args,
+            runtime_identifier,
+        )
+    except subprocess.TimeoutExpired as error:
+
+        elapsed = time.monotonic() - start
+
+        return TestResult(
+            path=test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=-1,
+            run_code=None,
+            elapsed=elapsed,
+            message=f"runtime driver compile timeout after {args.compile_timeout:.2f}s",
+            compile_stdout=timeout_output(error.stdout),
+            compile_stderr=timeout_output(error.stderr),
+            run_stdout="",
+            run_stderr="",
+        )
+
+    if runtime_compile_result.returncode != 0:
+
+        return TestResult(
+            path=test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=runtime_compile_result.returncode,
+            run_code=None,
+            elapsed=elapsed,
+            message="translated runtime driver failed to compile",
+            compile_stdout=runtime_compile_result.stdout,
+            compile_stderr=runtime_compile_result.stderr,
+            run_stdout="",
+            run_stderr="",
+        )
+
+    if not runtime_binary_path.exists():
+
+        return TestResult(
+            path=test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=runtime_compile_result.returncode,
+            run_code=None,
+            elapsed=elapsed,
+            message="translated runtime binary was not generated",
+            compile_stdout=runtime_compile_result.stdout,
+            compile_stderr=runtime_compile_result.stderr,
+            run_stdout="",
+            run_stderr="",
+        )
+
+    try:
+        runtime_run_result = run_binary(runtime_binary_path, root, runtime_identifier, args)
+    except subprocess.TimeoutExpired as error:
+
+        elapsed = time.monotonic() - start
+
+        return TestResult(
+            path=test_path,
+            kind="c-transpile",
+            passed=False,
+            compile_code=runtime_compile_result.returncode,
+            run_code=-1,
+            elapsed=elapsed,
+            message=f"translated runtime timeout after {args.run_timeout:.2f}s",
+            compile_stdout=runtime_compile_result.stdout,
+            compile_stderr=runtime_compile_result.stderr,
+            run_stdout=timeout_output(error.stdout),
+            run_stderr=timeout_output(error.stderr),
+        )
+
+    elapsed = time.monotonic() - start
+    passed = runtime_run_result.returncode == 0
+    message = "ok" if passed else "translated output runtime failure, expected 0"
+
     return TestResult(
         path=test_path,
         kind="c-transpile",
-        passed=True,
-        compile_code=result.returncode,
-        run_code=None,
+        passed=passed,
+        compile_code=runtime_compile_result.returncode,
+        run_code=runtime_run_result.returncode,
         elapsed=elapsed,
-        message="ok",
-        compile_stdout=result.stdout,
-        compile_stderr=result.stderr,
-        run_stdout="",
-        run_stderr="",
+        message=message,
+        compile_stdout=runtime_compile_result.stdout,
+        compile_stderr=runtime_compile_result.stderr,
+        run_stdout=runtime_run_result.stdout,
+        run_stderr=runtime_run_result.stderr,
     )
 
 
@@ -923,8 +1359,12 @@ def main() -> int:
         print(f"compiler not found: {compiler}", file=sys.stderr)
         return 1
 
-    test_roots = discover_test_roots(tests_dir, args.filter)
-    c_transpile_roots = discover_c_transpile_tests(tests_dir, args.filter)
+    test_roots = discover_test_roots(tests_dir, args.filter, args.exclude_only)
+    c_transpile_roots = discover_c_transpile_tests(
+        tests_dir,
+        args.filter,
+        args.exclude_only,
+    )
 
     if not test_roots and not c_transpile_roots:
         print("no tests found", file=sys.stderr)

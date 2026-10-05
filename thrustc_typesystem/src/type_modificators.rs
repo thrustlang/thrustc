@@ -122,17 +122,23 @@ impl GCCStructureTypeModificator {
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default, Serialize)]
 pub struct LLVMStructureTypeModificator {
     packed: bool,
+    align: Option<u64>,
 }
 
 impl LLVMStructureTypeModificator {
     #[inline]
-    pub fn new(packed: bool) -> Self {
-        Self { packed }
+    pub fn new(packed: bool, align: Option<u64>) -> Self {
+        Self { packed, align }
     }
 
     #[inline]
     pub fn is_packed(&self) -> bool {
         self.packed
+    }
+
+    #[inline]
+    pub fn align(&self) -> Option<u64> {
+        self.align
     }
 }
 
@@ -140,6 +146,10 @@ impl Display for StructureTypeModificator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.llvm.packed {
             write!(f, "@packed;")?;
+        }
+
+        if let Some(align) = self.llvm.align {
+            write!(f, "@align({align});")?;
         }
 
         Ok(())

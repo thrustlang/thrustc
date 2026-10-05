@@ -1,0 +1,9 @@
+importC "stdio.h" as cstdio;
+
+fn main() s32 @public {
+    var written: s32 = cstdio::printf("%d %d\n" as const ptr[char], 7, 8);
+
+    if written <= 0 { return 1; }
+
+    return 0;
+}

@@ -1,0 +1,12 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "array_fields.h";
+
+fn main() s32 @public {
+    if array_fields::LOCAL_ARRAY_FIELDS_TAG_LEN != 4 { return 1; }
+    if array_fields::LOCAL_ARRAY_FIELDS_PAYLOAD_LEN != 8 { return 2; }
+    if sizeOf(array_fields::LocalArrayFields) < 16 { return 3; }
+    if alignOf(array_fields::LocalArrayFields) == 0 { return 4; }
+
+    return 0;
+}

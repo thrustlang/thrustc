@@ -1,0 +1,16 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macro_struct.h";
+
+fn main() s32 @public {
+    var value: macro_struct::LocalMacroStruct =
+        new macro_struct::LocalMacroStruct {
+            value: macro_struct::LOCAL_MACRO_STRUCT_MAGIC as s32,
+            extra: macro_struct::LOCAL_MACRO_STRUCT_EXTRA as u16,
+        };
+
+    if value->value != 41 { return 1; }
+    if value->extra as s32 != 9 { return 2; }
+
+    return 0;
+}

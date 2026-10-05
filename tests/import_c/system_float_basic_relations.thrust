@@ -1,0 +1,10 @@
+importC "float.h" as cfloat;
+
+fn main() s32 @public {
+    if cfloat::FLT_RADIX < 2 { return 1; }
+    if cfloat::FLT_EPSILON <= 0.0 { return 2; }
+    if cfloat::DBL_MIN <= 0.0 { return 3; }
+    if cfloat::DBL_MAX <= cfloat::DBL_MIN { return 4; }
+
+    return 0;
+}

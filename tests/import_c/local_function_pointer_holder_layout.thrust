@@ -1,0 +1,10 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "function_pointer_types.h";
+
+fn main() s32 @public {
+    if sizeOf(function_pointer_types::LocalUnaryFn) != sizeOf(ptr) { return 1; }
+    if sizeOf(function_pointer_types::LocalBinaryFn) != sizeOf(ptr) { return 2; }
+
+    return 0;
+}

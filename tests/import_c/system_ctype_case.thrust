@@ -1,0 +1,9 @@
+importC "ctype.h" as ctypeh;
+
+fn main() s32 @public {
+    if ctypeh::toupper('a' as s32) != 'A' as s32 { return 1; }
+    if ctypeh::tolower('Z' as s32) != 'z' as s32 { return 2; }
+    if ctypeh::toupper('7' as s32) != '7' as s32 { return 3; }
+
+    return 0;
+}

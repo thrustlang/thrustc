@@ -17,7 +17,7 @@
 
 */
 
-use thrustc_attributes::ThrustAttributes;
+use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
 
 use thrustc_typesystem::type_modificators::{
     GCCStructureTypeModificator, LLVMStructureTypeModificator, StructureTypeModificator,
@@ -35,9 +35,13 @@ use crate::ParserContext;
 #[inline]
 pub fn build_structure_modificator(attributes: &ThrustAttributes) -> StructureTypeModificator {
     let llvm_packed_modificator: bool = attributes.iter().any(|attr| attr.is_packed());
+    let llvm_align_modificator: Option<u64> = attributes.iter().find_map(|attr| match attr {
+        ThrustAttribute::Align(align, ..) => Some(*align),
+        _ => None,
+    });
 
     StructureTypeModificator::new(
-        LLVMStructureTypeModificator::new(llvm_packed_modificator),
+        LLVMStructureTypeModificator::new(llvm_packed_modificator, llvm_align_modificator),
         GCCStructureTypeModificator::new(),
     )
 }

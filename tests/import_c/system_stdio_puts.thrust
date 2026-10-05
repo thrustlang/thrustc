@@ -1,0 +1,8 @@
+importC "stdio.h" as cstdio;
+
+fn main() s32 @public {
+    if cstdio::BUFSIZ <= 0 { return 1; }
+    if cstdio::puts("import_c puts smoke" as const ptr[char]) <= 0 { return 2; }
+
+    return 0;
+}

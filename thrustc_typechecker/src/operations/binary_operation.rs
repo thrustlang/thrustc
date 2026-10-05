@@ -30,6 +30,14 @@ pub fn validate_binary_node(
     right: &Type,
     span: Span,
 ) -> Result<(), CompilationIssue> {
+    if let Type::Const(inner, ..) = left {
+        return self::validate_binary_node(operator, inner, right, span);
+    }
+
+    if let Type::Const(inner, ..) = right {
+        return self::validate_binary_node(operator, left, inner, span);
+    }
+
     match *operator {
         TokenType::Arith
         | TokenType::ArithEq
@@ -321,6 +329,7 @@ fn validate_binary_comparasion_expression(
             Type::F32 { .. } | Type::F64 { .. } | Type::F128 { .. },
             Type::F32 { .. } | Type::F64 { .. } | Type::F128 { .. },
         ) => Ok(()),
+        (Type::Char { .. }, Type::Char { .. }) => Ok(()),
 
         _ => Err(CompilationIssue::Error(
             CompilationIssueCode::E0030,

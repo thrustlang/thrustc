@@ -1,0 +1,9 @@
+#ifndef IMPORT_C_HELPER_CHAR_STRING_MACROS_H
+#define IMPORT_C_HELPER_CHAR_STRING_MACROS_H
+
+#define LOCAL_CHAR_MACRO 'x'
+#define LOCAL_NEWLINE_CHAR '\n'
+#define LOCAL_GREETING "hello-importc"
+#define LOCAL_TITLE "ImportC"
+
+#endif

@@ -35,6 +35,7 @@ Compiler flags:
 • -cpu-enable-features [sse2;cx16;sahf;tbm] It specify to enable certain CPU features to use.
 • -cpu-disable-features [sse2;cx16;sahf;tbm] It specify to disable certain CPU features to use.
 • -cpu-features [+sse2,+cx16,+sahf,-tbm] It overwrites the CPU features to use.
+• --import-c-scope [main-only|transitive-no-system|transitive-all] Configure how broadly C declarations are collected for `importC` and emitted C bindings.
 • -emit [llvm-bc|llvm-ir|asm|unopt-llvm-ir|unopt-llvm-bc|unopt-asm|obj|unchecked-pretty-ast|unchecked-ast|pretty-ast|ast|pretty-tokens|tokens] Compile the code into specified representation.
 • -print [llvm-ir|unopt-llvm-ir|asm|unopt-asm|unchecked-pretty-ast|unchecked-ast|pretty-ast|ast|pretty-tokens|tokens] Displays the final compilation on standard output.
 • -opt [O0|O1|O2|O3|Os|Oz] Optimization level.

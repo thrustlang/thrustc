@@ -1,0 +1,6 @@
+fn main() s32 @public {
+    if invert_bool(true) != false { return 1; }
+    if invert_bool(false) != true { return 2; }
+
+    return 0;
+}

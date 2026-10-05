@@ -1,0 +1,10 @@
+importC "string.h" as cstring;
+
+fn main() s32 @public {
+    var pos: const ptr[char] = cstring::strrchr("banana" as const ptr[char], 'a' as s32);
+
+    if pos->[0] != 'a' { return 1; }
+    if cstring::strlen(pos) != 1 { return 2; }
+
+    return 0;
+}

@@ -746,6 +746,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
         const VALID_STRUCTS_ATTRIBUTES: &[ThrustAttributeComparator] = &[
             ThrustAttributeComparator::Public,
             ThrustAttributeComparator::Packed,
+            ThrustAttributeComparator::Align,
         ];
 
         const VALID_LOCAL_ATTRIBUTES: &[ThrustAttributeComparator] = &[

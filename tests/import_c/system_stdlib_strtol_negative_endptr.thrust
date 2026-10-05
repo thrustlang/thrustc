@@ -1,0 +1,11 @@
+importC "stdlib.h" as cstdlib;
+
+fn main() s32 @public {
+    var end: ptr[ptr] = nullptr;
+    var parsed := cstdlib::strtol("-77rest" as const ptr[char], ref end, 10);
+
+    if parsed != -77 { return 1; }
+    if end == nullptr { return 2; }
+
+    return 0;
+}

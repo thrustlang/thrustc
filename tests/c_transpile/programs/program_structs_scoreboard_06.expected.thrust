@@ -1,0 +1,51 @@
+struct Player06 {
+    id: s32,
+    score: s32,
+    bonus: s32,
+}
+
+static base_reward_06: const s32 @public @extern("base_reward_06") = 4;
+static mut updates_06: s32 = 0;
+
+fn apply_round_06(player: ptr[Player06], delta: s32) void {
+    player->bonus = clamp_bonus_06(player->bonus + (delta % 4));
+    player->score += delta + player->bonus + base_reward_06;
+    updates_06 += 1;
+}
+fn clamp_bonus_06(value: s32) s32 {
+    if value < 0 {
+        return (0) as s32;
+    }
+    if value > 5 {
+        return (5) as s32;
+    }
+    return (value) as s32;
+}
+fn main() s32 @public {
+    var players: array[Player06; 6] = fixed[new Player06 { id: 1, score: 10, bonus: 1 }, new Player06 { id: 2, score: 7, bonus: 2 }, new Player06 { id: 3, score: 13, bonus: 1 }, new Player06 { id: 4, score: 9, bonus: 0 }, new Player06 { id: 5, score: 11, bonus: 3 }, new Player06 { id: 6, score: 8, bonus: 2 }];
+    var deltas: array[s32; 6] = fixed[4, 5, 3, 2, 6, 1];
+    var best: s32 = 0;
+    for var i: s32 = 0; i < 6; i += 1; {
+        apply_round_06(ref players[i], deltas->[i]);
+        if players[i]->score > best {
+            best = players[i]->score;
+        }
+    }
+    if updates_06 != 6 {
+        return (1) as s32;
+    }
+    if best <= 12 {
+        return (2) as s32;
+    }
+    if total_score_06(ref players[0]) <= 79 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}
+fn total_score_06(players: ptr[Player06]) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < 6; i += 1; {
+        total += players[i]->score;
+    }
+    return (total) as s32;
+}

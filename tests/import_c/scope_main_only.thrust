@@ -1,0 +1,14 @@
+directive "--import-c-include=tests/import_c/helpers/scope";
+directive "--import-c-scope=main-only";
+
+importC "scope_bundle.h";
+
+fn main() s32 @public {
+    if scope_bundle::SCOPE_ROOT_VALUE != 13 { return 1; }
+
+    var bundle: scope_bundle::ScopeBundle = new scope_bundle::ScopeBundle { value: 9 };
+
+    if bundle->value != 9 { return 2; }
+
+    return 0;
+}

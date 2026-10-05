@@ -1,0 +1,9 @@
+importC "stdio.h" as cstdio;
+
+fn main() s32 @public {
+    if cstdio::stdin == nullptr { return 1; }
+    if cstdio::stdout == nullptr { return 2; }
+    if cstdio::stderr == nullptr { return 3; }
+
+    return 0;
+}

@@ -37,9 +37,14 @@ pub fn index_precedence<'parser>(
     loop {
         if ctx.match_token(TokenType::LBracket)? {
             expr = expressions::index::build_index(ctx, expr, false)?;
+        } else if ctx.check(TokenType::Arrow) && ctx.check_to(TokenType::Identifier, 1) {
+            ctx.advance()?;
+            expr = expressions::property::build_property(ctx, expr, true)?;
         } else if ctx.match_token(TokenType::Arrow)? && ctx.check(TokenType::LBracket) {
             ctx.advance()?;
             expr = expressions::index::build_index(ctx, expr, true)?;
+        } else if ctx.match_token(TokenType::Dot)? {
+            expr = expressions::property::build_property(ctx, expr, false)?;
         } else {
             break;
         }

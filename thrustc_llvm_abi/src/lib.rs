@@ -502,7 +502,11 @@ pub fn lower_call_epilogue<'llvm_abi>(
                 _ => unreachable!(),
             };
 
-            if configuration.is_memory_return() {
+            if configuration.is_memory_return()
+                || configuration
+                    .return_type()
+                    .is_some_and(SystemVABIType::is_coerce)
+            {
                 let lowered_value: BasicValueEnum<'_> =
                     thrustc_llvm_system_v_abi::lower_system_v_call_epilogue(
                         llvm_builder,

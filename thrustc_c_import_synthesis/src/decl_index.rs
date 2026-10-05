@@ -26,6 +26,7 @@ use crate::options::CImportScope;
 #[derive(Debug)]
 pub struct DeclIndex<'clang> {
     function_decls: Vec<clang::Entity<'clang>>,
+    var_decls: Vec<clang::Entity<'clang>>,
     struct_decls: Vec<clang::Entity<'clang>>,
     union_decls: Vec<clang::Entity<'clang>>,
     enum_decls: Vec<clang::Entity<'clang>>,
@@ -38,6 +39,7 @@ impl<'clang> DeclIndex<'clang> {
     pub fn new() -> Self {
         Self {
             function_decls: Vec::new(),
+            var_decls: Vec::new(),
             struct_decls: Vec::new(),
             union_decls: Vec::new(),
             enum_decls: Vec::new(),
@@ -56,6 +58,11 @@ impl<'clang> DeclIndex<'clang> {
     #[inline]
     pub fn struct_decls(&self) -> &[clang::Entity<'clang>] {
         &self.struct_decls
+    }
+
+    #[inline]
+    pub fn var_decls(&self) -> &[clang::Entity<'clang>] {
+        &self.var_decls
     }
 
     #[inline]
@@ -91,6 +98,11 @@ impl<'clang> DeclIndex<'clang> {
     }
 
     #[inline]
+    pub fn var_decls_mut(&mut self) -> &mut Vec<clang::Entity<'clang>> {
+        &mut self.var_decls
+    }
+
+    #[inline]
     pub fn union_decls_mut(&mut self) -> &mut Vec<clang::Entity<'clang>> {
         &mut self.union_decls
     }
@@ -119,6 +131,7 @@ pub fn collect_decl_index<'clang>(
     let mut index: DeclIndex<'clang> = DeclIndex::new();
 
     let mut seen_function_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
+    let mut seen_var_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
     let mut seen_struct_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
     let mut seen_union_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
     let mut seen_enum_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
@@ -126,69 +139,80 @@ pub fn collect_decl_index<'clang>(
     let mut seen_macro_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
 
     for entity in entities {
-        let should_import: bool = match import_scope {
-            CImportScope::MainOnly => match main_only_file {
-                Some(main_file) => match entity
-                    .get_location()
-                    .and_then(|loc| loc.get_file_location().file)
-                {
-                    Some(file) => file == main_file,
-                    None => false,
-                },
-                None => false,
-            },
-            CImportScope::TransitiveNoSystem => !entity.is_in_system_header(),
-            CImportScope::TransitiveAll => true,
+        let should_import: bool = if import_scope == CImportScope::TransitiveAll {
+            true
+        } else if import_scope == CImportScope::TransitiveNoSystem {
+            !entity.is_in_system_header()
+        } else if let Some(main_file) = main_only_file {
+            if let Some(location) = entity.get_location() {
+                if let Some(file) = location.get_file_location().file {
+                    file == main_file
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        } else {
+            false
         };
 
         if !should_import {
             continue;
         }
 
-        match entity.get_kind() {
-            EntityKind::FunctionDecl => {
-                let canonical: clang::Entity<'clang> = entity.get_canonical_entity();
+        let canonical: clang::Entity<'clang> = entity.get_canonical_entity();
 
-                if seen_function_decls.insert(canonical) {
-                    index.function_decls_mut().push(entity);
-                }
+        if entity.get_kind() == EntityKind::FunctionDecl {
+            if seen_function_decls.insert(canonical) {
+                index.function_decls_mut().push(entity);
             }
-            EntityKind::StructDecl => {
-                let canonical: clang::Entity<'clang> = entity.get_canonical_entity();
 
-                if seen_struct_decls.insert(canonical) {
-                    index.struct_decls_mut().push(entity);
-                }
-            }
-            EntityKind::UnionDecl => {
-                let canonical: clang::Entity<'clang> = entity.get_canonical_entity();
+            continue;
+        }
 
-                if seen_union_decls.insert(canonical) {
-                    index.union_decls_mut().push(entity);
-                }
+        if entity.get_kind() == EntityKind::VarDecl {
+            if seen_var_decls.insert(canonical) {
+                index.var_decls_mut().push(entity);
             }
-            EntityKind::EnumDecl => {
-                let canonical: clang::Entity<'clang> = entity.get_canonical_entity();
 
-                if seen_enum_decls.insert(canonical) {
-                    index.enum_decls_mut().push(entity);
-                }
-            }
-            EntityKind::TypedefDecl => {
-                let canonical: clang::Entity<'clang> = entity.get_canonical_entity();
+            continue;
+        }
 
-                if seen_typedef_decls.insert(canonical) {
-                    index.typedef_decls_mut().push(entity);
-                }
+        if entity.get_kind() == EntityKind::StructDecl {
+            if seen_struct_decls.insert(canonical) {
+                index.struct_decls_mut().push(entity);
             }
-            EntityKind::MacroDefinition => {
-                let canonical: clang::Entity<'clang> = entity.get_canonical_entity();
 
-                if seen_macro_decls.insert(canonical) {
-                    index.macro_decls_mut().push(entity);
-                }
+            continue;
+        }
+
+        if entity.get_kind() == EntityKind::UnionDecl {
+            if seen_union_decls.insert(canonical) {
+                index.union_decls_mut().push(entity);
             }
-            _ => {}
+
+            continue;
+        }
+
+        if entity.get_kind() == EntityKind::EnumDecl {
+            if seen_enum_decls.insert(canonical) {
+                index.enum_decls_mut().push(entity);
+            }
+
+            continue;
+        }
+
+        if entity.get_kind() == EntityKind::TypedefDecl {
+            if seen_typedef_decls.insert(canonical) {
+                index.typedef_decls_mut().push(entity);
+            }
+
+            continue;
+        }
+
+        if entity.get_kind() == EntityKind::MacroDefinition && seen_macro_decls.insert(canonical) {
+            index.macro_decls_mut().push(entity);
         }
     }
 

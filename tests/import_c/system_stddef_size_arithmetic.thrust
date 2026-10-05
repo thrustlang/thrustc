@@ -1,0 +1,10 @@
+importC "stddef.h" as cstddef;
+
+fn main() s32 @public {
+    var total: cstddef::size_t = 6 as cstddef::size_t;
+
+    if sizeOf(cstddef::size_t) != sizeOf(usize) { return 1; }
+    if total + 4 != 10 { return 2; }
+
+    return 0;
+}

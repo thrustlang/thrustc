@@ -39,27 +39,19 @@ pub fn import_enums<'clang>(
     let mut enum_name_override: HashMap<clang::Entity<'clang>, String> = HashMap::new();
 
     for entity in typedef_decls.iter() {
-        let Some(name) = entity.get_name() else {
-            continue;
-        };
+        if let Some(name) = entity.get_name()
+            && let Some(underlying) = entity.get_typedef_underlying_type()
+        {
+            let underlying_canonical: clang::Type<'clang> = underlying.get_canonical_type();
 
-        let Some(underlying) = entity.get_typedef_underlying_type() else {
-            continue;
-        };
-
-        let underlying_canonical = underlying.get_canonical_type();
-
-        if underlying_canonical.get_kind() != TypeKind::Enum {
-            continue;
+            if underlying_canonical.get_kind() == TypeKind::Enum
+                && let Some(decl) = underlying_canonical.get_declaration()
+            {
+                enum_name_override
+                    .entry(decl.get_canonical_entity())
+                    .or_insert(name);
+            }
         }
-
-        let Some(decl) = underlying_canonical.get_declaration() else {
-            continue;
-        };
-
-        enum_name_override
-            .entry(decl.get_canonical_entity())
-            .or_insert(name);
     }
 
     for entity in enum_decls.iter() {
@@ -89,31 +81,28 @@ pub fn import_enums<'clang>(
             }
         };
 
-        let mut fields: Vec<(String, u64)> = Vec::new();
+        let fields: Vec<(String, u64)> = definition
+            .get_children()
+            .into_iter()
+            .filter(|child| child.get_kind() == clang::EntityKind::EnumConstantDecl)
+            .filter_map(|child| {
+                let field_name: Option<String> = child.get_name();
+                let field_value: Option<(i64, u64)> = child.get_enum_constant_value();
 
-        for child in definition.get_children() {
-            if child.get_kind() != clang::EntityKind::EnumConstantDecl {
-                continue;
-            }
-
-            let Some(field_name) = child.get_name() else {
-                continue;
-            };
-
-            let Some((_signed, unsigned)) = child.get_enum_constant_value() else {
-                continue;
-            };
-
-            fields.push((field_name, unsigned));
-        }
+                match (field_name, field_value) {
+                    (Some(field_name), Some((_signed, unsigned))) => Some((field_name, unsigned)),
+                    _ => None,
+                }
+            })
+            .collect();
 
         let canonical_enum: clang::Entity<'clang> = entity.get_canonical_entity();
-
-        if let Some(name) = enum_name_override
+        let exported_name: Option<String> = enum_name_override
             .get(&canonical_enum)
             .cloned()
-            .or_else(|| definition.get_name().or_else(|| entity.get_name()))
-        {
+            .or_else(|| definition.get_name().or_else(|| entity.get_name()));
+
+        if let Some(name) = exported_name {
             if exported_enums.insert(name.clone()) {
                 state
                     .enums_mut()

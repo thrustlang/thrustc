@@ -1,0 +1,8 @@
+importC "ctype.h" as ctypeh;
+
+fn main() s32 @public {
+    if ctypeh::isdigit('7' as s32) == 0 { return 1; }
+    if ctypeh::isdigit('x' as s32) != 0 { return 2; }
+
+    return 0;
+}

@@ -1,0 +1,10 @@
+importC "limits.h" as climits;
+
+fn main() s32 @public {
+    if climits::CHAR_BIT < 8 { return 1; }
+    if climits::SCHAR_MAX <= 0 { return 2; }
+    if climits::INT_MIN >= 0 { return 3; }
+    if climits::INT_MAX <= climits::SCHAR_MAX { return 4; }
+
+    return 0;
+}

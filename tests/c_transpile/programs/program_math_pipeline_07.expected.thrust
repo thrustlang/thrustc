@@ -1,0 +1,51 @@
+static base_bias_07: const s32 @public @extern("base_bias_07") = 6;
+static mut reductions_07: s32 = 0;
+
+fn fold_all_07(pairs: ptr[s32]) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < 7; i += 1; {
+        var local: s32 = fold_pair_07(pairs->[((i) * 2) + (0)], pairs->[((i) * 2) + (1)]);
+        if (local & 1) == 0 {
+            total += local / 2;
+        } else {
+            total += local;
+        }
+    }
+    return (total) as s32;
+}
+fn fold_pair_07(left: s32, right: s32) s32 {
+    var common: s32 = gcd_07(left + 2, right + 2);
+    var score: s32 = (left * 4) + right + base_bias_07;
+    reductions_07 += 1;
+    return (score - common) as s32;
+}
+fn gcd_07(a_param: s32, b_param: s32) s32 {
+    var a: s32 = a_param;
+    var b: s32 = b_param;
+
+    while b != 0 {
+        var next: s32 = a % b;
+        a = b;
+        b = next;
+    }
+    if a < 0 {
+        return (-a) as s32;
+    } else {
+        return (a) as s32;
+    }
+}
+fn main() s32 @public {
+    var pairs: array[array[s32; 2]; 7] = fixed[fixed[8, 4], fixed[6, 9], fixed[10, 5], fixed[7, 12], fixed[9, 3], fixed[5, 11], fixed[11, 6]];
+    var total: s32 = fold_all_07(ref pairs[0][0]);
+    var guard: s32 = gcd_07(total, 54 + 9);
+    if reductions_07 != 7 {
+        return (1) as s32;
+    }
+    if total <= 54 {
+        return (2) as s32;
+    }
+    if guard <= 0 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}

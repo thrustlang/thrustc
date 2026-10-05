@@ -1,21 +1,22 @@
-import std::tstring;
-import std::collections::vector;
-import std::io;
-
-fn iterate(str: ptr[tstring::TString], args: ptr, count: usize) void {
-    io::print("%s\n", tstring::toCString(str));
+fn writeCell(rows: ptr[s32]) void {
+    rows->[(1 * 2) + 0] = 7;
 }
 
-fn dropAllTstring(str: ptr[tstring::TString], args: ptr, count: usize) void {
-    tstring::dropTString(str);
+fn pick(rows: ptr[s32]) s32 {
+    return rows->[(0 * 2) + 1];
 }
 
 fn main() s32 @public {
-    var tstr: tstring::TString = tstring::fromCString("hello");
-    var tstr_splitted: vector::Vector[tstring::TString] = tstring::split(ref tstr, "");
+    var rows: array[array[s32; 2]; 2] = fixed[
+        fixed[1, 2],
+        fixed[3, 4]
+    ];
 
-    vector::forEach(ref tstr_splitted, iterate);
-    tstring::dropTString(ref tstr);
-    
+    if pick(ref rows[0][0]) != 2 { return 1; }
+
+    writeCell(ref rows[0][0]);
+
+    if rows[1]->[0] != 7 { return 2; }
+
     return 0;
 }

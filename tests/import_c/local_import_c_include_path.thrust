@@ -1,0 +1,18 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "import_c_include_path.h";
+
+fn main() s32 @public {
+    if import_c_include_path::IMPORTC_INCLUDE_PATH_MAGIC != 7 {
+        return 1;
+    }
+
+    var value: import_c_include_path::ImportCIncludePathBox =
+        new import_c_include_path::ImportCIncludePathBox { value: 5 };
+
+    if value->value != 5 {
+        return 2;
+    }
+
+    return 0;
+}

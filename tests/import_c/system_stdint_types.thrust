@@ -1,0 +1,16 @@
+importC "stdint.h" as cstdint;
+
+fn main() s32 @public {
+    var small: cstdint::uint8_t = 7;
+    var signed: cstdint::int16_t = -9;
+    var wide: cstdint::uint32_t = 33;
+
+    if small != 7 { return 1; }
+    if signed != -9 { return 2; }
+
+    var total: cstdint::uint32_t = wide + (small as cstdint::uint32_t);
+
+    if total != 40 { return 3; }
+
+    return 0;
+}

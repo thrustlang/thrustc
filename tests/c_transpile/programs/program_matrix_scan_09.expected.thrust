@@ -1,0 +1,37 @@
+static matrix_bias_09: const s32 @public @extern("matrix_bias_09") = 1;
+static mut visited_cells_09: s32 = 0;
+
+fn fill_matrix_09(matrix: ptr[s32]) void {
+    for var r: s32 = 0; r < 5; r += 1; {
+        for var c: s32 = 0; c < 6; c += 1; {
+            matrix->[((r) * 6) + (c)] = (r + 3) * (c + 2) + matrix_bias_09;
+        }
+    }
+}
+fn main() s32 @public {
+    var matrix: array[array[s32; 6]; 5];
+    fill_matrix_09(ref matrix[0][0]);
+    var total: s32 = trace_band_09(ref matrix[0][0]);
+    if visited_cells_09 != 5 * 6 {
+        return (1) as s32;
+    }
+    if total <= 100 {
+        return (2) as s32;
+    }
+    if (ref matrix[0][0])->[((4) * 6) + (5)] <= matrix_bias_09 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}
+fn trace_band_09(matrix: ptr[s32]) s32 {
+    var total: s32 = 0;
+    for var r: s32 = 0; r < 5; r += 1; {
+        for var c: s32 = 0; c < 6; c += 1; {
+            if (r + c) <= 8 {
+                total += matrix->[((r) * 6) + (c)];
+            }
+            visited_cells_09 += 1;
+        }
+    }
+    return (total) as s32;
+}

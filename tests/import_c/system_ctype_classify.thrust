@@ -1,0 +1,10 @@
+importC "ctype.h" as ctypeh;
+
+fn main() s32 @public {
+    if ctypeh::isdigit('9' as s32) == 0 { return 1; }
+    if ctypeh::isalpha('Q' as s32) == 0 { return 2; }
+    if ctypeh::isspace(' ' as s32) == 0 { return 3; }
+    if ctypeh::isdigit('x' as s32) != 0 { return 4; }
+
+    return 0;
+}

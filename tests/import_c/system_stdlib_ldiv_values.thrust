@@ -1,0 +1,10 @@
+importC "stdlib.h" as cstdlib;
+
+fn main() s32 @public {
+    var result: cstdlib::ldiv_t = cstdlib::ldiv(25 as ssize, 7 as ssize);
+
+    if result->quot != 3 { return 1; }
+    if result->rem != 4 { return 2; }
+
+    return 0;
+}

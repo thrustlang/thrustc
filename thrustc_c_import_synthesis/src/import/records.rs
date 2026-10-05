@@ -23,10 +23,11 @@ use crate::diagnostics::{CImportDiagnostic, CImportDiagnosticKind};
 use crate::import::ImportState;
 use crate::model::CImportedStruct;
 use crate::type_map;
-use thrustc_typesystem::Type;
+use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 pub fn import_structs<'clang>(
     struct_decls: &[clang::Entity<'clang>],
+    union_decls: &[clang::Entity<'clang>],
     state: &mut ImportState<'clang>,
 ) {
     let span: thrustc_code_location::Span = state.span();
@@ -95,15 +96,17 @@ pub fn import_structs<'clang>(
         };
 
         if state.exported_structs_mut().insert(name.clone()) {
-            state.structs_mut().push(CImportedStruct::new(name, fields));
+            let metadata: StructTypeMetadata = match &kind {
+                Type::Struct { metadata, .. } => *metadata,
+                _ => StructTypeMetadata::default(),
+            };
+
+            state
+                .structs_mut()
+                .push(CImportedStruct::new(name, fields, metadata));
         }
     }
-}
 
-pub fn report_skipped_unions<'clang>(
-    union_decls: &[clang::Entity<'clang>],
-    state: &mut ImportState<'clang>,
-) {
     for entity in union_decls.iter() {
         if let Some(name) = entity.get_name() {
             state.diagnostics_mut().push(CImportDiagnostic::new(

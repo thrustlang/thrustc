@@ -1,0 +1,10 @@
+importC "string.h" as cstring;
+
+fn main() s32 @public {
+    var pos: const ptr[char] = cstring::strchr("magic" as const ptr[char], 'g' as s32);
+
+    if pos->[0] != 'g' { return 1; }
+    if cstring::strlen(pos) != 3 { return 2; }
+
+    return 0;
+}

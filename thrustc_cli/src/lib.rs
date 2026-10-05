@@ -494,6 +494,19 @@ impl CommandLine {
                 self.advance();
             }
 
+            "--import-c-scope" => {
+                self.advance();
+
+                let import_scope: thrustc_options::ImportCScope =
+                    self.parse_import_c_scope(self.peek());
+
+                self.get_mut_options()
+                    .get_mut_import_c_options()
+                    .set_import_scope(import_scope);
+
+                self.advance();
+            }
+
             "--import-c-target" => {
                 self.advance();
                 let target: String = self.peek().to_string();
@@ -1740,6 +1753,20 @@ impl CommandLine {
                 self.report_error(&format!("Unknown specific ABI: '{}'.", any));
             }
         }
+    }
+
+    #[inline]
+    fn parse_import_c_scope(&self, scope: &str) -> thrustc_options::ImportCScope {
+        let normalized: String = scope.trim().to_lowercase();
+
+        if let Some(import_scope) = thrustc_options::ImportCScope::to_str(&normalized) {
+            return import_scope;
+        }
+
+        self.report_error(&format!(
+            "Unknown import C scope: '{}'. Expected one of: main-only, transitive-no-system, transitive-all.",
+            scope
+        ));
     }
 
     #[inline]

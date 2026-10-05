@@ -28,9 +28,6 @@ use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 
 use thrustc_typesystem::type_metadata::StructTypeMetadata;
-use thrustc_typesystem::type_modificators::{
-    GCCStructureTypeModificator, LLVMStructureTypeModificator, StructureTypeModificator,
-};
 
 use crate::{
     context::PreprocessorContext,
@@ -63,20 +60,8 @@ pub fn parse_import_c<'preprocessor>(
     let import_spec_path: PathBuf = PathBuf::from(&import_str);
     let mut header_path: PathBuf = import_spec_path.clone();
     let mut treat_as_header_spec: bool = false;
-
-    if header_path.is_relative() {
-        let candidate: PathBuf = current_dir.join(&import_str);
-
-        if candidate.exists() {
-            header_path = candidate;
-        } else {
-            treat_as_header_spec = true;
-        }
-    }
-
-    if !treat_as_header_spec && let Ok(canonicalized) = header_path.canonicalize() {
-        header_path = canonicalized;
-    }
+    let mut resolved_from_import_search: bool = false;
+    let mut parse_via_header_spec: bool = false;
 
     if parser.check(TokenType::Only) {
         let only_span: Span = parser.peek().get_span();
@@ -111,6 +96,50 @@ pub fn parse_import_c<'preprocessor>(
     }
 
     parser.consume(TokenType::SemiColon)?;
+
+    let file_options: &thrustc_directive::FileOptions<'_, '_> = parser.get_file_options();
+    let import_opts: thrustc_options::ImportCOptions =
+        thrustc_directive::combine_import_c_options(file_options);
+
+    if header_path.is_relative() {
+        let candidate: PathBuf = current_dir.join(&import_str);
+
+        if candidate.exists() {
+            header_path = candidate;
+        } else {
+            for include_dir in import_opts.include_paths() {
+                let candidate: PathBuf = include_dir.join(&import_str);
+
+                if candidate.exists() {
+                    header_path = candidate;
+                    resolved_from_import_search = true;
+                    parse_via_header_spec = true;
+                    break;
+                }
+            }
+
+            if !resolved_from_import_search {
+                for include_dir in import_opts.system_include_paths() {
+                    let candidate: PathBuf = include_dir.join(&import_str);
+
+                    if candidate.exists() {
+                        header_path = candidate;
+                        resolved_from_import_search = true;
+                        parse_via_header_spec = true;
+                        break;
+                    }
+                }
+            }
+
+            if !resolved_from_import_search {
+                treat_as_header_spec = true;
+            }
+        }
+    }
+
+    if !treat_as_header_spec && let Ok(canonicalized) = header_path.canonicalize() {
+        header_path = canonicalized;
+    }
 
     let mut current_file_path: PathBuf = current_path.clone();
 
@@ -170,13 +199,32 @@ pub fn parse_import_c<'preprocessor>(
 
     // C header parsing and symbol synthesis.
     {
-        let file_options: &thrustc_directive::FileOptions<'_, '_> = parser.get_file_options();
-        let import_opts: thrustc_options::ImportCOptions =
-            thrustc_directive::combine_import_c_options(file_options);
-
         let mut options: thrustc_c_import_synthesis::options::CImportOptions =
             thrustc_c_import_synthesis::options::CImportOptions::new();
-        options.set_import_scope(thrustc_c_import_synthesis::options::CImportScope::MainOnly);
+
+        let effective_scope: thrustc_options::ImportCScope =
+            if import_opts.import_scope_overridden() {
+                import_opts.import_scope()
+            } else if treat_as_header_spec || resolved_from_import_search {
+                thrustc_options::ImportCScope::TransitiveAll
+            } else {
+                thrustc_options::ImportCScope::MainOnly
+            };
+
+        let import_scope: thrustc_c_import_synthesis::options::CImportScope = match effective_scope
+        {
+            thrustc_options::ImportCScope::MainOnly => {
+                thrustc_c_import_synthesis::options::CImportScope::MainOnly
+            }
+            thrustc_options::ImportCScope::TransitiveNoSystem => {
+                thrustc_c_import_synthesis::options::CImportScope::TransitiveNoSystem
+            }
+            thrustc_options::ImportCScope::TransitiveAll => {
+                thrustc_c_import_synthesis::options::CImportScope::TransitiveAll
+            }
+        };
+
+        options.set_import_scope(import_scope);
 
         // Build clang arguments from `--import-c-*` flags.
         {
@@ -217,7 +265,7 @@ pub fn parse_import_c<'preprocessor>(
             clang_args.extend(import_opts.args().iter().cloned());
         }
 
-        let importer_header_path: PathBuf = if treat_as_header_spec {
+        let importer_header_path: PathBuf = if parse_via_header_spec {
             import_spec_path.clone()
         } else {
             header_path.clone()
@@ -238,22 +286,39 @@ pub fn parse_import_c<'preprocessor>(
             };
 
             let help: String = if treat_as_header_spec {
-                "Pass '--import-c-include <dir>' or '--import-c-system-include <dir>' so Clang can resolve the header.".into()
+                "Pass '--import-c-system-include <dir>' for system headers or '--import-c-include <dir>' for local/vendor headers so importC can resolve the header.".into()
             } else {
                 "Pass '--import-c-system-include <dir>' or '--import-c-include <dir>' so Clang can resolve the header and its dependencies.".into()
             };
 
             let note: Option<String> = if !context.diagnostics().is_empty() {
-                Some(
-                    context
+                {
+                    let mut note: String = context
                         .diagnostics()
                         .iter()
                         .map(|diagnostic| diagnostic.message().to_string())
                         .collect::<Vec<String>>()
-                        .join("\n"),
-                )
+                        .join("\n");
+
+                    if treat_as_header_spec {
+                        note.push_str(
+                            "\nTry '--import-c-system-include <dir>' for system headers or '--import-c-include <dir>' for local/vendor headers.",
+                        );
+                    }
+
+                    Some(note)
+                }
             } else if !treat_as_header_spec {
-                Some("System headers are currently filtered by the default import scope.".into())
+                Some(
+                    "System headers may be filtered by the configured import scope. Try '--import-c-scope=transitive-all' if you need them."
+                        .into(),
+                )
+            } else if import_str.ends_with(".h") && !import_str.contains(std::path::MAIN_SEPARATOR)
+            {
+                Some(
+                    "This looks like a header spec. Try '--import-c-system-include <dir>' for system headers or '--import-c-include <dir>' for local/vendor headers."
+                        .into(),
+                )
             } else {
                 None
             };
@@ -283,16 +348,31 @@ pub fn parse_import_c<'preprocessor>(
                 thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::SkippedBitfieldStruct => {
                     CompilationIssueCode::W0103
                 }
+                thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention => {
+                    CompilationIssueCode::E0100
+                }
                 thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::SkippedDeclaration => {
                     CompilationIssueCode::W0104
                 }
             };
 
-            parser.add_warning(CompilationIssue::Warning(
-                code,
-                diagnostic.message().to_string(),
-                span,
-            ));
+            if diagnostic.kind()
+                == thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention
+            {
+                parser.add_error(CompilationIssue::Error(
+                    code,
+                    diagnostic.message().to_string(),
+                    "Use a function with a calling convention that Thrust can import, or remove the importC dependency on that declaration.".into(),
+                    None,
+                    span,
+                ));
+            } else {
+                parser.add_warning(CompilationIssue::Warning(
+                    code,
+                    diagnostic.message().to_string(),
+                    span,
+                ));
+            }
         }
 
         for function in context.functions() {
@@ -312,7 +392,10 @@ pub fn parse_import_c<'preprocessor>(
 
             let mut attributes: thrustc_attributes::ThrustAttributes = Vec::with_capacity(4);
 
-            attributes.push(ThrustAttribute::Convention("C".into(), span));
+            attributes.push(ThrustAttribute::Convention(
+                function.convention().to_string(),
+                span,
+            ));
 
             if function.variadic() {
                 attributes.push(ThrustAttribute::Ignore(span));
@@ -348,11 +431,7 @@ pub fn parse_import_c<'preprocessor>(
                 field_types.push(field_type.clone());
             }
 
-            let llvm_mod: LLVMStructureTypeModificator = LLVMStructureTypeModificator::new(false);
-            let gcc_mod: GCCStructureTypeModificator = GCCStructureTypeModificator::new();
-            let modificator: StructureTypeModificator =
-                StructureTypeModificator::new(llvm_mod, gcc_mod);
-            let metadata: StructTypeMetadata = StructTypeMetadata::new(modificator);
+            let metadata: StructTypeMetadata = *record.metadata();
 
             let kind: Type = Type::Struct {
                 name: name.clone(),
@@ -426,6 +505,32 @@ pub fn parse_import_c<'preprocessor>(
                     span,
                 },
                 variant: Variant::CustomType,
+                public: true,
+            };
+
+            module.add_symbol(symbol);
+        }
+
+        for imported_static in context.statics() {
+            let name: String = imported_static.name().to_string();
+            let kind: Type = imported_static.kind().clone();
+
+            let attributes: thrustc_attributes::ThrustAttributes = vec![
+                ThrustAttribute::Public(span),
+                ThrustAttribute::Extern(imported_static.external_name().to_string(), span),
+            ];
+
+            let symbol: Symbol = Symbol {
+                name,
+                signature: Signature::Static {
+                    kind,
+                    invalid_kind: Type::Void { span },
+                    is_mutable: imported_static.is_mutable(),
+                    attributes,
+                    modificators: Modificators::new(),
+                    span,
+                },
+                variant: Variant::Static,
                 public: true,
             };
 

@@ -23,6 +23,7 @@ pub enum CImportDiagnosticKind {
     InventedFieldName,
     SkippedUnion,
     SkippedBitfieldStruct,
+    UnsupportedCallingConvention,
     SkippedDeclaration,
 }
 

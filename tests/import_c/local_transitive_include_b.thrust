@@ -1,0 +1,15 @@
+directive "--import-c-include=tests/import_c/helpers/transitive";
+
+importC "b_root.h";
+
+fn main() s32 @public {
+    if b_root::TRANSITIVE_B_FLAG != 6 { return 1; }
+    if b_root::TransitiveModeB=>TransitiveModeBHot != 8 { return 2; }
+
+    var root: b_root::TransitiveRootB =
+        new b_root::TransitiveRootB { base: b_root::TransitiveModeB=>TransitiveModeBWarm };
+
+    if root->base != 4 { return 3; }
+
+    return 0;
+}

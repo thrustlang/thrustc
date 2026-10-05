@@ -142,6 +142,21 @@ pub fn emit_c_bindings_thrust(
 
     let mut opts: thrustc_c_import_synthesis::options::CImportOptions =
         thrustc_c_import_synthesis::options::CImportOptions::new();
+
+    let import_scope: thrustc_c_import_synthesis::options::CImportScope =
+        match import_opts.import_scope() {
+            thrustc_options::ImportCScope::MainOnly => {
+                thrustc_c_import_synthesis::options::CImportScope::MainOnly
+            }
+            thrustc_options::ImportCScope::TransitiveNoSystem => {
+                thrustc_c_import_synthesis::options::CImportScope::TransitiveNoSystem
+            }
+            thrustc_options::ImportCScope::TransitiveAll => {
+                thrustc_c_import_synthesis::options::CImportScope::TransitiveAll
+            }
+        };
+
+    opts.set_import_scope(import_scope);
     *opts.clang_args_mut() = clang_args;
 
     let mut ctx: thrustc_c_import_synthesis::context::CImportContext =
@@ -162,6 +177,9 @@ pub fn emit_c_bindings_thrust(
             }
             thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::SkippedBitfieldStruct => {
                 CompilationIssueCode::W0103
+            }
+            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention => {
+                CompilationIssueCode::W0104
             }
             thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::SkippedDeclaration => {
                 CompilationIssueCode::W0104
@@ -343,34 +361,26 @@ fn translate_single_c_to_thrust(
     let mut import_c_specs: Vec<String> = Vec::new();
 
     for inc in includes.iter() {
-        let Some(spec) = self::extract_include_spec(inc) else {
-            continue;
-        };
+        if let Some(spec) = self::extract_include_spec(inc) {
+            import_c_specs.push(spec);
 
-        import_c_specs.push(spec);
+            if let Some(file) = inc.get_file() {
+                let path: PathBuf = file.get_path();
 
-        let Some(file) = inc.get_file() else {
-            continue;
-        };
+                if let Some(parent) = path.parent() {
+                    let mut dir: PathBuf = parent.to_path_buf();
 
-        let path: PathBuf = file.get_path();
-        let Some(parent) = path.parent() else {
-            continue;
-        };
+                    if let Ok(rel) = dir.strip_prefix(&cwd) {
+                        dir = rel.to_path_buf();
+                    }
 
-        let mut dir: PathBuf = parent.to_path_buf();
-        if let Ok(rel) = dir.strip_prefix(&cwd) {
-            dir = rel.to_path_buf();
-        }
-
-        // System header directories tend to be absolute and non-portable; rely on Clang defaults.
-        let is_system: bool = file.get_location(1, 1).is_in_system_header();
-        if is_system {
-            continue;
-        }
-
-        if !import_c_include_dirs.contains(&dir) {
-            import_c_include_dirs.push(dir);
+                    if !file.get_location(1, 1).is_in_system_header()
+                        && !import_c_include_dirs.contains(&dir)
+                    {
+                        import_c_include_dirs.push(dir);
+                    }
+                }
+            }
         }
     }
 
@@ -402,7 +412,13 @@ fn translate_single_c_to_thrust(
 
     let root: clang::Entity<'_> = tu.get_entity();
 
-    top_level::append_translated_top_level_declarations(&root, &canonical_input, &mut out, span)
+    top_level::append_translated_top_level_declarations(
+        &root,
+        &canonical_input,
+        &mut out,
+        &mut issues,
+        span,
+    )
         .map_err(|err| vec![err])?;
 
     let output_path: PathBuf = if let Some(output) = translate_opts.output() {
@@ -678,7 +694,38 @@ pub fn format_type_thrust(ty: &Type) -> String {
 pub(crate) fn format_parameter_type_thrust(ty: &clang::Type<'_>) -> Result<String, String> {
     let canonical: clang::Type<'_> = ty.get_canonical_type();
 
-    if canonical.get_kind() == clang::TypeKind::ConstantArray {
+    if matches!(
+        canonical.get_kind(),
+        clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
+    ) {
+        let mut current: clang::Type<'_> = canonical;
+        let mut depth: usize = 0;
+
+        while matches!(
+            current.get_kind(),
+            clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
+        ) {
+            depth = depth.saturating_add(1);
+
+            current = current
+                .get_element_type()
+                .ok_or_else(|| "array parameter without element type".to_string())?
+                .get_canonical_type();
+        }
+
+        if depth > 1
+            && !matches!(
+                current.get_kind(),
+                clang::TypeKind::ConstantArray
+                    | clang::TypeKind::IncompleteArray
+                    | clang::TypeKind::Record
+            )
+        {
+            let inner: String = self::format_clang_type_thrust(&current)?;
+
+            return Ok(format!("ptr[{inner}]"));
+        }
+
         let element_type: clang::Type<'_> = canonical
             .get_element_type()
             .ok_or_else(|| "array parameter without element type".to_string())?;
@@ -687,7 +734,63 @@ pub(crate) fn format_parameter_type_thrust(ty: &clang::Type<'_>) -> Result<Strin
         return Ok(format!("ptr[{inner}]"));
     }
 
+    if canonical.get_kind() == clang::TypeKind::Pointer {
+        let Some(pointee_type) = canonical.get_pointee_type() else {
+            return self::format_clang_type_thrust(ty);
+        };
+
+        let mut current: clang::Type<'_> = pointee_type.get_canonical_type();
+        let mut depth: usize = 0;
+
+        while matches!(
+            current.get_kind(),
+            clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
+        ) {
+            depth = depth.saturating_add(1);
+
+            current = current
+                .get_element_type()
+                .ok_or_else(|| "pointer-to-array parameter without element type".to_string())?
+                .get_canonical_type();
+        }
+
+        if depth > 0
+            && !matches!(
+                current.get_kind(),
+                clang::TypeKind::ConstantArray
+                    | clang::TypeKind::IncompleteArray
+                    | clang::TypeKind::Record
+            )
+        {
+            let inner: String = self::format_clang_type_thrust(&current)?;
+
+            return Ok(format!("ptr[{inner}]"));
+        }
+    }
+
     self::format_clang_type_thrust(ty)
+}
+
+pub(crate) fn format_clang_calling_convention_thrust(
+    convention: Option<clang::CallingConvention>,
+) -> Result<&'static str, String> {
+    match convention.unwrap_or(clang::CallingConvention::Cdecl) {
+        clang::CallingConvention::Cdecl => Ok("C"),
+        clang::CallingConvention::SysV64 => Ok("X86_64_SysV"),
+        clang::CallingConvention::Win64 => Ok("Win64"),
+        clang::CallingConvention::Stdcall => Ok("X86StdCall"),
+        clang::CallingConvention::Fastcall => Ok("X86FastCall"),
+        clang::CallingConvention::Thiscall => Ok("X86ThisCall"),
+        clang::CallingConvention::Vectorcall => Ok("X86VectorCall"),
+        clang::CallingConvention::Swift => Ok("Swift"),
+        clang::CallingConvention::PreserveMost => Ok("weakReg"),
+        clang::CallingConvention::PreserveAll => Ok("strongReg"),
+        clang::CallingConvention::Aapcs => Ok("ARMAAPCS"),
+        clang::CallingConvention::AapcsVfp => Ok("ARM_AAPCS_VFP"),
+        clang::CallingConvention::IntelOcl => Ok("Intel_OCL_BI"),
+        clang::CallingConvention::RegCall => Ok("X86RegCall"),
+        other => Err(format!("unsupported calling convention: {other:?}")),
+    }
 }
 
 pub(crate) fn format_clang_type_thrust(ty: &clang::Type<'_>) -> Result<String, String> {
@@ -725,6 +828,14 @@ pub(crate) fn format_clang_type_thrust(ty: &clang::Type<'_>) -> Result<String, S
             };
 
             let pointee_kind = pointee.get_canonical_type().get_kind();
+
+            if matches!(
+                pointee_kind,
+                clang::TypeKind::FunctionPrototype | clang::TypeKind::FunctionNoPrototype
+            ) {
+                return self::format_clang_type_thrust(&pointee);
+            }
+
             if pointee_kind == clang::TypeKind::Void {
                 return Ok("ptr".into());
             }
@@ -758,13 +869,45 @@ pub(crate) fn format_clang_type_thrust(ty: &clang::Type<'_>) -> Result<String, S
             format!("array[{inner}; {size}]")
         }
 
+        clang::TypeKind::FunctionPrototype | clang::TypeKind::FunctionNoPrototype => {
+            let return_type: clang::Type<'_> = canonical
+                .get_result_type()
+                .ok_or_else(|| "function type without return type".to_string())?;
+
+            let return_type_text: String = self::format_clang_type_thrust(&return_type)?;
+            let mut parameter_types_text: Vec<String> = Vec::new();
+
+            if let Some(argument_types) = canonical.get_argument_types() {
+                for argument_type in argument_types.iter() {
+                    parameter_types_text.push(self::format_parameter_type_thrust(argument_type)?);
+                }
+            }
+
+            let mut out: String = String::new();
+
+            out.push_str("Fn[");
+            out.push_str(&parameter_types_text.join(", "));
+            out.push(']');
+
+            if canonical.is_variadic() {
+                out.push_str(" @arbitraryArgs");
+            }
+
+            out.push_str(" -> ");
+            out.push_str(&return_type_text);
+            out
+        }
+
         clang::TypeKind::Record => {
             let decl = canonical
                 .get_declaration()
                 .ok_or_else(|| "record without declaration".to_string())?;
 
-            decl.get_name()
-                .ok_or_else(|| "anonymous record type".to_string())?
+            let name: String = decl
+                .get_name()
+                .ok_or_else(|| "anonymous record type".to_string())?;
+
+            self::sanitize_identifier_for_thrust(&name)
         }
 
         clang::TypeKind::Enum => {
@@ -773,7 +916,9 @@ pub(crate) fn format_clang_type_thrust(ty: &clang::Type<'_>) -> Result<String, S
                 return Ok("s32".into());
             };
 
-            decl.get_name().unwrap_or_else(|| "s32".into())
+            decl.get_name()
+                .map(|name| self::sanitize_identifier_for_thrust(&name))
+                .unwrap_or_else(|| "s32".into())
         }
 
         other => return Err(format!("unsupported C type kind: {other:?}")),
@@ -816,6 +961,9 @@ pub(crate) fn needs_space_between_tokens(prev: &str, current: &str) -> bool {
             | "*="
             | "/="
             | "%="
+            | "&="
+            | "|="
+            | "^="
             | "=="
             | "!="
             | "<"
@@ -844,6 +992,9 @@ pub(crate) fn needs_space_between_tokens(prev: &str, current: &str) -> bool {
             | "*="
             | "/="
             | "%="
+            | "&="
+            | "|="
+            | "^="
             | "=="
             | "!="
             | "<"
@@ -900,6 +1051,9 @@ pub(crate) fn extract_binary_operator_from_tokens(tokens: &[String]) -> Option<&
             "*=" => Some("*="),
             "/=" => Some("/="),
             "%=" => Some("%="),
+            "&=" => Some("&="),
+            "|=" => Some("|="),
+            "^=" => Some("^="),
             "==" => Some("=="),
             "!=" => Some("!="),
             "<" => Some("<"),
@@ -920,6 +1074,7 @@ pub(crate) fn extract_binary_operator_from_tokens(tokens: &[String]) -> Option<&
             ">>" => Some(">>"),
             "<<=" => Some("<<="),
             ">>=" => Some(">>="),
+            "," => Some(","),
             _ => None,
         };
 
@@ -1003,7 +1158,10 @@ pub(crate) fn is_assignment_expression(entity: &clang::Entity<'_>) -> bool {
 
     matches!(
         self::extract_binary_operator_from_tokens(&tokens),
-        Some("=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=")
+        Some(
+            "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<="
+                | ">>="
+        )
     )
 }
 
@@ -1051,11 +1209,40 @@ pub(crate) fn extract_binary_operator(
     let range: clang::source::SourceRange<'_> = entity.get_range()?;
     let left_range: clang::source::SourceRange<'_> = left.get_range()?;
     let right_range: clang::source::SourceRange<'_> = right.get_range()?;
-    let source_tokens: Vec<String> = range
-        .tokenize()
+
+    let source_tokens: Vec<clang::token::Token<'_>> = range.tokenize();
+
+    let left_end: clang::source::Location<'_> = left_range.get_end().get_expansion_location();
+    let right_start: clang::source::Location<'_> = right_range.get_start().get_expansion_location();
+
+    if left_end.file == right_start.file {
+        let operator_tokens: Vec<String> = source_tokens
+            .iter()
+            .filter_map(|token| {
+                let location: clang::source::Location<'_> = token.get_location().get_expansion_location();
+
+                if location.file != left_end.file {
+                    return None;
+                }
+
+                if location.offset < left_end.offset || location.offset >= right_start.offset {
+                    return None;
+                }
+
+                Some(token.get_spelling())
+            })
+            .collect();
+
+        if let Some(operator) = self::extract_binary_operator_from_tokens(&operator_tokens) {
+            return Some(operator);
+        }
+    }
+
+    let source_tokens: Vec<String> = source_tokens
         .into_iter()
-        .map(|t| t.get_spelling())
+        .map(|token| token.get_spelling())
         .collect();
+
     let left_tokens: Vec<String> = left_range
         .tokenize()
         .into_iter()
@@ -1067,9 +1254,21 @@ pub(crate) fn extract_binary_operator(
         .map(|t| t.get_spelling())
         .collect();
 
-    let start: usize =
-        self::find_subsequence_from(&source_tokens, &left_tokens, 0)? + left_tokens.len();
-    let end: usize = self::find_subsequence_from(&source_tokens, &right_tokens, start)?;
+    if left_tokens.is_empty() || source_tokens.len() < left_tokens.len() {
+        return None;
+    }
+
+    let left_index: usize = (0..=source_tokens.len() - left_tokens.len())
+        .find(|&index| source_tokens[index..index + left_tokens.len()] == *left_tokens)?;
+
+    let start: usize = left_index + left_tokens.len();
+
+    if right_tokens.is_empty() || source_tokens.len() < right_tokens.len() || start >= source_tokens.len() {
+        return None;
+    }
+
+    let end: usize = (start..=source_tokens.len() - right_tokens.len())
+        .find(|&index| source_tokens[index..index + right_tokens.len()] == *right_tokens)?;
 
     self::extract_binary_operator_from_tokens(&source_tokens[start..end])
 }
@@ -1133,6 +1332,11 @@ pub(crate) fn is_supported_expr_kind(kind: clang::EntityKind) -> bool {
             | clang::EntityKind::FloatingLiteral
             | clang::EntityKind::StringLiteral
             | clang::EntityKind::CharacterLiteral
+            | clang::EntityKind::UnaryExpr
+            | clang::EntityKind::CompoundLiteralExpr
+            | clang::EntityKind::InitListExpr
+            | clang::EntityKind::GNUNullExpr
+            | clang::EntityKind::NullPtrLiteralExpr
             | clang::EntityKind::DeclRefExpr
             | clang::EntityKind::MemberRefExpr
             | clang::EntityKind::CallExpr
@@ -1217,13 +1421,4 @@ pub(crate) fn sanitize_identifier_for_thrust(name: &str) -> String {
         | "while" => format!("{name}_"),
         _ => name.to_string(),
     }
-}
-
-fn find_subsequence_from(haystack: &[String], needle: &[String], start: usize) -> Option<usize> {
-    if needle.is_empty() || haystack.len() < needle.len() || start >= haystack.len() {
-        return None;
-    }
-
-    (start..=haystack.len() - needle.len())
-        .find(|&idx| haystack[idx..idx + needle.len()] == *needle)
 }

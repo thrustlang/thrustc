@@ -20,6 +20,7 @@
 use clang::TypeKind;
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::type_metadata::ArrayTypeMetadata;
 use thrustc_typesystem::type_metadata::FixedArrayTypeMetadata;
 
 use crate::diagnostics::{CImportDiagnostic, CImportDiagnosticKind};
@@ -163,6 +164,27 @@ pub fn map_type<'clang>(
                 metadata: FixedArrayTypeMetadata::new(None),
                 span,
             }
+        }
+
+        TypeKind::IncompleteArray => {
+            let element_type = canonical
+                .get_element_type()
+                .ok_or_else(|| "incomplete array without element type".to_string())?;
+
+            let base_type: Type = self::map_type(&element_type, span, struct_cache, diagnostics)?;
+
+            Type::Array {
+                base_type: Box::new(base_type),
+                infered_type: None,
+                metadata: ArrayTypeMetadata::new(None, None),
+                span,
+            }
+        }
+
+        TypeKind::VariableArray => return Err("VLA is not supported yet".into()),
+
+        TypeKind::DependentSizedArray => {
+            return Err("dependent-sized arrays are not supported yet".into())
         }
 
         TypeKind::Record => {

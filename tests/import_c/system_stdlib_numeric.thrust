@@ -1,0 +1,13 @@
+importC "stdlib.h" as cstdlib;
+
+fn main() s32 @public {
+    if cstdlib::abs(-9) != 9 { return 1; }
+    if cstdlib::labs(-12) != 12 { return 2; }
+
+    var result: cstdlib::div_t = cstdlib::div(19, 4);
+
+    if result->quot != 4 { return 3; }
+    if result->rem != 3 { return 4; }
+
+    return 0;
+}

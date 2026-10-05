@@ -1,0 +1,6 @@
+fn main() s32 @public {
+    if echo_char('q') != 'q' { return 1; }
+    if echo_uchar(200 as u8) != 200 { return 2; }
+
+    return 0;
+}

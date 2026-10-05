@@ -21,6 +21,7 @@ mod enums;
 mod functions;
 mod macros;
 mod records;
+mod statics;
 mod typedefs;
 
 use std::collections::HashSet;
@@ -32,7 +33,8 @@ use thrustc_code_location::Span;
 use crate::context::CImportContext;
 use crate::diagnostics::CImportDiagnostic;
 use crate::model::{
-    CImportedConstant, CImportedEnum, CImportedFunction, CImportedStruct, CImportedTypedef,
+    CImportedConstant, CImportedEnum, CImportedFunction, CImportedStatic, CImportedStruct,
+    CImportedTypedef,
 };
 use crate::options::CImportScope;
 use crate::record_layout::StructCache;
@@ -46,6 +48,7 @@ pub struct ImportState<'clang> {
     structs: Vec<CImportedStruct>,
     enums: Vec<CImportedEnum>,
     typedefs: Vec<CImportedTypedef>,
+    statics: Vec<CImportedStatic>,
     constants: Vec<CImportedConstant>,
     diagnostics: Vec<CImportDiagnostic>,
     exported_structs: HashSet<String>,
@@ -62,6 +65,7 @@ impl<'clang> ImportState<'clang> {
             structs: Vec::new(),
             enums: Vec::new(),
             typedefs: Vec::new(),
+            statics: Vec::new(),
             constants: Vec::new(),
             diagnostics: Vec::new(),
             exported_structs: HashSet::new(),
@@ -96,6 +100,11 @@ impl<'clang> ImportState<'clang> {
     #[inline]
     pub fn typedefs_mut(&mut self) -> &mut Vec<CImportedTypedef> {
         &mut self.typedefs
+    }
+
+    #[inline]
+    pub fn statics_mut(&mut self) -> &mut Vec<CImportedStatic> {
+        &mut self.statics
     }
 
     #[inline]
@@ -162,7 +171,7 @@ pub fn run_import(context: &mut CImportContext) -> Result<(), String> {
         .parse()
         .map_err(|e| format!("Failed to parse C header '{}': {e}", header_path.display()))?;
 
-    let (diagnostics, has_errors) = crate::parse::collect_diagnostics(&tu);
+    let (diagnostics, has_errors): (Vec<CImportDiagnostic>, bool) = parse::collect_diagnostics(&tu);
 
     if has_errors {
         *context.diagnostics_mut() = diagnostics;
@@ -175,7 +184,7 @@ pub fn run_import(context: &mut CImportContext) -> Result<(), String> {
 
     let import_scope: CImportScope = context.options().import_scope();
 
-    let main_only_file: Option<clang::source::File<'_>> = crate::parse::resolve_main_only_file(
+    let main_only_file: Option<clang::source::File<'_>> = parse::resolve_main_only_file(
         import_scope,
         &tu,
         header_exists,
@@ -183,16 +192,18 @@ pub fn run_import(context: &mut CImportContext) -> Result<(), String> {
         &wrapper_path,
     );
 
-    let root: clang::Entity<'_> = tu.get_entity();
-    let entities: Vec<clang::Entity<'_>> = root.get_children();
     let decl_index: decl_index::DeclIndex<'_> =
-        decl_index::collect_decl_index(entities, import_scope, main_only_file);
+        decl_index::collect_decl_index(tu.get_entity().get_children(), import_scope, main_only_file);
 
     let mut state: ImportState<'_> = ImportState::new(span);
+
     *state.diagnostics_mut() = diagnostics;
 
-    self::records::import_structs(decl_index.struct_decls(), &mut state);
-    self::records::report_skipped_unions(decl_index.union_decls(), &mut state);
+    self::records::import_structs(
+        decl_index.struct_decls(),
+        decl_index.union_decls(),
+        &mut state,
+    );
     self::macros::import_macros(decl_index.macro_decls(), &mut state);
     self::enums::import_enums(
         decl_index.enum_decls(),
@@ -200,6 +211,7 @@ pub fn run_import(context: &mut CImportContext) -> Result<(), String> {
         &mut state,
     );
     self::typedefs::import_typedefs(decl_index.typedef_decls(), &mut state);
+    self::statics::import_statics(decl_index.var_decls(), &mut state);
     self::functions::import_functions(decl_index.function_decls(), &mut state);
 
     let ImportState {
@@ -207,6 +219,7 @@ pub fn run_import(context: &mut CImportContext) -> Result<(), String> {
         structs,
         enums,
         typedefs,
+        statics,
         constants,
         diagnostics,
         ..
@@ -216,6 +229,7 @@ pub fn run_import(context: &mut CImportContext) -> Result<(), String> {
     *context.structs_mut() = structs;
     *context.enums_mut() = enums;
     *context.typedefs_mut() = typedefs;
+    *context.statics_mut() = statics;
     *context.constants_mut() = constants;
     *context.diagnostics_mut() = diagnostics;
 

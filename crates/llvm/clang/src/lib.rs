@@ -2463,6 +2463,15 @@ impl<'tu> Entity<'tu> {
         unsafe { clang_Cursor_isMacroFunctionLike(self.raw) != 0 }
     }
 
+    /// Returns whether this AST entity is a function-like macro.
+    ///
+    /// This unsafe fallback is kept available unconditionally because some downstream crates need
+    /// the query even when the feature gate is not enabled, and this workspace vendors a recent
+    /// clang-sys where the symbol is known to exist.
+    pub unsafe fn is_function_like_macro_unchecked(&self) -> bool {
+        clang_Cursor_isMacroFunctionLike(self.raw) != 0
+    }
+
     /// Returns whether this AST entity is an inline function.
     #[cfg(feature = "clang_3_9")]
     pub fn is_inline_function(&self) -> bool {

@@ -1,0 +1,14 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+directive "--import-c-scope=main-only";
+
+importC "char_string_macros.h";
+importC "string.h" as cstring;
+
+fn main() s32 @public {
+    if char_string_macros::LOCAL_CHAR_MACRO != 'x' { return 1; }
+    if char_string_macros::LOCAL_NEWLINE_CHAR != '\n' { return 2; }
+    if cstring::strlen(char_string_macros::LOCAL_TITLE as const ptr[char]) != 7 { return 3; }
+    if cstring::strlen(char_string_macros::LOCAL_GREETING as const ptr[char]) != 13 { return 4; }
+
+    return 0;
+}

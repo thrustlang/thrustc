@@ -1,0 +1,12 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "typedef_struct.h";
+
+fn main() s32 @public {
+    var pair: typedef_struct::LocalTypedefStruct =
+        new typedef_struct::LocalTypedefStruct { left: 8, right: 13 };
+
+    if pair->left + pair->right != 21 { return 1; }
+
+    return 0;
+}

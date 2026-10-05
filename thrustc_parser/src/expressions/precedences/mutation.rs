@@ -17,12 +17,12 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId};
+use thrustc_ast::{Ast, NodeId, traits::AstGetType};
 use thrustc_code_location::Span;
 use thrustc_errors::CompilationIssue;
 use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::Type;
+use thrustc_typesystem::{Type, traits::PrecedenceTypeExtensions};
 
 use crate::{
     ParserContext,
@@ -36,10 +36,42 @@ pub fn equal_precedence<'parser>(
 
     let mut expression: Ast = precedences::cast::cast_precedence(ctx)?;
 
-    if ctx.match_token(TokenType::Eq)? {
+    if ctx.match_token(TokenType::Eq)?
+        || ctx.match_token(TokenType::PlusEq)?
+        || ctx.match_token(TokenType::MinusEq)?
+        || ctx.match_token(TokenType::StarEq)?
+        || ctx.match_token(TokenType::SlashEq)?
+        || ctx.match_token(TokenType::ArithEq)?
+        || ctx.match_token(TokenType::BAndEq)?
+        || ctx.match_token(TokenType::BorEq)?
+        || ctx.match_token(TokenType::XorEq)?
+        || ctx.match_token(TokenType::LShiftEq)?
+        || ctx.match_token(TokenType::RShiftEq)?
+    {
+        let operator_tk = ctx.previous();
         let span: Span = ctx.previous().get_span();
 
         let expr: Ast = expressions::parse_expr(ctx)?;
+
+        if operator_tk.get_type() != TokenType::Eq {
+            let left_type: &Type = expression.get_value_type()?;
+            let right_type: &Type = expr.get_value_type()?;
+            let kind: Type =
+                left_type.get_term_precedence_type(right_type, operator_tk.get_type());
+
+            expression = Ast::BinaryOp {
+                left: expression.into(),
+                operator: operator_tk.get_type(),
+                right: expr.into(),
+                kind,
+                span,
+                id: NodeId::new(),
+            };
+
+            ctx.leave_expression();
+
+            return Ok(expression);
+        }
 
         expression = Ast::Mutation {
             source: expression.into(),

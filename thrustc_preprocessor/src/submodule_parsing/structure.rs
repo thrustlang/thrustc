@@ -89,9 +89,13 @@ pub fn parse_structure<'module_parser>(
     }
 
     let is_packed: bool = attributes.iter().any(|attr| attr.is_packed());
+    let align: Option<u64> = attributes.iter().find_map(|attr| match attr {
+        thrustc_attributes::ThrustAttribute::Align(align, ..) => Some(*align),
+        _ => None,
+    });
 
     let structure_modificator: StructureTypeModificator = StructureTypeModificator::new(
-        LLVMStructureTypeModificator::new(is_packed),
+        LLVMStructureTypeModificator::new(is_packed, align),
         GCCStructureTypeModificator::new(),
     );
 

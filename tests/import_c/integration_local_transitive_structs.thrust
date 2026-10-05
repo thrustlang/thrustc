@@ -1,0 +1,21 @@
+directive "--import-c-include=tests/import_c/helpers/transitive";
+
+importC "a_root.h";
+importC "b_root.h";
+
+fn combine(left: s32, right: s32) s32 {
+    return left + right;
+}
+
+fn main() s32 @public {
+    var left: a_root::TransitiveLeafA =
+        new a_root::TransitiveLeafA { value: a_root::TRANSITIVE_A_LEAF as s32 };
+    var right: b_root::TransitiveRootB =
+        new b_root::TransitiveRootB { base: b_root::TransitiveModeB=>TransitiveModeBWarm };
+
+    if combine(left->value, right->base) != 9 { return 1; }
+    if a_root::TRANSITIVE_A_ROOT != 12 { return 2; }
+    if b_root::TRANSITIVE_B_FLAG != 6 { return 3; }
+
+    return 0;
+}

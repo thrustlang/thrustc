@@ -761,6 +761,12 @@ impl TargetInfo {
 
                 let is_packed: bool = modifications.llvm().is_packed();
 
+                let explicit_align_bits: Option<u32> = modifications
+                    .llvm()
+                    .align()
+                    .and_then(|align| u32::try_from(align).ok())
+                    .map(|align| align.saturating_mul(self.i8_width));
+
                 let mut current_offset_bits: u32 = 0;
                 let mut max_align_bits: u32 = if is_packed { 1 } else { 8 };
 
@@ -789,13 +795,15 @@ impl TargetInfo {
                     }
                 }
 
-                let total_width_bits: u32 = if is_packed {
-                    current_offset_bits
-                } else {
-                    current_offset_bits
-                        .div_ceil(max_align_bits)
-                        .saturating_mul(max_align_bits)
-                };
+                if let Some(explicit_align_bits) = explicit_align_bits {
+                    if explicit_align_bits > max_align_bits {
+                        max_align_bits = explicit_align_bits;
+                    }
+                }
+
+                let total_width_bits: u32 = current_offset_bits
+                    .div_ceil(max_align_bits)
+                    .saturating_mul(max_align_bits);
 
                 let mut struct_type_layout: StructTypeLayout = StructTypeLayout::new(
                     total_width_bits,

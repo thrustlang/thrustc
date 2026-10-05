@@ -26,7 +26,9 @@ use thrustc_backends::llvm::{
 };
 use thrustc_backends::{ThrustCodeModel, ThrustOptimization, ThrustRelocMode};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_options::{CompilationPhase, CompilerOptions, EmitableUnit, PrintableUnit};
+use thrustc_options::{
+    CompilationPhase, CompilerOptions, EmitableUnit, ImportCScope, PrintableUnit,
+};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 
@@ -71,6 +73,7 @@ pub struct FileDirectives {
     import_c_system_include_paths: Vec<std::path::PathBuf>,
     import_c_defines: Vec<String>,
     import_c_undefs: Vec<String>,
+    import_c_scope: Option<ImportCScope>,
     import_c_target: Option<String>,
     import_c_sysroot: Option<std::path::PathBuf>,
     import_c_std: Option<String>,
@@ -778,6 +781,23 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
             directives.import_c_undefs.push(value.to_string());
         }
 
+        "--import-c-scope" => {
+            let value: &str = value
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| format!("Directive flag '{}' expects a value using '='.", flag))?;
+
+            let normalized: String = value.trim().to_lowercase();
+
+            let Some(import_scope) = ImportCScope::to_str(&normalized) else {
+                return Err(format!(
+                    "Unknown import C scope '{}'. Expected one of: main-only, transitive-no-system, transitive-all.",
+                    value
+                ));
+            };
+
+            directives.import_c_scope = Some(import_scope);
+        }
+
         "--import-c-target" => {
             let value: &str = value
                 .filter(|value| !value.is_empty())
@@ -1077,9 +1097,7 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
     Ok(())
 }
 
-pub fn combine_import_c_options(
-    options: &FileOptions<'_, '_>,
-) -> thrustc_options::ImportCOptions {
+pub fn combine_import_c_options(options: &FileOptions<'_, '_>) -> thrustc_options::ImportCOptions {
     let mut combined: thrustc_options::ImportCOptions =
         options.global().get_import_c_options().clone();
 
@@ -1099,6 +1117,10 @@ pub fn combine_import_c_options(
 
     for und in directives.import_c_undefs.iter().cloned() {
         combined.add_undef(und);
+    }
+
+    if let Some(import_scope) = directives.import_c_scope {
+        combined.set_import_scope(import_scope);
     }
 
     if let Some(target) = directives.import_c_target.as_ref().cloned() {

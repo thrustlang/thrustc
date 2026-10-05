@@ -1,0 +1,37 @@
+static mut rejected_07: s32 = 0;
+static required_mask_07: const s32 @public @extern("required_mask_07") = (1 | 4) as const s32;
+
+fn apply_flags_07(current: s32, extra: s32) s32 {
+    var merged: s32 = current | extra;
+    if (merged & 2) != 0 {
+        merged ^= 2;
+        merged |= 4;
+    }
+    return (merged) as s32;
+}
+fn main() s32 @public {
+    var entries: array[s32; 6] = fixed[1, 0, 2, 4, 1 | 2, 1 | 4];
+    var accepted: s32 = validate_flags_07(entries as ptr[s32]);
+    if accepted < 3 {
+        return (1) as s32;
+    }
+    if rejected_07 <= 0 {
+        return (2) as s32;
+    }
+    if (apply_flags_07(2, 0) & 4) == 0 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}
+fn validate_flags_07(entries: const ptr[s32]) s32 {
+    var accepted: s32 = 0;
+    for var i: s32 = 0; i < 6; i += 1; {
+        var merged: s32 = apply_flags_07(entries->[i], 4);
+        if (merged & required_mask_07) == required_mask_07 {
+            accepted += 1;
+        } else {
+            rejected_07 += 1;
+        }
+    }
+    return (accepted) as s32;
+}

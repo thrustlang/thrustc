@@ -1,0 +1,14 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "typedef_enum.h";
+
+fn main() s32 @public {
+    if typedef_enum::LOCAL_TYPEDEF_ENUM_MAGIC != 17 { return 1; }
+    if typedef_enum::LocalTypedefEnum=>LocalTypedefEnumCold != -1 { return 2; }
+
+    var warm: s32 = typedef_enum::LocalTypedefEnum=>LocalTypedefEnumWarm;
+
+    if warm != 0 { return 3; }
+
+    return 0;
+}

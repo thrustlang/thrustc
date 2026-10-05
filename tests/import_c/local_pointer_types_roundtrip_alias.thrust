@@ -1,0 +1,13 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "pointer_types.h" as ptrs;
+
+fn main() s32 @public {
+    var item: ptrs::LocalPointerInner = new ptrs::LocalPointerInner { value: 21 };
+    var p: ptrs::LocalPointerInnerPtr = ref item;
+    var cp: ptrs::LocalPointerInnerConstPtr = ref item;
+
+    if p->value + cp->value != 42 { return 1; }
+
+    return 0;
+}

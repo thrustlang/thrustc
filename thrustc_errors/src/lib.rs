@@ -1218,19 +1218,13 @@ var p: ptr[SomeStruct] = arbitraryArgFrom(args, ptr[SomeStruct]);
 
 Incorrect:
 """
-struct Pair @public @align(4) {   // here the error
+fn printf(fmt: const array[char]) s32 @public @align(4);   // here the error
                     ^
-    a: u32,
-    b: u32
-}
 """
 
 Correct:
 """
-struct Pair @public {
-    a: u32,
-    b: u32
-}
+fn printf(fmt: const array[char]) s32 @public;
 """##);
 
         explanations.insert(CompilationIssueCode::W0002, r##"A @convention attribute names a convention the compiler does not know. The compiler cannot apply it, so it falls back to the C convention and keeps going. Use a convention from the list of known values, or omit the attribute.

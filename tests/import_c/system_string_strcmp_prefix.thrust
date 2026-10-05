@@ -1,0 +1,13 @@
+importC "string.h" as cstring;
+
+fn main() s32 @public {
+    if cstring::strcmp("alpha" as const ptr[char], "alphabet" as const ptr[char]) >= 0 {
+        return 1;
+    }
+
+    if cstring::strcmp("alphabet" as const ptr[char], "alpha" as const ptr[char]) <= 0 {
+        return 2;
+    }
+
+    return 0;
+}

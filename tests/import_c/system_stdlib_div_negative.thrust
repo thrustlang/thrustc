@@ -1,0 +1,10 @@
+importC "stdlib.h" as cstdlib;
+
+fn main() s32 @public {
+    var result: cstdlib::div_t = cstdlib::div(-19, 4);
+
+    if result->quot != -4 { return 1; }
+    if result->rem != -3 { return 2; }
+
+    return 0;
+}

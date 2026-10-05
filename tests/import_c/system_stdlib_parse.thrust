@@ -1,0 +1,13 @@
+importC "stdlib.h" as cstdlib;
+
+fn main() s32 @public {
+    if cstdlib::atoi("123" as const ptr[char]) != 123 { return 1; }
+
+    var end: ptr[ptr] = nullptr;
+    var parsed: ssize = cstdlib::strtol("255" as const ptr[char], ref end, 10);
+
+    if parsed != 255 { return 2; }
+    if end == nullptr { return 3; }
+
+    return 0;
+}

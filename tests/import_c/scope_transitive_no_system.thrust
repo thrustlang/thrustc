@@ -1,0 +1,12 @@
+directive "--import-c-include=tests/import_c/helpers/scope";
+directive "--import-c-scope=transitive-no-system";
+
+importC "scope_bundle.h";
+
+fn main() s32 @public {
+    if scope_bundle::SCOPE_ROOT_VALUE != 13 { return 1; }
+    if scope_bundle::SCOPE_DEP_VALUE != 27 { return 2; }
+    if scope_bundle::ScopeDepKind=>ScopeDepKindWarm != 1 { return 3; }
+
+    return 0;
+}

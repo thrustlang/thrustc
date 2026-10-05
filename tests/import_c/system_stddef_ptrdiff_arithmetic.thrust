@@ -1,0 +1,10 @@
+importC "stddef.h" as cstddef;
+
+fn main() s32 @public {
+    var diff: cstddef::ptrdiff_t = 12 as cstddef::ptrdiff_t;
+
+    if sizeOf(cstddef::ptrdiff_t) != sizeOf(ssize) { return 1; }
+    if diff - 5 != 7 { return 2; }
+
+    return 0;
+}

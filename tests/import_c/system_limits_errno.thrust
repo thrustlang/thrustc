@@ -1,0 +1,11 @@
+importC "limits.h" as climits;
+importC "errno.h" as cerrno;
+
+fn main() s32 @public {
+    if climits::CHAR_BIT < 8 { return 1; }
+    if climits::INT_MAX <= 0 { return 2; }
+    if cerrno::EINVAL == 0 { return 3; }
+    if cerrno::ERANGE == cerrno::EINVAL { return 4; }
+
+    return 0;
+}

@@ -1,0 +1,18 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "nested_structs.h";
+
+fn main() s32 @public {
+    var left: nested_structs::LocalNestedLeaf =
+        new nested_structs::LocalNestedLeaf { value: 3 };
+
+    var right: nested_structs::LocalNestedLeaf =
+        new nested_structs::LocalNestedLeaf { value: 8 };
+
+    var pair: nested_structs::LocalNestedPair =
+        new nested_structs::LocalNestedPair { left: left, right: right };
+
+    if pair->left.value + pair->right.value != 11 { return 1; }
+
+    return 0;
+}

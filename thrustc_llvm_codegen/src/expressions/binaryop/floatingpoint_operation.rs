@@ -101,25 +101,16 @@ fn compile_compound_float_operation<'ctx>(
     operator: &TokenType,
     span: Span,
 ) -> BasicValueEnum<'ctx> {
-    if lhs.is_memory_assigned_reference() {
+    if lhs.is_memory_assigned_value().unwrap_or(false) {
         context.add_codegen_location(CodeGenLocation::LValue);
         let reference: BasicValueEnum<'_> = codegen::compile_as_ptr_value(context, lhs, cast);
         context.pop_current_codegen_location();
 
-        let symbol: memory::SymbolAllocated<'_> = if let Ast::Reference { name, .. } = lhs {
-            context.get_table().get_symbol(name)
+        let atomic_config: Option<LLVMAtomicModificators> = if let Ast::Reference { name, .. } = lhs {
+            context.get_table().get_symbol(name).determinate_atomic_configuration()
         } else {
-            abort::abort_codegen(
-                context,
-                "Failed to compile the compound float operation!",
-                span,
-                std::path::PathBuf::from(file!()),
-                line!(),
-            );
+            None
         };
-
-        let atomic_config: Option<LLVMAtomicModificators> =
-            symbol.determinate_atomic_configuration();
 
         if let Some(config) = atomic_config {
             context.push_atomic_modificators(config);

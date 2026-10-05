@@ -1,0 +1,58 @@
+static global_offset_06: const s32 @public @extern("global_offset_06") = 4;
+static mut processed_windows_06: s32 = 0;
+
+fn count_peaks_06(values: const ptr[s32]) s32 {
+    var peaks: s32 = 0;
+    for var i: s32 = 1; i + 1 < 15; i += 1; {
+        if (values->[i] >= values->[i - 1]) && (values->[i] > values->[i + 1]) {
+            peaks += 1;
+        }
+    }
+    return (peaks) as s32;
+}
+fn main() s32 @public {
+    var raw: array[s32; 15] = fixed[1, -6, 3, 8, 4, -2, 7, 5, 9, -1, 2, 6, 8, -3, 4];
+    var cooked: array[s32; 15];
+    var best: s32 = 0;
+    var score: s32 = 0;
+    for var i: s32 = 0; i < 15; i += 1; {
+        cooked->[i] = normalize_06(raw->[i]);
+        if (i % 5) == 2 {
+            cooked->[i] += 1;
+        }
+    }
+    for var i: s32 = 0; i + 5 <= 15; i += 1; {
+        var current: s32 = sliding_sum_06(cooked as ptr[s32], i);
+        if current > best {
+            best = current;
+        }
+        if current >= 29 {
+            score += 2;
+        }
+    }
+    score += count_peaks_06(cooked as ptr[s32]);
+    if processed_windows_06 != 15 - 5 + 1 {
+        return (1) as s32;
+    }
+    if best <= 29 {
+        return (2) as s32;
+    }
+    if score < 9 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}
+fn normalize_06(value: s32) s32 {
+    if value < 0 {
+        return ((-value * 2) + global_offset_06) as s32;
+    }
+    return (value + global_offset_06) as s32;
+}
+fn sliding_sum_06(values: const ptr[s32], start: s32) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < 5; i += 1; {
+        total += values->[start + i];
+    }
+    processed_windows_06 += 1;
+    return (total) as s32;
+}

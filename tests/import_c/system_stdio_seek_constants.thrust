@@ -1,0 +1,12 @@
+importC "stdio.h" as cstdio;
+
+fn main() s32 @public {
+    if cstdio::SEEK_SET < 0 { return 1; }
+    if cstdio::SEEK_CUR < 0 { return 2; }
+    if cstdio::SEEK_END < 0 { return 3; }
+    if cstdio::SEEK_SET == cstdio::SEEK_CUR && cstdio::SEEK_CUR == cstdio::SEEK_END {
+        return 4;
+    }
+
+    return 0;
+}

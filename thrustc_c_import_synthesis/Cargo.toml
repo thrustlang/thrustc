@@ -10,7 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-clang = { workspace = true }
+clang = { workspace = true, features = ["clang_3_6", "clang_3_9"] }
 
 thrustc_attributes = { path = "../thrustc_attributes" }
 thrustc_code_location = { path = "../thrustc_code_location" }

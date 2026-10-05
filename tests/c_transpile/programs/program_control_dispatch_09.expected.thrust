@@ -1,0 +1,47 @@
+static mut branch_hits_09: s32 = 0;
+static global_seed_09: const s32 @public @extern("global_seed_09") = 2;
+
+fn dispatch_09(mode: s32, value: s32) s32 {
+    if mode == 1 {
+        branch_hits_09 += 1;
+        return (value + global_seed_09) as s32;
+    } else if mode == 2 {
+        branch_hits_09 += 1;
+        return (value - 3) as s32;
+    } else if mode == 3 {
+        branch_hits_09 += 1;
+        return ((value * 3) + 1) as s32;
+    } else {
+        return (value) as s32;
+    }
+}
+fn main() s32 @public {
+    var modes: array[s32; 9] = fixed[2, 3, 1, 2, 3, 1, 2, 3, 1];
+    var values: array[s32; 9] = fixed[9, 5, 4, 8, 6, 3, 7, 2, 1];
+    var total: s32 = run_control_09(modes as ptr[s32], values as ptr[s32]);
+    if branch_hits_09 != 9 {
+        return (1) as s32;
+    }
+    if total <= 16 {
+        return (2) as s32;
+    }
+    if dispatch_09(1, 1) <= 1 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}
+fn run_control_09(modes: const ptr[s32], values: const ptr[s32]) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < 9; i += 1; {
+        var current: s32 = dispatch_09(modes->[i], values->[i]);
+        if (current % 3) == 0 {
+            total += current / 3;
+        } else {
+            total += current;
+        }
+        if total > 36 {
+            total -= 2;
+        }
+    }
+    return (total) as s32;
+}

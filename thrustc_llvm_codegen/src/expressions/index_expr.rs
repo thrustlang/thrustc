@@ -45,8 +45,8 @@ pub fn compile<'ctx>(
         context.add_codegen_location(CodeGenLocation::RValue);
 
         let vector: BasicValueEnum = codegen::compile_as_value(context, source, None);
-        let index: IntValue = codegen::compile_as_value(context, index, Some(&index_type))
-            .into_int_value();
+        let index: IntValue =
+            codegen::compile_as_value(context, index, Some(&index_type)).into_int_value();
 
         context.pop_current_codegen_location();
 
@@ -149,7 +149,17 @@ pub fn compile<'ctx>(
     }
 
     if context.get_codegen_location().is_load_behavior() {
-        return memory::load_pointer(context, ptr, span);
+        let element_type: Type = ptr_type.calculate_index_type(1).clone();
+
+        if element_type.is_ptr_like_type()
+            && !element_type.is_struct_type()
+            && !element_type.is_fixed_array_type()
+            && !element_type.is_array_type_with_inference()
+        {
+            return memory::load_pointer(context, ptr, span);
+        } else {
+            return ptr.into();
+        }
     }
 
     ptr.into()

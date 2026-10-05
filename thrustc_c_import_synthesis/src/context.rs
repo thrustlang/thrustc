@@ -24,7 +24,8 @@ use thrustc_code_location::Span;
 use crate::diagnostics::CImportDiagnostic;
 use crate::import;
 use crate::model::{
-    CImportedConstant, CImportedEnum, CImportedFunction, CImportedStruct, CImportedTypedef,
+    CImportedConstant, CImportedEnum, CImportedFunction, CImportedStatic, CImportedStruct,
+    CImportedTypedef,
 };
 use crate::options::CImportOptions;
 
@@ -37,6 +38,7 @@ pub struct CImportContext {
     structs: Vec<CImportedStruct>,
     enums: Vec<CImportedEnum>,
     typedefs: Vec<CImportedTypedef>,
+    statics: Vec<CImportedStatic>,
     constants: Vec<CImportedConstant>,
     diagnostics: Vec<CImportDiagnostic>,
 }
@@ -52,6 +54,7 @@ impl CImportContext {
             structs: Vec::new(),
             enums: Vec::new(),
             typedefs: Vec::new(),
+            statics: Vec::new(),
             constants: Vec::new(),
             diagnostics: Vec::new(),
         }
@@ -95,6 +98,11 @@ impl CImportContext {
     }
 
     #[inline]
+    pub fn statics(&self) -> &[CImportedStatic] {
+        &self.statics
+    }
+
+    #[inline]
     pub fn constants(&self) -> &[CImportedConstant] {
         &self.constants
     }
@@ -124,6 +132,11 @@ impl CImportContext {
     #[inline]
     pub fn typedefs_mut(&mut self) -> &mut Vec<CImportedTypedef> {
         &mut self.typedefs
+    }
+
+    #[inline]
+    pub fn statics_mut(&mut self) -> &mut Vec<CImportedStatic> {
+        &mut self.statics
     }
 
     #[inline]

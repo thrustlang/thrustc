@@ -1,0 +1,15 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macro_enum.h";
+
+fn main() s32 @public {
+    if macro_enum::LOCAL_MACRO_ENUM_SHIFT != 3 { return 1; }
+    if macro_enum::LocalMacroEnum=>LocalMacroEnumZero != 0 { return 2; }
+
+    var code: u64 =
+        macro_enum::LocalMacroEnum=>LocalMacroEnumTwo + macro_enum::LOCAL_MACRO_ENUM_SHIFT;
+
+    if code != 5 { return 3; }
+
+    return 0;
+}

@@ -1,0 +1,7 @@
+importC "string.h" as cstring;
+
+fn main() s32 @public {
+    if cstring::strlen("" as const ptr[char]) != 0 { return 1; }
+
+    return 0;
+}

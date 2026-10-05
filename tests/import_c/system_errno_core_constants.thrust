@@ -1,0 +1,9 @@
+importC "errno.h" as cerrno;
+
+fn main() s32 @public {
+    if cerrno::EDOM == 0 { return 1; }
+    if cerrno::ERANGE == 0 { return 2; }
+    if cerrno::EDOM == cerrno::ERANGE { return 3; }
+
+    return 0;
+}

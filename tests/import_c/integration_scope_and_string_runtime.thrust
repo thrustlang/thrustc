@@ -1,0 +1,13 @@
+directive "--import-c-include=tests/import_c/helpers/scope";
+directive "--import-c-scope=transitive-all";
+
+importC "scope_bundle.h";
+importC "string.h" as cstring;
+
+fn main() s32 @public {
+    if cstring::strlen("scope" as const ptr[char]) != 5 { return 1; }
+    if scope_bundle::SCOPE_ROOT_VALUE != 13 { return 2; }
+    if scope_bundle::SCOPE_DEP_VALUE != 27 { return 3; }
+
+    return 0;
+}

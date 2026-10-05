@@ -762,6 +762,17 @@ pub fn show_help() -> ! {
         &format!(
             "{} {} [{}] {}\n",
             "•".bold(),
+            "--import-c-scope".custom_color((141, 141, 142)).bold(),
+            "main-only|transitive-no-system|transitive-all",
+            "Set the declaration import scope used by importC and emitted C bindings.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} [{}] {}\n",
+            "•".bold(),
             "--import-c-target".custom_color((141, 141, 142)).bold(),
             "triple",
             "Set the clang target triple for importC (--target=...).",

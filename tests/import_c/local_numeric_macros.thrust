@@ -1,0 +1,12 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "numeric_macros.h";
+
+fn main() s32 @public {
+    if numeric_macros::LOCAL_HEX != 42 { return 1; }
+    if numeric_macros::LOCAL_UNSIGNED != 15 { return 2; }
+    if numeric_macros::LOCAL_FLOAT >= numeric_macros::LOCAL_DOUBLE { return 3; }
+    if numeric_macros::LOCAL_NEGATIVE != -5 { return 4; }
+
+    return 0;
+}

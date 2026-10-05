@@ -1,0 +1,9 @@
+importC "ctype.h" as ctypeh;
+
+fn main() s32 @public {
+    if ctypeh::isspace(' ' as s32) == 0 { return 1; }
+    if ctypeh::ispunct('!' as s32) == 0 { return 2; }
+    if ctypeh::isspace('a' as s32) != 0 { return 3; }
+
+    return 0;
+}

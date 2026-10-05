@@ -615,7 +615,19 @@ impl std::fmt::Display for Type {
                     ""
                 };
 
-                write!(f, "struct {}{} {{ ", name, has_llvm_packed_attribute)?;
+                let llvm_alignment_attribute: String = if let Some(align) = modifications.llvm().align() {
+                    format!("<align({align})>")
+                } else {
+                    String::new()
+                };
+
+                write!(
+                    f,
+                    "struct {}{}{} {{ ",
+                    name,
+                    has_llvm_packed_attribute,
+                    llvm_alignment_attribute
+                )?;
 
                 for field in fields.iter() {
                     write!(f, "{} ", field)?;

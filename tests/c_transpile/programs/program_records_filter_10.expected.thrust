@@ -1,0 +1,33 @@
+struct Record10 {
+    key: s32,
+    value: s32,
+    active: s32,
+}
+
+static checksum_bias_10: const s32 @public @extern("checksum_bias_10") = 5;
+static mut kept_records_10: s32 = 0;
+
+fn filter_records_10(records: ptr[Record10]) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < 5; i += 1; {
+        if ((records[i]->active) != 0) && (records[i]->value >= 6) {
+            total += records[i]->key + records[i]->value + checksum_bias_10;
+            kept_records_10 += 1;
+        }
+    }
+    return (total) as s32;
+}
+fn main() s32 @public {
+    var records: array[Record10; 5] = fixed[new Record10 { key: 1, value: 6, active: 1 }, new Record10 { key: 2, value: 9, active: 1 }, new Record10 { key: 3, value: 5, active: 1 }, new Record10 { key: 4, value: 11, active: 0 }, new Record10 { key: 5, value: 8, active: 1 }];
+    var total: s32 = filter_records_10(ref records[0]);
+    if kept_records_10 < 3 {
+        return (1) as s32;
+    }
+    if total <= 24 {
+        return (2) as s32;
+    }
+    if records[1]->key != 2 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}

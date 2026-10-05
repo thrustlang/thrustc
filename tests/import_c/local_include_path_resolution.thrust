@@ -1,0 +1,14 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "include_path_resolution.h";
+
+fn main() s32 @public {
+    if include_path_resolution::INCLUDE_PATH_RESOLUTION_VALUE != 33 { return 1; }
+
+    var value: include_path_resolution::IncludePathResolutionBox =
+        new include_path_resolution::IncludePathResolutionBox { value: 11 };
+
+    if value->value != 11 { return 2; }
+
+    return 0;
+}

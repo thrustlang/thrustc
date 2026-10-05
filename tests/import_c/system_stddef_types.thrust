@@ -1,0 +1,8 @@
+importC "stddef.h" as cstddef;
+
+fn main() s32 @public {
+    if sizeOf(cstddef::size_t) != sizeOf(usize) { return 1; }
+    if sizeOf(cstddef::ptrdiff_t) != sizeOf(ssize) { return 2; }
+
+    return 0;
+}

@@ -1,0 +1,9 @@
+importC "stdlib.h" as cstdlib;
+
+fn main() s32 @public {
+    if cstdlib::abs(-1) != 1 { return 1; }
+    if cstdlib::abs(13) != 13 { return 2; }
+    if cstdlib::labs(-22) != 22 { return 3; }
+
+    return 0;
+}
