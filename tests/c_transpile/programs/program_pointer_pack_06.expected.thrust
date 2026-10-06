@@ -1,0 +1,37 @@
+static mut pointer_writes_06: s32 = 0;
+
+fn main() s32 @public {
+    var source: array[s32; 11] = fixed[7, -6, 9, 0, 7, 1, -2, 9, 7, 2, 6];
+    var out: array[s32; 11] = fixed[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var count: s32 = remap_pack_06(out as ptr[s32], source as ptr[s32], 11);
+    var total: s32 = sum_pack_06(out as ptr[s32], count);
+    if pointer_writes_06 != count {
+        return (1) as s32;
+    }
+    if count != 9 {
+        return (2) as s32;
+    }
+    if total != 96 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}
+fn remap_pack_06(out: ptr[s32], src: const ptr[s32], n: s32) s32 {
+    var kept: s32 = 0;
+    for var i: s32 = 0; i < n; i += 1; {
+        var value: s32 = src->[i];
+        if value >= 0 {
+            out->[kept] = value + i;
+            kept += 1;
+            pointer_writes_06 += 1;
+        }
+    }
+    return (kept) as s32;
+}
+fn sum_pack_06(values: const ptr[s32], n: s32) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < n; i += 1; {
+        total += values->[i];
+    }
+    return (total) as s32;
+}

@@ -21,7 +21,7 @@ use crate::context::TranspilerContext;
 use thrustc_code_location::Span;
 
 impl TranspilerContext {
-    pub(crate) fn abort_transpilation(
+    pub fn abort_transpilation(
         message: &str,
         span: Span,
         file: std::path::PathBuf,

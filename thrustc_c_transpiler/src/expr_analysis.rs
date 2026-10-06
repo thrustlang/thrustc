@@ -17,7 +17,7 @@
 
 */
 
-pub(crate) fn resolve_expression_type<'clang>(
+pub fn resolve_expression_type<'clang>(
     entity: &clang::Entity<'clang>,
 ) -> Option<clang::Type<'clang>> {
     let mut resolved: Option<clang::Type<'clang>> = entity.get_type();
@@ -58,7 +58,7 @@ pub(crate) fn resolve_expression_type<'clang>(
     resolved
 }
 
-pub(crate) fn analyze_nested_scalar_array_type(ty: &clang::Type<'_>) -> Option<(bool, Vec<usize>)> {
+pub fn analyze_nested_scalar_array_type(ty: &clang::Type<'_>) -> Option<(bool, Vec<usize>)> {
     let canonical: clang::Type<'_> = ty.get_canonical_type();
 
     let (pointer_root, mut current): (bool, clang::Type<'_>) =
@@ -94,9 +94,7 @@ pub(crate) fn analyze_nested_scalar_array_type(ty: &clang::Type<'_>) -> Option<(
     Some((pointer_root, extents))
 }
 
-pub(crate) fn clean_expression_wrappers<'clang>(
-    entity: &clang::Entity<'clang>,
-) -> clang::Entity<'clang> {
+pub fn clean_expression_wrappers<'clang>(entity: &clang::Entity<'clang>) -> clang::Entity<'clang> {
     let mut probe: clang::Entity<'clang> = *entity;
 
     loop {

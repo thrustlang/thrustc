@@ -17,57 +17,22 @@
 
 */
 
-use crate::macro_expr::{MacroCursor, MacroExpr, MacroLimit, MacroUnOp};
+use crate::macro_ast::{ForDecl, ForInit, MacroExpr, MacroStmt, MacroUnOp};
+use crate::macro_error::MacroLimit;
+use crate::macro_expr::MacroCursor;
+use crate::macro_token::{MacroToken, MacroTokenKind, MacroTokenOrigin};
 
-type SplitDecl<'tokens> = Result<Option<(String, String, &'tokens [String])>, MacroLimit>;
+type SplitDecl<'tokens> = Result<Option<(String, String, &'tokens [MacroToken])>, MacroLimit>;
+type MultiDeclEntry = (String, String, Option<MacroExpr>);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum MacroStmt {
-    VarDecl {
-        ty: String,
-        name: String,
-        init: Option<MacroExpr>,
-    },
-    Expr(MacroExpr),
-    If {
-        cond: MacroExpr,
-        then_branch: Vec<MacroStmt>,
-        else_branch: Vec<MacroStmt>,
-    },
-    While {
-        cond: MacroExpr,
-        body: Vec<MacroStmt>,
-    },
-    DoWhile {
-        body: Vec<MacroStmt>,
-        cond: MacroExpr,
-    },
-    For {
-        init: Option<ForInit>,
-        cond: Option<MacroExpr>,
-        inc: Option<MacroExpr>,
-        body: Vec<MacroStmt>,
-    },
-    Compound(Vec<MacroStmt>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum ForInit {
-    Decl {
-        ty: String,
-        name: String,
-        init: Option<MacroExpr>,
-    },
-    Expr(MacroExpr),
-}
-
-pub(crate) struct MacroStmtCursor<'tokens> {
-    tokens: &'tokens [String],
+#[derive(Debug)]
+pub struct MacroStmtCursor<'tokens> {
+    tokens: &'tokens [MacroToken],
     position: usize,
 }
 
 impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn new(tokens: &'tokens [String]) -> Self {
+    pub fn new(tokens: &'tokens [MacroToken]) -> Self {
         Self {
             tokens,
             position: 0,
@@ -76,45 +41,26 @@ impl<'tokens> MacroStmtCursor<'tokens> {
 }
 
 impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn peek(&self) -> Option<&str> {
-        self.tokens.get(self.position).map(|token| token.as_str())
-    }
-}
-
-impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn at_end(&self) -> bool {
-        self.position >= self.tokens.len()
-    }
-}
-
-impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn eat(&mut self, expected: &str) -> bool {
-        if self.peek() == Some(expected) {
-            self.position += 1;
-
-            return true;
+    fn advance(&mut self) -> Option<&'tokens MacroToken> {
+        if self.position >= self.tokens.len() {
+            return None;
         }
 
-        false
+        let token: &'tokens MacroToken = &self.tokens[self.position];
+
+        self.position = self.position.saturating_add(1);
+
+        Some(token)
     }
 }
 
 impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn expect(&mut self, expected: &str) -> Result<(), MacroLimit> {
-        if self.eat(expected) {
-            return Ok(());
-        }
-
-        Err(MacroLimit::NotComputable)
-    }
-}
-
-impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn parse_body(&mut self) -> Result<Vec<MacroStmt>, MacroLimit> {
+    pub fn parse_body(&mut self) -> Result<Vec<MacroStmt>, MacroLimit> {
         let mut out: Vec<MacroStmt> = Vec::new();
 
-        while !self.at_end() && self.peek() != Some("}") {
-            if self.eat(";") {
+        while self.position < self.tokens.len() && self.tokens[self.position].get_text() != "}" {
+            if self.tokens[self.position].get_text() == ";" {
+                let _ignored: Option<&'tokens MacroToken> = self.advance();
                 continue;
             }
 
@@ -126,38 +72,46 @@ impl<'tokens> MacroStmtCursor<'tokens> {
 }
 
 impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn parse_statement(&mut self) -> Result<MacroStmt, MacroLimit> {
-        match self.peek() {
+    pub fn parse_statement(&mut self) -> Result<MacroStmt, MacroLimit> {
+        match self.tokens.get(self.position).map(|token| token.get_text()) {
             Some("for") => self.parse_for(),
             Some("while") => self.parse_while(),
             Some("do") => self.parse_do(),
             Some("if") => self.parse_if(),
             Some("{") => {
-                self.position += 1;
+                let _ignored: Option<&'tokens MacroToken> = self.advance();
 
                 let inner: Vec<MacroStmt> = self.parse_body()?;
 
-                self.expect("}")?;
+                if self
+                    .tokens
+                    .get(self.position)
+                    .is_none_or(|token| token.get_text() != "}")
+                {
+                    return Err(MacroLimit::ExpectedToken);
+                }
+
+                let _ignored: Option<&'tokens MacroToken> = self.advance();
 
                 Ok(MacroStmt::Compound(inner))
             }
             Some(
                 "return" | "continue" | "break" | "goto" | "switch" | "case" | "default"
                 | "typedef",
-            ) => Err(MacroLimit::NotComputable),
+            ) => Err(MacroLimit::UnsupportedStatementKeyword),
             Some(_) => self.parse_decl_or_expr(),
-            None => Err(MacroLimit::NotComputable),
+            None => Err(MacroLimit::UnexpectedEndOfTokens),
         }
     }
 }
 
 impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn parse_decl_or_expr(&mut self) -> Result<MacroStmt, MacroLimit> {
+    pub fn parse_decl_or_expr(&mut self) -> Result<MacroStmt, MacroLimit> {
         let start: usize = self.position;
 
         let end: usize = self::find_semicolon(self.tokens, start)?;
 
-        let stmt_tokens: &[String] = &self.tokens[start..end];
+        let stmt_tokens: &[MacroToken] = &self.tokens[start..end];
 
         self.position = end + 1;
 
@@ -165,7 +119,9 @@ impl<'tokens> MacroStmtCursor<'tokens> {
             let init: Option<MacroExpr> = if decl.2.is_empty() {
                 None
             } else {
-                Some(MacroCursor::parse(decl.2)?)
+                let spellings: Vec<String> = crate::macro_token::texts(decl.2);
+
+                Some(MacroCursor::parse(&spellings)?)
             };
 
             return Ok(MacroStmt::VarDecl {
@@ -175,27 +131,357 @@ impl<'tokens> MacroStmtCursor<'tokens> {
             });
         }
 
-        Ok(MacroStmt::Expr(MacroCursor::parse(stmt_tokens)?))
+        if let Some(multidecl) = Self::parse_multi_var_decl_simple(stmt_tokens)? {
+            if multidecl.len() == 1 {
+                return Ok(multidecl
+                    .into_iter()
+                    .next()
+                    .unwrap_or(MacroStmt::Compound(Vec::new())));
+            }
+
+            return Ok(MacroStmt::Compound(multidecl));
+        }
+
+        let spellings: Vec<String> = crate::macro_token::texts(stmt_tokens);
+
+        Ok(MacroStmt::Expr(MacroCursor::parse(&spellings)?))
     }
 }
 
 impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn parse_for(&mut self) -> Result<MacroStmt, MacroLimit> {
-        self.expect("for")?;
-        self.expect("(")?;
+    fn parse_multi_var_decl_simple(
+        tokens: &[MacroToken],
+    ) -> Result<Option<Vec<MacroStmt>>, MacroLimit> {
+        let Some(entries) = Self::parse_multi_var_decl_entries(tokens)? else {
+            return Ok(None);
+        };
+
+        Ok(Some(
+            entries
+                .into_iter()
+                .map(|(ty, name, init)| MacroStmt::VarDecl { ty, name, init })
+                .collect(),
+        ))
+    }
+
+    fn parse_multi_var_decl_entries(
+        tokens: &[MacroToken],
+    ) -> Result<Option<Vec<MultiDeclEntry>>, MacroLimit> {
+        let parts: Vec<&[MacroToken]> = self::split_top_level(tokens, ",")?;
+
+        if parts.len() < 2 {
+            return Ok(None);
+        }
+
+        let Some(first_decl) = self::split_var_decl(parts[0])? else {
+            return Ok(None);
+        };
+
+        let first_decl_part: &[MacroToken] = if let Some(eq_index) = {
+            let mut depth: i32 = 0;
+            let mut out_index: Option<usize> = None;
+
+            for (index, token) in parts[0].iter().enumerate() {
+                if token.get_text() == "(" || token.get_text() == "[" {
+                    depth += 1;
+                } else if token.get_text() == ")" || token.get_text() == "]" {
+                    depth -= 1;
+                } else if token.get_text() == "=" && depth == 0 {
+                    out_index = Some(index);
+                    break;
+                }
+            }
+
+            out_index
+        } {
+            &parts[0][..eq_index]
+        } else {
+            parts[0]
+        };
+
+        let first_shape: DeclaratorShape =
+            Self::parse_simple_declarator_shape(first_decl_part, true)?;
+        let base_ty: String = Self::peel_type_by_shape(&first_decl.0, &first_shape)?;
+
+        let first_init: Option<MacroExpr> = if first_decl.2.is_empty() {
+            None
+        } else {
+            let spellings: Vec<String> = crate::macro_token::texts(first_decl.2);
+
+            Some(MacroCursor::parse(&spellings)?)
+        };
+
+        let mut out: Vec<MultiDeclEntry> =
+            vec![(first_decl.0.clone(), first_decl.1.clone(), first_init)];
+
+        for part in parts.iter().skip(1) {
+            if part.is_empty() {
+                return Err(MacroLimit::DeclaratorMalformed);
+            }
+
+            if let Some(explicit_decl) = self::split_var_decl(part)? {
+                let init: Option<MacroExpr> = if explicit_decl.2.is_empty() {
+                    None
+                } else {
+                    let spellings: Vec<String> = crate::macro_token::texts(explicit_decl.2);
+
+                    Some(MacroCursor::parse(&spellings)?)
+                };
+
+                out.push((explicit_decl.0, explicit_decl.1, init));
+                continue;
+            }
+
+            let decl_part: &[MacroToken] = if let Some(eq_index) = {
+                let mut depth: i32 = 0;
+                let mut out_index: Option<usize> = None;
+
+                for (index, token) in part.iter().enumerate() {
+                    if token.get_text() == "(" || token.get_text() == "[" {
+                        depth += 1;
+                    } else if token.get_text() == ")" || token.get_text() == "]" {
+                        depth -= 1;
+                    } else if token.get_text() == "=" && depth == 0 {
+                        out_index = Some(index);
+                        break;
+                    }
+                }
+
+                out_index
+            } {
+                &part[..eq_index]
+            } else {
+                part
+            };
+
+            let shape: DeclaratorShape = Self::parse_simple_declarator_shape(decl_part, false)?;
+            let ty: String = Self::apply_shape_to_type(&base_ty, &shape)?;
+
+            let init: Option<MacroExpr> = if let Some(eq_index) = {
+                let mut depth: i32 = 0;
+                let mut out_index: Option<usize> = None;
+
+                for (index, token) in part.iter().enumerate() {
+                    if token.get_text() == "(" || token.get_text() == "[" {
+                        depth += 1;
+                    } else if token.get_text() == ")" || token.get_text() == "]" {
+                        depth -= 1;
+                    } else if token.get_text() == "=" && depth == 0 {
+                        out_index = Some(index);
+                        break;
+                    }
+                }
+
+                out_index
+            } {
+                let rhs: &[MacroToken] = &part[eq_index + 1..];
+
+                if rhs.is_empty() {
+                    return Err(MacroLimit::DeclaratorMalformed);
+                }
+
+                let spellings: Vec<String> = crate::macro_token::texts(rhs);
+
+                Some(MacroCursor::parse(&spellings)?)
+            } else {
+                None
+            };
+
+            out.push((ty, shape.name, init));
+        }
+
+        Ok(Some(out))
+    }
+
+    fn parse_simple_declarator_shape(
+        decl_part: &[MacroToken],
+        allow_specifier_prefix: bool,
+    ) -> Result<DeclaratorShape, MacroLimit> {
+        if decl_part.is_empty() {
+            return Err(MacroLimit::DeclaratorMalformed);
+        }
+
+        let mut core: &[MacroToken] = decl_part;
+        let mut array_size: Option<String> = None;
+
+        if core.len() > 2
+            && core[core.len() - 3].get_text() == "["
+            && core[core.len() - 1].get_text() == "]"
+        {
+            let normalized: String =
+                crate::macro_lex::normalize_literal_token_spelling(core[core.len() - 2].get_text());
+
+            if !normalized
+                .chars()
+                .next()
+                .is_some_and(|ch| ch.is_ascii_digit())
+            {
+                return Err(MacroLimit::DeclaratorMalformed);
+            }
+
+            array_size = Some(normalized);
+            core = &core[..core.len() - 3];
+        }
+
+        if core.is_empty() {
+            return Err(MacroLimit::DeclaratorMalformed);
+        }
+
+        let name_index: usize = core.len() - 1;
+        let name: &str = core[name_index].get_text();
+
+        if !name
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
+            || Self::is_reserved_word(name)
+        {
+            return Err(MacroLimit::DeclaratorMalformed);
+        }
+
+        let mut stars: usize = 0;
+        let mut index: usize = name_index;
+
+        while index > 0 && core[index - 1].get_text() == "*" {
+            stars += 1;
+            index -= 1;
+        }
+
+        let specifier_prefix: &[MacroToken] = &core[..index];
+
+        if !allow_specifier_prefix && !specifier_prefix.is_empty() {
+            return Err(MacroLimit::DeclaratorUnsupported);
+        }
+
+        Ok(DeclaratorShape {
+            stars,
+            name: name.to_string(),
+            array_size,
+        })
+    }
+
+    fn peel_type_by_shape(full_type: &str, shape: &DeclaratorShape) -> Result<String, MacroLimit> {
+        let mut current: String = full_type.to_string();
+
+        if let Some(size_text) = &shape.array_size {
+            if !current.starts_with("array[") || !current.ends_with(']') {
+                return Err(MacroLimit::DeclaratorMalformed);
+            }
+
+            let inner_text: &str = &current[6..current.len() - 1];
+            let separator: &str = "; ";
+
+            let Some(split_at) = inner_text.rfind(separator) else {
+                return Err(MacroLimit::DeclaratorMalformed);
+            };
+
+            let inner: String = inner_text[..split_at].to_string();
+            let parsed_size: String = inner_text[split_at + separator.len()..].to_string();
+
+            if parsed_size.is_empty() {
+                return Err(MacroLimit::DeclaratorMalformed);
+            }
+
+            if parsed_size != *size_text {
+                return Err(MacroLimit::DeclaratorMalformed);
+            }
+
+            current = inner;
+        }
+
+        for _ in 0..shape.stars {
+            if !current.starts_with("ptr[") || !current.ends_with(']') {
+                return Err(MacroLimit::DeclaratorMalformed);
+            }
+
+            let inner: String = current[4..current.len() - 1].to_string();
+
+            current = inner;
+        }
+
+        Ok(current)
+    }
+
+    fn apply_shape_to_type(base_type: &str, shape: &DeclaratorShape) -> Result<String, MacroLimit> {
+        let mut ty: String = base_type.to_string();
+
+        for _ in 0..shape.stars {
+            ty = format!("ptr[{ty}]");
+        }
+
+        if let Some(size_text) = &shape.array_size {
+            if size_text.is_empty() {
+                return Err(MacroLimit::DeclaratorMalformed);
+            }
+
+            ty = format!("array[{ty}; {size_text}]");
+        }
+
+        Ok(ty)
+    }
+
+    fn is_reserved_word(word: &str) -> bool {
+        matches!(
+            word,
+            "return"
+                | "continue"
+                | "break"
+                | "goto"
+                | "switch"
+                | "case"
+                | "default"
+                | "typedef"
+                | "for"
+                | "while"
+                | "do"
+                | "if"
+                | "else"
+                | "sizeof"
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
+struct DeclaratorShape {
+    stars: usize,
+    name: String,
+    array_size: Option<String>,
+}
+
+impl<'tokens> MacroStmtCursor<'tokens> {
+    pub fn parse_for(&mut self) -> Result<MacroStmt, MacroLimit> {
+        if self
+            .tokens
+            .get(self.position)
+            .is_none_or(|token| token.get_text() != "for")
+        {
+            return Err(MacroLimit::StatementMalformed);
+        }
+
+        let _ignored: Option<&'tokens MacroToken> = self.advance();
+
+        if self
+            .tokens
+            .get(self.position)
+            .is_none_or(|token| token.get_text() != "(")
+        {
+            return Err(MacroLimit::ExpectedToken);
+        }
+
+        let _ignored: Option<&'tokens MacroToken> = self.advance();
 
         let header_start: usize = self.position;
 
         let header_end: usize = self::find_matching_paren(self.tokens, header_start)?;
 
-        let header: &[String] = &self.tokens[header_start..header_end];
+        let header: &[MacroToken] = &self.tokens[header_start..header_end];
 
         self.position = header_end + 1;
 
-        let parts: Vec<&[String]> = self::split_top_level(header, ";")?;
+        let parts: Vec<&[MacroToken]> = self::split_top_level(header, ";")?;
 
         if parts.len() != 3 {
-            return Err(MacroLimit::NotComputable);
+            return Err(MacroLimit::ForHeaderUnsupported);
         }
 
         let init: Option<ForInit> = if parts[0].is_empty() {
@@ -204,7 +490,9 @@ impl<'tokens> MacroStmtCursor<'tokens> {
             let decl_init: Option<MacroExpr> = if decl.2.is_empty() {
                 None
             } else {
-                Some(MacroCursor::parse(decl.2)?)
+                let spellings: Vec<String> = crate::macro_token::texts(decl.2);
+
+                Some(MacroCursor::parse(&spellings)?)
             };
 
             Some(ForInit::Decl {
@@ -212,20 +500,33 @@ impl<'tokens> MacroStmtCursor<'tokens> {
                 name: decl.1,
                 init: decl_init,
             })
+        } else if let Some(multi_decls) = Self::parse_multi_var_decl_entries(parts[0])? {
+            Some(ForInit::Decls(
+                multi_decls
+                    .into_iter()
+                    .map(|(ty, name, init)| ForDecl::new(ty, name, init))
+                    .collect(),
+            ))
         } else {
-            Some(ForInit::Expr(MacroCursor::parse(parts[0])?))
+            let spellings: Vec<String> = crate::macro_token::texts(parts[0]);
+
+            Some(ForInit::Expr(MacroCursor::parse(&spellings)?))
         };
 
         let cond: Option<MacroExpr> = if parts[1].is_empty() {
             None
         } else {
-            Some(MacroCursor::parse(parts[1])?)
+            let spellings: Vec<String> = crate::macro_token::texts(parts[1]);
+
+            Some(MacroCursor::parse(&spellings)?)
         };
 
         let inc: Option<MacroExpr> = if parts[2].is_empty() {
             None
         } else {
-            Some(MacroCursor::parse(parts[2])?)
+            let spellings: Vec<String> = crate::macro_token::texts(parts[2]);
+
+            Some(MacroCursor::parse(&spellings)?)
         };
 
         let body: Vec<MacroStmt> = self.parse_single_or_compound()?;
@@ -240,15 +541,34 @@ impl<'tokens> MacroStmtCursor<'tokens> {
 }
 
 impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn parse_while(&mut self) -> Result<MacroStmt, MacroLimit> {
-        self.expect("while")?;
-        self.expect("(")?;
+    pub fn parse_while(&mut self) -> Result<MacroStmt, MacroLimit> {
+        if self
+            .tokens
+            .get(self.position)
+            .is_none_or(|token| token.get_text() != "while")
+        {
+            return Err(MacroLimit::StatementMalformed);
+        }
+
+        let _ignored: Option<&'tokens MacroToken> = self.advance();
+
+        if self
+            .tokens
+            .get(self.position)
+            .is_none_or(|token| token.get_text() != "(")
+        {
+            return Err(MacroLimit::ExpectedToken);
+        }
+
+        let _ignored: Option<&'tokens MacroToken> = self.advance();
 
         let start: usize = self.position;
 
         let end: usize = self::find_matching_paren(self.tokens, start)?;
 
-        let cond: MacroExpr = MacroCursor::parse(&self.tokens[start..end])?;
+        let spellings: Vec<String> = crate::macro_token::texts(&self.tokens[start..end]);
+
+        let cond: MacroExpr = MacroCursor::parse(&spellings)?;
 
         self.position = end + 1;
 
@@ -259,44 +579,101 @@ impl<'tokens> MacroStmtCursor<'tokens> {
 }
 
 impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn parse_do(&mut self) -> Result<MacroStmt, MacroLimit> {
-        self.expect("do")?;
+    pub fn parse_do(&mut self) -> Result<MacroStmt, MacroLimit> {
+        if self
+            .tokens
+            .get(self.position)
+            .is_none_or(|token| token.get_text() != "do")
+        {
+            return Err(MacroLimit::StatementMalformed);
+        }
+
+        let _ignored: Option<&'tokens MacroToken> = self.advance();
 
         let body: Vec<MacroStmt> = self.parse_single_or_compound()?;
 
-        self.expect("while")?;
-        self.expect("(")?;
+        if self
+            .tokens
+            .get(self.position)
+            .is_none_or(|token| token.get_text() != "while")
+        {
+            return Err(MacroLimit::ExpectedToken);
+        }
+
+        let _ignored: Option<&'tokens MacroToken> = self.advance();
+
+        if self
+            .tokens
+            .get(self.position)
+            .is_none_or(|token| token.get_text() != "(")
+        {
+            return Err(MacroLimit::ExpectedToken);
+        }
+
+        let _ignored: Option<&'tokens MacroToken> = self.advance();
 
         let start: usize = self.position;
 
         let end: usize = self::find_matching_paren(self.tokens, start)?;
 
-        let cond: MacroExpr = MacroCursor::parse(&self.tokens[start..end])?;
+        let spellings: Vec<String> = crate::macro_token::texts(&self.tokens[start..end]);
+
+        let cond: MacroExpr = MacroCursor::parse(&spellings)?;
 
         self.position = end + 1;
 
-        self.eat(";");
+        if self
+            .tokens
+            .get(self.position)
+            .is_some_and(|token| token.get_text() == ";")
+        {
+            let _ignored: Option<&'tokens MacroToken> = self.advance();
+        }
 
         Ok(MacroStmt::DoWhile { body, cond })
     }
 }
 
 impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn parse_if(&mut self) -> Result<MacroStmt, MacroLimit> {
-        self.expect("if")?;
-        self.expect("(")?;
+    pub fn parse_if(&mut self) -> Result<MacroStmt, MacroLimit> {
+        if self
+            .tokens
+            .get(self.position)
+            .is_none_or(|token| token.get_text() != "if")
+        {
+            return Err(MacroLimit::StatementMalformed);
+        }
+
+        let _ignored: Option<&'tokens MacroToken> = self.advance();
+
+        if self
+            .tokens
+            .get(self.position)
+            .is_none_or(|token| token.get_text() != "(")
+        {
+            return Err(MacroLimit::ExpectedToken);
+        }
+
+        let _ignored: Option<&'tokens MacroToken> = self.advance();
 
         let start: usize = self.position;
 
         let end: usize = self::find_matching_paren(self.tokens, start)?;
 
-        let cond: MacroExpr = MacroCursor::parse(&self.tokens[start..end])?;
+        let spellings: Vec<String> = crate::macro_token::texts(&self.tokens[start..end]);
+
+        let cond: MacroExpr = MacroCursor::parse(&spellings)?;
 
         self.position = end + 1;
 
         let then_branch: Vec<MacroStmt> = self.parse_single_or_compound()?;
 
-        let else_branch: Vec<MacroStmt> = if self.eat("else") {
+        let else_branch: Vec<MacroStmt> = if self
+            .tokens
+            .get(self.position)
+            .is_some_and(|token| token.get_text() == "else")
+        {
+            let _ignored: Option<&'tokens MacroToken> = self.advance();
             self.parse_single_or_compound()?
         } else {
             Vec::new()
@@ -311,13 +688,25 @@ impl<'tokens> MacroStmtCursor<'tokens> {
 }
 
 impl<'tokens> MacroStmtCursor<'tokens> {
-    pub(crate) fn parse_single_or_compound(&mut self) -> Result<Vec<MacroStmt>, MacroLimit> {
-        if self.peek() == Some("{") {
-            self.position += 1;
+    pub fn parse_single_or_compound(&mut self) -> Result<Vec<MacroStmt>, MacroLimit> {
+        if self
+            .tokens
+            .get(self.position)
+            .is_some_and(|token| token.get_text() == "{")
+        {
+            let _ignored: Option<&'tokens MacroToken> = self.advance();
 
             let inner: Vec<MacroStmt> = self.parse_body()?;
 
-            self.expect("}")?;
+            if self
+                .tokens
+                .get(self.position)
+                .is_none_or(|token| token.get_text() != "}")
+            {
+                return Err(MacroLimit::ExpectedToken);
+            }
+
+            let _ignored: Option<&'tokens MacroToken> = self.advance();
 
             return Ok(inner);
         }
@@ -327,7 +716,7 @@ impl<'tokens> MacroStmtCursor<'tokens> {
 }
 
 impl MacroStmt {
-    pub(crate) fn lower(&self, indent: usize) -> Result<Vec<String>, MacroLimit> {
+    pub fn lower(&self, indent: usize) -> Result<Vec<String>, MacroLimit> {
         let pad: String = "    ".repeat(indent);
 
         match self {
@@ -495,6 +884,48 @@ impl MacroStmt {
             return Ok(out);
         }
 
+        if let Some(ForInit::Decls(decls)) = init {
+            let mut out: Vec<String> = Vec::new();
+
+            for decl in decls.iter() {
+                let clean: String = crate::util::sanitize_thrust_identifier(decl.get_name());
+
+                if let Some(init) = decl.get_init() {
+                    let init_text: String =
+                        crate::macro_expr::lower(init, crate::location::Location::RValue);
+
+                    out.push(format!(
+                        "{pad}var {clean}: {} = {init_text};",
+                        decl.get_ty()
+                    ));
+                } else {
+                    out.push(format!("{pad}var {clean}: {};", decl.get_ty()));
+                }
+            }
+
+            let cond_text: String = cond
+                .map(|cond| self.lower_condition(cond))
+                .unwrap_or_else(|| "true".to_string());
+
+            out.push(format!("{pad}while {cond_text} {{"));
+
+            for stmt in body.iter() {
+                out.extend(stmt.lower(indent + 1)?);
+            }
+
+            if let Some(inc) = inc {
+                let inc_text: String = self.lower_inc_dec(inc);
+
+                if !inc_text.is_empty() {
+                    out.push(format!("{}    {inc_text};", pad));
+                }
+            }
+
+            out.push(format!("{pad}}}"));
+
+            return Ok(out);
+        }
+
         let mut out: Vec<String> = Vec::new();
 
         if let Some(ForInit::Expr(init)) = init {
@@ -571,8 +1002,8 @@ impl MacroStmt {
                     crate::macro_expr::lower(arg, crate::location::Location::LValue);
 
                 match op {
-                    crate::macro_expr::MacroPostOp::Increment => format!("{arg_text} += 1"),
-                    crate::macro_expr::MacroPostOp::Decrement => format!("{arg_text} -= 1"),
+                    crate::macro_ast::MacroPostOp::Increment => format!("{arg_text} += 1"),
+                    crate::macro_ast::MacroPostOp::Decrement => format!("{arg_text} -= 1"),
                 }
             }
 
@@ -581,7 +1012,7 @@ impl MacroStmt {
     }
 }
 
-fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
+fn split_var_decl(tokens: &[MacroToken]) -> SplitDecl<'_> {
     let mut depth: i32 = 0;
 
     let mut assign: Option<usize> = None;
@@ -589,13 +1020,19 @@ fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
     let mut index: usize = 0;
 
     while index < tokens.len() {
-        let token: &str = tokens[index].as_str();
+        let token: &str = tokens[index].get_text();
 
-        if token == "(" || token == "[" {
+        if tokens[index].get_kind() == MacroTokenKind::Punctuation && (token == "(" || token == "[")
+        {
             depth += 1;
-        } else if token == ")" || token == "]" {
+        } else if tokens[index].get_kind() == MacroTokenKind::Punctuation
+            && (token == ")" || token == "]")
+        {
             depth -= 1;
-        } else if token == "=" && depth == 0 {
+        } else if tokens[index].get_kind() == MacroTokenKind::Punctuation
+            && token == "="
+            && depth == 0
+        {
             assign = Some(index);
             break;
         }
@@ -603,12 +1040,12 @@ fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
         index += 1;
     }
 
-    let decl_part: &[String] = match assign {
+    let decl_part: &[MacroToken] = match assign {
         Some(eq) => &tokens[..eq],
         None => tokens,
     };
 
-    let init_part: &[String] = match assign {
+    let init_part: &[MacroToken] = match assign {
         Some(eq) => &tokens[eq + 1..],
         None => &[],
     };
@@ -617,13 +1054,13 @@ fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
         return Ok(None);
     }
 
-    let mut core: &[String] = decl_part;
+    let mut core: &[MacroToken] = decl_part;
 
-    let mut array_suffix: Option<&[String]> = None;
+    let mut array_suffix: Option<&[MacroToken]> = None;
 
     if core.len() > 2
-        && core[core.len() - 1].as_str() == "]"
-        && core[core.len() - 3].as_str() == "["
+        && core[core.len() - 1].get_text() == "]"
+        && core[core.len() - 3].get_text() == "["
     {
         array_suffix = Some(&core[core.len() - 2..core.len() - 1]);
         core = &core[..core.len() - 3];
@@ -633,7 +1070,7 @@ fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
         return Ok(None);
     }
 
-    let last: &str = core[core.len() - 1].as_str();
+    let last: &str = core[core.len() - 1].get_text();
 
     if !last
         .chars()
@@ -663,7 +1100,7 @@ fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
         return Ok(None);
     }
 
-    let type_tokens: &[String] = &core[..core.len() - 1];
+    let type_tokens: &[MacroToken] = &core[..core.len() - 1];
 
     if type_tokens.is_empty() {
         return Ok(None);
@@ -674,10 +1111,10 @@ fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
     let mut words: Vec<String> = Vec::new();
 
     for token in type_tokens.iter() {
-        if token == "*" {
+        if token.get_text() == "*" {
             stars += 1;
         } else if matches!(
-            token.as_str(),
+            token.get_text(),
             "int"
                 | "unsigned"
                 | "signed"
@@ -694,15 +1131,16 @@ fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
                 | "enum"
                 | "union"
         ) {
-            if token != "const" && token != "volatile" {
-                words.push(token.to_string());
+            if token.get_text() != "const" && token.get_text() != "volatile" {
+                words.push(token.get_text().to_string());
             }
         } else if token
+            .get_text()
             .chars()
             .next()
             .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
         {
-            words.push(token.to_string());
+            words.push(token.get_text().to_string());
         } else {
             return Ok(None);
         }
@@ -745,7 +1183,7 @@ fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
     };
 
     let Some(mut out) = base else {
-        return Err(MacroLimit::NotComputable);
+        return Err(MacroLimit::DeclaratorMalformed);
     };
 
     for _ in 0..stars {
@@ -754,18 +1192,18 @@ fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
 
     if let Some(size_tokens) = array_suffix {
         if size_tokens.len() != 1 {
-            return Err(MacroLimit::NotComputable);
+            return Err(MacroLimit::DeclaratorMalformed);
         }
 
         let size_text: String =
-            crate::macro_lex::normalize_literal_token_spelling(size_tokens[0].as_str());
+            crate::macro_lex::normalize_literal_token_spelling(size_tokens[0].get_text());
 
         if !size_text
             .chars()
             .next()
             .is_some_and(|ch| ch.is_ascii_digit())
         {
-            return Err(MacroLimit::NotComputable);
+            return Err(MacroLimit::DeclaratorMalformed);
         }
 
         out = format!("array[{out}; {size_text}]");
@@ -774,41 +1212,50 @@ fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
     Ok(Some((out, last.to_string(), init_part)))
 }
 
-fn find_semicolon(tokens: &[String], start: usize) -> Result<usize, MacroLimit> {
+fn find_semicolon(tokens: &[MacroToken], start: usize) -> Result<usize, MacroLimit> {
     let mut depth: i32 = 0;
 
     let mut index: usize = start;
 
     while index < tokens.len() {
-        let token: &str = tokens[index].as_str();
+        let token: &str = tokens[index].get_text();
 
-        if token == "(" || token == "[" {
+        if tokens[index].get_kind() == MacroTokenKind::Punctuation && (token == "(" || token == "[")
+        {
             depth += 1;
-        } else if token == ")" || token == "]" {
+        } else if tokens[index].get_kind() == MacroTokenKind::Punctuation
+            && (token == ")" || token == "]")
+        {
             depth -= 1;
-        } else if token == ";" && depth == 0 {
+        } else if tokens[index].get_kind() == MacroTokenKind::Punctuation
+            && token == ";"
+            && depth == 0
+        {
             return Ok(index);
-        } else if token == "}" && depth == 0 {
+        } else if tokens[index].get_kind() == MacroTokenKind::Punctuation
+            && token == "}"
+            && depth == 0
+        {
             break;
         }
 
         index += 1;
     }
 
-    Err(MacroLimit::NotComputable)
+    Err(MacroLimit::TokenBalanceError)
 }
 
-fn find_matching_paren(tokens: &[String], start: usize) -> Result<usize, MacroLimit> {
+fn find_matching_paren(tokens: &[MacroToken], start: usize) -> Result<usize, MacroLimit> {
     let mut depth: i32 = 1;
 
     let mut index: usize = start;
 
     while index < tokens.len() {
-        let token: &str = tokens[index].as_str();
+        let token: &str = tokens[index].get_text();
 
-        if token == "(" {
+        if tokens[index].get_kind() == MacroTokenKind::Punctuation && token == "(" {
             depth += 1;
-        } else if token == ")" {
+        } else if tokens[index].get_kind() == MacroTokenKind::Punctuation && token == ")" {
             depth -= 1;
 
             if depth == 0 {
@@ -819,14 +1266,14 @@ fn find_matching_paren(tokens: &[String], start: usize) -> Result<usize, MacroLi
         index += 1;
     }
 
-    Err(MacroLimit::NotComputable)
+    Err(MacroLimit::TokenBalanceError)
 }
 
 fn split_top_level<'tokens>(
-    tokens: &'tokens [String],
+    tokens: &'tokens [MacroToken],
     sep: &str,
-) -> Result<Vec<&'tokens [String]>, MacroLimit> {
-    let mut parts: Vec<&[String]> = Vec::new();
+) -> Result<Vec<&'tokens [MacroToken]>, MacroLimit> {
+    let mut parts: Vec<&[MacroToken]> = Vec::new();
 
     let mut depth: i32 = 0;
 
@@ -835,13 +1282,19 @@ fn split_top_level<'tokens>(
     let mut index: usize = 0;
 
     while index < tokens.len() {
-        let token: &str = tokens[index].as_str();
+        let token: &str = tokens[index].get_text();
 
-        if token == "(" || token == "[" {
+        if tokens[index].get_kind() == MacroTokenKind::Punctuation && (token == "(" || token == "[")
+        {
             depth += 1;
-        } else if token == ")" || token == "]" {
+        } else if tokens[index].get_kind() == MacroTokenKind::Punctuation
+            && (token == ")" || token == "]")
+        {
             depth -= 1;
-        } else if token == sep && depth == 0 {
+        } else if tokens[index].get_kind() == MacroTokenKind::Punctuation
+            && token == sep
+            && depth == 0
+        {
             parts.push(&tokens[start..index]);
             start = index + 1;
         }
@@ -854,14 +1307,21 @@ fn split_top_level<'tokens>(
     Ok(parts)
 }
 
-pub(crate) fn parse_statement_body(tokens: &[String]) -> Result<Vec<MacroStmt>, MacroLimit> {
+pub fn parse_statement_body_tokens(tokens: &[MacroToken]) -> Result<Vec<MacroStmt>, MacroLimit> {
     let mut cursor: MacroStmtCursor<'_> = MacroStmtCursor::new(tokens);
 
     let parsed: Vec<MacroStmt> = cursor.parse_body()?;
 
-    if !cursor.at_end() {
-        return Err(MacroLimit::NotComputable);
+    if cursor.position < cursor.tokens.len() {
+        return Err(MacroLimit::TrailingTokens);
     }
 
     Ok(parsed)
+}
+
+pub fn parse_statement_body(spellings: &[String]) -> Result<Vec<MacroStmt>, MacroLimit> {
+    let tokens: Vec<MacroToken> =
+        crate::macro_token::from_spellings(spellings, MacroTokenOrigin::FallbackLexed);
+
+    self::parse_statement_body_tokens(&tokens)
 }

@@ -20,9 +20,190 @@
 use std::path::PathBuf;
 
 use thrustc_code_location::Span;
-use thrustc_errors::CompilationIssue;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
-pub(crate) fn collapse_macro_site_errors(
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MacroLimit {
+    TokenPasting,
+    VariadicArguments,
+    Stringizing,
+    CallBodied,
+    SizeOfExpression,
+    SizeOfMalformed,
+    DeclaratorMalformed,
+    DeclaratorUnsupported,
+    ForHeaderUnsupported,
+    UnsupportedStatementKeyword,
+    ExpectedToken,
+    UnexpectedEndOfTokens,
+    TrailingTokens,
+    ExpressionMalformed,
+    StatementMalformed,
+    ExpansionDepthExceeded,
+    RecursiveExpansion,
+    RescanLimitExceeded,
+    InvocationMalformed,
+    ArgumentCountMismatch,
+    TokenBalanceError,
+}
+
+pub fn get_macro_issue_help(name: &str, limit: MacroLimit) -> (String, String) {
+    let detail: String = match limit {
+        MacroLimit::TokenPasting => format!(
+            "The C macro '{name}' builds new names by gluing words together, which is not supported."
+        ),
+        MacroLimit::VariadicArguments => format!(
+            "The C macro '{name}' takes a variable number of arguments, which is not supported."
+        ),
+        MacroLimit::Stringizing => {
+            format!("The C macro '{name}' turns code into text, which is not supported.")
+        }
+        MacroLimit::CallBodied => format!(
+            "The C macro '{name}' runs code to get its value, so it cannot become a constant."
+        ),
+        MacroLimit::SizeOfExpression => format!(
+            "The C macro '{name}' uses sizeof on an expression, which is not supported yet."
+        ),
+        MacroLimit::SizeOfMalformed => format!(
+            "The C macro '{name}' has a malformed sizeof(...) form that could not be parsed safely."
+        ),
+        MacroLimit::DeclaratorMalformed => format!(
+            "The C macro '{name}' has a malformed declarator that could not be parsed safely."
+        ),
+        MacroLimit::DeclaratorUnsupported => {
+            format!("The C macro '{name}' uses a declarator shape that is not supported yet.")
+        }
+        MacroLimit::ForHeaderUnsupported => {
+            format!("The C macro '{name}' uses a for-loop header form that is not supported yet.")
+        }
+        MacroLimit::UnsupportedStatementKeyword => format!(
+            "The C macro '{name}' uses a statement keyword that is not supported in macro statement lowering."
+        ),
+        MacroLimit::ExpectedToken => {
+            format!("The C macro '{name}' is missing an expected token while parsing.")
+        }
+        MacroLimit::UnexpectedEndOfTokens => {
+            format!("The C macro '{name}' ended unexpectedly while parsing.")
+        }
+        MacroLimit::TrailingTokens => format!(
+            "The C macro '{name}' leaves trailing tokens after parsing, so it is ambiguous."
+        ),
+        MacroLimit::ExpressionMalformed => {
+            format!("The C macro '{name}' has an expression form that could not be parsed safely.")
+        }
+        MacroLimit::StatementMalformed => {
+            format!("The C macro '{name}' has a statement form that could not be parsed safely.")
+        }
+        MacroLimit::ExpansionDepthExceeded => {
+            format!("The C macro '{name}' exceeded maximum expansion depth.")
+        }
+        MacroLimit::RecursiveExpansion => {
+            format!("The C macro '{name}' recursively expands itself and cannot be lowered safely.")
+        }
+        MacroLimit::RescanLimitExceeded => {
+            format!("The C macro '{name}' requires too many expansion rescan passes.")
+        }
+        MacroLimit::InvocationMalformed => {
+            format!("The C macro '{name}' has a malformed invocation form.")
+        }
+        MacroLimit::ArgumentCountMismatch => format!(
+            "The C macro '{name}' invocation has a different argument count than its definition."
+        ),
+        MacroLimit::TokenBalanceError => format!(
+            "The C macro '{name}' has unbalanced tokens in an expression or statement body."
+        ),
+    };
+
+    let help: String = match limit {
+        MacroLimit::TokenPasting => {
+            "Rewrite it in the C code without gluing names together.".to_string()
+        }
+        MacroLimit::VariadicArguments => {
+            "Give it a fixed number of arguments in the C code.".to_string()
+        }
+        MacroLimit::Stringizing => "Write the text directly in the C code instead.".to_string(),
+        MacroLimit::CallBodied => {
+            "Call the underlying function directly in the C code.".to_string()
+        }
+        MacroLimit::SizeOfExpression => {
+            "Use sizeof(type) in the macro or rewrite this part without sizeof(expr).".to_string()
+        }
+        MacroLimit::SizeOfMalformed => {
+            "Rewrite sizeof(...) to a simple supported form like sizeof(type).".to_string()
+        }
+        MacroLimit::DeclaratorMalformed => {
+            "Fix the macro declaration syntax so each declarator is unambiguous.".to_string()
+        }
+        MacroLimit::DeclaratorUnsupported => {
+            "Rewrite the declarator to a simpler pointer/array form supported by macro lowering."
+                .to_string()
+        }
+        MacroLimit::ForHeaderUnsupported => {
+            "Rewrite the for header to a simpler init/cond/inc form.".to_string()
+        }
+        MacroLimit::UnsupportedStatementKeyword => {
+            "Rewrite the macro statement body to if/while/do/for/block/expr/decl forms supported by macro lowering.".to_string()
+        }
+        MacroLimit::ExpectedToken => {
+            "Fix delimiters and required tokens in the macro body (for example missing ')', ']', or '}').".to_string()
+        }
+        MacroLimit::UnexpectedEndOfTokens => {
+            "Ensure the macro body is complete and not cut off before closing delimiters or operands.".to_string()
+        }
+        MacroLimit::TrailingTokens => {
+            "Remove extra trailing tokens so the macro parses as a single unambiguous expression/statement.".to_string()
+        }
+        MacroLimit::ExpressionMalformed => {
+            "Rewrite the macro expression to a simpler supported form.".to_string()
+        }
+        MacroLimit::StatementMalformed => {
+            "Rewrite the macro statement to a simpler supported form.".to_string()
+        }
+        MacroLimit::ExpansionDepthExceeded => {
+            "Reduce nested macro indirections or recursive expansion depth.".to_string()
+        }
+        MacroLimit::RecursiveExpansion => {
+            "Break the recursive macro chain or replace it with non-recursive helpers.".to_string()
+        }
+        MacroLimit::RescanLimitExceeded => {
+            "Simplify the macro body so expansion stabilizes in fewer passes.".to_string()
+        }
+        MacroLimit::InvocationMalformed => {
+            "Fix macro invocation syntax and separators so arguments parse unambiguously.".to_string()
+        }
+        MacroLimit::ArgumentCountMismatch => {
+            "Adjust the invocation argument count to match the macro parameter list.".to_string()
+        }
+        MacroLimit::TokenBalanceError => {
+            "Ensure parentheses/brackets/braces are balanced in the macro body.".to_string()
+        }
+    };
+
+    (detail, help)
+}
+
+pub fn add_macro_error(
+    ctx: &mut crate::macros::MacroContext<'_>,
+    entity: &clang::Entity<'_>,
+    macro_name: &str,
+    detail: &str,
+    help: &str,
+    span: Span,
+) {
+    let prefix: String = crate::macros::expansion_prefix(entity);
+    let origin: String = crate::macros::origin_note(entity);
+
+    ctx.get_mut_transpiler_context()
+        .add_macros_error(CompilationIssue::Error(
+            CompilationIssueCode::E0110,
+            format!("{prefix}Macro '{macro_name}' translation failed: {detail}{origin}"),
+            help.to_string(),
+            None,
+            span,
+        ));
+}
+
+pub fn collapse_macro_site_errors(
     ctx: &mut crate::macros::MacroContext<'_>,
     site: &clang::Entity<'_>,
     macro_name: &str,
@@ -64,9 +245,14 @@ pub(crate) fn collapse_macro_site_errors(
 
     match first {
         CompilationIssue::Error(code, message, help, ..) => {
-            ctx.get_mut_transpiler_context().add_macros_error(
-                CompilationIssue::Error(code, message, help, note, Span::nothing()),
-            );
+            ctx.get_mut_transpiler_context()
+                .add_macros_error(CompilationIssue::Error(
+                    code,
+                    message,
+                    help,
+                    note,
+                    Span::nothing(),
+                ));
         }
 
         other => {
@@ -75,7 +261,7 @@ pub(crate) fn collapse_macro_site_errors(
     }
 }
 
-pub(crate) fn collapse_macro_site_errors_with_failed_at(
+pub fn collapse_macro_site_errors_with_failed_at(
     ctx: &mut crate::macros::MacroContext<'_>,
     site: &clang::Entity<'_>,
     macro_name: &str,
@@ -155,14 +341,15 @@ pub(crate) fn collapse_macro_site_errors_with_failed_at(
                     continue;
                 }
 
-                let Some((body_file, _, _)) = ctx
-                    .get_macro_table()
-                    .get_macro_body_range(&inner)
+                let Some((body_file, _, _)) = ctx.get_macro_table().get_macro_body_range(&inner)
                 else {
                     break;
                 };
 
-                chain.push(format!("through macro '{inner}' at {}", body_file.display()));
+                chain.push(format!(
+                    "through macro '{inner}' at {}",
+                    body_file.display()
+                ));
 
                 current_file = body_file;
                 current_offset = 0;
@@ -182,9 +369,14 @@ pub(crate) fn collapse_macro_site_errors_with_failed_at(
 
     match first {
         CompilationIssue::Error(code, message, help, ..) => {
-            ctx.get_mut_transpiler_context().add_macros_error(
-                CompilationIssue::Error(code, message, help, note, Span::nothing()),
-            );
+            ctx.get_mut_transpiler_context()
+                .add_macros_error(CompilationIssue::Error(
+                    code,
+                    message,
+                    help,
+                    note,
+                    Span::nothing(),
+                ));
         }
 
         other => {

@@ -18,7 +18,7 @@
 */
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Location {
+pub enum Location {
     LValue,
     RValue,
     CallArg,
@@ -27,17 +27,17 @@ pub(crate) enum Location {
 
 impl Location {
     #[inline]
-    pub(crate) fn is_direct(&self) -> bool {
+    pub fn is_direct(&self) -> bool {
         matches!(self, Location::LValue)
     }
 
     #[inline]
-    pub(crate) fn is_load(&self) -> bool {
+    pub fn is_load(&self) -> bool {
         matches!(self, Location::RValue | Location::CallArg)
     }
 
     #[inline]
-    pub(crate) fn is_address_of(&self) -> bool {
+    pub fn is_address_of(&self) -> bool {
         matches!(self, Location::AddressOf)
     }
 }

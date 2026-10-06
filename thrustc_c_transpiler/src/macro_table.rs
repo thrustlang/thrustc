@@ -20,10 +20,65 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MacroFunctionLikeKind {
+    PureFunction,
+    Statement,
+    Unsupported(crate::macro_error::MacroLimit),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MacroFunctionLikeDefinition {
+    name: String,
+    parameters: Vec<String>,
+    body: Vec<crate::macro_token::MacroToken>,
+    kind: MacroFunctionLikeKind,
+}
+
+impl MacroFunctionLikeDefinition {
+    #[inline]
+    pub fn new(
+        name: String,
+        parameters: Vec<String>,
+        body: Vec<crate::macro_token::MacroToken>,
+        kind: MacroFunctionLikeKind,
+    ) -> Self {
+        Self {
+            name,
+            parameters,
+            body,
+            kind,
+        }
+    }
+}
+
+impl MacroFunctionLikeDefinition {
+    #[inline]
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    #[inline]
+    pub fn get_parameters(&self) -> &[String] {
+        &self.parameters
+    }
+
+    #[inline]
+    pub fn get_body(&self) -> &[crate::macro_token::MacroToken] {
+        &self.body
+    }
+
+    #[inline]
+    pub fn get_kind(&self) -> MacroFunctionLikeKind {
+        self.kind
+    }
+}
+
 #[derive(Debug)]
-pub(crate) struct MacroTable {
+pub struct MacroTable {
     input_source_file: PathBuf,
-    statement_macro_definitions: Vec<(String, Vec<String>, Vec<String>)>,
+    statement_macro_definitions: Vec<(String, Vec<String>, Vec<crate::macro_token::MacroToken>)>,
+    function_like_macro_definitions: HashMap<String, MacroFunctionLikeDefinition>,
     macro_definition_sites: HashMap<String, String>,
     macro_body_ranges: HashMap<String, (PathBuf, u32, u32)>,
     macro_expansion_sites: Vec<(String, String)>,
@@ -33,10 +88,11 @@ pub(crate) struct MacroTable {
 
 impl MacroTable {
     #[inline]
-    pub(crate) fn new(input_source_file: PathBuf) -> Self {
+    pub fn new(input_source_file: PathBuf) -> Self {
         Self {
             input_source_file,
             statement_macro_definitions: Vec::new(),
+            function_like_macro_definitions: HashMap::new(),
             macro_definition_sites: HashMap::new(),
             macro_body_ranges: HashMap::new(),
             macro_expansion_sites: Vec::new(),
@@ -48,21 +104,21 @@ impl MacroTable {
 
 impl MacroTable {
     #[inline]
-    pub(crate) fn get_input_source_file(&self) -> &Path {
+    pub fn get_input_source_file(&self) -> &Path {
         &self.input_source_file
     }
 
-    pub(crate) fn get_macro_definition_site(&self, macro_name: &str) -> Option<String> {
+    pub fn get_macro_definition_site(&self, macro_name: &str) -> Option<String> {
         self.macro_definition_sites.get(macro_name).cloned()
     }
 
     #[inline]
-    pub(crate) fn get_macro_body_range(&self, macro_name: &str) -> Option<(PathBuf, u32, u32)> {
+    pub fn get_macro_body_range(&self, macro_name: &str) -> Option<(PathBuf, u32, u32)> {
         self.macro_body_ranges.get(macro_name).cloned()
     }
 
     #[inline]
-    pub(crate) fn get_parameter_names(&self, macro_name: &str) -> Option<Vec<String>> {
+    pub fn get_parameter_names(&self, macro_name: &str) -> Option<Vec<String>> {
         self.statement_macro_definitions
             .iter()
             .find(|entry| entry.0 == macro_name)
@@ -70,7 +126,18 @@ impl MacroTable {
     }
 
     #[inline]
-    pub(crate) fn get_body_tokens(&self, macro_name: &str) -> Option<Vec<String>> {
+    pub fn get_body_tokens(&self, macro_name: &str) -> Option<Vec<String>> {
+        self.statement_macro_definitions
+            .iter()
+            .find(|entry| entry.0 == macro_name)
+            .map(|entry| crate::macro_token::texts(&entry.2))
+    }
+
+    #[inline]
+    pub fn get_body_macro_tokens(
+        &self,
+        macro_name: &str,
+    ) -> Option<Vec<crate::macro_token::MacroToken>> {
         self.statement_macro_definitions
             .iter()
             .find(|entry| entry.0 == macro_name)
@@ -78,7 +145,7 @@ impl MacroTable {
     }
 
     #[inline]
-    pub(crate) fn find_macro_name(&self, location_key: &str) -> Option<String> {
+    pub fn find_macro_name(&self, location_key: &str) -> Option<String> {
         self.macro_expansion_sites
             .iter()
             .find(|entry| entry.0 == location_key)
@@ -86,20 +153,90 @@ impl MacroTable {
     }
 
     #[inline]
-    pub(crate) fn has_emitted_outline(&self, macro_name: &str) -> bool {
+    pub fn has_emitted_outline(&self, macro_name: &str) -> bool {
         self.emitted_outline_names
             .iter()
             .any(|entry| entry == macro_name)
+    }
+
+    #[inline]
+    pub fn get_function_like_definition(
+        &self,
+        macro_name: &str,
+    ) -> Option<&MacroFunctionLikeDefinition> {
+        self.function_like_macro_definitions.get(macro_name)
+    }
+
+    #[inline]
+    pub fn get_function_like_definition_cloned(
+        &self,
+        macro_name: &str,
+    ) -> Option<MacroFunctionLikeDefinition> {
+        self.function_like_macro_definitions
+            .get(macro_name)
+            .cloned()
     }
 }
 
 impl MacroTable {
     #[inline]
-    pub(crate) fn add_statement_macro_definition(
+    pub fn register_function_like_macros(
+        &mut self,
+        items: &[(clang::Entity<'_>, String, crate::macros::MacroKind)],
+    ) {
+        for (definition, macro_name, kind) in items.iter() {
+            let function_like_kind: MacroFunctionLikeKind = match kind {
+                crate::macros::MacroKind::Object => continue,
+                crate::macros::MacroKind::PureFunction { .. } => {
+                    MacroFunctionLikeKind::PureFunction
+                }
+                crate::macros::MacroKind::Statement { .. } => MacroFunctionLikeKind::Statement,
+                crate::macros::MacroKind::Unsupported(limit) => {
+                    MacroFunctionLikeKind::Unsupported(*limit)
+                }
+            };
+
+            let (parameters, body): (Vec<String>, Vec<crate::macro_token::MacroToken>) = match kind
+            {
+                crate::macros::MacroKind::PureFunction { parameters, body }
+                | crate::macros::MacroKind::Statement { parameters, body } => {
+                    (parameters.clone(), body.clone())
+                }
+                crate::macros::MacroKind::Unsupported(_) => {
+                    let tokens: Vec<crate::macro_token::MacroToken> = definition
+                        .get_range()
+                        .map(|range| {
+                            let clang_tokens: Vec<clang::token::Token<'_>> = range.tokenize();
+                            crate::macro_lex::to_macro_tokens(
+                                &clang_tokens,
+                                crate::macro_token::MacroTokenOrigin::DefinitionBody,
+                            )
+                        })
+                        .unwrap_or_default();
+
+                    (Vec::new(), tokens)
+                }
+                crate::macros::MacroKind::Object => (Vec::new(), Vec::new()),
+            };
+
+            self.function_like_macro_definitions.insert(
+                macro_name.clone(),
+                MacroFunctionLikeDefinition::new(
+                    macro_name.clone(),
+                    parameters,
+                    body,
+                    function_like_kind,
+                ),
+            );
+        }
+    }
+
+    #[inline]
+    pub fn add_statement_macro_definition(
         &mut self,
         macro_name: String,
         parameter_names: Vec<String>,
-        body_tokens: Vec<String>,
+        body_tokens: Vec<crate::macro_token::MacroToken>,
         definition: &clang::Entity<'_>,
     ) {
         if self
@@ -128,8 +265,8 @@ impl MacroTable {
             .unwrap_or_default();
 
         let body_range: Option<(PathBuf, u32, u32)> = definition.get_range().map(|range| {
-            let start = range.get_start().get_spelling_location();
-            let end = range.get_end().get_spelling_location();
+            let start: clang::source::Location<'_> = range.get_start().get_spelling_location();
+            let end: clang::source::Location<'_> = range.get_end().get_spelling_location();
 
             let path: PathBuf = start
                 .file
@@ -155,7 +292,7 @@ impl MacroTable {
     }
 
     #[inline]
-    pub(crate) fn register_statement_macros(
+    pub fn register_statement_macros(
         &mut self,
         items: &[(clang::Entity<'_>, String, crate::macros::MacroKind)],
     ) {
@@ -172,7 +309,7 @@ impl MacroTable {
     }
 
     #[inline]
-    pub(crate) fn record_macro_expansion(&mut self, location_key: String, macro_name: String) {
+    pub fn record_macro_expansion(&mut self, location_key: String, macro_name: String) {
         if self
             .macro_expansion_sites
             .iter()
@@ -185,27 +322,27 @@ impl MacroTable {
     }
 
     #[inline]
-    pub(crate) fn mark_outline_emitted(&mut self, macro_name: &str) {
+    pub fn mark_outline_emitted(&mut self, macro_name: &str) {
         self.emitted_outline_names.insert(macro_name.to_string());
     }
 }
 
 impl MacroTable {
     #[inline]
-    pub(crate) fn add_pending_outline_function(&mut self, text: String) {
+    pub fn add_pending_outline_function(&mut self, text: String) {
         self.pending_outline_functions.push(text);
     }
 }
 
 impl MacroTable {
     #[inline]
-    pub(crate) fn take_pending_outline_functions(&mut self) -> Vec<String> {
+    pub fn take_pending_outline_functions(&mut self) -> Vec<String> {
         std::mem::take(&mut self.pending_outline_functions)
     }
 }
 
 impl MacroTable {
-    pub(crate) fn make_location_key(entity: &clang::Entity<'_>) -> Option<String> {
+    pub fn make_location_key(entity: &clang::Entity<'_>) -> Option<String> {
         let range: clang::source::SourceRange<'_> = entity.get_range()?;
 
         let location: clang::source::Location<'_> = range.get_start().get_expansion_location();
@@ -222,7 +359,7 @@ impl MacroTable {
 }
 
 impl MacroTable {
-    pub(crate) fn scan_macro_expansions(&mut self, root: &clang::Entity<'_>) {
+    pub fn scan_macro_expansions(&mut self, root: &clang::Entity<'_>) {
         if root.get_kind() == clang::EntityKind::MacroExpansion {
             if let (Some(macro_name), Some(location_key)) =
                 (root.get_name(), Self::make_location_key(root))
@@ -238,7 +375,7 @@ impl MacroTable {
 }
 
 impl MacroTable {
-    pub(crate) fn entity_originates_in_input(&self, entity: &clang::Entity<'_>) -> bool {
+    pub fn entity_originates_in_input(&self, entity: &clang::Entity<'_>) -> bool {
         if entity.is_in_main_file() {
             return true;
         }
@@ -262,7 +399,7 @@ impl MacroTable {
 
 impl MacroTable {
     #[inline]
-    pub(crate) fn find_innermost_macro_at(&self, file: &Path, offset: u32) -> Option<String> {
+    pub fn find_innermost_macro_at(&self, file: &Path, offset: u32) -> Option<String> {
         let mut best: Option<(String, u32)> = None;
 
         for (name, (range_file, start, end)) in self.macro_body_ranges.iter() {

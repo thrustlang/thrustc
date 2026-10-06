@@ -17,7 +17,7 @@
 
 */
 
-pub(crate) fn expression_produces_condition(entity: &clang::Entity<'_>) -> bool {
+pub fn expression_produces_condition(entity: &clang::Entity<'_>) -> bool {
     match entity.get_kind() {
         clang::EntityKind::ConditionalOperator => true,
         clang::EntityKind::UnaryOperator => crate::macro_lex::entity_spellings(entity)

@@ -25,7 +25,7 @@ use thrustc_options::TranslateCOptions;
 
 use crate::options::{EmitCBindingsOptions, TranslateCOutput};
 
-pub(crate) fn translate_single_c_to_thrust(
+pub fn translate_single_c_to_thrust(
     input: &Path,
     translate_opts: &TranslateCOptions,
 ) -> Result<TranslateCOutput, Vec<CompilationIssue>> {
@@ -68,8 +68,8 @@ pub(crate) fn translate_single_c_to_thrust(
     parser.detailed_preprocessing_record(true);
     parser.arguments(&args_refs);
 
-    let tu: clang::TranslationUnit<'_> = match parser.parse() {
-        Ok(tu) => tu,
+    let translation_unit: clang::TranslationUnit<'_> = match parser.parse() {
+        Ok(translation_unit) => translation_unit,
         Err(e) => {
             return Err(vec![CompilationIssue::Error(
                 CompilationIssueCode::E0111,
@@ -89,7 +89,7 @@ pub(crate) fn translate_single_c_to_thrust(
 
     let mut fatal_diagnostics: Vec<String> = Vec::new();
 
-    for diagnostic in tu.get_diagnostics() {
+    for diagnostic in translation_unit.get_diagnostics() {
         let severity: clang::diagnostic::Severity = diagnostic.get_severity();
         let text: String = diagnostic.get_text();
 
@@ -144,7 +144,7 @@ pub(crate) fn translate_single_c_to_thrust(
         )]);
     }
 
-    let Some(main_file) = tu.get_file(&canonical_input) else {
+    let Some(main_file) = translation_unit.get_file(&canonical_input) else {
         let errors: Vec<CompilationIssue> = vec![CompilationIssue::Error(
             CompilationIssueCode::E0111,
             "Unable to locate the main file inside the translation unit.".into(),
@@ -213,7 +213,7 @@ pub(crate) fn translate_single_c_to_thrust(
         out.push('\n');
     }
 
-    let root: clang::Entity<'_> = tu.get_entity();
+    let root: clang::Entity<'_> = translation_unit.get_entity();
 
     let mut macro_ctx: crate::macros::MacroContext<'_> =
         crate::macros::MacroContext::new(canonical_input.clone());
@@ -227,11 +227,7 @@ pub(crate) fn translate_single_c_to_thrust(
 
     issues.extend(macro_ctx.get_mut_transpiler_context().take_warnings());
     issues.extend(macro_ctx.get_mut_transpiler_context().take_errors());
-    issues.extend(
-        macro_ctx
-            .get_mut_transpiler_context()
-            .take_macros_errors(),
-    );
+    issues.extend(macro_ctx.get_mut_transpiler_context().take_macros_errors());
 
     let output_path: PathBuf = translate_opts
         .output()
@@ -331,11 +327,7 @@ pub fn emit_c_bindings_thrust(
 
     warnings.extend(macro_ctx.get_mut_transpiler_context().take_warnings());
     warnings.extend(macro_ctx.get_mut_transpiler_context().take_errors());
-    warnings.extend(
-        macro_ctx
-            .get_mut_transpiler_context()
-            .take_macros_errors(),
-    );
+    warnings.extend(macro_ctx.get_mut_transpiler_context().take_macros_errors());
 
     let output_path: PathBuf = emit_opts
         .output()

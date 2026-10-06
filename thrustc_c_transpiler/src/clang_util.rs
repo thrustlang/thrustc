@@ -19,7 +19,7 @@
 
 use std::path::{Path, PathBuf};
 
-pub(crate) trait ClangArgumentsSource {
+pub trait ClangArgumentsSource {
     fn include_paths(&self) -> &[PathBuf];
     fn system_include_paths(&self) -> &[PathBuf];
     fn defines(&self) -> &[String];
@@ -98,7 +98,7 @@ impl ClangArgumentsSource for thrustc_options::TranslateCOptions {
     }
 }
 
-pub(crate) fn build_clang_arguments(source: &impl ClangArgumentsSource) -> Vec<String> {
+pub fn build_clang_arguments(source: &impl ClangArgumentsSource) -> Vec<String> {
     let mut args: Vec<String> = Vec::new();
 
     if let Some(res) = self::detect_clang_resource_include_dir() {
@@ -287,7 +287,7 @@ fn detect_clang_resource_include_dir() -> Option<PathBuf> {
     include_dirs.find(|include_dir| include_dir.is_dir())
 }
 
-pub(crate) fn is_supported_expr_kind(kind: clang::EntityKind) -> bool {
+pub fn is_supported_expr_kind(kind: clang::EntityKind) -> bool {
     matches!(
         kind,
         clang::EntityKind::IntegerLiteral
@@ -332,7 +332,7 @@ fn clang_commands() -> Vec<String> {
     commands
 }
 
-pub(crate) fn escape_string_for_thrust_literal(s: &str) -> String {
+pub fn escape_string_for_thrust_literal(s: &str) -> String {
     let mut out: String = String::with_capacity(s.len().saturating_add(8));
 
     for ch in s.chars() {

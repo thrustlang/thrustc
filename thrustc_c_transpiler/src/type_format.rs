@@ -21,7 +21,7 @@ use thrustc_compile_time::BuiltinValue;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::Type;
 
-pub(crate) fn format_clang_type_thrust(
+pub fn format_clang_type_thrust(
     ty: &clang::Type<'_>,
     macro_ctx: &mut crate::macros::MacroContext,
     prefix: &str,
@@ -254,7 +254,7 @@ pub(crate) fn format_clang_type_thrust(
     out
 }
 
-pub(crate) fn cast_expression_to_type(
+pub fn cast_expression_to_type(
     entity: &clang::Entity<'_>,
     translated: String,
     expected_type: &clang::Type<'_>,
@@ -430,7 +430,7 @@ pub(crate) fn cast_expression_to_type(
     Default::default()
 }
 
-pub(crate) fn format_parameter_type_thrust(
+pub fn format_parameter_type_thrust(
     ty: &clang::Type<'_>,
     macro_ctx: &mut crate::macros::MacroContext,
     prefix: &str,
@@ -695,7 +695,7 @@ pub fn format_type_thrust(ty: &Type) -> String {
     }
 }
 
-pub(crate) fn format_builtin_value_thrust(
+pub fn format_builtin_value_thrust(
     value: &BuiltinValue,
     expected_type: &Type,
     macro_ctx: &mut crate::macros::MacroContext,
@@ -824,7 +824,7 @@ pub(crate) fn format_builtin_value_thrust(
     }
 }
 
-pub(crate) fn format_clang_calling_convention_thrust(
+pub fn format_clang_calling_convention_thrust(
     convention: Option<clang::CallingConvention>,
 ) -> Result<&'static str, String> {
     match convention.unwrap_or(clang::CallingConvention::Cdecl) {

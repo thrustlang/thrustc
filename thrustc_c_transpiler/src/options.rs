@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 
 use thrustc_errors::CompilationIssue;
 
-pub(crate) type TranslateCOutput = (PathBuf, String, Vec<CompilationIssue>);
+pub type TranslateCOutput = (PathBuf, String, Vec<CompilationIssue>);
 
 #[derive(Debug, Clone)]
 pub struct EmitCBindingsOptions {

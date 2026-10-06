@@ -1,0 +1,29 @@
+static flux_anchor_01: const s32 @public @extern("flux_anchor_01") = 4;
+static mut flux_visits_01: s32 = 0;
+
+fn fold_flux_01(values: const ptr[s32], start: s32, count: s32) s32 {
+    var total: s32 = 0;
+    for var i: s32 = start; i < start + count; i += 1; {
+        var sample: s32 = values->[i];
+        if (i % 2) == 0 {
+            total += sample + flux_anchor_01;
+        } else {
+            total += sample - 3;
+        }
+        flux_visits_01 += 1;
+    }
+    return (total) as s32;
+}
+fn main() s32 @public {
+    var data: array[s32; 10] = fixed[-8, -3, -7, 8, 3, -4, 4, 2, 9, 11];
+    var left: s32 = fold_flux_01(data as ptr[s32], 0, 6);
+    var right: s32 = fold_flux_01(data as ptr[s32], 3, 7);
+    var mixed: s32 = left + right;
+    if flux_visits_01 != 13 {
+        return (1) as s32;
+    }
+    if mixed != 25 {
+        return (2) as s32;
+    }
+    return (0) as s32;
+}

@@ -1,0 +1,52 @@
+static MODE_HALT_07: const s32 @public @extern("MODE_HALT_07") = 2;
+static MODE_IDLE_07: const s32 @public @extern("MODE_IDLE_07") = 0;
+static MODE_RUN_07: const s32 @public @extern("MODE_RUN_07") = 1;
+static mut enum_turns_07: s32 = 0;
+
+fn main() s32 @public {
+    var tokens: array[s32; 8] = fixed[-5, 2, 9, 11, 7, 2, 3, -6];
+    var mode: s32 = MODE_IDLE_07;
+    var score: s32 = 0;
+    for var i: s32 = 0; i < 8; i += 1; {
+        mode = step_mode_07(mode, tokens->[i]);
+        score += mode + tokens->[i];
+    }
+    if enum_turns_07 != 8 {
+        return (1) as s32;
+    }
+    if score < -120 {
+        return (2) as s32;
+    }
+    return (0) as s32;
+}
+fn step_mode_07(mode_param: s32, token: s32) s32 {
+    var mode: s32 = mode_param;
+
+    if mode == MODE_IDLE_07 {
+        var thrust_temporary_0: s32;
+        if (token > 0) {
+            thrust_temporary_0 = MODE_RUN_07;
+        } else {
+            thrust_temporary_0 = MODE_HALT_07;
+        }
+        mode = thrust_temporary_0;
+    } else if mode == MODE_RUN_07 {
+        var thrust_temporary_1: s32;
+        if (token % 3 == 0) {
+            thrust_temporary_1 = MODE_HALT_07;
+        } else {
+            thrust_temporary_1 = MODE_RUN_07;
+        }
+        mode = thrust_temporary_1;
+    } else {
+        var thrust_temporary_2: s32;
+        if (token < 0) {
+            thrust_temporary_2 = MODE_IDLE_07;
+        } else {
+            thrust_temporary_2 = MODE_RUN_07;
+        }
+        mode = thrust_temporary_2;
+    }
+    enum_turns_07 += 1;
+    return (mode) as s32;
+}

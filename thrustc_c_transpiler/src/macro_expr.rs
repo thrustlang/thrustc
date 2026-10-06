@@ -17,85 +17,12 @@
 
 */
 
+use crate::macro_ast::{MacroExpr, MacroPostOp, MacroUnOp};
+use crate::macro_error::MacroLimit;
 use crate::macro_lex;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum MacroExpr {
-    Ident(String),
-    Literal(String),
-    Null,
-    Paren(Box<MacroExpr>),
-    Unary {
-        op: MacroUnOp,
-        arg: Box<MacroExpr>,
-    },
-    Postfix {
-        op: MacroPostOp,
-        arg: Box<MacroExpr>,
-    },
-    Binary {
-        op: String,
-        left: Box<MacroExpr>,
-        right: Box<MacroExpr>,
-    },
-    Ternary {
-        cond: Box<MacroExpr>,
-        then_branch: Box<MacroExpr>,
-        else_branch: Box<MacroExpr>,
-    },
-    Call {
-        callee: Box<MacroExpr>,
-        args: Vec<MacroExpr>,
-    },
-    Index {
-        base: Box<MacroExpr>,
-        index: Box<MacroExpr>,
-    },
-    Member {
-        base: Box<MacroExpr>,
-        field: String,
-    },
-    Cast {
-        target: String,
-        arg: Box<MacroExpr>,
-    },
-    Assign {
-        op: String,
-        target: Box<MacroExpr>,
-        value: Box<MacroExpr>,
-    },
-    SizeOf(String),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum MacroUnOp {
-    Ref,
-    Deref,
-    Not,
-    Invert,
-    Negate,
-    Positive,
-    PreIncrement,
-    PreDecrement,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum MacroPostOp {
-    Increment,
-    Decrement,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum MacroLimit {
-    TokenPasting,
-    VariadicArguments,
-    Stringizing,
-    CallBodied,
-    NotComputable,
-}
-
 impl MacroExpr {
-    pub(crate) fn is_atomic(&self) -> bool {
+    pub fn is_atomic(&self) -> bool {
         matches!(
             self,
             MacroExpr::Ident(_)
@@ -110,13 +37,13 @@ impl MacroExpr {
     }
 }
 
-pub(crate) struct MacroCursor<'tokens> {
+pub struct MacroCursor<'tokens> {
     tokens: &'tokens [String],
     position: usize,
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn new(tokens: &'tokens [String]) -> Self {
+    pub fn new(tokens: &'tokens [String]) -> Self {
         Self {
             tokens,
             position: 0,
@@ -125,13 +52,13 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse(body: &[String]) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse(body: &[String]) -> Result<MacroExpr, MacroLimit> {
         let mut cursor: MacroCursor<'_> = MacroCursor::new(body);
 
-        let parsed: MacroExpr = cursor.parse_assign()?;
+        let parsed: MacroExpr = cursor.parse_comma()?;
 
         if !cursor.at_end() {
-            return Err(MacroLimit::NotComputable);
+            return Err(MacroLimit::TrailingTokens);
         }
 
         Ok(parsed)
@@ -139,21 +66,50 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn peek(&self) -> Option<&str> {
+    pub fn parse_comma(&mut self) -> Result<MacroExpr, MacroLimit> {
+        let mut items: Vec<MacroExpr> = vec![self.parse_assign()?];
+
+        while self.eat(",") {
+            items.push(self.parse_assign()?);
+        }
+
+        if items.len() == 1 {
+            return Ok(items.remove(0));
+        }
+
+        Ok(MacroExpr::Comma(items))
+    }
+}
+
+impl<'tokens> MacroCursor<'tokens> {
+    pub fn advance(&mut self) -> Option<&'tokens str> {
+        if self.position >= self.tokens.len() {
+            return None;
+        }
+
+        let token: &'tokens str = self.tokens[self.position].as_str();
+        self.position = self.position.saturating_add(1);
+
+        Some(token)
+    }
+}
+
+impl<'tokens> MacroCursor<'tokens> {
+    pub fn peek(&self) -> Option<&str> {
         self.tokens.get(self.position).map(|token| token.as_str())
     }
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn at_end(&self) -> bool {
+    pub fn at_end(&self) -> bool {
         self.position >= self.tokens.len()
     }
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn eat(&mut self, expected: &str) -> bool {
+    pub fn eat(&mut self, expected: &str) -> bool {
         if self.peek() == Some(expected) {
-            self.position += 1;
+            let _ignored: Option<&'tokens str> = self.advance();
 
             return true;
         }
@@ -163,17 +119,17 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn expect(&mut self, expected: &str) -> Result<(), MacroLimit> {
+    pub fn expect(&mut self, expected: &str) -> Result<(), MacroLimit> {
         if self.eat(expected) {
             return Ok(());
         }
 
-        Err(MacroLimit::NotComputable)
+        Err(MacroLimit::ExpectedToken)
     }
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_assign(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_assign(&mut self) -> Result<MacroExpr, MacroLimit> {
         let target: MacroExpr = self.parse_ternary()?;
 
         if self.peek().is_some_and(|token| {
@@ -182,9 +138,10 @@ impl<'tokens> MacroCursor<'tokens> {
                 "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>="
             )
         }) {
-            let op: String = self.tokens[self.position].to_string();
-
-            self.position += 1;
+            let Some(op_token) = self.advance() else {
+                return Err(MacroLimit::UnexpectedEndOfTokens);
+            };
+            let op: String = op_token.to_string();
 
             let value: MacroExpr = self.parse_assign()?;
 
@@ -200,7 +157,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_ternary(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_ternary(&mut self) -> Result<MacroExpr, MacroLimit> {
         let cond: MacroExpr = self.parse_lor()?;
 
         if !self.eat("?") {
@@ -222,7 +179,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_lor(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_lor(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut left: MacroExpr = self.parse_land()?;
 
         while self.eat("||") {
@@ -240,7 +197,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_land(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_land(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut left: MacroExpr = self.parse_bor()?;
 
         while self.eat("&&") {
@@ -258,7 +215,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_bor(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_bor(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut left: MacroExpr = self.parse_bxor()?;
 
         while self.eat("|") {
@@ -276,7 +233,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_bxor(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_bxor(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut left: MacroExpr = self.parse_band()?;
 
         while self.eat("^") {
@@ -294,7 +251,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_band(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_band(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut left: MacroExpr = self.parse_equality()?;
 
         while self.eat("&") {
@@ -312,7 +269,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_equality(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_equality(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut left: MacroExpr = self.parse_relational()?;
 
         loop {
@@ -342,7 +299,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_relational(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_relational(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut left: MacroExpr = self.parse_shift()?;
 
         loop {
@@ -388,7 +345,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_shift(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_shift(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut left: MacroExpr = self.parse_additive()?;
 
         loop {
@@ -418,7 +375,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_additive(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_additive(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut left: MacroExpr = self.parse_multiplicative()?;
 
         loop {
@@ -448,7 +405,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_multiplicative(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_multiplicative(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut left: MacroExpr = self.parse_cast()?;
 
         loop {
@@ -486,11 +443,11 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_cast(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_cast(&mut self) -> Result<MacroExpr, MacroLimit> {
         if self.peek() == Some("(") {
             let saved: usize = self.position;
 
-            self.position += 1;
+            let _ignored: Option<&'tokens str> = self.advance();
 
             if let Some(target) = self.parse_cast_target() {
                 if self.eat(")") {
@@ -515,7 +472,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_cast_target(&mut self) -> Option<String> {
+    pub fn parse_cast_target(&mut self) -> Option<String> {
         let mut words: Vec<String> = Vec::new();
         let mut stars: usize = 0;
 
@@ -523,18 +480,17 @@ impl<'tokens> MacroCursor<'tokens> {
             match self.peek() {
                 Some("*") => {
                     stars += 1;
-                    self.position += 1;
+                    let _ignored: Option<&'tokens str> = self.advance();
                 }
                 Some("int") | Some("unsigned") | Some("long") | Some("short") | Some("char")
                 | Some("float") | Some("double") | Some("signed") | Some("void")
                 | Some("const") | Some("volatile") | Some("_Bool") => {
-                    let word: String = self.tokens[self.position].to_string();
+                    let word_token: &'tokens str = self.advance()?;
+                    let word: String = word_token.to_string();
 
                     if word != "const" && word != "volatile" {
                         words.push(word);
                     }
-
-                    self.position += 1;
                 }
                 _ => break,
             }
@@ -566,7 +522,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_unary(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_unary(&mut self) -> Result<MacroExpr, MacroLimit> {
         if self.eat("++") {
             return Ok(MacroExpr::Unary {
                 op: MacroUnOp::PreIncrement,
@@ -632,7 +588,7 @@ impl<'tokens> MacroCursor<'tokens> {
                         return Ok(MacroExpr::SizeOf(target));
                     }
 
-                    return Err(MacroLimit::NotComputable);
+                    return Err(MacroLimit::SizeOfMalformed);
                 }
 
                 self.position = saved;
@@ -640,9 +596,15 @@ impl<'tokens> MacroCursor<'tokens> {
                 if let Some(target) = self.parse_sizeof_user_target() {
                     return Ok(MacroExpr::SizeOf(target));
                 }
+
+                self.position = saved;
+
+                if self.parse_comma().is_ok() && self.eat(")") {
+                    return Err(MacroLimit::SizeOfExpression);
+                }
             }
 
-            return Err(MacroLimit::NotComputable);
+            return Err(MacroLimit::SizeOfMalformed);
         }
 
         self.parse_postfix()
@@ -650,9 +612,9 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_sizeof_user_target(&mut self) -> Option<String> {
+    pub fn parse_sizeof_user_target(&mut self) -> Option<String> {
         if matches!(self.peek(), Some("struct") | Some("enum") | Some("union")) {
-            self.position += 1;
+            let _ignored: Option<&'tokens str> = self.advance();
         }
 
         let name: String = match self.peek() {
@@ -664,7 +626,7 @@ impl<'tokens> MacroCursor<'tokens> {
             {
                 let name: String = word.to_string();
 
-                self.position += 1;
+                let _ignored: Option<&'tokens str> = self.advance();
 
                 name
             }
@@ -707,7 +669,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_postfix(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_postfix(&mut self) -> Result<MacroExpr, MacroLimit> {
         let mut node: MacroExpr = self.parse_primary()?;
 
         loop {
@@ -750,11 +712,11 @@ impl<'tokens> MacroCursor<'tokens> {
                     {
                         let field: String = name.to_string();
 
-                        self.position += 1;
+                        let _ignored: Option<&'tokens str> = self.advance();
 
                         field
                     }
-                    _ => return Err(MacroLimit::NotComputable),
+                    _ => return Err(MacroLimit::ExpressionMalformed),
                 };
 
                 node = MacroExpr::Member {
@@ -781,7 +743,7 @@ impl<'tokens> MacroCursor<'tokens> {
 }
 
 impl<'tokens> MacroCursor<'tokens> {
-    pub(crate) fn parse_primary(&mut self) -> Result<MacroExpr, MacroLimit> {
+    pub fn parse_primary(&mut self) -> Result<MacroExpr, MacroLimit> {
         if self.eat("(") {
             let inner: MacroExpr = self.parse_assign()?;
 
@@ -795,7 +757,7 @@ impl<'tokens> MacroCursor<'tokens> {
         }
 
         let Some(token) = self.peek() else {
-            return Err(MacroLimit::NotComputable);
+            return Err(MacroLimit::ExpressionMalformed);
         };
 
         if token.chars().next().is_some_and(|ch| ch.is_ascii_digit())
@@ -804,7 +766,7 @@ impl<'tokens> MacroCursor<'tokens> {
         {
             let literal: String = macro_lex::normalize_literal_token_spelling(token);
 
-            self.position += 1;
+            let _ignored: Option<&'tokens str> = self.advance();
 
             return Ok(MacroExpr::Literal(literal));
         }
@@ -816,16 +778,16 @@ impl<'tokens> MacroCursor<'tokens> {
         {
             let name: String = token.to_string();
 
-            self.position += 1;
+            let _ignored: Option<&'tokens str> = self.advance();
 
             return Ok(MacroExpr::Ident(name));
         }
 
-        Err(MacroLimit::NotComputable)
+        Err(MacroLimit::ExpressionMalformed)
     }
 }
 
-pub(crate) fn lower(expr: &MacroExpr, ctx: crate::location::Location) -> String {
+pub fn lower(expr: &MacroExpr, ctx: crate::location::Location) -> String {
     match expr {
         MacroExpr::Ident(name) => name.to_string(),
         MacroExpr::Literal(text) => text.to_string(),
@@ -890,6 +852,15 @@ pub(crate) fn lower(expr: &MacroExpr, ctx: crate::location::Location) -> String 
             let right_text: String = self::lower(right, crate::location::Location::RValue);
 
             format!("{left_text} {op} {right_text}")
+        }
+
+        MacroExpr::Comma(items) => {
+            let item_texts: Vec<String> = items
+                .iter()
+                .map(|item| self::lower(item, crate::location::Location::RValue))
+                .collect();
+
+            format!("({})", item_texts.join(", "))
         }
 
         MacroExpr::Assign { op, target, value } => {
@@ -970,7 +941,7 @@ pub(crate) fn lower(expr: &MacroExpr, ctx: crate::location::Location) -> String 
     }
 }
 
-pub(crate) fn lower_function_body(expr: &MacroExpr, return_type: &str) -> String {
+pub fn lower_function_body(expr: &MacroExpr, return_type: &str) -> String {
     if let MacroExpr::Ternary {
         cond,
         then_branch,
@@ -991,7 +962,7 @@ pub(crate) fn lower_function_body(expr: &MacroExpr, return_type: &str) -> String
     format!("({body_text}) as {return_type}")
 }
 
-pub(crate) fn lower_place_base(expr: &MacroExpr) -> String {
+pub fn lower_place_base(expr: &MacroExpr) -> String {
     match expr {
         MacroExpr::Ident(name) => name.to_string(),
 

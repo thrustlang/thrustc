@@ -25,7 +25,7 @@ use thrustc_typesystem::Type;
 
 use crate::location::Location;
 
-pub(crate) fn append_translated_top_level_declarations(
+pub fn append_translated_top_level_declarations(
     root: &clang::Entity<'_>,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
     out: &mut String,
@@ -71,6 +71,10 @@ pub(crate) fn append_translated_top_level_declarations(
     }
 
     crate::macros::reclassify_macros_calling_statements(&mut system_classified);
+
+    macro_ctx
+        .get_mut_macro_table()
+        .register_function_like_macros(&system_classified);
 
     macro_ctx
         .get_mut_macro_table()
@@ -309,7 +313,7 @@ pub(crate) fn append_translated_top_level_declarations(
     }
 }
 
-pub(crate) fn translate_global_initializer(
+pub fn translate_global_initializer(
     entity: &clang::Entity<'_>,
     expected_type: &clang::Type<'_>,
     span: Span,
@@ -1010,7 +1014,7 @@ fn translate_global_var_decl(
     out
 }
 
-pub(crate) fn translate_zero_initializer(
+pub fn translate_zero_initializer(
     ty: &clang::Type<'_>,
     span: Span,
     origin: Option<&clang::Entity<'_>>,
@@ -1237,7 +1241,7 @@ pub(crate) fn translate_zero_initializer(
     }
 }
 
-pub(crate) fn append_imported_top_level_declarations(
+pub fn append_imported_top_level_declarations(
     ctx: &thrustc_c_import_synthesis::context::CImportContext,
     span: Span,
     out: &mut String,
@@ -1707,17 +1711,17 @@ fn translate_function_prototype(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn classify_top_level_declarations<'tu>(
-    main_entities: impl Iterator<Item = clang::Entity<'tu>>,
-    record_decls: &mut Vec<clang::Entity<'tu>>,
-    union_decls: &mut Vec<clang::Entity<'tu>>,
-    enum_decls: &mut Vec<clang::Entity<'tu>>,
-    typedef_decls: &mut Vec<clang::Entity<'tu>>,
-    function_definition_decls: &mut Vec<clang::Entity<'tu>>,
-    function_prototype_decls: &mut Vec<clang::Entity<'tu>>,
-    macro_decls: &mut Vec<clang::Entity<'tu>>,
-    global_var_decls: &mut Vec<clang::Entity<'tu>>,
-    global_decl_indexes: &mut HashMap<clang::Entity<'tu>, usize>,
+fn classify_top_level_declarations<'clang>(
+    main_entities: impl Iterator<Item = clang::Entity<'clang>>,
+    record_decls: &mut Vec<clang::Entity<'clang>>,
+    union_decls: &mut Vec<clang::Entity<'clang>>,
+    enum_decls: &mut Vec<clang::Entity<'clang>>,
+    typedef_decls: &mut Vec<clang::Entity<'clang>>,
+    function_definition_decls: &mut Vec<clang::Entity<'clang>>,
+    function_prototype_decls: &mut Vec<clang::Entity<'clang>>,
+    macro_decls: &mut Vec<clang::Entity<'clang>>,
+    global_var_decls: &mut Vec<clang::Entity<'clang>>,
+    global_decl_indexes: &mut HashMap<clang::Entity<'clang>, usize>,
 ) {
     for e in main_entities {
         match e.get_kind() {
@@ -1978,7 +1982,7 @@ fn translate_enum_decl(
     out
 }
 
-pub(crate) fn find_var_initializer<'clang>(
+pub fn find_var_initializer<'clang>(
     entity: &'clang clang::Entity<'clang>,
 ) -> Option<clang::Entity<'clang>> {
     let has_initializer: bool = crate::macro_lex::entity_spellings(entity)

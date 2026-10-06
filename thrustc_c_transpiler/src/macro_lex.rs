@@ -17,7 +17,7 @@
 
 */
 
-pub(crate) fn extract_binary_operator(
+pub fn extract_binary_operator(
     entity: &clang::Entity<'_>,
     left: &clang::Entity<'_>,
     right: &clang::Entity<'_>,
@@ -141,7 +141,7 @@ pub(crate) fn extract_binary_operator(
     self::extract_binary_operator_from_tokens(&source_token_texts[start..end])
 }
 
-pub(crate) fn needs_space_between_tokens(prev: &str, current: &str) -> bool {
+pub fn needs_space_between_tokens(prev: &str, current: &str) -> bool {
     if current == ")" || current == "]" || current == ";" || current == "," {
         return false;
     }
@@ -235,7 +235,7 @@ pub(crate) fn needs_space_between_tokens(prev: &str, current: &str) -> bool {
     false
 }
 
-pub(crate) fn extract_binary_operator_from_tokens(tokens: &[String]) -> Option<&'static str> {
+pub fn extract_binary_operator_from_tokens(tokens: &[String]) -> Option<&'static str> {
     let mut depth: i32 = 0;
 
     let token_iter = tokens.iter();
@@ -294,7 +294,7 @@ pub(crate) fn extract_binary_operator_from_tokens(tokens: &[String]) -> Option<&
     None
 }
 
-pub(crate) fn tokens_to_thrust_source(tokens: &[clang::token::Token<'_>]) -> String {
+pub fn tokens_to_thrust_source(tokens: &[clang::token::Token<'_>]) -> String {
     let mut out: String = String::new();
     let mut previous: Option<String> = None;
 
@@ -321,7 +321,7 @@ pub(crate) fn tokens_to_thrust_source(tokens: &[clang::token::Token<'_>]) -> Str
     out
 }
 
-pub(crate) fn is_assignment_expression(entity: &clang::Entity<'_>) -> bool {
+pub fn is_assignment_expression(entity: &clang::Entity<'_>) -> bool {
     if entity.get_kind() == clang::EntityKind::UnaryOperator {
         return self::entity_spellings(entity)
             .iter()
@@ -343,7 +343,7 @@ pub(crate) fn is_assignment_expression(entity: &clang::Entity<'_>) -> bool {
     )
 }
 
-pub(crate) fn entity_spellings(entity: &clang::Entity<'_>) -> Vec<String> {
+pub fn entity_spellings(entity: &clang::Entity<'_>) -> Vec<String> {
     if self::is_from_macro_expansion(entity) {
         if let Some(tokens) = self::spelling_range_tokens(entity) {
             return tokens
@@ -365,7 +365,7 @@ pub(crate) fn entity_spellings(entity: &clang::Entity<'_>) -> Vec<String> {
         .unwrap_or_default()
 }
 
-pub(crate) fn macro_type_name(key: &str) -> Option<String> {
+pub fn macro_type_name(key: &str) -> Option<String> {
     match key {
         "int" | "signed" | "signed int" => Some("s32".to_string()),
         "unsigned" | "unsigned int" => Some("u32".to_string()),
@@ -387,7 +387,7 @@ pub(crate) fn macro_type_name(key: &str) -> Option<String> {
     }
 }
 
-pub(crate) fn spelling_range_tokens<'clang>(
+pub fn spelling_range_tokens<'clang>(
     entity: &clang::Entity<'clang>,
 ) -> Option<Vec<clang::token::Token<'clang>>> {
     let range: clang::source::SourceRange<'_> = entity.get_range()?;
@@ -409,7 +409,7 @@ pub(crate) fn spelling_range_tokens<'clang>(
     Some(clang::source::SourceRange::new(start, end).tokenize())
 }
 
-pub(crate) fn range_spellings(
+pub fn range_spellings(
     range: &clang::source::SourceRange<'_>,
     entity: &clang::Entity<'_>,
 ) -> Vec<String> {
@@ -429,7 +429,7 @@ pub(crate) fn range_spellings(
         .collect()
 }
 
-pub(crate) fn normalize_literal_token_spelling(spelling: &str) -> String {
+pub fn normalize_literal_token_spelling(spelling: &str) -> String {
     if spelling.starts_with('"') || spelling.starts_with('\'') {
         return spelling.to_string();
     }
@@ -445,16 +445,215 @@ pub(crate) fn normalize_literal_token_spelling(spelling: &str) -> String {
     spelling.trim_end_matches(['u', 'U', 'l', 'L']).to_string()
 }
 
-pub(crate) fn is_from_macro_expansion(entity: &clang::Entity<'_>) -> bool {
+pub fn is_from_macro_expansion(entity: &clang::Entity<'_>) -> bool {
     let Some(range) = entity.get_range() else {
         return false;
     };
 
-    let expansion = range.get_start().get_expansion_location();
-    let spelling = range.get_start().get_spelling_location();
+    let expansion: clang::source::Location<'_> = range.get_start().get_expansion_location();
+    let spelling: clang::source::Location<'_> = range.get_start().get_spelling_location();
 
     match (expansion.file, spelling.file) {
         (Some(expansion_file), Some(spelling_file)) => expansion_file != spelling_file,
         _ => false,
     }
+}
+
+pub fn to_macro_tokens(
+    tokens: &[clang::token::Token<'_>],
+    origin: crate::macro_token::MacroTokenOrigin,
+) -> Vec<crate::macro_token::MacroToken> {
+    tokens
+        .iter()
+        .map(|token| {
+            let raw: String = token.get_spelling();
+
+            let text: String = match token.get_kind() {
+                clang::token::TokenKind::Identifier => {
+                    crate::util::sanitize_thrust_identifier(&raw)
+                }
+                clang::token::TokenKind::Literal => self::normalize_literal_token_spelling(&raw),
+                clang::token::TokenKind::Punctuation if raw == "." => "->".to_string(),
+                _ => raw,
+            };
+
+            let kind: crate::macro_token::MacroTokenKind = match token.get_kind() {
+                clang::token::TokenKind::Identifier => crate::macro_token::classify_text(&text),
+                clang::token::TokenKind::Literal => crate::macro_token::MacroTokenKind::Literal,
+                clang::token::TokenKind::Punctuation => {
+                    crate::macro_token::MacroTokenKind::Punctuation
+                }
+                clang::token::TokenKind::Keyword => crate::macro_token::MacroTokenKind::Keyword,
+                _ => crate::macro_token::MacroTokenKind::Unknown,
+            };
+
+            let location: clang::source::Location<'_> =
+                token.get_location().get_spelling_location();
+
+            let span: crate::macro_token::MacroSpan = crate::macro_token::MacroSpan::new(
+                location
+                    .file
+                    .map(|file| file.get_path().display().to_string()),
+                location.line,
+                location.column,
+                location.offset,
+            );
+
+            let mut token: crate::macro_token::MacroToken =
+                crate::macro_token::MacroToken::new(kind, text, origin);
+
+            token.set_span(Some(span));
+
+            token
+        })
+        .collect()
+}
+
+pub fn lex_text_to_macro_tokens(
+    source: &str,
+    origin: crate::macro_token::MacroTokenOrigin,
+) -> Vec<crate::macro_token::MacroToken> {
+    let bytes: &[u8] = source.as_bytes();
+    let mut out: Vec<crate::macro_token::MacroToken> = Vec::new();
+    let mut index: usize = 0;
+
+    while index < bytes.len() {
+        let ch: u8 = bytes[index];
+
+        if ch.is_ascii_whitespace() {
+            let start: usize = index;
+
+            while index < bytes.len() && bytes[index].is_ascii_whitespace() {
+                index += 1;
+            }
+
+            out.push(crate::macro_token::MacroToken::new(
+                crate::macro_token::MacroTokenKind::Whitespace,
+                source[start..index].to_string(),
+                origin,
+            ));
+            continue;
+        }
+
+        if ch.is_ascii_alphabetic() || ch == b'_' {
+            let start: usize = index;
+
+            index += 1;
+
+            while index < bytes.len()
+                && (bytes[index].is_ascii_alphanumeric() || bytes[index] == b'_')
+            {
+                index += 1;
+            }
+
+            let text: String = source[start..index].to_string();
+            out.push(crate::macro_token::MacroToken::new(
+                crate::macro_token::classify_text(&text),
+                text,
+                origin,
+            ));
+            continue;
+        }
+
+        if ch.is_ascii_digit() {
+            let start: usize = index;
+
+            index += 1;
+
+            while index < bytes.len()
+                && (bytes[index].is_ascii_alphanumeric()
+                    || bytes[index] == b'_'
+                    || bytes[index] == b'.')
+            {
+                index += 1;
+            }
+
+            let text: String = source[start..index].to_string();
+            out.push(crate::macro_token::MacroToken::new(
+                crate::macro_token::MacroTokenKind::Literal,
+                text,
+                origin,
+            ));
+            continue;
+        }
+
+        if ch == b'"' || ch == b'\'' {
+            let quote: u8 = ch;
+            let start: usize = index;
+
+            index += 1;
+
+            while index < bytes.len() {
+                let inner: u8 = bytes[index];
+
+                index += 1;
+
+                if inner == b'\\' {
+                    index += 1;
+                    continue;
+                }
+
+                if inner == quote {
+                    break;
+                }
+            }
+
+            out.push(crate::macro_token::MacroToken::new(
+                crate::macro_token::MacroTokenKind::Literal,
+                source[start..index.min(bytes.len())].to_string(),
+                origin,
+            ));
+            continue;
+        }
+
+        if index + 1 < bytes.len() {
+            let two: &str = &source[index..index + 2];
+            if crate::macro_token::classify_text(two)
+                == crate::macro_token::MacroTokenKind::Punctuation
+            {
+                out.push(crate::macro_token::MacroToken::new(
+                    crate::macro_token::MacroTokenKind::Punctuation,
+                    two.to_string(),
+                    origin,
+                ));
+                index += 2;
+                continue;
+            }
+        }
+
+        let one: &str = &source[index..index + 1];
+        out.push(crate::macro_token::MacroToken::new(
+            crate::macro_token::classify_text(one),
+            one.to_string(),
+            origin,
+        ));
+        index += 1;
+    }
+
+    out
+}
+
+pub fn detokenize_macro_tokens(tokens: &[crate::macro_token::MacroToken]) -> String {
+    let mut out: String = String::new();
+
+    for (index, token) in tokens.iter().enumerate() {
+        if token.get_kind() == crate::macro_token::MacroTokenKind::Whitespace {
+            out.push_str(token.get_text());
+            continue;
+        }
+
+        if index > 0 {
+            let previous: &crate::macro_token::MacroToken = &tokens[index - 1];
+
+            if previous.get_kind() != crate::macro_token::MacroTokenKind::Whitespace
+                && self::needs_space_between_tokens(previous.get_text(), token.get_text())
+            {
+                out.push(' ');
+            }
+        }
+
+        out.push_str(token.get_text());
+    }
+
+    out
 }

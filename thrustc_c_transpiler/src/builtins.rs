@@ -18,7 +18,7 @@
 */
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CanonicalBuiltin {
+pub enum CanonicalBuiltin {
     MemSet,
     MemCpy,
     MemMove,
@@ -27,7 +27,7 @@ pub(crate) enum CanonicalBuiltin {
 }
 
 impl CanonicalBuiltin {
-    pub(crate) fn rewrite_builtin_call(
+    pub fn rewrite_builtin_call(
         self,
         argument_entities: &[clang::Entity<'_>],
         arguments: &[String],
@@ -109,7 +109,7 @@ impl CanonicalBuiltin {
 
 impl CanonicalBuiltin {
     #[inline]
-    pub(crate) fn from_called_function_name(called_function_name: &str) -> Option<Self> {
+    pub fn from_called_function_name(called_function_name: &str) -> Option<Self> {
         let unqualified_name: &str = called_function_name
             .rsplit("::")
             .next()
@@ -208,7 +208,7 @@ impl CanonicalBuiltin {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum HeapOperation {
+pub enum HeapOperation {
     Malloc,
     Calloc,
     Realloc,
@@ -217,7 +217,7 @@ pub(crate) enum HeapOperation {
 
 impl HeapOperation {
     #[inline]
-    pub(crate) fn from_called_function_name(called_function_name: &str) -> Option<Self> {
+    pub fn from_called_function_name(called_function_name: &str) -> Option<Self> {
         let unqualified_name: &str = called_function_name
             .rsplit("::")
             .next()
@@ -234,7 +234,7 @@ impl HeapOperation {
 }
 
 impl HeapOperation {
-    pub(crate) fn resolve_heap_call<'clang>(
+    pub fn resolve_heap_call<'clang>(
         call_entity: &clang::Entity<'clang>,
     ) -> Option<(Self, clang::Entity<'clang>)> {
         let mut cursor_entity: clang::Entity<'_> = *call_entity;
@@ -270,7 +270,7 @@ impl HeapOperation {
 }
 
 impl HeapOperation {
-    pub(crate) fn try_lower_heap_call(
+    pub fn try_lower_heap_call(
         self,
         call_entity: &clang::Entity<'_>,
         pointee_type: Option<&clang::Type<'_>>,
@@ -288,7 +288,7 @@ impl HeapOperation {
 }
 
 impl HeapOperation {
-    pub(crate) fn rejection_reason(self) -> &'static str {
+    pub fn rejection_reason(self) -> &'static str {
         match self {
             Self::Malloc => {
                 "Heap allocation size is not a sizeof expression; rewrite the allocation as malloc(sizeof(T)) or malloc(N * sizeof(T)) with a constant N."

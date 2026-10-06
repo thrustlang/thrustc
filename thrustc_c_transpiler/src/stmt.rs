@@ -1296,7 +1296,7 @@ fn translate_conditional_return(
     ]
 }
 
-pub(crate) fn translate_stmt(
+pub fn translate_stmt(
     entity: &clang::Entity<'_>,
     indent: usize,
     span: Span,

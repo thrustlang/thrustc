@@ -22,7 +22,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
 use crate::location::Location;
 
-pub(crate) fn translate_expr(
+pub fn translate_expr(
     entity: &clang::Entity<'_>,
     span: Span,
     ctx: Location,
@@ -1268,7 +1268,7 @@ pub(crate) fn translate_expr(
 }
 
 #[allow(clippy::only_used_in_recursion)]
-pub(crate) fn translate_condition_expr(
+pub fn translate_condition_expr(
     entity: &clang::Entity<'_>,
     span: Span,
     ctx: Location,

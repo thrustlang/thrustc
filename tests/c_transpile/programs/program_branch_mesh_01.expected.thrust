@@ -1,0 +1,28 @@
+static mut branch_hits_01: s32 = 0;
+
+fn main() s32 @public {
+    var values: array[s32; 10] = fixed[-8, 0, -1, -7, 9, -1, 9, 10, 7, -8];
+    var total: s32 = 0;
+    for var i: s32 = 0; i < 10; i += 1; {
+        total += mesh_eval_01(values->[i], i);
+    }
+    if branch_hits_01 != 10 {
+        return (1) as s32;
+    }
+    if total != 39 {
+        return (2) as s32;
+    }
+    return (0) as s32;
+}
+fn mesh_eval_01(value: s32, i: s32) s32 {
+    var out: s32 = value;
+    if (((value > 0) && (i % 2 == 0))) || (((value < 0) && (i % 3 == 0))) {
+        out = value + i;
+    } else if (value == 0) || (i == 5) {
+        out = i - value;
+    } else {
+        out = value - i;
+    }
+    branch_hits_01 += 1;
+    return (out) as s32;
+}

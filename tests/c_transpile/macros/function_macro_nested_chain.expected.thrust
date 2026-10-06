@@ -1,0 +1,10 @@
+fn __c_macro_ADD1[T1](x: T1) T1 @alwaysInline {
+    return (((x) + (1))) as T1;
+}
+fn __c_macro_ONE[T1]() T1 @alwaysInline {
+    return ((1)) as T1;
+}
+
+fn function_macro_nested_chain(x: s32) s32 {
+    return (x + 1) as s32;
+}

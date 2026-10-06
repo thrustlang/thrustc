@@ -17,21 +17,24 @@
 
 */
 
-use crate::macro_expr::{MacroCursor, MacroExpr, MacroLimit};
+use crate::macro_ast::MacroExpr;
+use crate::macro_error::MacroLimit;
+use crate::macro_expr::MacroCursor;
+use crate::macro_token::{MacroToken, MacroTokenOrigin};
 
 use std::borrow::Borrow;
+use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use thrustc_code_location::Span;
 use thrustc_compile_time::BuiltinValue;
 
-use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::Type;
 
 const C_MACRO_SYMBOL_PREFIX: &str = "__c_macro_";
 
 #[derive(Debug)]
-pub(crate) struct MacroContext<'clang> {
+pub struct MacroContext<'clang> {
     table: crate::macro_table::MacroTable,
     context: crate::context::TranspilerContext,
     expansion_stack: Vec<String>,
@@ -42,7 +45,7 @@ pub(crate) struct MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub(crate) fn new(main_file: PathBuf) -> Self {
+    pub fn new(main_file: PathBuf) -> Self {
         Self {
             table: crate::macro_table::MacroTable::new(main_file),
             context: crate::context::TranspilerContext::new(),
@@ -56,29 +59,29 @@ impl<'clang> MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub(crate) fn get_macro_table(&self) -> &crate::macro_table::MacroTable {
+    pub fn get_macro_table(&self) -> &crate::macro_table::MacroTable {
         &self.table
     }
-    pub(crate) fn get_transpiler_context(&self) -> &crate::context::TranspilerContext {
+    pub fn get_transpiler_context(&self) -> &crate::context::TranspilerContext {
         &self.context
     }
 }
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub(crate) fn get_mut_macro_table(&mut self) -> &mut crate::macro_table::MacroTable {
+    pub fn get_mut_macro_table(&mut self) -> &mut crate::macro_table::MacroTable {
         &mut self.table
     }
 
     #[inline]
-    pub(crate) fn get_mut_transpiler_context(&mut self) -> &mut crate::context::TranspilerContext {
+    pub fn get_mut_transpiler_context(&mut self) -> &mut crate::context::TranspilerContext {
         &mut self.context
     }
 }
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub(crate) fn push_expansion(&mut self, name: &str) -> bool {
+    pub fn push_expansion(&mut self, name: &str) -> bool {
         if self.expansion_stack.iter().any(|entry| entry == name) {
             return true;
         }
@@ -91,14 +94,14 @@ impl<'clang> MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub(crate) fn pop_expansion(&mut self) {
+    pub fn pop_expansion(&mut self) {
         self.expansion_stack.pop();
     }
 }
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub(crate) fn next_temporary_name(&mut self) -> String {
+    pub fn next_temporary_name(&mut self) -> String {
         let index: u64 = self.temporary_counter;
 
         self.temporary_counter = self.temporary_counter.saturating_add(1);
@@ -109,21 +112,21 @@ impl<'clang> MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub(crate) fn push_pending_statement(&mut self, statement: String) {
+    pub fn push_pending_statement(&mut self, statement: String) {
         self.pending_statements.push(statement);
     }
 }
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub(crate) fn pending_statements_len(&self) -> usize {
+    pub fn pending_statements_len(&self) -> usize {
         self.pending_statements.len()
     }
 }
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub(crate) fn take_pending_statements_since(&mut self, base: usize) -> Vec<String> {
+    pub fn take_pending_statements_since(&mut self, base: usize) -> Vec<String> {
         if base >= self.pending_statements.len() {
             return Vec::new();
         }
@@ -133,20 +136,20 @@ impl<'clang> MacroContext<'clang> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum MacroKind {
+pub enum MacroKind {
     Object,
     PureFunction {
         parameters: Vec<String>,
-        body: Vec<String>,
+        body: Vec<MacroToken>,
     },
     Statement {
         parameters: Vec<String>,
-        body: Vec<String>,
+        body: Vec<MacroToken>,
     },
     Unsupported(MacroLimit),
 }
 
-pub(crate) fn append_translated_macro_consts(
+pub fn append_translated_macro_consts(
     macro_decls: &[clang::Entity<'_>],
     out: &mut String,
     fns_out: &mut String,
@@ -231,18 +234,19 @@ pub(crate) fn append_translated_macro_consts(
             let limit: MacroLimit = if body_calls_code {
                 MacroLimit::CallBodied
             } else {
-                MacroLimit::NotComputable
+                MacroLimit::ExpressionMalformed
             };
 
             let prefix: String = self::expansion_prefix(macro_decl);
-            let (detail, help) = self::plain_rejection(&raw_name, limit);
-
-            ctx.get_mut_transpiler_context()
-                .add_warning(CompilationIssue::Warning(
-                    CompilationIssueCode::W0104,
-                    format!("{prefix}{detail}\nhelp: {help}"),
-                    span,
-                ));
+            let (detail, help) = crate::macro_error::get_macro_issue_help(&raw_name, limit);
+            crate::macro_error::add_macro_error(
+                ctx,
+                macro_decl,
+                &raw_name,
+                &format!("{prefix}{detail}"),
+                &help,
+                span,
+            );
         }
     }
 
@@ -267,26 +271,61 @@ pub(crate) fn append_translated_macro_consts(
         self::reclassify_macros_calling_statements(&mut classified_macros);
 
         ctx.get_mut_macro_table()
+            .register_function_like_macros(&classified_macros);
+
+        ctx.get_mut_macro_table()
             .register_statement_macros(&classified_macros);
 
         for (macro_decl, raw_name, kind) in classified_macros.iter() {
             match kind {
                 MacroKind::PureFunction { parameters, body } => {
-                    let parsed: Result<MacroExpr, MacroLimit> = MacroCursor::parse(body);
+                    let mut expansion_context: crate::macro_expand::MacroExpansionContext =
+                        crate::macro_expand::MacroExpansionContext::new_default();
 
-                    let Ok(parsed) = parsed else {
-                        let prefix: String = self::expansion_prefix(macro_decl);
-                        let (detail, help) =
-                            self::plain_rejection(raw_name, MacroLimit::NotComputable);
+                    let expanded_body: Vec<MacroToken> =
+                        match crate::macro_expand::expand_function_like_tokens(
+                            body,
+                            ctx.get_macro_table(),
+                            &mut expansion_context,
+                        ) {
+                            Ok(tokens) => tokens,
+                            Err(reason) => {
+                                let prefix: String = self::expansion_prefix(macro_decl);
+                                let (detail, help) =
+                                    crate::macro_error::get_macro_issue_help(raw_name, reason);
 
-                        ctx.get_mut_transpiler_context()
-                            .add_warning(CompilationIssue::Warning(
-                                CompilationIssueCode::W0104,
-                                format!("{prefix}{detail}\nhelp: {help}"),
+                                crate::macro_error::add_macro_error(
+                                    ctx,
+                                    macro_decl,
+                                    raw_name,
+                                    &format!("{prefix}{detail}"),
+                                    &help,
+                                    span,
+                                );
+
+                                continue;
+                            }
+                        };
+
+                    let body_spellings: Vec<String> = crate::macro_token::texts(&expanded_body);
+                    let parsed: MacroExpr = match MacroCursor::parse(&body_spellings) {
+                        Ok(parsed) => parsed,
+                        Err(reason) => {
+                            let prefix: String = self::expansion_prefix(macro_decl);
+                            let (detail, help) =
+                                crate::macro_error::get_macro_issue_help(raw_name, reason);
+
+                            crate::macro_error::add_macro_error(
+                                ctx,
+                                macro_decl,
+                                raw_name,
+                                &format!("{prefix}{detail}"),
+                                &help,
                                 span,
-                            ));
+                            );
 
-                        continue;
+                            continue;
+                        }
                     };
 
                     let body_text: String = crate::macro_expr::lower_function_body(&parsed, "T1");
@@ -309,14 +348,16 @@ pub(crate) fn append_translated_macro_consts(
                 MacroKind::Object => continue,
                 MacroKind::Unsupported(limit) => {
                     let prefix: String = self::expansion_prefix(macro_decl);
-                    let (detail, help) = self::plain_rejection(raw_name, *limit);
+                    let (detail, help) = crate::macro_error::get_macro_issue_help(raw_name, *limit);
 
-                    ctx.get_mut_transpiler_context()
-                        .add_warning(CompilationIssue::Warning(
-                            CompilationIssueCode::W0104,
-                            format!("{prefix}{detail}\nhelp: {help}"),
-                            span,
-                        ));
+                    crate::macro_error::add_macro_error(
+                        ctx,
+                        macro_decl,
+                        raw_name,
+                        &format!("{prefix}{detail}"),
+                        &help,
+                        span,
+                    );
                 }
             }
         }
@@ -336,22 +377,50 @@ fn outline_statement_body(
     site: &clang::Entity<'_>,
     name: &str,
     parameters: &[String],
-    arg_texts: &[String],
-    function_name: &str,
+    args: &[Vec<MacroToken>],
+    mutable_parameters: &HashSet<String>,
     span: Span,
 ) -> Option<String> {
-    let body_tokens: Vec<String> = ctx.get_macro_table().get_body_tokens(name)?;
+    let function_name: String = {
+        let base: String = crate::util::sanitize_thrust_identifier(name);
+
+        format!("{C_MACRO_SYMBOL_PREFIX}{base}")
+    };
+
+    let body_tokens: Vec<MacroToken> = ctx.get_macro_table().get_body_macro_tokens(name)?;
 
     if body_tokens.iter().any(|token| {
-        token == "return" || token == "continue" || token == "break" || token == "goto"
+        token.get_text() == "return"
+            || token.get_text() == "continue"
+            || token.get_text() == "break"
+            || token.get_text() == "goto"
     }) {
         return None;
     }
 
-    let joined_lines: String = match self::lowered_statement_lines(&body_tokens, parameters) {
-        Some(lines) => lines.join("\n"),
-        None => self::translated_expanded_lines(ctx, site, name, parameters, arg_texts, span)?,
-    };
+    let template_args: Vec<Vec<MacroToken>> = parameters
+        .iter()
+        .map(|parameter| {
+            vec![MacroToken::new(
+                crate::macro_token::MacroTokenKind::Identifier,
+                parameter.clone(),
+                MacroTokenOrigin::DefinitionBody,
+            )]
+        })
+        .collect();
+
+    let mut joined_lines: String =
+        match self::lowered_statement_lines(ctx, &body_tokens, parameters, &template_args) {
+            Some(lines) => lines.join("\n"),
+            None => self::translated_expanded_lines(ctx, site, name, parameters, args, span)?,
+        };
+
+    if !mutable_parameters.is_empty() {
+        joined_lines = self::rewrite_mutable_parameter_uses(&joined_lines, mutable_parameters);
+        joined_lines = self::strip_parenthesized_mutable_lhs(&joined_lines, mutable_parameters);
+        joined_lines =
+            self::cast_mutable_parameter_assignments(&joined_lines, parameters, mutable_parameters);
+    }
 
     let type_names: Vec<String> = (1..=parameters.len())
         .map(|index| format!("T{index}"))
@@ -363,14 +432,18 @@ fn outline_statement_body(
         .map(|(parameter, type_name)| {
             let parameter_name: String = { crate::util::sanitize_thrust_identifier(parameter) };
 
-            format!("{parameter_name}: {type_name}")
+            if mutable_parameters.contains(parameter) {
+                format!("{parameter_name}: ptr[{type_name}]")
+            } else {
+                format!("{parameter_name}: {type_name}")
+            }
         })
         .collect();
 
     let mut text: String = String::new();
 
     text.push_str("fn ");
-    text.push_str(function_name);
+    text.push_str(&function_name);
     text.push('[');
     text.push_str(&type_names.join(", "));
     text.push_str("](");
@@ -382,24 +455,26 @@ fn outline_statement_body(
     Some(text)
 }
 
-fn lowered_statement_lines(body_tokens: &[String], parameters: &[String]) -> Option<Vec<String>> {
-    let mut renamed: Vec<String> = Vec::new();
+fn lowered_statement_lines(
+    ctx: &MacroContext<'_>,
+    body_tokens: &[MacroToken],
+    parameters: &[String],
+    args: &[Vec<MacroToken>],
+) -> Option<Vec<String>> {
+    let renamed: Vec<MacroToken> = self::substitute_tokens(body_tokens, parameters, args)?;
 
-    for token in body_tokens.iter() {
-        let mut clean: Option<String> = None;
+    let mut expansion_context: crate::macro_expand::MacroExpansionContext =
+        crate::macro_expand::MacroExpansionContext::new_default();
 
-        for parameter in parameters.iter() {
-            if token == parameter {
-                clean = Some(crate::util::sanitize_thrust_identifier(parameter));
-                break;
-            }
-        }
+    let expanded_tokens: Vec<MacroToken> = crate::macro_expand::expand_function_like_tokens(
+        &renamed,
+        ctx.get_macro_table(),
+        &mut expansion_context,
+    )
+    .ok()?;
 
-        renamed.push(clean.unwrap_or_else(|| token.clone()));
-    }
-
-    let parsed: Vec<crate::macro_stmt::MacroStmt> =
-        crate::macro_stmt::parse_statement_body(&renamed).ok()?;
+    let parsed: Vec<crate::macro_ast::MacroStmt> =
+        crate::macro_stmt::parse_statement_body_tokens(&expanded_tokens).ok()?;
 
     let mut lines: Vec<String> = Vec::new();
 
@@ -415,7 +490,7 @@ fn translated_expanded_lines(
     site: &clang::Entity<'_>,
     macro_name: &str,
     parameters: &[String],
-    arg_texts: &[String],
+    args: &[Vec<MacroToken>],
     span: Span,
 ) -> Option<String> {
     let children: Vec<clang::Entity<'_>> = site.get_children();
@@ -458,67 +533,262 @@ fn translated_expanded_lines(
         body_lines.extend(lines);
     }
 
-    let mut pairs: Vec<(String, String)> = parameters
-        .iter()
-        .cloned()
-        .zip(arg_texts.iter().cloned())
-        .collect();
-
-    pairs.sort_by_key(|pair| std::cmp::Reverse(pair.0.len()));
-
     let mut joined_lines: String = body_lines.join("\n");
 
-    for (parameter, argument) in pairs.iter() {
-        joined_lines = self::substitute_word(&joined_lines, parameter, argument);
-    }
+    let line_tokens: Vec<MacroToken> =
+        crate::macro_lex::lex_text_to_macro_tokens(&joined_lines, MacroTokenOrigin::FallbackLexed);
+    let generalized_tokens: Vec<MacroToken> =
+        self::replace_argument_token_sequences(&line_tokens, parameters, args);
+    let template_args: Vec<Vec<MacroToken>> = parameters
+        .iter()
+        .map(|parameter| {
+            vec![MacroToken::new(
+                crate::macro_token::MacroTokenKind::Identifier,
+                parameter.clone(),
+                MacroTokenOrigin::DefinitionBody,
+            )]
+        })
+        .collect();
+    let substituted_tokens: Vec<MacroToken> =
+        self::substitute_tokens(&generalized_tokens, parameters, &template_args)?;
+
+    joined_lines = crate::macro_lex::detokenize_macro_tokens(&substituted_tokens);
 
     Some(joined_lines)
 }
 
-fn substitute_word(text: &str, from: &str, to: &str) -> String {
-    let mut out: String = String::with_capacity(text.len());
+fn substitute_tokens(
+    tokens: &[MacroToken],
+    parameters: &[String],
+    args: &[Vec<MacroToken>],
+) -> Option<Vec<MacroToken>> {
+    crate::macro_expand::substitute_parameter_tokens(tokens, parameters, args)
+}
+
+fn replace_argument_token_sequences(
+    tokens: &[MacroToken],
+    parameters: &[String],
+    args: &[Vec<MacroToken>],
+) -> Vec<MacroToken> {
+    if parameters.len() != args.len() {
+        return tokens.to_vec();
+    }
+
+    let mut parameter_indices: Vec<usize> = (0..parameters.len()).collect();
+
+    parameter_indices.sort_by(|left, right| args[*right].len().cmp(&args[*left].len()));
+
+    let mut out: Vec<MacroToken> = Vec::new();
     let mut index: usize = 0;
 
-    while index < text.len() {
-        if text[index..].starts_with(from) {
-            let before_ok: bool = index == 0
-                || !text[..index]
-                    .chars()
-                    .next_back()
-                    .is_some_and(|ch| ch.is_ascii_alphanumeric() || ch == '_');
+    while index < tokens.len() {
+        let mut matched: bool = false;
 
-            let after: usize = index + from.len();
+        for parameter_index in parameter_indices.iter().copied() {
+            let arg_tokens: &[MacroToken] = &args[parameter_index];
 
-            let after_ok: bool = after >= text.len()
-                || !text[after..]
-                    .chars()
-                    .next()
-                    .is_some_and(|ch| ch.is_ascii_alphanumeric() || ch == '_');
-
-            if before_ok && after_ok {
-                out.push_str(to);
-                index = after;
+            if arg_tokens.is_empty() {
                 continue;
             }
-        }
 
-        if let Some(ch) = text[index..].chars().next() {
-            out.push(ch);
-            index += ch.len_utf8();
-        } else {
+            let end: usize = index.saturating_add(arg_tokens.len());
+
+            if end > tokens.len() {
+                continue;
+            }
+
+            let token_slice: &[MacroToken] = &tokens[index..end];
+
+            if !token_slice
+                .iter()
+                .zip(arg_tokens.iter())
+                .all(|(left, right)| left.get_text() == right.get_text())
+            {
+                continue;
+            }
+
+            out.push(MacroToken::new(
+                crate::macro_token::MacroTokenKind::Identifier,
+                parameters[parameter_index].clone(),
+                MacroTokenOrigin::DefinitionBody,
+            ));
+
+            index = end;
+            matched = true;
             break;
         }
+
+        if matched {
+            continue;
+        }
+
+        out.push(tokens[index].clone());
+        index = index.saturating_add(1);
     }
 
     out
 }
 
-fn site_call_arguments(site: &clang::Entity<'_>, name: &str) -> Option<Vec<Vec<String>>> {
+fn detect_mutated_parameters(tokens: &[MacroToken], parameters: &[String]) -> HashSet<String> {
+    let mut mutable_parameters: HashSet<String> = HashSet::new();
+
+    for parameter in parameters.iter() {
+        for (index, token) in tokens.iter().enumerate() {
+            if token.get_text() != *parameter {
+                continue;
+            }
+
+            if self::parameter_token_is_written(tokens, index) {
+                mutable_parameters.insert(parameter.clone());
+                break;
+            }
+        }
+    }
+
+    mutable_parameters
+}
+
+fn parameter_token_is_written(tokens: &[MacroToken], index: usize) -> bool {
+    let assign_ops: [&str; 11] = [
+        "=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^=",
+    ];
+
+    let next = tokens
+        .get(index.saturating_add(1))
+        .map(|token| token.get_text());
+
+    if next.is_some_and(|text| text == "++" || text == "--" || assign_ops.contains(&text)) {
+        return true;
+    }
+
+    let prev = index
+        .checked_sub(1)
+        .and_then(|prev_index| tokens.get(prev_index))
+        .map(|token| token.get_text());
+
+    if prev.is_some_and(|text| text == "++" || text == "--") {
+        return true;
+    }
+
+    if prev == Some("(") && next == Some(")") {
+        let assign_after_paren: Option<&str> = tokens
+            .get(index.saturating_add(2))
+            .map(|token| token.get_text());
+
+        if assign_after_paren.is_some_and(|text| assign_ops.contains(&text)) {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn rewrite_mutable_parameter_uses(lines: &str, mutable_parameters: &HashSet<String>) -> String {
+    let tokens: Vec<MacroToken> =
+        crate::macro_lex::lex_text_to_macro_tokens(lines, MacroTokenOrigin::FallbackLexed);
+
+    let mut out: Vec<MacroToken> = Vec::new();
+
+    for token in tokens.iter() {
+        if !mutable_parameters.contains(token.get_text()) {
+            out.push(token.clone());
+            continue;
+        }
+
+        out.push(MacroToken::new(
+            crate::macro_token::MacroTokenKind::Identifier,
+            token.get_text().to_string(),
+            MacroTokenOrigin::FallbackLexed,
+        ));
+        out.push(MacroToken::new(
+            crate::macro_token::MacroTokenKind::Punctuation,
+            "->".to_string(),
+            MacroTokenOrigin::FallbackLexed,
+        ));
+        out.push(MacroToken::new(
+            crate::macro_token::MacroTokenKind::Punctuation,
+            "[".to_string(),
+            MacroTokenOrigin::FallbackLexed,
+        ));
+        out.push(MacroToken::new(
+            crate::macro_token::MacroTokenKind::Literal,
+            "0".to_string(),
+            MacroTokenOrigin::FallbackLexed,
+        ));
+        out.push(MacroToken::new(
+            crate::macro_token::MacroTokenKind::Punctuation,
+            "]".to_string(),
+            MacroTokenOrigin::FallbackLexed,
+        ));
+    }
+
+    crate::macro_lex::detokenize_macro_tokens(&out)
+}
+
+fn strip_parenthesized_mutable_lhs(lines: &str, mutable_parameters: &HashSet<String>) -> String {
+    let mut out: String = lines.to_string();
+
+    for parameter in mutable_parameters.iter() {
+        let with_parens: String = format!("({parameter}->[0]) =");
+        let without_parens: String = format!("{parameter}->[0] =");
+
+        out = out.replace(&with_parens, &without_parens);
+    }
+
+    out
+}
+
+fn cast_mutable_parameter_assignments(
+    lines: &str,
+    parameters: &[String],
+    mutable_parameters: &HashSet<String>,
+) -> String {
+    let mut out_lines: Vec<String> = Vec::new();
+
+    for line in lines.lines() {
+        let mut rewritten_line: String = line.to_string();
+
+        for (index, parameter) in parameters.iter().enumerate() {
+            if !mutable_parameters.contains(parameter) {
+                continue;
+            }
+
+            let lhs: String = format!("{parameter}->[0] =");
+
+            if !rewritten_line.contains(&lhs) || !rewritten_line.trim_end().ends_with(';') {
+                continue;
+            }
+
+            let Some(eq_pos) = rewritten_line.find(&lhs) else {
+                continue;
+            };
+
+            let rhs_start: usize = eq_pos.saturating_add(lhs.len());
+            let rhs_with_semicolon: &str = &rewritten_line[rhs_start..];
+            let rhs_expression: &str = rhs_with_semicolon.trim().trim_end_matches(';').trim();
+            let type_name: String = format!("T{}", index.saturating_add(1));
+
+            rewritten_line = format!(
+                "{}{} ({}) as {};",
+                &rewritten_line[..rhs_start],
+                " ",
+                rhs_expression,
+                type_name
+            );
+        }
+
+        out_lines.push(rewritten_line);
+    }
+
+    out_lines.join("\n")
+}
+
+fn site_call_arguments(site: &clang::Entity<'_>, name: &str) -> Option<Vec<Vec<MacroToken>>> {
     let range: clang::source::SourceRange<'_> = site.get_range()?;
 
-    let location = range.get_start().get_expansion_location();
+    let location: clang::source::Location<'_> = range.get_start().get_expansion_location();
 
-    let file = location.file?;
+    let file: clang::source::File<'_> = location.file?;
 
     let contents: String = std::fs::read_to_string(file.get_path()).ok()?;
 
@@ -617,10 +887,11 @@ fn site_call_arguments(site: &clang::Entity<'_>, name: &str) -> Option<Vec<Vec<S
         arg_ranges.push((argument_start, offset - 1));
     }
 
-    let mut args: Vec<Vec<String>> = Vec::new();
+    let mut args: Vec<Vec<MacroToken>> = Vec::new();
 
     for (start, end) in arg_ranges.iter() {
         if start >= end {
+            args.push(Vec::new());
             continue;
         }
 
@@ -633,17 +904,11 @@ fn site_call_arguments(site: &clang::Entity<'_>, name: &str) -> Option<Vec<Vec<S
         let arg_range: clang::source::SourceRange<'_> =
             clang::source::SourceRange::new(start_location, end_location);
 
-        let spellings: Vec<String> = arg_range
-            .tokenize()
-            .into_iter()
-            .map(|token| token.get_spelling())
-            .collect();
+        let tokens: Vec<clang::token::Token<'_>> = arg_range.tokenize();
+        let macro_tokens: Vec<MacroToken> =
+            crate::macro_lex::to_macro_tokens(&tokens, MacroTokenOrigin::InvocationArgument);
 
-        if spellings.is_empty() {
-            return None;
-        }
-
-        args.push(spellings);
+        args.push(macro_tokens);
     }
 
     Some(args)
@@ -671,7 +936,7 @@ fn skip_c_string(bytes: &[u8], start: usize) -> usize {
     offset
 }
 
-pub(crate) fn reclassify_macros_calling_statements(
+pub fn reclassify_macros_calling_statements(
     items: &mut Vec<(clang::Entity<'_>, String, MacroKind)>,
 ) {
     loop {
@@ -706,7 +971,7 @@ pub(crate) fn reclassify_macros_calling_statements(
     }
 }
 
-pub(crate) fn try_outline_statement_macro(
+pub fn try_outline_statement_macro(
     ctx: &mut MacroContext<'_>,
     site: &clang::Entity<'_>,
     span: Span,
@@ -722,11 +987,46 @@ pub(crate) fn try_outline_statement_macro(
 
     let name: String = ctx.get_macro_table().find_macro_name(&key)?;
 
-    let parameters: Vec<String> = ctx.get_macro_table().get_parameter_names(&name)?;
+    let Some(parameters) = ctx.get_macro_table().get_parameter_names(&name) else {
+        crate::macro_error::add_macro_error(
+            ctx,
+            site,
+            &name,
+            "Missing macro parameter metadata for statement macro outline.",
+            "Ensure this macro is captured by the transpiler macro table before expansion.",
+            span,
+        );
 
-    let args: Vec<Vec<String>> = self::site_call_arguments(site, &name)?;
+        return None;
+    };
+
+    let Some(args) = self::site_call_arguments(site, &name) else {
+        crate::macro_error::add_macro_error(
+            ctx,
+            site,
+            &name,
+            "Could not extract invocation arguments for statement macro expansion.",
+            "Use a macro call form that can be tokenized unambiguously.",
+            span,
+        );
+
+        return None;
+    };
 
     if args.len() != parameters.len() {
+        crate::macro_error::add_macro_error(
+            ctx,
+            site,
+            &name,
+            &format!(
+                "Macro invocation argument count mismatch: expected {}, got {}.",
+                parameters.len(),
+                args.len()
+            ),
+            "Adjust macro invocation arguments to match the macro definition.",
+            span,
+        );
+
         return None;
     }
 
@@ -739,7 +1039,25 @@ pub(crate) fn try_outline_statement_macro(
     let mut arg_texts: Vec<String> = Vec::new();
 
     for arg_tokens in args.iter() {
-        let parsed: MacroExpr = MacroCursor::parse(arg_tokens).ok()?;
+        let arg_spellings: Vec<String> = crate::macro_token::texts(arg_tokens);
+        let parsed: MacroExpr = match MacroCursor::parse(&arg_spellings) {
+            Ok(parsed) => parsed,
+            Err(limit) => {
+                crate::macro_error::add_macro_error(
+                    ctx,
+                    site,
+                    &name,
+                    &format!(
+                        "Could not parse macro invocation argument expression ({:?}).",
+                        limit
+                    ),
+                    "Simplify the macro argument expression or extend macro parser coverage.",
+                    span,
+                );
+
+                return None;
+            }
+        };
 
         arg_texts.push(crate::macro_expr::lower(
             &parsed,
@@ -747,13 +1065,51 @@ pub(crate) fn try_outline_statement_macro(
         ));
     }
 
+    let mutable_parameters: HashSet<String> = ctx
+        .get_macro_table()
+        .get_body_macro_tokens(&name)
+        .as_ref()
+        .map(|tokens| self::detect_mutated_parameters(tokens, &parameters))
+        .unwrap_or_default();
+
+    for (index, argument_text) in arg_texts.iter_mut().enumerate() {
+        if !mutable_parameters.contains(&parameters[index]) {
+            continue;
+        }
+
+        if argument_text.starts_with("ref ") {
+            continue;
+        }
+
+        *argument_text = format!("ref {argument_text}");
+    }
+
     let call_text: String = format!("{function_name}({})", arg_texts.join(", "));
+
+    let lowered_args: Vec<Vec<MacroToken>> = arg_texts
+        .iter()
+        .map(|arg_text| {
+            crate::macro_lex::lex_text_to_macro_tokens(
+                arg_text,
+                MacroTokenOrigin::InvocationArgument,
+            )
+        })
+        .collect();
 
     if ctx.get_macro_table().has_emitted_outline(&name) {
         return Some(call_text);
     }
 
     if ctx.push_expansion(&name) {
+        crate::macro_error::add_macro_error(
+            ctx,
+            site,
+            &name,
+            "Detected recursive statement macro expansion.",
+            "Refactor recursive macro expansion to avoid infinite expansion chains.",
+            span,
+        );
+
         return None;
     }
 
@@ -762,14 +1118,25 @@ pub(crate) fn try_outline_statement_macro(
         site,
         &name,
         &parameters,
-        &arg_texts,
-        &function_name,
+        &lowered_args,
+        &mutable_parameters,
         span,
     );
 
     ctx.pop_expansion();
 
-    let outlined_text: String = outlined?;
+    let Some(outlined_text) = outlined else {
+        crate::macro_error::add_macro_error(
+            ctx,
+            site,
+            &name,
+            "Could not lower statement macro body safely.",
+            "This macro body currently requires unsupported statement semantics.",
+            span,
+        );
+
+        return None;
+    };
 
     ctx.get_mut_macro_table()
         .add_pending_outline_function(outlined_text);
@@ -778,41 +1145,48 @@ pub(crate) fn try_outline_statement_macro(
     Some(call_text)
 }
 
-pub(crate) fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(String, MacroKind)> {
+pub fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(String, MacroKind)> {
     let raw_name: String = decl.get_name()?;
 
     if unsafe { !decl.is_function_like_macro_unchecked() } {
         return Some((raw_name, MacroKind::Object));
     }
 
-    let tokens: Vec<String> = decl
+    let tokens: Vec<MacroToken> = decl
         .get_range()
         .map(|range| {
-            range
-                .tokenize()
-                .into_iter()
-                .map(|token| token.get_spelling())
-                .collect()
+            let clang_tokens: Vec<clang::token::Token<'_>> = range.tokenize();
+            crate::macro_lex::to_macro_tokens(&clang_tokens, MacroTokenOrigin::DefinitionBody)
         })
         .unwrap_or_default();
 
-    let name_index: Option<usize> = tokens.iter().position(|token| token == &raw_name);
+    let token_texts: Vec<String> = crate::macro_token::texts(&tokens);
+
+    let name_index: Option<usize> = token_texts.iter().position(|token| token == &raw_name);
 
     let Some(name_index) = name_index else {
-        return Some((raw_name, MacroKind::Unsupported(MacroLimit::NotComputable)));
+        return Some((
+            raw_name,
+            MacroKind::Unsupported(MacroLimit::StatementMalformed),
+        ));
     };
 
-    if tokens.get(name_index + 1).is_some_and(|token| token != "(") {
-        return Some((raw_name, MacroKind::Unsupported(MacroLimit::NotComputable)));
+    if token_texts
+        .get(name_index + 1)
+        .is_some_and(|token| token != "(")
+    {
+        return Some((raw_name, MacroKind::Unsupported(MacroLimit::ExpectedToken)));
     }
 
     let mut parameters: Vec<String> = Vec::new();
-    let mut body_start: usize = tokens.len();
+    let mut body_start: usize = token_texts.len();
     let mut depth: i32 = 0;
     let mut variadic: bool = false;
     let mut dot_run: usize = 0;
+    let mut saw_parameter_syntax: bool = false;
+    let mut saw_parameter_list_close: bool = false;
 
-    for (index, token) in tokens.iter().enumerate().skip(name_index + 1) {
+    for (index, token) in token_texts.iter().enumerate().skip(name_index + 1) {
         if token == "(" {
             depth += 1;
             dot_run = 0;
@@ -824,6 +1198,7 @@ pub(crate) fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(Str
 
             if depth == 0 {
                 body_start = index + 1;
+                saw_parameter_list_close = true;
                 break;
             }
 
@@ -834,19 +1209,30 @@ pub(crate) fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(Str
         if depth == 1 {
             if token == "..." {
                 variadic = true;
+                saw_parameter_syntax = true;
             } else if token == "." {
                 dot_run += 1;
+                saw_parameter_syntax = true;
 
                 if dot_run >= 3 {
                     variadic = true;
                 }
             } else if token != "," {
                 dot_run = 0;
+                saw_parameter_syntax = true;
                 parameters.push(token.to_string());
             } else {
                 dot_run = 0;
+                saw_parameter_syntax = true;
             }
         }
+    }
+
+    if !saw_parameter_list_close {
+        return Some((
+            raw_name,
+            MacroKind::Unsupported(MacroLimit::InvocationMalformed),
+        ));
     }
 
     if variadic
@@ -863,34 +1249,40 @@ pub(crate) fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(Str
         ));
     }
 
-    if parameters.is_empty() {
-        return Some((raw_name, MacroKind::Unsupported(MacroLimit::NotComputable)));
+    if parameters.is_empty() && saw_parameter_syntax {
+        return Some((
+            raw_name,
+            MacroKind::Unsupported(MacroLimit::InvocationMalformed),
+        ));
     }
 
-    if body_start > tokens.len() {
-        return Some((raw_name, MacroKind::Unsupported(MacroLimit::NotComputable)));
+    if body_start > token_texts.len() {
+        return Some((
+            raw_name,
+            MacroKind::Unsupported(MacroLimit::UnexpectedEndOfTokens),
+        ));
     }
 
-    let body: Vec<String> = tokens[body_start..].to_vec();
+    let body: Vec<MacroToken> = tokens[body_start..].to_vec();
 
-    if body.iter().any(|token| token == "##") {
+    if body.iter().any(|token| token.get_text() == "##") {
         return Some((raw_name, MacroKind::Unsupported(MacroLimit::TokenPasting)));
     }
 
-    if body.iter().any(|token| token == "__VA_ARGS__") {
+    if body.iter().any(|token| token.get_text() == "__VA_ARGS__") {
         return Some((
             raw_name,
             MacroKind::Unsupported(MacroLimit::VariadicArguments),
         ));
     }
 
-    if body.iter().any(|token| token == "#") {
+    if body.iter().any(|token| token.get_text() == "#") {
         return Some((raw_name, MacroKind::Unsupported(MacroLimit::Stringizing)));
     }
 
     if body
         .first()
-        .is_some_and(|token| token == "do" || token == "{")
+        .is_some_and(|token| token.get_text() == "do" || token.get_text() == "{")
     {
         return Some((raw_name, MacroKind::Statement { parameters, body }));
     }
@@ -899,11 +1291,11 @@ pub(crate) fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(Str
     let mut has_top_level_semicolon: bool = false;
 
     for token in body.iter() {
-        if token == "(" || token == "[" || token == "{" {
+        if token.get_text() == "(" || token.get_text() == "[" || token.get_text() == "{" {
             depth += 1;
-        } else if token == ")" || token == "]" || token == "}" {
+        } else if token.get_text() == ")" || token.get_text() == "]" || token.get_text() == "}" {
             depth -= 1;
-        } else if token == ";" && depth == 0 {
+        } else if token.get_text() == ";" && depth == 0 {
             has_top_level_semicolon = true;
             break;
         }
@@ -916,14 +1308,14 @@ pub(crate) fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(Str
     Some((raw_name, MacroKind::PureFunction { parameters, body }))
 }
 
-pub(crate) fn emit_function_like_macro_fn(
-    name: &str,
-    parameters: &[String],
-    body_text: &str,
-) -> String {
-    let type_names: Vec<String> = (1..=parameters.len())
-        .map(|index| format!("T{index}"))
-        .collect();
+pub fn emit_function_like_macro_fn(name: &str, parameters: &[String], body_text: &str) -> String {
+    let type_names: Vec<String> = if parameters.is_empty() {
+        vec!["T1".to_string()]
+    } else {
+        (1..=parameters.len())
+            .map(|index| format!("T{index}"))
+            .collect()
+    };
 
     let parameter_texts: Vec<String> = parameters
         .iter()
@@ -956,46 +1348,8 @@ pub(crate) fn emit_function_like_macro_fn(
     out
 }
 
-pub(crate) fn plain_rejection(name: &str, limit: MacroLimit) -> (String, String) {
-    let detail: String = match limit {
-        MacroLimit::TokenPasting => format!(
-            "The C macro '{name}' builds new names by gluing words together, which is not supported."
-        ),
-        MacroLimit::VariadicArguments => format!(
-            "The C macro '{name}' takes a variable number of arguments, which is not supported."
-        ),
-        MacroLimit::Stringizing => {
-            format!("The C macro '{name}' turns code into text, which is not supported.")
-        }
-        MacroLimit::CallBodied => format!(
-            "The C macro '{name}' runs code to get its value, so it cannot become a constant."
-        ),
-        MacroLimit::NotComputable => {
-            format!("The C macro '{name}' could not be computed.")
-        }
-    };
-
-    let help: String = match limit {
-        MacroLimit::TokenPasting => {
-            "Rewrite it in the C code without gluing names together.".to_string()
-        }
-        MacroLimit::VariadicArguments => {
-            "Give it a fixed number of arguments in the C code.".to_string()
-        }
-        MacroLimit::Stringizing => "Write the text directly in the C code instead.".to_string(),
-        MacroLimit::CallBodied => {
-            "Call the underlying function directly in the C code.".to_string()
-        }
-        MacroLimit::NotComputable => {
-            "Give it a plain number or text value in the C code.".to_string()
-        }
-    };
-
-    (detail, help)
-}
-
-pub(crate) fn extract_include_spec(entity: &clang::Entity<'_>) -> Option<String> {
-    let range = entity.get_range()?;
+pub fn extract_include_spec(entity: &clang::Entity<'_>) -> Option<String> {
+    let range: clang::source::SourceRange<'_> = entity.get_range()?;
     let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
     let spellings: Vec<String> = tokens.into_iter().map(|t| t.get_spelling()).collect();
 
@@ -1031,14 +1385,14 @@ pub(crate) fn extract_include_spec(entity: &clang::Entity<'_>) -> Option<String>
     None
 }
 
-pub(crate) fn expansion_prefix<'tu>(entity: impl Borrow<clang::Entity<'tu>>) -> String {
-    let entity: &clang::Entity<'tu> = entity.borrow();
+pub fn expansion_prefix<'clang>(entity: impl Borrow<clang::Entity<'clang>>) -> String {
+    let entity: &clang::Entity<'clang> = entity.borrow();
 
     let Some(location) = entity.get_location() else {
         return String::new();
     };
 
-    let expansion = location.get_expansion_location();
+    let expansion: clang::source::Location<'_> = location.get_expansion_location();
 
     let Some(file) = expansion.file else {
         return String::new();
@@ -1055,7 +1409,7 @@ pub(crate) fn expansion_prefix<'tu>(entity: impl Borrow<clang::Entity<'tu>>) -> 
     format!("{}:{}:{}: ", display, expansion.line, expansion.column)
 }
 
-pub(crate) fn origin_note(entity: &clang::Entity<'_>) -> String {
+pub fn origin_note(entity: &clang::Entity<'_>) -> String {
     if !crate::macro_lex::is_from_macro_expansion(entity) {
         return String::new();
     }
@@ -1079,17 +1433,19 @@ pub(crate) fn origin_note(entity: &clang::Entity<'_>) -> String {
     format!(" (from macro expansion in {display})")
 }
 
-fn macro_body_calls(body: &[String], statement_names: &[String], own_name: &str) -> bool {
+fn macro_body_calls(body: &[MacroToken], statement_names: &[String], own_name: &str) -> bool {
     let mut index: usize = 0;
 
     while index < body.len() {
-        let token: &str = &body[index];
+        let token: &str = body[index].get_text();
 
         if token
             .chars()
             .next()
             .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
-            && body.get(index + 1).is_some_and(|next| next == "(")
+            && body
+                .get(index + 1)
+                .is_some_and(|next| next.get_text() == "(")
             && token != own_name
             && !matches!(
                 token,
