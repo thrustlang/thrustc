@@ -124,6 +124,7 @@ pub(crate) enum MacroKind {
 pub(crate) fn append_translated_macro_consts(
     macro_decls: &[clang::Entity<'_>],
     out: &mut String,
+    fns_out: &mut String,
     ctx: &mut MacroContext<'_>,
     span: Span,
     emitted_constants: &mut usize,
@@ -140,20 +141,7 @@ pub(crate) fn append_translated_macro_consts(
             .filter(|(macro_decl, _)| unsafe { !macro_decl.is_function_like_macro_unchecked() });
 
         for (macro_decl, raw_name) in object_macros {
-            let name: String = {
-                let __sanitized: String = raw_name.to_string();
-
-                match __sanitized.as_str() {
-                    "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
-                    | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if"
-                    | "import" | "importC" | "load" | "loop" | "ptr" | "ref" | "return"
-                    | "struct" | "true" | "type" | "union" | "var" | "void" | "while" => {
-                        format!("{__sanitized}_")
-                    }
-
-                    _ => __sanitized,
-                }
-            };
+            let name: String = { crate::util::sanitize_thrust_identifier(&raw_name) };
 
             if let Some(result) = macro_decl.evaluate() {
                 let translated: Option<(Type, BuiltinValue)> = match result {
@@ -223,7 +211,7 @@ pub(crate) fn append_translated_macro_consts(
             ctx.get_mut_transpiler_context()
                 .add_warning(CompilationIssue::Warning(
                     CompilationIssueCode::W0104,
-                    format!("{prefix}{detail} {help}"),
+                    format!("{prefix}{detail}\nhelp: {help}"),
                     span,
                 ));
         }
@@ -247,7 +235,7 @@ pub(crate) fn append_translated_macro_consts(
             }
         }
 
-        self::promote_statement_delegates(&mut classified_macros);
+        self::reclassify_macros_calling_statements(&mut classified_macros);
         ctx.get_mut_macro_table()
             .register_statement_macros(&classified_macros);
 
@@ -264,7 +252,7 @@ pub(crate) fn append_translated_macro_consts(
                         ctx.get_mut_transpiler_context()
                             .add_warning(CompilationIssue::Warning(
                                 CompilationIssueCode::W0104,
-                                format!("{prefix}{detail} {help}"),
+                                format!("{prefix}{detail}\nhelp: {help}"),
                                 span,
                             ));
 
@@ -273,7 +261,7 @@ pub(crate) fn append_translated_macro_consts(
 
                     let body_text: String = crate::macro_expr::lower_function_body(&parsed, "T1");
 
-                    out.push_str(&self::emit_function_like_macro_fn(
+                    fns_out.push_str(&self::emit_function_like_macro_fn(
                         raw_name, parameters, &body_text,
                     ));
 
@@ -285,6 +273,7 @@ pub(crate) fn append_translated_macro_consts(
                         raw_name.clone(),
                         parameters.clone(),
                         body.clone(),
+                        macro_decl,
                     );
                 }
                 MacroKind::Object => continue,
@@ -295,7 +284,7 @@ pub(crate) fn append_translated_macro_consts(
                     ctx.get_mut_transpiler_context()
                         .add_warning(CompilationIssue::Warning(
                             CompilationIssueCode::W0104,
-                            format!("{prefix}{detail} {help}"),
+                            format!("{prefix}{detail}\nhelp: {help}"),
                             span,
                         ));
                 }
@@ -303,8 +292,12 @@ pub(crate) fn append_translated_macro_consts(
         }
     }
 
-    if *emitted_constants > 0 || *emitted_functions > 0 {
+    if *emitted_constants > 0 {
         out.push('\n');
+    }
+
+    if *emitted_functions > 0 {
+        fns_out.push('\n');
     }
 }
 
@@ -327,7 +320,7 @@ fn outline_statement_body(
 
     let joined_lines: String = match self::lowered_statement_lines(&body_tokens, parameters) {
         Some(lines) => lines.join("\n"),
-        None => self::translated_expanded_lines(ctx, site, parameters, arg_texts, span)?,
+        None => self::translated_expanded_lines(ctx, site, name, parameters, arg_texts, span)?,
     };
 
     let type_names: Vec<String> = (1..=parameters.len())
@@ -338,20 +331,7 @@ fn outline_statement_body(
         .iter()
         .zip(type_names.iter())
         .map(|(parameter, type_name)| {
-            let parameter_name: String = {
-                let __sanitized: String = parameter.to_string();
-
-                match __sanitized.as_str() {
-                    "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
-                    | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if"
-                    | "import" | "importC" | "load" | "loop" | "ptr" | "ref" | "return"
-                    | "struct" | "true" | "type" | "union" | "var" | "void" | "while" => {
-                        format!("{__sanitized}_")
-                    }
-
-                    _ => __sanitized,
-                }
-            };
+            let parameter_name: String = { crate::util::sanitize_thrust_identifier(parameter) };
 
             format!("{parameter_name}: {type_name}")
         })
@@ -380,15 +360,7 @@ fn lowered_statement_lines(body_tokens: &[String], parameters: &[String]) -> Opt
 
         for parameter in parameters.iter() {
             if token == parameter {
-                clean = Some(match parameter.as_str() {
-                    "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
-                    | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if"
-                    | "import" | "importC" | "load" | "loop" | "ptr" | "ref" | "return"
-                    | "struct" | "true" | "type" | "union" | "var" | "void" | "while" => {
-                        format!("{parameter}_")
-                    }
-                    _ => parameter.to_string(),
-                });
+                clean = Some(crate::util::sanitize_thrust_identifier(parameter));
                 break;
             }
         }
@@ -411,6 +383,7 @@ fn lowered_statement_lines(body_tokens: &[String], parameters: &[String]) -> Opt
 fn translated_expanded_lines(
     ctx: &mut MacroContext<'_>,
     site: &clang::Entity<'_>,
+    macro_name: &str,
     parameters: &[String],
     arg_texts: &[String],
     span: Span,
@@ -437,8 +410,20 @@ fn translated_expanded_lines(
     let mut body_lines: Vec<String> = Vec::new();
 
     for child in body_nodes.iter() {
+        let base_error_count: usize = ctx.get_transpiler_context().error_count();
+
         let lines: Vec<String> =
             crate::stmt::translate_stmt(child, 1, span, Some("void"), None, ctx);
+
+        if ctx.get_transpiler_context().error_count() > base_error_count {
+            crate::macro_error::collapse_macro_site_errors_with_failed_at(
+                ctx,
+                site,
+                macro_name,
+                child,
+                base_error_count,
+            );
+        }
 
         body_lines.extend(lines);
     }
@@ -656,7 +641,9 @@ fn skip_c_string(bytes: &[u8], start: usize) -> usize {
     offset
 }
 
-pub(crate) fn promote_statement_delegates(items: &mut Vec<(clang::Entity<'_>, String, MacroKind)>) {
+pub(crate) fn reclassify_macros_calling_statements(
+    items: &mut Vec<(clang::Entity<'_>, String, MacroKind)>,
+) {
     loop {
         let statement_names: Vec<String> = items
             .iter()
@@ -713,18 +700,7 @@ pub(crate) fn try_outline_statement_macro(
         return None;
     }
 
-    let function_name: String = {
-        let __sanitized: String = name.to_string();
-
-        match __sanitized.as_str() {
-            "array" | "asm" | "bool" | "break" | "char" | "const" | "continue" | "deref"
-            | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if" | "import"
-            | "importC" | "load" | "loop" | "ptr" | "ref" | "return" | "struct" | "true"
-            | "type" | "union" | "var" | "void" | "while" => format!("{__sanitized}_"),
-
-            _ => __sanitized,
-        }
-    };
+    let function_name: String = { crate::util::sanitize_thrust_identifier(&name) };
 
     let mut arg_texts: Vec<String> = Vec::new();
 
@@ -919,37 +895,13 @@ pub(crate) fn emit_function_like_macro_fn(
         .iter()
         .zip(type_names.iter())
         .map(|(parameter, type_name)| {
-            let parameter_name: String = {
-                let __sanitized: String = parameter.to_string();
-
-                match __sanitized.as_str() {
-                    "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
-                    | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if"
-                    | "import" | "importC" | "load" | "loop" | "ptr" | "ref" | "return"
-                    | "struct" | "true" | "type" | "union" | "var" | "void" | "while" => {
-                        format!("{__sanitized}_")
-                    }
-
-                    _ => __sanitized,
-                }
-            };
+            let parameter_name: String = { crate::util::sanitize_thrust_identifier(parameter) };
 
             format!("{parameter_name}: {type_name}")
         })
         .collect();
 
-    let function_name: String = {
-        let __sanitized: String = name.to_string();
-
-        match __sanitized.as_str() {
-            "array" | "asm" | "bool" | "break" | "char" | "const" | "continue" | "deref"
-            | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if" | "import"
-            | "importC" | "load" | "loop" | "ptr" | "ref" | "return" | "struct" | "true"
-            | "type" | "union" | "var" | "void" | "while" => format!("{__sanitized}_"),
-
-            _ => __sanitized,
-        }
-    };
+    let function_name: String = { crate::util::sanitize_thrust_identifier(name) };
 
     let mut out: String = String::new();
 

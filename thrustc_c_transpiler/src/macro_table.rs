@@ -17,13 +17,15 @@
 
 */
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub(crate) struct MacroTable {
     input_source_file: PathBuf,
     statement_macro_definitions: Vec<(String, Vec<String>, Vec<String>)>,
+    macro_definition_sites: HashMap<String, String>,
+    macro_body_ranges: HashMap<String, (PathBuf, u32, u32)>,
     macro_expansion_sites: Vec<(String, String)>,
     emitted_outline_names: HashSet<String>,
     pending_outline_functions: Vec<String>,
@@ -35,6 +37,8 @@ impl MacroTable {
         Self {
             input_source_file,
             statement_macro_definitions: Vec::new(),
+            macro_definition_sites: HashMap::new(),
+            macro_body_ranges: HashMap::new(),
             macro_expansion_sites: Vec::new(),
             emitted_outline_names: HashSet::new(),
             pending_outline_functions: Vec::new(),
@@ -56,6 +60,7 @@ impl MacroTable {
         macro_name: String,
         parameter_names: Vec<String>,
         body_tokens: Vec<String>,
+        definition: &clang::Entity<'_>,
     ) {
         if self
             .statement_macro_definitions
@@ -65,8 +70,92 @@ impl MacroTable {
             return;
         }
 
+        let definition_site: String = definition
+            .get_range()
+            .map(|range| {
+                let spelling = range.get_start().get_spelling_location();
+
+                match spelling.file {
+                    Some(file) => format!(
+                        "{}:{}:{}",
+                        file.get_path().display(),
+                        spelling.line,
+                        spelling.column
+                    ),
+                    None => String::new(),
+                }
+            })
+            .unwrap_or_default();
+
+        let body_range: Option<(PathBuf, u32, u32)> = definition.get_range().map(|range| {
+            let start = range.get_start().get_spelling_location();
+            let end = range.get_end().get_spelling_location();
+
+            let path: PathBuf = start
+                .file
+                .as_ref()
+                .map(|file| file.get_path())
+                .unwrap_or_else(|| PathBuf::from(""));
+
+            (path, start.offset, end.offset)
+        });
+
+        self.macro_definition_sites
+            .entry(macro_name.clone())
+            .or_insert(definition_site);
+
+        if let Some(range) = body_range {
+            self.macro_body_ranges
+                .entry(macro_name.clone())
+                .or_insert(range);
+        }
+
         self.statement_macro_definitions
             .push((macro_name, parameter_names, body_tokens));
+    }
+}
+
+impl MacroTable {
+    #[inline]
+    pub(crate) fn get_macro_definition_site(&self, macro_name: &str) -> Option<String> {
+        self.macro_definition_sites.get(macro_name).cloned()
+    }
+}
+
+impl MacroTable {
+    #[inline]
+    pub(crate) fn get_macro_body_range(&self, macro_name: &str) -> Option<(PathBuf, u32, u32)> {
+        self.macro_body_ranges.get(macro_name).cloned()
+    }
+}
+
+impl MacroTable {
+    #[inline]
+    pub(crate) fn find_innermost_macro_at(
+        &self,
+        file: &Path,
+        offset: u32,
+    ) -> Option<String> {
+        let mut best: Option<(String, u32)> = None;
+
+        for (name, (range_file, start, end)) in self.macro_body_ranges.iter() {
+            if range_file != file {
+                continue;
+            }
+
+            if offset < *start || offset > *end {
+                continue;
+            }
+
+            let length: u32 = end.saturating_sub(*start);
+
+            match best.as_ref() {
+                Some((_, best_length)) if length >= *best_length => continue,
+                _ => best = Some((name.clone(), length)),
+            }
+        }
+
+        best.map(|(name, _)| name)
     }
 }
 
@@ -96,12 +185,13 @@ impl MacroTable {
         &mut self,
         items: &[(clang::Entity<'_>, String, crate::macros::MacroKind)],
     ) {
-        for (_, macro_name, kind) in items.iter() {
+        for (definition, macro_name, kind) in items.iter() {
             if let crate::macros::MacroKind::Statement { parameters, body } = kind {
                 self.add_statement_macro_definition(
                     macro_name.clone(),
                     parameters.clone(),
                     body.clone(),
+                    definition,
                 );
             }
         }

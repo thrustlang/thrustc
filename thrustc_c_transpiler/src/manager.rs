@@ -93,7 +93,8 @@ pub(crate) fn translate_single_c_to_thrust(
         let severity: clang::diagnostic::Severity = diagnostic.get_severity();
         let text: String = diagnostic.get_text();
 
-        let expansion = diagnostic.get_location().get_expansion_location();
+        let expansion: clang::source::Location<'_> =
+            diagnostic.get_location().get_expansion_location();
 
         let prefix: String = expansion
             .file
@@ -226,6 +227,11 @@ pub(crate) fn translate_single_c_to_thrust(
 
     issues.extend(macro_ctx.get_mut_transpiler_context().take_warnings());
     issues.extend(macro_ctx.get_mut_transpiler_context().take_errors());
+    issues.extend(
+        macro_ctx
+            .get_mut_transpiler_context()
+            .take_macros_errors(),
+    );
 
     let output_path: PathBuf = translate_opts
         .output()
@@ -325,6 +331,11 @@ pub fn emit_c_bindings_thrust(
 
     warnings.extend(macro_ctx.get_mut_transpiler_context().take_warnings());
     warnings.extend(macro_ctx.get_mut_transpiler_context().take_errors());
+    warnings.extend(
+        macro_ctx
+            .get_mut_transpiler_context()
+            .take_macros_errors(),
+    );
 
     let output_path: PathBuf = emit_opts
         .output()

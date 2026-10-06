@@ -301,20 +301,7 @@ pub(crate) fn tokens_to_thrust_source(tokens: &[clang::token::Token<'_>]) -> Str
     for tk in tokens.iter() {
         let raw: String = tk.get_spelling();
         let s: String = match tk.get_kind() {
-            clang::token::TokenKind::Identifier => {
-                let __sanitized: String = raw.to_string();
-
-                match __sanitized.as_str() {
-                    "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
-                    | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if"
-                    | "import" | "importC" | "load" | "loop" | "ptr" | "ref" | "return"
-                    | "struct" | "true" | "type" | "union" | "var" | "void" | "while" => {
-                        format!("{__sanitized}_")
-                    }
-
-                    _ => __sanitized,
-                }
-            }
+            clang::token::TokenKind::Identifier => crate::util::sanitize_thrust_identifier(&raw),
             clang::token::TokenKind::Literal => self::normalize_literal_token_spelling(&raw),
             clang::token::TokenKind::Punctuation if raw == "." => "->".into(),
             _ => raw,

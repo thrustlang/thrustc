@@ -332,15 +332,7 @@ impl MacroStmt {
 
         match self {
             MacroStmt::VarDecl { ty, name, init } => {
-                let clean: String = match name.as_str() {
-                    "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
-                    | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if"
-                    | "import" | "importC" | "load" | "loop" | "ptr" | "ref" | "return"
-                    | "struct" | "true" | "type" | "union" | "var" | "void" | "while" => {
-                        format!("{name}_")
-                    }
-                    _ => name.to_string(),
-                };
+                let clean: String = crate::util::sanitize_thrust_identifier(name);
 
                 if let Some(init) = init {
                     let init_text: String =
@@ -474,13 +466,7 @@ impl MacroStmt {
         }
 
         if let Some(ForInit::Decl { ty, name, init }) = init {
-            let clean: String = match name.as_str() {
-                "array" | "asm" | "bool" | "break" | "char" | "const" | "continue" | "deref"
-                | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if" | "import"
-                | "importC" | "load" | "loop" | "ptr" | "ref" | "return" | "struct" | "true"
-                | "type" | "union" | "var" | "void" | "while" => format!("{name}_"),
-                _ => name.to_string(),
-            };
+            let clean: String = crate::util::sanitize_thrust_identifier(name);
 
             let init_text: String = if let Some(init) = init {
                 let value: String =

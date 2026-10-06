@@ -17,24 +17,17 @@
 
 */
 
-pub mod abort;
-pub mod builtins;
-pub mod clang_util;
-pub mod context;
-pub mod entrypoint;
-pub mod expr;
-pub mod expr_analysis;
-pub mod location;
-pub mod macro_error;
-pub mod macro_expr;
-pub mod macro_lex;
-pub mod macro_stmt;
-pub mod macro_table;
-pub mod macros;
-pub mod manager;
-pub mod options;
-pub mod stmt;
-pub mod stmt_analysis;
-pub mod top_level;
-pub mod type_format;
-pub mod util;
+pub fn sanitize_thrust_identifier(raw: impl AsRef<str>) -> String {
+    let __sanitized: String = raw.as_ref().to_string();
+
+    match __sanitized.as_str() {
+        "array" | "asm" | "bool" | "break" | "char" | "const" | "continue" | "deref"
+        | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if" | "import" | "importC"
+        | "load" | "loop" | "ptr" | "ref" | "return" | "struct" | "true" | "type" | "union"
+        | "var" | "void" | "while" => {
+            format!("{__sanitized}_")
+        }
+
+        _ => __sanitized,
+    }
+}

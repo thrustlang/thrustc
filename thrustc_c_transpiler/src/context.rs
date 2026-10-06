@@ -23,6 +23,7 @@ use thrustc_errors::CompilationIssue;
 pub(crate) struct TranspilerContext {
     errors: Vec<CompilationIssue>,
     warnings: Vec<CompilationIssue>,
+    macros_errors: Vec<CompilationIssue>,
 }
 
 impl TranspilerContext {
@@ -31,6 +32,7 @@ impl TranspilerContext {
         Self {
             errors: Vec::new(),
             warnings: Vec::new(),
+            macros_errors: Vec::new(),
         }
     }
 }
@@ -73,14 +75,91 @@ impl TranspilerContext {
 impl TranspilerContext {
     #[inline]
     pub(crate) fn take_errors(&mut self) -> Vec<CompilationIssue> {
-        std::mem::take(&mut self.errors)
+        let taken: Vec<CompilationIssue> = std::mem::take(&mut self.errors);
+
+        let mut unique: Vec<CompilationIssue> = Vec::with_capacity(taken.len());
+
+        for issue in taken {
+            let seen: bool = unique
+                .iter()
+                .any(|known| format!("{known:?}") == format!("{issue:?}"));
+
+            if !seen {
+                unique.push(issue);
+            }
+        }
+
+        unique
     }
 }
 
 impl TranspilerContext {
     #[inline]
     pub(crate) fn take_warnings(&mut self) -> Vec<CompilationIssue> {
-        std::mem::take(&mut self.warnings)
+        let taken: Vec<CompilationIssue> = std::mem::take(&mut self.warnings);
+
+        let mut unique: Vec<CompilationIssue> = Vec::with_capacity(taken.len());
+
+        for issue in taken {
+            let seen: bool = unique
+                .iter()
+                .any(|known| format!("{known:?}") == format!("{issue:?}"));
+
+            if !seen {
+                unique.push(issue);
+            }
+        }
+
+        unique
+    }
+}
+
+impl TranspilerContext {
+    #[inline]
+    pub(crate) fn add_macros_error(&mut self, issue: CompilationIssue) {
+        let seen: bool = self
+            .macros_errors
+            .iter()
+            .any(|known| format!("{known:?}") == format!("{issue:?}"));
+
+        if !seen {
+            self.macros_errors.push(issue);
+        }
+    }
+}
+
+impl TranspilerContext {
+    #[inline]
+    pub(crate) fn take_macros_errors(&mut self) -> Vec<CompilationIssue> {
+        std::mem::take(&mut self.macros_errors)
+    }
+}
+
+impl TranspilerContext {
+    #[inline]
+    pub(crate) fn has_macros_errors(&self) -> bool {
+        !self.macros_errors.is_empty()
+    }
+}
+
+impl TranspilerContext {
+    #[inline]
+    pub(crate) fn macros_error_count(&self) -> usize {
+        self.macros_errors.len()
+    }
+}
+
+impl TranspilerContext {
+    #[inline]
+    pub(crate) fn take_new_errors_since(
+        &mut self,
+        base_error_count: usize,
+    ) -> Vec<CompilationIssue> {
+        if base_error_count >= self.errors.len() {
+            return Vec::new();
+        }
+
+        self.errors.split_off(base_error_count)
     }
 }
 
@@ -88,6 +167,15 @@ impl TranspilerContext {
     #[inline]
     pub(crate) fn fail<T: Default>(&mut self, issue: CompilationIssue) -> T {
         self.errors.push(issue);
+
+        T::default()
+    }
+}
+
+impl TranspilerContext {
+    #[inline]
+    pub(crate) fn fail_macro<T: Default>(&mut self, issue: CompilationIssue) -> T {
+        self.add_macros_error(issue);
 
         T::default()
     }

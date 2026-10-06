@@ -274,9 +274,14 @@ impl HeapOperation {
         self,
         call_entity: &clang::Entity<'_>,
         pointee_type: Option<&clang::Type<'_>>,
+        macro_ctx: &mut crate::macros::MacroContext,
+        prefix: &str,
+        span: thrustc_code_location::Span,
     ) -> Option<String> {
         match self {
-            Self::Malloc => Self::lower_malloc_call(call_entity, pointee_type),
+            Self::Malloc => {
+                Self::lower_malloc_call(call_entity, pointee_type, macro_ctx, prefix, span)
+            }
             Self::Calloc | Self::Realloc | Self::Free => None,
         }
     }
@@ -303,6 +308,9 @@ impl HeapOperation {
     fn lower_malloc_call(
         call_entity: &clang::Entity<'_>,
         pointee_type: Option<&clang::Type<'_>>,
+        macro_ctx: &mut crate::macros::MacroContext,
+        prefix: &str,
+        span: thrustc_code_location::Span,
     ) -> Option<String> {
         let child_entities: Vec<clang::Entity<'_>> = call_entity.get_children();
 
@@ -313,7 +321,8 @@ impl HeapOperation {
         let size_argument: clang::Entity<'_> = Self::unwrap_parenthesized(child_entities[1]);
 
         if let Some(sizeof_operand) = Self::sizeof_operand_clang_type(&size_argument) {
-            let thrust_type_name: String = Self::format_thrust_type(&sizeof_operand)?;
+            let thrust_type_name: String =
+                Self::format_thrust_type(&sizeof_operand, macro_ctx, prefix, span)?;
 
             return Some(format!("halloc({thrust_type_name})"));
         }
@@ -339,6 +348,9 @@ impl HeapOperation {
                         return Self::sized_heap_allocate(
                             &Self::unwrap_parenthesized(operand_entities[0]),
                             element_count,
+                            macro_ctx,
+                            prefix,
+                            span,
                         );
                     }
                 }
@@ -356,6 +368,9 @@ impl HeapOperation {
                         return Self::sized_heap_allocate(
                             &Self::unwrap_parenthesized(operand_entities[1]),
                             element_count,
+                            macro_ctx,
+                            prefix,
+                            span,
                         );
                     }
                 }
@@ -366,7 +381,8 @@ impl HeapOperation {
 
         let pointee_type: &clang::Type<'_> = pointee_type?;
 
-        let thrust_type_name: String = Self::format_thrust_type(pointee_type)?;
+        let thrust_type_name: String =
+            Self::format_thrust_type(pointee_type, macro_ctx, prefix, span)?;
 
         let requested_bytes: u64 = Self::constant_u64(&size_argument)?;
 
@@ -384,8 +400,12 @@ impl HeapOperation {
     fn sized_heap_allocate(
         sizeof_entity: &clang::Entity<'_>,
         element_count: u64,
+        macro_ctx: &mut crate::macros::MacroContext,
+        prefix: &str,
+        span: thrustc_code_location::Span,
     ) -> Option<String> {
-        let thrust_type_name: String = Self::sizeof_operand_name(sizeof_entity)?;
+        let thrust_type_name: String =
+            Self::sizeof_operand_name(sizeof_entity, macro_ctx, prefix, span)?;
 
         if element_count == 1 {
             return Some(format!("halloc({thrust_type_name})"));
@@ -442,9 +462,16 @@ impl HeapOperation {
 }
 
 impl HeapOperation {
-    fn sizeof_operand_name(sizeof_entity: &clang::Entity<'_>) -> Option<String> {
+    fn sizeof_operand_name(
+        sizeof_entity: &clang::Entity<'_>,
+        macro_ctx: &mut crate::macros::MacroContext,
+        prefix: &str,
+        span: thrustc_code_location::Span,
+    ) -> Option<String> {
         if let Some(sizeof_operand) = Self::sizeof_operand_clang_type(sizeof_entity) {
-            if let Some(thrust_type_name) = Self::format_thrust_type(&sizeof_operand) {
+            if let Some(thrust_type_name) =
+                Self::format_thrust_type(&sizeof_operand, macro_ctx, prefix, span)
+            {
                 return Some(thrust_type_name);
             }
         }
@@ -543,9 +570,18 @@ impl HeapOperation {
 }
 
 impl HeapOperation {
-    fn format_thrust_type(clang_type: &clang::Type<'_>) -> Option<String> {
+    fn format_thrust_type(
+        clang_type: &clang::Type<'_>,
+        macro_ctx: &mut crate::macros::MacroContext,
+        prefix: &str,
+        span: thrustc_code_location::Span,
+    ) -> Option<String> {
         let formatted_name: String =
-            crate::type_format::format_clang_type_thrust(clang_type).ok()?;
+            crate::type_format::format_clang_type_thrust(clang_type, macro_ctx, prefix, span);
+
+        if formatted_name.is_empty() {
+            return None;
+        }
 
         Some(
             formatted_name

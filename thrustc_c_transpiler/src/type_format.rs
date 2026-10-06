@@ -21,7 +21,12 @@ use thrustc_compile_time::BuiltinValue;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::Type;
 
-pub(crate) fn format_clang_type_thrust(ty: &clang::Type<'_>) -> Result<String, String> {
+pub(crate) fn format_clang_type_thrust(
+    ty: &clang::Type<'_>,
+    macro_ctx: &mut crate::macros::MacroContext,
+    prefix: &str,
+    span: thrustc_code_location::Span,
+) -> String {
     let is_const: bool = ty.is_const_qualified();
     let canonical: clang::Type<'_> = ty.get_canonical_type();
 
@@ -52,7 +57,7 @@ pub(crate) fn format_clang_type_thrust(ty: &clang::Type<'_>) -> Result<String, S
 
         clang::TypeKind::Pointer => {
             let Some(pointee) = canonical.get_pointee_type() else {
-                return Ok("ptr".into());
+                return "ptr".into();
             };
 
             let pointee_kind = pointee.get_canonical_type().get_kind();
@@ -61,16 +66,21 @@ pub(crate) fn format_clang_type_thrust(ty: &clang::Type<'_>) -> Result<String, S
                 pointee_kind,
                 clang::TypeKind::FunctionPrototype | clang::TypeKind::FunctionNoPrototype
             ) {
-                return self::format_clang_type_thrust(&pointee);
+                return self::format_clang_type_thrust(&pointee, macro_ctx, prefix, span);
             }
 
             if pointee_kind == clang::TypeKind::Void {
-                return Ok("ptr".into());
+                return "ptr".into();
             }
 
             let inner_ty: clang::Type<'_> = pointee.get_canonical_type();
             let pointee_const: bool = pointee.is_const_qualified();
-            let mut inner: String = self::format_clang_type_thrust(&inner_ty)?;
+            let mut inner: String =
+                self::format_clang_type_thrust(&inner_ty, macro_ctx, prefix, span);
+
+            if inner.is_empty() {
+                return String::new();
+            }
 
             if let Some(stripped) = inner.strip_prefix("const ") {
                 inner = stripped.to_string();
@@ -84,31 +94,78 @@ pub(crate) fn format_clang_type_thrust(ty: &clang::Type<'_>) -> Result<String, S
         }
 
         clang::TypeKind::ConstantArray => {
-            let element_type: clang::Type<'_> = canonical
-                .get_element_type()
-                .ok_or_else(|| "constant array without element type".to_string())?;
+            let Some(element_type) = canonical.get_element_type() else {
+                return macro_ctx.get_mut_transpiler_context().fail(
+                    CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported C type: constant array without element type"
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ),
+                );
+            };
 
-            let size: u32 = canonical
-                .get_size()
-                .and_then(|s| u32::try_from(s).ok())
-                .ok_or_else(|| "constant array with unknown or too-large size".to_string())?;
+            let Some(size) = canonical.get_size().and_then(|s| u32::try_from(s).ok()) else {
+                return macro_ctx.get_mut_transpiler_context().fail(
+                    CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported C type: constant array with unknown or too-large size"
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ),
+                );
+            };
 
-            let inner: String = self::format_clang_type_thrust(&element_type)?;
+            let inner: String =
+                self::format_clang_type_thrust(&element_type, macro_ctx, prefix, span);
+
+            if inner.is_empty() {
+                return String::new();
+            }
 
             format!("array[{inner}; {size}]")
         }
 
         clang::TypeKind::FunctionPrototype | clang::TypeKind::FunctionNoPrototype => {
-            let return_type: clang::Type<'_> = canonical
-                .get_result_type()
-                .ok_or_else(|| "function type without return type".to_string())?;
+            let Some(return_type) = canonical.get_result_type() else {
+                return macro_ctx.get_mut_transpiler_context().fail(
+                    CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported C type: function type without return type"
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ),
+                );
+            };
 
-            let return_type_text: String = self::format_clang_type_thrust(&return_type)?;
+            let return_type_text: String =
+                self::format_clang_type_thrust(&return_type, macro_ctx, prefix, span);
+
+            if return_type_text.is_empty() {
+                return String::new();
+            }
+
             let mut parameter_types_text: Vec<String> = Vec::new();
 
             if let Some(argument_types) = canonical.get_argument_types() {
                 for argument_type in argument_types.iter() {
-                    parameter_types_text.push(self::format_parameter_type_thrust(argument_type)?);
+                    let parameter_text: String =
+                        self::format_parameter_type_thrust(argument_type, macro_ctx, prefix, span);
+
+                    if parameter_text.is_empty() {
+                        return String::new();
+                    }
+
+                    parameter_types_text.push(parameter_text);
                 }
             }
 
@@ -128,62 +185,197 @@ pub(crate) fn format_clang_type_thrust(ty: &clang::Type<'_>) -> Result<String, S
         }
 
         clang::TypeKind::Record => {
-            let decl = canonical
-                .get_declaration()
-                .ok_or_else(|| "record without declaration".to_string())?;
+            let Some(decl) = canonical.get_declaration() else {
+                return macro_ctx.get_mut_transpiler_context().fail(
+                    CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported C type: record without declaration"
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ),
+                );
+            };
 
-            let name: String = decl
-                .get_name()
-                .ok_or_else(|| "anonymous record type".to_string())?;
+            let Some(name) = decl.get_name() else {
+                return macro_ctx.get_mut_transpiler_context().fail(
+                    CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported C type: anonymous record type"
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ),
+                );
+            };
 
-            {
-                let __sanitized: String = name.to_string();
-
-                match __sanitized.as_str() {
-                    "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
-                    | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if"
-                    | "import" | "importC" | "load" | "loop" | "ptr" | "ref" | "return"
-                    | "struct" | "true" | "type" | "union" | "var" | "void" | "while" => {
-                        format!("{__sanitized}_")
-                    }
-
-                    _ => __sanitized,
-                }
-            }
+            crate::util::sanitize_thrust_identifier(&name)
         }
 
         clang::TypeKind::Enum => {
             // Use the enum name in source when available.
 
             let Some(decl) = canonical.get_declaration() else {
-                return Ok("s32".into());
+                return "s32".into();
             };
 
             decl.get_name()
-                .map(|name| {
-                    let __sanitized: String = name.to_string();
-
-                    match __sanitized.as_str() {
-                        "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
-                        | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for"
-                        | "if" | "import" | "importC" | "load" | "loop" | "ptr" | "ref"
-                        | "return" | "struct" | "true" | "type" | "union" | "var" | "void"
-                        | "while" => format!("{__sanitized}_"),
-
-                        _ => __sanitized,
-                    }
-                })
+                .map(|name| crate::util::sanitize_thrust_identifier(&name))
                 .unwrap_or_else(|| "s32".into())
         }
 
-        other => return Err(format!("unsupported C type kind: {other:?}")),
+        other => {
+            return macro_ctx
+                .get_mut_transpiler_context()
+                .fail(CompilationIssue::Error(
+                    CompilationIssueCode::E0110,
+                    format!("C translation failed:\n{prefix}Unsupported C type kind: {other:?}"),
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
+                    None,
+                    span,
+                ));
+        }
     };
 
     if is_const {
         out = format!("const {out}");
     }
 
-    Ok(out)
+    out
+}
+
+pub(crate) fn format_parameter_type_thrust(
+    ty: &clang::Type<'_>,
+    macro_ctx: &mut crate::macros::MacroContext,
+    prefix: &str,
+    span: thrustc_code_location::Span,
+) -> String {
+    let canonical: clang::Type<'_> = ty.get_canonical_type();
+
+    if matches!(
+        canonical.get_kind(),
+        clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
+    ) {
+        let mut current: clang::Type<'_> = canonical;
+        let mut depth: usize = 0;
+
+        while matches!(
+            current.get_kind(),
+            clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
+        ) {
+            depth = depth.saturating_add(1);
+
+            let Some(element) = current.get_element_type() else {
+                return macro_ctx.get_mut_transpiler_context().fail(
+                    CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported C type: array parameter without element type"
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ),
+                );
+            };
+
+            current = element.get_canonical_type();
+        }
+
+        if depth > 1
+            && !matches!(
+                current.get_kind(),
+                clang::TypeKind::ConstantArray
+                    | clang::TypeKind::IncompleteArray
+                    | clang::TypeKind::Record
+            )
+        {
+            let inner: String = self::format_clang_type_thrust(&current, macro_ctx, prefix, span);
+
+            if inner.is_empty() {
+                return String::new();
+            }
+
+            return format!("ptr[{inner}]");
+        }
+
+        let Some(element_type) = canonical.get_element_type() else {
+            return macro_ctx.get_mut_transpiler_context().fail(
+                CompilationIssue::Error(
+                    CompilationIssueCode::E0110,
+                    format!(
+                        "C translation failed:\n{prefix}Unsupported C type: array parameter without element type"
+                    ),
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
+                    None,
+                    span,
+                ),
+            );
+        };
+
+        let inner: String = self::format_clang_type_thrust(&element_type, macro_ctx, prefix, span);
+
+        if inner.is_empty() {
+            return String::new();
+        }
+
+        return format!("ptr[{inner}]");
+    }
+
+    if canonical.get_kind() == clang::TypeKind::Pointer {
+        let Some(pointee_type) = canonical.get_pointee_type() else {
+            return self::format_clang_type_thrust(ty, macro_ctx, prefix, span);
+        };
+
+        let mut current: clang::Type<'_> = pointee_type.get_canonical_type();
+        let mut depth: usize = 0;
+
+        while matches!(
+            current.get_kind(),
+            clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
+        ) {
+            depth = depth.saturating_add(1);
+
+            let Some(element) = current.get_element_type() else {
+                return macro_ctx.get_mut_transpiler_context().fail(
+                    CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported C type: pointer-to-array parameter without element type"
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ),
+                );
+            };
+
+            current = element.get_canonical_type();
+        }
+
+        if depth > 0
+            && !matches!(
+                current.get_kind(),
+                clang::TypeKind::ConstantArray
+                    | clang::TypeKind::IncompleteArray
+                    | clang::TypeKind::Record
+            )
+        {
+            let inner: String = self::format_clang_type_thrust(&current, macro_ctx, prefix, span);
+
+            if inner.is_empty() {
+                return String::new();
+            }
+
+            return format!("ptr[{inner}]");
+        }
+    }
+
+    self::format_clang_type_thrust(ty, macro_ctx, prefix, span)
 }
 
 pub fn format_type_thrust(ty: &Type) -> String {
@@ -445,87 +637,6 @@ pub(crate) fn format_builtin_value_thrust(
             "nullptr".into()
         }
     }
-}
-
-pub(crate) fn format_parameter_type_thrust(ty: &clang::Type<'_>) -> Result<String, String> {
-    let canonical: clang::Type<'_> = ty.get_canonical_type();
-
-    if matches!(
-        canonical.get_kind(),
-        clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
-    ) {
-        let mut current: clang::Type<'_> = canonical;
-        let mut depth: usize = 0;
-
-        while matches!(
-            current.get_kind(),
-            clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
-        ) {
-            depth = depth.saturating_add(1);
-
-            current = current
-                .get_element_type()
-                .ok_or_else(|| "array parameter without element type".to_string())?
-                .get_canonical_type();
-        }
-
-        if depth > 1
-            && !matches!(
-                current.get_kind(),
-                clang::TypeKind::ConstantArray
-                    | clang::TypeKind::IncompleteArray
-                    | clang::TypeKind::Record
-            )
-        {
-            let inner: String = self::format_clang_type_thrust(&current)?;
-
-            return Ok(format!("ptr[{inner}]"));
-        }
-
-        let element_type: clang::Type<'_> = canonical
-            .get_element_type()
-            .ok_or_else(|| "array parameter without element type".to_string())?;
-
-        let inner: String = self::format_clang_type_thrust(&element_type)?;
-
-        return Ok(format!("ptr[{inner}]"));
-    }
-
-    if canonical.get_kind() == clang::TypeKind::Pointer {
-        let Some(pointee_type) = canonical.get_pointee_type() else {
-            return self::format_clang_type_thrust(ty);
-        };
-
-        let mut current: clang::Type<'_> = pointee_type.get_canonical_type();
-        let mut depth: usize = 0;
-
-        while matches!(
-            current.get_kind(),
-            clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
-        ) {
-            depth = depth.saturating_add(1);
-
-            current = current
-                .get_element_type()
-                .ok_or_else(|| "pointer-to-array parameter without element type".to_string())?
-                .get_canonical_type();
-        }
-
-        if depth > 0
-            && !matches!(
-                current.get_kind(),
-                clang::TypeKind::ConstantArray
-                    | clang::TypeKind::IncompleteArray
-                    | clang::TypeKind::Record
-            )
-        {
-            let inner: String = self::format_clang_type_thrust(&current)?;
-
-            return Ok(format!("ptr[{inner}]"));
-        }
-    }
-
-    self::format_clang_type_thrust(ty)
 }
 
 pub(crate) fn format_clang_calling_convention_thrust(

@@ -94,7 +94,7 @@ pub(crate) fn analyze_nested_scalar_array_type(ty: &clang::Type<'_>) -> Option<(
     Some((pointer_root, extents))
 }
 
-pub(crate) fn peel_expression_wrappers<'tu>(entity: &clang::Entity<'tu>) -> clang::Entity<'tu> {
+pub(crate) fn clean_expression_wrappers<'tu>(entity: &clang::Entity<'tu>) -> clang::Entity<'tu> {
     let mut probe: clang::Entity<'tu> = *entity;
 
     loop {

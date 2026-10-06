@@ -36,20 +36,22 @@ pub(crate) fn translate_expr(
         | clang::EntityKind::StringLiteral
         | clang::EntityKind::CharacterLiteral => {
             let Some(range) = entity.get_range() else {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    {
-                        let detail: String = format!(
-                            "Missing source range for expression kind {:?}.",
-                            entity.get_kind()
-                        );
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        {
+                            let detail: String = format!(
+                                "Missing source range for expression kind {:?}.",
+                                entity.get_kind()
+                            );
 
-                        format!("C translation failed:\n{prefix}{detail}")
-                    },
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                            format!("C translation failed:\n{prefix}{detail}")
+                        },
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             };
 
             let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
@@ -71,25 +73,25 @@ pub(crate) fn translate_expr(
             String::new()
         }
 
-            clang::EntityKind::DeclRefExpr => self::translate_decl_ref_expr(entity, span, macro_ctx),
+        clang::EntityKind::DeclRefExpr => self::translate_decl_ref_expr(entity, span, macro_ctx),
 
-        clang::EntityKind::GNUNullExpr | clang::EntityKind::NullPtrLiteralExpr => {
-            "nullptr".into()
-        }
+        clang::EntityKind::GNUNullExpr | clang::EntityKind::NullPtrLiteralExpr => "nullptr".into(),
 
         clang::EntityKind::MemberRefExpr => {
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             let Some(base_node) = children.first() else {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!(
-                        "C translation failed:\n{prefix}Malformed member reference expression."
-                    ),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Malformed member reference expression."
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             };
 
             let Some(field_name) = entity.get_name() else {
@@ -124,20 +126,7 @@ pub(crate) fn translate_expr(
                 "->"
             };
 
-            let field_name: String = {
-                let __sanitized: String = field_name.to_string();
-
-                match __sanitized.as_str() {
-                    "array" | "asm" | "bool" | "break" | "char" | "const" | "continue"
-                    | "deref" | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if"
-                    | "import" | "importC" | "load" | "loop" | "ptr" | "ref" | "return"
-                    | "struct" | "true" | "type" | "union" | "var" | "void" | "while" => {
-                        format!("{__sanitized}_")
-                    }
-
-                    _ => __sanitized,
-                }
-            };
+            let field_name: String = { crate::util::sanitize_thrust_identifier(&field_name) };
 
             format!("{base}{operator}{field_name}")
         }
@@ -217,16 +206,19 @@ pub(crate) fn translate_expr(
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             if children.is_empty() {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Malformed call expression."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!("C translation failed:\n{prefix}Malformed call expression."),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             }
 
-            let callee: String = self::translate_expr(&children[0], span, Location::RValue, macro_ctx);
+            let callee: String =
+                self::translate_expr(&children[0], span, Location::RValue, macro_ctx);
 
             let mut expected_parameter_types: Vec<clang::Type<'_>> = if let Some(reference) =
                 entity.get_reference()
@@ -374,25 +366,12 @@ pub(crate) fn translate_expr(
                                 continue;
                             }
 
-                            let element_text: String =
-                                match crate::type_format::format_clang_type_thrust(&element_type) {
-                                    Ok(text) => text,
-                                    Err(msg) => {
-                                        let detail: String = format!(
-                                            "Unsupported array call argument type: {msg}"
-                                        );
-
-                                        return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                                            CompilationIssueCode::E0110,
-                                            format!(
-                                                "C translation failed:\n{prefix}{detail}"
-                                            ),
-                                            "Rewrite the C input to avoid the unsupported construct.".into(),
-                                            None,
-                                            span,
-                                        ));
-                                    }
-                                };
+                            let element_text: String = crate::type_format::format_clang_type_thrust(
+                                &element_type,
+                                macro_ctx,
+                                &prefix,
+                                span,
+                            );
 
                             args.push(format!("{translated} as ptr[{element_text}]"));
                             continue;
@@ -423,20 +402,24 @@ pub(crate) fn translate_expr(
             if let Some(heap_operation) =
                 crate::builtins::HeapOperation::from_called_function_name(&callee)
             {
-                if let Some(halloc_text) = heap_operation.try_lower_heap_call(entity, None) {
+                if let Some(halloc_text) =
+                    heap_operation.try_lower_heap_call(entity, None, macro_ctx, &prefix, span)
+                {
                     return halloc_text;
                 }
 
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!(
-                        "C translation failed:\n{prefix}{}",
-                        heap_operation.rejection_reason()
-                    ),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}{}",
+                            heap_operation.rejection_reason()
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             }
 
             format!("{callee}({})", args.join(", "))
@@ -460,13 +443,15 @@ pub(crate) fn translate_expr(
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             let Some(operand) = children.first() else {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Malformed unary operator."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!("C translation failed:\n{prefix}Malformed unary operator."),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             };
 
             let is_increment: bool = spellings.contains(&"++".to_string());
@@ -495,12 +480,12 @@ pub(crate) fn translate_expr(
                     ));
                 }
 
-                let peeled: clang::Entity<'_> =
-                    crate::expr_analysis::peel_expression_wrappers(operand);
+                let cleaned: clang::Entity<'_> =
+                    crate::expr_analysis::clean_expression_wrappers(operand);
 
-                let target_kind: clang::EntityKind = peeled.get_kind();
+                let target_kind: clang::EntityKind = cleaned.get_kind();
 
-                let target_type_kind: Option<clang::TypeKind> = peeled
+                let target_type_kind: Option<clang::TypeKind> = cleaned
                     .get_type()
                     .map(|target_type| target_type.get_canonical_type().get_kind());
 
@@ -538,7 +523,8 @@ pub(crate) fn translate_expr(
                 }
 
                 if target_kind == clang::EntityKind::DeclRefExpr {
-                    let name: String = self::translate_expr(operand, span, Location::RValue, macro_ctx);
+                    let name: String =
+                        self::translate_expr(operand, span, Location::RValue, macro_ctx);
 
                     if name.contains("::") {
                         return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
@@ -559,15 +545,15 @@ pub(crate) fn translate_expr(
                     return format!("{name}{operator_text}");
                 }
 
-                let peeled_spellings: Vec<String> = crate::macro_lex::entity_spellings(&peeled);
+                let cleaned_spellings: Vec<String> = crate::macro_lex::entity_spellings(&cleaned);
 
                 let is_place_target: bool = matches!(
                     target_kind,
                     clang::EntityKind::MemberRefExpr | clang::EntityKind::ArraySubscriptExpr
                 ) || (target_kind == clang::EntityKind::UnaryOperator
-                    && peeled_spellings.contains(&"*".to_string())
-                    && !peeled_spellings.contains(&"++".to_string())
-                    && !peeled_spellings.contains(&"--".to_string()));
+                    && cleaned_spellings.contains(&"*".to_string())
+                    && !cleaned_spellings.contains(&"++".to_string())
+                    && !cleaned_spellings.contains(&"--".to_string()));
 
                 if !is_place_target {
                     return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
@@ -581,7 +567,8 @@ pub(crate) fn translate_expr(
                     ));
                 }
 
-                let place_text: String = self::translate_expr(&peeled, span, Location::RValue, macro_ctx);
+                let place_text: String =
+                    self::translate_expr(&cleaned, span, Location::RValue, macro_ctx);
 
                 if is_prefix {
                     return format!("{operator_text}({place_text})");
@@ -596,16 +583,18 @@ pub(crate) fn translate_expr(
             });
 
             let Some(op) = op else {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!(
-                        "C translation failed:\n{prefix}Unsupported unary operator{}.",
-                        crate::macros::origin_note(entity)
-                    ),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported unary operator{}.",
+                            crate::macros::origin_note(entity)
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             };
 
             let operand_ctx: Location = if op == "&" {
@@ -642,10 +631,10 @@ pub(crate) fn translate_expr(
                 "+" => operand_text,
                 "-" => format!("-{operand_text}"),
                 "~" => {
-                    let peeled_operand: clang::Entity<'_> =
-                        crate::expr_analysis::peel_expression_wrappers(operand);
+                    let cleaned_operand: clang::Entity<'_> =
+                        crate::expr_analysis::clean_expression_wrappers(operand);
 
-                    let operand_type_kind: Option<clang::TypeKind> = peeled_operand
+                    let operand_type_kind: Option<clang::TypeKind> = cleaned_operand
                         .get_type()
                         .map(|operand_type| operand_type.get_canonical_type().get_kind());
 
@@ -700,16 +689,18 @@ pub(crate) fn translate_expr(
                         span,
                     ))
                 }
-                _ => macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!(
-                        "C translation failed:\n{prefix}Unsupported unary operator{}.",
-                        crate::macros::origin_note(entity)
-                    ),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                )),
+                _ => macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported unary operator{}.",
+                            crate::macros::origin_note(entity)
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    )),
             }
         }
 
@@ -797,57 +788,37 @@ pub(crate) fn translate_expr(
                     ));
                 };
 
-                let operand_type_text: String =
-                    match crate::type_format::format_clang_type_thrust(&operand_type) {
-                        Ok(text) => text,
+                let operand_type_text: String = crate::type_format::format_clang_type_thrust(
+                    &operand_type,
+                    macro_ctx,
+                    &prefix,
+                    span,
+                );
 
-                        Err(message) => match operand_type.get_sizeof() {
-                            Ok(evaluated_size)
-                                if !matches!(
-                                    operand_type.get_canonical_type().get_kind(),
-                                    clang::TypeKind::LongDouble | clang::TypeKind::Complex
-                                ) =>
-                            {
-                                return format!("{evaluated_size}");
-                            }
+                if operand_type_text.is_empty() {
+                    match operand_type.get_sizeof() {
+                        Ok(evaluated_size)
+                            if !matches!(
+                                operand_type.get_canonical_type().get_kind(),
+                                clang::TypeKind::LongDouble | clang::TypeKind::Complex
+                            ) =>
+                        {
+                            return format!("{evaluated_size}");
+                        }
 
-                            _ => {
-                                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                                    CompilationIssueCode::E0110,
-                                    {
-                                        let detail: String =
-                                            format!("Unsupported sizeof operand type: {message}");
-
-                                        format!("C translation failed:\n{prefix}{detail}")
-                                    },
-                                    "Rewrite the C input to avoid the unsupported construct."
-                                        .into(),
-                                    None,
-                                    span,
-                                ));
-                            }
-                        },
-                    };
+                        _ => {}
+                    }
+                }
 
                 let mut sizeof_text: String = format!("abiSizeOf({operand_type_text})");
 
                 if let Some(result_type) = result_type {
-                    let result_type_text: String =
-                        match crate::type_format::format_clang_type_thrust(&result_type) {
-                            Ok(text) => text,
-                            Err(msg) => {
-                                let detail: String =
-                                    format!("Unsupported sizeof result type: {msg}");
-
-                                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                                    CompilationIssueCode::E0110,
-                                    format!("C translation failed:\n{prefix}{detail}"),
-                                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                                    None,
-                                    span,
-                                ));
-                            }
-                        };
+                    let result_type_text: String = crate::type_format::format_clang_type_thrust(
+                        &result_type,
+                        macro_ctx,
+                        &prefix,
+                        span,
+                    );
 
                     sizeof_text = format!("({sizeof_text}) as {result_type_text}");
                 }
@@ -855,26 +826,30 @@ pub(crate) fn translate_expr(
                 return sizeof_text;
             }
 
-            macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                CompilationIssueCode::E0110,
-                format!("C translation failed:\n{prefix}Unsupported unary expression."),
-                "Rewrite the C input to avoid the unsupported construct.".into(),
-                None,
-                span,
-            ))
+            macro_ctx
+                .get_mut_transpiler_context()
+                .fail(CompilationIssue::Error(
+                    CompilationIssueCode::E0110,
+                    format!("C translation failed:\n{prefix}Unsupported unary expression."),
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
+                    None,
+                    span,
+                ))
         }
 
         clang::EntityKind::BinaryOperator | clang::EntityKind::CompoundAssignOperator => {
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             if children.len() < 2 {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Malformed binary operator."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!("C translation failed:\n{prefix}Malformed binary operator."),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             }
 
             let lhs_ctx: Location = if crate::macro_lex::is_assignment_expression(entity) {
@@ -885,7 +860,8 @@ pub(crate) fn translate_expr(
 
             let left: String = self::translate_expr(&children[0], span, lhs_ctx, macro_ctx);
 
-            let right: String = self::translate_expr(&children[1], span, Location::RValue, macro_ctx);
+            let right: String =
+                self::translate_expr(&children[1], span, Location::RValue, macro_ctx);
 
             let Some(op) =
                 crate::macro_lex::extract_binary_operator(entity, &children[0], &children[1])
@@ -897,16 +873,18 @@ pub(crate) fn translate_expr(
                         })
                     })
             else {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!(
-                        "C translation failed:\n{prefix}Unsupported binary operator{}.",
-                        crate::macros::origin_note(entity)
-                    ),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported binary operator{}.",
+                            crate::macros::origin_note(entity)
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             };
 
             if op == "," {
@@ -932,23 +910,27 @@ pub(crate) fn translate_expr(
                 .rev()
                 .find(|c| crate::clang_util::is_supported_expr_kind(c.get_kind()))
             else {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Unsupported cast expression."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!("C translation failed:\n{prefix}Unsupported cast expression."),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             };
 
             let Some(to_ty) = entity.get_type() else {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Missing cast type."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!("C translation failed:\n{prefix}Missing cast type."),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             };
 
             if let Some((heap_operation, heap_call)) =
@@ -957,22 +939,28 @@ pub(crate) fn translate_expr(
                 let pointee: Option<clang::Type<'_>> =
                     to_ty.get_canonical_type().get_pointee_type();
 
-                if let Some(halloc_text) =
-                    heap_operation.try_lower_heap_call(&heap_call, pointee.as_ref())
-                {
+                if let Some(halloc_text) = heap_operation.try_lower_heap_call(
+                    &heap_call,
+                    pointee.as_ref(),
+                    macro_ctx,
+                    &prefix,
+                    span,
+                ) {
                     return halloc_text;
                 }
 
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!(
-                        "C translation failed:\n{prefix}{}",
-                        heap_operation.rejection_reason()
-                    ),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}{}",
+                            heap_operation.rejection_reason()
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             }
 
             let value: String = self::translate_expr(value_node, span, Location::RValue, macro_ctx);
@@ -982,20 +970,7 @@ pub(crate) fn translate_expr(
             }
 
             let to_ty_text: String =
-                match crate::type_format::format_clang_type_thrust(&to_ty) {
-                    Ok(text) => text,
-                    Err(msg) => {
-                        let detail: String = format!("Unsupported cast target type: {msg}");
-
-                        return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            format!("C translation failed:\n{prefix}{detail}"),
-                            "Rewrite the C input to avoid the unsupported construct.".into(),
-                            None,
-                            span,
-                        ));
-                    }
-                };
+                crate::type_format::format_clang_type_thrust(&to_ty, macro_ctx, &prefix, span);
 
             format!("{value} as {to_ty_text}")
         }
@@ -1004,34 +979,40 @@ pub(crate) fn translate_expr(
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             if children.len() < 3 {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Malformed conditional operator."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!("C translation failed:\n{prefix}Malformed conditional operator."),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             }
 
             let cond: String =
                 self::translate_condition_expr(&children[0], span, Location::RValue, macro_ctx);
-            let then_expr: String = self::translate_expr(&children[1], span, Location::RValue, macro_ctx);
-            let else_expr: String = self::translate_expr(&children[2], span, Location::RValue, macro_ctx);
+            let then_expr: String =
+                self::translate_expr(&children[1], span, Location::RValue, macro_ctx);
+            let else_expr: String =
+                self::translate_expr(&children[2], span, Location::RValue, macro_ctx);
 
-            format!(
-                "if {cond} {{ {then_expr} }} else {{ {else_expr} }}"
-            )
+            format!("if {cond} {{ {then_expr} }} else {{ {else_expr} }}")
         }
 
         clang::EntityKind::CompoundLiteralExpr => {
             let Some(compound_type) = entity.get_type() else {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Compound literal is missing its type."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Compound literal is missing its type."
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             };
 
             crate::top_level::translate_global_initializer(entity, &compound_type, span, macro_ctx)
@@ -1039,13 +1020,17 @@ pub(crate) fn translate_expr(
 
         clang::EntityKind::InitListExpr => {
             let Some(init_type) = entity.get_type() else {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Initializer list is missing its type."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Initializer list is missing its type."
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             };
 
             crate::top_level::translate_global_initializer(entity, &init_type, span, macro_ctx)
@@ -1055,13 +1040,17 @@ pub(crate) fn translate_expr(
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             if children.len() < 2 {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Malformed array subscript expression."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Malformed array subscript expression."
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             }
 
             let base_node: &clang::Entity<'_> = &children[0];
@@ -1075,7 +1064,8 @@ pub(crate) fn translate_expr(
             if ctx.is_address_of() {
                 let base: String = self::translate_expr(base_node, span, ctx, macro_ctx);
 
-                let index: String = self::translate_expr(index_node, span, Location::RValue, macro_ctx);
+                let index: String =
+                    self::translate_expr(index_node, span, Location::RValue, macro_ctx);
 
                 return format!("{base}[{index}]");
             }
@@ -1087,16 +1077,16 @@ pub(crate) fn translate_expr(
             }
 
             // La base de un subíndice se indexa sobre su dirección (GEP
-            // del backend): una base MemberRef (pelando wrappers de decay)
+            // del backend): una base MemberRef (limpiando wrappers de decay)
             // se traduce en AddressOf (`.` sin loads intermedios,
             // `buffer.data->[0]`), el resto en RValue (`pp->[0]->[0]`,
             // `records[i]`, `xs->[2]`).
 
-            let base_probe: clang::Entity<'_> =
-                crate::expr_analysis::peel_expression_wrappers(base_node);
+            let base_cleaned: clang::Entity<'_> =
+                crate::expr_analysis::clean_expression_wrappers(base_node);
 
             let base_ctx: Location =
-                if matches!(base_probe.get_kind(), clang::EntityKind::MemberRefExpr) {
+                if matches!(base_cleaned.get_kind(), clang::EntityKind::MemberRefExpr) {
                     Location::AddressOf
                 } else {
                     Location::RValue
@@ -1153,17 +1143,19 @@ pub(crate) fn translate_expr(
             }
         }
 
-        other => macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-            CompilationIssueCode::E0110,
-            {
-                let detail: String = format!("Unsupported expression kind: {other:?}");
+        other => macro_ctx
+            .get_mut_transpiler_context()
+            .fail(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                {
+                    let detail: String = format!("Unsupported expression kind: {other:?}");
 
-                format!("C translation failed:\n{prefix}{detail}")
-            },
-            "Rewrite the C input to avoid the unsupported construct.".into(),
-            None,
-            span,
-        )),
+                    format!("C translation failed:\n{prefix}{detail}")
+                },
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            )),
     }
 }
 
@@ -1226,16 +1218,19 @@ pub(crate) fn translate_condition_expr(
             if tokens.contains(&"!".to_string()) {
                 let children: Vec<clang::Entity<'_>> = entity.get_children();
                 let Some(operand) = children.first() else {
-                    return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                        CompilationIssueCode::E0110,
-                        format!("C translation failed:\n{prefix}Malformed unary operator."),
-                        "Rewrite the C input to avoid the unsupported construct.".into(),
-                        None,
-                        span,
-                    ));
+                    return macro_ctx
+                        .get_mut_transpiler_context()
+                        .fail(CompilationIssue::Error(
+                            CompilationIssueCode::E0110,
+                            format!("C translation failed:\n{prefix}Malformed unary operator."),
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
+                            None,
+                            span,
+                        ));
                 };
 
-                let operand_text: String = self::translate_condition_expr(operand, span, ctx, macro_ctx);
+                let operand_text: String =
+                    self::translate_condition_expr(operand, span, ctx, macro_ctx);
 
                 return format!("!({operand_text})");
             }
@@ -1249,13 +1244,15 @@ pub(crate) fn translate_condition_expr(
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
             if children.len() < 2 {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Malformed binary operator."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!("C translation failed:\n{prefix}Malformed binary operator."),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             }
 
             let Some(op) =
@@ -1268,21 +1265,25 @@ pub(crate) fn translate_condition_expr(
                         })
                     })
             else {
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!(
-                        "C translation failed:\n{prefix}Unsupported binary operator{}.",
-                        crate::macros::origin_note(entity)
-                    ),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Unsupported binary operator{}.",
+                            crate::macros::origin_note(entity)
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
             };
 
             if matches!(op, "&&" | "||") {
-                let left: String = self::translate_condition_expr(&children[0], span, ctx, macro_ctx);
-                let right: String = self::translate_condition_expr(&children[1], span, ctx, macro_ctx);
+                let left: String =
+                    self::translate_condition_expr(&children[0], span, ctx, macro_ctx);
+                let right: String =
+                    self::translate_condition_expr(&children[1], span, ctx, macro_ctx);
 
                 return format!("({left}) {op} ({right})");
             }
@@ -1353,20 +1354,7 @@ fn coerce_call_argument(
 ) -> String {
     let prefix: String = crate::macros::expansion_prefix(entity);
     let thrust_type: String =
-        match crate::type_format::format_clang_type_thrust(expected_type) {
-            Ok(text) => text,
-            Err(msg) => {
-                let detail: String = format!("Unsupported call parameter type: {msg}");
-
-                return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}{detail}"),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
-            }
-        };
+        crate::type_format::format_clang_type_thrust(expected_type, macro_ctx, &prefix, span);
 
     let mut argument_type: Option<clang::Type<'_>> = entity.get_type();
     let mut probe: clang::Entity<'_> = *entity;
@@ -1438,16 +1426,23 @@ fn coerce_call_argument(
     let needs_cast: bool = match argument_type {
         Some(argument_type) => {
             let match_: bool = {
-                let argument_text: Result<String, String> =
-                    crate::type_format::format_clang_type_thrust(&argument_type);
+                let argument_text: String = crate::type_format::format_clang_type_thrust(
+                    &argument_type,
+                    macro_ctx,
+                    &prefix,
+                    span,
+                );
 
-                let expected_text: Result<String, String> =
-                    crate::type_format::format_clang_type_thrust(expected_type);
+                let expected_text: String = crate::type_format::format_clang_type_thrust(
+                    expected_type,
+                    macro_ctx,
+                    &prefix,
+                    span,
+                );
 
-                match (argument_text, expected_text) {
-                    (Ok(argument_text), Ok(expected_text)) => argument_text == expected_text,
-                    _ => false,
-                }
+                !argument_text.is_empty()
+                    && !expected_text.is_empty()
+                    && argument_text == expected_text
             };
 
             !match_
@@ -1469,20 +1464,22 @@ fn translate_decl_ref_expr(
 ) -> String {
     let prefix: String = crate::macros::expansion_prefix(entity);
     let Some(range) = entity.get_range() else {
-        return macro_ctx.get_mut_transpiler_context().fail(CompilationIssue::Error(
-            CompilationIssueCode::E0110,
-            {
-                let detail: String = format!(
-                    "Missing source range for expression kind {:?}.",
-                    entity.get_kind()
-                );
+        return macro_ctx
+            .get_mut_transpiler_context()
+            .fail(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                {
+                    let detail: String = format!(
+                        "Missing source range for expression kind {:?}.",
+                        entity.get_kind()
+                    );
 
-                format!("C translation failed:\n{prefix}{detail}")
-            },
-            "Rewrite the C input to avoid the unsupported construct.".into(),
-            None,
-            span,
-        ));
+                    format!("C translation failed:\n{prefix}{detail}")
+                },
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
     };
 
     let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
@@ -1529,31 +1526,10 @@ fn translate_decl_ref_expr(
         return fallback;
     };
 
-    let module_name: String = {
-        let __sanitized: String = module_stem.to_string_lossy().to_string();
+    let module_name: String =
+        { crate::util::sanitize_thrust_identifier(module_stem.to_string_lossy()) };
 
-        match __sanitized.as_str() {
-            "array" | "asm" | "bool" | "break" | "char" | "const" | "continue" | "deref"
-            | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if" | "import"
-            | "importC" | "load" | "loop" | "ptr" | "ref" | "return" | "struct" | "true"
-            | "type" | "union" | "var" | "void" | "while" => format!("{__sanitized}_"),
-
-            _ => __sanitized,
-        }
-    };
-
-    let symbol_name: String = {
-        let __sanitized: String = reference_name.to_string();
-
-        match __sanitized.as_str() {
-            "array" | "asm" | "bool" | "break" | "char" | "const" | "continue" | "deref"
-            | "directive" | "else" | "enum" | "false" | "fn" | "for" | "if" | "import"
-            | "importC" | "load" | "loop" | "ptr" | "ref" | "return" | "struct" | "true"
-            | "type" | "union" | "var" | "void" | "while" => format!("{__sanitized}_"),
-
-            _ => __sanitized,
-        }
-    };
+    let symbol_name: String = { crate::util::sanitize_thrust_identifier(&reference_name) };
 
     format!("{module_name}::{symbol_name}")
 }
@@ -1564,7 +1540,7 @@ fn try_translate_linearized_array_subscript(
     macro_ctx: &mut crate::macros::MacroContext,
 ) -> Option<String> {
     let mut indices_rev: Vec<clang::Entity<'_>> = Vec::new();
-    let mut probe: clang::Entity<'_> = crate::expr_analysis::peel_expression_wrappers(entity);
+    let mut probe: clang::Entity<'_> = crate::expr_analysis::clean_expression_wrappers(entity);
 
     while probe.get_kind() == clang::EntityKind::ArraySubscriptExpr {
         let children: Vec<clang::Entity<'_>> = probe.get_children();
@@ -1574,7 +1550,7 @@ fn try_translate_linearized_array_subscript(
         }
 
         indices_rev.push(children[1]);
-        probe = crate::expr_analysis::peel_expression_wrappers(&children[0]);
+        probe = crate::expr_analysis::clean_expression_wrappers(&children[0]);
     }
 
     if indices_rev.len() < 2 {
@@ -1598,10 +1574,19 @@ fn try_translate_linearized_array_subscript(
             .get_reference()
             .is_some_and(|reference| reference.get_kind() == clang::EntityKind::ParmDecl);
 
-    if ((!pointer_root && !parameter_array_root) && extents.len() != indices_rev.len())
-        || (parameter_array_root && extents.len() != indices_rev.len())
-        || (pointer_root && extents.len().saturating_add(1) != indices_rev.len())
-    {
+    let extents_len: usize = extents.len();
+
+    let indices_len: usize = indices_rev.len();
+
+    let expected_len: usize = if pointer_root {
+        extents_len.saturating_add(1)
+    } else {
+        extents_len
+    };
+
+    let lengths_match: bool = expected_len == indices_len;
+
+    if !lengths_match {
         return None;
     }
 
@@ -1618,7 +1603,8 @@ fn try_translate_linearized_array_subscript(
     let mut terms: Vec<String> = Vec::with_capacity(indices_rev.len());
 
     for (index_position, index_node) in indices_rev.iter().enumerate() {
-        let index_text: String = self::translate_expr(index_node, span, Location::RValue, macro_ctx);
+        let index_text: String =
+            self::translate_expr(index_node, span, Location::RValue, macro_ctx);
 
         let start_extent: usize = if pointer_root {
             index_position
@@ -1671,8 +1657,10 @@ fn translate_pointer_target_expr(
                 crate::macro_lex::extract_binary_operator(entity, &children[0], &children[1])
             && op == "+"
         {
-            let base: String = self::translate_expr(&children[0], span, Location::RValue, macro_ctx);
-            let index: String = self::translate_expr(&children[1], span, Location::RValue, macro_ctx);
+            let base: String =
+                self::translate_expr(&children[0], span, Location::RValue, macro_ctx);
+            let index: String =
+                self::translate_expr(&children[1], span, Location::RValue, macro_ctx);
 
             return Some(format!("{base}->[{index}]"));
         }
