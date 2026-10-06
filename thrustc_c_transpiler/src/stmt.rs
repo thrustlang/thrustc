@@ -24,7 +24,7 @@ use crate::location::Location;
 
 type SwitchSegment = (Vec<Option<String>>, Vec<String>, bool);
 
-pub(crate) fn translate_stmt(
+fn translate_stmt_inner(
     entity: &clang::Entity<'_>,
     indent: usize,
     span: Span,
@@ -356,7 +356,8 @@ pub(crate) fn translate_stmt(
                 );
 
                 if let Some(name) = macro_name.as_deref() {
-                    ctx.get_mut_transpiler_context().fail_macro::<Vec<String>>(issue);
+                    ctx.get_mut_transpiler_context()
+                        .fail_macro::<Vec<String>>(issue);
 
                     crate::macro_error::collapse_macro_site_errors(
                         ctx,
@@ -390,11 +391,7 @@ pub(crate) fn translate_stmt(
                         if let Some(name) = macro_name.as_deref() {
                             if ctx.get_transpiler_context().error_count() > child_base {
                                 crate::macro_error::collapse_macro_site_errors_with_failed_at(
-                                    ctx,
-                                    entity,
-                                    name,
-                                    &child,
-                                    child_base,
+                                    ctx, entity, name, &child, child_base,
                                 );
                             }
                         }
@@ -881,11 +878,7 @@ pub(crate) fn translate_stmt(
                 if let Some(name) = macro_name.as_deref() {
                     if ctx.get_transpiler_context().error_count() > child_base {
                         crate::macro_error::collapse_macro_site_errors_with_failed_at(
-                            ctx,
-                            entity,
-                            name,
-                            &child,
-                            child_base,
+                            ctx, entity, name, &child, child_base,
                         );
                     }
                 }
@@ -1092,6 +1085,53 @@ fn translate_switch_stmt(
     lines
 }
 
+fn translate_return_expr(
+    entity: &clang::Entity<'_>,
+    span: Span,
+    expected_return_type: &str,
+    macro_ctx: &mut crate::macros::MacroContext<'_>,
+) -> String {
+    if matches!(
+        expected_return_type,
+        "s8" | "s16" | "s32" | "s64" | "ssize" | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
+    ) && crate::stmt_analysis::expression_produces_condition(entity)
+    {
+        let condition: String =
+            crate::expr::translate_condition_expr(entity, span, Location::RValue, macro_ctx);
+
+        return format!("({condition}) as {expected_return_type}");
+    }
+
+    let value: String = crate::expr::translate_expr(entity, span, Location::RValue, macro_ctx);
+
+    if expected_return_type.contains("ptr[char]")
+        && (value.starts_with('"') || value.starts_with("n#\""))
+    {
+        return format!("{value} as {expected_return_type}");
+    }
+
+    if matches!(
+        expected_return_type,
+        "s8" | "s16"
+            | "s32"
+            | "s64"
+            | "ssize"
+            | "u8"
+            | "u16"
+            | "u32"
+            | "u64"
+            | "u128"
+            | "usize"
+            | "char"
+            | "f32"
+            | "f64"
+    ) {
+        return format!("({value}) as {expected_return_type}");
+    }
+
+    value
+}
+
 fn collect_switch_labels_and_body<'stmt>(
     entity: &clang::Entity<'stmt>,
     span: Span,
@@ -1208,53 +1248,6 @@ fn push_switch_segment<'stmt>(
     current_body_nodes.clear();
 }
 
-fn translate_return_expr(
-    entity: &clang::Entity<'_>,
-    span: Span,
-    expected_return_type: &str,
-    macro_ctx: &mut crate::macros::MacroContext<'_>,
-) -> String {
-    if matches!(
-        expected_return_type,
-        "s8" | "s16" | "s32" | "s64" | "ssize" | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-    ) && crate::stmt_analysis::expression_produces_condition(entity)
-    {
-        let condition: String =
-            crate::expr::translate_condition_expr(entity, span, Location::RValue, macro_ctx);
-
-        return format!("({condition}) as {expected_return_type}");
-    }
-
-    let value: String = crate::expr::translate_expr(entity, span, Location::RValue, macro_ctx);
-
-    if expected_return_type.contains("ptr[char]")
-        && (value.starts_with('"') || value.starts_with("n#\""))
-    {
-        return format!("{value} as {expected_return_type}");
-    }
-
-    if matches!(
-        expected_return_type,
-        "s8" | "s16"
-            | "s32"
-            | "s64"
-            | "ssize"
-            | "u8"
-            | "u16"
-            | "u32"
-            | "u64"
-            | "u128"
-            | "usize"
-            | "char"
-            | "f32"
-            | "f64"
-    ) {
-        return format!("({value}) as {expected_return_type}");
-    }
-
-    value
-}
-
 fn translate_conditional_return(
     entity: &clang::Entity<'_>,
     indent: usize,
@@ -1293,4 +1286,44 @@ fn translate_conditional_return(
         format!("{child_indent_str}return {else_expr};"),
         format!("{indent_str}}}"),
     ]
+}
+
+pub(crate) fn translate_stmt(
+    entity: &clang::Entity<'_>,
+    indent: usize,
+    span: Span,
+    function_return_type: Option<&str>,
+    loop_continue_action: Option<&str>,
+    ctx: &mut crate::macros::MacroContext<'_>,
+) -> Vec<String> {
+    let base_pending: usize = ctx.pending_statements_len();
+
+    let mut lines: Vec<String> = self::translate_stmt_inner(
+        entity,
+        indent,
+        span,
+        function_return_type,
+        loop_continue_action,
+        ctx,
+    );
+
+    let pending: Vec<String> = ctx.take_pending_statements_since(base_pending);
+
+    let indent_str: String = "    ".repeat(indent);
+
+    let mut indented_pending: Vec<String> = Vec::with_capacity(pending.len());
+
+    for statement in pending {
+        for line in statement.split('\n') {
+            if line.is_empty() {
+                continue;
+            }
+
+            indented_pending.push(format!("{indent_str}{line}"));
+        }
+    }
+
+    indented_pending.append(&mut lines);
+
+    indented_pending
 }

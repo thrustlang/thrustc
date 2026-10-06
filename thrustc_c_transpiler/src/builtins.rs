@@ -30,79 +30,79 @@ impl CanonicalBuiltin {
     pub(crate) fn rewrite_builtin_call(
         self,
         argument_entities: &[clang::Entity<'_>],
-        argument_texts: &[String],
+        arguments: &[String],
     ) -> Option<String> {
-        if argument_entities.len() != argument_texts.len() {
+        if argument_entities.len() != arguments.len() {
             return None;
         }
 
         match self {
             Self::MemSet => {
-                if argument_texts.len() != 3 {
+                if arguments.len() != 3 {
                     return None;
                 }
 
                 let destination: String =
-                    Self::ensure_pointer_text(&argument_entities[0], &argument_texts[0]);
+                    Self::ensure_pointer_text(&argument_entities[0], &arguments[0]);
 
                 let byte_value: String =
-                    Self::ensure_byte_value_text(&argument_entities[1], &argument_texts[1]);
+                    Self::ensure_byte_value_text(&argument_entities[1], &arguments[1]);
 
                 let byte_size: String =
-                    Self::ensure_size_value_text(&argument_entities[2], &argument_texts[2]);
+                    Self::ensure_size_value_text(&argument_entities[2], &arguments[2]);
 
                 Some(format!("memset({destination}, {byte_value}, {byte_size})"))
             }
 
             Self::MemCpy => {
-                if argument_texts.len() != 3 {
+                if arguments.len() != 3 {
                     return None;
                 }
 
                 let source: String =
-                    Self::ensure_pointer_text(&argument_entities[1], &argument_texts[1]);
+                    Self::ensure_pointer_text(&argument_entities[1], &arguments[1]);
 
                 let destination: String =
-                    Self::ensure_pointer_text(&argument_entities[0], &argument_texts[0]);
+                    Self::ensure_pointer_text(&argument_entities[0], &arguments[0]);
 
                 let byte_size: String =
-                    Self::ensure_signed_size_value_text(&argument_entities[2], &argument_texts[2]);
+                    Self::ensure_signed_size_value_text(&argument_entities[2], &arguments[2]);
 
                 Some(format!("memcpy({source}, {destination}, {byte_size})"))
             }
 
             Self::MemMove => {
-                if argument_texts.len() != 3 {
+                if arguments.len() != 3 {
                     return None;
                 }
 
                 let source: String =
-                    Self::ensure_pointer_text(&argument_entities[1], &argument_texts[1]);
+                    Self::ensure_pointer_text(&argument_entities[1], &arguments[1]);
 
                 let destination: String =
-                    Self::ensure_pointer_text(&argument_entities[0], &argument_texts[0]);
+                    Self::ensure_pointer_text(&argument_entities[0], &arguments[0]);
 
                 let byte_size: String =
-                    Self::ensure_size_value_text(&argument_entities[2], &argument_texts[2]);
+                    Self::ensure_size_value_text(&argument_entities[2], &arguments[2]);
 
                 Some(format!("memmove({source}, {destination}, {byte_size})"))
             }
 
             Self::BZero => {
-                if argument_texts.len() != 2 {
+                if arguments.len() != 2 {
                     return None;
                 }
 
                 let destination: String =
-                    Self::ensure_pointer_text(&argument_entities[0], &argument_texts[0]);
+                    Self::ensure_pointer_text(&argument_entities[0], &arguments[0]);
 
                 let byte_size: String =
-                    Self::ensure_size_value_text(&argument_entities[1], &argument_texts[1]);
+                    Self::ensure_size_value_text(&argument_entities[1], &arguments[1]);
 
                 Some(format!("memset({destination}, (0) as u8, {byte_size})"))
             }
 
-            Self::Expect => argument_texts.first().cloned(),
+            Self::Expect => arguments.first().cloned(),
         }
     }
 }

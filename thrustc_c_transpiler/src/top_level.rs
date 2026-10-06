@@ -309,201 +309,6 @@ pub(crate) fn append_translated_top_level_declarations(
     }
 }
 
-fn translate_global_var_decl(
-    entity: &clang::Entity<'_>,
-    span: Span,
-    macro_ctx: &mut crate::macros::MacroContext<'_>,
-) -> String {
-    let prefix: String = crate::macros::expansion_prefix(entity);
-    let Some(raw_name) = entity.get_name() else {
-        return macro_ctx
-            .get_mut_transpiler_context()
-            .fail(CompilationIssue::Error(
-                CompilationIssueCode::E0110,
-                format!(
-                    "C translation failed:\n{prefix}Encountered a global variable without a name."
-                ),
-                "Rewrite the C input to avoid the unsupported construct.".into(),
-                None,
-                span,
-            ));
-    };
-
-    let name: String = { crate::util::sanitize_thrust_identifier(&raw_name) };
-
-    let Some(var_type) = entity.get_type() else {
-        return macro_ctx
-            .get_mut_transpiler_context()
-            .fail(CompilationIssue::Error(
-                CompilationIssueCode::E0110,
-                {
-                    let detail: String = format!("Missing type for global '{name}'.");
-
-                    format!("C translation failed:\n{prefix}{detail}")
-                },
-                "Rewrite the C input to avoid the unsupported construct.".into(),
-                None,
-                span,
-            ));
-    };
-
-    let canonical_type: clang::Type<'_> = var_type.get_canonical_type();
-    let initializer: Option<clang::Entity<'_>> = self::find_var_initializer(entity);
-    let initializer_text: Option<String> = match (initializer, entity.get_storage_class()) {
-        (Some(initializer), _) => {
-            let mut initializer_text: String =
-                self::translate_global_initializer(&initializer, &canonical_type, span, macro_ctx);
-
-            let initializer_kind: clang::EntityKind = initializer.get_kind();
-            let scalar_global: bool = matches!(
-                canonical_type.get_kind(),
-                clang::TypeKind::Bool
-                    | clang::TypeKind::CharS
-                    | clang::TypeKind::CharU
-                    | clang::TypeKind::SChar
-                    | clang::TypeKind::UChar
-                    | clang::TypeKind::Short
-                    | clang::TypeKind::UShort
-                    | clang::TypeKind::Int
-                    | clang::TypeKind::UInt
-                    | clang::TypeKind::Long
-                    | clang::TypeKind::ULong
-                    | clang::TypeKind::LongLong
-                    | clang::TypeKind::ULongLong
-                    | clang::TypeKind::UInt128
-                    | clang::TypeKind::Float
-                    | clang::TypeKind::Double
-                    | clang::TypeKind::Enum
-            );
-
-            if scalar_global
-                && matches!(
-                    initializer_kind,
-                    clang::EntityKind::BinaryOperator
-                        | clang::EntityKind::CompoundAssignOperator
-                        | clang::EntityKind::ParenExpr
-                        | clang::EntityKind::UnexposedExpr
-                )
-            {
-                let maybe_bitwise_expr: bool = crate::macro_lex::entity_spellings(&initializer)
-                    .iter()
-                    .any(|token| matches!(token.as_str(), "|" | "&" | "^" | "<<" | ">>"));
-
-                if maybe_bitwise_expr {
-                    let expected_type_text: String = crate::type_format::format_clang_type_thrust(
-                        &canonical_type,
-                        macro_ctx,
-                        &prefix,
-                        span,
-                    );
-
-                    if !expected_type_text.is_empty() {
-                        initializer_text = format!("({initializer_text}) as {expected_type_text}");
-                    }
-                }
-            }
-
-            Some(initializer_text)
-        }
-
-        (None, Some(clang::StorageClass::Extern)) => None,
-
-        (None, _) => Some(self::translate_zero_initializer(
-            &canonical_type,
-            span,
-            Some(entity),
-            macro_ctx,
-        )),
-    };
-
-    let type_text: String = if canonical_type.get_kind() == clang::TypeKind::IncompleteArray {
-        if let Some(initializer) = initializer {
-            if initializer.get_kind() == clang::EntityKind::InitListExpr {
-                let Some(element_type) = canonical_type.get_element_type() else {
-                    let detail: String =
-                        format!("Incomplete array global '{name}' is missing an element type.");
-
-                    return macro_ctx
-                        .get_mut_transpiler_context()
-                        .fail(CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            format!("C translation failed:\n{prefix}{detail}"),
-                            "Rewrite the C input to avoid the unsupported construct.".into(),
-                            None,
-                            span,
-                        ));
-                };
-
-                let element_type_text: String = crate::type_format::format_clang_type_thrust(
-                    &element_type,
-                    macro_ctx,
-                    &prefix,
-                    span,
-                );
-
-                let element_count: usize = initializer.get_children().len();
-
-                format!("array[{element_type_text}; {element_count}]")
-            } else {
-                crate::type_format::format_clang_type_thrust(&var_type, macro_ctx, &prefix, span)
-            }
-        } else {
-            return macro_ctx
-                .get_mut_transpiler_context()
-                .fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    {
-                        let detail: String =
-                            format!("Incomplete array global '{name}' requires an initializer.");
-
-                        format!("C translation failed:\n{prefix}{detail}")
-                    },
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
-        }
-    } else {
-        crate::type_format::format_clang_type_thrust(&var_type, macro_ctx, &prefix, span)
-    };
-
-    let is_mutable: bool = !var_type.is_const_qualified();
-    let is_external: bool = !matches!(
-        entity.get_storage_class(),
-        Some(clang::StorageClass::Static | clang::StorageClass::PrivateExtern)
-    ) && !matches!(
-        entity.get_linkage(),
-        Some(clang::Linkage::Internal | clang::Linkage::UniqueExternal)
-    );
-
-    let mut out: String = String::new();
-
-    out.push_str("static ");
-
-    if is_mutable {
-        out.push_str("mut ");
-    }
-
-    out.push_str(&name);
-    out.push_str(": ");
-    out.push_str(&type_text);
-
-    if is_external {
-        out.push_str(" @public @extern(\"");
-        out.push_str(&raw_name);
-        out.push_str("\")");
-    }
-
-    if let Some(initializer_text) = initializer_text {
-        out.push_str(" = ");
-        out.push_str(&initializer_text);
-    }
-
-    out.push(';');
-
-    out
-}
-
 pub(crate) fn translate_global_initializer(
     entity: &clang::Entity<'_>,
     expected_type: &clang::Type<'_>,
@@ -739,16 +544,7 @@ pub(crate) fn translate_global_initializer(
         crate::expr::translate_expr(entity, span, Location::RValue, macro_ctx)
     };
 
-    let expected_type_text: String =
-        crate::type_format::format_clang_type_thrust(expected_type, macro_ctx, &prefix, span);
-
-    if expected_type_text.contains("ptr[char]")
-        && (translated.starts_with('"') || translated.starts_with("n#\""))
-    {
-        return format!("({translated}) as {expected_type_text}");
-    }
-
-    translated
+    crate::expr::cast_expression_to_type(entity, translated, expected_type, span, macro_ctx)
 }
 
 fn translate_record_decl(
@@ -973,6 +769,225 @@ fn translate_record_decl(
     out
 }
 
+fn translate_global_var_decl(
+    entity: &clang::Entity<'_>,
+    span: Span,
+    macro_ctx: &mut crate::macros::MacroContext<'_>,
+) -> String {
+    let prefix: String = crate::macros::expansion_prefix(entity);
+    let Some(raw_name) = entity.get_name() else {
+        return macro_ctx
+            .get_mut_transpiler_context()
+            .fail(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                format!(
+                    "C translation failed:\n{prefix}Encountered a global variable without a name."
+                ),
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
+    };
+
+    let name: String = { crate::util::sanitize_thrust_identifier(&raw_name) };
+
+    let Some(var_type) = entity.get_type() else {
+        return macro_ctx
+            .get_mut_transpiler_context()
+            .fail(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                {
+                    let detail: String = format!("Missing type for global '{name}'.");
+
+                    format!("C translation failed:\n{prefix}{detail}")
+                },
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
+    };
+
+    let canonical_type: clang::Type<'_> = var_type.get_canonical_type();
+    let base_pending: usize = macro_ctx.pending_statements_len();
+
+    let initializer: Option<clang::Entity<'_>> = self::find_var_initializer(entity);
+    let initializer_text: Option<String> = match (initializer, entity.get_storage_class()) {
+        (Some(initializer), _) => {
+            let mut initializer_text: String =
+                self::translate_global_initializer(&initializer, &canonical_type, span, macro_ctx);
+
+            if macro_ctx.pending_statements_len() > base_pending {
+                let _ = macro_ctx.take_pending_statements_since(base_pending);
+
+                return macro_ctx.get_mut_transpiler_context().fail(
+                    CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        format!(
+                            "C translation failed:\n{prefix}Ternary in global initializer is not supported."
+                        ),
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ),
+                );
+            }
+
+            let initializer_kind: clang::EntityKind = initializer.get_kind();
+            let scalar_global: bool = matches!(
+                canonical_type.get_kind(),
+                clang::TypeKind::Bool
+                    | clang::TypeKind::CharS
+                    | clang::TypeKind::CharU
+                    | clang::TypeKind::SChar
+                    | clang::TypeKind::UChar
+                    | clang::TypeKind::Short
+                    | clang::TypeKind::UShort
+                    | clang::TypeKind::Int
+                    | clang::TypeKind::UInt
+                    | clang::TypeKind::Long
+                    | clang::TypeKind::ULong
+                    | clang::TypeKind::LongLong
+                    | clang::TypeKind::ULongLong
+                    | clang::TypeKind::UInt128
+                    | clang::TypeKind::Float
+                    | clang::TypeKind::Double
+                    | clang::TypeKind::Enum
+            );
+
+            if scalar_global
+                && matches!(
+                    initializer_kind,
+                    clang::EntityKind::BinaryOperator
+                        | clang::EntityKind::CompoundAssignOperator
+                        | clang::EntityKind::ParenExpr
+                        | clang::EntityKind::UnexposedExpr
+                )
+            {
+                let maybe_bitwise_expr: bool = crate::macro_lex::entity_spellings(&initializer)
+                    .iter()
+                    .any(|token| matches!(token.as_str(), "|" | "&" | "^" | "<<" | ">>"));
+
+                if maybe_bitwise_expr {
+                    let expected_type_text: String = crate::type_format::format_clang_type_thrust(
+                        &canonical_type,
+                        macro_ctx,
+                        &prefix,
+                        span,
+                    );
+
+                    if !expected_type_text.is_empty() {
+                        initializer_text = format!("({initializer_text}) as {expected_type_text}");
+                    }
+                }
+            }
+
+            Some(initializer_text)
+        }
+
+        (None, Some(clang::StorageClass::Extern)) => None,
+
+        (None, _) => {
+            let pending_base: usize = macro_ctx.pending_statements_len();
+
+            let zero: String =
+                self::translate_zero_initializer(&canonical_type, span, Some(entity), macro_ctx);
+
+            if macro_ctx.pending_statements_len() > pending_base {
+                let _ = macro_ctx.take_pending_statements_since(pending_base);
+            }
+
+            Some(zero)
+        }
+    };
+
+    let type_text: String = if canonical_type.get_kind() == clang::TypeKind::IncompleteArray {
+        if let Some(initializer) = initializer {
+            if initializer.get_kind() == clang::EntityKind::InitListExpr {
+                let Some(element_type) = canonical_type.get_element_type() else {
+                    let detail: String =
+                        format!("Incomplete array global '{name}' is missing an element type.");
+
+                    return macro_ctx
+                        .get_mut_transpiler_context()
+                        .fail(CompilationIssue::Error(
+                            CompilationIssueCode::E0110,
+                            format!("C translation failed:\n{prefix}{detail}"),
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
+                            None,
+                            span,
+                        ));
+                };
+
+                let element_type_text: String = crate::type_format::format_clang_type_thrust(
+                    &element_type,
+                    macro_ctx,
+                    &prefix,
+                    span,
+                );
+
+                let element_count: usize = initializer.get_children().len();
+
+                format!("array[{element_type_text}; {element_count}]")
+            } else {
+                crate::type_format::format_clang_type_thrust(&var_type, macro_ctx, &prefix, span)
+            }
+        } else {
+            return macro_ctx
+                .get_mut_transpiler_context()
+                .fail(CompilationIssue::Error(
+                    CompilationIssueCode::E0110,
+                    {
+                        let detail: String =
+                            format!("Incomplete array global '{name}' requires an initializer.");
+
+                        format!("C translation failed:\n{prefix}{detail}")
+                    },
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
+                    None,
+                    span,
+                ));
+        }
+    } else {
+        crate::type_format::format_clang_type_thrust(&var_type, macro_ctx, &prefix, span)
+    };
+
+    let is_mutable: bool = !var_type.is_const_qualified();
+    let is_external: bool = !matches!(
+        entity.get_storage_class(),
+        Some(clang::StorageClass::Static | clang::StorageClass::PrivateExtern)
+    ) && !matches!(
+        entity.get_linkage(),
+        Some(clang::Linkage::Internal | clang::Linkage::UniqueExternal)
+    );
+
+    let mut out: String = String::new();
+
+    out.push_str("static ");
+
+    if is_mutable {
+        out.push_str("mut ");
+    }
+
+    out.push_str(&name);
+    out.push_str(": ");
+    out.push_str(&type_text);
+
+    if is_external {
+        out.push_str(" @public @extern(\"");
+        out.push_str(&raw_name);
+        out.push_str("\")");
+    }
+
+    if let Some(initializer_text) = initializer_text {
+        out.push_str(" = ");
+        out.push_str(&initializer_text);
+    }
+
+    out.push(';');
+
+    out
+}
+
 pub(crate) fn translate_zero_initializer(
     ty: &clang::Type<'_>,
     span: Span,
@@ -1182,166 +1197,6 @@ pub(crate) fn translate_zero_initializer(
     }
 }
 
-fn translate_function(
-    entity: &clang::Entity<'_>,
-    span: Span,
-    macro_ctx: &mut crate::macros::MacroContext<'_>,
-) -> String {
-    let prefix: String = crate::macros::expansion_prefix(entity);
-    let Some(name) = entity.get_name() else {
-        return macro_ctx
-            .get_mut_transpiler_context()
-            .fail(CompilationIssue::Error(
-                CompilationIssueCode::E0110,
-                format!("C translation failed:\n{prefix}Encountered a function without a name."),
-                "Rewrite the C input to avoid the unsupported construct.".into(),
-                None,
-                span,
-            ));
-    };
-
-    let name: String = { crate::util::sanitize_thrust_identifier(&name) };
-
-    let ret_ty: String = entity
-        .get_result_type()
-        .map(|ty| crate::type_format::format_clang_type_thrust(&ty, macro_ctx, &prefix, span))
-        .filter(|text| !text.is_empty())
-        .unwrap_or_else(|| "void".into());
-
-    let children: Vec<clang::Entity<'_>> = entity.get_children();
-    let body: Option<clang::Entity<'_>> = children
-        .iter()
-        .find(|child| child.get_kind() == clang::EntityKind::CompoundStmt)
-        .copied();
-
-    let mut parameter_names: HashSet<String> = HashSet::new();
-    let mut mutated_parameters: HashSet<String> = HashSet::new();
-
-    if let Some(args) = entity.get_arguments() {
-        for argument in args.iter() {
-            if let Some(argument_name) = argument.get_name() {
-                parameter_names.insert(argument_name);
-            }
-        }
-    }
-
-    if let Some(body_entity) = body.as_ref() {
-        self::collect_mutated_parameter_names(
-            body_entity,
-            &parameter_names,
-            &mut mutated_parameters,
-        );
-    }
-
-    let mut params: Vec<String> = Vec::new();
-    let mut parameter_locals: Vec<(String, String, String)> = Vec::new();
-
-    if let Some(args) = entity.get_arguments() {
-        for (idx, arg) in args.iter().enumerate() {
-            let original_name: String = arg.get_name().unwrap_or_else(|| format!("arg{idx}"));
-            let param_name: String = { crate::util::sanitize_thrust_identifier(&original_name) };
-
-            let Some(param_ty) = arg.get_type() else {
-                return macro_ctx
-                    .get_mut_transpiler_context()
-                    .fail(CompilationIssue::Error(
-                        CompilationIssueCode::E0110,
-                        {
-                            let detail: String = format!(
-                                "Missing type for parameter '{param_name}' in function '{name}'."
-                            );
-
-                            format!("C translation failed:\n{prefix}{detail}")
-                        },
-                        "Rewrite the C input to avoid the unsupported construct.".into(),
-                        None,
-                        span,
-                    ));
-            };
-
-            let ty_text: String = crate::type_format::format_parameter_type_thrust(
-                &param_ty, macro_ctx, &prefix, span,
-            );
-
-            let needs_local_copy: bool = mutated_parameters.contains(&original_name);
-            let needs_local_copy: bool = needs_local_copy
-                || param_ty.get_canonical_type().get_kind() == clang::TypeKind::Record;
-
-            if needs_local_copy {
-                let signature_name: String = format!("{param_name}_param");
-
-                params.push(format!("{signature_name}: {ty_text}"));
-                parameter_locals.push((param_name, signature_name, ty_text));
-            } else {
-                params.push(format!("{param_name}: {ty_text}"));
-            }
-        }
-    }
-
-    let mut out: String = String::new();
-
-    out.push_str("fn ");
-    out.push_str(&name);
-    out.push('(');
-    out.push_str(&params.join(", "));
-    out.push_str(") ");
-    out.push_str(&ret_ty);
-
-    if name == "main" {
-        out.push_str(" @public");
-    }
-
-    out.push_str(" {\n");
-
-    let Some(body) = body else {
-        return macro_ctx
-            .get_mut_transpiler_context()
-            .fail(CompilationIssue::Error(
-                CompilationIssueCode::E0110,
-                {
-                    let detail: String = format!("Missing function body for '{name}'.");
-
-                    format!("C translation failed:\n{prefix}{detail}")
-                },
-                "Rewrite the C input to avoid the unsupported construct.".into(),
-                None,
-                span,
-            ));
-    };
-
-    for (local_name, signature_name, ty_text) in parameter_locals.iter() {
-        out.push_str("    var ");
-        out.push_str(local_name);
-        out.push_str(": ");
-        out.push_str(ty_text);
-        out.push_str(" = ");
-        out.push_str(signature_name);
-        out.push_str(";\n");
-    }
-
-    if !parameter_locals.is_empty() {
-        out.push('\n');
-    }
-
-    let mut lines: Vec<String> = Vec::new();
-
-    for child in body.get_children() {
-        let translated: Vec<String> =
-            crate::stmt::translate_stmt(&child, 1, span, Some(&ret_ty), None, macro_ctx);
-
-        lines.extend(translated);
-    }
-
-    for line in lines.into_iter() {
-        out.push_str(&line);
-        out.push('\n');
-    }
-
-    out.push('}');
-
-    out
-}
-
 pub(crate) fn append_imported_top_level_declarations(
     ctx: &thrustc_c_import_synthesis::context::CImportContext,
     span: Span,
@@ -1510,6 +1365,166 @@ pub(crate) fn append_imported_top_level_declarations(
             out.push_str(";\n");
         }
     }
+}
+
+fn translate_function(
+    entity: &clang::Entity<'_>,
+    span: Span,
+    macro_ctx: &mut crate::macros::MacroContext<'_>,
+) -> String {
+    let prefix: String = crate::macros::expansion_prefix(entity);
+    let Some(name) = entity.get_name() else {
+        return macro_ctx
+            .get_mut_transpiler_context()
+            .fail(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                format!("C translation failed:\n{prefix}Encountered a function without a name."),
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
+    };
+
+    let name: String = { crate::util::sanitize_thrust_identifier(&name) };
+
+    let ret_ty: String = entity
+        .get_result_type()
+        .map(|ty| crate::type_format::format_clang_type_thrust(&ty, macro_ctx, &prefix, span))
+        .filter(|text| !text.is_empty())
+        .unwrap_or_else(|| "void".into());
+
+    let children: Vec<clang::Entity<'_>> = entity.get_children();
+    let body: Option<clang::Entity<'_>> = children
+        .iter()
+        .find(|child| child.get_kind() == clang::EntityKind::CompoundStmt)
+        .copied();
+
+    let mut parameter_names: HashSet<String> = HashSet::new();
+    let mut mutated_parameters: HashSet<String> = HashSet::new();
+
+    if let Some(args) = entity.get_arguments() {
+        for argument in args.iter() {
+            if let Some(argument_name) = argument.get_name() {
+                parameter_names.insert(argument_name);
+            }
+        }
+    }
+
+    if let Some(body_entity) = body.as_ref() {
+        self::collect_mutated_parameter_names(
+            body_entity,
+            &parameter_names,
+            &mut mutated_parameters,
+        );
+    }
+
+    let mut params: Vec<String> = Vec::new();
+    let mut parameter_locals: Vec<(String, String, String)> = Vec::new();
+
+    if let Some(args) = entity.get_arguments() {
+        for (idx, arg) in args.iter().enumerate() {
+            let original_name: String = arg.get_name().unwrap_or_else(|| format!("arg{idx}"));
+            let param_name: String = { crate::util::sanitize_thrust_identifier(&original_name) };
+
+            let Some(param_ty) = arg.get_type() else {
+                return macro_ctx
+                    .get_mut_transpiler_context()
+                    .fail(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        {
+                            let detail: String = format!(
+                                "Missing type for parameter '{param_name}' in function '{name}'."
+                            );
+
+                            format!("C translation failed:\n{prefix}{detail}")
+                        },
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
+            };
+
+            let ty_text: String = crate::type_format::format_parameter_type_thrust(
+                &param_ty, macro_ctx, &prefix, span,
+            );
+
+            let needs_local_copy: bool = mutated_parameters.contains(&original_name);
+            let needs_local_copy: bool = needs_local_copy
+                || param_ty.get_canonical_type().get_kind() == clang::TypeKind::Record;
+
+            if needs_local_copy {
+                let signature_name: String = format!("{param_name}_param");
+
+                params.push(format!("{signature_name}: {ty_text}"));
+                parameter_locals.push((param_name, signature_name, ty_text));
+            } else {
+                params.push(format!("{param_name}: {ty_text}"));
+            }
+        }
+    }
+
+    let mut out: String = String::new();
+
+    out.push_str("fn ");
+    out.push_str(&name);
+    out.push('(');
+    out.push_str(&params.join(", "));
+    out.push_str(") ");
+    out.push_str(&ret_ty);
+
+    if name == "main" {
+        out.push_str(" @public");
+    }
+
+    out.push_str(" {\n");
+
+    let Some(body) = body else {
+        return macro_ctx
+            .get_mut_transpiler_context()
+            .fail(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                {
+                    let detail: String = format!("Missing function body for '{name}'.");
+
+                    format!("C translation failed:\n{prefix}{detail}")
+                },
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
+    };
+
+    for (local_name, signature_name, ty_text) in parameter_locals.iter() {
+        out.push_str("    var ");
+        out.push_str(local_name);
+        out.push_str(": ");
+        out.push_str(ty_text);
+        out.push_str(" = ");
+        out.push_str(signature_name);
+        out.push_str(";\n");
+    }
+
+    if !parameter_locals.is_empty() {
+        out.push('\n');
+    }
+
+    let mut lines: Vec<String> = Vec::new();
+
+    for child in body.get_children() {
+        let translated: Vec<String> =
+            crate::stmt::translate_stmt(&child, 1, span, Some(&ret_ty), None, macro_ctx);
+
+        lines.extend(translated);
+    }
+
+    for line in lines.into_iter() {
+        out.push_str(&line);
+        out.push('\n');
+    }
+
+    out.push('}');
+
+    out
 }
 
 fn translate_function_prototype(

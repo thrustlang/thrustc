@@ -18,13 +18,17 @@
 */
 
 use crate::macro_expr::{MacroCursor, MacroExpr, MacroLimit};
+
 use std::borrow::Borrow;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use thrustc_code_location::Span;
 use thrustc_compile_time::BuiltinValue;
+
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::Type;
+
+const C_MACRO_SYMBOL_PREFIX: &str = "__c_macro_";
 
 #[derive(Debug)]
 pub(crate) struct MacroContext<'clang> {
@@ -32,6 +36,7 @@ pub(crate) struct MacroContext<'clang> {
     issues: crate::context::TranspilerContext,
     expansion_stack: Vec<String>,
     temporary_counter: u64,
+    pending_statements: Vec<String>,
     marker: PhantomData<&'clang ()>,
 }
 
@@ -43,6 +48,7 @@ impl<'clang> MacroContext<'clang> {
             issues: crate::context::TranspilerContext::new(),
             expansion_stack: Vec::new(),
             temporary_counter: 0,
+            pending_statements: Vec::new(),
             marker: PhantomData,
         }
     }
@@ -103,7 +109,32 @@ impl<'clang> MacroContext<'clang> {
 
         self.temporary_counter = self.temporary_counter.saturating_add(1);
 
-        format!("__thrustc_temporary_{index}")
+        format!("thrust_temporary_{index}")
+    }
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub(crate) fn push_pending_statement(&mut self, statement: String) {
+        self.pending_statements.push(statement);
+    }
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub(crate) fn pending_statements_len(&self) -> usize {
+        self.pending_statements.len()
+    }
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub(crate) fn take_pending_statements_since(&mut self, base: usize) -> Vec<String> {
+        if base >= self.pending_statements.len() {
+            return Vec::new();
+        }
+
+        self.pending_statements.split_off(base)
     }
 }
 
@@ -141,7 +172,11 @@ pub(crate) fn append_translated_macro_consts(
             .filter(|(macro_decl, _)| unsafe { !macro_decl.is_function_like_macro_unchecked() });
 
         for (macro_decl, raw_name) in object_macros {
-            let name: String = { crate::util::sanitize_thrust_identifier(&raw_name) };
+            let name: String = {
+                let base: String = crate::util::sanitize_thrust_identifier(&raw_name);
+
+                format!("{C_MACRO_SYMBOL_PREFIX}{base}")
+            };
 
             if let Some(result) = macro_decl.evaluate() {
                 let translated: Option<(Type, BuiltinValue)> = match result {
@@ -236,6 +271,7 @@ pub(crate) fn append_translated_macro_consts(
         }
 
         self::reclassify_macros_calling_statements(&mut classified_macros);
+
         ctx.get_mut_macro_table()
             .register_statement_macros(&classified_macros);
 
@@ -700,7 +736,11 @@ pub(crate) fn try_outline_statement_macro(
         return None;
     }
 
-    let function_name: String = { crate::util::sanitize_thrust_identifier(&name) };
+    let function_name: String = {
+        let base: String = crate::util::sanitize_thrust_identifier(&name);
+
+        format!("{C_MACRO_SYMBOL_PREFIX}{base}")
+    };
 
     let mut arg_texts: Vec<String> = Vec::new();
 
@@ -901,7 +941,11 @@ pub(crate) fn emit_function_like_macro_fn(
         })
         .collect();
 
-    let function_name: String = { crate::util::sanitize_thrust_identifier(name) };
+    let function_name: String = {
+        let base: String = crate::util::sanitize_thrust_identifier(name);
+
+        format!("{C_MACRO_SYMBOL_PREFIX}{base}")
+    };
 
     let mut out: String = String::new();
 

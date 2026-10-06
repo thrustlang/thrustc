@@ -17,11 +17,11 @@
 
 */
 
-pub(crate) fn resolve_expression_type<'tu>(
-    entity: &clang::Entity<'tu>,
-) -> Option<clang::Type<'tu>> {
-    let mut resolved: Option<clang::Type<'tu>> = entity.get_type();
-    let mut probe: clang::Entity<'tu> = *entity;
+pub(crate) fn resolve_expression_type<'clang>(
+    entity: &clang::Entity<'clang>,
+) -> Option<clang::Type<'clang>> {
+    let mut resolved: Option<clang::Type<'clang>> = entity.get_type();
+    let mut probe: clang::Entity<'clang> = *entity;
 
     loop {
         if !matches!(
@@ -31,7 +31,7 @@ pub(crate) fn resolve_expression_type<'tu>(
             break;
         }
 
-        let children: Vec<clang::Entity<'tu>> = probe.get_children();
+        let children: Vec<clang::Entity<'clang>> = probe.get_children();
 
         if children.len() != 1 {
             break;
@@ -40,7 +40,7 @@ pub(crate) fn resolve_expression_type<'tu>(
         probe = children[0];
 
         if let Some(probe_type) = probe.get_type() {
-            let canonical_type: clang::Type<'tu> = probe_type.get_canonical_type();
+            let canonical_type: clang::Type<'clang> = probe_type.get_canonical_type();
 
             if matches!(
                 canonical_type.get_kind(),
@@ -94,8 +94,10 @@ pub(crate) fn analyze_nested_scalar_array_type(ty: &clang::Type<'_>) -> Option<(
     Some((pointer_root, extents))
 }
 
-pub(crate) fn clean_expression_wrappers<'tu>(entity: &clang::Entity<'tu>) -> clang::Entity<'tu> {
-    let mut probe: clang::Entity<'tu> = *entity;
+pub(crate) fn clean_expression_wrappers<'clang>(
+    entity: &clang::Entity<'clang>,
+) -> clang::Entity<'clang> {
+    let mut probe: clang::Entity<'clang> = *entity;
 
     loop {
         if !matches!(
@@ -105,7 +107,7 @@ pub(crate) fn clean_expression_wrappers<'tu>(entity: &clang::Entity<'tu>) -> cla
             break;
         }
 
-        let children: Vec<clang::Entity<'tu>> = probe.get_children();
+        let children: Vec<clang::Entity<'clang>> = probe.get_children();
 
         if children.len() != 1 || !crate::clang_util::is_supported_expr_kind(children[0].get_kind())
         {

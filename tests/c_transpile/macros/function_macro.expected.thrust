@@ -1,4 +1,4 @@
-fn ADD[T1, T2](a: T1, b: T2) T1 @alwaysInline {
+fn __c_macro_ADD[T1, T2](a: T1, b: T2) T1 @alwaysInline {
     return (((a) + (b))) as T1;
 }
 
