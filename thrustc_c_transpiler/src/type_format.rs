@@ -95,7 +95,7 @@ pub(crate) fn format_clang_type_thrust(
 
         clang::TypeKind::ConstantArray => {
             let Some(element_type) = canonical.get_element_type() else {
-                return macro_ctx.get_mut_transpiler_context().fail(
+                macro_ctx.get_mut_transpiler_context().add_error_fail(
                     CompilationIssue::Error(
                         CompilationIssueCode::E0110,
                         format!(
@@ -106,10 +106,11 @@ pub(crate) fn format_clang_type_thrust(
                         span,
                     ),
                 );
+                return Default::default();
             };
 
             let Some(size) = canonical.get_size().and_then(|s| u32::try_from(s).ok()) else {
-                return macro_ctx.get_mut_transpiler_context().fail(
+                macro_ctx.get_mut_transpiler_context().add_error_fail(
                     CompilationIssue::Error(
                         CompilationIssueCode::E0110,
                         format!(
@@ -120,6 +121,7 @@ pub(crate) fn format_clang_type_thrust(
                         span,
                     ),
                 );
+                return Default::default();
             };
 
             let inner: String =
@@ -134,7 +136,7 @@ pub(crate) fn format_clang_type_thrust(
 
         clang::TypeKind::FunctionPrototype | clang::TypeKind::FunctionNoPrototype => {
             let Some(return_type) = canonical.get_result_type() else {
-                return macro_ctx.get_mut_transpiler_context().fail(
+                macro_ctx.get_mut_transpiler_context().add_error_fail(
                     CompilationIssue::Error(
                         CompilationIssueCode::E0110,
                         format!(
@@ -145,6 +147,7 @@ pub(crate) fn format_clang_type_thrust(
                         span,
                     ),
                 );
+                return Default::default();
             };
 
             let return_type_text: String =
@@ -186,7 +189,7 @@ pub(crate) fn format_clang_type_thrust(
 
         clang::TypeKind::Record => {
             let Some(decl) = canonical.get_declaration() else {
-                return macro_ctx.get_mut_transpiler_context().fail(
+                macro_ctx.get_mut_transpiler_context().add_error_fail(
                     CompilationIssue::Error(
                         CompilationIssueCode::E0110,
                         format!(
@@ -197,10 +200,11 @@ pub(crate) fn format_clang_type_thrust(
                         span,
                     ),
                 );
+                return Default::default();
             };
 
             let Some(name) = decl.get_name() else {
-                return macro_ctx.get_mut_transpiler_context().fail(
+                macro_ctx.get_mut_transpiler_context().add_error_fail(
                     CompilationIssue::Error(
                         CompilationIssueCode::E0110,
                         format!(
@@ -211,6 +215,7 @@ pub(crate) fn format_clang_type_thrust(
                         span,
                     ),
                 );
+                return Default::default();
             };
 
             crate::util::sanitize_thrust_identifier(&name)
@@ -229,15 +234,16 @@ pub(crate) fn format_clang_type_thrust(
         }
 
         other => {
-            return macro_ctx
+            macro_ctx
                 .get_mut_transpiler_context()
-                .fail(CompilationIssue::Error(
+                .add_error_fail(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
                     format!("C translation failed:\n{prefix}Unsupported C type kind: {other:?}"),
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
                 ));
+            return Default::default();
         }
     };
 
@@ -246,6 +252,182 @@ pub(crate) fn format_clang_type_thrust(
     }
 
     out
+}
+
+pub(crate) fn cast_expression_to_type(
+    entity: &clang::Entity<'_>,
+    translated: String,
+    expected_type: &clang::Type<'_>,
+    span: thrustc_code_location::Span,
+    macro_ctx: &mut crate::macros::MacroContext,
+) -> String {
+    let prefix: String = crate::macros::expansion_prefix(entity);
+
+    let thrust_type: String =
+        self::format_clang_type_thrust(expected_type, macro_ctx, &prefix, span);
+
+    if thrust_type.is_empty() {
+        return translated;
+    }
+
+    let mut argument_type: Option<clang::Type<'_>> = entity.get_type();
+
+    let mut probe: clang::Entity<'_> = *entity;
+
+    while matches!(
+        probe.get_kind(),
+        clang::EntityKind::ParenExpr | clang::EntityKind::UnexposedExpr
+    ) {
+        let nested_children: Vec<clang::Entity<'_>> = probe.get_children();
+
+        if nested_children.len() != 1 {
+            break;
+        }
+
+        probe = nested_children[0];
+
+        if let Some(probe_type) = probe.get_type() {
+            argument_type = Some(probe_type);
+
+            let probe_canonical: clang::Type<'_> = probe_type.get_canonical_type();
+
+            if matches!(
+                probe_canonical.get_kind(),
+                clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
+            ) {
+                break;
+            }
+        }
+    }
+
+    let argument_text: String = match argument_type.as_ref() {
+        Some(argument_type) => {
+            self::format_clang_type_thrust(argument_type, macro_ctx, &prefix, span)
+        }
+        None => String::new(),
+    };
+
+    let argument_stripped: &str = argument_text
+        .strip_prefix("const ")
+        .unwrap_or(&argument_text);
+
+    let thrust_stripped: &str = thrust_type.strip_prefix("const ").unwrap_or(&thrust_type);
+
+    if !argument_text.is_empty() && argument_stripped == thrust_stripped {
+        return translated;
+    }
+
+    let src_kind: Option<clang::TypeKind> = argument_type
+        .as_ref()
+        .map(|ty| ty.get_canonical_type().get_kind());
+
+    let dst_kind: clang::TypeKind = expected_type.get_canonical_type().get_kind();
+
+    let src_is_int: bool = matches!(
+        src_kind,
+        Some(clang::TypeKind::SChar)
+            | Some(clang::TypeKind::UChar)
+            | Some(clang::TypeKind::CharS)
+            | Some(clang::TypeKind::CharU)
+            | Some(clang::TypeKind::Short)
+            | Some(clang::TypeKind::UShort)
+            | Some(clang::TypeKind::Int)
+            | Some(clang::TypeKind::UInt)
+            | Some(clang::TypeKind::Long)
+            | Some(clang::TypeKind::ULong)
+            | Some(clang::TypeKind::LongLong)
+            | Some(clang::TypeKind::ULongLong)
+            | Some(clang::TypeKind::UInt128)
+            | Some(clang::TypeKind::Enum)
+    );
+
+    let src_is_float: bool = matches!(
+        src_kind,
+        Some(clang::TypeKind::Float)
+            | Some(clang::TypeKind::Double)
+            | Some(clang::TypeKind::LongDouble)
+    );
+
+    let src_is_bool: bool = matches!(src_kind, Some(clang::TypeKind::Bool));
+
+    let src_is_ptr: bool = matches!(src_kind, Some(clang::TypeKind::Pointer));
+
+    let src_is_array: bool = matches!(
+        src_kind,
+        Some(clang::TypeKind::ConstantArray)
+            | Some(clang::TypeKind::IncompleteArray)
+            | Some(clang::TypeKind::VariableArray)
+            | Some(clang::TypeKind::DependentSizedArray)
+    );
+
+    let src_is_record: bool = matches!(src_kind, Some(clang::TypeKind::Record));
+
+    let src_is_numeric: bool = src_is_int || src_is_float;
+
+    let dst_is_int: bool = matches!(
+        dst_kind,
+        clang::TypeKind::SChar
+            | clang::TypeKind::UChar
+            | clang::TypeKind::CharS
+            | clang::TypeKind::CharU
+            | clang::TypeKind::Short
+            | clang::TypeKind::UShort
+            | clang::TypeKind::Int
+            | clang::TypeKind::UInt
+            | clang::TypeKind::Long
+            | clang::TypeKind::ULong
+            | clang::TypeKind::LongLong
+            | clang::TypeKind::ULongLong
+            | clang::TypeKind::UInt128
+            | clang::TypeKind::Enum
+    );
+
+    let dst_is_float: bool = matches!(
+        dst_kind,
+        clang::TypeKind::Float | clang::TypeKind::Double | clang::TypeKind::LongDouble
+    );
+
+    let dst_is_bool: bool = dst_kind == clang::TypeKind::Bool;
+
+    let dst_is_ptr: bool = dst_kind == clang::TypeKind::Pointer;
+
+    let dst_is_array: bool = matches!(
+        dst_kind,
+        clang::TypeKind::ConstantArray
+            | clang::TypeKind::IncompleteArray
+            | clang::TypeKind::VariableArray
+            | clang::TypeKind::DependentSizedArray
+    );
+
+    let dst_is_numeric: bool = dst_is_int || dst_is_float;
+
+    let is_valid: bool = (src_is_numeric && dst_is_numeric)
+        || (src_is_int && dst_is_bool)
+        || (src_is_bool && dst_is_int)
+        || (src_is_ptr && dst_is_ptr)
+        || (src_is_ptr && dst_is_int)
+        || (src_is_int && dst_is_ptr)
+        || (dst_is_ptr
+            && (src_is_array || src_is_record || src_is_numeric || src_is_bool || src_is_ptr))
+        || (dst_is_array && src_is_array)
+        || (dst_is_array && src_is_ptr)
+        || (argument_text.is_empty());
+
+    if is_valid {
+        return format!("({translated}) as {thrust_type}");
+    }
+
+    macro_ctx
+        .get_mut_transpiler_context()
+        .add_error_fail(CompilationIssue::Error(
+            CompilationIssueCode::E0110,
+            format!("C translation failed:\n{prefix}Cannot cast expression to '{thrust_type}'."),
+            "Rewrite the C input to avoid the unsupported construct.".into(),
+            None,
+            span,
+        ));
+
+    Default::default()
 }
 
 pub(crate) fn format_parameter_type_thrust(
@@ -270,7 +452,7 @@ pub(crate) fn format_parameter_type_thrust(
             depth = depth.saturating_add(1);
 
             let Some(element) = current.get_element_type() else {
-                return macro_ctx.get_mut_transpiler_context().fail(
+                macro_ctx.get_mut_transpiler_context().add_error_fail(
                     CompilationIssue::Error(
                         CompilationIssueCode::E0110,
                         format!(
@@ -281,6 +463,7 @@ pub(crate) fn format_parameter_type_thrust(
                         span,
                     ),
                 );
+                return Default::default();
             };
 
             current = element.get_canonical_type();
@@ -304,7 +487,7 @@ pub(crate) fn format_parameter_type_thrust(
         }
 
         let Some(element_type) = canonical.get_element_type() else {
-            return macro_ctx.get_mut_transpiler_context().fail(
+            macro_ctx.get_mut_transpiler_context().add_error_fail(
                 CompilationIssue::Error(
                     CompilationIssueCode::E0110,
                     format!(
@@ -315,6 +498,7 @@ pub(crate) fn format_parameter_type_thrust(
                     span,
                 ),
             );
+            return Default::default();
         };
 
         let inner: String = self::format_clang_type_thrust(&element_type, macro_ctx, prefix, span);
@@ -341,7 +525,7 @@ pub(crate) fn format_parameter_type_thrust(
             depth = depth.saturating_add(1);
 
             let Some(element) = current.get_element_type() else {
-                return macro_ctx.get_mut_transpiler_context().fail(
+                macro_ctx.get_mut_transpiler_context().add_error_fail(
                     CompilationIssue::Error(
                         CompilationIssueCode::E0110,
                         format!(
@@ -352,6 +536,7 @@ pub(crate) fn format_parameter_type_thrust(
                         span,
                     ),
                 );
+                return Default::default();
             };
 
             current = element.get_canonical_type();

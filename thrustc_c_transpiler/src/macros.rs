@@ -33,7 +33,7 @@ const C_MACRO_SYMBOL_PREFIX: &str = "__c_macro_";
 #[derive(Debug)]
 pub(crate) struct MacroContext<'clang> {
     table: crate::macro_table::MacroTable,
-    issues: crate::context::TranspilerContext,
+    context: crate::context::TranspilerContext,
     expansion_stack: Vec<String>,
     temporary_counter: u64,
     pending_statements: Vec<String>,
@@ -45,7 +45,7 @@ impl<'clang> MacroContext<'clang> {
     pub(crate) fn new(main_file: PathBuf) -> Self {
         Self {
             table: crate::macro_table::MacroTable::new(main_file),
-            issues: crate::context::TranspilerContext::new(),
+            context: crate::context::TranspilerContext::new(),
             expansion_stack: Vec::new(),
             temporary_counter: 0,
             pending_statements: Vec::new(),
@@ -59,6 +59,9 @@ impl<'clang> MacroContext<'clang> {
     pub(crate) fn get_macro_table(&self) -> &crate::macro_table::MacroTable {
         &self.table
     }
+    pub(crate) fn get_transpiler_context(&self) -> &crate::context::TranspilerContext {
+        &self.context
+    }
 }
 
 impl<'clang> MacroContext<'clang> {
@@ -66,19 +69,10 @@ impl<'clang> MacroContext<'clang> {
     pub(crate) fn get_mut_macro_table(&mut self) -> &mut crate::macro_table::MacroTable {
         &mut self.table
     }
-}
 
-impl<'clang> MacroContext<'clang> {
-    #[inline]
-    pub(crate) fn get_transpiler_context(&self) -> &crate::context::TranspilerContext {
-        &self.issues
-    }
-}
-
-impl<'clang> MacroContext<'clang> {
     #[inline]
     pub(crate) fn get_mut_transpiler_context(&mut self) -> &mut crate::context::TranspilerContext {
-        &mut self.issues
+        &mut self.context
     }
 }
 

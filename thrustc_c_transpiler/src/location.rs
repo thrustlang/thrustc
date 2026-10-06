@@ -30,16 +30,12 @@ impl Location {
     pub(crate) fn is_direct(&self) -> bool {
         matches!(self, Location::LValue)
     }
-}
 
-impl Location {
     #[inline]
     pub(crate) fn is_load(&self) -> bool {
         matches!(self, Location::RValue | Location::CallArg)
     }
-}
 
-impl Location {
     #[inline]
     pub(crate) fn is_address_of(&self) -> bool {
         matches!(self, Location::AddressOf)

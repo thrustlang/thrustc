@@ -53,22 +53,28 @@ impl TranspilerContext {
 
 impl TranspilerContext {
     #[inline]
-    pub(crate) fn has_errors(&self) -> bool {
-        !self.errors.is_empty()
-    }
-}
-
-impl TranspilerContext {
-    #[inline]
     pub(crate) fn error_count(&self) -> usize {
         self.errors.len()
     }
-}
 
-impl TranspilerContext {
     #[inline]
     pub(crate) fn warning_count(&self) -> usize {
         self.warnings.len()
+    }
+
+    #[inline]
+    pub(crate) fn has_errors(&self) -> bool {
+        !self.errors.is_empty()
+    }
+
+    #[inline]
+    pub(crate) fn has_macros_errors(&self) -> bool {
+        !self.macros_errors.is_empty()
+    }
+
+    #[inline]
+    pub(crate) fn macros_error_count(&self) -> usize {
+        self.macros_errors.len()
     }
 }
 
@@ -91,9 +97,7 @@ impl TranspilerContext {
 
         unique
     }
-}
 
-impl TranspilerContext {
     #[inline]
     pub(crate) fn take_warnings(&mut self) -> Vec<CompilationIssue> {
         let taken: Vec<CompilationIssue> = std::mem::take(&mut self.warnings);
@@ -112,9 +116,7 @@ impl TranspilerContext {
 
         unique
     }
-}
 
-impl TranspilerContext {
     #[inline]
     pub(crate) fn add_macros_error(&mut self, issue: CompilationIssue) {
         let seen: bool = self
@@ -126,30 +128,12 @@ impl TranspilerContext {
             self.macros_errors.push(issue);
         }
     }
-}
 
-impl TranspilerContext {
     #[inline]
     pub(crate) fn take_macros_errors(&mut self) -> Vec<CompilationIssue> {
         std::mem::take(&mut self.macros_errors)
     }
-}
 
-impl TranspilerContext {
-    #[inline]
-    pub(crate) fn has_macros_errors(&self) -> bool {
-        !self.macros_errors.is_empty()
-    }
-}
-
-impl TranspilerContext {
-    #[inline]
-    pub(crate) fn macros_error_count(&self) -> usize {
-        self.macros_errors.len()
-    }
-}
-
-impl TranspilerContext {
     #[inline]
     pub(crate) fn take_new_errors_since(
         &mut self,
@@ -165,10 +149,8 @@ impl TranspilerContext {
 
 impl TranspilerContext {
     #[inline]
-    pub(crate) fn fail<T: Default>(&mut self, issue: CompilationIssue) -> T {
+    pub(crate) fn add_error_fail(&mut self, issue: CompilationIssue) {
         self.errors.push(issue);
-
-        T::default()
     }
 }
 

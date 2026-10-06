@@ -51,6 +51,46 @@ impl MacroTable {
     pub(crate) fn get_input_source_file(&self) -> &Path {
         &self.input_source_file
     }
+
+    pub(crate) fn get_macro_definition_site(&self, macro_name: &str) -> Option<String> {
+        self.macro_definition_sites.get(macro_name).cloned()
+    }
+
+    #[inline]
+    pub(crate) fn get_macro_body_range(&self, macro_name: &str) -> Option<(PathBuf, u32, u32)> {
+        self.macro_body_ranges.get(macro_name).cloned()
+    }
+
+    #[inline]
+    pub(crate) fn get_parameter_names(&self, macro_name: &str) -> Option<Vec<String>> {
+        self.statement_macro_definitions
+            .iter()
+            .find(|entry| entry.0 == macro_name)
+            .map(|entry| entry.1.clone())
+    }
+
+    #[inline]
+    pub(crate) fn get_body_tokens(&self, macro_name: &str) -> Option<Vec<String>> {
+        self.statement_macro_definitions
+            .iter()
+            .find(|entry| entry.0 == macro_name)
+            .map(|entry| entry.2.clone())
+    }
+
+    #[inline]
+    pub(crate) fn find_macro_name(&self, location_key: &str) -> Option<String> {
+        self.macro_expansion_sites
+            .iter()
+            .find(|entry| entry.0 == location_key)
+            .map(|entry| entry.1.clone())
+    }
+
+    #[inline]
+    pub(crate) fn has_emitted_outline(&self, macro_name: &str) -> bool {
+        self.emitted_outline_names
+            .iter()
+            .any(|entry| entry == macro_name)
+    }
 }
 
 impl MacroTable {
@@ -113,73 +153,7 @@ impl MacroTable {
         self.statement_macro_definitions
             .push((macro_name, parameter_names, body_tokens));
     }
-}
 
-impl MacroTable {
-    #[inline]
-    pub(crate) fn get_macro_definition_site(&self, macro_name: &str) -> Option<String> {
-        self.macro_definition_sites.get(macro_name).cloned()
-    }
-}
-
-impl MacroTable {
-    #[inline]
-    pub(crate) fn get_macro_body_range(&self, macro_name: &str) -> Option<(PathBuf, u32, u32)> {
-        self.macro_body_ranges.get(macro_name).cloned()
-    }
-}
-
-impl MacroTable {
-    #[inline]
-    pub(crate) fn find_innermost_macro_at(
-        &self,
-        file: &Path,
-        offset: u32,
-    ) -> Option<String> {
-        let mut best: Option<(String, u32)> = None;
-
-        for (name, (range_file, start, end)) in self.macro_body_ranges.iter() {
-            if range_file != file {
-                continue;
-            }
-
-            if offset < *start || offset > *end {
-                continue;
-            }
-
-            let length: u32 = end.saturating_sub(*start);
-
-            match best.as_ref() {
-                Some((_, best_length)) if length >= *best_length => continue,
-                _ => best = Some((name.clone(), length)),
-            }
-        }
-
-        best.map(|(name, _)| name)
-    }
-}
-
-impl MacroTable {
-    #[inline]
-    pub(crate) fn get_parameter_names(&self, macro_name: &str) -> Option<Vec<String>> {
-        self.statement_macro_definitions
-            .iter()
-            .find(|entry| entry.0 == macro_name)
-            .map(|entry| entry.1.clone())
-    }
-}
-
-impl MacroTable {
-    #[inline]
-    pub(crate) fn get_body_tokens(&self, macro_name: &str) -> Option<Vec<String>> {
-        self.statement_macro_definitions
-            .iter()
-            .find(|entry| entry.0 == macro_name)
-            .map(|entry| entry.2.clone())
-    }
-}
-
-impl MacroTable {
     #[inline]
     pub(crate) fn register_statement_macros(
         &mut self,
@@ -196,9 +170,7 @@ impl MacroTable {
             }
         }
     }
-}
 
-impl MacroTable {
     #[inline]
     pub(crate) fn record_macro_expansion(&mut self, location_key: String, macro_name: String) {
         if self
@@ -211,28 +183,7 @@ impl MacroTable {
 
         self.macro_expansion_sites.push((location_key, macro_name));
     }
-}
 
-impl MacroTable {
-    #[inline]
-    pub(crate) fn find_macro_name(&self, location_key: &str) -> Option<String> {
-        self.macro_expansion_sites
-            .iter()
-            .find(|entry| entry.0 == location_key)
-            .map(|entry| entry.1.clone())
-    }
-}
-
-impl MacroTable {
-    #[inline]
-    pub(crate) fn has_emitted_outline(&self, macro_name: &str) -> bool {
-        self.emitted_outline_names
-            .iter()
-            .any(|entry| entry == macro_name)
-    }
-}
-
-impl MacroTable {
     #[inline]
     pub(crate) fn mark_outline_emitted(&mut self, macro_name: &str) {
         self.emitted_outline_names.insert(macro_name.to_string());
@@ -257,7 +208,7 @@ impl MacroTable {
     pub(crate) fn make_location_key(entity: &clang::Entity<'_>) -> Option<String> {
         let range: clang::source::SourceRange<'_> = entity.get_range()?;
 
-        let location = range.get_start().get_expansion_location();
+        let location: clang::source::Location<'_> = range.get_start().get_expansion_location();
 
         let file: clang::source::File<'_> = location.file?;
 
@@ -306,5 +257,31 @@ impl MacroTable {
                     == self.input_source_file
             })
             .unwrap_or(false)
+    }
+}
+
+impl MacroTable {
+    #[inline]
+    pub(crate) fn find_innermost_macro_at(&self, file: &Path, offset: u32) -> Option<String> {
+        let mut best: Option<(String, u32)> = None;
+
+        for (name, (range_file, start, end)) in self.macro_body_ranges.iter() {
+            if range_file != file {
+                continue;
+            }
+
+            if offset < *start || offset > *end {
+                continue;
+            }
+
+            let length: u32 = end.saturating_sub(*start);
+
+            match best.as_ref() {
+                Some((_, best_length)) if length >= *best_length => continue,
+                _ => best = Some((name.clone(), length)),
+            }
+        }
+
+        best.map(|(name, _)| name)
     }
 }
