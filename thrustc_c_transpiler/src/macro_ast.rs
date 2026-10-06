@@ -101,28 +101,34 @@ impl ForDecl {
 }
 
 impl ForDecl {
+    #[inline]
     pub fn get_ty(&self) -> &str {
         &self.ty
     }
 
+    #[inline]
     pub fn get_name(&self) -> &str {
         &self.name
     }
 
+    #[inline]
     pub fn get_init(&self) -> Option<&MacroExpr> {
         self.init.as_ref()
     }
 }
 
 impl ForDecl {
+    #[inline]
     pub fn get_mut_ty(&mut self) -> &mut String {
         &mut self.ty
     }
 
+    #[inline]
     pub fn get_mut_name(&mut self) -> &mut String {
         &mut self.name
     }
 
+    #[inline]
     pub fn get_mut_init(&mut self) -> &mut Option<MacroExpr> {
         &mut self.init
     }
@@ -192,20 +198,24 @@ impl MacroNodeMeta {
 }
 
 impl MacroNodeMeta {
+    #[inline]
     pub fn get_kind(&self) -> &Type {
         &self.kind
     }
 
+    #[inline]
     pub fn get_span(&self) -> Span {
         self.span
     }
 }
 
 impl MacroNodeMeta {
+    #[inline]
     pub fn get_mut_kind(&mut self) -> &mut Type {
         &mut self.kind
     }
 
+    #[inline]
     pub fn set_span(&mut self, span: Span) {
         self.span = span;
     }
@@ -224,20 +234,24 @@ impl MacroExprNode {
 }
 
 impl MacroExprNode {
+    #[inline]
     pub fn get_expr(&self) -> &MacroExpr {
         &self.expr
     }
 
+    #[inline]
     pub fn get_meta(&self) -> &MacroNodeMeta {
         &self.meta
     }
 }
 
 impl MacroExprNode {
+    #[inline]
     pub fn get_mut_expr(&mut self) -> &mut MacroExpr {
         &mut self.expr
     }
 
+    #[inline]
     pub fn get_mut_meta(&mut self) -> &mut MacroNodeMeta {
         &mut self.meta
     }
@@ -256,20 +270,24 @@ impl MacroStmtNode {
 }
 
 impl MacroStmtNode {
+    #[inline]
     pub fn get_stmt(&self) -> &MacroStmt {
         &self.stmt
     }
 
+    #[inline]
     pub fn get_meta(&self) -> &MacroNodeMeta {
         &self.meta
     }
 }
 
 impl MacroStmtNode {
+    #[inline]
     pub fn get_mut_stmt(&mut self) -> &mut MacroStmt {
         &mut self.stmt
     }
 
+    #[inline]
     pub fn get_mut_meta(&mut self) -> &mut MacroNodeMeta {
         &mut self.meta
     }

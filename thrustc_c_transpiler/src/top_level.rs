@@ -303,12 +303,12 @@ pub fn append_translated_top_level_declarations(
         out.push('\n');
     }
 
-    for outlined in macro_ctx
+    for statement_macro_function_text in macro_ctx
         .get_mut_macro_table()
-        .take_pending_outline_functions()
+        .take_pending_statement_macro_functions()
         .iter()
     {
-        out.push_str(outlined);
+        out.push_str(statement_macro_function_text);
         out.push('\n');
     }
 }

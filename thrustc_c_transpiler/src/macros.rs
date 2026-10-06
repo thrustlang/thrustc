@@ -62,6 +62,8 @@ impl<'clang> MacroContext<'clang> {
     pub fn get_macro_table(&self) -> &crate::macro_table::MacroTable {
         &self.table
     }
+
+    #[inline]
     pub fn get_transpiler_context(&self) -> &crate::context::TranspilerContext {
         &self.context
     }
@@ -372,7 +374,7 @@ pub fn append_translated_macro_consts(
     }
 }
 
-fn outline_statement_body(
+fn build_statement_macro_function(
     ctx: &mut MacroContext<'_>,
     site: &clang::Entity<'_>,
     name: &str,
@@ -971,7 +973,7 @@ pub fn reclassify_macros_calling_statements(
     }
 }
 
-pub fn try_outline_statement_macro(
+pub fn try_extract_statement_macro_call(
     ctx: &mut MacroContext<'_>,
     site: &clang::Entity<'_>,
     span: Span,
@@ -992,7 +994,7 @@ pub fn try_outline_statement_macro(
             ctx,
             site,
             &name,
-            "Missing macro parameter metadata for statement macro outline.",
+            "Missing macro parameter metadata for statement macro function extraction.",
             "Ensure this macro is captured by the transpiler macro table before expansion.",
             span,
         );
@@ -1096,7 +1098,10 @@ pub fn try_outline_statement_macro(
         })
         .collect();
 
-    if ctx.get_macro_table().has_emitted_outline(&name) {
+    if ctx
+        .get_macro_table()
+        .has_emitted_statement_macro_function(&name)
+    {
         return Some(call_text);
     }
 
@@ -1113,7 +1118,7 @@ pub fn try_outline_statement_macro(
         return None;
     }
 
-    let outlined: Option<String> = self::outline_statement_body(
+    let statement_macro_function: Option<String> = self::build_statement_macro_function(
         ctx,
         site,
         &name,
@@ -1125,7 +1130,7 @@ pub fn try_outline_statement_macro(
 
     ctx.pop_expansion();
 
-    let Some(outlined_text) = outlined else {
+    let Some(statement_macro_function_text) = statement_macro_function else {
         crate::macro_error::add_macro_error(
             ctx,
             site,
@@ -1139,8 +1144,9 @@ pub fn try_outline_statement_macro(
     };
 
     ctx.get_mut_macro_table()
-        .add_pending_outline_function(outlined_text);
-    ctx.get_mut_macro_table().mark_outline_emitted(&name);
+        .add_pending_statement_macro_function(statement_macro_function_text);
+    ctx.get_mut_macro_table()
+        .mark_statement_macro_function_emitted(&name);
 
     Some(call_text)
 }

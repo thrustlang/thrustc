@@ -82,8 +82,8 @@ pub struct MacroTable {
     macro_definition_sites: HashMap<String, String>,
     macro_body_ranges: HashMap<String, (PathBuf, u32, u32)>,
     macro_expansion_sites: Vec<(String, String)>,
-    emitted_outline_names: HashSet<String>,
-    pending_outline_functions: Vec<String>,
+    emitted_statement_macro_functions: HashSet<String>,
+    pending_statement_macro_functions: Vec<String>,
 }
 
 impl MacroTable {
@@ -96,8 +96,8 @@ impl MacroTable {
             macro_definition_sites: HashMap::new(),
             macro_body_ranges: HashMap::new(),
             macro_expansion_sites: Vec::new(),
-            emitted_outline_names: HashSet::new(),
-            pending_outline_functions: Vec::new(),
+            emitted_statement_macro_functions: HashSet::new(),
+            pending_statement_macro_functions: Vec::new(),
         }
     }
 }
@@ -108,6 +108,7 @@ impl MacroTable {
         &self.input_source_file
     }
 
+    #[inline]
     pub fn get_macro_definition_site(&self, macro_name: &str) -> Option<String> {
         self.macro_definition_sites.get(macro_name).cloned()
     }
@@ -153,8 +154,8 @@ impl MacroTable {
     }
 
     #[inline]
-    pub fn has_emitted_outline(&self, macro_name: &str) -> bool {
-        self.emitted_outline_names
+    pub fn has_emitted_statement_macro_function(&self, macro_name: &str) -> bool {
+        self.emitted_statement_macro_functions
             .iter()
             .any(|entry| entry == macro_name)
     }
@@ -322,22 +323,23 @@ impl MacroTable {
     }
 
     #[inline]
-    pub fn mark_outline_emitted(&mut self, macro_name: &str) {
-        self.emitted_outline_names.insert(macro_name.to_string());
+    pub fn mark_statement_macro_function_emitted(&mut self, macro_name: &str) {
+        self.emitted_statement_macro_functions
+            .insert(macro_name.to_string());
     }
 }
 
 impl MacroTable {
     #[inline]
-    pub fn add_pending_outline_function(&mut self, text: String) {
-        self.pending_outline_functions.push(text);
+    pub fn add_pending_statement_macro_function(&mut self, text: String) {
+        self.pending_statement_macro_functions.push(text);
     }
 }
 
 impl MacroTable {
     #[inline]
-    pub fn take_pending_outline_functions(&mut self) -> Vec<String> {
-        std::mem::take(&mut self.pending_outline_functions)
+    pub fn take_pending_statement_macro_functions(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.pending_statement_macro_functions)
     }
 }
 

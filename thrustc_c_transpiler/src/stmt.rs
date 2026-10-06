@@ -35,7 +35,7 @@ fn translate_stmt_inner(
     let prefix: String = crate::macros::expansion_prefix(entity);
     let indent_str: String = "    ".repeat(indent);
 
-    if let Some(call) = crate::macros::try_outline_statement_macro(ctx, entity, span) {
+    if let Some(call) = crate::macros::try_extract_statement_macro_call(ctx, entity, span) {
         return vec![format!("{indent_str}{call};")];
     }
 
