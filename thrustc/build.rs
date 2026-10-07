@@ -24,6 +24,7 @@ fn main() {
             .join("..")
             .join("assets")
             .join("thrustlang-logo.ico");
+
         res.set_icon(
             icon_path
                 .to_str()
