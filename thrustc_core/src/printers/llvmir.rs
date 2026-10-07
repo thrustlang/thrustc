@@ -27,8 +27,8 @@ use syntect::parsing::SyntaxSetBuilder;
 use syntect::util::LinesWithEndings;
 use thrustc_options::CompilerOptions;
 
-use crate::ThrustCompiler;
 use crate::utils;
+use crate::ThrustCompiler;
 
 pub fn print_llvm_ir(
     compiler: &ThrustCompiler,

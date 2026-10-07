@@ -34,7 +34,7 @@ use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::Type;
-use thrustc_typesystem::traits::{TypeCodeLocation, TypeIsExtensions};
+use thrustc_typesystem::traits::{ConstantTypeExtensions, TypeCodeLocation, TypeIsExtensions};
 use thrustc_typesystem::type_layout::{Layout, TargetInfo};
 use thrustc_typesystem::type_modificators::StructureTypeModificator;
 
@@ -63,20 +63,220 @@ pub enum WebAssemblyABIType<'abi> {
 
 #[derive(Debug, Clone)]
 pub struct WebAssemblyABIParameterConfiguration<'abi> {
-    pub name: &'abi str,
-    pub ascii_name: &'abi str,
-    pub ty: &'abi Type,
-    pub passing: WebAssemblyABIType<'abi>,
-    pub source_index: usize,
-    pub llvm_index: Option<u32>,
+    name: &'abi str,
+    ascii_name: &'abi str,
+    ty: &'abi Type,
+    passing: WebAssemblyABIType<'abi>,
+    source_index: usize,
+    llvm_index: Option<u32>,
 }
 
 #[derive(Debug, Clone)]
 pub struct WebAssemblyABIFunctionTypeConfiguration<'abi> {
-    pub return_type: &'abi Type,
-    pub return_passing: WebAssemblyABIType<'abi>,
-    pub parameters: Vec<WebAssemblyABIParameterConfiguration<'abi>>,
-    pub is_variadic: bool,
+    return_type: &'abi Type,
+    return_passing: WebAssemblyABIType<'abi>,
+    parameters: Vec<WebAssemblyABIParameterConfiguration<'abi>>,
+    is_variadic: bool,
+}
+
+impl<'abi> WebAssemblyABIParameterConfiguration<'abi> {
+    #[inline]
+    pub fn new(
+        name: &'abi str,
+        ascii_name: &'abi str,
+        ty: &'abi Type,
+        passing: WebAssemblyABIType<'abi>,
+        source_index: usize,
+        llvm_index: Option<u32>,
+    ) -> Self {
+        Self {
+            name,
+            ascii_name,
+            ty,
+            passing,
+            source_index,
+            llvm_index,
+        }
+    }
+}
+
+impl<'abi> WebAssemblyABIParameterConfiguration<'abi> {
+    #[inline]
+    pub fn get_name(&self) -> &'abi str {
+        self.name
+    }
+
+    #[inline]
+    pub fn get_ascii_name(&self) -> &'abi str {
+        self.ascii_name
+    }
+
+    #[inline]
+    pub fn get_ty(&self) -> &'abi Type {
+        self.ty
+    }
+
+    #[inline]
+    pub fn get_passing(&self) -> &WebAssemblyABIType<'abi> {
+        &self.passing
+    }
+
+    #[inline]
+    pub fn get_source_index(&self) -> usize {
+        self.source_index
+    }
+
+    #[inline]
+    pub fn get_llvm_index(&self) -> Option<u32> {
+        self.llvm_index
+    }
+}
+
+impl<'abi> WebAssemblyABIParameterConfiguration<'abi> {
+    #[inline]
+    pub fn get_mut_name(&mut self) -> &mut &'abi str {
+        &mut self.name
+    }
+
+    #[inline]
+    pub fn get_mut_ascii_name(&mut self) -> &mut &'abi str {
+        &mut self.ascii_name
+    }
+
+    #[inline]
+    pub fn get_mut_ty(&mut self) -> &mut &'abi Type {
+        &mut self.ty
+    }
+
+    #[inline]
+    pub fn get_mut_passing(&mut self) -> &mut WebAssemblyABIType<'abi> {
+        &mut self.passing
+    }
+
+    #[inline]
+    pub fn get_mut_source_index(&mut self) -> &mut usize {
+        &mut self.source_index
+    }
+
+    #[inline]
+    pub fn get_mut_llvm_index(&mut self) -> &mut Option<u32> {
+        &mut self.llvm_index
+    }
+}
+
+impl<'abi> WebAssemblyABIParameterConfiguration<'abi> {
+    #[inline]
+    pub fn set_name(&mut self, name: &'abi str) {
+        self.name = name;
+    }
+
+    #[inline]
+    pub fn set_ascii_name(&mut self, ascii_name: &'abi str) {
+        self.ascii_name = ascii_name;
+    }
+
+    #[inline]
+    pub fn set_ty(&mut self, ty: &'abi Type) {
+        self.ty = ty;
+    }
+
+    #[inline]
+    pub fn set_passing(&mut self, passing: WebAssemblyABIType<'abi>) {
+        self.passing = passing;
+    }
+
+    #[inline]
+    pub fn set_source_index(&mut self, source_index: usize) {
+        self.source_index = source_index;
+    }
+
+    #[inline]
+    pub fn set_llvm_index(&mut self, llvm_index: Option<u32>) {
+        self.llvm_index = llvm_index;
+    }
+}
+
+impl<'abi> WebAssemblyABIFunctionTypeConfiguration<'abi> {
+    #[inline]
+    pub fn new(
+        return_type: &'abi Type,
+        return_passing: WebAssemblyABIType<'abi>,
+        parameters: Vec<WebAssemblyABIParameterConfiguration<'abi>>,
+        is_variadic: bool,
+    ) -> Self {
+        Self {
+            return_type,
+            return_passing,
+            parameters,
+            is_variadic,
+        }
+    }
+}
+
+impl<'abi> WebAssemblyABIFunctionTypeConfiguration<'abi> {
+    #[inline]
+    pub fn get_return_type(&self) -> &'abi Type {
+        self.return_type
+    }
+
+    #[inline]
+    pub fn get_return_passing(&self) -> &WebAssemblyABIType<'abi> {
+        &self.return_passing
+    }
+
+    #[inline]
+    pub fn get_parameters(&self) -> &Vec<WebAssemblyABIParameterConfiguration<'abi>> {
+        &self.parameters
+    }
+
+    #[inline]
+    pub fn is_variadic(&self) -> bool {
+        self.is_variadic
+    }
+}
+
+impl<'abi> WebAssemblyABIFunctionTypeConfiguration<'abi> {
+    #[inline]
+    pub fn get_mut_return_type(&mut self) -> &mut &'abi Type {
+        &mut self.return_type
+    }
+
+    #[inline]
+    pub fn get_mut_return_passing(&mut self) -> &mut WebAssemblyABIType<'abi> {
+        &mut self.return_passing
+    }
+
+    #[inline]
+    pub fn get_mut_parameters(&mut self) -> &mut Vec<WebAssemblyABIParameterConfiguration<'abi>> {
+        &mut self.parameters
+    }
+
+    #[inline]
+    pub fn get_mut_is_variadic(&mut self) -> &mut bool {
+        &mut self.is_variadic
+    }
+}
+
+impl<'abi> WebAssemblyABIFunctionTypeConfiguration<'abi> {
+    #[inline]
+    pub fn set_return_type(&mut self, return_type: &'abi Type) {
+        self.return_type = return_type;
+    }
+
+    #[inline]
+    pub fn set_return_passing(&mut self, return_passing: WebAssemblyABIType<'abi>) {
+        self.return_passing = return_passing;
+    }
+
+    #[inline]
+    pub fn set_parameters(&mut self, parameters: Vec<WebAssemblyABIParameterConfiguration<'abi>>) {
+        self.parameters = parameters;
+    }
+
+    #[inline]
+    pub fn set_is_variadic(&mut self, is_variadic: bool) {
+        self.is_variadic = is_variadic;
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -204,11 +404,11 @@ pub fn lower_call_prologue<'abi>(
         Vec::with_capacity(args.len().saturating_add(1));
 
     if matches!(
-        configuration.return_passing,
+        configuration.get_return_passing(),
         WebAssemblyABIType::Indirect(_)
     ) {
         let llvm_type: BasicTypeEnum =
-            self::generate_type(llvm_context, abi_context, configuration.return_type);
+            self::generate_type(llvm_context, abi_context, configuration.get_return_type());
         let buffer: PointerValue = llvm_builder
             .build_alloca(llvm_type, "")
             .unwrap_or_else(|_| {
@@ -224,18 +424,18 @@ pub fn lower_call_prologue<'abi>(
         lowered.push(buffer.into());
     }
 
-    for parameter in &configuration.parameters {
-        let value: BasicValueEnum = *args.get(parameter.source_index).unwrap_or_else(|| {
+    for parameter in configuration.get_parameters() {
+        let value: BasicValueEnum = *args.get(parameter.get_source_index()).unwrap_or_else(|| {
             abort::abort_codegen(
                 abi_context,
                 "Failed to get a WebAssembly ABI call argument.",
-                parameter.ty.get_span(),
+                parameter.get_ty().get_span(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             )
         });
 
-        match &parameter.passing {
+        match parameter.get_passing() {
             WebAssemblyABIType::Direct(_) => lowered.push(value.into()),
             WebAssemblyABIType::Ignore(_) => {}
             WebAssemblyABIType::Indirect(ty) => {
@@ -352,7 +552,11 @@ pub fn lower_call_prologue<'abi>(
         }
     }
 
-    for (index, value) in args.iter().enumerate().skip(configuration.parameters.len()) {
+    for (index, value) in args
+        .iter()
+        .enumerate()
+        .skip(configuration.get_parameters().len())
+    {
         let ty: &Type = argument_types.get(index).unwrap_or_else(|| {
             abort::abort_codegen(
                 abi_context,
@@ -363,7 +567,9 @@ pub fn lower_call_prologue<'abi>(
             )
         });
 
-        match self::classify_type(abi_context, ty) {
+        let ty: Type = ty.remove_all_constant_type();
+
+        match self::classify_type(abi_context, &ty) {
             WebAssemblyABIType::Indirect(indirect_type)
             | WebAssemblyABIType::DirectAggregate {
                 aggregate: indirect_type,
@@ -403,7 +609,7 @@ pub fn lower_call_prologue<'abi>(
             }
 
             WebAssemblyABIType::Direct(_) => {
-                let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(ty) {
+                let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(&ty) {
                     Either::Left(layout) => layout.into_layout(),
                     Either::Right(layout) => layout.into_layout(),
                 };
@@ -473,7 +679,7 @@ pub fn lower_call_epilogue<'abi>(
     configuration: &WebAssemblyABIFunctionTypeConfiguration<'abi>,
     span: Span,
 ) -> Option<BasicValueEnum<'abi>> {
-    match &configuration.return_passing {
+    match configuration.get_return_passing() {
         WebAssemblyABIType::Ignore(ty) => {
             if matches!(ty, Type::Void { .. }) {
                 None
@@ -663,68 +869,68 @@ pub fn lower_function_parameters<'abi>(
         &Type,
         WebAssemblyABIFunctionParameterConfiguration,
         BasicValueEnum<'_>,
-    )> = Vec::with_capacity(configuration.parameters.len());
+    )> = Vec::with_capacity(configuration.get_parameters().len());
 
-    for parameter in &configuration.parameters {
-        match &parameter.passing {
+    for parameter in configuration.get_parameters() {
+        match parameter.get_passing() {
             WebAssemblyABIType::Direct(_) => {
                 let value: BasicValueEnum = *llvm_parameters
-                    .get(parameter.llvm_index.unwrap_or_default() as usize)
+                    .get(parameter.get_llvm_index().unwrap_or_default() as usize)
                     .unwrap_or_else(|| {
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get a direct WebAssembly ABI parameter.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
                     });
 
                 lowered.push((
-                    parameter.name,
-                    parameter.ascii_name,
-                    parameter.ty,
+                    parameter.get_name(),
+                    parameter.get_ascii_name(),
+                    parameter.get_ty(),
                     WebAssemblyABIFunctionParameterConfiguration::Value,
                     value,
                 ));
             }
             WebAssemblyABIType::Indirect(_) => {
                 let value: BasicValueEnum = *llvm_parameters
-                    .get(parameter.llvm_index.unwrap_or_default() as usize)
+                    .get(parameter.get_llvm_index().unwrap_or_default() as usize)
                     .unwrap_or_else(|| {
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get an indirect WebAssembly ABI parameter.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
                     });
 
                 lowered.push((
-                    parameter.name,
-                    parameter.ascii_name,
-                    parameter.ty,
+                    parameter.get_name(),
+                    parameter.get_ascii_name(),
+                    parameter.get_ty(),
                     WebAssemblyABIFunctionParameterConfiguration::Address,
                     value,
                 ));
             }
             WebAssemblyABIType::Ignore(ty) => lowered.push((
-                parameter.name,
-                parameter.ascii_name,
-                parameter.ty,
+                parameter.get_name(),
+                parameter.get_ascii_name(),
+                parameter.get_ty(),
                 WebAssemblyABIFunctionParameterConfiguration::Value,
                 self::generate_type(llvm_context, abi_context, ty).const_zero(),
             )),
 
             WebAssemblyABIType::DirectAggregate { aggregate, .. } => {
                 let scalar_value: BasicValueEnum = *llvm_parameters
-                    .get(parameter.llvm_index.unwrap_or_default() as usize)
+                    .get(parameter.get_llvm_index().unwrap_or_default() as usize)
                     .unwrap_or_else(|| {
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get a WebAssembly ABI singleton parameter.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -745,7 +951,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to allocate a WebAssembly ABI singleton parameter.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -757,7 +963,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to initialize a WebAssembly ABI singleton parameter.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -767,7 +973,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to align a WebAssembly ABI singleton parameter initialization.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -779,7 +985,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to reconstruct a WebAssembly ABI singleton parameter.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -789,7 +995,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to align a WebAssembly ABI singleton parameter reconstruction.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -801,7 +1007,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to load a WebAssembly ABI singleton parameter.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -812,7 +1018,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get a WebAssembly ABI singleton parameter load.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -822,16 +1028,16 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to align a WebAssembly ABI singleton parameter load.",
-                            parameter.ty.get_span(),
+                            parameter.get_ty().get_span(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
                     });
 
                 lowered.push((
-                    parameter.name,
-                    parameter.ascii_name,
-                    parameter.ty,
+                    parameter.get_name(),
+                    parameter.get_ascii_name(),
+                    parameter.get_ty(),
                     WebAssemblyABIFunctionParameterConfiguration::Value,
                     aggregate_value,
                 ));
@@ -851,7 +1057,7 @@ pub fn lower_function_terminator<'abi>(
     return_value: Option<BasicValueEnum<'abi>>,
     span: Span,
 ) -> bool {
-    match &configuration.return_passing {
+    match configuration.get_return_passing() {
         WebAssemblyABIType::Direct(_) => false,
         WebAssemblyABIType::Ignore(_) => {
             llvm_builder.build_return(None).unwrap_or_else(|_| {
@@ -1048,7 +1254,7 @@ pub fn lower_function_conventions<'abi>(
     function_value: FunctionValue<'abi>,
     configuration: &WebAssemblyABIFunctionTypeConfiguration<'abi>,
 ) {
-    if let WebAssemblyABIType::Indirect(ty) = &configuration.return_passing {
+    if let WebAssemblyABIType::Indirect(ty) = configuration.get_return_passing() {
         let llvm_type: BasicTypeEnum = self::generate_type(llvm_context, abi_context, ty);
         let alignment: u32 = match abi_context.get_mut_target_info().get_type_layout(ty) {
             Either::Left(layout) => layout.alignof.max(1),
@@ -1062,14 +1268,15 @@ pub fn lower_function_conventions<'abi>(
         function_value.add_attribute(AttributeLoc::Param(0), sret);
         function_value.set_param_alignment(0, alignment);
     } else {
-        let attribute_type: Option<&Type> = match &configuration.return_passing {
+        let attribute_type: Option<&Type> = match configuration.get_return_passing() {
             WebAssemblyABIType::Direct(ty) => Some(ty),
             WebAssemblyABIType::DirectAggregate { scalar, .. } => Some(scalar),
             _ => None,
         };
 
         if let Some(ty) = attribute_type {
-            let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(ty) {
+            let ty: Type = ty.remove_all_constant_type();
+            let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(&ty) {
                 Either::Left(layout) => layout.into_layout(),
                 Either::Right(layout) => layout.into_layout(),
             };
@@ -1094,12 +1301,12 @@ pub fn lower_function_conventions<'abi>(
         }
     }
 
-    for parameter in &configuration.parameters {
-        let Some(index) = parameter.llvm_index else {
+    for parameter in configuration.get_parameters() {
+        let Some(index) = parameter.get_llvm_index() else {
             continue;
         };
 
-        match &parameter.passing {
+        match parameter.get_passing() {
             WebAssemblyABIType::Indirect(ty) => {
                 let llvm_type: BasicTypeEnum = self::generate_type(llvm_context, abi_context, ty);
                 let alignment: u32 = match abi_context.get_mut_target_info().get_type_layout(ty) {
@@ -1117,7 +1324,8 @@ pub fn lower_function_conventions<'abi>(
 
             WebAssemblyABIType::Direct(ty)
             | WebAssemblyABIType::DirectAggregate { scalar: ty, .. } => {
-                let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(ty) {
+                let ty: Type = ty.remove_all_constant_type();
+                let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(&ty) {
                     Either::Left(layout) => layout.into_layout(),
                     Either::Right(layout) => layout.into_layout(),
                 };
@@ -1153,14 +1361,15 @@ pub fn lower_call_conventions<'abi>(
     configuration: &WebAssemblyABIFunctionTypeConfiguration<'abi>,
     argument_types: &[Type],
 ) {
-    let return_attribute_type: Option<&Type> = match &configuration.return_passing {
+    let return_attribute_type: Option<&Type> = match configuration.get_return_passing() {
         WebAssemblyABIType::Direct(ty) => Some(ty),
         WebAssemblyABIType::DirectAggregate { scalar, .. } => Some(scalar),
         _ => None,
     };
 
     if let Some(ty) = return_attribute_type {
-        let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(ty) {
+        let ty: Type = ty.remove_all_constant_type();
+        let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(&ty) {
             Either::Left(layout) => layout.into_layout(),
             Either::Right(layout) => layout.into_layout(),
         };
@@ -1184,7 +1393,7 @@ pub fn lower_call_conventions<'abi>(
         }
     }
 
-    if let WebAssemblyABIType::Indirect(ty) = &configuration.return_passing {
+    if let WebAssemblyABIType::Indirect(ty) = configuration.get_return_passing() {
         let llvm_type: BasicTypeEnum = self::generate_type(llvm_context, abi_context, ty);
         let alignment: u32 = match abi_context.get_mut_target_info().get_type_layout(ty) {
             Either::Left(layout) => layout.alignof.max(1),
@@ -1200,12 +1409,12 @@ pub fn lower_call_conventions<'abi>(
         callsite.set_alignment_attribute(AttributeLoc::Param(0), alignment);
     }
 
-    for parameter in &configuration.parameters {
-        let Some(index) = parameter.llvm_index else {
+    for parameter in configuration.get_parameters() {
+        let Some(index) = parameter.get_llvm_index() else {
             continue;
         };
 
-        match &parameter.passing {
+        match parameter.get_passing() {
             WebAssemblyABIType::Indirect(ty) => {
                 let llvm_type: BasicTypeEnum = self::generate_type(llvm_context, abi_context, ty);
                 let alignment: u32 = match abi_context.get_mut_target_info().get_type_layout(ty) {
@@ -1225,7 +1434,8 @@ pub fn lower_call_conventions<'abi>(
 
             WebAssemblyABIType::Direct(ty)
             | WebAssemblyABIType::DirectAggregate { scalar: ty, .. } => {
-                let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(ty) {
+                let ty: Type = ty.remove_all_constant_type();
+                let layout: Layout = match abi_context.get_mut_target_info().get_type_layout(&ty) {
                     Either::Left(layout) => layout.into_layout(),
                     Either::Right(layout) => layout.into_layout(),
                 };
@@ -1254,14 +1464,14 @@ pub fn lower_call_conventions<'abi>(
     }
 
     let mut lowered_index: u32 = configuration
-        .parameters
+        .get_parameters()
         .iter()
-        .filter_map(|parameter| parameter.llvm_index)
+        .filter_map(WebAssemblyABIParameterConfiguration::get_llvm_index)
         .max()
         .map_or_else(
             || {
                 if matches!(
-                    configuration.return_passing,
+                    configuration.get_return_passing(),
                     WebAssemblyABIType::Indirect(_)
                 ) {
                     1
@@ -1272,7 +1482,10 @@ pub fn lower_call_conventions<'abi>(
             |index| index.saturating_add(1),
         );
 
-    for ty in argument_types.iter().skip(configuration.parameters.len()) {
+    for ty in argument_types
+        .iter()
+        .skip(configuration.get_parameters().len())
+    {
         if matches!(
             self::classify_type(abi_context, ty),
             WebAssemblyABIType::Ignore(_)
@@ -1369,14 +1582,14 @@ fn generate_function_type_from_parts<'abi>(
             WebAssemblyABIType::Ignore(_) => None,
         };
 
-        parameters.push(WebAssemblyABIParameterConfiguration {
+        parameters.push(WebAssemblyABIParameterConfiguration::new(
             name,
             ascii_name,
             ty,
             passing,
             source_index,
-            llvm_index: parameter_index,
-        });
+            parameter_index,
+        ));
     }
 
     let function_type: FunctionType = match &return_passing {
@@ -1394,12 +1607,12 @@ fn generate_function_type_from_parts<'abi>(
 
     (
         function_type,
-        WebAssemblyABIFunctionTypeConfiguration {
+        WebAssemblyABIFunctionTypeConfiguration::new(
             return_type,
             return_passing,
             parameters,
             is_variadic,
-        },
+        ),
     )
 }
 

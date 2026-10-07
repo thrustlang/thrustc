@@ -29,8 +29,68 @@ pub type TypeEnv = HashMap<String, Type>;
 
 #[derive(Debug, Clone)]
 pub struct SolveResult {
-    pub env: TypeEnv,
-    pub return_type: Type,
+    env: TypeEnv,
+    return_type: Type,
+}
+
+impl SolveResult {
+    #[inline]
+    pub fn new(env: TypeEnv, return_type: Type) -> Self {
+        Self { env, return_type }
+    }
+}
+
+impl SolveResult {
+    #[inline]
+    pub fn get_env(&self) -> &TypeEnv {
+        &self.env
+    }
+
+    #[inline]
+    pub fn get_return_type(&self) -> &Type {
+        &self.return_type
+    }
+}
+
+impl SolveResult {
+    #[inline]
+    pub fn get_mut_env(&mut self) -> &mut TypeEnv {
+        &mut self.env
+    }
+
+    #[inline]
+    pub fn get_mut_return_type(&mut self) -> &mut Type {
+        &mut self.return_type
+    }
+}
+
+impl SolveResult {
+    #[inline]
+    pub fn set_env(&mut self, env: TypeEnv) {
+        self.env = env;
+    }
+
+    #[inline]
+    pub fn set_return_type(&mut self, return_type: Type) {
+        self.return_type = return_type;
+    }
+}
+
+impl SolveResult {
+    #[inline]
+    pub fn into_parts(self) -> (TypeEnv, Type) {
+        (self.env, self.return_type)
+    }
+
+    #[inline]
+    pub fn into_env(self) -> TypeEnv {
+        self.env
+    }
+
+    #[inline]
+    pub fn into_return_type(self) -> Type {
+        self.return_type
+    }
 }
 
 pub fn solve(
@@ -89,7 +149,7 @@ pub fn solve(
 
     let return_type: Type = substitute(return_type, &env);
 
-    Ok(SolveResult { env, return_type })
+    Ok(SolveResult::new(env, return_type))
 }
 
 fn unify(declared: &Type, provided: &Type, env: &mut TypeEnv) {

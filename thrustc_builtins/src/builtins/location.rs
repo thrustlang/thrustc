@@ -17,8 +17,8 @@
 
 use thrustc_code_location::Span;
 use thrustc_errors::CompilationIssue;
-use thrustc_typesystem::Type;
 use thrustc_typesystem::type_metadata::ArrayTypeMetadata;
+use thrustc_typesystem::Type;
 
 use crate::context::BuiltinContext;
 use crate::traits::BuiltinFunctionSignature;
@@ -36,10 +36,7 @@ impl CompileTimeBuiltinFunction for File {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: self::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(self::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -47,7 +44,7 @@ impl CompileTimeBuiltinFunction for File {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        let path: std::path::PathBuf = context.file.get_path().to_path_buf();
+        let path: std::path::PathBuf = context.get_file().get_path().to_path_buf();
 
         Ok(BuiltinValue::CString(
             path.to_string_lossy().into_owned().into_bytes(),
@@ -66,12 +63,12 @@ impl CompileTimeBuiltinFunction for FileLine {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::U32 {
+        BuiltinFunctionSignature::new(
+            Type::U32 {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -79,7 +76,9 @@ impl CompileTimeBuiltinFunction for FileLine {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        Ok(BuiltinValue::Integer(context.call_span.get_line() as u64))
+        Ok(BuiltinValue::Integer(
+            context.get_call_span().get_line() as u64
+        ))
     }
 }
 
@@ -94,10 +93,7 @@ impl CompileTimeBuiltinFunction for CurrentFuncName {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: self::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(self::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -105,7 +101,7 @@ impl CompileTimeBuiltinFunction for CurrentFuncName {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        let name: &str = context.current_function.unwrap_or("");
+        let name: &str = context.get_current_function().unwrap_or("");
 
         Ok(BuiltinValue::CString(name.as_bytes().to_vec()))
     }

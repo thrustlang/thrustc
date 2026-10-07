@@ -29,7 +29,7 @@ use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 
-use crate::{ParserContext, expressions, typegeneration};
+use crate::{expressions, typegeneration, ParserContext};
 
 pub fn build_builtin_call<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -166,7 +166,7 @@ pub fn build_builtin_call<'parser>(
                 arguments: deferred_arguments,
                 span,
             },
-            kind: signature.return_type,
+            kind: signature.get_return_type().clone(),
             span,
             id: NodeId::new(),
         });

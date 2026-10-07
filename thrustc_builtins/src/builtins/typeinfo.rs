@@ -19,8 +19,8 @@
 
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::{ConstantTypeExtensions, TypeCodeLocation, TypePointerExtensions};
+use thrustc_typesystem::Type;
 
 use crate::context::BuiltinContext;
 use crate::traits::BuiltinFunctionSignature;
@@ -39,12 +39,12 @@ impl CompileTimeBuiltinFunction for FixedArraySize {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Type],
-        }
+            vec![BuiltinParameter::Type],
+        )
     }
 
     fn evaluate(
@@ -91,12 +91,12 @@ impl CompileTimeBuiltinFunction for IsSameType {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Type, BuiltinParameter::Type],
-        }
+            vec![BuiltinParameter::Type, BuiltinParameter::Type],
+        )
     }
 
     fn evaluate(
@@ -147,12 +147,12 @@ impl CompileTimeBuiltinFunction for IsPtrLike {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Type],
-        }
+            vec![BuiltinParameter::Type],
+        )
     }
 
     fn evaluate(
@@ -190,17 +190,17 @@ impl CompileTimeBuiltinFunction for IsFixedArrayOfSize {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: vec![
+            vec![
                 BuiltinParameter::Type,
                 BuiltinParameter::Value(Type::USize {
                     span: Span::nothing(),
                 }),
             ],
-        }
+        )
     }
 
     fn evaluate(

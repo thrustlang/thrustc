@@ -42,8 +42,8 @@ use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::{
     Type,
     traits::{
-        DereferenceExtensions, TypeCodeLocation, TypeExtensions, TypeFixedArrayEntensions,
-        TypeIsExtensions, TypePointerExtensions,
+        ConstantTypeExtensions, DereferenceExtensions, TypeCodeLocation, TypeExtensions,
+        TypeFixedArrayEntensions, TypeIsExtensions, TypePointerExtensions,
     },
     type_layout::TargetInfo,
     type_modificators::StructureTypeModificator,
@@ -99,7 +99,7 @@ impl<'system_v_abi> SystemVABIContext<'system_v_abi> {
         target_data: &'system_v_abi TargetData,
         codegen_location: SystemVCodeGenLocation,
     ) -> Self {
-        let abi_variant = if target_triple.is_windows_based() {
+        let abi_variant: X64ABIVariant = if target_triple.is_windows_based() {
             X64ABIVariant::Windows
         } else {
             X64ABIVariant::SystemV
@@ -609,6 +609,8 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
         classes: &[SystemVABITypeClass; 8],
         ty: &'llvm_abi Type,
     ) -> SystemVABIType<'llvm_abi> {
+        let non_constant_ty: Type = ty.remove_all_constant_type();
+
         let type_layout: either::Either<
             thrustc_typesystem::type_layout::TypeLayout,
             thrustc_typesystem::type_layout::StructTypeLayout,
@@ -620,7 +622,7 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
         };
 
         if abi_context.abi_variant == X64ABIVariant::Windows {
-            if ty.is_struct_type() || ty.is_fixed_array_type() {
+            if non_constant_ty.is_struct_type() || non_constant_ty.is_fixed_array_type() {
                 if layout.abi_size > 8 {
                     return SystemVABIType::ToMemory(ty);
                 } else {
@@ -650,8 +652,8 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
 
         match used {
             1 => match classes[0] {
-                SystemVABITypeClass::INTEGER if ty.is_fixed_array_type() => {
-                    let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+                SystemVABITypeClass::INTEGER if non_constant_ty.is_fixed_array_type() => {
+                    let array_fixed_ty: Type = non_constant_ty.get_fixed_array_base_type();
 
                     if array_fixed_ty.is_array_type()
                         || array_fixed_ty.is_fixed_array_type()
@@ -690,8 +692,8 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                     SystemVABIType::Same(ty)
                 }
 
-                SystemVABITypeClass::SSE if ty.is_fixed_array_type() => {
-                    let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+                SystemVABITypeClass::SSE if non_constant_ty.is_fixed_array_type() => {
+                    let array_fixed_ty: Type = non_constant_ty.get_fixed_array_base_type();
 
                     let is_float: bool = array_fixed_ty.is_float_type();
 
@@ -725,7 +727,9 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                 }
 
                 SystemVABITypeClass::MEMORY => SystemVABIType::ToMemory(ty),
-                SystemVABITypeClass::INTEGER if ty.is_struct_type() || ty.is_fixed_array_type() => {
+                SystemVABITypeClass::INTEGER
+                    if non_constant_ty.is_struct_type() || non_constant_ty.is_fixed_array_type() =>
+                {
                     SystemVABIType::Coerce(ty, layout.width)
                 }
                 SystemVABITypeClass::INTEGER | SystemVABITypeClass::SSE => SystemVABIType::Same(ty),
@@ -735,7 +739,7 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
 
             2 => match (classes[0], classes[1]) {
                 (SystemVABITypeClass::INTEGER, SystemVABITypeClass::INTEGER)
-                    if ty.is_fixed_array_type() =>
+                    if non_constant_ty.is_fixed_array_type() =>
                 {
                     fn integer_chunk_type(bits: u32, span: Span) -> Type {
                         match bits {
@@ -746,7 +750,7 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                         }
                     }
 
-                    let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+                    let array_fixed_ty: Type = non_constant_ty.get_fixed_array_base_type();
 
                     if array_fixed_ty.is_array_type()
                         || array_fixed_ty.is_fixed_array_type()
@@ -783,9 +787,9 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                 }
 
                 (SystemVABITypeClass::SSE, SystemVABITypeClass::SSE)
-                    if ty.is_fixed_array_type() =>
+                    if non_constant_ty.is_fixed_array_type() =>
                 {
-                    let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+                    let array_fixed_ty: Type = non_constant_ty.get_fixed_array_base_type();
 
                     let is_float: bool = array_fixed_ty.is_float_type();
 
@@ -819,7 +823,7 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                 }
 
                 (SystemVABITypeClass::SSE, SystemVABITypeClass::SSE) => {
-                    let array_fixed_ty: Type = ty.get_fixed_array_base_type();
+                    let array_fixed_ty: Type = non_constant_ty.get_fixed_array_base_type();
 
                     let is_float: bool = array_fixed_ty.is_float_type();
 
@@ -846,7 +850,7 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                 }
 
                 (SystemVABITypeClass::SSE, SystemVABITypeClass::SSEUP)
-                    if ty.is_fixed_array_type() =>
+                    if non_constant_ty.is_fixed_array_type() =>
                 {
                     SystemVABIType::Same(ty)
                 }
@@ -856,7 +860,7 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                 (SystemVABITypeClass::MEMORY, _) => SystemVABIType::ToMemory(ty),
 
                 _ => {
-                    if let Type::Struct { fields, .. } = &ty {
+                    if let Type::Struct { fields, .. } = &non_constant_ty {
                         SystemVABIType::DecomposeAndExpand(
                             fields.clone(),
                             SystemVABITypeDecomposeAndExpandVariant::DecomposeAndExpandStructure,
@@ -2120,28 +2124,31 @@ pub fn lower_system_v_call_epilogue<'llvm_abi>(
     let is_void_type: bool = function_value.get_type().get_return_type().is_none();
 
     if let Some(SystemVABIType::Coerce(original_ty, _)) = configuration.return_type() {
-        let returned_value: BasicValueEnum<'_> = callsite.try_as_basic_value().left().unwrap_or_else(|| {
-            abort::abort_codegen(
-                abi_context,
-                "Failed to compile lower a function call!",
-                span,
-                std::path::PathBuf::from(file!()),
-                line!(),
-            )
-        });
+        let returned_value: BasicValueEnum<'_> =
+            callsite.try_as_basic_value().left().unwrap_or_else(|| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to compile lower a function call!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
 
         let original_llvm_ty: BasicTypeEnum<'_> =
             self::generate_type(llvm_context, abi_context, original_ty);
 
-        let ptr: PointerValue<'_> = llvm_builder.build_alloca(original_llvm_ty, "").unwrap_or_else(|_| {
-            abort::abort_codegen(
-                abi_context,
-                "Failed to allocate memory for a coerced return value in System V ABI!",
-                original_ty.get_span(),
-                std::path::PathBuf::from(file!()),
-                line!(),
-            )
-        });
+        let ptr: PointerValue<'_> = llvm_builder
+            .build_alloca(original_llvm_ty, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to allocate memory for a coerced return value in System V ABI!",
+                    original_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
 
         let alignment: u32 = abi_context
             .get_target_data()
@@ -2320,7 +2327,9 @@ pub fn lower_function_terminator<'llvm_abi>(
     return_value: Option<BasicValueEnum<'llvm_abi>>,
     span: Span,
 ) -> bool {
-    if let Some(SystemVABIType::Coerce(original_ty, coerced_width_bits)) = configuration.return_type() {
+    if let Some(SystemVABIType::Coerce(original_ty, coerced_width_bits)) =
+        configuration.return_type()
+    {
         let Some(return_value) = return_value else {
             return false;
         };
@@ -2328,15 +2337,17 @@ pub fn lower_function_terminator<'llvm_abi>(
         let original_llvm_ty: BasicTypeEnum<'_> =
             self::generate_type(llvm_context, abi_context, original_ty);
 
-        let ptr: PointerValue<'_> = llvm_builder.build_alloca(original_llvm_ty, "").unwrap_or_else(|_| {
-            abort::abort_codegen(
-                abi_context,
-                "Failed to allocate memory for a coerced return value in System V ABI!",
-                original_ty.get_span(),
-                std::path::PathBuf::from(file!()),
-                line!(),
-            )
-        });
+        let ptr: PointerValue<'_> = llvm_builder
+            .build_alloca(original_llvm_ty, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to allocate memory for a coerced return value in System V ABI!",
+                    original_ty.get_span(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
 
         let alignment: u32 = abi_context
             .get_target_data()
@@ -2397,7 +2408,11 @@ pub fn lower_function_terminator<'llvm_abi>(
             });
 
         let coerced_value: BasicValueEnum<'_> = llvm_builder
-            .build_load(llvm_context.custom_width_int_type(*coerced_width_bits), ptr, "")
+            .build_load(
+                llvm_context.custom_width_int_type(*coerced_width_bits),
+                ptr,
+                "",
+            )
             .unwrap_or_else(|_| {
                 abort::abort_codegen(
                     abi_context,

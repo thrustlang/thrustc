@@ -1,3 +1,4 @@
+use thrustc_backends::CompilerFeaturesMode;
 use thrustc_code_location::Span;
 use thrustc_directive::{FileDirectives, FileOptions, apply_directive, apply_file_directives};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
@@ -9,7 +10,7 @@ use thrustc_token_type::TokenType;
 fn applies_local_optimization() {
     let mut directives: FileDirectives = FileDirectives::default();
 
-    apply_directive("-opt=O3", &mut directives).unwrap();
+    apply_directive("-opt=O3", &mut directives, CompilerFeaturesMode::Stable).unwrap();
 
     assert!(directives.optimization().unwrap().is_high_opt());
 }
@@ -18,8 +19,12 @@ fn applies_local_optimization() {
 fn rejects_global_flags() {
     let mut directives: FileDirectives = FileDirectives::default();
 
-    let error: String =
-        apply_directive("-target-triple=x86_64-unknown-linux-gnu", &mut directives).unwrap_err();
+    let error: String = apply_directive(
+        "-target-triple=x86_64-unknown-linux-gnu",
+        &mut directives,
+        CompilerFeaturesMode::Stable,
+    )
+    .unwrap_err();
 
     assert!(error.contains("global"));
 }
@@ -28,8 +33,18 @@ fn rejects_global_flags() {
 fn accumulates_warning_directives() {
     let mut directives: FileDirectives = FileDirectives::default();
 
-    apply_directive("--disable-warnings=W0020", &mut directives).unwrap();
-    apply_directive("--disable-warnings=W0030", &mut directives).unwrap();
+    apply_directive(
+        "--disable-warnings=W0020",
+        &mut directives,
+        CompilerFeaturesMode::Stable,
+    )
+    .unwrap();
+    apply_directive(
+        "--disable-warnings=W0030",
+        &mut directives,
+        CompilerFeaturesMode::Stable,
+    )
+    .unwrap();
 
     assert_eq!(directives.warnings_to_disable().len(), 2);
 }
@@ -82,7 +97,7 @@ fn accepts_every_file_scoped_cli_flag() {
     ];
 
     for spec in specs {
-        apply_directive(spec, &mut directives).unwrap();
+        apply_directive(spec, &mut directives, CompilerFeaturesMode::Stable).unwrap();
     }
 }
 
@@ -91,7 +106,7 @@ fn local_scalar_value_overrides_the_global_value() {
     let global: CompilerOptions = CompilerOptions::new();
     let mut directives: FileDirectives = FileDirectives::default();
 
-    apply_directive("-opt=O3", &mut directives).unwrap();
+    apply_directive("-opt=O3", &mut directives, CompilerFeaturesMode::Stable).unwrap();
 
     let effective: FileOptions<'_, '_> = FileOptions::new(&global, &directives);
 
@@ -117,7 +132,8 @@ fn invalid_directive_uses_e0054_and_the_string_span() {
         },
     ];
 
-    let error: CompilationIssue = apply_file_directives(&tokens).unwrap_err();
+    let error: CompilationIssue =
+        apply_file_directives(&tokens, CompilerFeaturesMode::Stable).unwrap_err();
 
     match error {
         CompilationIssue::Error(code, _, _, _, error_span) => {
@@ -126,4 +142,31 @@ fn invalid_directive_uses_e0054_and_the_string_span() {
         }
         _ => panic!("expected an invalid-directive compiler error"),
     }
+}
+
+#[test]
+fn import_c_directive_requires_unstable_mode() {
+    let mut directives: FileDirectives = FileDirectives::default();
+
+    let error: String = apply_directive(
+        "--import-c-include=/tmp",
+        &mut directives,
+        CompilerFeaturesMode::Stable,
+    )
+    .unwrap_err();
+
+    assert!(error.contains("-mode unstable"));
+}
+
+#[test]
+fn import_c_directive_is_allowed_in_unstable_mode() {
+    let mut directives: FileDirectives = FileDirectives::default();
+
+    let result: Result<(), String> = apply_directive(
+        "--import-c-include=/tmp",
+        &mut directives,
+        CompilerFeaturesMode::Unstable,
+    );
+
+    assert!(result.is_ok());
 }

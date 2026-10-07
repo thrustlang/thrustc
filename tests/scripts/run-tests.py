@@ -992,6 +992,8 @@ def run_c_transpile_test(
     output_path = output_dir / test_path.with_suffix(".thrust").name
     command = [
         str(compiler),
+        "-mode",
+        "unstable",
         "--translate-c-to-thrust",
         str(test_path),
         "--translate-c-out-dir",

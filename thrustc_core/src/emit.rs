@@ -24,7 +24,7 @@ use inkwell::targets::TargetMachine;
 use thrustc_directive::FileOptions;
 use thrustc_options::{CompilationUnit, EmitableUnit, Emited};
 
-use crate::{ThrustCompiler, emitters, interrupt};
+use crate::{emitters, interrupt, ThrustCompiler};
 
 pub fn llvm_after_optimization(
     compiler: &mut ThrustCompiler,

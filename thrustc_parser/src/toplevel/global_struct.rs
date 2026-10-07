@@ -18,22 +18,22 @@
 */
 
 use thrustc_ast::{
-    Ast, NodeId, ast_logic_data::StructureData, traits::AstStructFieldsDataExtensions,
+    ast_logic_data::StructureData, traits::AstStructFieldsDataExtensions, Ast, NodeId,
 };
 use thrustc_attributes::ThrustAttributes;
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::Struct;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
-    Type, type_metadata::StructTypeMetadata, type_modificators::StructureTypeModificator,
+    type_metadata::StructTypeMetadata, type_modificators::StructureTypeModificator, Type,
 };
 
 use thrustc_ast::traits::AstStructureDataExtensions;
 use thrustc_parser_table::GenericStructEntry;
 
-use crate::{ParserContext, attributes, modificators, typegeneration};
+use crate::{attributes, modificators, typegeneration, ParserContext};
 
 pub fn build_structure<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -104,8 +104,12 @@ pub fn build_structure<'parser>(
 
             let field_type: Type = typegeneration::build_type(ctx, false)?;
 
-            data.1
-                .push((field_name.to_string(), field_type, field_position, field_span));
+            data.1.push((
+                field_name.to_string(),
+                field_type,
+                field_position,
+                field_span,
+            ));
 
             field_position = field_position.saturating_add(1);
 
@@ -153,18 +157,22 @@ pub fn build_structure<'parser>(
         if is_generic {
             ctx.get_mut_symbols().new_generic_struct(
                 name.to_string(),
-                GenericStructEntry {
+                GenericStructEntry::new(
                     type_params,
-                    field_names: data.1.iter().map(|(field_name, ..)| field_name.clone()).collect(),
-                    field_types: data.1.iter().map(|(_, ty, ..)| ty.clone()).collect(),
+                    data.1
+                        .iter()
+                        .map(|(field_name, ..)| field_name.clone())
+                        .collect(),
+                    data.1.iter().map(|(_, ty, ..)| ty.clone()).collect(),
                     metadata,
                     span,
-                },
+                ),
             );
         } else {
             let struct_: Struct = (name.to_string(), data.1, attributes, metadata, span);
 
-            ctx.get_mut_symbols().new_global_struct(name.to_string(), struct_)?;
+            ctx.get_mut_symbols()
+                .new_global_struct(name.to_string(), struct_)?;
         }
 
         Ok(Ast::new_nullptr(span))
@@ -172,13 +180,16 @@ pub fn build_structure<'parser>(
         if is_generic {
             ctx.get_mut_symbols().new_generic_struct(
                 name.to_string(),
-                GenericStructEntry {
+                GenericStructEntry::new(
                     type_params,
-                    field_names: data.1.iter().map(|(field_name, ..)| field_name.clone()).collect(),
-                    field_types: data.1.iter().map(|(_, ty, ..)| ty.clone()).collect(),
+                    data.1
+                        .iter()
+                        .map(|(field_name, ..)| field_name.clone())
+                        .collect(),
+                    data.1.iter().map(|(_, ty, ..)| ty.clone()).collect(),
                     metadata,
                     span,
-                },
+                ),
             );
         }
 

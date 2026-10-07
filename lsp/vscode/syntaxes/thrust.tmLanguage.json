@@ -99,7 +99,7 @@
         },
         {
           "name": "keyword.operator.word.thrust",
-          "match": "\\b(as|deref|ref|address|addr|load|write|alloc|fixed|or|and)\\b"
+          "match": "\\b(as|deref|ref|address|addr|load|write|alloc|fixed|native|or|and)\\b"
         },
         {
           "name": "keyword.modifier.thrust",
@@ -117,11 +117,11 @@
     },
     "types": {
       "name": "storage.type.thrust",
-      "match": "\\b(s8|s16|s32|s64|ssize|u8|u16|u32|u64|u128|usize|f32|f64|f128|f80|fppc_128|bool|char|ptr|array|void|Fn|CString|CNString)\\b"
+      "match": "\\b(s8|s16|s32|s64|ssize|u8|u16|u32|u64|u128|usize|f32|f64|f128|f80|fppc_128|bool|char|ptr|array|NativeVector|void|Fn|CString|CNString)\\b"
     },
     "builtins": {
       "name": "support.function.builtin.thrust",
-      "match": "\\b(halloc|memset|memmove|memcpy|abiSizeOf|bitSizeOf|abiAlignOf|arbitraryArg|arbitraryArgs|arbitraryArgsStart|arbitraryArgsCopy|arbitraryArgsEnd|arbitraryArgFrom|arbitraryArgsCount|atomicStore|atomicAdd|atomicSubtract|atomicAnd|atomicNand|atomicOr|atomicXor|atomicSignedMaximum|atomicSignedMinimum|atomicUnsignedMaximum|atomicUnsignedMinimum|atomicCompareAndSwap|alignOf|sizeOf|staticAssert|compileError|compileWarning|file|fileLine|currentFuncName|isSigned|isUnsigned|isInteger|isFloat|isBool|isChar|isPointer|isArray|isFixedArray|isStruct|isVoid|isConst|isNumeric|isFunction|typeWidth|fieldCount|fixedArraySize|isSameType|isPtrLike|isFixedArrayOfSize|compilerVersion|debugBuild|stringLength|targetOS|targetArch|targetVendor|targetAbi|targetTriple|isLinux|isWindows|isDarwin|isApple|isAix|isUnix|isBSD|isFreeBSD|isNetBSD|isOpenBSD|isAndroid|isIOS|isSolaris|isHaiku|isWasm32|isWasm64|is64Bit|is32Bit|isBigEndian|isLittleEndian|isX86|isX8664|isArm|isAarch64|isRiscv64|isPpc|isPpc64|isMips64|isSystemz|isLoongarch64|isWasm|isElf|isMachO|isCoff|hasPosixThreads|hasSysvAbi|pointerWidth|isizeWidth|usizeWidth|pointerAlign|maxAlignment|targetCPU|targetCpuFeatures|hasFeature|hostOsName|hostArch|hostEndian|currentTimestamp)\\b\\s*(?=\\()"
+      "match": "\\b(halloc|memset|memmove|memcpy|abiSizeOf|bitSizeOf|abiAlignOf|arbitraryArg|arbitraryArgs|arbitraryArgsStart|arbitraryArgsCopy|arbitraryArgsEnd|arbitraryArgFrom|arbitraryArgsCount|atomicStore|atomicAdd|atomicSubtract|atomicAnd|atomicNand|atomicOr|atomicXor|atomicSignedMaximum|atomicSignedMinimum|atomicUnsignedMaximum|atomicUnsignedMinimum|atomicCompareAndSwap|alignOf|sizeOf|staticAssert|compileError|compileWarning|file|fileLine|currentFuncName|isSigned|isUnsigned|isInteger|isFloat|isBool|isChar|isPointer|isArray|isFixedArray|isStruct|isVoid|isConst|isNumeric|isFunction|typeWidth|fieldCount|fixedArraySize|isSameType|isPtrLike|isFixedArrayOfSize|compilerVersion|debugBuild|stringLength|targetOS|targetArch|targetVendor|targetAbi|targetTriple|isLinux|isWindows|isDarwin|isApple|isAix|isUnix|isBSD|isFreeBSD|isNetBSD|isOpenBSD|isAndroid|isIOS|isSolaris|isHaiku|isWasm32|isWasm64|is64Bit|is32Bit|isBigEndian|isLittleEndian|isX86|isX8664|isArm|isAarch64|isRiscv64|isPpc|isPpc64|isMips64|isSystemz|isLoongarch64|isWasm|isElf|isMachO|isCoff|hasPosixThreads|hasSysvAbi|pointerWidth|isizeWidth|usizeWidth|pointerAlign|maxAlignment|targetCPU|targetCpuFeatures|hasFeature|hostOsName|hostArch|hostEndian|currentTimestamp|processorCount|hostName)\\b\\s*(?=\\()"
     },
     "constants": {
       "name": "variable.other.constant.thrust",

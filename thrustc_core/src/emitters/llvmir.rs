@@ -19,7 +19,7 @@
 
 use inkwell::{module::Module, support::LLVMString};
 
-use crate::{ThrustCompiler, utils};
+use crate::{utils, ThrustCompiler};
 
 pub fn emit_llvm_ir(
     _compiler: &ThrustCompiler,

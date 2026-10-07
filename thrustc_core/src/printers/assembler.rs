@@ -26,8 +26,8 @@ use inkwell::targets::FileType;
 use inkwell::targets::TargetMachine;
 use thrustc_options::CompilerOptions;
 
-use crate::ThrustCompiler;
 use crate::utils;
+use crate::ThrustCompiler;
 
 pub fn print_llvm_assembler(
     compiler: &ThrustCompiler,

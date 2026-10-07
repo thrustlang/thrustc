@@ -19,13 +19,49 @@ use thrustc_typesystem::Type;
 
 #[derive(Debug, Clone)]
 pub struct BuiltinTypeInfo {
-    pub name: &'static str,
-    pub ty: Type,
+    name: &'static str,
+    ty: Type,
 }
 
 impl BuiltinTypeInfo {
     #[inline]
     pub fn new(name: &'static str, ty: Type) -> Self {
         Self { name, ty }
+    }
+}
+
+impl BuiltinTypeInfo {
+    #[inline]
+    pub fn get_name(&self) -> &'static str {
+        self.name
+    }
+
+    #[inline]
+    pub fn get_ty(&self) -> &Type {
+        &self.ty
+    }
+}
+
+impl BuiltinTypeInfo {
+    #[inline]
+    pub fn get_mut_name(&mut self) -> &mut &'static str {
+        &mut self.name
+    }
+
+    #[inline]
+    pub fn get_mut_ty(&mut self) -> &mut Type {
+        &mut self.ty
+    }
+}
+
+impl BuiltinTypeInfo {
+    #[inline]
+    pub fn set_name(&mut self, name: &'static str) {
+        self.name = name;
+    }
+
+    #[inline]
+    pub fn set_ty(&mut self, ty: Type) {
+        self.ty = ty;
     }
 }

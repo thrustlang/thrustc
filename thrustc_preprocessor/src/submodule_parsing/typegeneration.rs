@@ -25,6 +25,7 @@ use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_token_type::traits::TokenTypeExtensions;
 use thrustc_typesystem::{
+    traits::ConstantTypeExtensions,
     Type,
     type_metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
     type_modificators::{
@@ -378,6 +379,20 @@ fn parse_native_vector_type(ctx: &mut dyn TypeParseContext, span: Span) -> Resul
     ctx.consume(TokenType::LBracket)?;
 
     let element_type: Type = self::build_type(ctx)?;
+
+    let non_constant_element_type: Type = element_type.remove_all_constant_type();
+
+    if matches!(non_constant_element_type, Type::NativeVector { .. }) {
+        ctx.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0019,
+            "Nested native vectors are not supported.".into(),
+            "You should use an array/fixed array of NativeVector values, or a NativeVector of pointers.".into(),
+            None,
+            span,
+        ));
+
+        return Err(());
+    }
 
     ctx.consume(TokenType::SemiColon)?;
 

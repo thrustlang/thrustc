@@ -23,7 +23,7 @@ use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_lexer::Lexer;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 
 use crate::{module::Module, parser::ModuleParser, std_library};
@@ -197,13 +197,14 @@ pub fn parse_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
         CompilationUnit::new(name, module_path.clone(), content, base_name.clone());
 
     let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&file, options)?;
-    let directives = match thrustc_directive::apply_file_directives(&tokens) {
-        Ok(directives) => directives,
-        Err(error) => {
-            parser.add_error(error);
-            return Err(());
-        }
-    };
+    let directives =
+        match thrustc_directive::apply_file_directives(&tokens, options.get_compiler_features()) {
+            Ok(directives) => directives,
+            Err(error) => {
+                parser.add_error(error);
+                return Err(());
+            }
+        };
     let file_options = thrustc_directive::FileOptions::new(options, &directives);
 
     let subparser: ModuleParser = ModuleParser::new(

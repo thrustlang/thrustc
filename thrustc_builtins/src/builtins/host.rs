@@ -39,10 +39,7 @@ impl CompileTimeBuiltinFunction for HostOsName {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -67,10 +64,7 @@ impl CompileTimeBuiltinFunction for HostArch {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -95,10 +89,7 @@ impl CompileTimeBuiltinFunction for HostEndian {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -133,12 +124,12 @@ impl CompileTimeBuiltinFunction for CurrentTimestamp {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -166,12 +157,12 @@ impl CompileTimeBuiltinFunction for ProcessorCount {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -198,10 +189,7 @@ impl CompileTimeBuiltinFunction for HostName {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(

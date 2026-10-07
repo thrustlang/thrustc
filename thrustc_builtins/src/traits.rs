@@ -29,8 +29,18 @@ pub enum BuiltinParameter {
 
 #[derive(Debug, Clone)]
 pub struct BuiltinFunctionSignature {
-    pub return_type: Type,
-    pub parameters: Vec<BuiltinParameter>,
+    return_type: Type,
+    parameters: Vec<BuiltinParameter>,
+}
+
+impl BuiltinFunctionSignature {
+    #[inline]
+    pub fn new(return_type: Type, parameters: Vec<BuiltinParameter>) -> Self {
+        Self {
+            return_type,
+            parameters,
+        }
+    }
 }
 
 pub trait CompileTimeBuiltinFunction: std::fmt::Debug {
@@ -45,8 +55,42 @@ pub trait CompileTimeBuiltinFunction: std::fmt::Debug {
 
 impl BuiltinFunctionSignature {
     #[inline]
+    pub fn get_return_type(&self) -> &Type {
+        &self.return_type
+    }
+
+    #[inline]
+    pub fn get_parameters(&self) -> &Vec<BuiltinParameter> {
+        &self.parameters
+    }
+
+    #[inline]
     pub fn get_parameter_count(&self) -> usize {
         self.parameters.len()
+    }
+}
+
+impl BuiltinFunctionSignature {
+    #[inline]
+    pub fn get_mut_return_type(&mut self) -> &mut Type {
+        &mut self.return_type
+    }
+
+    #[inline]
+    pub fn get_mut_parameters(&mut self) -> &mut Vec<BuiltinParameter> {
+        &mut self.parameters
+    }
+}
+
+impl BuiltinFunctionSignature {
+    #[inline]
+    pub fn set_return_type(&mut self, return_type: Type) {
+        self.return_type = return_type;
+    }
+
+    #[inline]
+    pub fn set_parameters(&mut self, parameters: Vec<BuiltinParameter>) {
+        self.parameters = parameters;
     }
 }
 

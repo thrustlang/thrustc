@@ -35,12 +35,12 @@ impl CompileTimeBuiltinFunction for SizeOf {
     }
 
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Type],
-        }
+            vec![BuiltinParameter::Type],
+        )
     }
 
     fn evaluate(
@@ -61,7 +61,7 @@ impl CompileTimeBuiltinFunction for SizeOf {
             }
         };
 
-        let size_of: u32 = match context.target_info.get_type_layout(ty) {
+        let size_of: u32 = match context.get_mut_target_info().get_type_layout(ty) {
             either::Either::Left(layout) => layout.into_layout().sizeof,
             either::Either::Right(layout) => layout.into_layout().sizeof,
         };

@@ -29,8 +29,8 @@ use inkwell::targets::TargetMachine;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
 
-use crate::ThrustCompiler;
 use crate::utils;
+use crate::ThrustCompiler;
 
 #[inline]
 pub fn archive_compilation(

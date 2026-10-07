@@ -21,12 +21,12 @@
 #![allow(clippy::too_many_arguments)]
 
 use thrustc_ast::{
-    Ast, NodeId,
     ast_metadata::{ConstantMetadata, FunctionParameterMetadata, StaticMetadata},
+    Ast, NodeId,
 };
-use thrustc_ast_modificators::{Modificators, traits::ModificatorsExtensions};
+use thrustc_ast_modificators::{traits::ModificatorsExtensions, Modificators};
 use thrustc_atomic_ordering::ThrustAtomicOrdering;
-use thrustc_attributes::{ThrustAttribute, ThrustAttributes, traits::ThrustAttributesExtensions};
+use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttribute, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParametersTypes};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
@@ -36,9 +36,9 @@ use thrustc_preprocessor::module::Module;
 use thrustc_preprocessor::signatures::{Signature, Variant};
 use thrustc_thread_mode::ThrustThreadMode;
 
-use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::{TypeCodeLocation, TypePointerExtensions};
 use thrustc_typesystem::type_metadata::StructTypeMetadata;
+use thrustc_typesystem::Type;
 
 use crate::context::ImportContext;
 
@@ -87,17 +87,15 @@ pub fn synthesize_only_import<'parser>(
 
                     ctx.get_mut_symbols().new_generic_function(
                         symbol.name.clone(),
-                        GenericFunctionEntry {
-                            name: symbol.name.clone(),
-                            type_params: type_params.clone(),
-                            parameter_types,
-                            parameter_names,
-                            return_type,
-                            attributes: attributes.clone(),
-                            has_local_template: false,
-                            has_varargs: has_ignore,
+                        GenericFunctionEntry::new(
+                            symbol.name.clone(),
+                            type_params.clone(),
+                            (parameter_types, parameter_names, return_type),
+                            attributes.clone(),
+                            false,
+                            has_ignore,
                             span,
-                        },
+                        ),
                     );
 
                     ctx.get_mut_symbols()
@@ -276,10 +274,7 @@ pub fn synthesize_only_import<'parser>(
                 if let Some(type_params) = type_params {
                     ctx.get_mut_symbols().new_generic_custom_type(
                         symbol.name.clone(),
-                        GenericCustomTypeEntry {
-                            type_params: type_params.clone(),
-                            kind: kind.clone(),
-                        },
+                        GenericCustomTypeEntry::new(type_params.clone(), kind.clone()),
                     );
 
                     ctx.get_mut_symbols()
@@ -324,13 +319,13 @@ pub fn synthesize_only_import<'parser>(
                 if let Some(type_params) = type_params {
                     ctx.get_mut_symbols().new_generic_struct(
                         symbol.name.clone(),
-                        GenericStructEntry {
-                            type_params: type_params.clone(),
-                            field_names: fields.iter().map(|(name, _, _)| name.clone()).collect(),
-                            field_types: fields.iter().map(|(_, ty, _)| ty.clone()).collect(),
+                        GenericStructEntry::new(
+                            type_params.clone(),
+                            fields.iter().map(|(name, _, _)| name.clone()).collect(),
+                            fields.iter().map(|(_, ty, _)| ty.clone()).collect(),
                             metadata,
-                            span: kind.get_span(),
-                        },
+                            kind.get_span(),
+                        ),
                     );
 
                     ctx.get_mut_symbols()
@@ -528,7 +523,7 @@ pub fn ensure_deallocator_for_type<'parser>(
         self::ensure_concrete_qualified_function(ctx, &access, symbol, &generic_args, span)?
     };
 
-    Ok(Some((deallocator_name, Vec::with_capacity(0))))
+    Ok(Some((deallocator_name, Vec::new())))
 }
 
 fn ensure_concrete_qualified_function<'parser>(
@@ -689,7 +684,7 @@ fn find_deallocator_in_module<'parser>(
             ) {
                 let generic_args: Vec<Type> = type_params
                     .iter()
-                    .filter_map(|parameter| result.env.get(parameter).cloned())
+                    .filter_map(|parameter| result.get_env().get(parameter).cloned())
                     .collect();
 
                 if generic_args.len() == type_params.len() {
@@ -709,7 +704,7 @@ fn find_deallocator_in_module<'parser>(
         };
 
         if subtype.as_ref() == kind {
-            return Some((access, symbol.name.as_str(), Vec::with_capacity(0)));
+            return Some((access, symbol.name.as_str(), Vec::new()));
         }
     }
 

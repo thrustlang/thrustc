@@ -38,17 +38,17 @@ impl CompileTimeBuiltinFunction for StaticAssert {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Void {
+        BuiltinFunctionSignature::new(
+            Type::Void {
                 span: Span::nothing(),
             },
-            parameters: vec![
+            vec![
                 BuiltinParameter::Value(Type::Bool {
                     span: Span::nothing(),
                 }),
                 BuiltinParameter::Value(self::cstring_type()),
             ],
-        }
+        )
     }
 
     fn evaluate(
@@ -95,7 +95,7 @@ impl CompileTimeBuiltinFunction for StaticAssert {
                 format!("Static assertion failed: {}.", message),
                 "The condition of the 'staticAssert' builtin was not satisfied.".into(),
                 None,
-                context.call_span,
+                context.get_call_span(),
             ));
         }
 
@@ -114,12 +114,12 @@ impl CompileTimeBuiltinFunction for CompileError {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Void {
+        BuiltinFunctionSignature::new(
+            Type::Void {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Value(self::cstring_type())],
-        }
+            vec![BuiltinParameter::Value(self::cstring_type())],
+        )
     }
 
     fn evaluate(
@@ -140,7 +140,7 @@ impl CompileTimeBuiltinFunction for CompileError {
             message,
             "The 'compileError' builtin was invoked.".into(),
             None,
-            context.call_span,
+            context.get_call_span(),
         ))
     }
 }
@@ -156,12 +156,12 @@ impl CompileTimeBuiltinFunction for CompileWarning {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Void {
+        BuiltinFunctionSignature::new(
+            Type::Void {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Value(self::cstring_type())],
-        }
+            vec![BuiltinParameter::Value(self::cstring_type())],
+        )
     }
 
     fn evaluate(
@@ -177,10 +177,12 @@ impl CompileTimeBuiltinFunction for CompileWarning {
             _ => "Compilation warning.".to_string(),
         };
 
-        context.warnings.push(CompilationIssue::Warning(
+        let call_span: Span = context.get_call_span();
+
+        context.get_mut_warnings().push(CompilationIssue::Warning(
             CompilationIssueCode::W0031,
             message,
-            context.call_span,
+            call_span,
         ));
 
         Ok(BuiltinValue::Void)

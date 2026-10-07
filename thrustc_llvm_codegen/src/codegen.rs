@@ -1116,8 +1116,23 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                     ..
                 } = source.as_ref()
                 {
-                    if let Type::NativeVector { element_type, .. } =
-                        indexed_source.get_type_for_llvm()
+                    let ty: Type = indexed_source
+                        .get_type_for_llvm()
+                        .remove_all_constant_type();
+
+                    let atomic_config: Option<LLVMAtomicModificators> = match source.as_ref() {
+                        Ast::Reference { name, .. } => self
+                            .context
+                            .get_table()
+                            .get_symbol(name)
+                            .determinate_atomic_configuration(),
+
+                        _ => None,
+                    };
+
+                    if let Type::NativeVector {
+                        ref element_type, ..
+                    } = ty
                     {
                         let index_type: Type = Type::U32 { span: *span };
 
@@ -1126,12 +1141,8 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             self::compile_as_ptr_value(self.context, indexed_source, None);
                         self.context.pop_current_codegen_location();
 
-                        let old_vector: BasicValueEnum = memory::load(
-                            self.context,
-                            ptr.into_pointer_value(),
-                            indexed_source.get_type_for_llvm(),
-                            *span,
-                        );
+                        let old_vector: BasicValueEnum =
+                            memory::load(self.context, ptr.into_pointer_value(), &ty, *span);
 
                         self.context.add_codegen_location(CodeGenLocation::RValue);
                         let index: inkwell::values::IntValue =
@@ -1140,6 +1151,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         self.context.pop_current_codegen_location();
 
                         let value_type: &Type = value.get_type_for_llvm();
+
                         let value: BasicValueEnum =
                             self::compile_as_value(self.context, value, Some(element_type));
                         let value: BasicValueEnum = type_cast::try_smart_cast(
@@ -1153,12 +1165,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                         let new_vector: inkwell::values::VectorValue = self
                             .context
                             .get_llvm_builder()
-                            .build_insert_element(
-                                old_vector.into_vector_value(),
-                                value,
-                                index,
-                                "native.vector.write",
-                            )
+                            .build_insert_element(old_vector.into_vector_value(), value, index, "")
                             .unwrap_or_else(|_| {
                                 abort::abort_codegen(
                                     self.context,
@@ -1169,12 +1176,20 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                                 )
                             });
 
+                        if let Some(config) = atomic_config {
+                            self.context.push_atomic_modificators(config);
+                        }
+
                         memory::store(
                             self.context,
                             ptr.into_pointer_value(),
                             new_vector.into(),
                             *span,
                         );
+
+                        if atomic_config.is_some() {
+                            self.context.pop_atomic_modificators();
+                        }
 
                         return;
                     }
@@ -1574,7 +1589,7 @@ pub fn compile_as_value<'ctx>(
             span,
             ..
         } => {
-            let value_type: &Type = value.get_type_for_llvm();
+            let value_type: Type = value.get_type_for_llvm().remove_all_constant_type();
 
             if value_type.is_ptr_like_type() {
                 let should_load_pointer_reference: bool =
@@ -1582,7 +1597,7 @@ pub fn compile_as_value<'ctx>(
                         && value_type.is_flat_ptr_type();
 
                 let dereference_pointer: BasicValueEnum = if should_load_pointer_reference {
-                    self::compile_as_value(context, value, Some(value_type))
+                    self::compile_as_value(context, value, Some(&value_type))
                 } else {
                     context.add_codegen_location(CodeGenLocation::LValue);
 

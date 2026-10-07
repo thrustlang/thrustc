@@ -402,6 +402,43 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 }
             }
 
+            Ast::NativeVector {
+                kind: ty, items, ..
+            } => {
+                for node in items.iter() {
+                    self.expected_expression(node);
+                    self.analyze_expression(node);
+                }
+
+                let ty: thrustc_typesystem::Type = ty.remove_all_constant_type();
+
+                if let thrustc_typesystem::Type::NativeVector { element_type, .. } = &ty {
+                    let non_constant_element_type: thrustc_typesystem::Type =
+                        element_type.remove_all_constant_type();
+
+                    if matches!(
+                        non_constant_element_type,
+                        thrustc_typesystem::Type::NativeVector { .. }
+                    ) {
+                        self.add_error(CompilationIssue::Error(
+                            thrustc_errors::CompilationIssueCode::E0019,
+                            "Nested native vectors are not supported.".into(),
+                            "You should use an array/fixed array of NativeVector values, or a NativeVector of pointers.".into(),
+                            None,
+                            node.get_span(),
+                        ));
+                    }
+                } else {
+                    self.add_error(CompilationIssue::Error(
+                        thrustc_errors::CompilationIssueCode::E0001,
+                        "Expected a literal native vector value with a valid type.".into(),
+                        "You should remove it.".into(),
+                        None,
+                        node.get_span(),
+                    ));
+                }
+            }
+
             Ast::Index { source, index, .. } => {
                 self.expected_expression(source);
                 self.analyze_expression(source);

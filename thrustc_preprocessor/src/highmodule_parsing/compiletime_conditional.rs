@@ -17,15 +17,15 @@
 
 */
 
+use thrustc_ast::traits::AstCodeLocation;
 use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
-use thrustc_ast::traits::AstCodeLocation;
 use thrustc_code_location::Span;
 use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::Type;
 use thrustc_typesystem::type_metadata::ArrayTypeMetadata;
+use thrustc_typesystem::Type;
 
 use crate::context::PreprocessorContext;
 use crate::submodule_parsing::typegeneration;
@@ -349,7 +349,7 @@ fn parse_builtin_call(parser: &mut PreprocessorContext) -> Result<Ast<'static>, 
         )
         .map_err(|_| ())?;
 
-    Ok(value.to_ast(signature.return_type, span))
+    Ok(value.to_ast(signature.get_return_type().clone(), span))
 }
 
 pub fn skip_import(parser: &mut PreprocessorContext) -> Result<(), ()> {

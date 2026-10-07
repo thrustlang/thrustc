@@ -18,22 +18,22 @@
 */
 
 use thrustc_ast::{
-    traits::{AstAttributeExtensions, AstBaseReferenceExtensions, AstCodeLocation},
     Ast,
+    traits::{AstAttributeExtensions, AstBaseReferenceExtensions, AstCodeLocation},
 };
-use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributeComparator};
+use thrustc_attributes::{ThrustAttributeComparator, traits::ThrustAttributesExtensions};
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::FileOptions;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_token_type::{traits::TokenTypeExtensions, TokenType};
+use thrustc_token_type::{TokenType, traits::TokenTypeExtensions};
 
 use ahash::AHashMap as HashMap;
 
 use crate::table::LinterSymbolsTable;
 
-mod expressions;
+mod expr;
 mod table;
 
 #[derive(Debug)]
@@ -482,7 +482,7 @@ impl<'linter> Linter<'linter> {
             return;
         }
 
-        expressions::analyze(self, expr);
+        expr::analyze(self, expr);
 
         self.leave_node();
     }

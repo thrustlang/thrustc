@@ -29,7 +29,6 @@ pub mod starter;
 pub mod utils;
 pub mod validate;
 
-use inkwell::OptimizationLevel;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::execution_engine::ExecutionEngine;
@@ -40,14 +39,15 @@ use inkwell::targets::Target;
 use inkwell::targets::TargetData;
 use inkwell::targets::TargetMachine;
 use inkwell::targets::TargetTriple;
+use inkwell::OptimizationLevel;
 
 use thrustc_ast::Ast;
-use thrustc_backends::ThrustOptimization;
-use thrustc_backends::llvm::LLVMBackend;
-use thrustc_backends::llvm::Sanitizer;
 use thrustc_backends::llvm::jit;
 use thrustc_backends::llvm::jit::JITConfiguration;
 use thrustc_backends::llvm::target::LLVMTarget;
+use thrustc_backends::llvm::LLVMBackend;
+use thrustc_backends::llvm::Sanitizer;
+use thrustc_backends::ThrustOptimization;
 use thrustc_builtins::BuiltinRegistry;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::{FileDirectives, FileOptions};
@@ -61,11 +61,11 @@ use thrustc_llvm_codegen::optimizer::LLVMOptimizerFlags;
 use thrustc_llvm_codegen::optimizer::LLVMOptimizerPasses;
 use thrustc_llvm_compiler_intrinsic_checker::LLVMIntrinsicChecker;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
+use thrustc_options::linkage::LinkingCompilersConfiguration;
 use thrustc_options::CompilationPhase;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
 use thrustc_options::Emited;
-use thrustc_options::linkage::LinkingCompilersConfiguration;
 use thrustc_parser::Parser;
 use thrustc_parser::ParserContext;
 use thrustc_preprocessor::Preprocessor;
@@ -243,7 +243,10 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
                 continue;
             };
 
-            let Ok(directives) = thrustc_directive::apply_file_directives(&tokens) else {
+            let Ok(directives) = thrustc_directive::apply_file_directives(
+                &tokens,
+                self.options.get_compiler_features(),
+            ) else {
                 continue;
             };
 
@@ -380,7 +383,10 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return interrupt::archive_compilation_module(self, file, file_time);
         };
 
-        let directives: FileDirectives = match thrustc_directive::apply_file_directives(&tokens) {
+        let directives: FileDirectives = match thrustc_directive::apply_file_directives(
+            &tokens,
+            self.options.get_compiler_features(),
+        ) {
             Ok(directives) => directives,
             Err(error) => {
                 let mut diagnostician: Diagnostician = Diagnostician::new(file, self.options);
@@ -935,7 +941,10 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
             return interrupt::archive_compilation_module_jit(self, file, file_time);
         };
 
-        let directives: FileDirectives = match thrustc_directive::apply_file_directives(&tokens) {
+        let directives: FileDirectives = match thrustc_directive::apply_file_directives(
+            &tokens,
+            self.options.get_compiler_features(),
+        ) {
             Ok(directives) => directives,
             Err(error) => {
                 let mut diagnostician: Diagnostician = Diagnostician::new(file, self.options);

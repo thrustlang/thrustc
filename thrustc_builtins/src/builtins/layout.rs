@@ -18,9 +18,9 @@
 use thrustc_code_location::Span;
 use thrustc_errors::CompilationIssue;
 use thrustc_errors::CompilationIssueCode;
-use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::ConstantTypeExtensions;
 use thrustc_typesystem::traits::TypeCodeLocation;
+use thrustc_typesystem::Type;
 
 use crate::context::BuiltinContext;
 use crate::traits::BuiltinFunctionSignature;
@@ -39,12 +39,12 @@ impl CompileTimeBuiltinFunction for TypeWidth {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Type],
-        }
+            vec![BuiltinParameter::Type],
+        )
     }
 
     fn evaluate(
@@ -65,7 +65,7 @@ impl CompileTimeBuiltinFunction for TypeWidth {
             }
         };
 
-        let width: u32 = match context.target_info.get_type_layout(ty) {
+        let width: u32 = match context.get_mut_target_info().get_type_layout(ty) {
             either::Either::Left(layout) => layout.width,
             either::Either::Right(layout) => layout.width,
         };
@@ -85,12 +85,12 @@ impl CompileTimeBuiltinFunction for FieldCount {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Type],
-        }
+            vec![BuiltinParameter::Type],
+        )
     }
 
     fn evaluate(

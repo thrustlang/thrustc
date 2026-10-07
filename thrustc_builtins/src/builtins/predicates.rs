@@ -18,9 +18,9 @@
 use thrustc_code_location::Span;
 use thrustc_errors::CompilationIssue;
 use thrustc_errors::CompilationIssueCode;
-use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::ConstantTypeExtensions;
 use thrustc_typesystem::traits::TypeIsExtensions;
+use thrustc_typesystem::Type;
 
 use crate::context::BuiltinContext;
 use crate::traits::BuiltinFunctionSignature;
@@ -39,12 +39,12 @@ impl CompileTimeBuiltinFunction for IsConst {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Type],
-        }
+            vec![BuiltinParameter::Type],
+        )
     }
 
     fn evaluate(
@@ -82,12 +82,12 @@ macro_rules! define_predicate_builtin {
 
             #[inline]
             fn signature(&self) -> BuiltinFunctionSignature {
-                BuiltinFunctionSignature {
-                    return_type: Type::Bool {
+                BuiltinFunctionSignature::new(
+                    Type::Bool {
                         span: Span::nothing(),
                     },
-                    parameters: vec![BuiltinParameter::Type],
-                }
+                    vec![BuiltinParameter::Type],
+                )
             }
 
             fn evaluate(

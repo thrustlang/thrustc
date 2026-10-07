@@ -43,8 +43,8 @@ impl LLVMArchitectureAttribute {
         };
 
         for function in module.get_functions() {
-            let function_name = function.get_name();
-            let function_name_lossy = function_name.to_string_lossy();
+            let function_name: &std::ffi::CStr = function.get_name();
+            let function_name_lossy: std::borrow::Cow<'_, str> = function_name.to_string_lossy();
             let intrinsic: Option<Intrinsic> = Intrinsic::find(function_name_lossy.as_ref());
 
             let call_convention: u32 = function.get_call_conventions();
@@ -83,8 +83,9 @@ impl LLVMArchitectureAttribute {
                             unsafe { FunctionValue::new(called_value) };
 
                         if let Some(called_function) = called_function {
-                            let function_name = called_function.get_name();
-                            let function_name_lossy = function_name.to_string_lossy();
+                            let function_name: &std::ffi::CStr = called_function.get_name();
+                            let function_name_lossy: std::borrow::Cow<'_, str> =
+                                function_name.to_string_lossy();
                             let intrinsic: Option<Intrinsic> =
                                 Intrinsic::find(function_name_lossy.as_ref());
 

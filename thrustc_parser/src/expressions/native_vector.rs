@@ -23,7 +23,10 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_context::traits::TypeContextExtensions;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, traits::TypeIsExtensions};
+use thrustc_typesystem::{
+    Type,
+    traits::{ConstantTypeExtensions, TypeIsExtensions},
+};
 
 use crate::{ParserContext, expressions};
 
@@ -101,6 +104,18 @@ fn resolve_native_vector_type(
         ..
     }) = infered_type
     {
+        let non_constant_element_type: Type = element_type.remove_all_constant_type();
+
+        if matches!(non_constant_element_type, Type::NativeVector { .. }) {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0019,
+                "Nested native vectors are not supported.".into(),
+                "You should use an array/fixed array of NativeVector values, or a NativeVector of pointers.".into(),
+                None,
+                span,
+            ));
+        }
+
         if element_count as usize != items.len() {
             return Err(CompilationIssue::Error(
                 CompilationIssueCode::E0020,
@@ -133,6 +148,18 @@ fn resolve_native_vector_type(
     };
 
     let first_type: Type = first.get_value_type()?.clone();
+
+    let non_constant_first_type: Type = first_type.remove_all_constant_type();
+
+    if matches!(non_constant_first_type, Type::NativeVector { .. }) {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0019,
+            "Nested native vectors are not supported.".into(),
+            "You should use an array/fixed array of NativeVector values, or a NativeVector of pointers.".into(),
+            None,
+            span,
+        ));
+    }
 
     if !first_type.is_integer_type() && !first_type.is_float_type() && !first_type.is_bool_type() {
         return Err(CompilationIssue::Error(

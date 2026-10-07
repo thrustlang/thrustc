@@ -72,7 +72,7 @@
     },
     {
       "name": "Operator keywords (as, deref, ref, or, and...)",
-      "scope": "keyword.operator.thrust",
+      "scope": "keyword.operator.word.thrust",
       "settings": {
         "foreground": "#C678DD"
       }

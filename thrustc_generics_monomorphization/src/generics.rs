@@ -22,22 +22,22 @@
 use std::collections::{HashMap, HashSet};
 
 use thrustc_ast::{
-    Ast, ModuleExpressionValues, NodeId,
     ast_builtins::{AstBuiltin, DeferredBuiltinArgument},
     ast_logic_data::{ConstructorData, EnumData},
     ast_metadata::{FunctionParameterMetadata, ReferenceMetadata, ReferenceType},
     traits::AstGetType,
+    Ast, ModuleExpressionValues, NodeId,
 };
 use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_table::GenericFunctionEntry;
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
-    Type,
     traits::{TypeCodeLocation, TypePointerExtensions},
+    Type,
 };
 
 use crate::context::GenericsContext;
@@ -46,7 +46,7 @@ pub fn parse_type_parameters<'parser>(
     ctx: &mut GenericsContext<'parser, '_>,
 ) -> Result<Vec<String>, CompilationIssue> {
     if !ctx.check(TokenType::LBracket) {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     }
 
     ctx.consume(
@@ -121,7 +121,7 @@ pub fn resolve_generics<'parser>(ctx: &mut GenericsContext<'parser, '_>) {
             Ast::Function { name, .. } => ctx
                 .get_symbols()
                 .get_generic_function(name)
-                .is_some_and(|entry| entry.has_local_template),
+                .is_some_and(GenericFunctionEntry::has_local_template),
             Ast::Struct { name, .. } => ctx.get_symbols().has_generic_struct(name),
             Ast::CustomType { name, .. } => ctx.get_symbols().has_generic_custom_type(name),
             _ => false,
@@ -154,31 +154,34 @@ pub fn resolve_generics<'parser>(ctx: &mut GenericsContext<'parser, '_>) {
         for pending in pending {
             let Some(entry) = ctx
                 .get_symbols()
-                .get_generic_function(&pending.function)
+                .get_generic_function(pending.get_function())
                 .cloned()
             else {
                 continue;
             };
 
-            if !entry.has_local_template {
+            if !entry.has_local_template() {
                 continue;
             }
 
-            let module_str: String = pending.module.to_string_lossy().to_string();
+            let module_str: String = pending.get_module().to_string_lossy().to_string();
 
-            let key: String =
-                thrustc_generics::instantiation_key(Some(&module_str), &entry.name, &pending.env);
+            let key: String = thrustc_generics::instantiation_key(
+                Some(&module_str),
+                entry.get_name(),
+                pending.get_env(),
+            );
 
             if !memo.insert(key.clone()) {
                 continue;
             }
 
-            let Some(template) = templates.get(&entry.name) else {
+            let Some(template) = templates.get(entry.get_name()) else {
                 continue;
             };
 
             let mut concrete: Ast<'parser> =
-                thrustc_generics::substitute_ast(template.clone(), &pending.env);
+                thrustc_generics::substitute_ast(template.clone(), pending.get_env());
 
             if let Ast::Function {
                 name,
@@ -193,7 +196,7 @@ pub fn resolve_generics<'parser>(ctx: &mut GenericsContext<'parser, '_>) {
             }
 
             if let Ast::Function { original_name, .. } = &mut concrete {
-                *original_name = Some(entry.name.clone());
+                *original_name = Some(entry.get_name().clone());
             }
 
             let resolved: Ast<'parser> =
@@ -218,22 +221,22 @@ fn emit_unused_type_parameter_warnings<'parser>(
     for (_id, entry) in ctx.get_symbols().iter_generic_functions() {
         hints.clear();
 
-        for ty in entry.parameter_types.iter() {
+        for ty in entry.get_parameter_types().iter() {
             thrustc_generics::collect_unresolved_type_hints(ty, &mut hints);
         }
 
-        thrustc_generics::collect_unresolved_type_hints(&entry.return_type, &mut hints);
+        thrustc_generics::collect_unresolved_type_hints(entry.get_return_type(), &mut hints);
 
-        if let Some(template) = templates.get(&entry.name) {
+        if let Some(template) = templates.get(entry.get_name()) {
             thrustc_generics::collect_unresolved_hints(template, &mut hints);
         }
 
-        for parameter in entry.type_params.iter() {
+        for parameter in entry.get_type_params().iter() {
             if !hints.contains(parameter) {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0032,
                     format!("Type parameter '{}' is never used.", parameter),
-                    entry.span,
+                    entry.get_span(),
                 ));
             }
         }
@@ -242,16 +245,16 @@ fn emit_unused_type_parameter_warnings<'parser>(
     for (_id, entry) in ctx.get_symbols().iter_generic_structs() {
         hints.clear();
 
-        for ty in entry.field_types.iter() {
+        for ty in entry.get_field_types().iter() {
             thrustc_generics::collect_unresolved_type_hints(ty, &mut hints);
         }
 
-        for parameter in entry.type_params.iter() {
+        for parameter in entry.get_type_params().iter() {
             if !hints.contains(parameter) {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0032,
                     format!("Type parameter '{}' is never used.", parameter),
-                    entry.span,
+                    entry.get_span(),
                 ));
             }
         }
@@ -260,14 +263,14 @@ fn emit_unused_type_parameter_warnings<'parser>(
     for (_id, entry) in ctx.get_symbols().iter_generic_custom_types() {
         hints.clear();
 
-        thrustc_generics::collect_unresolved_type_hints(&entry.kind, &mut hints);
+        thrustc_generics::collect_unresolved_type_hints(entry.get_kind(), &mut hints);
 
-        for parameter in entry.type_params.iter() {
+        for parameter in entry.get_type_params().iter() {
             if !hints.contains(parameter) {
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0032,
                     format!("Type parameter '{}' is never used.", parameter),
-                    entry.kind.get_span(),
+                    entry.get_kind().get_span(),
                 ));
             }
         }
@@ -315,17 +318,19 @@ fn resolve_ast<'parser>(
 
             let result: Result<thrustc_generics::SolveResult, CompilationIssue> =
                 thrustc_generics::solve(
-                    &entry.type_params,
+                    entry.get_type_params(),
                     &generic_args,
-                    &entry.parameter_types,
+                    entry.get_parameter_types(),
                     &argument_types,
-                    &entry.return_type,
-                    entry.has_varargs,
+                    entry.get_return_type(),
+                    entry.has_varargs(),
                     span,
                 );
 
             match result {
                 Ok(result) => {
+                    let (env, return_type): (thrustc_generics::TypeEnv, Type) = result.into_parts();
+
                     let origin: Option<String> = ctx
                         .get_symbols()
                         .get_import_origin(&name)
@@ -333,26 +338,19 @@ fn resolve_ast<'parser>(
 
                     let key: String = thrustc_generics::instantiation_key(
                         origin.as_deref(),
-                        &entry.name,
-                        &result.env,
+                        entry.get_name(),
+                        &env,
                     );
 
                     self::ensure_instantiation(
-                        ctx,
-                        &name,
-                        &entry,
-                        &result.env,
-                        &key,
-                        templates,
-                        memo,
-                        output,
+                        ctx, &name, &entry, &env, &key, templates, memo, output,
                     );
 
                     Ast::Call {
                         name: key,
                         args: self::resolve_node_ast_list(ctx, args, templates, memo, output),
                         generic_args: Vec::with_capacity(0),
-                        kind: result.return_type,
+                        kind: return_type,
                         span,
                         id,
                     }
@@ -433,8 +431,8 @@ fn ensure_instantiation<'parser>(
         return;
     }
 
-    if entry.has_local_template {
-        let Some(template) = templates.get(&entry.name) else {
+    if entry.has_local_template() {
+        let Some(template) = templates.get(entry.get_name()) else {
             return;
         };
 
@@ -453,7 +451,7 @@ fn ensure_instantiation<'parser>(
         }
 
         if let Ast::Function { original_name, .. } = &mut concrete {
-            *original_name = Some(entry.name.clone());
+            *original_name = Some(entry.get_name().clone());
         }
 
         let resolved: Ast<'parser> = self::resolve_ast(ctx, concrete, templates, memo, output);
@@ -463,16 +461,16 @@ fn ensure_instantiation<'parser>(
         return;
     }
 
-    let return_type: Type = thrustc_generics::substitute(&entry.return_type, env);
+    let return_type: Type = thrustc_generics::substitute(entry.get_return_type(), env);
 
     let parameter_types: Vec<Type> = entry
-        .parameter_types
+        .get_parameter_types()
         .iter()
         .map(|parameter| thrustc_generics::substitute(parameter, env))
         .collect();
 
     let parameters: Vec<Ast<'parser>> = entry
-        .parameter_names
+        .get_parameter_names()
         .iter()
         .zip(parameter_types.iter())
         .enumerate()
@@ -483,14 +481,14 @@ fn ensure_instantiation<'parser>(
                 kind: parameter_type.clone(),
                 position: position as u32,
                 metadata: FunctionParameterMetadata::new(parameter_type.is_ptr_like_type()),
-                span: entry.span,
+                span: entry.get_span(),
                 id: NodeId::new(),
             },
         )
         .collect();
 
     let mut attributes: ThrustAttributes = entry
-        .attributes
+        .get_attributes()
         .iter()
         .filter(|attribute| {
             !matches!(
@@ -510,20 +508,23 @@ fn ensure_instantiation<'parser>(
             |module| format!("{}.{}", module.to_string_lossy(), key),
         );
 
-    attributes.push(ThrustAttribute::Public(entry.span));
-    attributes.push(ThrustAttribute::Extern(demangling_name.clone(), entry.span));
+    attributes.push(ThrustAttribute::Public(entry.get_span()));
+    attributes.push(ThrustAttribute::Extern(
+        demangling_name.clone(),
+        entry.get_span(),
+    ));
 
     let function: Ast<'_> = Ast::Function {
         name: key.to_string(),
         ascii_name: key.to_string(),
         demangling_name,
-        original_name: Some(entry.name.clone()),
+        original_name: Some(entry.get_name().clone()),
         parameters,
         parameter_types,
         body: None,
         return_type,
         attributes,
-        span: entry.span,
+        span: entry.get_span(),
         id: NodeId::new(),
     };
 
@@ -534,7 +535,7 @@ fn ensure_instantiation<'parser>(
         .get_import_origin(symbol_key)
         .map(|path| path.to_path_buf())
     {
-        thrustc_generics::record_pending(origin, entry.name.clone(), env.clone());
+        thrustc_generics::record_pending(origin, entry.get_name().clone(), env.clone());
     }
 }
 
@@ -1508,7 +1509,11 @@ fn resolve_builtin<'parser>(
         } => AstBuiltin::AtomicRMW {
             operation,
             destination: std::boxed::Box::new(self::resolve_ast(
-                ctx, *destination, templates, memo, output,
+                ctx,
+                *destination,
+                templates,
+                memo,
+                output,
             )),
             value: std::boxed::Box::new(self::resolve_ast(ctx, *value, templates, memo, output)),
             span,
@@ -1522,7 +1527,11 @@ fn resolve_builtin<'parser>(
             span,
         } => AstBuiltin::AtomicCompareAndSwap {
             destination: std::boxed::Box::new(self::resolve_ast(
-                ctx, *destination, templates, memo, output,
+                ctx,
+                *destination,
+                templates,
+                memo,
+                output,
             )),
             expected: std::boxed::Box::new(self::resolve_ast(
                 ctx, *expected, templates, memo, output,
@@ -1633,7 +1642,7 @@ fn collect_local_templates<'parser>(
             if ctx
                 .get_symbols()
                 .get_generic_function(name)
-                .is_some_and(|entry| entry.has_local_template)
+                .is_some_and(GenericFunctionEntry::has_local_template)
             {
                 templates.insert(name.clone(), node.clone());
             }

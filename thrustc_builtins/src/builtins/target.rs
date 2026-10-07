@@ -40,10 +40,7 @@ impl CompileTimeBuiltinFunction for TargetOS {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -68,10 +65,7 @@ impl CompileTimeBuiltinFunction for TargetArch {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -96,10 +90,7 @@ impl CompileTimeBuiltinFunction for TargetVendor {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -124,10 +115,7 @@ impl CompileTimeBuiltinFunction for TargetAbi {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -152,10 +140,7 @@ impl CompileTimeBuiltinFunction for TargetTriple {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -180,12 +165,12 @@ impl CompileTimeBuiltinFunction for IsLinux {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -210,12 +195,12 @@ impl CompileTimeBuiltinFunction for IsWindows {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -240,12 +225,12 @@ impl CompileTimeBuiltinFunction for IsDarwin {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -270,12 +255,12 @@ impl CompileTimeBuiltinFunction for IsApple {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -300,12 +285,12 @@ impl CompileTimeBuiltinFunction for IsAix {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -328,12 +313,12 @@ impl CompileTimeBuiltinFunction for IsUnix {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -358,12 +343,12 @@ impl CompileTimeBuiltinFunction for IsBSD {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -388,12 +373,12 @@ impl CompileTimeBuiltinFunction for IsFreeBSD {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -418,12 +403,12 @@ impl CompileTimeBuiltinFunction for IsNetBSD {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -448,12 +433,12 @@ impl CompileTimeBuiltinFunction for IsOpenBSD {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -478,12 +463,12 @@ impl CompileTimeBuiltinFunction for IsAndroid {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -508,12 +493,12 @@ impl CompileTimeBuiltinFunction for IsIOS {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -536,12 +521,12 @@ impl CompileTimeBuiltinFunction for IsSolaris {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -566,12 +551,12 @@ impl CompileTimeBuiltinFunction for IsHaiku {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -596,12 +581,12 @@ impl CompileTimeBuiltinFunction for IsWasm32 {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -626,12 +611,12 @@ impl CompileTimeBuiltinFunction for IsWasm64 {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -656,12 +641,12 @@ impl CompileTimeBuiltinFunction for Is64Bit {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -684,12 +669,12 @@ impl CompileTimeBuiltinFunction for Is32Bit {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -712,12 +697,12 @@ impl CompileTimeBuiltinFunction for IsBigEndian {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -742,12 +727,12 @@ impl CompileTimeBuiltinFunction for IsLittleEndian {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -772,12 +757,12 @@ impl CompileTimeBuiltinFunction for IsX86 {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -802,12 +787,12 @@ impl CompileTimeBuiltinFunction for IsX8664 {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -832,12 +817,12 @@ impl CompileTimeBuiltinFunction for IsArm {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -862,12 +847,12 @@ impl CompileTimeBuiltinFunction for IsAarch64 {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -892,12 +877,12 @@ impl CompileTimeBuiltinFunction for IsRiscv64 {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -922,12 +907,12 @@ impl CompileTimeBuiltinFunction for IsPpc {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -952,12 +937,12 @@ impl CompileTimeBuiltinFunction for IsPpc64 {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -982,12 +967,12 @@ impl CompileTimeBuiltinFunction for IsMips64 {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1012,12 +997,12 @@ impl CompileTimeBuiltinFunction for IsSystemz {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1042,12 +1027,12 @@ impl CompileTimeBuiltinFunction for IsLoongarch64 {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1072,12 +1057,12 @@ impl CompileTimeBuiltinFunction for IsWasm {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1102,12 +1087,12 @@ impl CompileTimeBuiltinFunction for IsElf {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1132,12 +1117,12 @@ impl CompileTimeBuiltinFunction for IsMachO {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1162,12 +1147,12 @@ impl CompileTimeBuiltinFunction for IsCoff {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1192,12 +1177,12 @@ impl CompileTimeBuiltinFunction for HasPosixThreads {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1222,12 +1207,12 @@ impl CompileTimeBuiltinFunction for HasSysvAbi {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1242,7 +1227,7 @@ impl CompileTimeBuiltinFunction for HasSysvAbi {
 }
 
 fn target_triple<'a>(context: &'a mut BuiltinContext<'_>) -> &'a LLVMTargetTriple {
-    context.target_info.get_triple()
+    context.get_target_info().get_triple()
 }
 
 #[derive(Debug)]
@@ -1256,12 +1241,12 @@ impl CompileTimeBuiltinFunction for PointerWidth {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1269,7 +1254,9 @@ impl CompileTimeBuiltinFunction for PointerWidth {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        Ok(BuiltinValue::Integer(context.target_info.ptr_width() as u64))
+        Ok(BuiltinValue::Integer(
+            context.get_target_info().ptr_width() as u64
+        ))
     }
 }
 
@@ -1284,12 +1271,12 @@ impl CompileTimeBuiltinFunction for IsizeWidth {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1298,7 +1285,7 @@ impl CompileTimeBuiltinFunction for IsizeWidth {
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
         Ok(BuiltinValue::Integer(
-            context.target_info.isize_width() as u64
+            context.get_target_info().isize_width() as u64,
         ))
     }
 }
@@ -1314,12 +1301,12 @@ impl CompileTimeBuiltinFunction for UsizeWidth {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1328,7 +1315,7 @@ impl CompileTimeBuiltinFunction for UsizeWidth {
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
         Ok(BuiltinValue::Integer(
-            context.target_info.usize_width() as u64
+            context.get_target_info().usize_width() as u64,
         ))
     }
 }
@@ -1344,12 +1331,12 @@ impl CompileTimeBuiltinFunction for PointerAlign {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1357,7 +1344,9 @@ impl CompileTimeBuiltinFunction for PointerAlign {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        Ok(BuiltinValue::Integer(context.target_info.ptr_align() as u64))
+        Ok(BuiltinValue::Integer(
+            context.get_target_info().ptr_align() as u64
+        ))
     }
 }
 
@@ -1372,12 +1361,12 @@ impl CompileTimeBuiltinFunction for MaxAlignment {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -1385,7 +1374,7 @@ impl CompileTimeBuiltinFunction for MaxAlignment {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        let info: &thrustc_typesystem::type_layout::TargetInfo = context.target_info;
+        let info: &thrustc_typesystem::type_layout::TargetInfo = context.get_target_info();
 
         let max: u32 = [
             info.bool_align(),
@@ -1421,10 +1410,7 @@ impl CompileTimeBuiltinFunction for TargetCPU {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -1432,7 +1418,7 @@ impl CompileTimeBuiltinFunction for TargetCPU {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        let llvm_backend = context.options.get_llvm_backend();
+        let llvm_backend = context.get_options().get_llvm_backend();
         let (cpu, _): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
         Ok(BuiltinValue::CString(cpu.as_bytes().to_vec()))
@@ -1450,10 +1436,7 @@ impl CompileTimeBuiltinFunction for TargetCpuFeatures {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: location::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(location::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -1461,7 +1444,7 @@ impl CompileTimeBuiltinFunction for TargetCpuFeatures {
         _args: &[BuiltinArgument],
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
-        let llvm_backend = context.options.get_llvm_backend();
+        let llvm_backend = context.get_options().get_llvm_backend();
         let (_, features): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
         Ok(BuiltinValue::CString(features.as_bytes().to_vec()))
@@ -1479,12 +1462,12 @@ impl CompileTimeBuiltinFunction for HasFeature {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Value(location::cstring_type())],
-        }
+            vec![BuiltinParameter::Value(location::cstring_type())],
+        )
     }
 
     fn evaluate(
@@ -1503,12 +1486,12 @@ impl CompileTimeBuiltinFunction for HasFeature {
                     "The 'hasFeature' compiler builtin expects a string argument.".into(),
                     "You should pass a feature name, like hasFeature(\"sse2\").".into(),
                     None,
-                    context.call_span,
+                    context.get_call_span(),
                 ));
             }
         };
 
-        let llvm_backend = context.options.get_llvm_backend();
+        let llvm_backend = context.get_options().get_llvm_backend();
         let (_, features): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
         let enabled: bool = features.split(',').any(|entry| {

@@ -20,26 +20,27 @@
 #![allow(unused_assignments)]
 
 use thrustc_ast::{
-    Ast,
     ast_logic_data::StructureData,
     traits::{AstGetType, AstStructFieldsDataExtensions},
+    Ast,
 };
-use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
+use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_compile_time::BuiltinValue;
 use thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
-use thrustc_token::{Token, traits::TokenExtensions};
-use thrustc_token_type::TokenType;
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::traits::TokenTypeExtensions;
+use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
-    Type,
+    traits::ConstantTypeExtensions,
     type_metadata::{ArrayTypeMetadata, FixedArrayTypeMetadata},
     type_modificators::{
         FunctionReferenceTypeModificator, GCCFunctionReferenceTypeModificator,
         LLVMFunctionReferenceTypeModificator,
     },
+    Type,
 };
 
 use thrustc_entities::parser_entities::{
@@ -52,7 +53,7 @@ use thrustc_parser_table::traits::{
     StructSymbolExtensions,
 };
 
-use crate::{ParserContext, attributes, expressions};
+use crate::{attributes, expressions, ParserContext};
 
 pub fn build_type<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -213,10 +214,10 @@ fn build_type_inner<'parser>(
             if ctx.check(TokenType::LBracket) {
                 if let Some(generic) = ctx.get_symbols().get_generic_struct(name).cloned() {
                     let env: thrustc_generics::TypeEnv =
-                        self::parse_generic_type_arguments(ctx, &generic.type_params, span)?;
+                        self::parse_generic_type_arguments(ctx, generic.get_type_params(), span)?;
 
                     let fields: Vec<Type> = generic
-                        .field_types
+                        .get_field_types()
                         .iter()
                         .map(|field| thrustc_generics::substitute(field, &env))
                         .collect();
@@ -224,7 +225,7 @@ fn build_type_inner<'parser>(
                     let ty = Type::Struct {
                         name: name.to_string(),
                         fields,
-                        metadata: generic.metadata,
+                        metadata: generic.get_metadata(),
                         span,
                     };
 
@@ -233,9 +234,9 @@ fn build_type_inner<'parser>(
 
                 if let Some(generic) = ctx.get_symbols().get_generic_custom_type(name).cloned() {
                     let env: thrustc_generics::TypeEnv =
-                        self::parse_generic_type_arguments(ctx, &generic.type_params, span)?;
+                        self::parse_generic_type_arguments(ctx, generic.get_type_params(), span)?;
 
-                    return Ok(thrustc_generics::substitute(&generic.kind, &env));
+                    return Ok(thrustc_generics::substitute(generic.get_kind(), &env));
                 }
             }
 
@@ -616,6 +617,18 @@ fn parse_native_vector_type(
     )?;
 
     let element_type: Type = self::build_type(ctx, false)?;
+
+    let non_constant_element_type: Type = element_type.remove_all_constant_type();
+
+    if matches!(non_constant_element_type, Type::NativeVector { .. }) {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0019,
+            "Nested native vectors are not supported.".into(),
+            "You should use an array/fixed array of NativeVector values, or a NativeVector of pointers.".into(),
+            None,
+            span,
+        ));
+    }
 
     ctx.consume(
         TokenType::SemiColon,

@@ -38,10 +38,7 @@ impl CompileTimeBuiltinFunction for CompilerVersion {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: self::cstring_type(),
-            parameters: Vec::new(),
-        }
+        BuiltinFunctionSignature::new(self::cstring_type(), Vec::new())
     }
 
     fn evaluate(
@@ -66,12 +63,12 @@ impl CompileTimeBuiltinFunction for DebugBuild {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::Bool {
+        BuiltinFunctionSignature::new(
+            Type::Bool {
                 span: Span::nothing(),
             },
-            parameters: Vec::new(),
-        }
+            Vec::new(),
+        )
     }
 
     fn evaluate(
@@ -80,7 +77,7 @@ impl CompileTimeBuiltinFunction for DebugBuild {
         context: &mut BuiltinContext<'_>,
     ) -> Result<BuiltinValue, CompilationIssue> {
         Ok(BuiltinValue::Bool(
-            context.options.omit_default_optimizations(),
+            context.get_options().omit_default_optimizations(),
         ))
     }
 }

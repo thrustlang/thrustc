@@ -24,10 +24,10 @@ use std::rc::Rc;
 use ahash::AHashMap as HashMap;
 use ahash::AHashSet as HashSet;
 
-use thrustc_backends::llvm::LLVMBackend;
 use thrustc_backends::llvm::target::LLVMTarget;
-use thrustc_builtins::BuiltinRegistry;
+use thrustc_backends::llvm::LLVMBackend;
 use thrustc_builtins::default_registry;
+use thrustc_builtins::BuiltinRegistry;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_lexer::Lexer;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
@@ -380,10 +380,12 @@ fn parse_std_module_file(
         CompilationUnit::new(name, path.to_path_buf(), content, base_name.clone());
 
     let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&file, options).map_err(|_| ())?;
-    let directives = thrustc_directive::apply_file_directives(&tokens).map_err(|error| {
-        let mut diagnostician: Diagnostician = Diagnostician::new(&file, options);
-        diagnostician.dispatch_diagnostic(&error, thrustc_logging::LoggingType::Error);
-    })?;
+    let directives =
+        thrustc_directive::apply_file_directives(&tokens, options.get_compiler_features())
+            .map_err(|error| {
+                let mut diagnostician: Diagnostician = Diagnostician::new(&file, options);
+                diagnostician.dispatch_diagnostic(&error, thrustc_logging::LoggingType::Error);
+            })?;
     let file_options = thrustc_directive::FileOptions::new(options, &directives);
 
     let subparser: ModuleParser = ModuleParser::new(

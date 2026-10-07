@@ -34,7 +34,10 @@ use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::{
     Type,
-    traits::{TypeCodeLocation, TypeExtensions, TypeIsExtensions, TypePointerExtensions},
+    traits::{
+        ConstantTypeExtensions, TypeCodeLocation, TypeExtensions, TypeIsExtensions,
+        TypePointerExtensions,
+    },
     type_layout::TargetInfo,
     type_modificators::StructureTypeModificator,
 };
@@ -235,6 +238,7 @@ pub fn generate_function_type<'llvm_abi>(
         CudaABIFunctionTypeReturnConfiguration::new(return_type);
 
     {
+        let return_type: Type = return_type.remove_all_constant_type();
         let is_integer_signed_type: bool = return_type.is_signed_integer_type();
         let is_integer_unsigned_type: bool = return_type.is_unsigned_integer_type();
 
@@ -243,7 +247,7 @@ pub fn generate_function_type<'llvm_abi>(
             thrustc_typesystem::type_layout::StructTypeLayout,
         > = abi_context
             .get_mut_target_info()
-            .get_type_layout(return_type);
+            .get_type_layout(&return_type);
 
         let layout: thrustc_typesystem::type_layout::Layout = match type_layout {
             either::Either::Left(ty) => ty.into_layout(),
@@ -282,8 +286,9 @@ pub fn generate_function_type<'llvm_abi>(
             Ast::FunctionParameter { name, kind: ty, .. } => {
                 let llvm_ty: BasicTypeEnum<'_> = self::generate_type(llvm_context, abi_context, ty);
 
-                let is_integer_signed_type: bool = ty.is_signed_integer_type();
-                let is_integer_unsigned_type: bool = ty.is_unsigned_integer_type();
+                let non_constant_ty: Type = ty.remove_all_constant_type();
+                let is_integer_signed_type: bool = non_constant_ty.is_signed_integer_type();
+                let is_integer_unsigned_type: bool = non_constant_ty.is_unsigned_integer_type();
 
                 let type_layout: either::Either<
                     thrustc_typesystem::type_layout::TypeLayout,
@@ -682,7 +687,10 @@ pub fn generate_type<'llvm_abi>(
 
                 any => abort::abort_codegen(
                     abi_context,
-                    &format!("Failed to compile '{:?}' as a native vector element type!", any),
+                    &format!(
+                        "Failed to compile '{:?}' as a native vector element type!",
+                        any
+                    ),
                     ty.get_span(),
                     std::path::PathBuf::from(file!()),
                     line!(),

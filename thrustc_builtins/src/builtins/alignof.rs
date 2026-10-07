@@ -37,12 +37,12 @@ impl CompileTimeBuiltinFunction for AlignOf {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::U32 {
+        BuiltinFunctionSignature::new(
+            Type::U32 {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Type],
-        }
+            vec![BuiltinParameter::Type],
+        )
     }
 
     fn evaluate(
@@ -63,7 +63,7 @@ impl CompileTimeBuiltinFunction for AlignOf {
             }
         };
 
-        let align_of: u32 = match context.target_info.get_type_layout(ty) {
+        let align_of: u32 = match context.get_mut_target_info().get_type_layout(ty) {
             either::Either::Left(layout) => layout.into_layout().alignof,
             either::Either::Right(layout) => layout.into_layout().alignof,
         };

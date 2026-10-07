@@ -65,7 +65,7 @@ pub fn diagnostics(uri: &str, text: &str) -> Vec<Value> {
     };
 
     let directives: thrustc_directive::FileDirectives =
-        match thrustc_directive::apply_file_directives(&tokens) {
+        match thrustc_directive::apply_file_directives(&tokens, options.get_compiler_features()) {
             Ok(directives) => directives,
             Err(error) => {
                 diagnostics.push(self::compilation_issue_to_diagnostic(&error));

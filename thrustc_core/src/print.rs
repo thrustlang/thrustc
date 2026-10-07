@@ -25,7 +25,7 @@ use inkwell::targets::TargetMachine;
 use thrustc_directive::FileOptions;
 use thrustc_options::{CompilationUnit, Emited, PrintableUnit};
 
-use crate::{ThrustCompiler, interrupt, printers};
+use crate::{interrupt, printers, ThrustCompiler};
 
 #[inline]
 pub fn llvm_before_optimization(

@@ -17,17 +17,17 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, ast_metadata::FunctionParameterMetadata};
-use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
+use thrustc_ast::{ast_metadata::FunctionParameterMetadata, Ast, NodeId};
+use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParametersTypes};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_table::GenericFunctionEntry;
-use thrustc_token::{Token, traits::TokenExtensions};
-use thrustc_token_type::{TokenType, traits::TokenTypeAttributesExtensions};
-use thrustc_typesystem::{Type, traits::TypePointerExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
+use thrustc_token_type::{traits::TokenTypeAttributesExtensions, TokenType};
+use thrustc_typesystem::{traits::TypePointerExtensions, Type};
 
-use crate::{ParserContext, attributes, statements::code_block, typegeneration};
+use crate::{attributes, statements::code_block, typegeneration, ParserContext};
 
 pub fn build_function<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -155,20 +155,22 @@ pub fn build_function<'parser>(
     if is_generic {
         ctx.get_mut_symbols().new_generic_function(
             name.to_string(),
-            GenericFunctionEntry {
-                name: name.to_string(),
+            GenericFunctionEntry::new(
+                name.to_string(),
                 type_params,
-                parameter_types: parameters_types.clone(),
-                parameter_names: parameter_names
-                    .iter()
-                    .map(|name| name.to_string())
-                    .collect(),
-                return_type: return_type.clone(),
-                attributes: attributes.clone(),
-                has_local_template: true,
-                has_varargs: function_has_ignore,
+                (
+                    parameters_types.clone(),
+                    parameter_names
+                        .iter()
+                        .map(|name| name.to_string())
+                        .collect(),
+                    return_type.clone(),
+                ),
+                attributes.clone(),
+                true,
+                function_has_ignore,
                 span,
-            },
+            ),
         );
     }
 

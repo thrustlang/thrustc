@@ -23,7 +23,7 @@ use thrustc_code_location::Span;
 use thrustc_entities::UnaryOperation;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
-use thrustc_typesystem::traits::TypeIsExtensions;
+use thrustc_typesystem::traits::{ConstantTypeExtensions, TypeIsExtensions};
 
 use crate::abort;
 use crate::codegen;
@@ -126,7 +126,9 @@ fn compile_increment_decrement_ref<'ctx>(
         context.push_atomic_modificators(config);
     }
 
-    match kind {
+    let kind: Type = kind.remove_all_constant_type();
+
+    match &kind {
         kind if kind.is_integer_type() => {
             let old_value: IntValue = symbol.load(context).into_int_value();
             let modifier: IntValue = old_value.get_type().const_int(1, false);
@@ -234,7 +236,7 @@ fn compile_increment_decrement_ref<'ctx>(
         }
         _ => {
             let old_value: FloatValue = symbol.load(context).into_float_value();
-            let modifier: FloatValue = typegeneration::generate_type(context, kind)
+            let modifier: FloatValue = typegeneration::generate_type(context, &kind)
                 .into_float_type()
                 .const_float(1.0);
 
@@ -278,7 +280,7 @@ fn compile_increment_decrement_ref<'ctx>(
             let result: BasicValueEnum = if before { result } else { old_value.into() };
 
             let result: BasicValueEnum =
-                type_cast::try_smart_cast(context, cast_type, kind, result, span);
+                type_cast::try_smart_cast(context, cast_type, &kind, result, span);
 
             if atomic_config.is_some() {
                 context.pop_atomic_modificators();
@@ -299,11 +301,11 @@ fn compile_increment_decrement<'ctx>(
     let llvm_builder: &Builder = context.get_llvm_builder();
 
     let value: BasicValueEnum = codegen::compile_as_value(context, expression, cast_type);
-    let kind: &Type = expression.get_type_for_llvm();
+    let kind: Type = expression.get_type_for_llvm().remove_all_constant_type();
 
     let span: Span = expression.get_span();
 
-    match kind {
+    match &kind {
         kind if kind.is_integer_type() => {
             let old_value: IntValue = value.into_int_value();
             let modifier: IntValue = old_value.get_type().const_int(1, false);
@@ -521,7 +523,7 @@ fn compile_increment_decrement<'ctx>(
                 old_value.into()
             };
 
-            type_cast::try_smart_cast(context, cast_type, kind, emitted, span)
+            type_cast::try_smart_cast(context, cast_type, &kind, emitted, span)
         }
     }
 }
@@ -533,13 +535,13 @@ fn compile_logical_negation<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder = context.get_llvm_builder();
 
-    let kind: &Type = expr.get_type_for_llvm();
+    let kind: Type = expr.get_type_for_llvm().remove_all_constant_type();
 
     let value: BasicValueEnum = codegen::compile_as_value(context, expr, cast_type);
 
     let span: Span = expr.get_span();
 
-    match kind {
+    match &kind {
         kind if kind.is_bool_type() => {
             let int_value: IntValue = value.into_int_value();
 
@@ -593,11 +595,11 @@ fn compile_arithmetic_negation<'ctx>(
     let llvm_builder: &Builder = context.get_llvm_builder();
 
     let value: BasicValueEnum = codegen::compile_as_value(context, expr, cast_type);
-    let kind: &Type = expr.get_type_for_llvm();
+    let kind: Type = expr.get_type_for_llvm().remove_all_constant_type();
 
     let span: Span = expr.get_span();
 
-    match kind {
+    match &kind {
         kind if kind.is_integer_type() => {
             let int: IntValue = value.into_int_value();
 
@@ -628,7 +630,7 @@ fn compile_arithmetic_negation<'ctx>(
                     )
                 });
 
-            type_cast::try_smart_cast(context, cast_type, kind, result.into(), span)
+            type_cast::try_smart_cast(context, cast_type, &kind, result.into(), span)
         }
     }
 }
@@ -641,11 +643,11 @@ fn compile_bitwise_not<'ctx>(
     let llvm_builder: &Builder = context.get_llvm_builder();
 
     let value: BasicValueEnum = codegen::compile_as_value(context, expr, cast_type);
-    let kind: &Type = expr.get_type_for_llvm();
+    let kind: Type = expr.get_type_for_llvm().remove_all_constant_type();
 
     let span: Span = expr.get_span();
 
-    match kind {
+    match &kind {
         kind if kind.is_integer_type() => {
             let int: IntValue = value.into_int_value();
 
@@ -675,7 +677,7 @@ fn compile_bitwise_not<'ctx>(
                 )
             });
 
-            type_cast::try_smart_cast(context, cast_type, kind, result.into(), span)
+            type_cast::try_smart_cast(context, cast_type, &kind, result.into(), span)
         }
     }
 }
@@ -688,10 +690,10 @@ fn compile_increment_decrement_const<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let value: BasicValueEnum = codegen::compile_constant_as_value(context, expression, cast_type);
 
-    let kind: &Type = expression.get_type_for_llvm();
+    let kind: Type = expression.get_type_for_llvm().remove_all_constant_type();
     let span: Span = expression.get_span();
 
-    match kind {
+    match &kind {
         kind if kind.is_integer_type() => {
             let int: IntValue = value.into_int_value();
 
@@ -755,10 +757,10 @@ fn compile_logical_negation_const<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let value: BasicValueEnum = codegen::compile_constant_as_value(context, expr, cast_type);
 
-    let kind: &Type = expr.get_type_for_llvm();
+    let kind: Type = expr.get_type_for_llvm().remove_all_constant_type();
     let span: Span = expr.get_span();
 
-    match kind {
+    match &kind {
         kind if kind.is_bool_type() => {
             let int_value: IntValue = value.into_int_value();
 
@@ -781,9 +783,9 @@ fn compile_arithmetic_negation_const<'ctx>(
     cast_type: &Type,
 ) -> BasicValueEnum<'ctx> {
     let value: BasicValueEnum = codegen::compile_constant_as_value(context, expr, cast_type);
-    let kind: &Type = expr.get_type_for_llvm();
+    let kind: Type = expr.get_type_for_llvm().remove_all_constant_type();
 
-    match kind {
+    match &kind {
         kind if kind.is_integer_type() => value.into_int_value().const_neg().into(),
         _ => {
             let float_value: FloatValue = value.into_float_value();
@@ -810,9 +812,9 @@ fn compile_arithmetic_bitwise_not_const<'ctx>(
     cast_type: &Type,
 ) -> BasicValueEnum<'ctx> {
     let value: BasicValueEnum = codegen::compile_constant_as_value(context, expr, cast_type);
-    let kind: &Type = expr.get_type_for_llvm();
+    let kind: Type = expr.get_type_for_llvm().remove_all_constant_type();
 
-    match kind {
+    match &kind {
         kind if kind.is_integer_type() => value.into_int_value().const_not().into(),
 
         _ => abort::abort_codegen(

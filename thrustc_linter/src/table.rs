@@ -17,8 +17,8 @@
 
 */
 
-use thrustc_ast::{ast_metadata::FunctionParameterMetadata, Ast};
-use thrustc_entities::{linter_entities::*, FunctionParameter};
+use thrustc_ast::{Ast, ast_metadata::FunctionParameterMetadata};
+use thrustc_entities::{FunctionParameter, linter_entities::*};
 
 use ahash::AHashMap as HashMap;
 use thrustc_code_location::Span;

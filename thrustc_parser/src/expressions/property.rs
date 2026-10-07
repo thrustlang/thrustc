@@ -18,26 +18,26 @@
 */
 
 use thrustc_ast::{
-    Ast, NodeId,
     ast_logic_data::{PropertyData, StructureData},
     ast_metadata::PropertyMetadata,
     traits::{AstGetType, AstMemoryExtensions, AstStructureDataExtensions},
+    Ast, NodeId,
 };
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::Struct;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
-    Type,
     traits::{TypeCodeLocation, TypeExtensions, TypePointerExtensions},
+    Type,
 };
 
 use thrustc_parser_table::traits::{
     FoundSymbolEitherExtensions, FoundSymbolExtensions, StructSymbolExtensions,
 };
 
-use crate::{ParserContext, abort};
+use crate::{abort, ParserContext};
 
 pub fn build_property<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -162,7 +162,7 @@ fn decompose_struct_property<'parser>(
                 .get_generic_struct(name)
                 .and_then(|generic| {
                     generic
-                        .field_names
+                        .get_field_names()
                         .iter()
                         .position(|other| *other == current_property_name)
                         .and_then(|index| {

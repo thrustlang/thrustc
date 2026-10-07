@@ -39,15 +39,15 @@ use thrustc_options::PrintableUnit;
 
 use ahash::AHashMap as HashMap;
 
-use thrustc_backends::ThrustRelocMode;
 use thrustc_backends::llvm;
+use thrustc_backends::llvm::debug::DwarfVersion;
+use thrustc_backends::llvm::passes::LLVMModificatorPasses;
 use thrustc_backends::llvm::DenormalFloatingPointBehavior;
 use thrustc_backends::llvm::DenormalFloatingPointBehavior32BitFloatingPoint;
 use thrustc_backends::llvm::Sanitizer;
 use thrustc_backends::llvm::SanitizerConfiguration;
 use thrustc_backends::llvm::SymbolLinkageMergeStrategy;
-use thrustc_backends::llvm::debug::DwarfVersion;
-use thrustc_backends::llvm::passes::LLVMModificatorPasses;
+use thrustc_backends::ThrustRelocMode;
 use thrustc_options::linkage::LinkingCompilersConfiguration;
 
 mod help;
@@ -192,6 +192,44 @@ impl CommandLine {
             self.get_mut_options()
                 .get_mut_linking_compilers_configuration()
                 .comprobate_status_to_determinate_usage_automatically();
+        }
+
+        if self.get_options().get_compiler_features().is_stable_mode() {
+            let import_options: &thrustc_options::ImportCOptions =
+                self.get_options().get_import_c_options();
+            let translate_options: &thrustc_options::TranslateCOptions =
+                self.get_options().get_translate_c_options();
+
+            let uses_import_c_flags: bool = !import_options.include_paths().is_empty()
+                || !import_options.system_include_paths().is_empty()
+                || !import_options.defines().is_empty()
+                || !import_options.undefs().is_empty()
+                || import_options.import_scope_overridden()
+                || import_options.target().is_some()
+                || import_options.sysroot().is_some()
+                || import_options.std().is_some()
+                || !import_options.args().is_empty();
+
+            let uses_translate_c_flags: bool = !translate_options.include_paths().is_empty()
+                || !translate_options.system_include_paths().is_empty()
+                || !translate_options.defines().is_empty()
+                || !translate_options.undefs().is_empty()
+                || translate_options.target().is_some()
+                || translate_options.sysroot().is_some()
+                || translate_options.std().is_some()
+                || !translate_options.args().is_empty()
+                || translate_options.out_dir().is_some()
+                || translate_options.output().is_some()
+                || !self
+                    .get_options()
+                    .get_translate_c_to_thrust_inputs()
+                    .is_empty();
+
+            if uses_import_c_flags || uses_translate_c_flags {
+                self.report_error(
+                    "Flags '--import-c-*', '--translate-c-*' and '--translate-c-to-thrust' require '-mode unstable'.",
+                );
+            }
         }
     }
 }

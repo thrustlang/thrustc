@@ -18,11 +18,11 @@
 */
 
 use thrustc_ast::{
+    Ast,
     traits::{
         AstCodeLocation, AstConstantExtensions, AstGetType, AstMemoryExtensions,
         AstStandardExtensions,
     },
-    Ast,
 };
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::FileOptions;
@@ -30,12 +30,12 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 
 use thrustc_code_location::Span;
-use thrustc_typesystem::{traits::TypeExtensions, Type};
+use thrustc_typesystem::{Type, traits::TypeExtensions};
 
 use crate::context::AnalyzerContext;
 
 mod context;
-mod expressions;
+mod expr;
 
 #[derive(Debug)]
 pub struct GeneralAnalyzer<'analyzer> {
@@ -579,7 +579,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
     }
 
     fn analyze_expr_inner(&mut self, node: &'analyzer Ast) -> Result<(), CompilationIssue> {
-        expressions::validate_node(self, node)
+        expr::validate_node(self, node)
     }
 }
 

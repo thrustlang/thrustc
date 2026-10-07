@@ -20,23 +20,23 @@
 #![allow(clippy::too_many_arguments)]
 
 use thrustc_ast::{
-    Ast, NodeId,
     ast_metadata::{ReferenceMetadata, ReferenceType},
     traits::AstGetType,
+    Ast, NodeId,
 };
-use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
+use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_external_table::ExternalSymbolTable;
 use thrustc_parser_table::GenericFunctionEntry;
 use thrustc_preprocessor::signatures::{Signature, Variant};
 
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::VoidTypeExtensions;
+use thrustc_typesystem::Type;
 
-use crate::{ParserContext, expressions, typegeneration};
+use crate::{expressions, typegeneration, ParserContext};
 
 pub fn build_qualified_expression<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -165,7 +165,7 @@ pub fn build_qualified_expression<'parser>(
             return Ok(Ast::Call {
                 name: qualified_symbol.clone(),
                 args: arguments.positional,
-                generic_args: Vec::with_capacity(0),
+                generic_args: Vec::new(),
                 kind: kind.clone(),
                 span,
                 id: NodeId::new(),
@@ -492,17 +492,19 @@ fn build_qualified_generic_call<'parser>(
         if !ctx.get_symbols().has_generic_function(&qualified_symbol) {
             ctx.get_mut_symbols().new_generic_function(
                 qualified_symbol.clone(),
-                GenericFunctionEntry {
-                    name: symbol.to_string(),
-                    type_params: type_params.to_vec(),
-                    parameter_types: parameter_types.clone(),
-                    parameter_names: parameter_names.clone(),
-                    return_type: kind.clone(),
-                    attributes: attributes.clone(),
-                    has_local_template: false,
-                    has_varargs: has_ignore,
+                GenericFunctionEntry::new(
+                    symbol.to_string(),
+                    type_params.to_vec(),
+                    (
+                        parameter_types.clone(),
+                        parameter_names.clone(),
+                        kind.clone(),
+                    ),
+                    attributes.clone(),
+                    false,
+                    has_ignore,
                     span,
-                },
+                ),
             );
 
             if let Some(origin) = origin.as_ref() {
@@ -538,11 +540,12 @@ fn build_qualified_generic_call<'parser>(
         }
     };
 
+    let (env, return_type): (thrustc_generics::TypeEnv, Type) = result.into_parts();
+
     let origin_key: Option<String> = origin
         .as_ref()
         .map(|path| path.to_string_lossy().to_string());
-    let key: String =
-        thrustc_generics::instantiation_key(origin_key.as_deref(), symbol, &result.env);
+    let key: String = thrustc_generics::instantiation_key(origin_key.as_deref(), symbol, &env);
 
     if !thrustc_import_synthesis::synthesis::has_any_synthetized_function(
         &ctx.import_context(),
@@ -550,10 +553,10 @@ fn build_qualified_generic_call<'parser>(
     ) {
         let concrete_parameter_types: Vec<Type> = parameter_types
             .iter()
-            .map(|parameter| thrustc_generics::substitute(parameter, &result.env))
+            .map(|parameter| thrustc_generics::substitute(parameter, &env))
             .collect();
 
-        let concrete_return_type: Type = thrustc_generics::substitute(&kind, &result.env);
+        let concrete_return_type: Type = thrustc_generics::substitute(&kind, &env);
         let demangling_name: String = origin
             .as_ref()
             .and_then(|path| path.file_stem())
@@ -576,14 +579,14 @@ fn build_qualified_generic_call<'parser>(
     }
 
     if let Some(origin) = origin {
-        thrustc_generics::record_pending(origin, symbol.to_string(), result.env);
+        thrustc_generics::record_pending(origin, symbol.to_string(), env);
     }
 
     Ok(Ast::Call {
         name: key,
         args,
         generic_args: Vec::with_capacity(0),
-        kind: result.return_type,
+        kind: return_type,
         span,
         id: NodeId::new(),
     })

@@ -26,8 +26,8 @@ use thrustc_errors::CompilationIssue;
 use thrustc_errors::CompilationIssueCode;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
-use thrustc_typesystem::Type;
 use thrustc_typesystem::type_layout::TargetInfo;
+use thrustc_typesystem::Type;
 
 use crate::builtin_type::BuiltinTypeInfo;
 use crate::context::BuiltinContext;
@@ -59,7 +59,7 @@ impl BuiltinRegistry {
 
     #[inline]
     pub fn get_type(&self, name: &str) -> Option<&Type> {
-        self.types.get(name).map(|info| &info.ty)
+        self.types.get(name).map(BuiltinTypeInfo::get_ty)
     }
 }
 
@@ -71,7 +71,9 @@ impl BuiltinRegistry {
 
     #[inline]
     pub fn register_type(&mut self, info: BuiltinTypeInfo) {
-        self.types.insert(info.name, info);
+        let info_name: &'static str = info.get_name();
+
+        self.types.insert(info_name, info);
     }
 }
 
@@ -106,21 +108,24 @@ impl BuiltinRegistry {
 
             let mut warnings: Vec<CompilationIssue> = Vec::new();
 
-            let mut context: BuiltinContext = BuiltinContext {
-                target_info: &mut self.target_info,
+            let mut context: BuiltinContext = BuiltinContext::new(
+                &mut self.target_info,
                 options,
                 file,
                 call_span,
                 current_function,
-                warnings: &mut warnings,
-            };
+                &mut warnings,
+            );
 
             let value: BuiltinValue = function.evaluate(args, &mut context)?;
 
             (value, warnings)
         };
 
-        Ok((value.to_ast(signature.return_type, call_span), warnings))
+        Ok((
+            value.to_ast(signature.get_return_type().clone(), call_span),
+            warnings,
+        ))
     }
 
     pub fn evaluate_function(
@@ -163,14 +168,14 @@ impl BuiltinRegistry {
 
         let mut warnings: Vec<CompilationIssue> = Vec::new();
 
-        let mut context: BuiltinContext = BuiltinContext {
-            target_info: &mut target_info,
+        let mut context: BuiltinContext = BuiltinContext::new(
+            &mut target_info,
             options,
             file,
             call_span,
             current_function,
-            warnings: &mut warnings,
-        };
+            &mut warnings,
+        );
 
         function.evaluate(args, &mut context)
     }

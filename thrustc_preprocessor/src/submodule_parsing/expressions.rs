@@ -17,11 +17,11 @@
 
 */
 
-use thrustc_ast::{Ast, NodeId, traits::AstCodeLocation};
+use thrustc_ast::{traits::AstCodeLocation, Ast, NodeId};
 use thrustc_builtins::BuiltinFunctionSignature;
 use thrustc_code_location::Span;
 use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 
@@ -342,7 +342,7 @@ fn parse_builtin_call(
         .evaluate_function(name, &args, span, None, ctx.get_options(), ctx.get_file())
         .map_err(|_| ())?;
 
-    Ok(value.to_ast(signature.return_type, span))
+    Ok(value.to_ast(signature.get_return_type().clone(), span))
 }
 
 fn parse_constant_reference(

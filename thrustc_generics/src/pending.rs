@@ -26,9 +26,71 @@ use crate::solve::TypeEnv;
 
 #[derive(Debug, Clone)]
 pub struct PendingInstantiation {
-    pub module: PathBuf,
-    pub function: String,
-    pub env: TypeEnv,
+    module: PathBuf,
+    function: String,
+    env: TypeEnv,
+}
+
+impl PendingInstantiation {
+    #[inline]
+    pub fn new(module: PathBuf, function: String, env: TypeEnv) -> Self {
+        Self {
+            module,
+            function,
+            env,
+        }
+    }
+}
+
+impl PendingInstantiation {
+    #[inline]
+    pub fn get_module(&self) -> &PathBuf {
+        &self.module
+    }
+
+    #[inline]
+    pub fn get_function(&self) -> &String {
+        &self.function
+    }
+
+    #[inline]
+    pub fn get_env(&self) -> &TypeEnv {
+        &self.env
+    }
+}
+
+impl PendingInstantiation {
+    #[inline]
+    pub fn get_mut_module(&mut self) -> &mut PathBuf {
+        &mut self.module
+    }
+
+    #[inline]
+    pub fn get_mut_function(&mut self) -> &mut String {
+        &mut self.function
+    }
+
+    #[inline]
+    pub fn get_mut_env(&mut self) -> &mut TypeEnv {
+        &mut self.env
+    }
+}
+
+impl PendingInstantiation {
+    #[inline]
+    pub fn set_module(&mut self, module: PathBuf) {
+        self.module = module;
+    }
+
+    #[inline]
+    pub fn set_function(&mut self, function: String) {
+        self.function = function;
+    }
+
+    #[inline]
+    pub fn set_env(&mut self, env: TypeEnv) {
+        self.env = env;
+    }
 }
 
 #[derive(Debug, Default)]
@@ -48,15 +110,13 @@ pub fn record_pending(module: PathBuf, function: String, env: TypeEnv) {
         let key: String = hashing::type_env_fingerprint(&env);
 
         if !pending.required.iter().any(|entry| {
-            entry.module == module
-                && entry.function == function
-                && hashing::type_env_fingerprint(&entry.env) == key
+            entry.get_module() == &module
+                && entry.get_function() == &function
+                && hashing::type_env_fingerprint(entry.get_env()) == key
         }) {
-            pending.required.push(PendingInstantiation {
-                module: module.clone(),
-                function,
-                env,
-            });
+            pending
+                .required
+                .push(PendingInstantiation::new(module.clone(), function, env));
 
             pending.dirty.insert(module);
         }
@@ -72,7 +132,7 @@ pub fn take_pending(module: &Path) -> Vec<PendingInstantiation> {
         pending
             .required
             .iter()
-            .filter(|entry| entry.module == module)
+            .filter(|entry| entry.get_module() == module)
             .cloned()
             .collect()
     })

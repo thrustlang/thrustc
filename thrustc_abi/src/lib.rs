@@ -49,7 +49,9 @@ impl SpecificABI {
     pub fn is_system_v(&self) -> bool {
         matches!(self, Self::SystemV)
     }
+}
 
+impl SpecificABI {
     #[inline]
     pub fn is_none(&self) -> bool {
         matches!(self, Self::None)

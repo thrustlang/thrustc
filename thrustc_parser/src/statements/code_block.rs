@@ -18,23 +18,23 @@
 */
 
 use thrustc_ast::{
-    Ast, NodeId,
     ast_metadata::{ReferenceMetadata, ReferenceType},
     traits::AstStandardExtensions,
+    Ast, NodeId,
 };
 use thrustc_attributes::{
-    ThrustAttribute, ThrustAttributeComparator, traits::ThrustAttributesExtensions,
+    traits::ThrustAttributesExtensions, ThrustAttribute, ThrustAttributeComparator,
 };
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
-    Type,
     traits::{TypeExtensions, TypeIsExtensions},
+    Type,
 };
 
-use crate::{ParserContext, statements};
+use crate::{statements, ParserContext};
 
 pub fn parse_code_block_stmt<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -203,18 +203,18 @@ fn build_dealloc_defer<'parser>(
             let argument_types: Vec<Type> = vec![expected_arg];
 
             if let Ok(result) = thrustc_generics::solve(
-                &entry.type_params,
+                entry.get_type_params(),
                 &[],
-                &entry.parameter_types,
+                entry.get_parameter_types(),
                 &argument_types,
-                &entry.return_type,
-                entry.has_varargs,
+                entry.get_return_type(),
+                entry.has_varargs(),
                 *span,
             ) {
                 generic_args = entry
-                    .type_params
+                    .get_type_params()
                     .iter()
-                    .filter_map(|parameter| result.env.get(parameter).cloned())
+                    .filter_map(|parameter| result.get_env().get(parameter).cloned())
                     .collect();
             }
         }
@@ -292,7 +292,7 @@ fn find_local_deallocator<'parser>(
         };
 
         if subtype.as_ref() == kind {
-            return Some((name.clone(), Vec::with_capacity(0)));
+            return Some((name.clone(), Vec::new()));
         }
 
         let Some(entry) = ctx.get_symbols().get_generic_function(name) else {
@@ -306,18 +306,18 @@ fn find_local_deallocator<'parser>(
         };
 
         if let Ok(result) = thrustc_generics::solve(
-            &entry.type_params,
+            entry.get_type_params(),
             &[],
-            &entry.parameter_types,
+            entry.get_parameter_types(),
             &[argument_type],
-            &entry.return_type,
-            entry.has_varargs,
+            entry.get_return_type(),
+            entry.has_varargs(),
             span,
         ) {
             let generic_args: Vec<Type> = entry
-                .type_params
+                .get_type_params()
                 .iter()
-                .filter_map(|parameter| result.env.get(parameter).cloned())
+                .filter_map(|parameter| result.get_env().get(parameter).cloned())
                 .collect();
 
             return Some((name.clone(), generic_args));

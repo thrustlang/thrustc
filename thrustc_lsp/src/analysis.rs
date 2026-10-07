@@ -27,8 +27,8 @@ use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_builtins::BuiltinRegistry;
 use thrustc_lexer::Lexer;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_preprocessor::Preprocessor;
 use thrustc_preprocessor::signatures::{Signature, Variant};
+use thrustc_preprocessor::Preprocessor;
 use thrustc_typesystem::type_layout::TargetInfo;
 
 use crate::documents::Document;
@@ -1040,7 +1040,9 @@ fn analyze_imported_modules(uri: &str, text: &str) -> Vec<ImportedModule> {
         return modules;
     };
 
-    let Ok(directives) = thrustc_directive::apply_file_directives(&tokens) else {
+    let Ok(directives) =
+        thrustc_directive::apply_file_directives(&tokens, options.get_compiler_features())
+    else {
         return modules;
     };
     let file_options: thrustc_directive::FileOptions =

@@ -22,7 +22,7 @@ use inkwell::{
     targets::{FileType, TargetMachine},
 };
 
-use crate::{ThrustCompiler, utils};
+use crate::{utils, ThrustCompiler};
 
 pub fn emit_llvm_object(
     _compiler: &ThrustCompiler,

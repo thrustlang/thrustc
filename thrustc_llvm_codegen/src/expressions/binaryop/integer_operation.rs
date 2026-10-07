@@ -44,6 +44,7 @@ use inkwell::types::BasicTypeEnum;
 use inkwell::values::BasicValueEnum;
 use inkwell::values::IntValue;
 use inkwell::values::PointerValue;
+use thrustc_typesystem::traits::ConstantTypeExtensions;
 use thrustc_typesystem::traits::TypeExtensions;
 use thrustc_typesystem::traits::TypeIsExtensions;
 
@@ -623,8 +624,8 @@ pub fn compile<'ctx>(
         let lhs: &Ast<'_> = binary.0;
         let rhs: &Ast<'_> = binary.2;
 
-        let lhs_type: &Type = binary.0.get_type_for_llvm();
-        let rhs_type: &Type = binary.2.get_type_for_llvm();
+        let lhs_type: Type = binary.0.get_type_for_llvm().remove_all_constant_type();
+        let rhs_type: Type = binary.2.get_type_for_llvm().remove_all_constant_type();
 
         let lhs_is_signed: bool = lhs_type.is_signed_integer_type();
         let rhs_is_signed: bool = rhs_type.is_signed_integer_type();
@@ -634,7 +635,7 @@ pub fn compile<'ctx>(
             lhs,
             rhs,
             cast,
-            (lhs_is_signed, rhs_is_signed, lhs_type, rhs_type),
+            (lhs_is_signed, rhs_is_signed, &lhs_type, &rhs_type),
             operator,
             span,
         );
@@ -1181,8 +1182,8 @@ pub fn compile_constant<'ctx>(
         let lhs: BasicValueEnum = codegen::compile_constant_as_value(context, binary.0, cast);
         let rhs: BasicValueEnum = codegen::compile_constant_as_value(context, binary.2, cast);
 
-        let lhs_type: &Type = binary.0.get_type_for_llvm();
-        let rhs_type: &Type = binary.2.get_type_for_llvm();
+        let lhs_type: Type = binary.0.get_type_for_llvm().remove_all_constant_type();
+        let rhs_type: Type = binary.2.get_type_for_llvm().remove_all_constant_type();
 
         return self::compile_constant_int_value_operation(
             context,

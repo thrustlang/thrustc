@@ -34,7 +34,7 @@ use inkwell::context::Context;
 use inkwell::values::BasicValueEnum;
 use inkwell::values::PointerValue;
 use thrustc_typesystem::Type;
-use thrustc_typesystem::traits::TypeIsExtensions;
+use thrustc_typesystem::traits::{ConstantTypeExtensions, TypeIsExtensions};
 
 fn compile_bool_operation<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
@@ -218,8 +218,8 @@ pub fn compile<'ctx>(
         let lhs: BasicValueEnum<'_> = codegen::compile_as_value(context, binary.0, None);
         let rhs: BasicValueEnum<'_> = codegen::compile_as_value(context, binary.2, None);
 
-        let lhs_type: &Type = binary.0.get_type_for_llvm();
-        let rhs_type: &Type = binary.2.get_type_for_llvm();
+        let lhs_type: Type = binary.0.get_type_for_llvm().remove_all_constant_type();
+        let rhs_type: Type = binary.2.get_type_for_llvm().remove_all_constant_type();
 
         return compile_bool_operation(
             context,
@@ -487,8 +487,8 @@ pub fn compile_constant<'ctx>(
         let rhs: BasicValueEnum<'_> =
             codegen::compile_constant_as_value(context, binary.2, cast_type);
 
-        let lhs_type: &Type = binary.0.get_type_for_llvm();
-        let rhs_type: &Type = binary.2.get_type_for_llvm();
+        let lhs_type: Type = binary.0.get_type_for_llvm().remove_all_constant_type();
+        let rhs_type: Type = binary.2.get_type_for_llvm().remove_all_constant_type();
 
         return compile_constant_boolean_operation(
             context,

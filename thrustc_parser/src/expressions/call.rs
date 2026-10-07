@@ -18,22 +18,22 @@
 */
 
 use thrustc_ast::{
-    Ast, NodeId,
     traits::{AstCodeLocation, AstGetType},
+    Ast, NodeId,
 };
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{FoundSymbolId, Function, Intrinsic};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, traits::FunctionReferenceExtensions};
+use thrustc_typesystem::{traits::FunctionReferenceExtensions, Type};
 
 use thrustc_parser_table::traits::{
     FoundSymbolEitherExtensions, FoundSymbolExtensions, FunctionAssemblerExtensions,
     FunctionExtensions, IntrinsicExtensions,
 };
 
-use crate::{ParserContext, expressions};
+use crate::{expressions, ParserContext};
 
 #[derive(Debug)]
 pub struct ParsedCallArguments<'parser> {
@@ -288,7 +288,7 @@ pub fn build_call<'parser>(
                         return Ok(Ast::Call {
                             name: name.to_string(),
                             args,
-                            generic_args: Vec::with_capacity(0),
+                            generic_args: Vec::new(),
                             kind: FunctionExtensions::get_type(&function),
                             span,
                             id: NodeId::new(),
@@ -335,7 +335,7 @@ pub fn build_generic_call<'parser>(
         ));
     };
 
-    let mut generic_args: Vec<Type> = Vec::with_capacity(generic.type_params.len());
+    let mut generic_args: Vec<Type> = Vec::with_capacity(generic.get_type_params().len());
 
     if ctx.match_token(TokenType::LBracket)? {
         loop {
@@ -373,10 +373,19 @@ pub fn build_generic_call<'parser>(
 
     let arguments: ParsedCallArguments = self::parse_call_arguments(ctx)?;
 
-    let parameter_names: Vec<&str> = generic.parameter_names.iter().map(String::as_str).collect();
+    let parameter_names: Vec<&str> = generic
+        .get_parameter_names()
+        .iter()
+        .map(String::as_str)
+        .collect();
 
-    let args: Vec<Ast> =
-        self::reorder_call_arguments(name, span, arguments, &parameter_names, generic.has_varargs)?;
+    let args: Vec<Ast> = self::reorder_call_arguments(
+        name,
+        span,
+        arguments,
+        &parameter_names,
+        generic.has_varargs(),
+    )?;
 
     let argument_types: Vec<Type> = args
         .iter()
@@ -387,15 +396,15 @@ pub fn build_generic_call<'parser>(
         .collect();
 
     let kind: Type = match thrustc_generics::solve(
-        &generic.type_params,
+        generic.get_type_params(),
         &generic_args,
-        &generic.parameter_types,
+        generic.get_parameter_types(),
         &argument_types,
-        &generic.return_type,
-        generic.has_varargs,
+        generic.get_return_type(),
+        generic.has_varargs(),
         span,
     ) {
-        Ok(result) => result.return_type,
+        Ok(result) => result.into_return_type(),
         Err(error) => {
             ctx.add_error_report(error);
 

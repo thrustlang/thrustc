@@ -22,11 +22,11 @@ use thrustc_attributes::ThrustAttributes;
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_parser_table::GenericCustomTypeEntry;
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 
-use crate::{ParserContext, attributes, typegeneration};
+use crate::{attributes, typegeneration, ParserContext};
 
 pub fn build_custom_type<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -85,10 +85,7 @@ pub fn build_custom_type<'parser>(
         if is_generic {
             ctx.get_mut_symbols().new_generic_custom_type(
                 name.to_string(),
-                GenericCustomTypeEntry {
-                    type_params,
-                    kind: custom_type.clone(),
-                },
+                GenericCustomTypeEntry::new(type_params, custom_type.clone()),
             );
         } else {
             ctx.get_mut_symbols()
@@ -100,10 +97,7 @@ pub fn build_custom_type<'parser>(
         if is_generic {
             ctx.get_mut_symbols().new_generic_custom_type(
                 name.to_string(),
-                GenericCustomTypeEntry {
-                    type_params,
-                    kind: custom_type.clone(),
-                },
+                GenericCustomTypeEntry::new(type_params, custom_type.clone()),
             );
         }
 

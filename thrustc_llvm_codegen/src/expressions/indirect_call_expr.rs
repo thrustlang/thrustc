@@ -21,8 +21,8 @@ use inkwell::context::Context;
 use thrustc_ast::Ast;
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
-use thrustc_typesystem::traits::TypeIsExtensions;
 use thrustc_typesystem::traits::TypePointerExtensions;
+use thrustc_typesystem::traits::{ConstantTypeExtensions, TypeIsExtensions};
 
 use inkwell::AddressSpace;
 use inkwell::builder::Builder;
@@ -53,12 +53,30 @@ pub fn compile<'ctx>(
 
     let function_ptr_value: PointerValue<'_> = source_value.into_pointer_value();
 
+    let ty: Type = function_type.remove_all_constant_type();
+
+    if !matches!(ty, Type::Fn { .. }) {
+        abort::abort_codegen(
+            context,
+            "Failed to compile indirect function call!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        );
+    }
+
+    let mut ty: &Type = function_type;
+
+    while let Type::Const(subtype, ..) = ty {
+        ty = subtype;
+    }
+
     let Type::Fn {
         parameter_types,
         return_type,
         modificator,
         ..
-    } = function_type
+    } = ty
     else {
         abort::abort_codegen(
             context,
@@ -79,7 +97,7 @@ pub fn compile<'ctx>(
 
     let argument_types: Vec<Type> = args
         .iter()
-        .map(|argument| argument.get_type_for_llvm().clone())
+        .map(|argument| argument.get_type_for_llvm().remove_all_constant_type())
         .collect();
 
     let compiled_args: Vec<BasicValueEnum> = args

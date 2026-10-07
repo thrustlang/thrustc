@@ -100,7 +100,9 @@ pub fn contains_unstable_ast(ast: &Ast) -> bool {
 
 fn contains_unstable_in_children(ast: &Ast) -> bool {
     match ast {
-        Ast::FixedArray { items, .. } | Ast::Array { items, .. } => {
+        Ast::FixedArray { items, .. }
+        | Ast::NativeVector { items, .. }
+        | Ast::Array { items, .. } => {
             items.iter().any(contains_unstable_ast)
         }
         Ast::Index { source, index, .. } => {

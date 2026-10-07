@@ -1144,7 +1144,9 @@ fn local_import_symbols_from_file(uri: &str, import_path: &str) -> Vec<Symbol> {
     let Ok(tokens) = thrustc_lexer::Lexer::lex_for_preprocessor(&file, &options) else {
         return symbols;
     };
-    let Ok(directives) = thrustc_directive::apply_file_directives(&tokens) else {
+    let Ok(directives) =
+        thrustc_directive::apply_file_directives(&tokens, options.get_compiler_features())
+    else {
         return symbols;
     };
     let file_options: thrustc_directive::FileOptions =

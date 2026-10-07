@@ -19,24 +19,24 @@
 
 use thrustc_ast::traits::AstGetType;
 use thrustc_ast::{
-    Ast, NodeId, ast_logic_data::ConstructorData, traits::AstStructureDataExtensions,
+    ast_logic_data::ConstructorData, traits::AstStructureDataExtensions, Ast, NodeId,
 };
 use thrustc_attributes::ThrustAttributes;
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{FoundSymbolId, Struct};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_preprocessor::signatures::{Signature, Variant};
-use thrustc_token::{Token, traits::TokenExtensions};
+use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
+use thrustc_typesystem::{type_metadata::StructTypeMetadata, Type};
 
 use thrustc_parser_external_table::ExternalSymbolTable;
-use thrustc_parser_table::GenericStructEntry;
 use thrustc_parser_table::traits::{
     ConstructorExtensions, FoundSymbolEitherExtensions, StructSymbolExtensions,
 };
+use thrustc_parser_table::GenericStructEntry;
 
-use crate::{ParserContext, expressions};
+use crate::{expressions, ParserContext};
 
 pub fn build_constructor<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -145,19 +145,19 @@ pub fn build_constructor<'parser>(
             } else {
                 ctx.get_mut_symbols().new_generic_struct(
                     symbol.to_string(),
-                    GenericStructEntry {
-                        type_params: generic_type_params.clone(),
-                        field_names: signature_fields
+                    GenericStructEntry::new(
+                        generic_type_params.clone(),
+                        signature_fields
                             .iter()
                             .map(|(name, ..)| name.clone())
                             .collect(),
-                        field_types: signature_fields
+                        signature_fields
                             .iter()
                             .map(|(_, ty, _)| ty.clone())
                             .collect(),
                         metadata,
                         span,
-                    },
+                    ),
                 );
 
                 if let Some(path) = origin.as_ref() {
@@ -213,14 +213,14 @@ pub fn build_constructor<'parser>(
             }
         }
     } else if let Some(generic) = ctx.get_symbols().get_generic_struct(symbol).cloned() {
-        type_params = Some(generic.type_params);
+        type_params = Some(generic.get_type_params().clone());
 
-        metadata = generic.metadata;
+        metadata = generic.get_metadata();
 
         fields = generic
-            .field_names
+            .get_field_names()
             .iter()
-            .zip(generic.field_types.iter())
+            .zip(generic.get_field_types().iter())
             .map(|(name, ty)| ((*name).to_string(), ty.clone()))
             .collect();
     } else {
@@ -451,7 +451,7 @@ pub fn build_constructor<'parser>(
         match result {
             Ok(result) => {
                 for entry in data.iter_mut() {
-                    entry.2 = thrustc_generics::substitute(&entry.2, &result.env);
+                    entry.2 = thrustc_generics::substitute(&entry.2, result.get_env());
                 }
             }
             Err(error) => {

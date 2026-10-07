@@ -39,12 +39,12 @@ impl CompileTimeBuiltinFunction for StringLength {
 
     #[inline]
     fn signature(&self) -> BuiltinFunctionSignature {
-        BuiltinFunctionSignature {
-            return_type: Type::USize {
+        BuiltinFunctionSignature::new(
+            Type::USize {
                 span: Span::nothing(),
             },
-            parameters: vec![BuiltinParameter::Value(self::cstring_type())],
-        }
+            vec![BuiltinParameter::Value(self::cstring_type())],
+        )
     }
 
     fn evaluate(

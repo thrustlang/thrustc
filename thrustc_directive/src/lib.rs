@@ -24,7 +24,9 @@ use thrustc_backends::llvm::{
     DenormalFloatingPointBehavior, DenormalFloatingPointBehavior32BitFloatingPoint, Sanitizer,
     SanitizerConfiguration, SymbolLinkageMergeStrategy,
 };
-use thrustc_backends::{ThrustCodeModel, ThrustOptimization, ThrustRelocMode};
+use thrustc_backends::{
+    CompilerFeaturesMode, ThrustCodeModel, ThrustOptimization, ThrustRelocMode,
+};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{
     CompilationPhase, CompilerOptions, EmitableUnit, ImportCScope, PrintableUnit,
@@ -692,7 +694,10 @@ pub fn parse_warning_codes(value: &str) -> Result<Vec<CompilationIssueCode>, Str
     Ok(warnings)
 }
 
-pub fn apply_file_directives(tokens: &[Token]) -> Result<FileDirectives, CompilationIssue> {
+pub fn apply_file_directives(
+    tokens: &[Token],
+    mode: CompilerFeaturesMode,
+) -> Result<FileDirectives, CompilationIssue> {
     let mut directives: FileDirectives = FileDirectives::default();
 
     for (index, token) in tokens.iter().enumerate() {
@@ -708,7 +713,8 @@ pub fn apply_file_directives(tokens: &[Token]) -> Result<FileDirectives, Compila
             continue;
         }
 
-        if let Err(message) = self::apply_directive(spec_token.get_lexeme(), &mut directives) {
+        if let Err(message) = self::apply_directive(spec_token.get_lexeme(), &mut directives, mode)
+        {
             return Err(  CompilationIssue::Error(
                 CompilationIssueCode::E0054,
                 message,
@@ -723,7 +729,11 @@ pub fn apply_file_directives(tokens: &[Token]) -> Result<FileDirectives, Compila
     Ok(directives)
 }
 
-pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<(), String> {
+pub fn apply_directive(
+    spec: &str,
+    directives: &mut FileDirectives,
+    mode: CompilerFeaturesMode,
+) -> Result<(), String> {
     let spec: &str = spec.trim();
 
     if !spec.starts_with('-') {
@@ -740,6 +750,25 @@ pub fn apply_directive(spec: &str, directives: &mut FileDirectives) -> Result<()
     if self::is_global_only(flag) {
         return Err(format!(
             "Flag '{}' is global and cannot be used as a file directive.",
+            flag
+        ));
+    }
+
+    if matches!(
+        flag,
+        "--import-c-include"
+            | "--import-c-system-include"
+            | "--import-c-define"
+            | "--import-c-undef"
+            | "--import-c-scope"
+            | "--import-c-target"
+            | "--import-c-sysroot"
+            | "--import-c-std"
+            | "--import-c-arg"
+    ) && !mode.is_unstable_mode()
+    {
+        return Err(format!(
+            "Directive flag '{}' requires '-mode unstable'.",
             flag
         ));
     }

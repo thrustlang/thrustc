@@ -19,7 +19,7 @@
 
 use inkwell::module::Module;
 
-use crate::{ThrustCompiler, utils};
+use crate::{utils, ThrustCompiler};
 
 pub fn emit_llvm_bitcode(
     _compiler: &ThrustCompiler,

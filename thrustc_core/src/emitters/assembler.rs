@@ -21,10 +21,10 @@ use inkwell::{
     module::Module,
     targets::{FileType, TargetMachine},
 };
-use thrustc_backends::llvm::{LLVMBackend, target::LLVMTarget};
+use thrustc_backends::llvm::{target::LLVMTarget, LLVMBackend};
 use thrustc_options::CompilerOptions;
 
-use crate::{ThrustCompiler, utils};
+use crate::{utils, ThrustCompiler};
 
 pub fn emit_llvm_assembler(
     compiler: &ThrustCompiler,
