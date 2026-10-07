@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["build_clang_arguments","clang_commands","detect_clang_resource_include_dir","detect_host_system_include_dirs","escape_string_for_thrust_literal","is_supported_expr_kind","verbose_include_dirs"],"trait":["ClangArgumentsSource"]};

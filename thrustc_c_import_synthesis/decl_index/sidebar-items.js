@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["collect_decl_index"],"struct":["DeclIndex"]};

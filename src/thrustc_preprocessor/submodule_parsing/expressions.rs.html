@@ -17,11 +17,11 @@
 <a href=#17 id=17 data-nosnippet>17</a>
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
-<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{Ast, NodeId, traits::AstCodeLocation};
+<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{traits::AstCodeLocation, Ast, NodeId};
 <a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_builtins::BuiltinFunctionSignature;
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_compile_time::{BuiltinArgument, BuiltinValue};
-<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>thrustc_token::{Token, traits::TokenExtensions};
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>thrustc_token::{traits::TokenExtensions, Token};
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_token_type::TokenType;
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>thrustc_typesystem::Type;
 <a href=#27 id=27 data-nosnippet>27</a>
@@ -342,7 +342,7 @@
 <a href=#342 id=342 data-nosnippet>342</a>        .evaluate_function(name, <span class="kw-2">&amp;</span>args, span, <span class="prelude-val">None</span>, ctx.get_options(), ctx.get_file())
 <a href=#343 id=343 data-nosnippet>343</a>        .map_err(|<span class="kw">_</span>| ())<span class="question-mark">?</span>;
 <a href=#344 id=344 data-nosnippet>344</a>
-<a href=#345 id=345 data-nosnippet>345</a>    <span class="prelude-val">Ok</span>(value.to_ast(signature.return_type, span))
+<a href=#345 id=345 data-nosnippet>345</a>    <span class="prelude-val">Ok</span>(value.to_ast(signature.get_return_type().clone(), span))
 <a href=#346 id=346 data-nosnippet>346</a>}
 <a href=#347 id=347 data-nosnippet>347</a>
 <a href=#348 id=348 data-nosnippet>348</a><span class="kw">fn </span>parse_constant_reference(

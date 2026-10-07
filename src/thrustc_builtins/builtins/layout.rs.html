@@ -18,9 +18,9 @@
 <a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#19 id=19 data-nosnippet>19</a><span class="kw">use </span>thrustc_errors::CompilationIssue;
 <a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span>thrustc_errors::CompilationIssueCode;
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_typesystem::Type;
-<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_typesystem::traits::ConstantTypeExtensions;
-<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_typesystem::traits::TypeCodeLocation;
+<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_typesystem::traits::ConstantTypeExtensions;
+<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_typesystem::traits::TypeCodeLocation;
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_typesystem::Type;
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span><span class="kw">crate</span>::context::BuiltinContext;
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span><span class="kw">crate</span>::traits::BuiltinFunctionSignature;
@@ -39,12 +39,12 @@
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a>    <span class="attr">#[inline]
 <a href=#41 id=41 data-nosnippet>41</a>    </span><span class="kw">fn </span>signature(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BuiltinFunctionSignature {
-<a href=#42 id=42 data-nosnippet>42</a>        BuiltinFunctionSignature {
-<a href=#43 id=43 data-nosnippet>43</a>            return_type: Type::USize {
+<a href=#42 id=42 data-nosnippet>42</a>        BuiltinFunctionSignature::new(
+<a href=#43 id=43 data-nosnippet>43</a>            Type::USize {
 <a href=#44 id=44 data-nosnippet>44</a>                span: Span::nothing(),
 <a href=#45 id=45 data-nosnippet>45</a>            },
-<a href=#46 id=46 data-nosnippet>46</a>            parameters: <span class="macro">vec!</span>[BuiltinParameter::Type],
-<a href=#47 id=47 data-nosnippet>47</a>        }
+<a href=#46 id=46 data-nosnippet>46</a>            <span class="macro">vec!</span>[BuiltinParameter::Type],
+<a href=#47 id=47 data-nosnippet>47</a>        )
 <a href=#48 id=48 data-nosnippet>48</a>    }
 <a href=#49 id=49 data-nosnippet>49</a>
 <a href=#50 id=50 data-nosnippet>50</a>    <span class="kw">fn </span>evaluate(
@@ -65,7 +65,7 @@
 <a href=#65 id=65 data-nosnippet>65</a>            }
 <a href=#66 id=66 data-nosnippet>66</a>        };
 <a href=#67 id=67 data-nosnippet>67</a>
-<a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>width: u32 = <span class="kw">match </span>context.target_info.get_type_layout(ty) {
+<a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>width: u32 = <span class="kw">match </span>context.get_mut_target_info().get_type_layout(ty) {
 <a href=#69 id=69 data-nosnippet>69</a>            either::Either::Left(layout) =&gt; layout.width,
 <a href=#70 id=70 data-nosnippet>70</a>            either::Either::Right(layout) =&gt; layout.width,
 <a href=#71 id=71 data-nosnippet>71</a>        };
@@ -85,12 +85,12 @@
 <a href=#85 id=85 data-nosnippet>85</a>
 <a href=#86 id=86 data-nosnippet>86</a>    <span class="attr">#[inline]
 <a href=#87 id=87 data-nosnippet>87</a>    </span><span class="kw">fn </span>signature(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BuiltinFunctionSignature {
-<a href=#88 id=88 data-nosnippet>88</a>        BuiltinFunctionSignature {
-<a href=#89 id=89 data-nosnippet>89</a>            return_type: Type::USize {
+<a href=#88 id=88 data-nosnippet>88</a>        BuiltinFunctionSignature::new(
+<a href=#89 id=89 data-nosnippet>89</a>            Type::USize {
 <a href=#90 id=90 data-nosnippet>90</a>                span: Span::nothing(),
 <a href=#91 id=91 data-nosnippet>91</a>            },
-<a href=#92 id=92 data-nosnippet>92</a>            parameters: <span class="macro">vec!</span>[BuiltinParameter::Type],
-<a href=#93 id=93 data-nosnippet>93</a>        }
+<a href=#92 id=92 data-nosnippet>92</a>            <span class="macro">vec!</span>[BuiltinParameter::Type],
+<a href=#93 id=93 data-nosnippet>93</a>        )
 <a href=#94 id=94 data-nosnippet>94</a>    }
 <a href=#95 id=95 data-nosnippet>95</a>
 <a href=#96 id=96 data-nosnippet>96</a>    <span class="kw">fn </span>evaluate(

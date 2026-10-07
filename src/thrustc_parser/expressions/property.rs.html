@@ -18,26 +18,26 @@
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{
-<a href=#21 id=21 data-nosnippet>21</a>    Ast, NodeId,
-<a href=#22 id=22 data-nosnippet>22</a>    ast_logic_data::{PropertyData, StructureData},
-<a href=#23 id=23 data-nosnippet>23</a>    ast_metadata::PropertyMetadata,
-<a href=#24 id=24 data-nosnippet>24</a>    traits::{AstGetType, AstMemoryExtensions, AstStructureDataExtensions},
+<a href=#21 id=21 data-nosnippet>21</a>    ast_logic_data::{PropertyData, StructureData},
+<a href=#22 id=22 data-nosnippet>22</a>    ast_metadata::PropertyMetadata,
+<a href=#23 id=23 data-nosnippet>23</a>    traits::{AstGetType, AstMemoryExtensions, AstStructureDataExtensions},
+<a href=#24 id=24 data-nosnippet>24</a>    Ast, NodeId,
 <a href=#25 id=25 data-nosnippet>25</a>};
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_entities::parser_entities::Struct;
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
-<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>thrustc_token::{Token, traits::TokenExtensions};
+<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>thrustc_token::{traits::TokenExtensions, Token};
 <a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>thrustc_token_type::TokenType;
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span>thrustc_typesystem::{
-<a href=#32 id=32 data-nosnippet>32</a>    Type,
-<a href=#33 id=33 data-nosnippet>33</a>    traits::{TypeCodeLocation, TypeExtensions, TypePointerExtensions},
+<a href=#32 id=32 data-nosnippet>32</a>    traits::{TypeCodeLocation, TypeExtensions, TypePointerExtensions},
+<a href=#33 id=33 data-nosnippet>33</a>    Type,
 <a href=#34 id=34 data-nosnippet>34</a>};
 <a href=#35 id=35 data-nosnippet>35</a>
 <a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>thrustc_parser_table::traits::{
 <a href=#37 id=37 data-nosnippet>37</a>    FoundSymbolEitherExtensions, FoundSymbolExtensions, StructSymbolExtensions,
 <a href=#38 id=38 data-nosnippet>38</a>};
 <a href=#39 id=39 data-nosnippet>39</a>
-<a href=#40 id=40 data-nosnippet>40</a><span class="kw">use crate</span>::{ParserContext, abort};
+<a href=#40 id=40 data-nosnippet>40</a><span class="kw">use crate</span>::{abort, ParserContext};
 <a href=#41 id=41 data-nosnippet>41</a>
 <a href=#42 id=42 data-nosnippet>42</a><span class="kw">pub fn </span>build_property&lt;<span class="lifetime">'parser</span>&gt;(
 <a href=#43 id=43 data-nosnippet>43</a>    ctx: <span class="kw-2">&amp;mut </span>ParserContext&lt;<span class="lifetime">'parser</span>&gt;,
@@ -162,7 +162,7 @@
 <a href=#162 id=162 data-nosnippet>162</a>                .get_generic_struct(name)
 <a href=#163 id=163 data-nosnippet>163</a>                .and_then(|generic| {
 <a href=#164 id=164 data-nosnippet>164</a>                    generic
-<a href=#165 id=165 data-nosnippet>165</a>                        .field_names
+<a href=#165 id=165 data-nosnippet>165</a>                        .get_field_names()
 <a href=#166 id=166 data-nosnippet>166</a>                        .iter()
 <a href=#167 id=167 data-nosnippet>167</a>                        .position(|other| <span class="kw-2">*</span>other == current_property_name)
 <a href=#168 id=168 data-nosnippet>168</a>                        .and_then(|index| {

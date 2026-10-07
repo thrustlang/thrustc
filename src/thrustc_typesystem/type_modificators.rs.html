@@ -122,37 +122,47 @@
 <a href=#122 id=122 data-nosnippet>122</a>#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default, Serialize)]
 <a href=#123 id=123 data-nosnippet>123</a></span><span class="kw">pub struct </span>LLVMStructureTypeModificator {
 <a href=#124 id=124 data-nosnippet>124</a>    packed: bool,
-<a href=#125 id=125 data-nosnippet>125</a>}
-<a href=#126 id=126 data-nosnippet>126</a>
-<a href=#127 id=127 data-nosnippet>127</a><span class="kw">impl </span>LLVMStructureTypeModificator {
-<a href=#128 id=128 data-nosnippet>128</a>    <span class="attr">#[inline]
-<a href=#129 id=129 data-nosnippet>129</a>    </span><span class="kw">pub fn </span>new(packed: bool) -&gt; <span class="self">Self </span>{
-<a href=#130 id=130 data-nosnippet>130</a>        <span class="self">Self </span>{ packed }
-<a href=#131 id=131 data-nosnippet>131</a>    }
-<a href=#132 id=132 data-nosnippet>132</a>
-<a href=#133 id=133 data-nosnippet>133</a>    <span class="attr">#[inline]
-<a href=#134 id=134 data-nosnippet>134</a>    </span><span class="kw">pub fn </span>is_packed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#135 id=135 data-nosnippet>135</a>        <span class="self">self</span>.packed
-<a href=#136 id=136 data-nosnippet>136</a>    }
-<a href=#137 id=137 data-nosnippet>137</a>}
+<a href=#125 id=125 data-nosnippet>125</a>    align: <span class="prelude-ty">Option</span>&lt;u64&gt;,
+<a href=#126 id=126 data-nosnippet>126</a>}
+<a href=#127 id=127 data-nosnippet>127</a>
+<a href=#128 id=128 data-nosnippet>128</a><span class="kw">impl </span>LLVMStructureTypeModificator {
+<a href=#129 id=129 data-nosnippet>129</a>    <span class="attr">#[inline]
+<a href=#130 id=130 data-nosnippet>130</a>    </span><span class="kw">pub fn </span>new(packed: bool, align: <span class="prelude-ty">Option</span>&lt;u64&gt;) -&gt; <span class="self">Self </span>{
+<a href=#131 id=131 data-nosnippet>131</a>        <span class="self">Self </span>{ packed, align }
+<a href=#132 id=132 data-nosnippet>132</a>    }
+<a href=#133 id=133 data-nosnippet>133</a>
+<a href=#134 id=134 data-nosnippet>134</a>    <span class="attr">#[inline]
+<a href=#135 id=135 data-nosnippet>135</a>    </span><span class="kw">pub fn </span>is_packed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#136 id=136 data-nosnippet>136</a>        <span class="self">self</span>.packed
+<a href=#137 id=137 data-nosnippet>137</a>    }
 <a href=#138 id=138 data-nosnippet>138</a>
-<a href=#139 id=139 data-nosnippet>139</a><span class="kw">impl </span>Display <span class="kw">for </span>StructureTypeModificator {
-<a href=#140 id=140 data-nosnippet>140</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
-<a href=#141 id=141 data-nosnippet>141</a>        <span class="kw">if </span><span class="self">self</span>.llvm.packed {
-<a href=#142 id=142 data-nosnippet>142</a>            <span class="macro">write!</span>(f, <span class="string">"@packed;"</span>)<span class="question-mark">?</span>;
-<a href=#143 id=143 data-nosnippet>143</a>        }
+<a href=#139 id=139 data-nosnippet>139</a>    <span class="attr">#[inline]
+<a href=#140 id=140 data-nosnippet>140</a>    </span><span class="kw">pub fn </span>align(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;u64&gt; {
+<a href=#141 id=141 data-nosnippet>141</a>        <span class="self">self</span>.align
+<a href=#142 id=142 data-nosnippet>142</a>    }
+<a href=#143 id=143 data-nosnippet>143</a>}
 <a href=#144 id=144 data-nosnippet>144</a>
-<a href=#145 id=145 data-nosnippet>145</a>        <span class="prelude-val">Ok</span>(())
-<a href=#146 id=146 data-nosnippet>146</a>    }
-<a href=#147 id=147 data-nosnippet>147</a>}
-<a href=#148 id=148 data-nosnippet>148</a>
-<a href=#149 id=149 data-nosnippet>149</a><span class="kw">impl </span>Display <span class="kw">for </span>FunctionReferenceTypeModificator {
-<a href=#150 id=150 data-nosnippet>150</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
-<a href=#151 id=151 data-nosnippet>151</a>        <span class="kw">if </span><span class="self">self</span>.llvm.ignore_args {
-<a href=#152 id=152 data-nosnippet>152</a>            <span class="macro">write!</span>(f, <span class="string">"@ignore;"</span>)<span class="question-mark">?</span>;
+<a href=#145 id=145 data-nosnippet>145</a><span class="kw">impl </span>Display <span class="kw">for </span>StructureTypeModificator {
+<a href=#146 id=146 data-nosnippet>146</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+<a href=#147 id=147 data-nosnippet>147</a>        <span class="kw">if </span><span class="self">self</span>.llvm.packed {
+<a href=#148 id=148 data-nosnippet>148</a>            <span class="macro">write!</span>(f, <span class="string">"@packed;"</span>)<span class="question-mark">?</span>;
+<a href=#149 id=149 data-nosnippet>149</a>        }
+<a href=#150 id=150 data-nosnippet>150</a>
+<a href=#151 id=151 data-nosnippet>151</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(align) = <span class="self">self</span>.llvm.align {
+<a href=#152 id=152 data-nosnippet>152</a>            <span class="macro">write!</span>(f, <span class="string">"@align({align});"</span>)<span class="question-mark">?</span>;
 <a href=#153 id=153 data-nosnippet>153</a>        }
 <a href=#154 id=154 data-nosnippet>154</a>
 <a href=#155 id=155 data-nosnippet>155</a>        <span class="prelude-val">Ok</span>(())
 <a href=#156 id=156 data-nosnippet>156</a>    }
 <a href=#157 id=157 data-nosnippet>157</a>}
+<a href=#158 id=158 data-nosnippet>158</a>
+<a href=#159 id=159 data-nosnippet>159</a><span class="kw">impl </span>Display <span class="kw">for </span>FunctionReferenceTypeModificator {
+<a href=#160 id=160 data-nosnippet>160</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+<a href=#161 id=161 data-nosnippet>161</a>        <span class="kw">if </span><span class="self">self</span>.llvm.ignore_args {
+<a href=#162 id=162 data-nosnippet>162</a>            <span class="macro">write!</span>(f, <span class="string">"@ignore;"</span>)<span class="question-mark">?</span>;
+<a href=#163 id=163 data-nosnippet>163</a>        }
+<a href=#164 id=164 data-nosnippet>164</a>
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="prelude-val">Ok</span>(())
+<a href=#166 id=166 data-nosnippet>166</a>    }
+<a href=#167 id=167 data-nosnippet>167</a>}
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["hover"]};
+window.SIDEBAR_ITEMS = {"fn":["find_enum_value_detail","find_field_detail","hover","select_hover_reference_range"]};

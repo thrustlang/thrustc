@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["build_native_vector","build_native_vector_after_name","resolve_native_vector_type"]};

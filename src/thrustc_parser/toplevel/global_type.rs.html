@@ -22,11 +22,11 @@
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_errors::{CompilationIssue, CompilationIssueCode};
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>thrustc_parser_table::GenericCustomTypeEntry;
-<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_token::{Token, traits::TokenExtensions};
+<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_token::{traits::TokenExtensions, Token};
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>thrustc_token_type::TokenType;
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_typesystem::Type;
 <a href=#28 id=28 data-nosnippet>28</a>
-<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use crate</span>::{ParserContext, attributes, typegeneration};
+<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use crate</span>::{attributes, typegeneration, ParserContext};
 <a href=#30 id=30 data-nosnippet>30</a>
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">pub fn </span>build_custom_type&lt;<span class="lifetime">'parser</span>&gt;(
 <a href=#32 id=32 data-nosnippet>32</a>    ctx: <span class="kw-2">&amp;mut </span>ParserContext&lt;<span class="lifetime">'parser</span>&gt;,
@@ -85,34 +85,28 @@
 <a href=#85 id=85 data-nosnippet>85</a>        <span class="kw">if </span>is_generic {
 <a href=#86 id=86 data-nosnippet>86</a>            ctx.get_mut_symbols().new_generic_custom_type(
 <a href=#87 id=87 data-nosnippet>87</a>                name.to_string(),
-<a href=#88 id=88 data-nosnippet>88</a>                GenericCustomTypeEntry {
-<a href=#89 id=89 data-nosnippet>89</a>                    type_params,
-<a href=#90 id=90 data-nosnippet>90</a>                    kind: custom_type.clone(),
-<a href=#91 id=91 data-nosnippet>91</a>                },
-<a href=#92 id=92 data-nosnippet>92</a>            );
-<a href=#93 id=93 data-nosnippet>93</a>        } <span class="kw">else </span>{
-<a href=#94 id=94 data-nosnippet>94</a>            ctx.get_mut_symbols()
-<a href=#95 id=95 data-nosnippet>95</a>                .new_global_custom_type(name.to_string(), (custom_type, attributes))<span class="question-mark">?</span>;
-<a href=#96 id=96 data-nosnippet>96</a>        }
-<a href=#97 id=97 data-nosnippet>97</a>
-<a href=#98 id=98 data-nosnippet>98</a>        <span class="prelude-val">Ok</span>(Ast::new_nullptr(span))
-<a href=#99 id=99 data-nosnippet>99</a>    } <span class="kw">else </span>{
-<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">if </span>is_generic {
-<a href=#101 id=101 data-nosnippet>101</a>            ctx.get_mut_symbols().new_generic_custom_type(
-<a href=#102 id=102 data-nosnippet>102</a>                name.to_string(),
-<a href=#103 id=103 data-nosnippet>103</a>                GenericCustomTypeEntry {
-<a href=#104 id=104 data-nosnippet>104</a>                    type_params,
-<a href=#105 id=105 data-nosnippet>105</a>                    kind: custom_type.clone(),
-<a href=#106 id=106 data-nosnippet>106</a>                },
-<a href=#107 id=107 data-nosnippet>107</a>            );
-<a href=#108 id=108 data-nosnippet>108</a>        }
-<a href=#109 id=109 data-nosnippet>109</a>
-<a href=#110 id=110 data-nosnippet>110</a>        <span class="prelude-val">Ok</span>(Ast::CustomType {
-<a href=#111 id=111 data-nosnippet>111</a>            name: name.to_string(),
-<a href=#112 id=112 data-nosnippet>112</a>            kind: custom_type,
-<a href=#113 id=113 data-nosnippet>113</a>            span,
-<a href=#114 id=114 data-nosnippet>114</a>            id: NodeId::new(),
-<a href=#115 id=115 data-nosnippet>115</a>        })
-<a href=#116 id=116 data-nosnippet>116</a>    }
-<a href=#117 id=117 data-nosnippet>117</a>}
+<a href=#88 id=88 data-nosnippet>88</a>                GenericCustomTypeEntry::new(type_params, custom_type.clone()),
+<a href=#89 id=89 data-nosnippet>89</a>            );
+<a href=#90 id=90 data-nosnippet>90</a>        } <span class="kw">else </span>{
+<a href=#91 id=91 data-nosnippet>91</a>            ctx.get_mut_symbols()
+<a href=#92 id=92 data-nosnippet>92</a>                .new_global_custom_type(name.to_string(), (custom_type, attributes))<span class="question-mark">?</span>;
+<a href=#93 id=93 data-nosnippet>93</a>        }
+<a href=#94 id=94 data-nosnippet>94</a>
+<a href=#95 id=95 data-nosnippet>95</a>        <span class="prelude-val">Ok</span>(Ast::new_nullptr(span))
+<a href=#96 id=96 data-nosnippet>96</a>    } <span class="kw">else </span>{
+<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">if </span>is_generic {
+<a href=#98 id=98 data-nosnippet>98</a>            ctx.get_mut_symbols().new_generic_custom_type(
+<a href=#99 id=99 data-nosnippet>99</a>                name.to_string(),
+<a href=#100 id=100 data-nosnippet>100</a>                GenericCustomTypeEntry::new(type_params, custom_type.clone()),
+<a href=#101 id=101 data-nosnippet>101</a>            );
+<a href=#102 id=102 data-nosnippet>102</a>        }
+<a href=#103 id=103 data-nosnippet>103</a>
+<a href=#104 id=104 data-nosnippet>104</a>        <span class="prelude-val">Ok</span>(Ast::CustomType {
+<a href=#105 id=105 data-nosnippet>105</a>            name: name.to_string(),
+<a href=#106 id=106 data-nosnippet>106</a>            kind: custom_type,
+<a href=#107 id=107 data-nosnippet>107</a>            span,
+<a href=#108 id=108 data-nosnippet>108</a>            id: NodeId::new(),
+<a href=#109 id=109 data-nosnippet>109</a>        })
+<a href=#110 id=110 data-nosnippet>110</a>    }
+<a href=#111 id=111 data-nosnippet>111</a>}
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["main"],"mod":["analysis","completion","definition","document_symbol","documents","hover","server"],"static":["GLOBAL"]};
+window.SIDEBAR_ITEMS = {"fn":["main"],"mod":["analysis","completion","definition","document_symbol","documents","frontend","hover","server"],"static":["GLOBAL"]};

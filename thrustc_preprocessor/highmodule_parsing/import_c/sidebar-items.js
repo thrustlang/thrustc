@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["build_import_options","clang_commands","detect_clang_resource_include_dir","detect_host_system_include_dirs","emit_import_diagnostics","emit_imported_symbols","parse_import_c","parse_import_request","synthesize_imported_header","verbose_include_dirs"],"struct":["ImportRequest"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["definition","symbol_location"]};
+window.SIDEBAR_ITEMS = {"fn":["definition","find_enum_value_symbol","find_field_symbol","symbol_location"]};

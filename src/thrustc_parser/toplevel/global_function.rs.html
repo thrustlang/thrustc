@@ -17,17 +17,17 @@
 <a href=#17 id=17 data-nosnippet>17</a>
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
-<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{Ast, NodeId, ast_metadata::FunctionParameterMetadata};
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
+<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{ast_metadata::FunctionParameterMetadata, Ast, NodeId};
+<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributes};
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParametersTypes};
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>thrustc_errors::{CompilationIssue, CompilationIssueCode};
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_parser_table::GenericFunctionEntry;
-<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>thrustc_token::{Token, traits::TokenExtensions};
-<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_token_type::{TokenType, traits::TokenTypeAttributesExtensions};
-<a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>thrustc_typesystem::{Type, traits::TypePointerExtensions};
+<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>thrustc_token::{traits::TokenExtensions, Token};
+<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_token_type::{traits::TokenTypeAttributesExtensions, TokenType};
+<a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>thrustc_typesystem::{traits::TypePointerExtensions, Type};
 <a href=#29 id=29 data-nosnippet>29</a>
-<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use crate</span>::{ParserContext, attributes, statements::code_block, typegeneration};
+<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use crate</span>::{attributes, statements::code_block, typegeneration, ParserContext};
 <a href=#31 id=31 data-nosnippet>31</a>
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">pub fn </span>build_function&lt;<span class="lifetime">'parser</span>&gt;(
 <a href=#33 id=33 data-nosnippet>33</a>    ctx: <span class="kw-2">&amp;mut </span>ParserContext&lt;<span class="lifetime">'parser</span>&gt;,
@@ -155,103 +155,105 @@
 <a href=#155 id=155 data-nosnippet>155</a>    <span class="kw">if </span>is_generic {
 <a href=#156 id=156 data-nosnippet>156</a>        ctx.get_mut_symbols().new_generic_function(
 <a href=#157 id=157 data-nosnippet>157</a>            name.to_string(),
-<a href=#158 id=158 data-nosnippet>158</a>            GenericFunctionEntry {
-<a href=#159 id=159 data-nosnippet>159</a>                name: name.to_string(),
+<a href=#158 id=158 data-nosnippet>158</a>            GenericFunctionEntry::new(
+<a href=#159 id=159 data-nosnippet>159</a>                name.to_string(),
 <a href=#160 id=160 data-nosnippet>160</a>                type_params,
-<a href=#161 id=161 data-nosnippet>161</a>                parameter_types: parameters_types.clone(),
-<a href=#162 id=162 data-nosnippet>162</a>                parameter_names: parameter_names
-<a href=#163 id=163 data-nosnippet>163</a>                    .iter()
-<a href=#164 id=164 data-nosnippet>164</a>                    .map(|name| name.to_string())
-<a href=#165 id=165 data-nosnippet>165</a>                    .collect(),
-<a href=#166 id=166 data-nosnippet>166</a>                return_type: return_type.clone(),
-<a href=#167 id=167 data-nosnippet>167</a>                attributes: attributes.clone(),
-<a href=#168 id=168 data-nosnippet>168</a>                has_local_template: <span class="bool-val">true</span>,
-<a href=#169 id=169 data-nosnippet>169</a>                has_varargs: function_has_ignore,
-<a href=#170 id=170 data-nosnippet>170</a>                span,
-<a href=#171 id=171 data-nosnippet>171</a>            },
-<a href=#172 id=172 data-nosnippet>172</a>        );
-<a href=#173 id=173 data-nosnippet>173</a>    }
-<a href=#174 id=174 data-nosnippet>174</a>
-<a href=#175 id=175 data-nosnippet>175</a>    <span class="kw">if </span>parse_forward {
-<a href=#176 id=176 data-nosnippet>176</a>        <span class="kw">if </span>!is_generic {
-<a href=#177 id=177 data-nosnippet>177</a>            ctx.get_mut_symbols().new_function(
-<a href=#178 id=178 data-nosnippet>178</a>                name.to_string(),
-<a href=#179 id=179 data-nosnippet>179</a>                (
-<a href=#180 id=180 data-nosnippet>180</a>                    return_type,
-<a href=#181 id=181 data-nosnippet>181</a>                    FunctionParametersTypes(parameters_types),
-<a href=#182 id=182 data-nosnippet>182</a>                    FunctionParameterNames(parameter_names),
-<a href=#183 id=183 data-nosnippet>183</a>                    function_has_ignore,
-<a href=#184 id=184 data-nosnippet>184</a>                ),
-<a href=#185 id=185 data-nosnippet>185</a>            )<span class="question-mark">?</span>;
-<a href=#186 id=186 data-nosnippet>186</a>        }
-<a href=#187 id=187 data-nosnippet>187</a>
-<a href=#188 id=188 data-nosnippet>188</a>        <span class="kw">if </span>has_generics {
-<a href=#189 id=189 data-nosnippet>189</a>            ctx.get_mut_symbols().end_generic_scope();
-<a href=#190 id=190 data-nosnippet>190</a>        }
-<a href=#191 id=191 data-nosnippet>191</a>
-<a href=#192 id=192 data-nosnippet>192</a>        <span class="prelude-val">Ok</span>(Ast::new_nullptr(span))
-<a href=#193 id=193 data-nosnippet>193</a>    } <span class="kw">else </span>{
-<a href=#194 id=194 data-nosnippet>194</a>        <span class="kw">if </span>ctx.check(TokenType::SemiColon) {
-<a href=#195 id=195 data-nosnippet>195</a>            ctx.consume(
-<a href=#196 id=196 data-nosnippet>196</a>                TokenType::SemiColon,
-<a href=#197 id=197 data-nosnippet>197</a>                CompilationIssueCode::E0001,
-<a href=#198 id=198 data-nosnippet>198</a>                <span class="string">"Expected ';'."</span>.into(),
-<a href=#199 id=199 data-nosnippet>199</a>            )<span class="question-mark">?</span>;
-<a href=#200 id=200 data-nosnippet>200</a>
-<a href=#201 id=201 data-nosnippet>201</a>            <span class="kw">if </span>has_generics {
-<a href=#202 id=202 data-nosnippet>202</a>                ctx.get_mut_symbols().end_generic_scope();
-<a href=#203 id=203 data-nosnippet>203</a>            }
-<a href=#204 id=204 data-nosnippet>204</a>
-<a href=#205 id=205 data-nosnippet>205</a>            <span class="kw">let </span>prototype: Ast = Ast::Function {
-<a href=#206 id=206 data-nosnippet>206</a>                name: name.to_string(),
-<a href=#207 id=207 data-nosnippet>207</a>                ascii_name: ascii_name.to_string(),
-<a href=#208 id=208 data-nosnippet>208</a>                demangling_name: <span class="macro">format!</span>(<span class="string">"{}.{}"</span>, ctx.get_file().get_base_name(), ascii_name),
-<a href=#209 id=209 data-nosnippet>209</a>                original_name: <span class="prelude-val">Some</span>(name.to_string()),
-<a href=#210 id=210 data-nosnippet>210</a>                parameters,
-<a href=#211 id=211 data-nosnippet>211</a>                parameter_types: parameters_types,
-<a href=#212 id=212 data-nosnippet>212</a>                body: <span class="prelude-val">None</span>,
-<a href=#213 id=213 data-nosnippet>213</a>                return_type,
-<a href=#214 id=214 data-nosnippet>214</a>                attributes,
-<a href=#215 id=215 data-nosnippet>215</a>                span,
-<a href=#216 id=216 data-nosnippet>216</a>                id: NodeId::new(),
-<a href=#217 id=217 data-nosnippet>217</a>            };
-<a href=#218 id=218 data-nosnippet>218</a>
-<a href=#219 id=219 data-nosnippet>219</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(prototype);
-<a href=#220 id=220 data-nosnippet>220</a>        }
-<a href=#221 id=221 data-nosnippet>221</a>
-<a href=#222 id=222 data-nosnippet>222</a>        ctx.get_mut_symbols().new_parameters(<span class="kw-2">&amp;</span>parameters)<span class="question-mark">?</span>;
+<a href=#161 id=161 data-nosnippet>161</a>                (
+<a href=#162 id=162 data-nosnippet>162</a>                    parameters_types.clone(),
+<a href=#163 id=163 data-nosnippet>163</a>                    parameter_names
+<a href=#164 id=164 data-nosnippet>164</a>                        .iter()
+<a href=#165 id=165 data-nosnippet>165</a>                        .map(|name| name.to_string())
+<a href=#166 id=166 data-nosnippet>166</a>                        .collect(),
+<a href=#167 id=167 data-nosnippet>167</a>                    return_type.clone(),
+<a href=#168 id=168 data-nosnippet>168</a>                ),
+<a href=#169 id=169 data-nosnippet>169</a>                attributes.clone(),
+<a href=#170 id=170 data-nosnippet>170</a>                <span class="bool-val">true</span>,
+<a href=#171 id=171 data-nosnippet>171</a>                function_has_ignore,
+<a href=#172 id=172 data-nosnippet>172</a>                span,
+<a href=#173 id=173 data-nosnippet>173</a>            ),
+<a href=#174 id=174 data-nosnippet>174</a>        );
+<a href=#175 id=175 data-nosnippet>175</a>    }
+<a href=#176 id=176 data-nosnippet>176</a>
+<a href=#177 id=177 data-nosnippet>177</a>    <span class="kw">if </span>parse_forward {
+<a href=#178 id=178 data-nosnippet>178</a>        <span class="kw">if </span>!is_generic {
+<a href=#179 id=179 data-nosnippet>179</a>            ctx.get_mut_symbols().new_function(
+<a href=#180 id=180 data-nosnippet>180</a>                name.to_string(),
+<a href=#181 id=181 data-nosnippet>181</a>                (
+<a href=#182 id=182 data-nosnippet>182</a>                    return_type,
+<a href=#183 id=183 data-nosnippet>183</a>                    FunctionParametersTypes(parameters_types),
+<a href=#184 id=184 data-nosnippet>184</a>                    FunctionParameterNames(parameter_names),
+<a href=#185 id=185 data-nosnippet>185</a>                    function_has_ignore,
+<a href=#186 id=186 data-nosnippet>186</a>                ),
+<a href=#187 id=187 data-nosnippet>187</a>            )<span class="question-mark">?</span>;
+<a href=#188 id=188 data-nosnippet>188</a>        }
+<a href=#189 id=189 data-nosnippet>189</a>
+<a href=#190 id=190 data-nosnippet>190</a>        <span class="kw">if </span>has_generics {
+<a href=#191 id=191 data-nosnippet>191</a>            ctx.get_mut_symbols().end_generic_scope();
+<a href=#192 id=192 data-nosnippet>192</a>        }
+<a href=#193 id=193 data-nosnippet>193</a>
+<a href=#194 id=194 data-nosnippet>194</a>        <span class="prelude-val">Ok</span>(Ast::new_nullptr(span))
+<a href=#195 id=195 data-nosnippet>195</a>    } <span class="kw">else </span>{
+<a href=#196 id=196 data-nosnippet>196</a>        <span class="kw">if </span>ctx.check(TokenType::SemiColon) {
+<a href=#197 id=197 data-nosnippet>197</a>            ctx.consume(
+<a href=#198 id=198 data-nosnippet>198</a>                TokenType::SemiColon,
+<a href=#199 id=199 data-nosnippet>199</a>                CompilationIssueCode::E0001,
+<a href=#200 id=200 data-nosnippet>200</a>                <span class="string">"Expected ';'."</span>.into(),
+<a href=#201 id=201 data-nosnippet>201</a>            )<span class="question-mark">?</span>;
+<a href=#202 id=202 data-nosnippet>202</a>
+<a href=#203 id=203 data-nosnippet>203</a>            <span class="kw">if </span>has_generics {
+<a href=#204 id=204 data-nosnippet>204</a>                ctx.get_mut_symbols().end_generic_scope();
+<a href=#205 id=205 data-nosnippet>205</a>            }
+<a href=#206 id=206 data-nosnippet>206</a>
+<a href=#207 id=207 data-nosnippet>207</a>            <span class="kw">let </span>prototype: Ast = Ast::Function {
+<a href=#208 id=208 data-nosnippet>208</a>                name: name.to_string(),
+<a href=#209 id=209 data-nosnippet>209</a>                ascii_name: ascii_name.to_string(),
+<a href=#210 id=210 data-nosnippet>210</a>                demangling_name: <span class="macro">format!</span>(<span class="string">"{}.{}"</span>, ctx.get_file().get_base_name(), ascii_name),
+<a href=#211 id=211 data-nosnippet>211</a>                original_name: <span class="prelude-val">Some</span>(name.to_string()),
+<a href=#212 id=212 data-nosnippet>212</a>                parameters,
+<a href=#213 id=213 data-nosnippet>213</a>                parameter_types: parameters_types,
+<a href=#214 id=214 data-nosnippet>214</a>                body: <span class="prelude-val">None</span>,
+<a href=#215 id=215 data-nosnippet>215</a>                return_type,
+<a href=#216 id=216 data-nosnippet>216</a>                attributes,
+<a href=#217 id=217 data-nosnippet>217</a>                span,
+<a href=#218 id=218 data-nosnippet>218</a>                id: NodeId::new(),
+<a href=#219 id=219 data-nosnippet>219</a>            };
+<a href=#220 id=220 data-nosnippet>220</a>
+<a href=#221 id=221 data-nosnippet>221</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(prototype);
+<a href=#222 id=222 data-nosnippet>222</a>        }
 <a href=#223 id=223 data-nosnippet>223</a>
-<a href=#224 id=224 data-nosnippet>224</a>        ctx.set_current_function_name(name);
+<a href=#224 id=224 data-nosnippet>224</a>        ctx.get_mut_symbols().new_parameters(<span class="kw-2">&amp;</span>parameters)<span class="question-mark">?</span>;
 <a href=#225 id=225 data-nosnippet>225</a>
-<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">let </span>function_body: Ast = code_block::parse_code_block_stmt(ctx)<span class="question-mark">?</span>;
+<a href=#226 id=226 data-nosnippet>226</a>        ctx.set_current_function_name(name);
 <a href=#227 id=227 data-nosnippet>227</a>
-<a href=#228 id=228 data-nosnippet>228</a>        ctx.clear_current_function_name();
+<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let </span>function_body: Ast = code_block::parse_code_block_stmt(ctx)<span class="question-mark">?</span>;
 <a href=#229 id=229 data-nosnippet>229</a>
-<a href=#230 id=230 data-nosnippet>230</a>        ctx.get_mut_symbols().finish_parameters();
+<a href=#230 id=230 data-nosnippet>230</a>        ctx.clear_current_function_name();
 <a href=#231 id=231 data-nosnippet>231</a>
-<a href=#232 id=232 data-nosnippet>232</a>        <span class="kw">if </span>has_generics {
-<a href=#233 id=233 data-nosnippet>233</a>            ctx.get_mut_symbols().end_generic_scope();
-<a href=#234 id=234 data-nosnippet>234</a>        }
-<a href=#235 id=235 data-nosnippet>235</a>
-<a href=#236 id=236 data-nosnippet>236</a>        <span class="kw">let </span><span class="kw-2">mut </span>prototype: Ast = Ast::Function {
-<a href=#237 id=237 data-nosnippet>237</a>            name: name.to_string(),
-<a href=#238 id=238 data-nosnippet>238</a>            ascii_name: ascii_name.to_string(),
-<a href=#239 id=239 data-nosnippet>239</a>            demangling_name: <span class="macro">format!</span>(<span class="string">"{}.{}"</span>, ctx.get_file().get_base_name(), ascii_name),
-<a href=#240 id=240 data-nosnippet>240</a>            original_name: <span class="prelude-val">Some</span>(name.to_string()),
-<a href=#241 id=241 data-nosnippet>241</a>            parameters,
-<a href=#242 id=242 data-nosnippet>242</a>            parameter_types: parameters_types,
-<a href=#243 id=243 data-nosnippet>243</a>            body: <span class="prelude-val">None</span>,
-<a href=#244 id=244 data-nosnippet>244</a>            return_type,
-<a href=#245 id=245 data-nosnippet>245</a>            attributes,
-<a href=#246 id=246 data-nosnippet>246</a>            span,
-<a href=#247 id=247 data-nosnippet>247</a>            id: NodeId::new(),
-<a href=#248 id=248 data-nosnippet>248</a>        };
-<a href=#249 id=249 data-nosnippet>249</a>
-<a href=#250 id=250 data-nosnippet>250</a>        <span class="kw">if let </span>Ast::Function { body, .. } = <span class="kw-2">&amp;mut </span>prototype {
-<a href=#251 id=251 data-nosnippet>251</a>            <span class="kw-2">*</span>body = <span class="prelude-val">Some</span>(function_body.into());
-<a href=#252 id=252 data-nosnippet>252</a>        }
-<a href=#253 id=253 data-nosnippet>253</a>
-<a href=#254 id=254 data-nosnippet>254</a>        <span class="prelude-val">Ok</span>(prototype)
-<a href=#255 id=255 data-nosnippet>255</a>    }
-<a href=#256 id=256 data-nosnippet>256</a>}
+<a href=#232 id=232 data-nosnippet>232</a>        ctx.get_mut_symbols().finish_parameters();
+<a href=#233 id=233 data-nosnippet>233</a>
+<a href=#234 id=234 data-nosnippet>234</a>        <span class="kw">if </span>has_generics {
+<a href=#235 id=235 data-nosnippet>235</a>            ctx.get_mut_symbols().end_generic_scope();
+<a href=#236 id=236 data-nosnippet>236</a>        }
+<a href=#237 id=237 data-nosnippet>237</a>
+<a href=#238 id=238 data-nosnippet>238</a>        <span class="kw">let </span><span class="kw-2">mut </span>prototype: Ast = Ast::Function {
+<a href=#239 id=239 data-nosnippet>239</a>            name: name.to_string(),
+<a href=#240 id=240 data-nosnippet>240</a>            ascii_name: ascii_name.to_string(),
+<a href=#241 id=241 data-nosnippet>241</a>            demangling_name: <span class="macro">format!</span>(<span class="string">"{}.{}"</span>, ctx.get_file().get_base_name(), ascii_name),
+<a href=#242 id=242 data-nosnippet>242</a>            original_name: <span class="prelude-val">Some</span>(name.to_string()),
+<a href=#243 id=243 data-nosnippet>243</a>            parameters,
+<a href=#244 id=244 data-nosnippet>244</a>            parameter_types: parameters_types,
+<a href=#245 id=245 data-nosnippet>245</a>            body: <span class="prelude-val">None</span>,
+<a href=#246 id=246 data-nosnippet>246</a>            return_type,
+<a href=#247 id=247 data-nosnippet>247</a>            attributes,
+<a href=#248 id=248 data-nosnippet>248</a>            span,
+<a href=#249 id=249 data-nosnippet>249</a>            id: NodeId::new(),
+<a href=#250 id=250 data-nosnippet>250</a>        };
+<a href=#251 id=251 data-nosnippet>251</a>
+<a href=#252 id=252 data-nosnippet>252</a>        <span class="kw">if let </span>Ast::Function { body, .. } = <span class="kw-2">&amp;mut </span>prototype {
+<a href=#253 id=253 data-nosnippet>253</a>            <span class="kw-2">*</span>body = <span class="prelude-val">Some</span>(function_body.into());
+<a href=#254 id=254 data-nosnippet>254</a>        }
+<a href=#255 id=255 data-nosnippet>255</a>
+<a href=#256 id=256 data-nosnippet>256</a>        <span class="prelude-val">Ok</span>(prototype)
+<a href=#257 id=257 data-nosnippet>257</a>    }
+<a href=#258 id=258 data-nosnippet>258</a>}
 </code></pre></div></section></main></body></html>

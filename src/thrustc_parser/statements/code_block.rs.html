@@ -18,23 +18,23 @@
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{
-<a href=#21 id=21 data-nosnippet>21</a>    Ast, NodeId,
-<a href=#22 id=22 data-nosnippet>22</a>    ast_metadata::{ReferenceMetadata, ReferenceType},
-<a href=#23 id=23 data-nosnippet>23</a>    traits::AstStandardExtensions,
+<a href=#21 id=21 data-nosnippet>21</a>    ast_metadata::{ReferenceMetadata, ReferenceType},
+<a href=#22 id=22 data-nosnippet>22</a>    traits::AstStandardExtensions,
+<a href=#23 id=23 data-nosnippet>23</a>    Ast, NodeId,
 <a href=#24 id=24 data-nosnippet>24</a>};
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_attributes::{
-<a href=#26 id=26 data-nosnippet>26</a>    ThrustAttribute, ThrustAttributeComparator, traits::ThrustAttributesExtensions,
+<a href=#26 id=26 data-nosnippet>26</a>    traits::ThrustAttributesExtensions, ThrustAttribute, ThrustAttributeComparator,
 <a href=#27 id=27 data-nosnippet>27</a>};
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>thrustc_errors::{CompilationIssue, CompilationIssueCode};
-<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>thrustc_token::{Token, traits::TokenExtensions};
+<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>thrustc_token::{traits::TokenExtensions, Token};
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span>thrustc_token_type::TokenType;
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span>thrustc_typesystem::{
-<a href=#33 id=33 data-nosnippet>33</a>    Type,
-<a href=#34 id=34 data-nosnippet>34</a>    traits::{TypeExtensions, TypeIsExtensions},
+<a href=#33 id=33 data-nosnippet>33</a>    traits::{TypeExtensions, TypeIsExtensions},
+<a href=#34 id=34 data-nosnippet>34</a>    Type,
 <a href=#35 id=35 data-nosnippet>35</a>};
 <a href=#36 id=36 data-nosnippet>36</a>
-<a href=#37 id=37 data-nosnippet>37</a><span class="kw">use crate</span>::{ParserContext, statements};
+<a href=#37 id=37 data-nosnippet>37</a><span class="kw">use crate</span>::{statements, ParserContext};
 <a href=#38 id=38 data-nosnippet>38</a>
 <a href=#39 id=39 data-nosnippet>39</a><span class="kw">pub fn </span>parse_code_block_stmt&lt;<span class="lifetime">'parser</span>&gt;(
 <a href=#40 id=40 data-nosnippet>40</a>    ctx: <span class="kw-2">&amp;mut </span>ParserContext&lt;<span class="lifetime">'parser</span>&gt;,
@@ -203,18 +203,18 @@
 <a href=#203 id=203 data-nosnippet>203</a>            <span class="kw">let </span>argument_types: Vec&lt;Type&gt; = <span class="macro">vec!</span>[expected_arg];
 <a href=#204 id=204 data-nosnippet>204</a>
 <a href=#205 id=205 data-nosnippet>205</a>            <span class="kw">if let </span><span class="prelude-val">Ok</span>(result) = thrustc_generics::solve(
-<a href=#206 id=206 data-nosnippet>206</a>                <span class="kw-2">&amp;</span>entry.type_params,
+<a href=#206 id=206 data-nosnippet>206</a>                entry.get_type_params(),
 <a href=#207 id=207 data-nosnippet>207</a>                <span class="kw-2">&amp;</span>[],
-<a href=#208 id=208 data-nosnippet>208</a>                <span class="kw-2">&amp;</span>entry.parameter_types,
+<a href=#208 id=208 data-nosnippet>208</a>                entry.get_parameter_types(),
 <a href=#209 id=209 data-nosnippet>209</a>                <span class="kw-2">&amp;</span>argument_types,
-<a href=#210 id=210 data-nosnippet>210</a>                <span class="kw-2">&amp;</span>entry.return_type,
-<a href=#211 id=211 data-nosnippet>211</a>                entry.has_varargs,
+<a href=#210 id=210 data-nosnippet>210</a>                entry.get_return_type(),
+<a href=#211 id=211 data-nosnippet>211</a>                entry.has_varargs(),
 <a href=#212 id=212 data-nosnippet>212</a>                <span class="kw-2">*</span>span,
 <a href=#213 id=213 data-nosnippet>213</a>            ) {
 <a href=#214 id=214 data-nosnippet>214</a>                generic_args = entry
-<a href=#215 id=215 data-nosnippet>215</a>                    .type_params
+<a href=#215 id=215 data-nosnippet>215</a>                    .get_type_params()
 <a href=#216 id=216 data-nosnippet>216</a>                    .iter()
-<a href=#217 id=217 data-nosnippet>217</a>                    .filter_map(|parameter| result.env.get(parameter).cloned())
+<a href=#217 id=217 data-nosnippet>217</a>                    .filter_map(|parameter| result.get_env().get(parameter).cloned())
 <a href=#218 id=218 data-nosnippet>218</a>                    .collect();
 <a href=#219 id=219 data-nosnippet>219</a>            }
 <a href=#220 id=220 data-nosnippet>220</a>        }
@@ -292,7 +292,7 @@
 <a href=#292 id=292 data-nosnippet>292</a>        };
 <a href=#293 id=293 data-nosnippet>293</a>
 <a href=#294 id=294 data-nosnippet>294</a>        <span class="kw">if </span>subtype.as_ref() == kind {
-<a href=#295 id=295 data-nosnippet>295</a>            <span class="kw">return </span><span class="prelude-val">Some</span>((name.clone(), Vec::with_capacity(<span class="number">0</span>)));
+<a href=#295 id=295 data-nosnippet>295</a>            <span class="kw">return </span><span class="prelude-val">Some</span>((name.clone(), Vec::new()));
 <a href=#296 id=296 data-nosnippet>296</a>        }
 <a href=#297 id=297 data-nosnippet>297</a>
 <a href=#298 id=298 data-nosnippet>298</a>        <span class="kw">let </span><span class="prelude-val">Some</span>(entry) = ctx.get_symbols().get_generic_function(name) <span class="kw">else </span>{
@@ -306,18 +306,18 @@
 <a href=#306 id=306 data-nosnippet>306</a>        };
 <a href=#307 id=307 data-nosnippet>307</a>
 <a href=#308 id=308 data-nosnippet>308</a>        <span class="kw">if let </span><span class="prelude-val">Ok</span>(result) = thrustc_generics::solve(
-<a href=#309 id=309 data-nosnippet>309</a>            <span class="kw-2">&amp;</span>entry.type_params,
+<a href=#309 id=309 data-nosnippet>309</a>            entry.get_type_params(),
 <a href=#310 id=310 data-nosnippet>310</a>            <span class="kw-2">&amp;</span>[],
-<a href=#311 id=311 data-nosnippet>311</a>            <span class="kw-2">&amp;</span>entry.parameter_types,
+<a href=#311 id=311 data-nosnippet>311</a>            entry.get_parameter_types(),
 <a href=#312 id=312 data-nosnippet>312</a>            <span class="kw-2">&amp;</span>[argument_type],
-<a href=#313 id=313 data-nosnippet>313</a>            <span class="kw-2">&amp;</span>entry.return_type,
-<a href=#314 id=314 data-nosnippet>314</a>            entry.has_varargs,
+<a href=#313 id=313 data-nosnippet>313</a>            entry.get_return_type(),
+<a href=#314 id=314 data-nosnippet>314</a>            entry.has_varargs(),
 <a href=#315 id=315 data-nosnippet>315</a>            span,
 <a href=#316 id=316 data-nosnippet>316</a>        ) {
 <a href=#317 id=317 data-nosnippet>317</a>            <span class="kw">let </span>generic_args: Vec&lt;Type&gt; = entry
-<a href=#318 id=318 data-nosnippet>318</a>                .type_params
+<a href=#318 id=318 data-nosnippet>318</a>                .get_type_params()
 <a href=#319 id=319 data-nosnippet>319</a>                .iter()
-<a href=#320 id=320 data-nosnippet>320</a>                .filter_map(|parameter| result.env.get(parameter).cloned())
+<a href=#320 id=320 data-nosnippet>320</a>                .filter_map(|parameter| result.get_env().get(parameter).cloned())
 <a href=#321 id=321 data-nosnippet>321</a>                .collect();
 <a href=#322 id=322 data-nosnippet>322</a>
 <a href=#323 id=323 data-nosnippet>323</a>            <span class="kw">return </span><span class="prelude-val">Some</span>((name.clone(), generic_args));

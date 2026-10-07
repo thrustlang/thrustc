@@ -29,7 +29,7 @@
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>thrustc_token_type::TokenType;
 <a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>thrustc_typesystem::Type;
 <a href=#31 id=31 data-nosnippet>31</a>
-<a href=#32 id=32 data-nosnippet>32</a><span class="kw">use crate</span>::{ParserContext, expressions, typegeneration};
+<a href=#32 id=32 data-nosnippet>32</a><span class="kw">use crate</span>::{expressions, typegeneration, ParserContext};
 <a href=#33 id=33 data-nosnippet>33</a>
 <a href=#34 id=34 data-nosnippet>34</a><span class="kw">pub fn </span>build_builtin_call&lt;<span class="lifetime">'parser</span>&gt;(
 <a href=#35 id=35 data-nosnippet>35</a>    ctx: <span class="kw-2">&amp;mut </span>ParserContext&lt;<span class="lifetime">'parser</span>&gt;,
@@ -166,7 +166,7 @@
 <a href=#166 id=166 data-nosnippet>166</a>                arguments: deferred_arguments,
 <a href=#167 id=167 data-nosnippet>167</a>                span,
 <a href=#168 id=168 data-nosnippet>168</a>            },
-<a href=#169 id=169 data-nosnippet>169</a>            kind: signature.return_type,
+<a href=#169 id=169 data-nosnippet>169</a>            kind: signature.get_return_type().clone(),
 <a href=#170 id=170 data-nosnippet>170</a>            span,
 <a href=#171 id=171 data-nosnippet>171</a>            id: NodeId::new(),
 <a href=#172 id=172 data-nosnippet>172</a>        });

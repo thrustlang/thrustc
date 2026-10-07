@@ -550,71 +550,77 @@
 <a href=#550 id=550 data-nosnippet>550</a>                | AstBuiltin::DeferredCompileTime { .. } =&gt; (),
 <a href=#551 id=551 data-nosnippet>551</a>            },
 <a href=#552 id=552 data-nosnippet>552</a>
-<a href=#553 id=553 data-nosnippet>553</a>            Ast::CString { .. }
-<a href=#554 id=554 data-nosnippet>554</a>            | Ast::CNString { .. }
-<a href=#555 id=555 data-nosnippet>555</a>            | Ast::Char { .. }
-<a href=#556 id=556 data-nosnippet>556</a>            | Ast::Boolean { .. }
-<a href=#557 id=557 data-nosnippet>557</a>            | Ast::Integer { .. }
-<a href=#558 id=558 data-nosnippet>558</a>            | Ast::Float { .. }
-<a href=#559 id=559 data-nosnippet>559</a>            | Ast::NullPtr { .. }
-<a href=#560 id=560 data-nosnippet>560</a>            | Ast::GlobalAssembler { .. }
-<a href=#561 id=561 data-nosnippet>561</a>            | Ast::Embedded { .. }
-<a href=#562 id=562 data-nosnippet>562</a>            | Ast::Struct { .. }
-<a href=#563 id=563 data-nosnippet>563</a>            | Ast::Block { .. }
-<a href=#564 id=564 data-nosnippet>564</a>            | Ast::CustomType { .. }
-<a href=#565 id=565 data-nosnippet>565</a>            | Ast::Enum { .. }
-<a href=#566 id=566 data-nosnippet>566</a>            | Ast::CompilerIntrinsic { .. }
-<a href=#567 id=567 data-nosnippet>567</a>            | Ast::CompilerIntrinsicParameter { .. }
-<a href=#568 id=568 data-nosnippet>568</a>            | Ast::AssemblerFunction { .. }
-<a href=#569 id=569 data-nosnippet>569</a>            | Ast::AssemblerFunctionParameter { .. }
-<a href=#570 id=570 data-nosnippet>570</a>            | Ast::Function { .. }
-<a href=#571 id=571 data-nosnippet>571</a>            | Ast::FunctionParameter { .. }
-<a href=#572 id=572 data-nosnippet>572</a>            | Ast::Continue { .. }
-<a href=#573 id=573 data-nosnippet>573</a>            | Ast::Break { .. }
-<a href=#574 id=574 data-nosnippet>574</a>            | Ast::ContinueAll { .. }
-<a href=#575 id=575 data-nosnippet>575</a>            | Ast::BreakAll { .. }
-<a href=#576 id=576 data-nosnippet>576</a>            | Ast::Return { .. }
-<a href=#577 id=577 data-nosnippet>577</a>            | Ast::Reference { .. }
-<a href=#578 id=578 data-nosnippet>578</a>            | Ast::Mutation { .. }
-<a href=#579 id=579 data-nosnippet>579</a>            | Ast::Address { .. }
-<a href=#580 id=580 data-nosnippet>580</a>            | Ast::Write { .. }
-<a href=#581 id=581 data-nosnippet>581</a>            | Ast::ModuleExpression { .. }
-<a href=#582 id=582 data-nosnippet>582</a>            | Ast::Import { .. }
-<a href=#583 id=583 data-nosnippet>583</a>            | Ast::ImportC { .. }
-<a href=#584 id=584 data-nosnippet>584</a>            | Ast::Unreachable { .. }
-<a href=#585 id=585 data-nosnippet>585</a>            | Ast::Invalid { .. } =&gt; (),
-<a href=#586 id=586 data-nosnippet>586</a>        }
-<a href=#587 id=587 data-nosnippet>587</a>    }
-<a href=#588 id=588 data-nosnippet>588</a>}
-<a href=#589 id=589 data-nosnippet>589</a>
-<a href=#590 id=590 data-nosnippet>590</a><span class="kw">impl</span>&lt;<span class="lifetime">'scoper</span>&gt; Scoper&lt;<span class="lifetime">'scoper</span>&gt; {
-<a href=#591 id=591 data-nosnippet>591</a>    <span class="attr">#[inline]
-<a href=#592 id=592 data-nosnippet>592</a>    </span><span class="kw">pub fn </span>add_error(<span class="kw-2">&amp;mut </span><span class="self">self</span>, error: CompilationIssue) {
-<a href=#593 id=593 data-nosnippet>593</a>        <span class="self">self</span>.errors.push(error);
-<a href=#594 id=594 data-nosnippet>594</a>    }
-<a href=#595 id=595 data-nosnippet>595</a>}
-<a href=#596 id=596 data-nosnippet>596</a>
-<a href=#597 id=597 data-nosnippet>597</a><span class="kw">impl</span>&lt;<span class="lifetime">'scoper</span>&gt; Scoper&lt;<span class="lifetime">'scoper</span>&gt; {
-<a href=#598 id=598 data-nosnippet>598</a>    <span class="attr">#[inline]
-<a href=#599 id=599 data-nosnippet>599</a>    </span><span class="kw">fn </span>get_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ScoperContext {
-<a href=#600 id=600 data-nosnippet>600</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.context
-<a href=#601 id=601 data-nosnippet>601</a>    }
+<a href=#553 id=553 data-nosnippet>553</a>            Ast::NativeVector { items, .. } =&gt; {
+<a href=#554 id=554 data-nosnippet>554</a>                <span class="kw">for </span>item <span class="kw">in </span>items.iter() {
+<a href=#555 id=555 data-nosnippet>555</a>                    <span class="self">self</span>.analyze_local_node(item);
+<a href=#556 id=556 data-nosnippet>556</a>                }
+<a href=#557 id=557 data-nosnippet>557</a>            }
+<a href=#558 id=558 data-nosnippet>558</a>
+<a href=#559 id=559 data-nosnippet>559</a>            Ast::CString { .. }
+<a href=#560 id=560 data-nosnippet>560</a>            | Ast::CNString { .. }
+<a href=#561 id=561 data-nosnippet>561</a>            | Ast::Char { .. }
+<a href=#562 id=562 data-nosnippet>562</a>            | Ast::Boolean { .. }
+<a href=#563 id=563 data-nosnippet>563</a>            | Ast::Integer { .. }
+<a href=#564 id=564 data-nosnippet>564</a>            | Ast::Float { .. }
+<a href=#565 id=565 data-nosnippet>565</a>            | Ast::NullPtr { .. }
+<a href=#566 id=566 data-nosnippet>566</a>            | Ast::GlobalAssembler { .. }
+<a href=#567 id=567 data-nosnippet>567</a>            | Ast::Embedded { .. }
+<a href=#568 id=568 data-nosnippet>568</a>            | Ast::Struct { .. }
+<a href=#569 id=569 data-nosnippet>569</a>            | Ast::Block { .. }
+<a href=#570 id=570 data-nosnippet>570</a>            | Ast::CustomType { .. }
+<a href=#571 id=571 data-nosnippet>571</a>            | Ast::Enum { .. }
+<a href=#572 id=572 data-nosnippet>572</a>            | Ast::CompilerIntrinsic { .. }
+<a href=#573 id=573 data-nosnippet>573</a>            | Ast::CompilerIntrinsicParameter { .. }
+<a href=#574 id=574 data-nosnippet>574</a>            | Ast::AssemblerFunction { .. }
+<a href=#575 id=575 data-nosnippet>575</a>            | Ast::AssemblerFunctionParameter { .. }
+<a href=#576 id=576 data-nosnippet>576</a>            | Ast::Function { .. }
+<a href=#577 id=577 data-nosnippet>577</a>            | Ast::FunctionParameter { .. }
+<a href=#578 id=578 data-nosnippet>578</a>            | Ast::Continue { .. }
+<a href=#579 id=579 data-nosnippet>579</a>            | Ast::Break { .. }
+<a href=#580 id=580 data-nosnippet>580</a>            | Ast::ContinueAll { .. }
+<a href=#581 id=581 data-nosnippet>581</a>            | Ast::BreakAll { .. }
+<a href=#582 id=582 data-nosnippet>582</a>            | Ast::Return { .. }
+<a href=#583 id=583 data-nosnippet>583</a>            | Ast::Reference { .. }
+<a href=#584 id=584 data-nosnippet>584</a>            | Ast::Mutation { .. }
+<a href=#585 id=585 data-nosnippet>585</a>            | Ast::Address { .. }
+<a href=#586 id=586 data-nosnippet>586</a>            | Ast::Write { .. }
+<a href=#587 id=587 data-nosnippet>587</a>            | Ast::ModuleExpression { .. }
+<a href=#588 id=588 data-nosnippet>588</a>            | Ast::Import { .. }
+<a href=#589 id=589 data-nosnippet>589</a>            | Ast::ImportC { .. }
+<a href=#590 id=590 data-nosnippet>590</a>            | Ast::Unreachable { .. }
+<a href=#591 id=591 data-nosnippet>591</a>            | Ast::Invalid { .. } =&gt; (),
+<a href=#592 id=592 data-nosnippet>592</a>        }
+<a href=#593 id=593 data-nosnippet>593</a>    }
+<a href=#594 id=594 data-nosnippet>594</a>}
+<a href=#595 id=595 data-nosnippet>595</a>
+<a href=#596 id=596 data-nosnippet>596</a><span class="kw">impl</span>&lt;<span class="lifetime">'scoper</span>&gt; Scoper&lt;<span class="lifetime">'scoper</span>&gt; {
+<a href=#597 id=597 data-nosnippet>597</a>    <span class="attr">#[inline]
+<a href=#598 id=598 data-nosnippet>598</a>    </span><span class="kw">pub fn </span>add_error(<span class="kw-2">&amp;mut </span><span class="self">self</span>, error: CompilationIssue) {
+<a href=#599 id=599 data-nosnippet>599</a>        <span class="self">self</span>.errors.push(error);
+<a href=#600 id=600 data-nosnippet>600</a>    }
+<a href=#601 id=601 data-nosnippet>601</a>}
 <a href=#602 id=602 data-nosnippet>602</a>
-<a href=#603 id=603 data-nosnippet>603</a>    <span class="attr">#[inline]
-<a href=#604 id=604 data-nosnippet>604</a>    </span><span class="kw">fn </span>get_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ScoperSymbolTable {
-<a href=#605 id=605 data-nosnippet>605</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.table
-<a href=#606 id=606 data-nosnippet>606</a>    }
-<a href=#607 id=607 data-nosnippet>607</a>}
+<a href=#603 id=603 data-nosnippet>603</a><span class="kw">impl</span>&lt;<span class="lifetime">'scoper</span>&gt; Scoper&lt;<span class="lifetime">'scoper</span>&gt; {
+<a href=#604 id=604 data-nosnippet>604</a>    <span class="attr">#[inline]
+<a href=#605 id=605 data-nosnippet>605</a>    </span><span class="kw">fn </span>get_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ScoperContext {
+<a href=#606 id=606 data-nosnippet>606</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.context
+<a href=#607 id=607 data-nosnippet>607</a>    }
 <a href=#608 id=608 data-nosnippet>608</a>
-<a href=#609 id=609 data-nosnippet>609</a><span class="kw">impl</span>&lt;<span class="lifetime">'scoper</span>&gt; Scoper&lt;<span class="lifetime">'scoper</span>&gt; {
-<a href=#610 id=610 data-nosnippet>610</a>    <span class="attr">#[inline]
-<a href=#611 id=611 data-nosnippet>611</a>    </span><span class="kw">fn </span>get_mut_context(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ScoperContext {
-<a href=#612 id=612 data-nosnippet>612</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>.context
-<a href=#613 id=613 data-nosnippet>613</a>    }
+<a href=#609 id=609 data-nosnippet>609</a>    <span class="attr">#[inline]
+<a href=#610 id=610 data-nosnippet>610</a>    </span><span class="kw">fn </span>get_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ScoperSymbolTable {
+<a href=#611 id=611 data-nosnippet>611</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.table
+<a href=#612 id=612 data-nosnippet>612</a>    }
+<a href=#613 id=613 data-nosnippet>613</a>}
 <a href=#614 id=614 data-nosnippet>614</a>
-<a href=#615 id=615 data-nosnippet>615</a>    <span class="attr">#[inline]
-<a href=#616 id=616 data-nosnippet>616</a>    </span><span class="kw">fn </span>get_mut_table(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ScoperSymbolTable {
-<a href=#617 id=617 data-nosnippet>617</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>.table
-<a href=#618 id=618 data-nosnippet>618</a>    }
-<a href=#619 id=619 data-nosnippet>619</a>}
+<a href=#615 id=615 data-nosnippet>615</a><span class="kw">impl</span>&lt;<span class="lifetime">'scoper</span>&gt; Scoper&lt;<span class="lifetime">'scoper</span>&gt; {
+<a href=#616 id=616 data-nosnippet>616</a>    <span class="attr">#[inline]
+<a href=#617 id=617 data-nosnippet>617</a>    </span><span class="kw">fn </span>get_mut_context(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ScoperContext {
+<a href=#618 id=618 data-nosnippet>618</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>.context
+<a href=#619 id=619 data-nosnippet>619</a>    }
+<a href=#620 id=620 data-nosnippet>620</a>
+<a href=#621 id=621 data-nosnippet>621</a>    <span class="attr">#[inline]
+<a href=#622 id=622 data-nosnippet>622</a>    </span><span class="kw">fn </span>get_mut_table(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ScoperSymbolTable {
+<a href=#623 id=623 data-nosnippet>623</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>.table
+<a href=#624 id=624 data-nosnippet>624</a>    }
+<a href=#625 id=625 data-nosnippet>625</a>}
 </code></pre></div></section></main></body></html>

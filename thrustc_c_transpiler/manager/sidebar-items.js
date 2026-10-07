@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["emit_c_bindings_thrust","translate_single_c_to_thrust"]};

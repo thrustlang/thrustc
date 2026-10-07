@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["compile_as_dbg_type","compile_as_function_type","dbg_type_encoding","determinate_mutation_target_type","generate_dereference_type","generate_pointer_arithmetic_type","generate_type","generate_type_function_type_to_function_type"]};
+window.SIDEBAR_ITEMS = {"fn":["compile_as_dbg_type","compile_as_function_type","dbg_type_encoding","determinate_mutation_target_type","generate_dereference_type","generate_native_vector_type","generate_pointer_arithmetic_type","generate_type","generate_type_function_type_to_function_type"]};

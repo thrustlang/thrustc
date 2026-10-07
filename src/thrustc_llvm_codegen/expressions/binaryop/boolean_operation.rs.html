@@ -34,7 +34,7 @@
 <a href=#34 id=34 data-nosnippet>34</a><span class="kw">use </span>inkwell::values::BasicValueEnum;
 <a href=#35 id=35 data-nosnippet>35</a><span class="kw">use </span>inkwell::values::PointerValue;
 <a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>thrustc_typesystem::Type;
-<a href=#37 id=37 data-nosnippet>37</a><span class="kw">use </span>thrustc_typesystem::traits::TypeIsExtensions;
+<a href=#37 id=37 data-nosnippet>37</a><span class="kw">use </span>thrustc_typesystem::traits::{ConstantTypeExtensions, TypeIsExtensions};
 <a href=#38 id=38 data-nosnippet>38</a>
 <a href=#39 id=39 data-nosnippet>39</a><span class="kw">fn </span>compile_bool_operation&lt;<span class="lifetime">'ctx</span>&gt;(
 <a href=#40 id=40 data-nosnippet>40</a>    context: <span class="kw-2">&amp;mut </span>LLVMCodeGenContext&lt;<span class="lifetime">'_</span>, <span class="lifetime">'ctx</span>&gt;,
@@ -218,8 +218,8 @@
 <a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">let </span>lhs: BasicValueEnum&lt;<span class="lifetime">'_</span>&gt; = codegen::compile_as_value(context, binary.<span class="number">0</span>, <span class="prelude-val">None</span>);
 <a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>rhs: BasicValueEnum&lt;<span class="lifetime">'_</span>&gt; = codegen::compile_as_value(context, binary.<span class="number">2</span>, <span class="prelude-val">None</span>);
 <a href=#220 id=220 data-nosnippet>220</a>
-<a href=#221 id=221 data-nosnippet>221</a>        <span class="kw">let </span>lhs_type: <span class="kw-2">&amp;</span>Type = binary.<span class="number">0</span>.get_type_for_llvm();
-<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">let </span>rhs_type: <span class="kw-2">&amp;</span>Type = binary.<span class="number">2</span>.get_type_for_llvm();
+<a href=#221 id=221 data-nosnippet>221</a>        <span class="kw">let </span>lhs_type: Type = binary.<span class="number">0</span>.get_type_for_llvm().remove_all_constant_type();
+<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">let </span>rhs_type: Type = binary.<span class="number">2</span>.get_type_for_llvm().remove_all_constant_type();
 <a href=#223 id=223 data-nosnippet>223</a>
 <a href=#224 id=224 data-nosnippet>224</a>        <span class="kw">return </span>compile_bool_operation(
 <a href=#225 id=225 data-nosnippet>225</a>            context,
@@ -487,8 +487,8 @@
 <a href=#487 id=487 data-nosnippet>487</a>        <span class="kw">let </span>rhs: BasicValueEnum&lt;<span class="lifetime">'_</span>&gt; =
 <a href=#488 id=488 data-nosnippet>488</a>            codegen::compile_constant_as_value(context, binary.<span class="number">2</span>, cast_type);
 <a href=#489 id=489 data-nosnippet>489</a>
-<a href=#490 id=490 data-nosnippet>490</a>        <span class="kw">let </span>lhs_type: <span class="kw-2">&amp;</span>Type = binary.<span class="number">0</span>.get_type_for_llvm();
-<a href=#491 id=491 data-nosnippet>491</a>        <span class="kw">let </span>rhs_type: <span class="kw-2">&amp;</span>Type = binary.<span class="number">2</span>.get_type_for_llvm();
+<a href=#490 id=490 data-nosnippet>490</a>        <span class="kw">let </span>lhs_type: Type = binary.<span class="number">0</span>.get_type_for_llvm().remove_all_constant_type();
+<a href=#491 id=491 data-nosnippet>491</a>        <span class="kw">let </span>rhs_type: Type = binary.<span class="number">2</span>.get_type_for_llvm().remove_all_constant_type();
 <a href=#492 id=492 data-nosnippet>492</a>
 <a href=#493 id=493 data-nosnippet>493</a>        <span class="kw">return </span>compile_constant_boolean_operation(
 <a href=#494 id=494 data-nosnippet>494</a>            context,

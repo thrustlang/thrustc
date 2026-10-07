@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["MacroTokenKind","MacroTokenOrigin"],"fn":["classify_text","from_spellings","is_keyword","is_punctuation","texts"],"struct":["MacroSpan","MacroToken"]};

@@ -20,23 +20,23 @@
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="attr">#![allow(clippy::too_many_arguments)]
 <a href=#21 id=21 data-nosnippet>21</a>
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">use </span>thrustc_ast::{
-<a href=#23 id=23 data-nosnippet>23</a>    Ast, NodeId,
-<a href=#24 id=24 data-nosnippet>24</a>    ast_metadata::{ReferenceMetadata, ReferenceType},
-<a href=#25 id=25 data-nosnippet>25</a>    traits::AstGetType,
+<a href=#23 id=23 data-nosnippet>23</a>    ast_metadata::{ReferenceMetadata, ReferenceType},
+<a href=#24 id=24 data-nosnippet>24</a>    traits::AstGetType,
+<a href=#25 id=25 data-nosnippet>25</a>    Ast, NodeId,
 <a href=#26 id=26 data-nosnippet>26</a>};
-<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
+<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributes};
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>thrustc_errors::{CompilationIssue, CompilationIssueCode};
 <a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>thrustc_parser_external_table::ExternalSymbolTable;
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span>thrustc_parser_table::GenericFunctionEntry;
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span>thrustc_preprocessor::signatures::{Signature, Variant};
 <a href=#33 id=33 data-nosnippet>33</a>
-<a href=#34 id=34 data-nosnippet>34</a><span class="kw">use </span>thrustc_token::{Token, traits::TokenExtensions};
+<a href=#34 id=34 data-nosnippet>34</a><span class="kw">use </span>thrustc_token::{traits::TokenExtensions, Token};
 <a href=#35 id=35 data-nosnippet>35</a><span class="kw">use </span>thrustc_token_type::TokenType;
-<a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>thrustc_typesystem::Type;
-<a href=#37 id=37 data-nosnippet>37</a><span class="kw">use </span>thrustc_typesystem::traits::VoidTypeExtensions;
+<a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>thrustc_typesystem::traits::VoidTypeExtensions;
+<a href=#37 id=37 data-nosnippet>37</a><span class="kw">use </span>thrustc_typesystem::Type;
 <a href=#38 id=38 data-nosnippet>38</a>
-<a href=#39 id=39 data-nosnippet>39</a><span class="kw">use crate</span>::{ParserContext, expressions, typegeneration};
+<a href=#39 id=39 data-nosnippet>39</a><span class="kw">use crate</span>::{expressions, typegeneration, ParserContext};
 <a href=#40 id=40 data-nosnippet>40</a>
 <a href=#41 id=41 data-nosnippet>41</a><span class="kw">pub fn </span>build_qualified_expression&lt;<span class="lifetime">'parser</span>&gt;(
 <a href=#42 id=42 data-nosnippet>42</a>    ctx: <span class="kw-2">&amp;mut </span>ParserContext&lt;<span class="lifetime">'parser</span>&gt;,
@@ -165,7 +165,7 @@
 <a href=#165 id=165 data-nosnippet>165</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(Ast::Call {
 <a href=#166 id=166 data-nosnippet>166</a>                name: qualified_symbol.clone(),
 <a href=#167 id=167 data-nosnippet>167</a>                args: arguments.positional,
-<a href=#168 id=168 data-nosnippet>168</a>                generic_args: Vec::with_capacity(<span class="number">0</span>),
+<a href=#168 id=168 data-nosnippet>168</a>                generic_args: Vec::new(),
 <a href=#169 id=169 data-nosnippet>169</a>                kind: kind.clone(),
 <a href=#170 id=170 data-nosnippet>170</a>                span,
 <a href=#171 id=171 data-nosnippet>171</a>                id: NodeId::new(),
@@ -492,100 +492,103 @@
 <a href=#492 id=492 data-nosnippet>492</a>        <span class="kw">if </span>!ctx.get_symbols().has_generic_function(<span class="kw-2">&amp;</span>qualified_symbol) {
 <a href=#493 id=493 data-nosnippet>493</a>            ctx.get_mut_symbols().new_generic_function(
 <a href=#494 id=494 data-nosnippet>494</a>                qualified_symbol.clone(),
-<a href=#495 id=495 data-nosnippet>495</a>                GenericFunctionEntry {
-<a href=#496 id=496 data-nosnippet>496</a>                    name: symbol.to_string(),
-<a href=#497 id=497 data-nosnippet>497</a>                    type_params: type_params.to_vec(),
-<a href=#498 id=498 data-nosnippet>498</a>                    parameter_types: parameter_types.clone(),
-<a href=#499 id=499 data-nosnippet>499</a>                    parameter_names: parameter_names.clone(),
-<a href=#500 id=500 data-nosnippet>500</a>                    return_type: kind.clone(),
-<a href=#501 id=501 data-nosnippet>501</a>                    attributes: attributes.clone(),
-<a href=#502 id=502 data-nosnippet>502</a>                    has_local_template: <span class="bool-val">false</span>,
-<a href=#503 id=503 data-nosnippet>503</a>                    has_varargs: has_ignore,
-<a href=#504 id=504 data-nosnippet>504</a>                    span,
-<a href=#505 id=505 data-nosnippet>505</a>                },
-<a href=#506 id=506 data-nosnippet>506</a>            );
-<a href=#507 id=507 data-nosnippet>507</a>
-<a href=#508 id=508 data-nosnippet>508</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(origin) = origin.as_ref() {
-<a href=#509 id=509 data-nosnippet>509</a>                ctx.get_mut_symbols()
-<a href=#510 id=510 data-nosnippet>510</a>                    .record_import_origin(qualified_symbol.clone(), origin.clone());
-<a href=#511 id=511 data-nosnippet>511</a>            }
-<a href=#512 id=512 data-nosnippet>512</a>        }
-<a href=#513 id=513 data-nosnippet>513</a>
-<a href=#514 id=514 data-nosnippet>514</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(Ast::Call {
-<a href=#515 id=515 data-nosnippet>515</a>            name: qualified_symbol,
-<a href=#516 id=516 data-nosnippet>516</a>            args,
-<a href=#517 id=517 data-nosnippet>517</a>            generic_args,
-<a href=#518 id=518 data-nosnippet>518</a>            kind,
-<a href=#519 id=519 data-nosnippet>519</a>            span,
-<a href=#520 id=520 data-nosnippet>520</a>            id: NodeId::new(),
-<a href=#521 id=521 data-nosnippet>521</a>        });
-<a href=#522 id=522 data-nosnippet>522</a>    }
-<a href=#523 id=523 data-nosnippet>523</a>
-<a href=#524 id=524 data-nosnippet>524</a>    <span class="kw">let </span>result: thrustc_generics::SolveResult = <span class="kw">match </span>thrustc_generics::solve(
-<a href=#525 id=525 data-nosnippet>525</a>        type_params,
-<a href=#526 id=526 data-nosnippet>526</a>        <span class="kw-2">&amp;</span>generic_args,
-<a href=#527 id=527 data-nosnippet>527</a>        <span class="kw-2">&amp;</span>parameter_types,
-<a href=#528 id=528 data-nosnippet>528</a>        <span class="kw-2">&amp;</span>argument_types,
-<a href=#529 id=529 data-nosnippet>529</a>        <span class="kw-2">&amp;</span>kind,
-<a href=#530 id=530 data-nosnippet>530</a>        has_ignore,
-<a href=#531 id=531 data-nosnippet>531</a>        span,
-<a href=#532 id=532 data-nosnippet>532</a>    ) {
-<a href=#533 id=533 data-nosnippet>533</a>        <span class="prelude-val">Ok</span>(result) =&gt; result,
-<a href=#534 id=534 data-nosnippet>534</a>        <span class="prelude-val">Err</span>(error) =&gt; {
-<a href=#535 id=535 data-nosnippet>535</a>            ctx.add_error_report(error);
-<a href=#536 id=536 data-nosnippet>536</a>
-<a href=#537 id=537 data-nosnippet>537</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(Ast::invalid_ast(span));
-<a href=#538 id=538 data-nosnippet>538</a>        }
-<a href=#539 id=539 data-nosnippet>539</a>    };
-<a href=#540 id=540 data-nosnippet>540</a>
-<a href=#541 id=541 data-nosnippet>541</a>    <span class="kw">let </span>origin_key: <span class="prelude-ty">Option</span>&lt;String&gt; = origin
-<a href=#542 id=542 data-nosnippet>542</a>        .as_ref()
-<a href=#543 id=543 data-nosnippet>543</a>        .map(|path| path.to_string_lossy().to_string());
-<a href=#544 id=544 data-nosnippet>544</a>    <span class="kw">let </span>key: String =
-<a href=#545 id=545 data-nosnippet>545</a>        thrustc_generics::instantiation_key(origin_key.as_deref(), symbol, <span class="kw-2">&amp;</span>result.env);
-<a href=#546 id=546 data-nosnippet>546</a>
-<a href=#547 id=547 data-nosnippet>547</a>    <span class="kw">if </span>!thrustc_import_synthesis::synthesis::has_any_synthetized_function(
-<a href=#548 id=548 data-nosnippet>548</a>        <span class="kw-2">&amp;</span>ctx.import_context(),
-<a href=#549 id=549 data-nosnippet>549</a>        <span class="kw-2">&amp;</span>key,
-<a href=#550 id=550 data-nosnippet>550</a>    ) {
-<a href=#551 id=551 data-nosnippet>551</a>        <span class="kw">let </span>concrete_parameter_types: Vec&lt;Type&gt; = parameter_types
-<a href=#552 id=552 data-nosnippet>552</a>            .iter()
-<a href=#553 id=553 data-nosnippet>553</a>            .map(|parameter| thrustc_generics::substitute(parameter, <span class="kw-2">&amp;</span>result.env))
-<a href=#554 id=554 data-nosnippet>554</a>            .collect();
-<a href=#555 id=555 data-nosnippet>555</a>
-<a href=#556 id=556 data-nosnippet>556</a>        <span class="kw">let </span>concrete_return_type: Type = thrustc_generics::substitute(<span class="kw-2">&amp;</span>kind, <span class="kw-2">&amp;</span>result.env);
-<a href=#557 id=557 data-nosnippet>557</a>        <span class="kw">let </span>demangling_name: String = origin
-<a href=#558 id=558 data-nosnippet>558</a>            .as_ref()
-<a href=#559 id=559 data-nosnippet>559</a>            .and_then(|path| path.file_stem())
-<a href=#560 id=560 data-nosnippet>560</a>            .map_or_else(
-<a href=#561 id=561 data-nosnippet>561</a>                || <span class="macro">format!</span>(<span class="string">"{}.{key}"</span>, access.join(<span class="string">"_"</span>)),
-<a href=#562 id=562 data-nosnippet>562</a>                |module| <span class="macro">format!</span>(<span class="string">"{}.{}"</span>, module.to_string_lossy(), key),
-<a href=#563 id=563 data-nosnippet>563</a>            );
-<a href=#564 id=564 data-nosnippet>564</a>
-<a href=#565 id=565 data-nosnippet>565</a>        thrustc_import_synthesis::synthesis::synthesize_function(
-<a href=#566 id=566 data-nosnippet>566</a>            <span class="kw-2">&amp;mut </span>ctx.import_context(),
-<a href=#567 id=567 data-nosnippet>567</a>            <span class="kw-2">&amp;</span>key,
-<a href=#568 id=568 data-nosnippet>568</a>            symbol,
-<a href=#569 id=569 data-nosnippet>569</a>            concrete_return_type.clone(),
-<a href=#570 id=570 data-nosnippet>570</a>            concrete_parameter_types,
-<a href=#571 id=571 data-nosnippet>571</a>            parameter_names.clone(),
-<a href=#572 id=572 data-nosnippet>572</a>            attributes.clone(),
-<a href=#573 id=573 data-nosnippet>573</a>            demangling_name,
-<a href=#574 id=574 data-nosnippet>574</a>            span,
-<a href=#575 id=575 data-nosnippet>575</a>        );
-<a href=#576 id=576 data-nosnippet>576</a>    }
-<a href=#577 id=577 data-nosnippet>577</a>
-<a href=#578 id=578 data-nosnippet>578</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(origin) = origin {
-<a href=#579 id=579 data-nosnippet>579</a>        thrustc_generics::record_pending(origin, symbol.to_string(), result.env);
-<a href=#580 id=580 data-nosnippet>580</a>    }
-<a href=#581 id=581 data-nosnippet>581</a>
-<a href=#582 id=582 data-nosnippet>582</a>    <span class="prelude-val">Ok</span>(Ast::Call {
-<a href=#583 id=583 data-nosnippet>583</a>        name: key,
-<a href=#584 id=584 data-nosnippet>584</a>        args,
-<a href=#585 id=585 data-nosnippet>585</a>        generic_args: Vec::with_capacity(<span class="number">0</span>),
-<a href=#586 id=586 data-nosnippet>586</a>        kind: result.return_type,
-<a href=#587 id=587 data-nosnippet>587</a>        span,
-<a href=#588 id=588 data-nosnippet>588</a>        id: NodeId::new(),
-<a href=#589 id=589 data-nosnippet>589</a>    })
-<a href=#590 id=590 data-nosnippet>590</a>}
+<a href=#495 id=495 data-nosnippet>495</a>                GenericFunctionEntry::new(
+<a href=#496 id=496 data-nosnippet>496</a>                    symbol.to_string(),
+<a href=#497 id=497 data-nosnippet>497</a>                    type_params.to_vec(),
+<a href=#498 id=498 data-nosnippet>498</a>                    (
+<a href=#499 id=499 data-nosnippet>499</a>                        parameter_types.clone(),
+<a href=#500 id=500 data-nosnippet>500</a>                        parameter_names.clone(),
+<a href=#501 id=501 data-nosnippet>501</a>                        kind.clone(),
+<a href=#502 id=502 data-nosnippet>502</a>                    ),
+<a href=#503 id=503 data-nosnippet>503</a>                    attributes.clone(),
+<a href=#504 id=504 data-nosnippet>504</a>                    <span class="bool-val">false</span>,
+<a href=#505 id=505 data-nosnippet>505</a>                    has_ignore,
+<a href=#506 id=506 data-nosnippet>506</a>                    span,
+<a href=#507 id=507 data-nosnippet>507</a>                ),
+<a href=#508 id=508 data-nosnippet>508</a>            );
+<a href=#509 id=509 data-nosnippet>509</a>
+<a href=#510 id=510 data-nosnippet>510</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(origin) = origin.as_ref() {
+<a href=#511 id=511 data-nosnippet>511</a>                ctx.get_mut_symbols()
+<a href=#512 id=512 data-nosnippet>512</a>                    .record_import_origin(qualified_symbol.clone(), origin.clone());
+<a href=#513 id=513 data-nosnippet>513</a>            }
+<a href=#514 id=514 data-nosnippet>514</a>        }
+<a href=#515 id=515 data-nosnippet>515</a>
+<a href=#516 id=516 data-nosnippet>516</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(Ast::Call {
+<a href=#517 id=517 data-nosnippet>517</a>            name: qualified_symbol,
+<a href=#518 id=518 data-nosnippet>518</a>            args,
+<a href=#519 id=519 data-nosnippet>519</a>            generic_args,
+<a href=#520 id=520 data-nosnippet>520</a>            kind,
+<a href=#521 id=521 data-nosnippet>521</a>            span,
+<a href=#522 id=522 data-nosnippet>522</a>            id: NodeId::new(),
+<a href=#523 id=523 data-nosnippet>523</a>        });
+<a href=#524 id=524 data-nosnippet>524</a>    }
+<a href=#525 id=525 data-nosnippet>525</a>
+<a href=#526 id=526 data-nosnippet>526</a>    <span class="kw">let </span>result: thrustc_generics::SolveResult = <span class="kw">match </span>thrustc_generics::solve(
+<a href=#527 id=527 data-nosnippet>527</a>        type_params,
+<a href=#528 id=528 data-nosnippet>528</a>        <span class="kw-2">&amp;</span>generic_args,
+<a href=#529 id=529 data-nosnippet>529</a>        <span class="kw-2">&amp;</span>parameter_types,
+<a href=#530 id=530 data-nosnippet>530</a>        <span class="kw-2">&amp;</span>argument_types,
+<a href=#531 id=531 data-nosnippet>531</a>        <span class="kw-2">&amp;</span>kind,
+<a href=#532 id=532 data-nosnippet>532</a>        has_ignore,
+<a href=#533 id=533 data-nosnippet>533</a>        span,
+<a href=#534 id=534 data-nosnippet>534</a>    ) {
+<a href=#535 id=535 data-nosnippet>535</a>        <span class="prelude-val">Ok</span>(result) =&gt; result,
+<a href=#536 id=536 data-nosnippet>536</a>        <span class="prelude-val">Err</span>(error) =&gt; {
+<a href=#537 id=537 data-nosnippet>537</a>            ctx.add_error_report(error);
+<a href=#538 id=538 data-nosnippet>538</a>
+<a href=#539 id=539 data-nosnippet>539</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(Ast::invalid_ast(span));
+<a href=#540 id=540 data-nosnippet>540</a>        }
+<a href=#541 id=541 data-nosnippet>541</a>    };
+<a href=#542 id=542 data-nosnippet>542</a>
+<a href=#543 id=543 data-nosnippet>543</a>    <span class="kw">let </span>(env, return_type): (thrustc_generics::TypeEnv, Type) = result.into_parts();
+<a href=#544 id=544 data-nosnippet>544</a>
+<a href=#545 id=545 data-nosnippet>545</a>    <span class="kw">let </span>origin_key: <span class="prelude-ty">Option</span>&lt;String&gt; = origin
+<a href=#546 id=546 data-nosnippet>546</a>        .as_ref()
+<a href=#547 id=547 data-nosnippet>547</a>        .map(|path| path.to_string_lossy().to_string());
+<a href=#548 id=548 data-nosnippet>548</a>    <span class="kw">let </span>key: String = thrustc_generics::instantiation_key(origin_key.as_deref(), symbol, <span class="kw-2">&amp;</span>env);
+<a href=#549 id=549 data-nosnippet>549</a>
+<a href=#550 id=550 data-nosnippet>550</a>    <span class="kw">if </span>!thrustc_import_synthesis::synthesis::has_any_synthetized_function(
+<a href=#551 id=551 data-nosnippet>551</a>        <span class="kw-2">&amp;</span>ctx.import_context(),
+<a href=#552 id=552 data-nosnippet>552</a>        <span class="kw-2">&amp;</span>key,
+<a href=#553 id=553 data-nosnippet>553</a>    ) {
+<a href=#554 id=554 data-nosnippet>554</a>        <span class="kw">let </span>concrete_parameter_types: Vec&lt;Type&gt; = parameter_types
+<a href=#555 id=555 data-nosnippet>555</a>            .iter()
+<a href=#556 id=556 data-nosnippet>556</a>            .map(|parameter| thrustc_generics::substitute(parameter, <span class="kw-2">&amp;</span>env))
+<a href=#557 id=557 data-nosnippet>557</a>            .collect();
+<a href=#558 id=558 data-nosnippet>558</a>
+<a href=#559 id=559 data-nosnippet>559</a>        <span class="kw">let </span>concrete_return_type: Type = thrustc_generics::substitute(<span class="kw-2">&amp;</span>kind, <span class="kw-2">&amp;</span>env);
+<a href=#560 id=560 data-nosnippet>560</a>        <span class="kw">let </span>demangling_name: String = origin
+<a href=#561 id=561 data-nosnippet>561</a>            .as_ref()
+<a href=#562 id=562 data-nosnippet>562</a>            .and_then(|path| path.file_stem())
+<a href=#563 id=563 data-nosnippet>563</a>            .map_or_else(
+<a href=#564 id=564 data-nosnippet>564</a>                || <span class="macro">format!</span>(<span class="string">"{}.{key}"</span>, access.join(<span class="string">"_"</span>)),
+<a href=#565 id=565 data-nosnippet>565</a>                |module| <span class="macro">format!</span>(<span class="string">"{}.{}"</span>, module.to_string_lossy(), key),
+<a href=#566 id=566 data-nosnippet>566</a>            );
+<a href=#567 id=567 data-nosnippet>567</a>
+<a href=#568 id=568 data-nosnippet>568</a>        thrustc_import_synthesis::synthesis::synthesize_function(
+<a href=#569 id=569 data-nosnippet>569</a>            <span class="kw-2">&amp;mut </span>ctx.import_context(),
+<a href=#570 id=570 data-nosnippet>570</a>            <span class="kw-2">&amp;</span>key,
+<a href=#571 id=571 data-nosnippet>571</a>            symbol,
+<a href=#572 id=572 data-nosnippet>572</a>            concrete_return_type.clone(),
+<a href=#573 id=573 data-nosnippet>573</a>            concrete_parameter_types,
+<a href=#574 id=574 data-nosnippet>574</a>            parameter_names.clone(),
+<a href=#575 id=575 data-nosnippet>575</a>            attributes.clone(),
+<a href=#576 id=576 data-nosnippet>576</a>            demangling_name,
+<a href=#577 id=577 data-nosnippet>577</a>            span,
+<a href=#578 id=578 data-nosnippet>578</a>        );
+<a href=#579 id=579 data-nosnippet>579</a>    }
+<a href=#580 id=580 data-nosnippet>580</a>
+<a href=#581 id=581 data-nosnippet>581</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(origin) = origin {
+<a href=#582 id=582 data-nosnippet>582</a>        thrustc_generics::record_pending(origin, symbol.to_string(), env);
+<a href=#583 id=583 data-nosnippet>583</a>    }
+<a href=#584 id=584 data-nosnippet>584</a>
+<a href=#585 id=585 data-nosnippet>585</a>    <span class="prelude-val">Ok</span>(Ast::Call {
+<a href=#586 id=586 data-nosnippet>586</a>        name: key,
+<a href=#587 id=587 data-nosnippet>587</a>        args,
+<a href=#588 id=588 data-nosnippet>588</a>        generic_args: Vec::with_capacity(<span class="number">0</span>),
+<a href=#589 id=589 data-nosnippet>589</a>        kind: return_type,
+<a href=#590 id=590 data-nosnippet>590</a>        span,
+<a href=#591 id=591 data-nosnippet>591</a>        id: NodeId::new(),
+<a href=#592 id=592 data-nosnippet>592</a>    })
+<a href=#593 id=593 data-nosnippet>593</a>}
 </code></pre></div></section></main></body></html>

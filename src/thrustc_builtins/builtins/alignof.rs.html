@@ -37,12 +37,12 @@
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a>    <span class="attr">#[inline]
 <a href=#39 id=39 data-nosnippet>39</a>    </span><span class="kw">fn </span>signature(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BuiltinFunctionSignature {
-<a href=#40 id=40 data-nosnippet>40</a>        BuiltinFunctionSignature {
-<a href=#41 id=41 data-nosnippet>41</a>            return_type: Type::U32 {
+<a href=#40 id=40 data-nosnippet>40</a>        BuiltinFunctionSignature::new(
+<a href=#41 id=41 data-nosnippet>41</a>            Type::U32 {
 <a href=#42 id=42 data-nosnippet>42</a>                span: Span::nothing(),
 <a href=#43 id=43 data-nosnippet>43</a>            },
-<a href=#44 id=44 data-nosnippet>44</a>            parameters: <span class="macro">vec!</span>[BuiltinParameter::Type],
-<a href=#45 id=45 data-nosnippet>45</a>        }
+<a href=#44 id=44 data-nosnippet>44</a>            <span class="macro">vec!</span>[BuiltinParameter::Type],
+<a href=#45 id=45 data-nosnippet>45</a>        )
 <a href=#46 id=46 data-nosnippet>46</a>    }
 <a href=#47 id=47 data-nosnippet>47</a>
 <a href=#48 id=48 data-nosnippet>48</a>    <span class="kw">fn </span>evaluate(
@@ -63,7 +63,7 @@
 <a href=#63 id=63 data-nosnippet>63</a>            }
 <a href=#64 id=64 data-nosnippet>64</a>        };
 <a href=#65 id=65 data-nosnippet>65</a>
-<a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">let </span>align_of: u32 = <span class="kw">match </span>context.target_info.get_type_layout(ty) {
+<a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">let </span>align_of: u32 = <span class="kw">match </span>context.get_mut_target_info().get_type_layout(ty) {
 <a href=#67 id=67 data-nosnippet>67</a>            either::Either::Left(layout) =&gt; layout.into_layout().alignof,
 <a href=#68 id=68 data-nosnippet>68</a>            either::Either::Right(layout) =&gt; layout.into_layout().alignof,
 <a href=#69 id=69 data-nosnippet>69</a>        };

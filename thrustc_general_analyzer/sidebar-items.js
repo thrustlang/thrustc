@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["context","expressions"],"struct":["GeneralAnalyzer"]};
+window.SIDEBAR_ITEMS = {"mod":["context","expr"],"struct":["GeneralAnalyzer"]};

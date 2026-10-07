@@ -29,8 +29,8 @@
 <a href=#29 id=29 data-nosnippet>29</a>};
 <a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span>thrustc_typesystem::Type;
-<a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span>thrustc_typesystem::traits::TypeIsExtensions;
-<a href=#33 id=33 data-nosnippet>33</a><span class="kw">use </span>thrustc_typesystem::traits::TypePointerExtensions;
+<a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span>thrustc_typesystem::traits::TypePointerExtensions;
+<a href=#33 id=33 data-nosnippet>33</a><span class="kw">use </span>thrustc_typesystem::traits::{IndexExtensions, TypeIsExtensions};
 <a href=#34 id=34 data-nosnippet>34</a>
 <a href=#35 id=35 data-nosnippet>35</a><span class="kw">use </span><span class="kw">crate</span>::context::{CodeGenLocation, LLVMCodeGenContext};
 <a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span><span class="kw">crate</span>::traits::AstLLVMGetType;
@@ -179,52 +179,63 @@
 <a href=#179 id=179 data-nosnippet>179</a>        context.add_codegen_location(CodeGenLocation::LValue);
 <a href=#180 id=180 data-nosnippet>180</a>        <span class="kw">let </span>source_value: BasicValueEnum&lt;<span class="lifetime">'_</span>&gt; = codegen::compile_as_ptr_value(context, source, <span class="prelude-val">None</span>);
 <a href=#181 id=181 data-nosnippet>181</a>        context.pop_current_codegen_location();
-<a href=#182 id=182 data-nosnippet>182</a>        source_value
-<a href=#183 id=183 data-nosnippet>183</a>    };
-<a href=#184 id=184 data-nosnippet>184</a>
-<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">let </span>ptr_value: PointerValue = source_value.into_pointer_value();
-<a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">let </span>ptr_type: <span class="kw-2">&amp;</span>Type = source.get_type_for_llvm();
-<a href=#187 id=187 data-nosnippet>187</a>
-<a href=#188 id=188 data-nosnippet>188</a>    <span class="kw">let </span>index: u32 = data
-<a href=#189 id=189 data-nosnippet>189</a>        .get_first_property()
-<a href=#190 id=190 data-nosnippet>190</a>        .unwrap_or_else(|| {
-<a href=#191 id=191 data-nosnippet>191</a>            abort::abort_codegen(
-<a href=#192 id=192 data-nosnippet>192</a>                context,
-<a href=#193 id=193 data-nosnippet>193</a>                <span class="string">"Failed to compile the property!"</span>,
-<a href=#194 id=194 data-nosnippet>194</a>                span,
-<a href=#195 id=195 data-nosnippet>195</a>                std::path::PathBuf::from(<span class="macro">file!</span>()),
-<a href=#196 id=196 data-nosnippet>196</a>                <span class="macro">line!</span>(),
-<a href=#197 id=197 data-nosnippet>197</a>            )
-<a href=#198 id=198 data-nosnippet>198</a>        })
-<a href=#199 id=199 data-nosnippet>199</a>        .get_index();
-<a href=#200 id=200 data-nosnippet>200</a>
-<a href=#201 id=201 data-nosnippet>201</a>    <span class="kw">let </span><span class="kw-2">mut </span>address: PointerValue =
-<a href=#202 id=202 data-nosnippet>202</a>        memory::gep_struct_anon(context, ptr_value, ptr_type, index, span);
-<a href=#203 id=203 data-nosnippet>203</a>
-<a href=#204 id=204 data-nosnippet>204</a>    <span class="kw">for </span>field <span class="kw">in </span>data.iter().skip(<span class="number">1</span>) {
-<a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">let </span>base_type: Type = field.get_base_type();
-<a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">let </span>index: u32 = field.get_index();
-<a href=#207 id=207 data-nosnippet>207</a>
-<a href=#208 id=208 data-nosnippet>208</a>        <span class="kw">let </span>property_type: BasicTypeEnum =
-<a href=#209 id=209 data-nosnippet>209</a>            typegeneration::generate_pointer_arithmetic_type(context, <span class="kw-2">&amp;</span>base_type);
-<a href=#210 id=210 data-nosnippet>210</a>
-<a href=#211 id=211 data-nosnippet>211</a>        address = llvm_builder
-<a href=#212 id=212 data-nosnippet>212</a>            .build_struct_gep(property_type, address, index, <span class="string">""</span>)
-<a href=#213 id=213 data-nosnippet>213</a>            .unwrap_or_else(|<span class="kw">_</span>| {
-<a href=#214 id=214 data-nosnippet>214</a>                abort::abort_codegen(
-<a href=#215 id=215 data-nosnippet>215</a>                    context,
-<a href=#216 id=216 data-nosnippet>216</a>                    <span class="string">"Failed to gep a value from pointer!"</span>,
-<a href=#217 id=217 data-nosnippet>217</a>                    span,
-<a href=#218 id=218 data-nosnippet>218</a>                    std::path::PathBuf::from(<span class="macro">file!</span>()),
-<a href=#219 id=219 data-nosnippet>219</a>                    <span class="macro">line!</span>(),
-<a href=#220 id=220 data-nosnippet>220</a>                )
-<a href=#221 id=221 data-nosnippet>221</a>            });
-<a href=#222 id=222 data-nosnippet>222</a>    }
-<a href=#223 id=223 data-nosnippet>223</a>
-<a href=#224 id=224 data-nosnippet>224</a>    <span class="kw">if </span>context.get_codegen_location().is_load_behavior() {
-<a href=#225 id=225 data-nosnippet>225</a>        <span class="kw">return </span>memory::load_pointer(context, address, span);
-<a href=#226 id=226 data-nosnippet>226</a>    }
+<a href=#182 id=182 data-nosnippet>182</a>
+<a href=#183 id=183 data-nosnippet>183</a>        source_value
+<a href=#184 id=184 data-nosnippet>184</a>    };
+<a href=#185 id=185 data-nosnippet>185</a>
+<a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">let </span>ptr_value: PointerValue = source_value.into_pointer_value();
+<a href=#187 id=187 data-nosnippet>187</a>    <span class="kw">let </span>ptr_type: <span class="kw-2">&amp;</span>Type = source.get_type_for_llvm();
+<a href=#188 id=188 data-nosnippet>188</a>
+<a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">let </span>index: u32 = data
+<a href=#190 id=190 data-nosnippet>190</a>        .get_first_property()
+<a href=#191 id=191 data-nosnippet>191</a>        .unwrap_or_else(|| {
+<a href=#192 id=192 data-nosnippet>192</a>            abort::abort_codegen(
+<a href=#193 id=193 data-nosnippet>193</a>                context,
+<a href=#194 id=194 data-nosnippet>194</a>                <span class="string">"Failed to compile the property!"</span>,
+<a href=#195 id=195 data-nosnippet>195</a>                span,
+<a href=#196 id=196 data-nosnippet>196</a>                std::path::PathBuf::from(<span class="macro">file!</span>()),
+<a href=#197 id=197 data-nosnippet>197</a>                <span class="macro">line!</span>(),
+<a href=#198 id=198 data-nosnippet>198</a>            )
+<a href=#199 id=199 data-nosnippet>199</a>        })
+<a href=#200 id=200 data-nosnippet>200</a>        .get_index();
+<a href=#201 id=201 data-nosnippet>201</a>
+<a href=#202 id=202 data-nosnippet>202</a>    <span class="kw">let </span><span class="kw-2">mut </span>address: PointerValue =
+<a href=#203 id=203 data-nosnippet>203</a>        memory::gep_struct_anon(context, ptr_value, ptr_type, index, span);
+<a href=#204 id=204 data-nosnippet>204</a>
+<a href=#205 id=205 data-nosnippet>205</a>    <span class="kw">for </span>field <span class="kw">in </span>data.iter().skip(<span class="number">1</span>) {
+<a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">let </span>base_type: Type = field.get_base_type();
+<a href=#207 id=207 data-nosnippet>207</a>        <span class="kw">let </span>index: u32 = field.get_index();
+<a href=#208 id=208 data-nosnippet>208</a>
+<a href=#209 id=209 data-nosnippet>209</a>        <span class="kw">let </span>property_type: BasicTypeEnum =
+<a href=#210 id=210 data-nosnippet>210</a>            typegeneration::generate_pointer_arithmetic_type(context, <span class="kw-2">&amp;</span>base_type);
+<a href=#211 id=211 data-nosnippet>211</a>
+<a href=#212 id=212 data-nosnippet>212</a>        address = llvm_builder
+<a href=#213 id=213 data-nosnippet>213</a>            .build_struct_gep(property_type, address, index, <span class="string">""</span>)
+<a href=#214 id=214 data-nosnippet>214</a>            .unwrap_or_else(|<span class="kw">_</span>| {
+<a href=#215 id=215 data-nosnippet>215</a>                abort::abort_codegen(
+<a href=#216 id=216 data-nosnippet>216</a>                    context,
+<a href=#217 id=217 data-nosnippet>217</a>                    <span class="string">"Failed to gep a value from pointer!"</span>,
+<a href=#218 id=218 data-nosnippet>218</a>                    span,
+<a href=#219 id=219 data-nosnippet>219</a>                    std::path::PathBuf::from(<span class="macro">file!</span>()),
+<a href=#220 id=220 data-nosnippet>220</a>                    <span class="macro">line!</span>(),
+<a href=#221 id=221 data-nosnippet>221</a>                )
+<a href=#222 id=222 data-nosnippet>222</a>            });
+<a href=#223 id=223 data-nosnippet>223</a>    }
+<a href=#224 id=224 data-nosnippet>224</a>
+<a href=#225 id=225 data-nosnippet>225</a>    <span class="kw">if </span>context.get_codegen_location().is_load_behavior() {
+<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">let </span>element_type: Type = ptr_type.calculate_index_type(<span class="number">1</span>).clone();
 <a href=#227 id=227 data-nosnippet>227</a>
-<a href=#228 id=228 data-nosnippet>228</a>    address.into()
-<a href=#229 id=229 data-nosnippet>229</a>}
+<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">if </span>element_type.is_ptr_like_type()
+<a href=#229 id=229 data-nosnippet>229</a>            &amp;&amp; !element_type.is_struct_type()
+<a href=#230 id=230 data-nosnippet>230</a>            &amp;&amp; !element_type.is_fixed_array_type()
+<a href=#231 id=231 data-nosnippet>231</a>            &amp;&amp; !element_type.is_array_type_with_inference()
+<a href=#232 id=232 data-nosnippet>232</a>        {
+<a href=#233 id=233 data-nosnippet>233</a>            <span class="kw">return </span>memory::load_pointer(context, address, span);
+<a href=#234 id=234 data-nosnippet>234</a>        } <span class="kw">else </span>{
+<a href=#235 id=235 data-nosnippet>235</a>            <span class="kw">return </span>address.into();
+<a href=#236 id=236 data-nosnippet>236</a>        }
+<a href=#237 id=237 data-nosnippet>237</a>    }
+<a href=#238 id=238 data-nosnippet>238</a>
+<a href=#239 id=239 data-nosnippet>239</a>    address.into()
+<a href=#240 id=240 data-nosnippet>240</a>}
 </code></pre></div></section></main></body></html>

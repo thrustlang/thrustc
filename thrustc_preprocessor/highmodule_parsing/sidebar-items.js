@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["compiletime_conditional","import"]};
+window.SIDEBAR_ITEMS = {"mod":["compiletime_conditional","import","import_c"]};

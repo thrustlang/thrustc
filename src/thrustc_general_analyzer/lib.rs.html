@@ -18,11 +18,11 @@
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{
-<a href=#21 id=21 data-nosnippet>21</a>    traits::{
-<a href=#22 id=22 data-nosnippet>22</a>        AstCodeLocation, AstConstantExtensions, AstGetType, AstMemoryExtensions,
-<a href=#23 id=23 data-nosnippet>23</a>        AstStandardExtensions,
-<a href=#24 id=24 data-nosnippet>24</a>    },
-<a href=#25 id=25 data-nosnippet>25</a>    Ast,
+<a href=#21 id=21 data-nosnippet>21</a>    Ast,
+<a href=#22 id=22 data-nosnippet>22</a>    traits::{
+<a href=#23 id=23 data-nosnippet>23</a>        AstCodeLocation, AstConstantExtensions, AstGetType, AstMemoryExtensions,
+<a href=#24 id=24 data-nosnippet>24</a>        AstStandardExtensions,
+<a href=#25 id=25 data-nosnippet>25</a>    },
 <a href=#26 id=26 data-nosnippet>26</a>};
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_diagnostician::Diagnostician;
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>thrustc_directive::FileOptions;
@@ -30,12 +30,12 @@
 <a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>thrustc_options::{CompilationUnit, CompilerOptions};
 <a href=#31 id=31 data-nosnippet>31</a>
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span>thrustc_code_location::Span;
-<a href=#33 id=33 data-nosnippet>33</a><span class="kw">use </span>thrustc_typesystem::{traits::TypeExtensions, Type};
+<a href=#33 id=33 data-nosnippet>33</a><span class="kw">use </span>thrustc_typesystem::{Type, traits::TypeExtensions};
 <a href=#34 id=34 data-nosnippet>34</a>
 <a href=#35 id=35 data-nosnippet>35</a><span class="kw">use </span><span class="kw">crate</span>::context::AnalyzerContext;
 <a href=#36 id=36 data-nosnippet>36</a>
 <a href=#37 id=37 data-nosnippet>37</a><span class="kw">mod </span>context;
-<a href=#38 id=38 data-nosnippet>38</a><span class="kw">mod </span>expressions;
+<a href=#38 id=38 data-nosnippet>38</a><span class="kw">mod </span>expr;
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a><span class="attr">#[derive(Debug)]
 <a href=#41 id=41 data-nosnippet>41</a></span><span class="kw">pub struct </span>GeneralAnalyzer&lt;<span class="lifetime">'analyzer</span>&gt; {
@@ -579,7 +579,7 @@
 <a href=#579 id=579 data-nosnippet>579</a>    }
 <a href=#580 id=580 data-nosnippet>580</a>
 <a href=#581 id=581 data-nosnippet>581</a>    <span class="kw">fn </span>analyze_expr_inner(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node: <span class="kw-2">&amp;</span><span class="lifetime">'analyzer </span>Ast) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilationIssue&gt; {
-<a href=#582 id=582 data-nosnippet>582</a>        expressions::validate_node(<span class="self">self</span>, node)
+<a href=#582 id=582 data-nosnippet>582</a>        expr::validate_node(<span class="self">self</span>, node)
 <a href=#583 id=583 data-nosnippet>583</a>    }
 <a href=#584 id=584 data-nosnippet>584</a>}
 <a href=#585 id=585 data-nosnippet>585</a>

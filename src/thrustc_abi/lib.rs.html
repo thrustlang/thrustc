@@ -49,10 +49,12 @@
 <a href=#49 id=49 data-nosnippet>49</a>    </span><span class="kw">pub fn </span>is_system_v(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 <a href=#50 id=50 data-nosnippet>50</a>        <span class="macro">matches!</span>(<span class="self">self</span>, <span class="self">Self</span>::SystemV)
 <a href=#51 id=51 data-nosnippet>51</a>    }
-<a href=#52 id=52 data-nosnippet>52</a>
-<a href=#53 id=53 data-nosnippet>53</a>    <span class="attr">#[inline]
-<a href=#54 id=54 data-nosnippet>54</a>    </span><span class="kw">pub fn </span>is_none(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#55 id=55 data-nosnippet>55</a>        <span class="macro">matches!</span>(<span class="self">self</span>, <span class="self">Self</span>::None)
-<a href=#56 id=56 data-nosnippet>56</a>    }
-<a href=#57 id=57 data-nosnippet>57</a>}
+<a href=#52 id=52 data-nosnippet>52</a>}
+<a href=#53 id=53 data-nosnippet>53</a>
+<a href=#54 id=54 data-nosnippet>54</a><span class="kw">impl </span>SpecificABI {
+<a href=#55 id=55 data-nosnippet>55</a>    <span class="attr">#[inline]
+<a href=#56 id=56 data-nosnippet>56</a>    </span><span class="kw">pub fn </span>is_none(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#57 id=57 data-nosnippet>57</a>        <span class="macro">matches!</span>(<span class="self">self</span>, <span class="self">Self</span>::None)
+<a href=#58 id=58 data-nosnippet>58</a>    }
+<a href=#59 id=59 data-nosnippet>59</a>}
 </code></pre></div></section></main></body></html>

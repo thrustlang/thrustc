@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["CompilationPhase","EmitableUnit","Emited","PrintableUnit"],"mod":["linkage"],"struct":["CompilationUnit","CompilerOptions"]};
+window.SIDEBAR_ITEMS = {"enum":["CompilationPhase","EmitableUnit","Emited","ImportCScope","PrintableUnit"],"mod":["linkage"],"struct":["CompilationUnit","CompilerOptions","EmitCBindingsOptions","ImportCOptions","TranslateCOptions"]};

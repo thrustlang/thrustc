@@ -18,22 +18,22 @@
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{
-<a href=#21 id=21 data-nosnippet>21</a>    traits::{AstAttributeExtensions, AstBaseReferenceExtensions, AstCodeLocation},
-<a href=#22 id=22 data-nosnippet>22</a>    Ast,
+<a href=#21 id=21 data-nosnippet>21</a>    Ast,
+<a href=#22 id=22 data-nosnippet>22</a>    traits::{AstAttributeExtensions, AstBaseReferenceExtensions, AstCodeLocation},
 <a href=#23 id=23 data-nosnippet>23</a>};
-<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributeComparator};
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>thrustc_attributes::{ThrustAttributeComparator, traits::ThrustAttributesExtensions};
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>thrustc_diagnostician::Diagnostician;
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_directive::FileOptions;
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>thrustc_errors::{CompilationIssue, CompilationIssueCode};
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>thrustc_options::{CompilationUnit, CompilerOptions};
-<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>thrustc_token_type::{traits::TokenTypeExtensions, TokenType};
+<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>thrustc_token_type::{TokenType, traits::TokenTypeExtensions};
 <a href=#31 id=31 data-nosnippet>31</a>
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span>ahash::AHashMap <span class="kw">as </span>HashMap;
 <a href=#33 id=33 data-nosnippet>33</a>
 <a href=#34 id=34 data-nosnippet>34</a><span class="kw">use </span><span class="kw">crate</span>::table::LinterSymbolsTable;
 <a href=#35 id=35 data-nosnippet>35</a>
-<a href=#36 id=36 data-nosnippet>36</a><span class="kw">mod </span>expressions;
+<a href=#36 id=36 data-nosnippet>36</a><span class="kw">mod </span>expr;
 <a href=#37 id=37 data-nosnippet>37</a><span class="kw">mod </span>table;
 <a href=#38 id=38 data-nosnippet>38</a>
 <a href=#39 id=39 data-nosnippet>39</a><span class="attr">#[derive(Debug)]
@@ -482,7 +482,7 @@
 <a href=#482 id=482 data-nosnippet>482</a>            <span class="kw">return</span>;
 <a href=#483 id=483 data-nosnippet>483</a>        }
 <a href=#484 id=484 data-nosnippet>484</a>
-<a href=#485 id=485 data-nosnippet>485</a>        expressions::analyze(<span class="self">self</span>, expr);
+<a href=#485 id=485 data-nosnippet>485</a>        expr::analyze(<span class="self">self</span>, expr);
 <a href=#486 id=486 data-nosnippet>486</a>
 <a href=#487 id=487 data-nosnippet>487</a>        <span class="self">self</span>.leave_node();
 <a href=#488 id=488 data-nosnippet>488</a>    }
