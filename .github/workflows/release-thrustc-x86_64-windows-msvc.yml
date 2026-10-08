@@ -109,6 +109,45 @@ jobs:
 
         working-directory: compiler-dependency-builder
 
+      - name: Inspecting LLVM libclang build outputs (diagnostic)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $LlvmBuild = Join-Path $env:APPDATA '.thrustlang/backends/llvm/build'
+          $LibDir = Join-Path $LlvmBuild 'lib'
+          $BinDir = Join-Path $LlvmBuild 'bin'
+          Write-Host "LLVM build dir: $LlvmBuild"
+          Write-Host "Exists build: $(Test-Path $LlvmBuild) | lib: $(Test-Path $LibDir) | bin: $(Test-Path $BinDir)"
+          if (-not (Test-Path $LlvmBuild)) {
+            Write-Host '::warning::LLVM build dir missing.'
+            exit 0
+          }
+          Write-Host '--- lib/libclang*.lib ---'
+          Get-ChildItem -Path $LibDir -File -Filter 'libclang*.lib' -ErrorAction SilentlyContinue | Select-Object Name, Length, LastWriteTime | Format-Table -AutoSize | Out-String | Write-Host
+          Write-Host '--- lib/clang*.lib (count + top 20) ---'
+          $clangLibs = @(Get-ChildItem -Path $LibDir -File -Filter 'clang*.lib' -ErrorAction SilentlyContinue)
+          Write-Host "count=$($clangLibs.Count)"
+          $clangLibs | Select-Object -First 20 Name, Length | Format-Table -AutoSize | Out-String | Write-Host
+          Write-Host '--- lib/LLVM*.lib (count + total bytes) ---'
+          $llvmLibs = @(Get-ChildItem -Path $LibDir -File -Filter 'LLVM*.lib' -ErrorAction SilentlyContinue)
+          $total = ($llvmLibs | Measure-Object -Property Length -Sum).Sum
+          Write-Host "count=$($llvmLibs.Count) totalBytes=$total"
+          $llvmLibs | Select-Object -First 20 Name, Length | Format-Table -AutoSize | Out-String | Write-Host
+          Write-Host '--- bin/llvm-config.exe + bin/libclang.dll ---'
+          foreach ($f in @((Join-Path $BinDir 'llvm-config.exe'), (Join-Path $BinDir 'libclang.dll'), (Join-Path $LibDir 'libclang.dll'))) {
+            Write-Host "$f exists=$(Test-Path $f)"
+          }
+          $llvmConfig = Join-Path $BinDir 'llvm-config.exe'
+          if (Test-Path $llvmConfig) {
+            try {
+              & $llvmConfig --version
+              (& $llvmConfig --libs) | Select-Object -First 1 | ForEach-Object { $_.Substring(0, [Math]::Min(2000, $_.Length)) } | Write-Host
+            } catch {
+              Write-Host "::warning::llvm-config failed: $($_.Exception.Message)"
+            }
+          }
+          exit 0
+
       - name: Installing and Configuring Build Cache
         run: |
           cargo install sccache
