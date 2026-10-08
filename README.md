@@ -4,12 +4,16 @@
 
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt= "standard-separator" style= "width: 1hv;"> </img>
 
-**Thrust Compiler** is a compiler that transfers the source code of Thrust files directly to the specified destination. The process includes static type analysis, code generation, optimizations, machine code compilation, and finally, emitting or linking.
+A general-purpose, statically typed systems programming language for writing verbose, accurate, and fast code.
+
+## What specific problem it solves?
+
+Thrust simplified C and C++ APIs in a better way that can be explained itself while integrating direct compiler control and convenience directly into the language itself.
+
+## Getting Started
 
 > [!IMPORTANT]  
 > The compiler is in an early development phase. It still hasn't made the major releases. There are still edge cases to be handled, and the compiler is under constant testing and fuzzing.
-
-## Getting Started
 
 ## Torio
 
@@ -28,12 +32,14 @@ If you don't want to build the project from scratch, you can check if there are 
 
 [Thrust Compiler - Github Releases](https://github.com/thrustlang/thrustc/releases)
 
-Supported operating systems and architectures:
+Supported platforms and architectures:
 
-- Linux x64 (GNU)
-- Windows x64 (MSVC) 
-- MacOS aarch64 (Apple Silicon)
-- MacOS x64 (Intel)
+| Platform | Architecture | Release tag |
+|---|---|---|
+| Linux Ubuntu GNU | x64 `x86_64-unknown-linux-gnu` | `thrustc-x86_64-linux-ubuntu-v*.*.*` |
+| Windows MSVC | x64 `x86_64-pc-windows-msvc` | `thrustc-x86_64-windows-msvc-v*.*.*` |
+| macOS Apple Silicon | aarch64 `aarch64-apple-darwin` | `thrustc-aarch64-macos-v*.*.*` |
+| macOS Intel | x64 `x86_64-apple-darwin` | `thrustc-x86_64-macos-v*.*.*` |
 
 ## From Scratch
 
