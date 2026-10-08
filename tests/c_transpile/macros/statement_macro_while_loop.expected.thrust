@@ -1,0 +1,11 @@
+fn countdown_five() s32 {
+    var k: s32 = 5;
+    __c_macro_COUNTDOWN[s32](ref k);
+    return (k) as s32;
+}
+fn __c_macro_COUNTDOWN[T1](n: ptr[T1]) void @alwaysInline {
+    while (n->[0]) > 0 {
+        n->[0] =  ((n->[0]) - 1) as T1;
+    }
+}
+

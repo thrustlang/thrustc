@@ -1,0 +1,7 @@
+fn __c_macro_ADDBASE2[T1](x: T1) T1 @alwaysInline {
+    return (((x) + 100)) as T1;
+}
+
+fn addbase_val() s32 {
+    return (((23) + 100)) as s32;
+}

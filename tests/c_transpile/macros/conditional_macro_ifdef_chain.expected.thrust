@@ -1,0 +1,3 @@
+fn picked_val() s32 {
+    return (20) as s32;
+}

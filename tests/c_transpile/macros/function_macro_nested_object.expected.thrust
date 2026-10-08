@@ -1,0 +1,10 @@
+fn __c_macro_ADDMB3[T1](x: T1) T1 @alwaysInline {
+    return ((((x) * 10) + 10)) as T1;
+}
+fn __c_macro_MULBASE3[T1](x: T1) T1 @alwaysInline {
+    return (((x) * 10)) as T1;
+}
+
+fn addmb_val() s32 {
+    return ((((5) * 10) + 10)) as s32;
+}

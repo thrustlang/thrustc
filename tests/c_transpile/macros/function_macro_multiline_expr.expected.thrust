@@ -1,0 +1,7 @@
+fn __c_macro_MLADD[T1, T2](a: T1, b: T2) T1 @alwaysInline {
+    return ((((a) + (b)))) as T1;
+}
+
+fn mladd_sum() s32 {
+    return ((((3) + (4)))) as s32;
+}

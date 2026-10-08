@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if half_nine() != 4 { return 1; }
+
+    return 0;
+}

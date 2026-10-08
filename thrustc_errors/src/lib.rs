@@ -1866,6 +1866,13 @@ Check the input file, include paths, defines, and the C standard."##,
         );
 
         explanations.insert(
+            CompilationIssueCode::E0112,
+            r##"The compiler could not infer the concrete type of a statement macro parameter while translating a C source file into Thrust (`--translate-c-to-thrust`).
+
+Give the parameter a typed context (for example a typed local declaration or a cast) so its type can be determined."##,
+        );
+
+        explanations.insert(
             CompilationIssueCode::W0100,
             r##"Clang emitted a diagnostic while importing a C header with `importC`. These messages are forwarded to help debug include paths, defines, and unsupported constructs."##,
         );
@@ -1966,6 +1973,7 @@ pub enum CompilationIssueCode {
     // translateC / transpiler
     E0110,
     E0111,
+    E0112,
 
     W0001,
     W0002,
@@ -2195,6 +2203,9 @@ impl CompilationIssueCode {
             CompilationIssueCode::E0111 => {
                 format!("C TRANSLATION CLANG ERROR - {}", "E0111".bright_red())
             }
+            CompilationIssueCode::E0112 => {
+                format!("C TRANSLATION MACRO TYPE UNRESOLVED - {}", "E0112".bright_red())
+            }
             CompilationIssueCode::W0001 => {
                 format!("IRRELEVANT ATTRIBUTE - {}", "W0001".bright_yellow())
             }
@@ -2394,6 +2405,7 @@ impl CompilationIssueCode {
 
             "E0110" => Ok(CompilationIssueCode::E0110),
             "E0111" => Ok(CompilationIssueCode::E0111),
+            "E0112" => Ok(CompilationIssueCode::E0112),
 
             "W0001" => Ok(CompilationIssueCode::W0001),
             "W0002" => Ok(CompilationIssueCode::W0002),

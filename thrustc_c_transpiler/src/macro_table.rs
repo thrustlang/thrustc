@@ -79,6 +79,7 @@ pub struct MacroTable {
     input_source_file: PathBuf,
     statement_macro_definitions: Vec<(String, Vec<String>, Vec<crate::macro_token::MacroToken>)>,
     function_like_macro_definitions: HashMap<String, MacroFunctionLikeDefinition>,
+    object_macro_definitions: HashMap<String, Vec<crate::macro_token::MacroToken>>,
     macro_definition_sites: HashMap<String, String>,
     macro_body_ranges: HashMap<String, (PathBuf, u32, u32)>,
     macro_expansion_sites: Vec<(String, String)>,
@@ -93,6 +94,7 @@ impl MacroTable {
             input_source_file,
             statement_macro_definitions: Vec::new(),
             function_like_macro_definitions: HashMap::new(),
+            object_macro_definitions: HashMap::new(),
             macro_definition_sites: HashMap::new(),
             macro_body_ranges: HashMap::new(),
             macro_expansion_sites: Vec::new(),
@@ -176,6 +178,25 @@ impl MacroTable {
         self.function_like_macro_definitions
             .get(macro_name)
             .cloned()
+    }
+
+    #[inline]
+    pub fn get_object_macro_definition(
+        &self,
+        macro_name: &str,
+    ) -> Option<Vec<crate::macro_token::MacroToken>> {
+        self.object_macro_definitions.get(macro_name).cloned()
+    }
+}
+
+impl MacroTable {
+    #[inline]
+    pub fn register_object_macro(
+        &mut self,
+        macro_name: String,
+        body: Vec<crate::macro_token::MacroToken>,
+    ) {
+        self.object_macro_definitions.insert(macro_name, body);
     }
 }
 

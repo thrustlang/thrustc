@@ -95,6 +95,7 @@ pub struct ForDecl {
 }
 
 impl ForDecl {
+    #[inline]
     pub fn new(ty: String, name: String, init: Option<MacroExpr>) -> Self {
         Self { ty, name, init }
     }
@@ -176,16 +177,20 @@ pub enum MacroStmt {
 }
 
 #[derive(Debug, Clone)]
-pub struct MacroNodeMeta {
+pub struct MacroNodeMetadata {
     kind: Type,
     span: Span,
 }
 
-impl MacroNodeMeta {
+impl MacroNodeMetadata {
+    #[inline]
     pub fn new(kind: Type, span: Span) -> Self {
         Self { kind, span }
     }
+}
 
+impl MacroNodeMetadata {
+    #[inline]
     pub fn unresolved(hint: &str, span: Span) -> Self {
         Self {
             kind: Type::Unresolved {
@@ -197,7 +202,7 @@ impl MacroNodeMeta {
     }
 }
 
-impl MacroNodeMeta {
+impl MacroNodeMetadata {
     #[inline]
     pub fn get_kind(&self) -> &Type {
         &self.kind
@@ -209,7 +214,7 @@ impl MacroNodeMeta {
     }
 }
 
-impl MacroNodeMeta {
+impl MacroNodeMetadata {
     #[inline]
     pub fn get_mut_kind(&mut self) -> &mut Type {
         &mut self.kind
@@ -224,11 +229,12 @@ impl MacroNodeMeta {
 #[derive(Debug, Clone)]
 pub struct MacroExprNode {
     expr: MacroExpr,
-    meta: MacroNodeMeta,
+    meta: MacroNodeMetadata,
 }
 
 impl MacroExprNode {
-    pub fn new(expr: MacroExpr, meta: MacroNodeMeta) -> Self {
+    #[inline]
+    pub fn new(expr: MacroExpr, meta: MacroNodeMetadata) -> Self {
         Self { expr, meta }
     }
 }
@@ -240,7 +246,7 @@ impl MacroExprNode {
     }
 
     #[inline]
-    pub fn get_meta(&self) -> &MacroNodeMeta {
+    pub fn get_meta(&self) -> &MacroNodeMetadata {
         &self.meta
     }
 }
@@ -252,7 +258,7 @@ impl MacroExprNode {
     }
 
     #[inline]
-    pub fn get_mut_meta(&mut self) -> &mut MacroNodeMeta {
+    pub fn get_mut_meta(&mut self) -> &mut MacroNodeMetadata {
         &mut self.meta
     }
 }
@@ -260,11 +266,12 @@ impl MacroExprNode {
 #[derive(Debug, Clone)]
 pub struct MacroStmtNode {
     stmt: MacroStmt,
-    meta: MacroNodeMeta,
+    meta: MacroNodeMetadata,
 }
 
 impl MacroStmtNode {
-    pub fn new(stmt: MacroStmt, meta: MacroNodeMeta) -> Self {
+    #[inline]
+    pub fn new(stmt: MacroStmt, meta: MacroNodeMetadata) -> Self {
         Self { stmt, meta }
     }
 }
@@ -276,7 +283,7 @@ impl MacroStmtNode {
     }
 
     #[inline]
-    pub fn get_meta(&self) -> &MacroNodeMeta {
+    pub fn get_meta(&self) -> &MacroNodeMetadata {
         &self.meta
     }
 }
@@ -288,7 +295,7 @@ impl MacroStmtNode {
     }
 
     #[inline]
-    pub fn get_mut_meta(&mut self) -> &mut MacroNodeMeta {
+    pub fn get_mut_meta(&mut self) -> &mut MacroNodeMetadata {
         &mut self.meta
     }
 }

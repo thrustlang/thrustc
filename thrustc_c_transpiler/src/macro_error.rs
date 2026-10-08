@@ -203,6 +203,28 @@ pub fn add_macro_error(
         ));
 }
 
+pub fn add_macro_parameter_type_error(
+    ctx: &mut crate::macros::MacroContext<'_>,
+    entity: &clang::Entity<'_>,
+    macro_name: &str,
+    parameter: &str,
+    span: Span,
+) {
+    let prefix: String = crate::macros::expansion_prefix(entity);
+    let origin: String = crate::macros::origin_note(entity);
+
+    ctx.get_mut_transpiler_context()
+        .add_macros_error(CompilationIssue::Error(
+            CompilationIssueCode::E0112,
+            format!(
+                "{prefix}Macro '{macro_name}' translation failed: could not infer the type of parameter '{parameter}'.{origin}"
+            ),
+            "Give the parameter a typed context (for example a typed local declaration or a cast) so its type can be determined.".to_string(),
+            None,
+            span,
+        ));
+}
+
 pub fn collapse_macro_site_errors(
     ctx: &mut crate::macros::MacroContext<'_>,
     site: &clang::Entity<'_>,

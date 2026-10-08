@@ -118,6 +118,17 @@ impl<'tokens> MacroStmtCursor<'tokens> {
 
         self.position = end + 1;
 
+        if let Some(multidecl) = Self::parse_multi_var_decl_simple(stmt_tokens)? {
+            if multidecl.len() == 1 {
+                return Ok(multidecl
+                    .into_iter()
+                    .next()
+                    .unwrap_or(MacroStmt::Compound(Vec::new())));
+            }
+
+            return Ok(MacroStmt::Compound(multidecl));
+        }
+
         if let Some(decl) = self::split_var_decl(stmt_tokens)? {
             let init: Option<MacroExpr> = if decl.2.is_empty() {
                 None
@@ -132,17 +143,6 @@ impl<'tokens> MacroStmtCursor<'tokens> {
                 name: decl.1,
                 init,
             });
-        }
-
-        if let Some(multidecl) = Self::parse_multi_var_decl_simple(stmt_tokens)? {
-            if multidecl.len() == 1 {
-                return Ok(multidecl
-                    .into_iter()
-                    .next()
-                    .unwrap_or(MacroStmt::Compound(Vec::new())));
-            }
-
-            return Ok(MacroStmt::Compound(multidecl));
         }
 
         let spellings: Vec<String> = crate::macro_token::texts(stmt_tokens);
@@ -677,7 +677,40 @@ impl<'tokens> MacroStmtCursor<'tokens> {
 }
 
 impl MacroStmt {
-    pub fn lower(&self, indent: usize) -> Result<Vec<String>, MacroLimit> {
+    pub fn lower(
+        &self,
+        ctx: &mut crate::macros::MacroContext,
+        indent: usize,
+    ) -> Result<Vec<String>, MacroLimit> {
+        let base: usize = ctx.pending_statements_len();
+
+        let mut out: Vec<String> = self.lower_body(ctx, indent)?;
+
+        let prelude: Vec<String> = ctx.take_pending_statements_since(base);
+
+        if !prelude.is_empty() {
+            let pad: String = "    ".repeat(indent);
+
+            let mut prefixed: Vec<String> = prelude
+                .into_iter()
+                .map(|line| format!("{pad}{line}"))
+                .collect();
+
+            prefixed.extend(out);
+
+            out = prefixed;
+        }
+
+        Ok(out)
+    }
+}
+
+impl MacroStmt {
+    fn lower_body(
+        &self,
+        ctx: &mut crate::macros::MacroContext,
+        indent: usize,
+    ) -> Result<Vec<String>, MacroLimit> {
         let pad: String = "    ".repeat(indent);
 
         match self {
@@ -686,7 +719,7 @@ impl MacroStmt {
 
                 if let Some(init) = init {
                     let init_text: String =
-                        crate::macro_expr::lower(init, crate::location::Location::RValue);
+                        crate::macro_expr::lower(ctx, init, crate::location::Location::RValue, ty);
 
                     Ok(vec![format!("{pad}var {clean}: {ty} = {init_text};")])
                 } else {
@@ -695,7 +728,7 @@ impl MacroStmt {
             }
 
             MacroStmt::Expr(expr) => {
-                let text: String = self.lower_inc_dec(expr);
+                let text: String = self.lower_inc_dec(ctx, expr);
 
                 Ok(vec![format!("{pad}{text};")])
             }
@@ -705,12 +738,12 @@ impl MacroStmt {
                 then_branch,
                 else_branch,
             } => {
-                let cond_text: String = self.lower_condition(cond);
+                let cond_text: String = self.lower_condition(ctx, cond);
 
                 let mut out: Vec<String> = vec![format!("{pad}if {cond_text} {{")];
 
                 for stmt in then_branch.iter() {
-                    out.extend(stmt.lower(indent + 1)?);
+                    out.extend(stmt.lower(ctx, indent + 1)?);
                 }
 
                 if else_branch.is_empty() {
@@ -719,7 +752,7 @@ impl MacroStmt {
                     out.push(format!("{pad}}} else {{"));
 
                     for stmt in else_branch.iter() {
-                        out.extend(stmt.lower(indent + 1)?);
+                        out.extend(stmt.lower(ctx, indent + 1)?);
                     }
 
                     out.push(format!("{pad}}}"));
@@ -729,12 +762,12 @@ impl MacroStmt {
             }
 
             MacroStmt::While { cond, body } => {
-                let cond_text: String = self.lower_condition(cond);
+                let cond_text: String = self.lower_condition(ctx, cond);
 
                 let mut out: Vec<String> = vec![format!("{pad}while {cond_text} {{")];
 
                 for stmt in body.iter() {
-                    out.extend(stmt.lower(indent + 1)?);
+                    out.extend(stmt.lower(ctx, indent + 1)?);
                 }
 
                 out.push(format!("{pad}}}"));
@@ -747,24 +780,24 @@ impl MacroStmt {
                     let mut out: Vec<String> = Vec::new();
 
                     for stmt in body.iter() {
-                        out.extend(stmt.lower(indent)?);
+                        out.extend(stmt.lower(ctx, indent)?);
                     }
 
                     return Ok(out);
                 }
 
-                let cond_text: String = self.lower_condition(cond);
+                let cond_text: String = self.lower_condition(ctx, cond);
 
                 let mut out: Vec<String> = Vec::new();
 
                 for stmt in body.iter() {
-                    out.extend(stmt.lower(indent)?);
+                    out.extend(stmt.lower(ctx, indent)?);
                 }
 
                 out.push(format!("{pad}while {cond_text} {{"));
 
                 for stmt in body.iter() {
-                    out.extend(stmt.lower(indent + 1)?);
+                    out.extend(stmt.lower(ctx, indent + 1)?);
                 }
 
                 out.push(format!("{pad}}}"));
@@ -777,13 +810,13 @@ impl MacroStmt {
                 cond,
                 inc,
                 body,
-            } => self.lower_for(indent, init.as_ref(), cond.as_ref(), inc.as_ref(), body),
+            } => self.lower_for(ctx, indent, init.as_ref(), cond.as_ref(), inc.as_ref(), body),
 
             MacroStmt::Compound(inner) => {
                 let mut out: Vec<String> = Vec::new();
 
                 for stmt in inner.iter() {
-                    out.extend(stmt.lower(indent)?);
+                    out.extend(stmt.lower(ctx, indent)?);
                 }
 
                 Ok(out)
@@ -795,6 +828,7 @@ impl MacroStmt {
 impl MacroStmt {
     fn lower_for(
         &self,
+        ctx: &mut crate::macros::MacroContext,
         indent: usize,
         init: Option<&ForInit>,
         cond: Option<&MacroExpr>,
@@ -807,7 +841,7 @@ impl MacroStmt {
             let mut out: Vec<String> = vec![format!("{pad}for ; ; {{")];
 
             for stmt in body.iter() {
-                out.extend(stmt.lower(indent + 1)?);
+                out.extend(stmt.lower(ctx, indent + 1)?);
             }
 
             out.push(format!("{pad}}}"));
@@ -820,7 +854,7 @@ impl MacroStmt {
 
             let init_text: String = if let Some(init) = init {
                 let value: String =
-                    crate::macro_expr::lower(init, crate::location::Location::RValue);
+                    crate::macro_expr::lower(ctx, init, crate::location::Location::RValue, ty);
 
                 format!("var {clean}: {ty} = {value}")
             } else {
@@ -828,16 +862,18 @@ impl MacroStmt {
             };
 
             let cond_text: String = cond
-                .map(|cond| self.lower_condition(cond))
+                .map(|cond| self.lower_condition(ctx, cond))
                 .unwrap_or_else(|| "true".to_string());
 
-            let inc_text: String = inc.map(|inc| self.lower_inc_dec(inc)).unwrap_or_default();
+            let inc_text: String = inc
+                .map(|inc| self.lower_inc_dec(ctx, inc))
+                .unwrap_or_default();
 
             let mut out: Vec<String> =
                 vec![format!("{pad}for {init_text}; {cond_text}; {inc_text}; {{")];
 
             for stmt in body.iter() {
-                out.extend(stmt.lower(indent + 1)?);
+                out.extend(stmt.lower(ctx, indent + 1)?);
             }
 
             out.push(format!("{pad}}}"));
@@ -852,8 +888,12 @@ impl MacroStmt {
                 let clean: String = crate::util::sanitize_thrust_identifier(decl.get_name());
 
                 if let Some(init) = decl.get_init() {
-                    let init_text: String =
-                        crate::macro_expr::lower(init, crate::location::Location::RValue);
+                    let init_text: String = crate::macro_expr::lower(
+                        ctx,
+                        init,
+                        crate::location::Location::RValue,
+                        decl.get_ty(),
+                    );
 
                     out.push(format!(
                         "{pad}var {clean}: {} = {init_text};",
@@ -865,17 +905,17 @@ impl MacroStmt {
             }
 
             let cond_text: String = cond
-                .map(|cond| self.lower_condition(cond))
+                .map(|cond| self.lower_condition(ctx, cond))
                 .unwrap_or_else(|| "true".to_string());
 
             out.push(format!("{pad}while {cond_text} {{"));
 
             for stmt in body.iter() {
-                out.extend(stmt.lower(indent + 1)?);
+                out.extend(stmt.lower(ctx, indent + 1)?);
             }
 
             if let Some(inc) = inc {
-                let inc_text: String = self.lower_inc_dec(inc);
+                let inc_text: String = self.lower_inc_dec(ctx, inc);
 
                 if !inc_text.is_empty() {
                     out.push(format!("{}    {inc_text};", pad));
@@ -890,23 +930,23 @@ impl MacroStmt {
         let mut out: Vec<String> = Vec::new();
 
         if let Some(ForInit::Expr(init)) = init {
-            let init_text: String = self.lower_inc_dec(init);
+            let init_text: String = self.lower_inc_dec(ctx, init);
 
             out.push(format!("{pad}{init_text};"));
         }
 
         let cond_text: String = cond
-            .map(|cond| self.lower_condition(cond))
+            .map(|cond| self.lower_condition(ctx, cond))
             .unwrap_or_else(|| "true".to_string());
 
         out.push(format!("{pad}while {cond_text} {{"));
 
         for stmt in body.iter() {
-            out.extend(stmt.lower(indent + 1)?);
+            out.extend(stmt.lower(ctx, indent + 1)?);
         }
 
         if let Some(inc) = inc {
-            let inc_text: String = self.lower_inc_dec(inc);
+            let inc_text: String = self.lower_inc_dec(ctx, inc);
 
             if !inc_text.is_empty() {
                 out.push(format!("{}    {inc_text};", pad));
@@ -920,7 +960,7 @@ impl MacroStmt {
 }
 
 impl MacroStmt {
-    fn lower_condition(&self, cond: &MacroExpr) -> String {
+    fn lower_condition(&self, ctx: &mut crate::macros::MacroContext, cond: &MacroExpr) -> String {
         if let MacroExpr::Binary { op, .. } = cond {
             if op == "=="
                 || op == "!="
@@ -931,25 +971,34 @@ impl MacroStmt {
                 || op == "&&"
                 || op == "||"
             {
-                return crate::macro_expr::lower(cond, crate::location::Location::RValue);
+                return crate::macro_expr::lower(
+                    ctx,
+                    cond,
+                    crate::location::Location::RValue,
+                    "bool",
+                );
             }
         }
 
         format!(
             "({}) != 0",
-            crate::macro_expr::lower(cond, crate::location::Location::RValue)
+            crate::macro_expr::lower(ctx, cond, crate::location::Location::RValue, "s32")
         )
     }
 }
 
 impl MacroStmt {
-    fn lower_inc_dec(&self, expr: &MacroExpr) -> String {
+    fn lower_inc_dec(&self, ctx: &mut crate::macros::MacroContext, expr: &MacroExpr) -> String {
         match expr {
             MacroExpr::Unary { op, arg }
                 if matches!(op, MacroUnOp::PreIncrement | MacroUnOp::PreDecrement) =>
             {
-                let arg_text: String =
-                    crate::macro_expr::lower(arg, crate::location::Location::LValue);
+                let arg_text: String = crate::macro_expr::lower(
+                    ctx,
+                    arg,
+                    crate::location::Location::LValue,
+                    "T1",
+                );
 
                 if matches!(op, MacroUnOp::PreIncrement) {
                     format!("{arg_text} += 1")
@@ -959,8 +1008,12 @@ impl MacroStmt {
             }
 
             MacroExpr::Postfix { op, arg } => {
-                let arg_text: String =
-                    crate::macro_expr::lower(arg, crate::location::Location::LValue);
+                let arg_text: String = crate::macro_expr::lower(
+                    ctx,
+                    arg,
+                    crate::location::Location::LValue,
+                    "T1",
+                );
 
                 match op {
                     crate::macro_ast::MacroPostOp::Increment => format!("{arg_text} += 1"),
@@ -968,7 +1021,7 @@ impl MacroStmt {
                 }
             }
 
-            _ => crate::macro_expr::lower(expr, crate::location::Location::RValue),
+            _ => crate::macro_expr::lower(ctx, expr, crate::location::Location::RValue, "T1"),
         }
     }
 }

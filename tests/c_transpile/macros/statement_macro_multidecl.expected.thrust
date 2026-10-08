@@ -1,0 +1,11 @@
+fn sum_two() s32 {
+    var r: s32 = 0;
+    __c_macro_SUM2[s32, s32, s32](5, 6, ref r);
+    return (r) as s32;
+}
+fn __c_macro_SUM2[T1, T2, T3](a: T1, b: T2, r: ptr[T3]) void @alwaysInline {
+    var t1: s32 = (a);
+    var t2: s32 = (b);
+    r->[0] =  (t1 + t2) as T3;
+}
+

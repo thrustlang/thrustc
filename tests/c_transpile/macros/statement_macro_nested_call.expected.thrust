@@ -4,7 +4,7 @@ fn __c_macro_INC[T1](x: T1) T1 @alwaysInline {
 
 fn statement_macro_nested_call() s32 {
     var value: s32 = 0;
-    __c_macro_ASSIGN_INC(ref value, 41);
+    __c_macro_ASSIGN_INC[s32, s32](ref value, 41);
     return (value) as s32;
 }
 fn __c_macro_ASSIGN_INC[T1, T2](dst: ptr[T1], src: T2) void @alwaysInline {

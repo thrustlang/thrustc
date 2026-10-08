@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if nested_seven(5) != 7 { return 1; }
+
+    return 0;
+}

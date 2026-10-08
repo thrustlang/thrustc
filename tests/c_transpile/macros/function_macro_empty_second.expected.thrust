@@ -3,5 +3,5 @@ fn __c_macro_SECOND[T1, T2](a: T1, b: T2) T1 @alwaysInline {
 }
 
 fn function_macro_empty_second() s32 {
-    return (2) as s32;
+    return ((2)) as s32;
 }

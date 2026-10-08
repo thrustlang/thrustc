@@ -1,0 +1,13 @@
+fn __c_macro_ADD2[T1](x: T1) T1 @alwaysInline {
+    return ((((x) + (1)) + (1))) as T1;
+}
+fn __c_macro_ADDONE2[T1](x: T1) T1 @alwaysInline {
+    return (((x) + (1))) as T1;
+}
+fn __c_macro_ONE2[T1]() T1 @alwaysInline {
+    return ((1)) as T1;
+}
+
+fn nested_seven(x: s32) s32 {
+    return ((((x) + (1)) + (1))) as s32;
+}

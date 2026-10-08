@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if negate_plus_size() != -1 { return 1; }
+
+    return 0;
+}

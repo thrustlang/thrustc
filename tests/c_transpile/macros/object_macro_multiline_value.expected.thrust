@@ -1,0 +1,3 @@
+fn mlval_thirty() s32 {
+    return (10 + 20) as s32;
+}

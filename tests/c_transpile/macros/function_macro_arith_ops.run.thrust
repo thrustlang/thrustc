@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if arith_ops(2) != 10 { return 1; }
+
+    return 0;
+}

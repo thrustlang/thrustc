@@ -3,5 +3,5 @@ fn __c_macro_ONE[T1]() T1 @alwaysInline {
 }
 
 fn function_macro_zero_args() s32 {
-    return (1) as s32;
+    return ((1)) as s32;
 }

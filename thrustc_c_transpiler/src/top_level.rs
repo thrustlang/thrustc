@@ -1838,7 +1838,7 @@ fn collect_mutated_parameter_names(
                 crate::macro_lex::extract_binary_operator(entity, &children[0], &children[1])
                     .map(|op| {
                         matches!(
-                            op,
+                            op.as_str(),
                             "=" | "+="
                                 | "-="
                                 | "*="

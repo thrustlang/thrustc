@@ -1,0 +1,7 @@
+fn __c_macro_ADD3[T1, T2, T3](a: T1, b: T2, c: T3) T1 @alwaysInline {
+    return (((a) + (b) + (c))) as T1;
+}
+
+fn add3_sums() s32 {
+    return (((1 + 1) + (2 + 2) + (3 + 3))) as s32;
+}

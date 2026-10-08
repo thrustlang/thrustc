@@ -1,0 +1,13 @@
+fn abs_neg_seven() s32 {
+    var k: s32 = -7;
+    __c_macro_ABSSET[s32](ref k);
+    return (k) as s32;
+}
+fn __c_macro_ABSSET[T1](x: ptr[T1]) void @alwaysInline {
+    if (x->[0]) < 0 {
+        x->[0] =  (- (x->[0])) as T1;
+    } else {
+        x->[0] =  ((x->[0])) as T1;
+    }
+}
+

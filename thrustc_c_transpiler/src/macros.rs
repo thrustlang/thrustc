@@ -177,6 +177,24 @@ pub fn append_translated_macro_consts(
                 format!("{C_MACRO_SYMBOL_PREFIX}{base}")
             };
 
+            let object_body: Vec<MacroToken> = macro_decl
+                .get_range()
+                .map(|range| {
+                    let tokens: Vec<MacroToken> = crate::macro_lex::to_macro_tokens(
+                        &range.tokenize(),
+                        MacroTokenOrigin::DefinitionBody,
+                    );
+
+                    match tokens.iter().position(|token| token.get_text() == raw_name) {
+                        Some(index) => tokens[index + 1..].to_vec(),
+                        None => Vec::new(),
+                    }
+                })
+                .unwrap_or_default();
+
+            ctx.get_mut_macro_table()
+                .register_object_macro(raw_name.clone(), object_body);
+
             if let Some(result) = macro_decl.evaluate() {
                 let translated: Option<(Type, BuiltinValue)> = match result {
                     clang::EvaluationResult::SignedInteger(value) => {
@@ -221,34 +239,6 @@ pub fn append_translated_macro_consts(
                     continue;
                 }
             }
-
-            let body_calls_code: bool = macro_decl
-                .get_range()
-                .map(|range| {
-                    range
-                        .tokenize()
-                        .into_iter()
-                        .map(|token| token.get_spelling())
-                        .any(|spelling| spelling == "(")
-                })
-                .unwrap_or(false);
-
-            let limit: MacroLimit = if body_calls_code {
-                MacroLimit::CallBodied
-            } else {
-                MacroLimit::ExpressionMalformed
-            };
-
-            let prefix: String = self::expansion_prefix(macro_decl);
-            let (detail, help) = crate::macro_error::get_macro_issue_help(&raw_name, limit);
-            crate::macro_error::add_macro_error(
-                ctx,
-                macro_decl,
-                &raw_name,
-                &format!("{prefix}{detail}"),
-                &help,
-                span,
-            );
         }
     }
 
@@ -285,7 +275,7 @@ pub fn append_translated_macro_consts(
                         crate::macro_expand::MacroExpansionContext::new_default();
 
                     let expanded_body: Vec<MacroToken> =
-                        match crate::macro_expand::expand_function_like_tokens(
+                        match crate::macro_expand::expand_function_tokens(
                             body,
                             ctx.get_macro_table(),
                             &mut expansion_context,
@@ -330,10 +320,20 @@ pub fn append_translated_macro_consts(
                         }
                     };
 
-                    let body_text: String = crate::macro_expr::lower_function_body(&parsed, "T1");
+                    let pending_base: usize = ctx.pending_statements_len();
 
-                    fns_out.push_str(&self::emit_function_like_macro_fn(
-                        raw_name, parameters, &body_text,
+                    let body_text: String =
+                        crate::macro_expr::lower_function_body(ctx, &parsed, "T1");
+
+                    let mut body_lines: Vec<String> =
+                        ctx.take_pending_statements_since(pending_base);
+
+                    body_lines.push(format!("return {body_text};"));
+
+                    fns_out.push_str(&self::emit_function_as_macro_fn(
+                        raw_name,
+                        parameters,
+                        &body_lines,
                     ));
 
                     *emitted_functions = emitted_functions.saturating_add(1);
@@ -374,13 +374,19 @@ pub fn append_translated_macro_consts(
     }
 }
 
+#[derive(Debug)]
+struct MacroParameterFlags {
+    mutable: HashSet<String>,
+    pointer: HashSet<String>,
+}
+
 fn build_statement_macro_function(
     ctx: &mut MacroContext<'_>,
     site: &clang::Entity<'_>,
     name: &str,
     parameters: &[String],
     args: &[Vec<MacroToken>],
-    mutable_parameters: &HashSet<String>,
+    flags: &MacroParameterFlags,
     span: Span,
 ) -> Option<String> {
     let function_name: String = {
@@ -417,11 +423,11 @@ fn build_statement_macro_function(
             None => self::translated_expanded_lines(ctx, site, name, parameters, args, span)?,
         };
 
-    if !mutable_parameters.is_empty() {
-        joined_lines = self::rewrite_mutable_parameter_uses(&joined_lines, mutable_parameters);
-        joined_lines = self::strip_parenthesized_mutable_lhs(&joined_lines, mutable_parameters);
+    if !flags.mutable.is_empty() {
+        joined_lines = self::rewrite_mutable_parameter_uses(&joined_lines, &flags.mutable);
+        joined_lines = self::strip_parenthesized_mutable_lhs(&joined_lines, &flags.mutable);
         joined_lines =
-            self::cast_mutable_parameter_assignments(&joined_lines, parameters, mutable_parameters);
+            self::cast_mutable_parameter_assignments(&joined_lines, parameters, &flags.mutable);
     }
 
     let type_names: Vec<String> = (1..=parameters.len())
@@ -434,7 +440,7 @@ fn build_statement_macro_function(
         .map(|(parameter, type_name)| {
             let parameter_name: String = { crate::util::sanitize_thrust_identifier(parameter) };
 
-            if mutable_parameters.contains(parameter) {
+            if flags.pointer.contains(parameter) {
                 format!("{parameter_name}: ptr[{type_name}]")
             } else {
                 format!("{parameter_name}: {type_name}")
@@ -458,7 +464,7 @@ fn build_statement_macro_function(
 }
 
 fn lowered_statement_lines(
-    ctx: &MacroContext<'_>,
+    ctx: &mut MacroContext<'_>,
     body_tokens: &[MacroToken],
     parameters: &[String],
     args: &[Vec<MacroToken>],
@@ -468,7 +474,7 @@ fn lowered_statement_lines(
     let mut expansion_context: crate::macro_expand::MacroExpansionContext =
         crate::macro_expand::MacroExpansionContext::new_default();
 
-    let expanded_tokens: Vec<MacroToken> = crate::macro_expand::expand_function_like_tokens(
+    let expanded_tokens: Vec<MacroToken> = crate::macro_expand::expand_function_tokens(
         &renamed,
         ctx.get_macro_table(),
         &mut expansion_context,
@@ -481,7 +487,7 @@ fn lowered_statement_lines(
     let mut lines: Vec<String> = Vec::new();
 
     for stmt in parsed.iter() {
-        lines.extend(stmt.lower(1).ok()?);
+        lines.extend(stmt.lower(ctx, 1).ok()?);
     }
 
     Some(lines)
@@ -685,6 +691,67 @@ fn parameter_token_is_written(tokens: &[MacroToken], index: usize) -> bool {
     false
 }
 
+fn detect_indexed_parameters(tokens: &[MacroToken], parameters: &[String]) -> HashSet<String> {
+    let mut indexed_parameters: HashSet<String> = HashSet::new();
+
+    for parameter in parameters.iter() {
+        for (index, token) in tokens.iter().enumerate() {
+            if token.get_text() != *parameter {
+                continue;
+            }
+
+            let mut probe: usize = index.saturating_add(1);
+
+            while tokens
+                .get(probe)
+                .is_some_and(|token| token.get_text() == ")")
+            {
+                probe = probe.saturating_add(1);
+            }
+
+            if tokens
+                .get(probe)
+                .is_some_and(|token| token.get_text() == "[")
+            {
+                indexed_parameters.insert(parameter.clone());
+                break;
+            }
+        }
+    }
+
+    indexed_parameters
+}
+
+fn detect_pointer_parameters(tokens: &[MacroToken], parameters: &[String]) -> HashSet<String> {
+    let mut pointer_parameters: HashSet<String> = HashSet::new();
+
+    for parameter in parameters.iter() {
+        for (index, token) in tokens.iter().enumerate() {
+            if token.get_text() != *parameter {
+                continue;
+            }
+
+            let mut probe: usize = index.saturating_add(1);
+
+            while tokens
+                .get(probe)
+                .is_some_and(|token| token.get_text() == ")")
+            {
+                probe = probe.saturating_add(1);
+            }
+
+            let next: Option<&str> = tokens.get(probe).map(|token| token.get_text());
+
+            if next == Some("[") || next == Some("->") {
+                pointer_parameters.insert(parameter.clone());
+                break;
+            }
+        }
+    }
+
+    pointer_parameters
+}
+
 fn rewrite_mutable_parameter_uses(lines: &str, mutable_parameters: &HashSet<String>) -> String {
     let tokens: Vec<MacroToken> =
         crate::macro_lex::lex_text_to_macro_tokens(lines, MacroTokenOrigin::FallbackLexed);
@@ -785,7 +852,10 @@ fn cast_mutable_parameter_assignments(
     out_lines.join("\n")
 }
 
-fn site_call_arguments(site: &clang::Entity<'_>, name: &str) -> Option<Vec<Vec<MacroToken>>> {
+fn site_call_arguments(
+    site: &clang::Entity<'_>,
+    name: &str,
+) -> Option<(Vec<Vec<MacroToken>>, u32)> {
     let range: clang::source::SourceRange<'_> = site.get_range()?;
 
     let location: clang::source::Location<'_> = range.get_start().get_expansion_location();
@@ -913,7 +983,7 @@ fn site_call_arguments(site: &clang::Entity<'_>, name: &str) -> Option<Vec<Vec<M
         args.push(macro_tokens);
     }
 
-    Some(args)
+    Some((args, u32::try_from(offset).ok()?))
 }
 
 fn skip_c_string(bytes: &[u8], start: usize) -> usize {
@@ -1002,7 +1072,7 @@ pub fn try_extract_statement_macro_call(
         return None;
     };
 
-    let Some(args) = self::site_call_arguments(site, &name) else {
+    let Some((args, _end)) = self::site_call_arguments(site, &name) else {
         crate::macro_error::add_macro_error(
             ctx,
             site,
@@ -1040,6 +1110,8 @@ pub fn try_extract_statement_macro_call(
 
     let mut arg_texts: Vec<String> = Vec::new();
 
+    let mut parsed_args: Vec<MacroExpr> = Vec::new();
+
     for arg_tokens in args.iter() {
         let arg_spellings: Vec<String> = crate::macro_token::texts(arg_tokens);
         let parsed: MacroExpr = match MacroCursor::parse(&arg_spellings) {
@@ -1062,20 +1134,91 @@ pub fn try_extract_statement_macro_call(
         };
 
         arg_texts.push(crate::macro_expr::lower(
+            ctx,
             &parsed,
             crate::location::Location::RValue,
+            "T1",
         ));
+
+        parsed_args.push(parsed);
     }
 
-    let mutable_parameters: HashSet<String> = ctx
+    let body_tokens: Vec<MacroToken> = ctx
         .get_macro_table()
         .get_body_macro_tokens(&name)
-        .as_ref()
-        .map(|tokens| self::detect_mutated_parameters(tokens, &parameters))
         .unwrap_or_default();
 
+    let mutable_parameters: HashSet<String> =
+        self::detect_mutated_parameters(&body_tokens, &parameters);
+
+    let pointer_parameters: HashSet<String> = {
+        let mut combined: HashSet<String> = mutable_parameters.clone();
+
+        combined.extend(self::detect_pointer_parameters(&body_tokens, &parameters));
+
+        combined
+    };
+
+    let indexed_parameters: HashSet<String> =
+        self::detect_indexed_parameters(&body_tokens, &parameters);
+
+    let expanded_body_tokens: Vec<MacroToken> = {
+        let mut expansion_context: crate::macro_expand::MacroExpansionContext =
+            crate::macro_expand::MacroExpansionContext::new_default();
+
+        crate::macro_expand::expand_function_tokens(
+            &body_tokens,
+            ctx.get_macro_table(),
+            &mut expansion_context,
+        )
+        .unwrap_or(body_tokens.clone())
+    };
+
+    let body_statements: Vec<crate::macro_ast::MacroStmt> =
+        match crate::macro_stmt::parse_statement_body_tokens(&expanded_body_tokens) {
+            Ok(statements) => statements,
+            Err(limit) => {
+                crate::macro_error::add_macro_error(
+                    ctx,
+                    site,
+                    &name,
+                    &format!(
+                        "Could not parse macro body for parameter type inference ({:?}).",
+                        limit
+                    ),
+                    "Simplify the macro body or extend macro parser coverage.",
+                    span,
+                );
+
+                return None;
+            }
+        };
+
+    let seeds: Vec<Option<crate::macro_type::InferredType>> = parsed_args
+        .iter()
+        .map(crate::macro_type::MacroType::literal_argument_type)
+        .collect();
+
+    let type_args: Vec<String> = match crate::macro_type::MacroType::infer_parameter_types(
+        &parameters,
+        &body_statements,
+        &seeds,
+    ) {
+        Ok(type_args) => type_args,
+        Err(parameter) => {
+            crate::macro_error::add_macro_parameter_type_error(ctx, site, &name, &parameter, span);
+
+            return None;
+        }
+    };
+
     for (index, argument_text) in arg_texts.iter_mut().enumerate() {
-        if !mutable_parameters.contains(&parameters[index]) {
+        if !pointer_parameters.contains(&parameters[index]) {
+            continue;
+        }
+
+        if indexed_parameters.contains(&parameters[index]) {
+            *argument_text = format!("{argument_text} as ptr[{}]", type_args[index]);
             continue;
         }
 
@@ -1086,7 +1229,11 @@ pub fn try_extract_statement_macro_call(
         *argument_text = format!("ref {argument_text}");
     }
 
-    let call_text: String = format!("{function_name}({})", arg_texts.join(", "));
+    let call_text: String = format!(
+        "{function_name}[{}]({})",
+        type_args.join(", "),
+        arg_texts.join(", ")
+    );
 
     let lowered_args: Vec<Vec<MacroToken>> = arg_texts
         .iter()
@@ -1124,7 +1271,10 @@ pub fn try_extract_statement_macro_call(
         &name,
         &parameters,
         &lowered_args,
-        &mutable_parameters,
+        &MacroParameterFlags {
+            mutable: mutable_parameters,
+            pointer: pointer_parameters,
+        },
         span,
     );
 
@@ -1149,6 +1299,78 @@ pub fn try_extract_statement_macro_call(
         .mark_statement_macro_function_emitted(&name);
 
     Some(call_text)
+}
+
+pub fn try_extract_expression_macro_call(
+    ctx: &mut MacroContext<'_>,
+    site: &clang::Entity<'_>,
+    span: Span,
+) -> Option<String> {
+    // clang collapses the source extents of every node produced by a
+    // function-like macro expansion onto the invocation site, which makes the
+    // expanded AST unusable for reconstructing operators and precedence. Route
+    // the invocation through the macro engine instead: substitute the
+    // invocation arguments into the macro body and lower the parsed body, so
+    // every operator is resolved by the internal parser.
+    let key: String = crate::macro_table::MacroTable::make_location_key(site)?;
+
+    let name: String = ctx.get_macro_table().find_macro_name(&key)?;
+
+    let definition = ctx.get_macro_table().get_function_like_definition(&name)?;
+
+    if definition.get_kind() != crate::macro_table::MacroFunctionLikeKind::PureFunction {
+        return None;
+    }
+
+    let parameters: Vec<String> = definition.get_parameters().to_vec();
+    let body: Vec<MacroToken> = definition.get_body().to_vec();
+
+    let (args, invocation_end): (Vec<Vec<MacroToken>>, u32) =
+        self::site_call_arguments(site, &name)?;
+
+    // Only treat the entity as the macro invocation when its expansion extent
+    // matches the invocation exactly; otherwise this is a larger expression
+    // that merely contains the invocation.
+    let entity_end: u32 = site.get_range()?.get_end().get_expansion_location().offset;
+
+    if entity_end != invocation_end {
+        return None;
+    }
+
+    if args.len() != parameters.len() {
+        return None;
+    }
+
+    let renamed: Vec<MacroToken> = self::substitute_tokens(&body, &parameters, &args)?;
+
+    let mut expansion_context: crate::macro_expand::MacroExpansionContext =
+        crate::macro_expand::MacroExpansionContext::new_default();
+
+    let expanded: Vec<MacroToken> = crate::macro_expand::expand_function_tokens(
+        &renamed,
+        ctx.get_macro_table(),
+        &mut expansion_context,
+    )
+    .ok()?;
+
+    let spellings: Vec<String> = crate::macro_token::texts(&expanded);
+
+    let parsed: MacroExpr = MacroCursor::parse(&spellings).ok()?;
+
+    let prefix: String = self::expansion_prefix(site);
+
+    let result_type: String = site
+        .get_type()
+        .map(|ty| crate::type_format::format_clang_type_thrust(&ty, ctx, &prefix, span))
+        .filter(|text| !text.is_empty())
+        .unwrap_or_else(|| "s32".to_string());
+
+    Some(crate::macro_expr::lower(
+        ctx,
+        &parsed,
+        crate::location::Location::RValue,
+        &result_type,
+    ))
 }
 
 pub fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(String, MacroKind)> {
@@ -1309,7 +1531,11 @@ pub fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(String, Ma
     ))
 }
 
-pub fn emit_function_like_macro_fn(name: &str, parameters: &[String], body_text: &str) -> String {
+pub fn emit_function_as_macro_fn(
+    name: &str,
+    parameters: &[String],
+    body_lines: &[String],
+) -> String {
     let type_names: Vec<String> = if parameters.is_empty() {
         vec!["T1".to_string()]
     } else {
@@ -1342,9 +1568,15 @@ pub fn emit_function_like_macro_fn(name: &str, parameters: &[String], body_text:
     out.push_str(&type_names.join(", "));
     out.push_str("](");
     out.push_str(&parameter_texts.join(", "));
-    out.push_str(") T1 @alwaysInline {\n    return ");
-    out.push_str(body_text);
-    out.push_str(";\n}\n");
+    out.push_str(") T1 @alwaysInline {\n");
+
+    for line in body_lines.iter() {
+        out.push_str("    ");
+        out.push_str(line);
+        out.push('\n');
+    }
+
+    out.push_str("}\n");
 
     out
 }

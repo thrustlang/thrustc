@@ -1,0 +1,10 @@
+fn __c_macro_NEGATE[T1](x: T1) T1 @alwaysInline {
+    return ((-(x))) as T1;
+}
+fn __c_macro_SZINT[T1]() T1 @alwaysInline {
+    return (((abiSizeOf(s32)) as s32)) as T1;
+}
+
+fn negate_plus_size() s32 {
+    return ((-(5)) + ((abiSizeOf(s32)) as s32)) as s32;
+}

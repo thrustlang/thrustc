@@ -1,0 +1,7 @@
+fn __c_macro_HALF[T1](x: T1) T1 @alwaysInline {
+    return (((((x) / 2)) as s32)) as T1;
+}
+
+fn half_nine() s32 {
+    return (((((9) / 2)) as s32)) as s32;
+}

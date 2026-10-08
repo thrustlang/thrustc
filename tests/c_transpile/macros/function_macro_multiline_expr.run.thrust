@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if mladd_sum() != 7 { return 1; }
+
+    return 0;
+}

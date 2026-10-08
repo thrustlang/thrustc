@@ -201,9 +201,16 @@ pub fn translate_single_c_to_thrust(
         span,
     );
 
+    let had_errors: bool = macro_ctx.get_mut_transpiler_context().has_errors()
+        || macro_ctx.get_mut_transpiler_context().has_macros_errors();
+
     issues.extend(macro_ctx.get_mut_transpiler_context().take_warnings());
     issues.extend(macro_ctx.get_mut_transpiler_context().take_errors());
     issues.extend(macro_ctx.get_mut_transpiler_context().take_macros_errors());
+
+    if had_errors {
+        return Err(issues);
+    }
 
     let output_path: PathBuf = translate_opts
         .output()

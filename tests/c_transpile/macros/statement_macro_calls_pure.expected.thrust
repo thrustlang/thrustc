@@ -1,0 +1,13 @@
+fn __c_macro_DOUBLE2[T1](x: T1) T1 @alwaysInline {
+    return (((x) * 2)) as T1;
+}
+
+fn apply_dbl_four() s32 {
+    var k: s32 = 4;
+    __c_macro_APPLY_DBL[s32](ref k);
+    return (k) as s32;
+}
+fn __c_macro_APPLY_DBL[T1](y: ptr[T1]) void @alwaysInline {
+    y->[0] =  (((y->[0]) * 2)) as T1;
+}
+

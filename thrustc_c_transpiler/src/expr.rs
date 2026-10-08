@@ -30,6 +30,12 @@ pub fn translate_expr(
 ) -> String {
     let prefix: String = crate::macros::expansion_prefix(entity);
 
+    if let Some(expression_text) =
+        crate::macros::try_extract_expression_macro_call(macro_ctx, entity, span)
+    {
+        return expression_text;
+    }
+
     match entity.get_kind() {
         clang::EntityKind::IntegerLiteral
         | clang::EntityKind::FloatingLiteral
@@ -894,6 +900,7 @@ pub fn translate_expr(
                             crate::macro_lex::extract_binary_operator_from_tokens(
                                 &crate::macro_lex::range_spellings(&range, entity),
                             )
+                            .map(|operator| operator.to_string())
                         })
                     })
             else {
@@ -926,33 +933,31 @@ pub fn translate_expr(
             }
 
             let is_assignment: bool = matches!(
-                op,
+                op.as_str(),
                 "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>="
             );
 
-            let right: String = if is_assignment {
-                if let Some(lhs_type) = children[0].get_type() {
-                    let is_pointer_assign: bool =
-                        matches!(op, "+=" | "-=" | "<<=" | ">>=" | "&=" | "|=" | "^=")
-                            && lhs_type.get_canonical_type().get_kind() == clang::TypeKind::Pointer;
+            let mut right: String = right;
 
-                    if is_pointer_assign {
-                        right
-                    } else {
-                        crate::type_format::cast_expression_to_type(
+            if is_assignment {
+                if let Some(lhs_type) = children[0].get_type() {
+                    let is_pointer_assign: bool = matches!(
+                        op.as_str(),
+                        "+=" | "-=" | "<<=" | ">>=" | "&=" | "|=" | "^="
+                    ) && lhs_type.get_canonical_type().get_kind()
+                        == clang::TypeKind::Pointer;
+
+                    if !is_pointer_assign {
+                        right = crate::type_format::cast_expression_to_type(
                             &children[1],
                             right,
                             &lhs_type,
                             span,
                             macro_ctx,
-                        )
+                        );
                     }
-                } else {
-                    right
                 }
-            } else {
-                right
-            };
+            }
 
             format!("{left} {op} {right}")
         }
@@ -974,6 +979,7 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
+
                 return Default::default();
             };
 
@@ -987,6 +993,7 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
+
                 return Default::default();
             };
 
@@ -1018,6 +1025,7 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
+
                 return Default::default();
             }
 
@@ -1114,6 +1122,7 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
+
                 return Default::default();
             };
 
@@ -1133,6 +1142,7 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
+
                 return Default::default();
             };
 
@@ -1154,6 +1164,7 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
+
                 return Default::default();
             }
 
@@ -1373,6 +1384,7 @@ pub fn translate_condition_expr(
                             crate::macro_lex::extract_binary_operator_from_tokens(
                                 &crate::macro_lex::range_spellings(&range, entity),
                             )
+                            .map(|operator| operator.to_string())
                         })
                     })
             else {
@@ -1388,10 +1400,11 @@ pub fn translate_condition_expr(
                         None,
                         span,
                     ));
+
                 return Default::default();
             };
 
-            if matches!(op, "&&" | "||") {
+            if matches!(op.as_str(), "&&" | "||") {
                 let left: String =
                     self::translate_condition_expr(&children[0], span, ctx, macro_ctx);
                 let right: String =
@@ -1400,7 +1413,7 @@ pub fn translate_condition_expr(
                 return format!("({left}) {op} ({right})");
             }
 
-            if matches!(op, "==" | "!=" | "<" | "<=" | ">" | ">=") {
+            if matches!(op.as_str(), "==" | "!=" | "<" | "<=" | ">" | ">=") {
                 let left_type: Option<clang::Type<'_>> = children[0].get_type();
                 let right_type: Option<clang::Type<'_>> = children[1].get_type();
                 let left_char: bool = left_type.as_ref().is_some_and(|ty| {
@@ -1578,6 +1591,7 @@ fn translate_decl_ref_expr(
                 None,
                 span,
             ));
+
         return Default::default();
     };
 

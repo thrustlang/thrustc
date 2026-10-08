@@ -15,5 +15,5 @@ fn function_macro(x: s32) s32 {
     }
     var memo_function_macro_1: s32 = count_function_macro_1;
     count_function_macro_1 = memo_function_macro_1;
-    return (x + 1) as s32;
+    return (((x) + (1))) as s32;
 }

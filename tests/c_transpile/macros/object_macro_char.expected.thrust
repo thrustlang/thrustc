@@ -1,0 +1,3 @@
+fn letter_code() s32 {
+    return ('A') as s32;
+}

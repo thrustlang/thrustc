@@ -173,7 +173,8 @@ pub fn parse_invocation_arguments(
     Err(MacroLimit::UnexpectedEndOfTokens)
 }
 
-pub fn expand_function_like_tokens(
+#[inline]
+pub fn expand_function_tokens(
     tokens: &[MacroToken],
     table: &MacroTable,
     context: &mut MacroExpansionContext,
@@ -208,6 +209,22 @@ pub fn rescan_tokens(
 
             let Some(definition) = table.get_function_like_definition_cloned(token.get_text())
             else {
+                if let Some(object_body) = table.get_object_macro_definition(token.get_text()) {
+                    context.try_enter(token.get_text())?;
+
+                    let rescanned_object: Result<Vec<MacroToken>, MacroLimit> =
+                        self::rescan_tokens(&object_body, table, context);
+
+                    context.leave();
+
+                    output.extend(rescanned_object?);
+
+                    index += 1;
+                    changed = true;
+
+                    continue;
+                }
+
                 output.push(token.clone());
                 index += 1;
                 continue;

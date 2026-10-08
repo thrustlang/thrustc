@@ -1,0 +1,12 @@
+fn fill_sum() s32 {
+    var arr: array[s32; 2];
+    arr->[0] = 0;
+    arr->[1] = 0;
+    __c_macro_FILL2[s32](arr as ptr[s32]);
+    return (arr->[0] + arr->[1]) as s32;
+}
+fn __c_macro_FILL2[T1](p: ptr[T1]) void @alwaysInline {
+    p->[0] = 10;
+    p->[1] = 20;
+}
+

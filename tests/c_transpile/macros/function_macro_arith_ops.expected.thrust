@@ -1,0 +1,7 @@
+fn __c_macro_MULADD[T1, T2, T3](a: T1, b: T2, c: T3) T1 @alwaysInline {
+    return (((a) * (b) + (c))) as T1;
+}
+
+fn arith_ops(x: s32) s32 {
+    return (((x) * (3) + (4))) as s32;
+}
