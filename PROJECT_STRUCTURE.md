@@ -15,27 +15,30 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
 ### Entry Point and CLI
 
 - **`thrustc`**  
-  Main binary entry point. Contains only `main.rs` and delegates everything to `thrustc_core`.
+  Main binary entry point. Delegates everything to `thrustc_core`.
 
 - **`thrustc_cli`**  
-  Command-line interface helpers and argument parsing utilities (`help.rs`, `lib.rs`).
+  Command-line interface helpers and argument parsing utilities.
 
 - **`thrustc_lsp`**  
   Language server binary for editor integrations. It communicates through the Language Server Protocol over stdio and ships with the compiler releases.
 
 - **`thrustc_options`**  
-  Compiler configuration and command-line options: backends, optimization levels, debug information, linkage, and target settings (`lib.rs`, `linkage.rs`).
+  Compiler configuration and command-line options: backends, optimization levels, debug information, linkage, and target settings.
 
 ### Core Infrastructure
 
 - **`thrustc_core`**  
-  Central driver of the compiler. Manages the compilation pipeline with lifecycle stages: `starter`, `cleaner`, `finisher`, and `validate`. Contains emission (`emitters/` for AST, LLVM IR, tokens, assembler, bitcode, and object files), printing (`printers/`), linkage, and interrupt handling.
+  Central driver of the compiler. Manages the compilation pipeline with lifecycle stages for start, clean, finish, and validation. Contains emission for AST, LLVM IR, tokens, assembler, bitcode, and object files, plus printing, linkage, and interrupt handling.
 
 - **`thrustc_diagnostician`**  
-  Diagnostic and error reporting system with source positions and pretty-printed messages (`diagnostic.rs`, `position.rs`, `printers.rs`, `errors.rs`, `config.rs`).
+  Diagnostic and error reporting system with source positions and pretty-printed messages.
 
 - **`thrustc_errors`**  
-  Internal error types and utilities.
+  Internal error types and utilities. Derive support lives in `thrustc_errors_macros`.
+
+- **`thrustc_errors_macros`**  
+  Procedural macros supporting `thrustc_errors`.
 
 - **`thrustc_logging`**  
   Structured logging for compiler internals.
@@ -46,7 +49,7 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
 ### Frontend: Lexing and Parsing
 
 - **`thrustc_lexer`**  
-  Handwritten lexer supporting identifiers, numbers, strings, characters, and language-specific rules (`lex.rs`, `identifier.rs`, `number.rs`, `string.rs`, `character.rs`).
+  Handwritten lexer supporting identifiers, numbers, strings, characters, and language-specific rules.
 
 - **`thrustc_reader`**  
   Source file reading and input management.
@@ -58,10 +61,10 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
   Source span and location tracking used throughout the compiler.
 
 - **`thrustc_preprocessor`**  
-  Preprocessor for modules, imports, and early processing of source code. Handles high-level module parsing (`highmodule_parsing/`), submodule parsing (`submodule_parsing/`), module tables, signatures, the standard library resolver (`std_library.rs`), and compile-time conditionals.
+  Preprocessor for modules, imports, and early processing of source code. Handles high-level and submodule parsing, module tables, signatures, the standard library resolver, and compile-time conditionals.
 
 - **`thrustc_parser`**  
-  Handwritten recursive descent parser with layered precedence climbing. Parses expressions (`expressions/` with 14 precedence levels), statements (`statements/`), top-level declarations (`toplevel/`), attributes (`@...`), modificators, and imports.
+  Handwritten recursive descent parser with layered precedence climbing. Parses expressions with precedence levels, statements, top-level declarations, attributes, modificators, and imports.
 
 - **`thrustc_parser_context`**  
   Context state maintained by the parser during recursive descent.
@@ -72,7 +75,7 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
 ### Frontend: AST
 
 - **`thrustc_ast`**  
-  Abstract Syntax Tree definitions, node types, visitor traits (`traits.rs`), metadata (`ast_metadata.rs`), builtins (`ast_builtins.rs`), logic data (`ast_logic_data.rs`), and implementations (`impls/`).
+  Abstract Syntax Tree definitions, node types, visitor traits, metadata, builtins, and logic data.
 
 - **`thrustc_ast_external`**  
   Thin re-export layer that exposes selected AST types to other crates without circular dependencies.
@@ -86,7 +89,10 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
 ### Builtins
 
 - **`thrustc_builtins`**  
-  Compile-time builtin system used by the parser and preprocessor. Provides a registry (`registry.rs`) with builtins for `sizeof`, `alignof`, `layout`, `target`, `predicates`, and `location`, plus compile-time conditionals (`builtins/compile_time.rs`), value and argument plumbing (`value.rs`), type info (`builtin_type.rs`), and traits (`traits.rs`).
+  Compile-time builtin system used by the parser and preprocessor. Provides a registry with builtins for size, alignment, layout, target, predicates, and location, plus value plumbing, type info, and traits. Compile-time folding itself lives in `thrustc_compile_time`.
+
+- **`thrustc_compile_time`**  
+  Shared compile-time value evaluation used by the frontend and the C import pipeline.
 
 ### Semantic Analysis and Middle-end
 
@@ -97,25 +103,33 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
   Complete type system: arrays, fixed arrays, pointers, structures, function references, casting, inference, layout, modifiers, precedence, location, indexation, and dereference.
 
 - **`thrustc_typechecker`**  
-  Main type checker with type inference for expressions (`expressions/`), operations (`operations/`), top-level declarations (`toplevel/`), metadata, and support utilities.
+  Main type checker with type inference for expressions, operations, top-level declarations, and metadata.
 
 - **`thrustc_generics`**  
-  Generic type resolution and substitution: parameter solving (`solve.rs`), type and AST substitution (`substitution.rs`), generic scope (`scope.rs`), pending instantiations (`pending.rs`).
+  Generic type resolution and substitution over parameters, types, scopes, and pending instantiations.
 
 - **`thrustc_generics_monomorphization`**  
-  Parser-level monomorphization driver for generics: resolves generic calls and instantiates concrete templates during parsing (`generics.rs`), with its own parser-light context (`context.rs`).
+  Parser-level monomorphization driver for generics: resolves generic calls and instantiates concrete templates during parsing.
 
 - **`thrustc_import_synthesis`**  
-  Import resolution and synthesis: resolves qualified module symbols (`resolve_signature`, `resolve_qualified_generic`), synthesizes imported functions, intrinsics, constants, statics, structs, enums and custom types, and handles import collisions and deallocators (`synthesis.rs`), with its own parser-light context (`context.rs`).
+  Import resolution and synthesis for functions, intrinsics, constants, statics, structs, enums and custom types, including collision handling. Thrust-side counterpart of `thrustc_c_import_synthesis`.
+
+### C Interop: Import and Transpilation
+
+- **`thrustc_c_import_synthesis`**  
+  C declaration import pipeline. Thrust-side counterpart handling for C functions, types, records, and macros.
+
+- **`thrustc_c_transpiler`**  
+  C to Thrust transpiler behind `--import-c`, `--translate-c-*`, and `--emit-c-bindings-*`.
 
 - **`thrustc_general_analyzer`**  
   General static analysis with context and expression visitors.
 
 - **`thrustc_linter`**  
-  Static linter for style and best-practice warnings (expressions, table).
+  Static linter for style and best-practice warnings.
 
 - **`thrustc_entities`**  
-  Shared entities consumed by the analyzer, parser, typechecker, and linter (`analyzer_entities.rs`, `parser_entities.rs`, `typechecker_entities.rs`, `linter_entities.rs`).
+  Shared entities consumed by the analyzer, parser, typechecker, and linter.
 
 - **`thrustc_semantic_analysis`**  
   General semantic analysis layer.
@@ -135,13 +149,16 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
 ### LLVM Backend
 
 - **`thrustc_llvm_codegen`**  
-  Primary code generation backend. Uses the LLVM C API directly with custom wrappers. Supports expressions (`expressions/` with binary operations, calls, structs, arrays, inline asm, literals), statements (`statements/` with conditionals and loops), top-level codegen (`toplevel/` with functions, intrinsics, asm functions), memory management (heap, stack, static), JIT, optimization, debug info, atomic operations, type generation, type casting, and attribute building.
+  Primary code generation backend over the LLVM C API with custom wrappers. Covers expressions, statements, top-level codegen, heap, stack and static memory, JIT, optimization, debug info, type generation, type casting, and attribute building. Atomic and variadic lowering live in the sibling crates below.
 
 - **`thrustc_llvm_codegen_variatic`**  
-  Variadic function code generation used by `thrustc_llvm_codegen`. Handles variadic lowering, `va_list` kinds (`va_list_kind.rs`), context propagation (`context.rs`), and abort handling (`abort.rs`).
+  Variadic function code generation used by `thrustc_llvm_codegen`.
+
+- **`thrustc_llvm_codegen_atomic`**  
+  Atomic operation code generation used by `thrustc_llvm_codegen`.
 
 - **`thrustc_llvm_target_triple`**  
-  Helper for working with LLVM target triples. It offers architecture queries (`supports_f80`, `supports_ppc128`, `is_64_bit`, and others).
+  Helper for working with LLVM target triples and architecture queries.
 
 - **`thrustc_llvm_attribute_architecture`**  
   Applies target architecture calling conventions to LLVM functions and call sites after code generation.
@@ -171,7 +188,7 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
   ABI data representation utilities.
 
 - **`thrustc_llvm_linker_driver`**  
-  Linker driver integration with platform-specific linkers (`linux_finders.rs`).
+  Linker driver integration with platform-specific linkers.
 
 ### Backend Abstraction
 
@@ -189,10 +206,10 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
 ### Standard Library
 
 - **`thrustc_std`**  
-  Standard library crate. Embeds the `std/` directory (Thrust source files and version metadata) via `include_dir!`, and manages installation into the user's home directory (`~/.thrustlang/std` on Unix, `%APPDATA%\.thrustlang\std` on Windows). Performs version-aware resolution (`resolve_target_version`, `ensure_std_present`, `validate_version`) and dumps the requested version's sources if missing.
+  Standard library crate. Embeds versioned Thrust sources and manages installation into the user home directory with version-aware resolution.
 
 - **`std/`**  
-  Versioned standard library sources. `VERSION.txt` lists the available versions, and each `v*/` directory contains modules such as `io.thrust`, `math.thrust`, `mem.thrust`, `collections/vector.thrust`, and C FFI helpers. Consumed by `thrustc_std` and the preprocessor's standard library resolver.
+  Versioned standard library sources. Each version directory contains the modules for that release, plus C interop helpers. Consumed by `thrustc_std` and the preprocessor standard library resolver.
 
 ---
 
@@ -204,8 +221,7 @@ Vendored forks of LLVM Rust bindings, patched for thrustc compatibility:
 - **`crates/llvm/17/clang-sys`**: Raw FFI bindings to the Clang C API.
 - **`crates/llvm/inkwell`**: Safe Rust wrappers over `llvm-sys` with additional context and builder abstractions.
 - **`crates/llvm/clang`**: Safe Rust wrappers over `clang-sys`.
-
-`clang-sys` and `llvm-sys` are patched via `[patch.crates-io]` in the workspace `Cargo.toml`; `inkwell` and `clang` are referenced as workspace path dependencies.
+- **`crates/llvm/lld-wrapper`**: LLD linker wrapper.
 
 ---
 
@@ -230,10 +246,11 @@ A fuzzing infrastructure using `cargo-fuzz`:
 
 ## Editor Support and Highlighting (`highlighting/`)
 
-- **Sublime Text**: `thrust.tmLanguage`, `llvm.sublime-syntax` for Thrust and LLVM IR syntax.
-- **VS Code**: `thrust-vscode/` extension and packaged `.vsix` for Thrust language support.
-- **Neovim and Vim**: `thrust.vim` syntax file and `thrust.nvim/` plugin package.
-- **Theme**: `One Dark.tmTheme` compatible theme.
+- **Sublime Text**: `highlighting/thrust.tmLanguage`, `highlighting/thrust.tmLanguage.json`, `highlighting/llvm.sublime-syntax` for Thrust and LLVM IR syntax.
+- **VS Code**: `highlighting/vscode/thrust-vscode/` extension and packaged `highlighting/vscode/thrustlang-highlighting-0.2.1.vsix` for Thrust language support.
+- **Neovim and Vim**: `highlighting/neovim/thrust.vim` syntax file, `highlighting/neovim/thrust.nvim/` plugin package, plus `highlighting/neovim/thrust.nvim.zip`.
+- **Theme**: `highlighting/One Dark.tmTheme` compatible theme.
+- **Assets**: `highlighting/assets/highlighting-example.png`.
 
 ## Language Server (`lsp/`)
 
@@ -243,24 +260,24 @@ A fuzzing infrastructure using `cargo-fuzz`:
 
 ## CI and CD (`.github/workflows/`)
 
-GitHub Actions workflows for four target platforms:
+GitHub Actions workflows for four target platforms (dev tags `thrustc-*-dev-v*.*.*`, release tags `thrustc-*-v*.*.*`):
 
-| Platform | Dev | Release |
-|---|---|---|
-| `x86_64-linux-ubuntu` | Yes | Yes |
-| `x86_64-macos` | Yes | Yes |
-| `aarch64-macos` | Yes | Yes |
-| `x86_64-windows-msvc` | Yes | Yes |
+| Platform | Runner | Dev | Release |
+|---|---|---|---|
+| `x86_64-linux-ubuntu` | `ubuntu-latest` | Yes | Yes |
+| `x86_64-macos` | `macos-15-intel` | Yes | Yes |
+| `aarch64-macos` | `macos-latest` | Yes | Yes |
+| `x86_64-windows-msvc` | `windows-latest` | Yes | Yes |
 
-Builds and publishes release binaries for each platform.
+Dev workflows publish prereleases from `target/debug/` plus `target/release-stripped/*-stripped`; release workflows publish stable binaries from `target/release/` plus stripped variants. All attach `thrustlang-vscode-*.vsix`.
 
 ---
 
 ## Scripts (`scripts/`)
 
-Cross-platform automation scripts (available as `.sh`, `.bat`, `.ps1`, `.fish`):
+Cross-platform automation scripts. Each base exists in four flavors (`.sh`, `.bat`, `.ps1`, `.fish`), except `license_updater.py` which is Python-only:
 
-- **`cargo-dependencies.*`**: Install project cargo tools (`sccache`, `panic-analyzer`, `git-cliff`).
+- **`cargo-dependencies.*`**: Install project cargo tools.
 - **`deploy-code-docs.*`**: Deploy compiler documentation.
 - **`deploy-version.*`**: Version deployment automation.
 - **`embed-std.*`**: Embed standard library sources.
@@ -272,7 +289,7 @@ Cross-platform automation scripts (available as `.sh`, `.bat`, `.ps1`, `.fish`):
 
 ## Changelogs (`changelogs/`)
 
-Per-platform changelogs for release versions:
+Per-platform changelogs for release versions. Each release is a directory with a `README.md` (41 releases), e.g. `changelogs/thrustc-x86_64-linux-ubuntu-v0.2.3/README.md`:
 
 - `thrustc-x86_64-linux-ubuntu-v*`
 - `thrustc-x86_64-macos-v*`
@@ -302,6 +319,10 @@ Example Thrust projects demonstrating language capabilities:
 - **`showcase/Cuda/`**: CUDA integration examples.
 - **`showcase/HttpServer/`**: HTTP server implementation.
 - **`showcase/OpenGL/`**: OpenGL graphics examples.
+
+## Tests (`tests/`)
+
+Test suites organized by feature area, plus a test runner and documentation. `tests/std/` mirrors standard library modules under test.
 
 ---
 
@@ -379,9 +400,11 @@ Source File (.thrust)
     ▼
 ┌─────────────────────────────────────────────────┐
 │ 7. Shared IR data                               │
-│    (thrustc_atomic_ordering, thrustc_thread_mode)│
-│    - Atomic operations and thread mode          │
-│    - LLVM conversion helpers                    │
+│    (thrustc_atomic_ordering, thrustc_thread_mode,│
+│     thrustc_abi)                                 │
+│    - Atomic operations, thread mode, and ABI     │
+│      type representation                         │
+│    - LLVM conversion helpers                     │
 └─────────────────────────────────────────────────┘
     │
     ▼
@@ -390,6 +413,8 @@ Source File (.thrust)
 │    + LLVM vendor crates (llvm-sys, inkwell)     │
 │    + Variadic codegen                           │
 │      (thrustc_llvm_codegen_variatic)            │
+│    + Atomic codegen                             │
+│      (thrustc_llvm_codegen_atomic)              │
 │    - Expression, statement, toplevel codegen    │
 │    - Heap, stack, and static memory management  │
 │    - JIT compilation and optimization           │
@@ -417,16 +442,16 @@ Source File (.thrust)
     ▼
 ┌─────────────────────────────────────────────────┐
 │ 9. Emission and Output                          │
-│    (thrustc_core, emitters/ and printers/)      │
+│    (thrustc_core with emission and printing)     │
 │                                                 │
 │    Output formats:                              │
-│    • Object file (.o): emitters/objfile.rs      │
-│    • LLVM IR (.ll): emitters/llvmir.rs          │
-│    • LLVM Bitcode (.bc): emitters/llvmbit.rs    │
-│    • Assembly (.s): emitters/assembler.rs       │
-│    • AST dump: emitters/ast.rs                  │
-│    • Token dump: emitters/tokens.rs             │
-│    • JIT execution: codegen JIT module          │
+│    • Object file                                │
+│    • LLVM IR                                   │
+│    • LLVM Bitcode                              │
+│    • Assembly                                  │
+│    • AST dump                                 │
+│    • Token dump                               │
+│    • JIT execution                             │
 └─────────────────────────────────────────────────┘
     │
     ▼
@@ -437,11 +462,13 @@ Source File (.thrust)
 
 ## Supported Compiler Host Platforms
 
-| Target | Support | Status |
+Matches `README.md` (`Platform | Architecture | Release tag`), ordered Linux, Windows, macOS ARM, macOS Intel:
+
+| Platform | Architecture | Release tag |
 |---|---|---|
-| `x86_64-unknown-linux-gnu` (Ubuntu) | Yes | Full support, CI tested |
-| `x86_64-apple-darwin` (macOS) | Yes | Full support, CI tested |
-| `aarch64-apple-darwin` (Apple Silicon) | Yes | Full support, CI tested |
-| `x86_64-pc-windows-msvc` (Windows) | Yes | Full support, CI tested |
+| Linux Ubuntu GNU | x64 `x86_64-unknown-linux-gnu` | `thrustc-x86_64-linux-ubuntu-v*.*.*` |
+| Windows MSVC | x64 `x86_64-pc-windows-msvc` | `thrustc-x86_64-windows-msvc-v*.*.*` |
+| macOS Apple Silicon | aarch64 `aarch64-apple-darwin` | `thrustc-aarch64-macos-v*.*.*` |
+| macOS Intel | x64 `x86_64-apple-darwin` | `thrustc-x86_64-macos-v*.*.*` |
 
 ---
