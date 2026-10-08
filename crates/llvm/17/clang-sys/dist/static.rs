@@ -121,35 +121,37 @@ fn get_clang_libraries<P: AsRef<Path>>(directory: P) -> Vec<String> {
 
     let escaped_path: &Path = Path::new(&escaped_directory);
 
-    let pattern: String = if cfg!(target_os = "windows") {
-        escaped_path.join("clang*.lib").to_str().unwrap().to_owned()
+    // On Windows the C API lives in `libclang.lib` (the static archive produced
+    // with `LIBCLANG_BUILD_STATIC=ON` and `LLVM_ENABLE_PIC=OFF`) while the C++
+    // libraries are `clang*.lib`, so both patterns must be collected. On Unix a
+    // single `libclang*.a` pattern covers the C API and the C++ libraries.
+    let patterns: Vec<String> = if cfg!(target_os = "windows") {
+        vec![
+            escaped_path.join("libclang*.lib").to_str().unwrap().to_owned(),
+            escaped_path.join("clang*.lib").to_str().unwrap().to_owned(),
+        ]
     } else {
-        escaped_path
+        vec![escaped_path
             .join("libclang*.a")
             .to_str()
             .unwrap()
-            .to_owned()
+            .to_owned()]
     };
 
-    let collected: Vec<String> = if let Ok(libraries) = glob::glob(&pattern) {
-        let found: Vec<String> = libraries
-            .filter_map(|l| l.ok())
-            .filter(|l| {
-                if cfg!(target_os = "windows") {
-                    l.file_stem()
-                        .map(|s| s.to_string_lossy().to_lowercase() != "libclang")
-                        .unwrap_or(true)
-                } else {
-                    true
+    let mut collected: Vec<String> = Vec::new();
+
+    for pattern in patterns.iter() {
+        if let Ok(libraries) = glob::glob(pattern) {
+            for name in libraries
+                .filter_map(|l| l.ok())
+                .filter_map(|l| self::get_library_name(&l))
+            {
+                if !collected.contains(&name) {
+                    collected.push(name);
                 }
-            })
-            .filter_map(|l| self::get_library_name(&l))
-            .collect();
-
-        found
-    } else {
-        Vec::new()
-    };
+            }
+        }
+    }
 
     if !collected.is_empty() {
         return collected;
@@ -157,14 +159,23 @@ fn get_clang_libraries<P: AsRef<Path>>(directory: P) -> Vec<String> {
 
     let fallback: Vec<String> = CLANG_LIBRARIES
         .iter()
-        .filter(|l| {
+        .filter_map(|l| {
             if cfg!(target_os = "windows") {
-                original_directory.join(format!("{}.lib", l)).exists()
+                if original_directory.join(format!("{}.lib", l)).exists() {
+                    return Some((*l).to_string());
+                }
+
+                if original_directory.join(format!("lib{}.lib", l)).exists() {
+                    return Some(format!("lib{}", l));
+                }
+
+                None
+            } else if original_directory.join(format!("lib{}.a", l)).exists() {
+                Some((*l).to_string())
             } else {
-                original_directory.join(format!("lib{}.a", l)).exists()
+                None
             }
         })
-        .map(|l| (*l).to_string())
         .collect();
 
     fallback
@@ -188,10 +199,13 @@ fn get_llvm_libraries() -> Vec<String> {
 fn get_library_name(path: &Path) -> Option<String> {
     path.file_stem().map(|p| {
         let string = p.to_string_lossy();
-        if let Some(name) = string.strip_prefix("lib") {
-            name.to_owned()
-        } else {
-            string.to_string()
+
+        if !cfg!(target_os = "windows") {
+            if let Some(name) = string.strip_prefix("lib") {
+                return name.to_owned();
+            }
         }
+
+        string.to_string()
     })
 }
