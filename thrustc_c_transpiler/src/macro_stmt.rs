@@ -95,10 +95,13 @@ impl<'tokens> MacroStmtCursor<'tokens> {
 
                 Ok(MacroStmt::Compound(inner))
             }
-            Some(
-                "return" | "continue" | "break" | "goto" | "switch" | "case" | "default"
-                | "typedef",
-            ) => Err(MacroLimit::UnsupportedStatementKeyword),
+            Some(text)
+                if text != "else"
+                    && text != "sizeof"
+                    && Self::is_reserved_word(text) =>
+            {
+                Err(MacroLimit::UnsupportedStatementKeyword)
+            }
             Some(_) => self.parse_decl_or_expr(),
             None => Err(MacroLimit::UnexpectedEndOfTokens),
         }
@@ -177,26 +180,10 @@ impl<'tokens> MacroStmtCursor<'tokens> {
             return Ok(None);
         };
 
-        let first_decl_part: &[MacroToken] = if let Some(eq_index) = {
-            let mut depth: i32 = 0;
-            let mut out_index: Option<usize> = None;
-
-            for (index, token) in parts[0].iter().enumerate() {
-                if token.get_text() == "(" || token.get_text() == "[" {
-                    depth += 1;
-                } else if token.get_text() == ")" || token.get_text() == "]" {
-                    depth -= 1;
-                } else if token.get_text() == "=" && depth == 0 {
-                    out_index = Some(index);
-                    break;
-                }
-            }
-
-            out_index
-        } {
-            &parts[0][..eq_index]
-        } else {
+        let first_decl_part: &[MacroToken] = if first_decl.2.is_empty() {
             parts[0]
+        } else {
+            &parts[0][..parts[0].len() - first_decl.2.len() - 1]
         };
 
         let first_shape: DeclaratorShape =
@@ -232,62 +219,45 @@ impl<'tokens> MacroStmtCursor<'tokens> {
                 continue;
             }
 
-            let decl_part: &[MacroToken] = if let Some(eq_index) = {
-                let mut depth: i32 = 0;
-                let mut out_index: Option<usize> = None;
+            let part_texts: Vec<String> = crate::macro_token::texts(part);
 
-                for (index, token) in part.iter().enumerate() {
-                    if token.get_text() == "(" || token.get_text() == "[" {
-                        depth += 1;
-                    } else if token.get_text() == ")" || token.get_text() == "]" {
-                        depth -= 1;
-                    } else if token.get_text() == "=" && depth == 0 {
-                        out_index = Some(index);
-                        break;
-                    }
-                }
+            let parsed_part: crate::macro_ast::MacroExpr =
+                MacroCursor::parse(&part_texts).map_err(|_| MacroLimit::DeclaratorMalformed)?;
 
-                out_index
-            } {
-                &part[..eq_index]
-            } else {
-                part
+            if let crate::macro_ast::MacroExpr::Ident(bare_name) = parsed_part {
+                let shape: DeclaratorShape = DeclaratorShape {
+                    stars: 0,
+                    name: bare_name,
+                    array_size: None,
+                };
+
+                let ty: String = Self::apply_shape_to_type(&base_ty, &shape)?;
+
+                out.push((ty, shape.name, None));
+                continue;
+            }
+
+            let crate::macro_ast::MacroExpr::Assign { op, target, value } = parsed_part else {
+                return Err(MacroLimit::DeclaratorMalformed);
             };
 
-            let shape: DeclaratorShape = Self::parse_simple_declarator_shape(decl_part, false)?;
+            if op != "=" {
+                return Err(MacroLimit::DeclaratorMalformed);
+            }
+
+            let crate::macro_ast::MacroExpr::Ident(target_name) = *target else {
+                return Err(MacroLimit::DeclaratorMalformed);
+            };
+
+            let shape: DeclaratorShape = DeclaratorShape {
+                stars: 0,
+                name: target_name,
+                array_size: None,
+            };
+
             let ty: String = Self::apply_shape_to_type(&base_ty, &shape)?;
 
-            let init: Option<MacroExpr> = if let Some(eq_index) = {
-                let mut depth: i32 = 0;
-                let mut out_index: Option<usize> = None;
-
-                for (index, token) in part.iter().enumerate() {
-                    if token.get_text() == "(" || token.get_text() == "[" {
-                        depth += 1;
-                    } else if token.get_text() == ")" || token.get_text() == "]" {
-                        depth -= 1;
-                    } else if token.get_text() == "=" && depth == 0 {
-                        out_index = Some(index);
-                        break;
-                    }
-                }
-
-                out_index
-            } {
-                let rhs: &[MacroToken] = &part[eq_index + 1..];
-
-                if rhs.is_empty() {
-                    return Err(MacroLimit::DeclaratorMalformed);
-                }
-
-                let spellings: Vec<String> = crate::macro_token::texts(rhs);
-
-                Some(MacroCursor::parse(&spellings)?)
-            } else {
-                None
-            };
-
-            out.push((ty, shape.name, init));
+            out.push((ty, shape.name, Some(*value)));
         }
 
         Ok(Some(out))
@@ -419,25 +389,16 @@ impl<'tokens> MacroStmtCursor<'tokens> {
 
         Ok(ty)
     }
+}
 
+impl<'tokens> MacroStmtCursor<'tokens> {
     fn is_reserved_word(word: &str) -> bool {
-        matches!(
-            word,
-            "return"
-                | "continue"
-                | "break"
-                | "goto"
-                | "switch"
-                | "case"
-                | "default"
-                | "typedef"
-                | "for"
-                | "while"
-                | "do"
-                | "if"
-                | "else"
-                | "sizeof"
-        )
+        crate::macro_token::is_keyword(word)
+            && word != "const"
+            && word != "volatile"
+            && word != "struct"
+            && word != "enum"
+            && word != "union"
     }
 }
 
@@ -1013,41 +974,30 @@ impl MacroStmt {
 }
 
 fn split_var_decl(tokens: &[MacroToken]) -> SplitDecl<'_> {
-    let mut depth: i32 = 0;
+    let assign: Option<usize> = tokens
+        .iter()
+        .scan(0i32, |depth, token| {
+            let text: &str = token.get_text();
 
-    let mut assign: Option<usize> = None;
+            let is_punct: bool = token.get_kind() == MacroTokenKind::Punctuation;
 
-    let mut index: usize = 0;
+            if is_punct && (text == "(" || text == "[") {
+                *depth += 1;
+            } else if is_punct && (text == ")" || text == "]") {
+                *depth -= 1;
+            }
 
-    while index < tokens.len() {
-        let token: &str = tokens[index].get_text();
+            Some(is_punct && text == "=" && *depth == 0)
+        })
+        .position(|is_assign| is_assign);
 
-        if tokens[index].get_kind() == MacroTokenKind::Punctuation && (token == "(" || token == "[")
-        {
-            depth += 1;
-        } else if tokens[index].get_kind() == MacroTokenKind::Punctuation
-            && (token == ")" || token == "]")
-        {
-            depth -= 1;
-        } else if tokens[index].get_kind() == MacroTokenKind::Punctuation
-            && token == "="
-            && depth == 0
-        {
-            assign = Some(index);
-            break;
+    let (decl_part, init_part): (&[MacroToken], &[MacroToken]) = match assign {
+        Some(eq) => {
+            let (head, tail): (&[MacroToken], &[MacroToken]) = tokens.split_at(eq);
+
+            (head, tail.get(1..).unwrap_or_default())
         }
-
-        index += 1;
-    }
-
-    let decl_part: &[MacroToken] = match assign {
-        Some(eq) => &tokens[..eq],
-        None => tokens,
-    };
-
-    let init_part: &[MacroToken] = match assign {
-        Some(eq) => &tokens[eq + 1..],
-        None => &[],
+        None => (tokens, &[]),
     };
 
     if decl_part.is_empty() {
@@ -1058,19 +1008,28 @@ fn split_var_decl(tokens: &[MacroToken]) -> SplitDecl<'_> {
 
     let mut array_suffix: Option<&[MacroToken]> = None;
 
-    if core.len() > 2
-        && core[core.len() - 1].get_text() == "]"
-        && core[core.len() - 3].get_text() == "["
-    {
-        array_suffix = Some(&core[core.len() - 2..core.len() - 1]);
-        core = &core[..core.len() - 3];
+    if let Some((close, without_close)) = core.split_last() {
+        if close.get_text() == "]" {
+            if let Some((size_token, without_size)) = without_close.split_last() {
+                if let Some((open, head)) = without_size.split_last() {
+                    if open.get_text() == "[" {
+                        array_suffix = Some(std::slice::from_ref(size_token));
+                        core = head;
+                    }
+                }
+            }
+        }
     }
 
     if core.is_empty() {
         return Ok(None);
     }
 
-    let last: &str = core[core.len() - 1].get_text();
+    let Some((name_token, type_tokens)) = core.split_last() else {
+        return Ok(None);
+    };
+
+    let last: &str = name_token.get_text();
 
     if !last
         .chars()
@@ -1080,123 +1039,87 @@ fn split_var_decl(tokens: &[MacroToken]) -> SplitDecl<'_> {
         return Ok(None);
     }
 
-    if matches!(
-        last,
-        "return"
-            | "continue"
-            | "break"
-            | "goto"
-            | "switch"
-            | "case"
-            | "default"
-            | "typedef"
-            | "for"
-            | "while"
-            | "do"
-            | "if"
-            | "else"
-            | "sizeof"
-    ) {
+    if MacroStmtCursor::is_reserved_word(last) {
         return Ok(None);
     }
-
-    let type_tokens: &[MacroToken] = &core[..core.len() - 1];
 
     if type_tokens.is_empty() {
         return Ok(None);
     }
 
-    let mut stars: usize = 0;
+    let stars: usize = type_tokens
+        .iter()
+        .filter(|token| token.get_text() == "*")
+        .count();
 
-    let mut words: Vec<String> = Vec::new();
+    let has_invalid_word: bool = type_tokens
+        .iter()
+        .filter(|token| token.get_text() != "*")
+        .any(|token| {
+            let text: &str = token.get_text();
 
-    for token in type_tokens.iter() {
-        if token.get_text() == "*" {
-            stars += 1;
-        } else if matches!(
-            token.get_text(),
-            "int"
-                | "unsigned"
-                | "signed"
-                | "long"
-                | "short"
-                | "char"
-                | "float"
-                | "double"
-                | "void"
-                | "const"
-                | "volatile"
-                | "_Bool"
-                | "struct"
-                | "enum"
-                | "union"
-        ) {
-            if token.get_text() != "const" && token.get_text() != "volatile" {
-                words.push(token.get_text().to_string());
-            }
-        } else if token
-            .get_text()
-            .chars()
-            .next()
-            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
-        {
-            words.push(token.get_text().to_string());
-        } else {
-            return Ok(None);
-        }
+            text != "const"
+                && text != "volatile"
+                && !text
+                    .chars()
+                    .next()
+                    .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
+        });
+
+    if has_invalid_word {
+        return Ok(None);
     }
+
+    let words: Vec<String> = type_tokens
+        .iter()
+        .filter(|token| {
+            token.get_text() != "*" && token.get_text() != "const" && token.get_text() != "volatile"
+        })
+        .map(|token| token.get_text().to_string())
+        .collect();
 
     if words.is_empty() {
         return Ok(None);
     }
 
-    let base: Option<String> = if words.len() == 1
-        && !matches!(
-            words[0].as_str(),
-            "int"
-                | "unsigned"
-                | "signed"
-                | "long"
-                | "short"
-                | "char"
-                | "float"
-                | "double"
-                | "void"
-                | "const"
-                | "volatile"
-                | "_Bool"
-                | "struct"
-                | "enum"
-                | "union"
-        ) {
-        Some(words[0].to_string())
-    } else if words.len() == 2
-        && matches!(words[0].as_str(), "struct" | "enum" | "union")
-        && words[1]
-            .chars()
-            .next()
-            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
+    let joined: String = words.join(" ");
+
+    let base: Option<String> = if let Some(mapped) = crate::macro_lex::macro_type_name(&joined)
     {
-        Some(words[1].to_string())
+        Some(mapped)
     } else {
-        crate::macro_lex::macro_type_name(&words.join(" "))
+        match words.as_slice() {
+            [single] if !crate::macro_token::is_keyword(single) => Some(single.clone()),
+            [head, tail]
+                if (head == "struct" || head == "enum" || head == "union")
+                    && tail
+                        .chars()
+                        .next()
+                        .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_') =>
+            {
+                Some(tail.clone())
+            }
+            _ => None,
+        }
     };
 
-    let Some(mut out) = base else {
+    let Some(base_text) = base else {
         return Err(MacroLimit::DeclaratorMalformed);
     };
 
-    for _ in 0..stars {
-        out = format!("ptr[{out}]");
-    }
+    let mut out: String = (0..stars).fold(base_text, |acc, _| format!("ptr[{acc}]"));
 
     if let Some(size_tokens) = array_suffix {
-        if size_tokens.len() != 1 {
+        let Some((size_token, rest)) = size_tokens.split_first() else {
+            return Err(MacroLimit::DeclaratorMalformed);
+        };
+
+        if !rest.is_empty() {
             return Err(MacroLimit::DeclaratorMalformed);
         }
 
         let size_text: String =
-            crate::macro_lex::normalize_literal_token_spelling(size_tokens[0].get_text());
+            crate::macro_lex::normalize_literal_token_spelling(size_token.get_text());
 
         if !size_text
             .chars()

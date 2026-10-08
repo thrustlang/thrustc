@@ -332,7 +332,7 @@ pub fn collapse_macro_site_errors_with_failed_at(
             for _ in 0..8 {
                 let Some(inner) = ctx
                     .get_macro_table()
-                    .find_innermost_macro_at(&current_file, current_offset)
+                    .find_macro_at(&current_file, current_offset)
                 else {
                     break;
                 };

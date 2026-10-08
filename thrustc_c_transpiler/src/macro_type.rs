@@ -24,6 +24,7 @@ use thrustc_typesystem::Type;
 pub struct MacroType;
 
 impl MacroType {
+    #[inline]
     pub fn from_thrust_text(text: &str, span: Span) -> Type {
         match text {
             "s8" => Type::S8 { span },
@@ -50,7 +51,8 @@ impl MacroType {
         }
     }
 
-    pub fn to_thrust_text(ty: &Type) -> String {
+    #[inline]
+    pub fn to_thrust_type(ty: &Type) -> String {
         crate::type_format::format_type_thrust(ty)
     }
 }

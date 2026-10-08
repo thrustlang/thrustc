@@ -1293,25 +1293,20 @@ pub fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(String, Ma
         return Some((raw_name, MacroKind::Statement { parameters, body }));
     }
 
-    let mut depth: i32 = 0;
-    let mut has_top_level_semicolon: bool = false;
+    let body_texts: Vec<String> = crate::macro_token::texts(&body);
 
-    for token in body.iter() {
-        if token.get_text() == "(" || token.get_text() == "[" || token.get_text() == "{" {
-            depth += 1;
-        } else if token.get_text() == ")" || token.get_text() == "]" || token.get_text() == "}" {
-            depth -= 1;
-        } else if token.get_text() == ";" && depth == 0 {
-            has_top_level_semicolon = true;
-            break;
-        }
+    if crate::macro_expr::MacroCursor::parse(&body_texts).is_ok() {
+        return Some((raw_name, MacroKind::PureFunction { parameters, body }));
     }
 
-    if has_top_level_semicolon {
+    if crate::macro_stmt::parse_statement_body_tokens(&body).is_ok() {
         return Some((raw_name, MacroKind::Statement { parameters, body }));
     }
 
-    Some((raw_name, MacroKind::PureFunction { parameters, body }))
+    Some((
+        raw_name,
+        MacroKind::Unsupported(MacroLimit::StatementMalformed),
+    ))
 }
 
 pub fn emit_function_like_macro_fn(name: &str, parameters: &[String], body_text: &str) -> String {

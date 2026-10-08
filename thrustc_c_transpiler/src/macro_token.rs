@@ -219,7 +219,7 @@ pub fn classify_text(text: &str) -> MacroTokenKind {
 }
 
 #[inline]
-fn is_keyword(text: &str) -> bool {
+pub fn is_keyword(text: &str) -> bool {
     matches!(
         text,
         "if" | "else"

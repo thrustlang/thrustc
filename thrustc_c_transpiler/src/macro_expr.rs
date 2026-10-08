@@ -22,6 +22,7 @@ use crate::macro_error::MacroLimit;
 use crate::macro_lex;
 
 impl MacroExpr {
+    #[inline]
     pub fn is_atomic(&self) -> bool {
         matches!(
             self,
@@ -37,6 +38,7 @@ impl MacroExpr {
     }
 }
 
+#[derive(Debug)]
 pub struct MacroCursor<'tokens> {
     tokens: &'tokens [String],
     position: usize,

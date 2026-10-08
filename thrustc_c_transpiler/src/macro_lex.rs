@@ -238,7 +238,7 @@ pub fn needs_space_between_tokens(prev: &str, current: &str) -> bool {
 pub fn extract_binary_operator_from_tokens(tokens: &[String]) -> Option<&'static str> {
     let mut depth: i32 = 0;
 
-    let token_iter = tokens.iter();
+    let token_iter: std::slice::Iter<'_, String> = tokens.iter();
 
     for t in token_iter {
         match t.as_str() {

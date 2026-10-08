@@ -186,7 +186,7 @@ impl MacroTable {
         items: &[(clang::Entity<'_>, String, crate::macros::MacroKind)],
     ) {
         for (definition, macro_name, kind) in items.iter() {
-            let function_like_kind: MacroFunctionLikeKind = match kind {
+            let mut function_like_kind: MacroFunctionLikeKind = match kind {
                 crate::macros::MacroKind::Object => continue,
                 crate::macros::MacroKind::PureFunction { .. } => {
                     MacroFunctionLikeKind::PureFunction
@@ -220,6 +220,24 @@ impl MacroTable {
                 crate::macros::MacroKind::Object => (Vec::new(), Vec::new()),
             };
 
+            if function_like_kind == MacroFunctionLikeKind::PureFunction {
+                let spellings: Vec<String> = crate::macro_token::texts(&body);
+
+                if crate::macro_expr::MacroCursor::parse(&spellings).is_err() {
+                    function_like_kind = MacroFunctionLikeKind::Unsupported(
+                        crate::macro_error::MacroLimit::ExpressionMalformed,
+                    );
+                }
+            }
+
+            if function_like_kind == MacroFunctionLikeKind::Statement
+                && crate::macro_stmt::parse_statement_body_tokens(&body).is_err()
+            {
+                function_like_kind = MacroFunctionLikeKind::Unsupported(
+                    crate::macro_error::MacroLimit::StatementMalformed,
+                );
+            }
+
             self.function_like_macro_definitions.insert(
                 macro_name.clone(),
                 MacroFunctionLikeDefinition::new(
@@ -245,6 +263,10 @@ impl MacroTable {
             .iter()
             .any(|entry| entry.0 == macro_name)
         {
+            return;
+        }
+
+        if crate::macro_stmt::parse_statement_body_tokens(&body_tokens).is_err() {
             return;
         }
 
@@ -401,7 +423,7 @@ impl MacroTable {
 
 impl MacroTable {
     #[inline]
-    pub fn find_innermost_macro_at(&self, file: &Path, offset: u32) -> Option<String> {
+    pub fn find_macro_at(&self, file: &Path, offset: u32) -> Option<String> {
         let mut best: Option<(String, u32)> = None;
 
         for (name, (range_file, start, end)) in self.macro_body_ranges.iter() {

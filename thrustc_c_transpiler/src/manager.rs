@@ -160,32 +160,8 @@ pub fn translate_single_c_to_thrust(
 
     let includes: Vec<clang::Entity<'_>> = main_file.get_includes();
 
-    let mut import_c_include_dirs: Vec<PathBuf> = Vec::new();
-    let mut import_c_specs: Vec<String> = Vec::new();
-
-    for inc in includes.iter() {
-        if let Some(spec) = crate::macros::extract_include_spec(inc) {
-            import_c_specs.push(spec);
-
-            if let Some(file) = inc.get_file() {
-                let path: PathBuf = file.get_path();
-
-                if let Some(parent) = path.parent() {
-                    let mut dir: PathBuf = parent.to_path_buf();
-
-                    if let Ok(rel) = dir.strip_prefix(&cwd) {
-                        dir = rel.to_path_buf();
-                    }
-
-                    if !file.get_location(1, 1).is_in_system_header()
-                        && !import_c_include_dirs.contains(&dir)
-                    {
-                        import_c_include_dirs.push(dir);
-                    }
-                }
-            }
-        }
-    }
+    let (mut import_c_include_dirs, mut import_c_specs): (Vec<PathBuf>, Vec<String>) =
+        self::collect_import_c_includes(&includes, &cwd);
 
     import_c_include_dirs.sort();
     import_c_specs.sort();
@@ -346,4 +322,39 @@ pub fn emit_c_bindings_thrust(
         });
 
     Ok((output_path, out, warnings))
+}
+
+fn collect_import_c_includes(
+    includes: &[clang::Entity<'_>],
+    cwd: &PathBuf,
+) -> (Vec<PathBuf>, Vec<String>) {
+    let mut import_c_include_dirs: Vec<PathBuf> = Vec::new();
+
+    let mut import_c_specs: Vec<String> = Vec::new();
+
+    for inc in includes.iter() {
+        if let Some(spec) = crate::macros::extract_include_spec(inc) {
+            import_c_specs.push(spec);
+
+            if let Some(file) = inc.get_file() {
+                let path: PathBuf = file.get_path();
+
+                if let Some(parent) = path.parent() {
+                    let mut dir: PathBuf = parent.to_path_buf();
+
+                    if let Ok(rel) = dir.strip_prefix(cwd) {
+                        dir = rel.to_path_buf();
+                    }
+
+                    if !file.get_location(1, 1).is_in_system_header()
+                        && !import_c_include_dirs.contains(&dir)
+                    {
+                        import_c_include_dirs.push(dir);
+                    }
+                }
+            }
+        }
+    }
+
+    (import_c_include_dirs, import_c_specs)
 }
