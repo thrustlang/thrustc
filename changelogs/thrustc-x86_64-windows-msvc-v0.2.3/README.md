@@ -2,6 +2,12 @@
 
 All notable changes to the Thrust Compiler (thrustc) are documented here.
 
+## [thrustc-x86_64-windows-msvc-v0.2.3] - 2026-10-08
+
+### Bug Fixes
+- Fix(llvm_backend, project) Link libclang statically on Windows MSVC and inspect build outputs ([`9de6674`](https://github.com/thrustlang/thrustc/commit/9de667419cd4cbfbe5dd2c9b92ccc7ae0301f49e))
+
+
 ## [thrustc-x86_64-linux-ubuntu-v0.2.3] - 2026-10-07
 
 ### Bug Fixes
