@@ -5,7 +5,18 @@ All notable changes to the Thrust Compiler (thrustc) are documented here.
 ## [thrustc-x86_64-windows-msvc-v0.2.3] - 2026-10-08
 
 ### Bug Fixes
+- **llvm_backend**: (fix(llvm_backend), fix(project)) Build static libclang on Windows MSVC via LLVM_ENABLE_PIC=OFF ([`e2c2f6c`](https://github.com/thrustlang/thrustc/commit/e2c2f6c0e77ecb3d317003ad76f4130b70f16295))
+- **project-visual**: Fix(project-visual) Renaming Thrust Comoiker to Thrust Programming Language ([`8281fb8`](https://github.com/thrustlang/thrustc/commit/8281fb8789799601d6c6a355889bd8a0f93fea32))
 - Fix(llvm_backend, project) Link libclang statically on Windows MSVC and inspect build outputs ([`9de6674`](https://github.com/thrustlang/thrustc/commit/9de667419cd4cbfbe5dd2c9b92ccc7ae0301f49e))
+
+
+### Documentation
+- **project-visual**: (feat(project-visual), feat(doc)) Improve central README with platform support table and update spec pointer ([`fa0fee8`](https://github.com/thrustlang/thrustc/commit/fa0fee877073a861d400183e857031770afeb48a))
+
+
+### Refactoring
+- **frontend**: (refac(frontend), fix(frontend)) Route macro constitution through the internal parser ([`8afd465`](https://github.com/thrustlang/thrustc/commit/8afd465d3df9143a28ec274075d0fab9ca469f47))
+- **doc**: Refac(doc) Update project structure without function code mentions ([`c3ae801`](https://github.com/thrustlang/thrustc/commit/c3ae8018ec7466e29137078046a4384d02598b55))
 
 
 ## [thrustc-x86_64-linux-ubuntu-v0.2.3] - 2026-10-07
