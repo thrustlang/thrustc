@@ -2,6 +2,14 @@
 
 All notable changes to the Thrust Compiler (thrustc) are documented here.
 
+## [thrustc-x86_64-linux-ubuntu-v0.2.4] - 2026-10-09
+
+### Bug Fixes
+- **project**: Fix(project) Refresh apt package lists before installing Ubuntu dependencies
+
+The Ubuntu runner's stale apt cache caused 404s for libpng-dev, libfreetype-dev and libpng-tools. Running 'apt-get update' first resolves the failing dependency install in both the release and dev workflows. ([`309852a`](https://github.com/thrustlang/thrustc/commit/309852a538770728a426a0cf6875eaf889fd730b))
+
+
 ## [thrustc-x86_64-windows-msvc-v0.2.4] - 2026-10-09
 
 ### Features
