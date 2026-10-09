@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["MacroLimit"],"fn":["add_macro_error","collapse_macro_site_errors","collapse_macro_site_errors_with_failed_at","get_macro_issue_help"]};
+window.SIDEBAR_ITEMS = {"enum":["MacroLimit"],"fn":["add_macro_error","add_macro_parameter_type_error","collapse_macro_site_errors","collapse_macro_site_errors_with_failed_at","get_macro_issue_help"]};

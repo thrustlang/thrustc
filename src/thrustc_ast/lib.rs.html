@@ -671,27 +671,28 @@
 <a href=#671 id=671 data-nosnippet>671</a><span class="attr">#[cfg_attr(feature = <span class="string">"fuzz"</span>, derive(Arbitrary))]
 <a href=#672 id=672 data-nosnippet>672</a>#[derive(Debug, Clone, Copy, Serialize)]
 <a href=#673 id=673 data-nosnippet>673</a></span><span class="kw">pub struct </span>NodeId {
-<a href=#674 id=674 data-nosnippet>674</a>    <span class="kw">pub </span>discriminat: u64,
+<a href=#674 id=674 data-nosnippet>674</a>    discriminat: u64,
 <a href=#675 id=675 data-nosnippet>675</a>}
 <a href=#676 id=676 data-nosnippet>676</a>
 <a href=#677 id=677 data-nosnippet>677</a><span class="kw">impl </span>NodeId {
-<a href=#678 id=678 data-nosnippet>678</a>    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
-<a href=#679 id=679 data-nosnippet>679</a>        <span class="self">Self </span>{
-<a href=#680 id=680 data-nosnippet>680</a>            discriminat: <span class="self">self</span>::get_unique_discriminat(),
-<a href=#681 id=681 data-nosnippet>681</a>        }
-<a href=#682 id=682 data-nosnippet>682</a>    }
-<a href=#683 id=683 data-nosnippet>683</a>}
-<a href=#684 id=684 data-nosnippet>684</a>
-<a href=#685 id=685 data-nosnippet>685</a><span class="kw">static </span>NODE_DISCRIMINANT_COUNTER: AtomicU64 = AtomicU64::new(<span class="number">0</span>);
-<a href=#686 id=686 data-nosnippet>686</a>
-<a href=#687 id=687 data-nosnippet>687</a><span class="kw">fn </span>get_unique_discriminat() -&gt; u64 {
-<a href=#688 id=688 data-nosnippet>688</a>    <span class="kw">if </span>NODE_DISCRIMINANT_COUNTER.load(std::sync::atomic::Ordering::Relaxed) &gt;= u64::MAX - <span class="number">1 </span>{
-<a href=#689 id=689 data-nosnippet>689</a>        thrustc_logging::print_critical_error(
-<a href=#690 id=690 data-nosnippet>690</a>            thrustc_logging::LoggingType::Panic,
-<a href=#691 id=691 data-nosnippet>691</a>            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Current AST NodeId exceeds {}!."</span>, u64::MAX),
-<a href=#692 id=692 data-nosnippet>692</a>        )
-<a href=#693 id=693 data-nosnippet>693</a>    }
-<a href=#694 id=694 data-nosnippet>694</a>
-<a href=#695 id=695 data-nosnippet>695</a>    NODE_DISCRIMINANT_COUNTER.fetch_add(<span class="number">1</span>, std::sync::atomic::Ordering::Relaxed)
-<a href=#696 id=696 data-nosnippet>696</a>}
+<a href=#678 id=678 data-nosnippet>678</a>    <span class="attr">#[inline]
+<a href=#679 id=679 data-nosnippet>679</a>    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+<a href=#680 id=680 data-nosnippet>680</a>        <span class="self">Self </span>{
+<a href=#681 id=681 data-nosnippet>681</a>            discriminat: <span class="self">self</span>::get_unique_discriminat(),
+<a href=#682 id=682 data-nosnippet>682</a>        }
+<a href=#683 id=683 data-nosnippet>683</a>    }
+<a href=#684 id=684 data-nosnippet>684</a>}
+<a href=#685 id=685 data-nosnippet>685</a>
+<a href=#686 id=686 data-nosnippet>686</a><span class="kw">static </span>NODE_DISCRIMINANT_COUNTER: AtomicU64 = AtomicU64::new(<span class="number">0</span>);
+<a href=#687 id=687 data-nosnippet>687</a>
+<a href=#688 id=688 data-nosnippet>688</a><span class="kw">fn </span>get_unique_discriminat() -&gt; u64 {
+<a href=#689 id=689 data-nosnippet>689</a>    <span class="kw">if </span>NODE_DISCRIMINANT_COUNTER.load(std::sync::atomic::Ordering::Relaxed) &gt;= u64::MAX - <span class="number">1 </span>{
+<a href=#690 id=690 data-nosnippet>690</a>        thrustc_logging::print_critical_error(
+<a href=#691 id=691 data-nosnippet>691</a>            thrustc_logging::LoggingType::Panic,
+<a href=#692 id=692 data-nosnippet>692</a>            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Current AST NodeId exceeds {}!."</span>, u64::MAX),
+<a href=#693 id=693 data-nosnippet>693</a>        )
+<a href=#694 id=694 data-nosnippet>694</a>    }
+<a href=#695 id=695 data-nosnippet>695</a>
+<a href=#696 id=696 data-nosnippet>696</a>    NODE_DISCRIMINANT_COUNTER.fetch_add(<span class="number">1</span>, std::sync::atomic::Ordering::Relaxed)
+<a href=#697 id=697 data-nosnippet>697</a>}
 </code></pre></div></section></main></body></html>

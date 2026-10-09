@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["translate_condition_expr","translate_decl_ref_expr","translate_expr","translate_pointer_target_expr","try_translate_linearized_array_subscript"]};
+window.SIDEBAR_ITEMS = {"fn":["translate_condition_expr","translate_decl_ref_expr","translate_expr","translate_transform_pointer_arithmetic","try_translate_linearized_array"]};

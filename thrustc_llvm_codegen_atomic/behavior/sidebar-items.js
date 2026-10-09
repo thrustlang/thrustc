@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["set_atomic_behavior_load_instruction","set_atomic_behavior_store_instruction"]};
+window.SIDEBAR_ITEMS = {"fn":["get_atomic_ordering","set_atomic_behavior_load_instruction","set_atomic_behavior_store_instruction"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["asmfunction","function","intrinsic"]};
+window.SIDEBAR_ITEMS = {"mod":["asm_function","function","intrinsic"]};

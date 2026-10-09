@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["PREALLOCATED_TOKENS_CAPACITY"],"mod":["character","identifier","lex","number","string"],"struct":["Lexer"]};
+window.SIDEBAR_ITEMS = {"constant":["PREALLOCATED_TOKENS_CAPACITY"],"mod":["character","escape","identifier","lex","number","string"],"struct":["Lexer"]};

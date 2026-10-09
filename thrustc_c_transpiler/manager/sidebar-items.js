@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["emit_c_bindings_thrust","translate_single_c_to_thrust"]};
+window.SIDEBAR_ITEMS = {"fn":["collect_import_c_includes","emit_c_bindings_thrust","extract_include_spec","translate_single_c_to_thrust"]};

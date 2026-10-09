@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["find_matching_paren","find_semicolon","parse_statement_body","parse_statement_body_tokens","split_top_level","split_var_decl"],"struct":["DeclaratorShape","MacroStmtCursor"],"type":["MultiDeclEntry","SplitDecl"]};
+window.SIDEBAR_ITEMS = {};

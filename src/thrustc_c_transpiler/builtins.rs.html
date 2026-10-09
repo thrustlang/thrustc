@@ -577,7 +577,7 @@
 <a href=#577 id=577 data-nosnippet>577</a>        span: thrustc_code_location::Span,
 <a href=#578 id=578 data-nosnippet>578</a>    ) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
 <a href=#579 id=579 data-nosnippet>579</a>        <span class="kw">let </span>formatted_name: String =
-<a href=#580 id=580 data-nosnippet>580</a>            <span class="kw">crate</span>::type_format::format_clang_type_thrust(clang_type, macro_ctx, prefix, span);
+<a href=#580 id=580 data-nosnippet>580</a>            <span class="kw">crate</span>::type_format::format_clang_type_thrust(clang_type, macro_ctx, prefix, span).ok()<span class="question-mark">?</span>;
 <a href=#581 id=581 data-nosnippet>581</a>
 <a href=#582 id=582 data-nosnippet>582</a>        <span class="kw">if </span>formatted_name.is_empty() {
 <a href=#583 id=583 data-nosnippet>583</a>            <span class="kw">return </span><span class="prelude-val">None</span>;

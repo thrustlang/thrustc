@@ -18,23 +18,23 @@
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::{
-<a href=#21 id=21 data-nosnippet>21</a>    traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
-<a href=#22 id=22 data-nosnippet>22</a>    Ast,
+<a href=#21 id=21 data-nosnippet>21</a>    Ast,
+<a href=#22 id=22 data-nosnippet>22</a>    traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
 <a href=#23 id=23 data-nosnippet>23</a>};
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 <a href=#25 id=25 data-nosnippet>25</a>
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>thrustc_code_location::Span;
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>thrustc_typesystem::{
-<a href=#28 id=28 data-nosnippet>28</a>    traits::{
-<a href=#29 id=29 data-nosnippet>29</a>        ConstantTypeExtensions, TypeArrayEntensions, TypeCodeLocation, TypeFixedArrayEntensions,
-<a href=#30 id=30 data-nosnippet>30</a>        TypeIsExtensions, TypePointerExtensions, VoidTypeExtensions,
-<a href=#31 id=31 data-nosnippet>31</a>    },
-<a href=#32 id=32 data-nosnippet>32</a>    Type,
+<a href=#28 id=28 data-nosnippet>28</a>    Type,
+<a href=#29 id=29 data-nosnippet>29</a>    traits::{
+<a href=#30 id=30 data-nosnippet>30</a>        ConstantTypeExtensions, TypeArrayEntensions, TypeCodeLocation, TypeFixedArrayEntensions,
+<a href=#31 id=31 data-nosnippet>31</a>        TypeIsExtensions, TypePointerExtensions, VoidTypeExtensions,
+<a href=#32 id=32 data-nosnippet>32</a>    },
 <a href=#33 id=33 data-nosnippet>33</a>};
 <a href=#34 id=34 data-nosnippet>34</a>
 <a href=#35 id=35 data-nosnippet>35</a><span class="kw">use crate</span>::{
-<a href=#36 id=36 data-nosnippet>36</a>    context::TypeCheckerControlContext, operations, type_checking,
-<a href=#37 id=37 data-nosnippet>37</a>    type_metadata::TypeCheckerNodeMetadata, TypeChecker,
+<a href=#36 id=36 data-nosnippet>36</a>    TypeChecker, context::TypeCheckerControlContext, operations, type_cast, type_checking,
+<a href=#37 id=37 data-nosnippet>37</a>    type_metadata::TypeCheckerNodeMetadata,
 <a href=#38 id=38 data-nosnippet>38</a>};
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a><span class="kw">mod </span>call_expr;
@@ -719,7 +719,7 @@
 <a href=#719 id=719 data-nosnippet>719</a>            <span class="kw">let </span>control_context: <span class="kw-2">&amp;mut </span>TypeCheckerControlContext =
 <a href=#720 id=720 data-nosnippet>720</a>                typechecker.get_mut_control_context();
 <a href=#721 id=721 data-nosnippet>721</a>
-<a href=#722 id=722 data-nosnippet>722</a>            type_checking::check_type_cast(cast_type, from_type, metadata, span, control_context)<span class="question-mark">?</span>;
+<a href=#722 id=722 data-nosnippet>722</a>            type_cast::check_type_cast(cast_type, from_type, metadata, span, control_context)<span class="question-mark">?</span>;
 <a href=#723 id=723 data-nosnippet>723</a>
 <a href=#724 id=724 data-nosnippet>724</a>            control_context.reset_type_cast_depth();
 <a href=#725 id=725 data-nosnippet>725</a>

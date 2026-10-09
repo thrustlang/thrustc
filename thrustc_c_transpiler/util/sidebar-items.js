@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["sanitize_thrust_identifier"]};
+window.SIDEBAR_ITEMS = {"fn":["normalize_to_thrust_identifier"]};

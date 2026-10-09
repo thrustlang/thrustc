@@ -30,8 +30,8 @@
 <a href=#30 id=30 data-nosnippet>30</a>                <span class="kw">return </span><span class="bool-val">false</span>;
 <a href=#31 id=31 data-nosnippet>31</a>            }
 <a href=#32 id=32 data-nosnippet>32</a>
-<a href=#33 id=33 data-nosnippet>33</a>            <span class="kw">crate</span>::macro_lex::extract_binary_operator(entity, <span class="kw-2">&amp;</span>children[<span class="number">0</span>], <span class="kw-2">&amp;</span>children[<span class="number">1</span>])
-<a href=#34 id=34 data-nosnippet>34</a>                .map(|op| <span class="macro">matches!</span>(op, <span class="string">"&amp;&amp;" </span>| <span class="string">"||" </span>| <span class="string">"==" </span>| <span class="string">"!=" </span>| <span class="string">"&lt;" </span>| <span class="string">"&lt;=" </span>| <span class="string">"&gt;" </span>| <span class="string">"&gt;="</span>))
+<a href=#33 id=33 data-nosnippet>33</a>            <span class="kw">crate</span>::macro_lex::lex_binary_operator(entity, <span class="kw-2">&amp;</span>children[<span class="number">0</span>], <span class="kw-2">&amp;</span>children[<span class="number">1</span>])
+<a href=#34 id=34 data-nosnippet>34</a>                .map(|op| <span class="macro">matches!</span>(op.as_str(), <span class="string">"&amp;&amp;" </span>| <span class="string">"||" </span>| <span class="string">"==" </span>| <span class="string">"!=" </span>| <span class="string">"&lt;" </span>| <span class="string">"&lt;=" </span>| <span class="string">"&gt;" </span>| <span class="string">"&gt;="</span>))
 <a href=#35 id=35 data-nosnippet>35</a>                .unwrap_or(<span class="bool-val">false</span>)
 <a href=#36 id=36 data-nosnippet>36</a>        }
 <a href=#37 id=37 data-nosnippet>37</a>        <span class="kw">_ </span>=&gt; entity

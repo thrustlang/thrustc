@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["collect_switch_labels_and_body","push_switch_segment","translate_conditional_return","translate_return_expr","translate_stmt","translate_stmt_inner","translate_switch_stmt"],"type":["SwitchSegment"]};
+window.SIDEBAR_ITEMS = {"fn":["collect_switch_labels_and_body","push_switch_segment","translate_conditional_return","translate_return_expr","translate_stmt","translate_switch_stmt"],"type":["SwitchSegment"]};

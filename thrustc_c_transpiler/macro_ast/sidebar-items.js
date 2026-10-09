@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ForInit","MacroAst","MacroExpr","MacroPostOp","MacroStmt","MacroUnOp"],"struct":["ForDecl","MacroExprNode","MacroNodeMeta","MacroStmtNode"]};
+window.SIDEBAR_ITEMS = {"enum":["ForInit","MacroAst","MacroExpr","MacroPostOp","MacroStmt","MacroUnOp"],"struct":["ForDecl","MacroExprNode","MacroNodeMetadata","MacroStmtNode"]};
