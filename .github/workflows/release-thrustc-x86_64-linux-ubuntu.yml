@@ -68,6 +68,7 @@ jobs:
         run: |
           sudo apt-get remove -y llvm-16* clang-16*
           sudo rm -rf /usr/lib/llvm-16
+          sudo apt-get update
           sudo apt-get install -y \
             libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
             libx11-dev libxkbcommon-dev libxkbcommon-x11-dev \
