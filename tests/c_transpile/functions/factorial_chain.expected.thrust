@@ -1,0 +1,52 @@
+fn binomial(n: s32, k: s32) s64 {
+    if (k < 0) || (k > n) {
+        return (0) as s64;
+    }
+    return (falling_factorial(n, k) / factorial(k)) as s64;
+}
+fn factorial(n: s32) s64 {
+    if n <= 1 {
+        return (1) as s64;
+    }
+    return ((n) as s64 * factorial(n - 1)) as s64;
+}
+fn factorial_chain_check() s32 {
+    if factorial(0) != 1 {
+        return (1) as s32;
+    }
+    if factorial(5) != 120 {
+        return (2) as s32;
+    }
+    if factorial(10) != 3628800 {
+        return (3) as s32;
+    }
+    if falling_factorial(6, 3) != 120 {
+        return (4) as s32;
+    }
+    if sum_factorials(5) != 153 {
+        return (5) as s32;
+    }
+    if binomial(6, 2) != 15 {
+        return (6) as s32;
+    }
+    if binomial(10, 5) != 252 {
+        return (7) as s32;
+    }
+    return (0) as s32;
+}
+fn falling_factorial(n: s32, k: s32) s64 {
+    var acc: s64 = (1) as s64;
+    var term: s32 = n;
+    for var i: s32 = 0; i < k; i = i + 1; {
+        acc = acc * (term) as s64;
+        term = term - 1;
+    }
+    return (acc) as s64;
+}
+fn sum_factorials(limit: s32) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 1; i <= limit; i = i + 1; {
+        total = total + (factorial(i)) as s32;
+    }
+    return (total) as s32;
+}

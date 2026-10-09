@@ -1,6 +1,6 @@
 fn repeat_three() s32 {
     var k: s32 = 0;
-    __c_macro_REPEAT3[s32](ref k);
+    __c_macro_REPEAT3[s32](ref (k));
     return (k) as s32;
 }
 fn __c_macro_REPEAT3[T1](x: ptr[T1]) void @alwaysInline {

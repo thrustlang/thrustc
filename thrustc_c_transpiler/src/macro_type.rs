@@ -33,6 +33,16 @@ pub enum InferredType {
     Pointer(Box<InferredType>),
 }
 
+impl InferredType {
+    #[inline]
+    pub fn text(&self) -> String {
+        match self {
+            InferredType::Known(text) => text.clone(),
+            InferredType::Pointer(inner) => format!("ptr[{}]", inner.text()),
+        }
+    }
+}
+
 type TypeSlots = HashMap<String, Option<InferredType>>;
 
 impl MacroType {
@@ -470,6 +480,88 @@ impl MacroType {
 }
 
 impl MacroType {
+    /// Computes the inferred type of an expression using the current type
+    /// environment, mirroring the parser's binary/unary type generation.
+    #[inline]
+    pub fn expression_type(
+        ctx: &crate::macros::MacroContext<'_>,
+        expr: &MacroExpr,
+    ) -> Option<InferredType> {
+        let mut slots: TypeSlots = ctx
+            .get_type_environment()
+            .iter()
+            .map(|(name, ty)| (name.clone(), Some(ty.clone())))
+            .collect();
+
+        Self::infer_expression(&mut slots, expr, None)
+    }
+}
+
+impl MacroType {
+    /// Builds a parameter type seed from the clang type of a macro argument.
+    ///
+    /// Pointer and array arguments seed a pointer slot so the inference can
+    /// reconstruct `ptr[T]` parameters; other types seed a plain value slot.
+    #[inline]
+    pub fn from_clang_type(
+        ctx: &mut crate::macros::MacroContext<'_>,
+        ty: &clang::Type<'_>,
+        span: Span,
+    ) -> Option<InferredType> {
+        let canonical: clang::Type<'_> = ty.get_canonical_type();
+
+        let prefix: String = String::new();
+
+        if canonical.get_kind() == clang::TypeKind::Pointer {
+            let pointee: clang::Type<'_> = canonical.get_pointee_type()?;
+
+            let pointee_text: String =
+                crate::type_format::format_clang_type_thrust(&pointee, ctx, &prefix, span).ok()?;
+
+            let pointee_text: &str = pointee_text.strip_prefix("const ").unwrap_or(&pointee_text);
+
+            if pointee_text.is_empty() {
+                return None;
+            }
+
+            return Some(InferredType::Pointer(Box::new(InferredType::Known(
+                pointee_text.to_string(),
+            ))));
+        }
+
+        if matches!(
+            canonical.get_kind(),
+            clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
+        ) {
+            let element: clang::Type<'_> = canonical.get_element_type()?;
+
+            let element_text: String =
+                crate::type_format::format_clang_type_thrust(&element, ctx, &prefix, span).ok()?;
+
+            let element_text: &str = element_text.strip_prefix("const ").unwrap_or(&element_text);
+
+            if element_text.is_empty() {
+                return None;
+            }
+
+            return Some(InferredType::Pointer(Box::new(InferredType::Known(
+                element_text.to_string(),
+            ))));
+        }
+
+        let text: String = crate::type_format::format_clang_type_thrust(ty, ctx, &prefix, span).ok()?;
+
+        let text: &str = text.strip_prefix("const ").unwrap_or(&text);
+
+        if text.is_empty() {
+            return None;
+        }
+
+        Some(InferredType::Known(text.to_string()))
+    }
+}
+
+impl MacroType {
     #[inline]
     fn base_identifier(expr: &MacroExpr) -> Option<&str> {
         match expr {
@@ -484,7 +576,10 @@ impl MacroType {
     #[inline]
     fn bind_slot(slots: &mut TypeSlots, name: &str, ty: InferredType) {
         if let Some(slot) = slots.get_mut(name) {
-            if slot.is_none() {
+            let keep_existing_pointer: bool = matches!(slot.as_ref(), Some(InferredType::Pointer(_)))
+                && matches!(&ty, InferredType::Known(text) if text.starts_with("ptr["));
+
+            if !keep_existing_pointer {
                 *slot = Some(ty);
             }
         }

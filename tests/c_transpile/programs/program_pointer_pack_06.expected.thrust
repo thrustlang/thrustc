@@ -1,7 +1,7 @@
 static mut pointer_writes_06: s32 = 0;
 
 fn main() s32 @public {
-    var source: array[s32; 11] = fixed[7, -6, 9, 0, 7, 1, -2, 9, 7, 2, 6];
+    var source: array[s32; 11] = fixed[7, (-6) as s32, 9, 0, 7, 1, (-2) as s32, 9, 7, 2, 6];
     var out: array[s32; 11] = fixed[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     var count: s32 = remap_pack_06(out as ptr[s32], source as ptr[s32], 11);
     var total: s32 = sum_pack_06(out as ptr[s32], count);

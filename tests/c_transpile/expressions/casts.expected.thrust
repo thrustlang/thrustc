@@ -14,8 +14,8 @@ fn cast_float(x: f32) s32 {
     }
     var memo_casts_1: s32 = carry_casts_1;
     carry_casts_1 = memo_casts_1;
-    return (x as s32) as s32;
+    return ((x) as s32) as s32;
 }
 fn cast_int(x: s32) f32 {
-    return (x as f32) as f32;
+    return ((x) as f32) as f32;
 }

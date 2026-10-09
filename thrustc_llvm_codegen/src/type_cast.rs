@@ -519,11 +519,12 @@ pub fn compile_type_cast<'ctx>(
         }
     }
 
-    if from_type.is_numeric_type()
+    if (from_type.is_numeric_type()
         || from_type.is_float_type()
         || from_type.is_struct_type()
         || from_type.is_ptr_like_type()
-        || from_type.is_fixed_array_type() && target_type.is_ptr_like_type()
+        || from_type.is_fixed_array_type())
+        && target_type.is_ptr_like_type()
     {
         let code_location: CodeGenLocation = context.get_codegen_location();
 

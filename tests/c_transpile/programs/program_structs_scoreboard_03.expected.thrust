@@ -26,7 +26,7 @@ fn main() s32 @public {
     var deltas: array[s32; 5] = fixed[5, 4, 3, 6, 2];
     var best: s32 = 0;
     for var i: s32 = 0; i < 5; i += 1; {
-        apply_round_03(ref players[i], deltas->[i]);
+        apply_round_03(players[i], deltas->[i]);
         if players[i]->score > best {
             best = players[i]->score;
         }
@@ -37,7 +37,7 @@ fn main() s32 @public {
     if best <= 14 {
         return (2) as s32;
     }
-    if total_score_03(ref players[0]) <= 80 {
+    if total_score_03(players[0]) <= 80 {
         return (3) as s32;
     }
     return (0) as s32;

@@ -14,7 +14,7 @@ fn abs_or_zero(x: s32) s32 {
     if x > 0 {
         return (x) as s32;
     } else if x < 0 {
-        return (-x) as s32;
+        return ((-x) as s32) as s32;
     } else {
         return (0) as s32;
     }

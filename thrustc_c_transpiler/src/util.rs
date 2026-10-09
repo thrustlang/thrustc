@@ -17,7 +17,7 @@
 
 */
 
-pub fn sanitize_thrust_identifier(raw: impl AsRef<str>) -> String {
+pub fn normalize_to_thrust_identifier(raw: impl AsRef<str>) -> String {
     let __sanitized: String = raw.as_ref().to_string();
 
     match __sanitized.as_str() {

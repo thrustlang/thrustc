@@ -1,0 +1,67 @@
+fn checksum() u32 {
+    var c: u32 = (0xFF) as u32;
+    c ^= ((165) as usize) as u32;
+    c += (1) as u32;
+    return (c) as u32;
+}
+fn frame_tag() const ptr[char] {
+    return "PKT\x41\t" as const ptr[char];
+}
+fn header_len() s32 {
+    return ((30) as s32) as s32;
+}
+fn latency_ms(hop: s32) f64 {
+    var base: f64 = 15.0;
+    var per: f64 = 0.25;
+    if hop == 0 {
+        return (1.0) as f64;
+    }
+    return (base + (hop) as f64 * per) as f64;
+}
+fn packet_frame_check() s32 {
+    var fail: s32 = 0;
+    if (header_len() != ((30) as s32)) && (fail == 0) {
+        fail = 1;
+    }
+    var sum: u32 = checksum();
+    if (sum != (0x5B) as u32) && (fail == 0) {
+        fail = 2;
+    }
+    var soh: char = ((1 as char)) as char;
+    var tab: char = ('\t') as char;
+    var esc: char = ((27 as char)) as char;
+    var nl: char = ('\n') as char;
+    var bs: char = ('\\') as char;
+    var qt: char = ('\'') as char;
+    if ((((((soh) as s32 != 1) || ((tab) as s32 != 9)) || ((esc) as s32 != 27)) || ((nl) as s32 != 10))) && (fail == 0) {
+        fail = 3;
+    }
+    if ((((bs) as s32 != 92) || ((qt) as s32 != 39))) && (fail == 0) {
+        fail = 4;
+    }
+    var tag: const ptr[char] = frame_tag();
+    var msg: const ptr[char] = ("frame:\tlen=0x10\n") as const ptr[char];
+    if ((((tag->[0]) as s32 != ('P') as s32) || ((tag->[3]) as s32 != ('A') as s32))) && (fail == 0) {
+        fail = 5;
+    }
+    if ((((msg->[6]) as s32 != ('\t') as s32) || ((msg->[7]) as s32 != ('l') as s32))) && (fail == 0) {
+        fail = 6;
+    }
+    var t0: f64 = latency_ms(0);
+    var t1: f64 = latency_ms(4);
+    if ((t0 != 1.0)) && (fail == 0) {
+        fail = 7;
+    }
+    if (((t1 < 16.0) || (t1 > 16.1))) && (fail == 0) {
+        fail = 8;
+    }
+    var seq: ssize = (0x10000) as ssize;
+    var total: usize = (0xFFFFFFFF) as usize;
+    if ((seq << (4) as ssize) != (0x100000) as ssize) && (fail == 0) {
+        fail = 9;
+    }
+    if ((total & (0xFFFF) as usize) != (0xFFFF) as usize) && (fail == 0) {
+        fail = 10;
+    }
+    return (fail) as s32;
+}

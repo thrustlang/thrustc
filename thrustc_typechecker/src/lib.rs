@@ -18,8 +18,8 @@
 */
 
 use thrustc_ast::{
-    traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
     Ast,
+    traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
 };
 
 use thrustc_code_location::Span;
@@ -28,8 +28,8 @@ use thrustc_directive::FileOptions;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::{
-    traits::{DereferenceExtensions, TypeIsExtensions, VoidTypeExtensions},
     Type,
+    traits::{DereferenceExtensions, TypeIsExtensions, VoidTypeExtensions},
 };
 
 use crate::{
@@ -43,6 +43,7 @@ mod expressions;
 mod operations;
 mod table;
 mod toplevel;
+mod type_cast;
 mod type_checking;
 mod type_metadata;
 mod type_support;
@@ -828,7 +829,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                     TypeCheckerNodeMetadata::new(value.is_totaly_literal_value());
 
                 let source_type: Type = determinate_mutation_target_type(source)?;
-                let value_type: Type = determinate_mutation_target_type(value)?;
+                let value_type: Type = value.get_value_type()?.clone();
 
                 {
                     let control_context: &mut TypeCheckerControlContext =

@@ -1,0 +1,69 @@
+struct Point {
+    x: f64,
+    y: f64,
+}
+
+struct Polygon {
+    edges: array[Point; 6],
+    count: s32,
+}
+
+fn edge_dx(a_param: Point, b_param: Point) f64 {
+    var a: Point = a_param;
+    var b: Point = b_param;
+
+    return (b->x - a->x) as f64;
+}
+fn edge_dy(a_param: Point, b_param: Point) f64 {
+    var a: Point = a_param;
+    var b: Point = b_param;
+
+    return (b->y - a->y) as f64;
+}
+fn point_make(x: f64, y: f64) Point {
+    var p: Point;
+    p->x = x;
+    p->y = y;
+    return p;
+}
+fn polygon_area(poly: const ptr[Polygon]) f64 {
+    var sum: f64 = 0.0;
+    for var i: s32 = 0; i < poly->count; i += 1; {
+        var a: Point = deref poly.edges[i];
+        var b: Point = deref poly.edges[(i + 1) % poly->count];
+        sum += a->x * b->y - b->x * a->y;
+    }
+    if sum < 0.0 {
+        sum = (-sum) as f64;
+    }
+    return (sum / 2.0) as f64;
+}
+fn polygon_area_check() s32 {
+    var poly: Polygon;
+    poly->count = 0;
+    polygon_push(ref (poly), point_make(0.0, 0.0));
+    polygon_push(ref (poly), point_make(4.0, 0.0));
+    polygon_push(ref (poly), point_make(4.0, 3.0));
+    polygon_push(ref (poly), point_make(0.0, 3.0));
+    if poly->count != 4 {
+        return (1) as s32;
+    }
+    if edge_dx(deref poly.edges[0], deref poly.edges[1]) != 4.0 {
+        return (2) as s32;
+    }
+    if edge_dy(deref poly.edges[1], deref poly.edges[2]) != 3.0 {
+        return (3) as s32;
+    }
+    if polygon_area(ref (poly)) != 12.0 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}
+fn polygon_push(poly: ptr[Polygon], p_param: Point) void {
+    var p: Point = p_param;
+
+    if poly->count < 6 {
+        poly.edges[poly->count] = p;
+        (poly->count)++;
+    }
+}

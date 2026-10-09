@@ -1,0 +1,86 @@
+enum TxnKind {
+    TXN_DEPOSIT: s32 = 1;
+    TXN_WITHDRAW: s32 = -1;
+    TXN_FEE: s32 = -2;
+}
+
+struct Txn {
+    id: s32,
+    kind: s32,
+    amount: s32,
+}
+
+struct Ledger {
+    entries: array[Txn; 10],
+    count: s32,
+    balance: s32,
+}
+
+fn ledger_apply(ledger: ptr[Ledger], t_param: Txn) s32 {
+    var t: Txn = t_param;
+
+    if ledger->count >= 10 {
+        return ((-1) as s32) as s32;
+    }
+    ledger.entries[ledger->count] = t;
+    (ledger->count)++;
+    ledger->balance += txn_delta(t);
+    return (0) as s32;
+}
+fn ledger_balance_check() s32 {
+    var ledger: Ledger;
+    ledger->count = 0;
+    ledger->balance = 0;
+    var a: Txn = new Txn { id: 1, kind: TxnKind=>TXN_DEPOSIT, amount: 100 };
+    var b: Txn = new Txn { id: 2, kind: TxnKind=>TXN_WITHDRAW, amount: 40 };
+    var c: Txn = new Txn { id: 3, kind: TxnKind=>TXN_FEE, amount: 5 };
+    if ledger_apply(ref (ledger), a) != 0 {
+        return (1) as s32;
+    }
+    if ledger_apply(ref (ledger), b) != 0 {
+        return (2) as s32;
+    }
+    if ledger_apply(ref (ledger), c) != 0 {
+        return (3) as s32;
+    }
+    if ledger->balance != 50 {
+        return (4) as s32;
+    }
+    if ledger_count_kind(ref (ledger), TxnKind=>TXN_DEPOSIT) != 1 {
+        return (5) as s32;
+    }
+    if ledger_count_kind(ref (ledger), TxnKind=>TXN_FEE) != 1 {
+        return (6) as s32;
+    }
+    if ledger_largest(ref (ledger)) != 100 {
+        return (7) as s32;
+    }
+    if txn_delta(b) != (-40) as s32 {
+        return (8) as s32;
+    }
+    return (0) as s32;
+}
+fn ledger_count_kind(ledger: const ptr[Ledger], kind: s32) s32 {
+    var n: s32 = 0;
+    for var i: s32 = 0; i < ledger->count; i += 1; {
+        if ledger.entries[i]->kind == kind {
+            n++;
+        }
+    }
+    return (n) as s32;
+}
+fn ledger_largest(ledger: const ptr[Ledger]) s32 {
+    var best: s32 = 0;
+    for var i: s32 = 0; i < ledger->count; i += 1; {
+        var d: s32 = txn_delta(deref ledger.entries[i]);
+        if d > best {
+            best = d;
+        }
+    }
+    return (best) as s32;
+}
+fn txn_delta(t_param: Txn) s32 {
+    var t: Txn = t_param;
+
+    return ((t->kind) as s32 * t->amount) as s32;
+}

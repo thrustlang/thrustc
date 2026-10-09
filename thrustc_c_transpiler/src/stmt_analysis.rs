@@ -30,7 +30,7 @@ pub fn expression_produces_condition(entity: &clang::Entity<'_>) -> bool {
                 return false;
             }
 
-            crate::macro_lex::extract_binary_operator(entity, &children[0], &children[1])
+            crate::macro_lex::lex_binary_operator(entity, &children[0], &children[1])
                 .map(|op| matches!(op.as_str(), "&&" | "||" | "==" | "!=" | "<" | "<=" | ">" | ">="))
                 .unwrap_or(false)
         }

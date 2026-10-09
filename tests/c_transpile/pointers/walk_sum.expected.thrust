@@ -1,0 +1,53 @@
+fn index_sum(xs: const ptr[s32], n: s32) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < n; i += 1; {
+        total = total + xs->[i];
+    }
+    return (total) as s32;
+}
+fn stride_sum(xs: const ptr[s32], n: s32, step: s32) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < n; i += step; {
+        total += xs->[i];
+    }
+    return (total) as s32;
+}
+fn walk_sum(xs: const ptr[s32], n: s32) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < n; i += 1; {
+        total = total + xs->[i];
+    }
+    return (total) as s32;
+}
+fn walk_sum_check() s32 {
+    var data: array[s32; 8] = fixed[2, 4, 6, 8, 10, 12, 14, 16];
+    var p: ptr[s32] = (data) as ptr[s32];
+    var n: s32 = (((8) as usize)) as s32;
+    if walk_sum(data as ptr[s32], n) != 72 {
+        return (1) as s32;
+    }
+    if index_sum(p, n) != 72 {
+        return (2) as s32;
+    }
+    if stride_sum(data as ptr[s32], n, 2) != 32 {
+        return (3) as s32;
+    }
+    var total: s32 = 0;
+    for var i: s32 = 0; i < n; i += 1; {
+        total = total + p->[i];
+    }
+    if total != 72 {
+        return (4) as s32;
+    }
+    var tail: s32 = 0;
+    for var i: s32 = 4; i < 8; i += 1; {
+        tail += data->[i];
+    }
+    if tail != 52 {
+        return (5) as s32;
+    }
+    if data->[2] != 6 {
+        return (6) as s32;
+    }
+    return (0) as s32;
+}

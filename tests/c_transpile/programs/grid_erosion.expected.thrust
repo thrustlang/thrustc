@@ -1,0 +1,66 @@
+struct Grid {
+    cells: array[array[s32; 5]; 4],
+    steps: s32,
+}
+
+static mut eroded_cells: s32 = 0;
+static seepage: const s32 @public @extern("seepage") = 1;
+
+fn erode_step(grid: ptr[Grid]) void {
+    for var r: s32 = 0; r < 4; r += 1; {
+        for var c: s32 = 0; c < 5; c += 1; {
+            var floor: s32 = neighbor_min(grid, r, c);
+            var drop: s32 = ((grid->cells[0][0])->[((r) * 5) + (c)] - floor) / 2;
+            if (drop > seepage) && ((grid->cells[0][0])->[((r) * 5) + (c)] > 1) {
+                (grid->cells[0][0])->[((r) * 5) + (c)] -= drop;
+                eroded_cells += 1;
+            }
+        }
+    }
+    grid->steps += 1;
+}
+fn grid_erosion_check() s32 {
+    var grid: Grid = new Grid { cells: fixed[fixed[8, 7, 6, 5, 4], fixed[6, 9, 8, 7, 3], fixed[4, 5, 6, 9, 2], fixed[3, 2, 1, 2, 5]], steps: 0 };
+    var before: s32 = grid_total(ref (grid));
+    erode_step(ref (grid));
+    erode_step(ref (grid));
+    var after: s32 = grid_total(ref (grid));
+    if grid->steps != 2 {
+        return (1) as s32;
+    }
+    if eroded_cells <= 0 {
+        return (2) as s32;
+    }
+    if after >= before {
+        return (3) as s32;
+    }
+    if after <= 0 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}
+fn grid_total(grid: const ptr[Grid]) s32 {
+    var sum: s32 = 0;
+    for var r: s32 = 0; r < 4; r += 1; {
+        for var c: s32 = 0; c < 5; c += 1; {
+            sum += (grid->cells[0][0])->[((r) * 5) + (c)];
+        }
+    }
+    return (sum) as s32;
+}
+fn neighbor_min(grid: const ptr[Grid], row: s32, col: s32) s32 {
+    var best: s32 = (grid->cells[0][0])->[((row) * 5) + (col)];
+    if (row > 0) && ((grid->cells[0][0])->[((row - 1) * 5) + (col)] < best) {
+        best = (grid->cells[0][0])->[((row - 1) * 5) + (col)];
+    }
+    if (row + 1 < 4) && ((grid->cells[0][0])->[((row + 1) * 5) + (col)] < best) {
+        best = (grid->cells[0][0])->[((row + 1) * 5) + (col)];
+    }
+    if (col > 0) && ((grid->cells[0][0])->[((row) * 5) + (col - 1)] < best) {
+        best = (grid->cells[0][0])->[((row) * 5) + (col - 1)];
+    }
+    if (col + 1 < 5) && ((grid->cells[0][0])->[((row) * 5) + (col + 1)] < best) {
+        best = (grid->cells[0][0])->[((row) * 5) + (col + 1)];
+    }
+    return (best) as s32;
+}

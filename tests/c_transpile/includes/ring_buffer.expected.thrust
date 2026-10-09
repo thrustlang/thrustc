@@ -1,0 +1,55 @@
+directive "--import-c-include=tests/c_transpile/includes";
+
+importC "ring_buffer.h";
+importC "stddef.h";
+
+fn clamp_slot(value: s32, limit: s32) s32 {
+    if value < 0 {
+        return (0) as s32;
+    }
+    if value >= limit {
+        return (limit - 1) as s32;
+    }
+    return (value) as s32;
+}
+fn ring_compact(mask: s32, window: s32) s32 {
+    var compacted: s32 = 0;
+    for var i: s32 = 0; i < window; i += 1; {
+        var value: s32 = ring_buffer::ring_buffer_pop();
+        if (value & mask) != 0 {
+            compacted = compacted ^ value;
+        } else {
+            compacted = compacted | (value << 1);
+        }
+    }
+    return (compacted) as s32;
+}
+fn ring_drain(limit: s32) s32 {
+    var drained: s32 = 0;
+    var guard: s32 = 0;
+    while guard < limit {
+        var value: s32 = ring_buffer::ring_buffer_pop();
+        if value < 0 {
+            break;
+        }
+        drained += clamp_slot(value, limit);
+        guard = guard + 1;
+    }
+    return (drained + ring_buffer::ring_buffer_capacity()) as s32;
+}
+fn ring_fill(seed: s32, count: usize) s32 {
+    var total: s32 = 0;
+    var i: usize = (0) as usize;
+    while i < count {
+        var value: s32 = seed + (i) as s32 * 3;
+        var pushed: s32 = ring_buffer::ring_buffer_push(value);
+        if pushed == 0 {
+            value = ring_buffer::ring_buffer_peek();
+            total = total - value;
+        } else {
+            total = total + value;
+        }
+        i = i + (1) as usize;
+    }
+    return (total) as s32;
+}

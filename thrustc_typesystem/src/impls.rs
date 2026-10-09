@@ -242,23 +242,23 @@ impl TypeExtensions for Type {
 
     #[inline]
     fn is_value(&self) -> bool {
-        self.is_numeric_type()
-            || self.is_fixed_array_type()
-            || self.is_native_vector_type()
-            || self.is_struct_type()
-            || self.is_const_value()
+        let ty: Type = self.remove_all_constant_type();
+
+        ty.is_numeric_type()
+            || ty.is_fixed_array_type()
+            || ty.is_native_vector_type()
+            || ty.is_struct_type()
+            || ty.is_const_value()
     }
 
     #[inline]
     fn is_const_value(&self) -> bool {
-        if let Type::Const(inner, ..) = self {
-            return inner.is_const_value();
-        }
+        let ty: Type = self.remove_all_constant_type();
 
-        self.is_numeric_type()
-            || self.is_fixed_array_type()
-            || self.is_native_vector_type()
-            || self.is_struct_type()
+        ty.is_numeric_type()
+            || ty.is_fixed_array_type()
+            || ty.is_native_vector_type()
+            || ty.is_struct_type()
     }
 
     #[inline]
@@ -316,14 +316,10 @@ impl TypeExtensions for Type {
 
     #[inline]
     fn get_type_ref(&self) -> Type {
-        if self.is_ptr_like_type() {
-            self.clone()
-        } else {
-            Type::Ptr {
-                subtype: Some(self.clone().into()),
-                address_space: self.get_address_space(),
-                span: self.get_span(),
-            }
+        Type::Ptr {
+            subtype: Some(self.clone().into()),
+            address_space: self.get_address_space(),
+            span: self.get_span(),
         }
     }
 
@@ -615,18 +611,17 @@ impl std::fmt::Display for Type {
                     ""
                 };
 
-                let llvm_alignment_attribute: String = if let Some(align) = modifications.llvm().align() {
-                    format!("<align({align})>")
-                } else {
-                    String::new()
-                };
+                let llvm_alignment_attribute: String =
+                    if let Some(align) = modifications.llvm().align() {
+                        format!("<align({align})>")
+                    } else {
+                        String::new()
+                    };
 
                 write!(
                     f,
                     "struct {}{}{} {{ ",
-                    name,
-                    has_llvm_packed_attribute,
-                    llvm_alignment_attribute
+                    name, has_llvm_packed_attribute, llvm_alignment_attribute
                 )?;
 
                 for field in fields.iter() {

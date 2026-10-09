@@ -15,7 +15,7 @@ fn fold_flux_10(values: const ptr[s32], start: s32, count: s32) s32 {
     return (total) as s32;
 }
 fn main() s32 @public {
-    var data: array[s32; 10] = fixed[12, 10, -2, 8, -7, 4, 4, 4, -4, -5];
+    var data: array[s32; 10] = fixed[12, 10, (-2) as s32, 8, (-7) as s32, 4, 4, 4, (-4) as s32, (-5) as s32];
     var left: s32 = fold_flux_10(data as ptr[s32], 0, 6);
     var right: s32 = fold_flux_10(data as ptr[s32], 3, 7);
     var mixed: s32 = left + right;

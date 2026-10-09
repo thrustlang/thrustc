@@ -13,7 +13,7 @@ fn compact_positive_10(input: const ptr[s32], output: ptr[s32]) s32 {
     return (count) as s32;
 }
 fn main() s32 @public {
-    var input: array[s32; 10] = fixed[2, 5, 7, 1, 6, -2, 8, 3, 4, 9];
+    var input: array[s32; 10] = fixed[2, 5, 7, 1, 6, (-2) as s32, 8, 3, 4, 9];
     var output: array[s32; 10] = fixed[0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     var count: s32 = compact_positive_10(input as ptr[s32], output as ptr[s32]);
     var total: s32 = sum_items_10(output as ptr[s32], count);

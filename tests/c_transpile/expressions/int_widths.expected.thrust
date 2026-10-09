@@ -1,0 +1,79 @@
+importC "stdint.h";
+
+fn fold_words(x: u32, y: u32) u32 {
+    var wide: usize = (x) as usize * (y) as usize;
+    return (((wide ^ (wide >> (32) as usize))) as u32) as u32;
+}
+fn int_widths_check() s32 {
+    var big: s32 = 0x12345678;
+    var ubig: u32 = (0xfedcba98) as u32;
+    var uc: u8 = (big) as u8;
+    var sh: s16 = (big) as s16;
+    var ush: u16 = (big) as u16;
+    var lg: ssize = (big) as ssize;
+    var back: s32 = (lg) as s32;
+    var ulg: usize = (ubig) as usize;
+    var round: s32;
+    var pack: s32;
+    var tot: s32;
+    var wrap: u32;
+    uc = ((uc) as s32 + 0) as u8;
+    sh = ((sh) as s32 + 0) as s16;
+    ush = ((ush) as s32 + 0) as u16;
+    back = back + 0;
+    ulg = ulg + (0) as usize;
+    round = narrow_roundtrip(big);
+    wrap = (255) as u32;
+    pack = (pack_nibbles((0xa) as u32, (0x5) as u32)) as s32;
+    tot = (fold_words((0x12345678) as u32, (0x9abcdef0) as u32)) as s32;
+    if uc != (0x78) as u32 {
+        return (1) as s32;
+    }
+    if sh != 0x5678 {
+        return (2) as s32;
+    }
+    if ush != (0x5678) as u32 {
+        return (3) as s32;
+    }
+    if back != big {
+        return (4) as s32;
+    }
+    if (ulg) as u32 != ubig {
+        return (5) as s32;
+    }
+    if wrap != (0xff) as u32 {
+        return (6) as s32;
+    }
+    if pack != 0xa5 {
+        return (7) as s32;
+    }
+    if sign_extend(((0xff) as u32) as u8) != (-1) as s32 {
+        return (8) as s32;
+    }
+    if round != 44512 {
+        return (9) as s32;
+    }
+    if tot != 791530190 {
+        return (10) as s32;
+    }
+    if ((big) as u8) as s32 != 0x78 {
+        return (11) as s32;
+    }
+    if ((big >> 16)) as u16 != (0x1234) as u32 {
+        return (12) as s32;
+    }
+    return (0) as s32;
+}
+fn narrow_roundtrip(value: s32) s32 {
+    var sc: s8 = (value) as s8;
+    var uc: u8 = (value) as u8;
+    var sh: s16 = (value) as s16;
+    var us: u16 = (value) as u16;
+    return ((sc) as s32 + (uc) as s32 + (sh) as s32 + (us) as s32) as s32;
+}
+fn pack_nibbles(hi: u32, lo: u32) u32 {
+    return (((hi & (0xf) as u32) << (4) as u32) | (lo & (0xf) as u32)) as u32;
+}
+fn sign_extend(byte: u8) s32 {
+    return (((byte) as s8) as s32) as s32;
+}

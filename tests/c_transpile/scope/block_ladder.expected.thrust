@@ -1,0 +1,67 @@
+static mut base_value: s32 = 5;
+
+fn block_ladder_check() s32 {
+    if base_value != 5 {
+        return (1) as s32;
+    }
+    if bump_block_ladder(4) != 22 {
+        return (2) as s32;
+    }
+    if shadow_chain(20) != 49 {
+        return (3) as s32;
+    }
+    if sibling_blocks(7) != 6 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}
+fn bump_block_ladder(seed: s32) s32 {
+    var total: s32 = seed;
+    {
+        var step: s32 = base_value;
+        total = total + step;
+        {
+            var step: s32 = 3;
+            total = total * step;
+        }
+        total = total - step;
+    }
+    return (total) as s32;
+}
+fn shadow_chain(value_param: s32) s32 {
+    var value: s32 = value_param;
+
+    var slot: s32 = value;
+    if slot > 0 {
+        var half: s32 = slot / 2;
+        var slot: s32 = half;
+        if slot > 1 {
+            var down: s32 = slot - 1;
+            var slot: s32 = down;
+            value = slot;
+        }
+        slot = slot + 1;
+        value = value + slot;
+    }
+    {
+        var slot: s32 = 9;
+        value = value ^ slot;
+    }
+    return (value + slot) as s32;
+}
+fn sibling_blocks(start: s32) s32 {
+    var total: s32 = start;
+    {
+        var step: s32 = 2;
+        total = step + step;
+    }
+    {
+        var step: s32 = 10;
+        total = total + step;
+    }
+    {
+        var step: s32 = total - start;
+        total = step - 1;
+    }
+    return (total) as s32;
+}

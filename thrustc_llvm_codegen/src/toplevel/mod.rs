@@ -17,6 +17,6 @@
 
 */
 
-pub mod asmfunction;
+pub mod asm_function;
 pub mod function;
 pub mod intrinsic;

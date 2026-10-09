@@ -10,6 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+thrustc_ast = { path = "../thrustc_ast" }
 thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_constants = { path = "../thrustc_constants" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }

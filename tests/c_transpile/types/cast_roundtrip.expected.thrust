@@ -1,0 +1,75 @@
+importC "stdbool.h";
+importC "stdint.h";
+
+type nibble_t = u8;
+type small_t = s16;
+type uint_t = u32;
+type wide_t = ssize;
+
+fn cast_roundtrip_check() s32 {
+    var w: ssize = (70000) as ssize;
+    var s: s16 = to_small(w);
+    var narrowed: s32 = (s) as s32;
+    if narrowed == 70000 {
+        return (1) as s32;
+    }
+    if to_uint(((-1) as s32) as ssize) != (0xFFFFFFFF) as u32 {
+        return (2) as s32;
+    }
+    if scale((3) as ssize, (4) as u32) != 12 {
+        return (3) as s32;
+    }
+    if scale(((-2) as s32) as ssize, (5) as u32) != (-10) as s32 {
+        return (4) as s32;
+    }
+    if saturate_cast((1000) as ssize, 0, 255) != 255 {
+        return (5) as s32;
+    }
+    if saturate_cast(((-50) as s32) as ssize, 0, 255) != 0 {
+        return (6) as s32;
+    }
+    if saturate_cast((42) as ssize, 0, 255) != 42 {
+        return (7) as s32;
+    }
+    if low_nibble((0xABC) as u32) != (0xC) as u32 {
+        return (8) as s32;
+    }
+    if !(same_bits_u16((0x1FFFF) as u32, ((-1) as s32) as s16)) {
+        return (9) as s32;
+    }
+    var mixed: ssize = (((5) as ssize) as f64 + 2.5) as ssize;
+    if mixed != 7 {
+        return (10) as s32;
+    }
+    var back: f64 = (((4000000000) as u32) as u32) as f64;
+    if back < 3999999999.0 {
+        return (11) as s32;
+    }
+    return (0) as s32;
+}
+fn low_nibble(value: u32) u8 {
+    return (((value & (0x0F) as u32)) as u8) as u8;
+}
+fn same_bits_u16(value: u32, other: s16) bool {
+    var a: u16 = (value) as u16;
+    var b: u16 = (other) as u16;
+    return a == b;
+}
+fn saturate_cast(value: ssize, lo: s32, hi: s32) s32 {
+    if value < (lo) as ssize {
+        return (lo) as s32;
+    }
+    if value > (hi) as ssize {
+        return (hi) as s32;
+    }
+    return ((value) as s32) as s32;
+}
+fn scale(value: ssize, factor: u32) ssize {
+    return (value * (factor) as ssize) as ssize;
+}
+fn to_small(value: ssize) s16 {
+    return ((value) as s16) as s16;
+}
+fn to_uint(value: ssize) u32 {
+    return ((value) as u32) as u32;
+}

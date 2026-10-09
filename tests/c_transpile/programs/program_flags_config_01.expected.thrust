@@ -1,5 +1,5 @@
 static mut rejected_01: s32 = 0;
-static required_mask_01: const s32 @public @extern("required_mask_01") = (1 | 4) as const s32;
+static required_mask_01: const s32 @public @extern("required_mask_01") = ((5) as s32) as const s32;
 
 fn apply_flags_01(current: s32, extra: s32) s32 {
     var merged: s32 = current | extra;
@@ -10,7 +10,7 @@ fn apply_flags_01(current: s32, extra: s32) s32 {
     return (merged) as s32;
 }
 fn main() s32 @public {
-    var entries: array[s32; 6] = fixed[1, 2, 1 | 2, 0, 4, 1 | 4];
+    var entries: array[s32; 6] = fixed[1, 2, (3) as s32, 0, 4, (5) as s32];
     var accepted: s32 = validate_flags_01(entries as ptr[s32]);
     if accepted < 3 {
         return (1) as s32;

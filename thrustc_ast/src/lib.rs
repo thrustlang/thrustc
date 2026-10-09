@@ -671,10 +671,11 @@ pub enum ModuleExpressionValues<'ast> {
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct NodeId {
-    pub discriminat: u64,
+    discriminat: u64,
 }
 
 impl NodeId {
+    #[inline]
     pub fn new() -> Self {
         Self {
             discriminat: self::get_unique_discriminat(),

@@ -1,0 +1,43 @@
+directive "--import-c-include=tests/c_transpile/includes";
+
+importC "filter_math.h";
+importC "sensor_filter.h";
+
+fn sensor_calibrate(sample: s32, factor: s32) s32 {
+    var corrected: s32 = sample;
+    var steps: s32 = 0;
+    while (steps < factor) && (corrected > 0) {
+        corrected = corrected - sensor_filter::sensor_scale(corrected, factor);
+        if corrected < 0 {
+            corrected = filter_math::filter_clamp(corrected, 0, sample);
+        }
+        steps += 1;
+    }
+    return (filter_math::filter_average(corrected, steps + 1)) as s32;
+}
+fn sensor_merge(left: s32, right: s32, factor: s32) s32 {
+    var merged: s32 = 0;
+    for var i: s32 = 0; i < factor; i += 1; {
+        var a: s32 = sensor_filter::sensor_read(left + i);
+        var b: s32 = sensor_filter::sensor_read(right + i);
+        var clamped: s32 = filter_math::filter_clamp(a - b, (-500) as s32, 500);
+        merged = merged + (clamped * (i + 1));
+    }
+    return (filter_math::filter_average(merged, factor)) as s32;
+}
+fn sensor_sweep(channels: s32, factor: s32) s32 {
+    var accum: s32 = 0;
+    var channel: s32 = 0;
+    while channel < channels {
+        var raw: s32 = sensor_filter::sensor_read(channel);
+        var scaled: s32 = sensor_filter::sensor_scale(raw, factor);
+        if scaled > 1000 {
+            scaled = filter_math::filter_clamp(scaled, 0, 1000);
+        } else if scaled < 0 {
+            scaled = 0;
+        }
+        accum += scaled;
+        channel += 1;
+    }
+    return (filter_math::filter_average(accum, channels)) as s32;
+}

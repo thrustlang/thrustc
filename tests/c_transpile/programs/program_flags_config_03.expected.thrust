@@ -10,7 +10,7 @@ fn apply_flags_03(current: s32, extra: s32) s32 {
     return (merged) as s32;
 }
 fn main() s32 @public {
-    var entries: array[s32; 7] = fixed[2, 1, 4, 1 | 2, 0, 4, 2];
+    var entries: array[s32; 7] = fixed[2, 1, 4, (3) as s32, 0, 4, 2];
     var accepted: s32 = validate_flags_03(entries as ptr[s32]);
     if accepted < 4 {
         return (1) as s32;
@@ -18,7 +18,7 @@ fn main() s32 @public {
     if rejected_03 <= 0 {
         return (2) as s32;
     }
-    if apply_flags_03(1, 4) != (1 | 4) {
+    if apply_flags_03(1, 4) != ((5) as s32) {
         return (3) as s32;
     }
     return (0) as s32;

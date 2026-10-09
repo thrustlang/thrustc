@@ -1,0 +1,71 @@
+fn bit_mask_check() s32 {
+    var fail: s32 = 0;
+    var f: u32 = pack_flags();
+    if (f != ((55) as u32)) && (fail == 0) {
+        fail = 1;
+    }
+    var wide: usize = (0xDEADBEEF) as usize;
+    var low: ssize = (0xEF) as ssize;
+    if ((wide & (low) as usize) != (0xEF) as usize) && (fail == 0) {
+        fail = 2;
+    }
+    if ((wide >> (8) as usize) == (0) as usize) && (fail == 0) {
+        fail = 3;
+    }
+    var nl: char = ('\n') as char;
+    var tab: char = ('\t') as char;
+    var nul: char = ('\0') as char;
+    var bs: char = ('\\') as char;
+    var sq: char = ('\'') as char;
+    var dq: char = ('\"') as char;
+    if ((((nl) as s32 != 0x0A) || ((tab) as s32 != 0x09))) && (fail == 0) {
+        fail = 4;
+    }
+    if ((nul) as s32 != 0) && (fail == 0) {
+        fail = 5;
+    }
+    if (((((bs) as s32 != 92) || ((sq) as s32 != 39)) || ((dq) as s32 != 34))) && (fail == 0) {
+        fail = 6;
+    }
+    var flags: const ptr[char] = ("flag|mask") as const ptr[char];
+    var path: const ptr[char] = ("C:\\tmp\\dev\n") as const ptr[char];
+    if (decode(flags) != 0x42) && (fail == 0) {
+        fail = 7;
+    }
+    if ((((path->[2]) as s32 != ('\\') as s32) || ((path->[6]) as s32 != ('\\') as s32))) && (fail == 0) {
+        fail = 8;
+    }
+    var g: f64 = gain(2);
+    if (((g < 2.0) || (g > 2.1))) && (fail == 0) {
+        fail = 9;
+    }
+    var mask: u32 = (0xff) as u32;
+    var shift: s32 = 3;
+    var probe: s32 = 0x1F;
+    if ((((mask >> (shift) as u32) & (probe) as u32)) as s32 != 0x1F) && (fail == 0) {
+        fail = 10;
+    }
+    return (fail) as s32;
+}
+fn decode(s: const ptr[char]) s32 {
+    var a: char = ('B') as char;
+    var b: char = ('B') as char;
+    if ((s->[0]) as s32 != ('f') as s32) || ((a) as s32 != (b) as s32) {
+        return ((-1) as s32) as s32;
+    }
+    return ((a) as s32) as s32;
+}
+fn gain(step: s32) f64 {
+    var g: f64 = 1.0;
+    g += (step) as f64 * 0.5;
+    g += 0.0015;
+    return (g) as f64;
+}
+fn pack_flags() u32 {
+    var f: u32 = (0) as u32;
+    f |= (0x01) as u32;
+    f |= ((0x10) as usize) as u32;
+    f |= (7) as u32;
+    f |= (32) as u32;
+    return (f) as u32;
+}

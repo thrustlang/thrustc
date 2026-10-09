@@ -1,0 +1,60 @@
+fn classify(ticket: s32) s32 {
+    var lane: s32 = 0;
+    if ticket % 5 == 0 {
+        lane = 3;
+    } else if ticket % 5 == 1 {
+        lane = 2;
+        lane += 1;
+    } else if ticket % 5 == 2 {
+        lane = 2;
+        lane += 1;
+    } else if ticket % 5 == 3 {
+        lane += 1;
+    } else {
+        lane = (-1) as s32;
+    }
+    return (lane) as s32;
+}
+fn serve_queue(tickets: const ptr[s32], n: s32, capacity: s32) s32 {
+    var served: s32 = 0;
+    var index: s32 = 0;
+    while index < n {
+        var t: s32 = tickets->[index];
+        index++;
+        if t < 0 {
+            continue;
+        }
+        var lane: s32 = classify(t);
+        if lane < 0 {
+            continue;
+        }
+        loop {
+            if served >= capacity {
+                return (served) as s32;
+            }
+            served++;
+            lane--;
+            if !(lane > 0) {
+                break;
+            }
+        }
+    }
+    return (served) as s32;
+}
+fn ticket_queue_check() s32 {
+    var tickets: array[s32; 7] = fixed[0, 1, 2, 3, 4, (-1) as s32, 6];
+    if serve_queue(tickets as ptr[s32], 7, 100) != 13 {
+        return (1) as s32;
+    }
+    var pair: array[s32; 2] = fixed[0, 0];
+    if serve_queue(pair as ptr[s32], 2, 4) != 4 {
+        return (2) as s32;
+    }
+    if ((classify(4) != (-1) as s32) || (classify(1) != 3)) || (classify(3) != 1) {
+        return (3) as s32;
+    }
+    if serve_queue(tickets as ptr[s32], 0, 10) != 0 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}

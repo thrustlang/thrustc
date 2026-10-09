@@ -38,7 +38,12 @@ pub fn lex(lexer: &mut Lexer, null_terminated: bool) -> Result<(), CompilationIs
             break;
         }
 
-        let ch: char = self::advance_string_char(lexer)?;
+        let ch: char = if lexer.peek() == '\\' {
+            crate::escape::read(lexer)?
+        } else {
+            lexer.advance()
+        };
+
         content.push(ch);
     }
 
@@ -70,61 +75,6 @@ pub fn lex(lexer: &mut Lexer, null_terminated: bool) -> Result<(), CompilationIs
     )?;
 
     Ok(())
-}
-
-fn handle_escape_sequence(lexer: &mut Lexer) -> Result<char, CompilationIssue> {
-    lexer.advance_only();
-
-    if lexer.is_eof() {
-        lexer.end_span();
-
-        let span: Span = Span::new(lexer.span());
-
-        return Err(CompilationIssue::Error(
-            CompilationIssueCode::E0001,
-            "Unexpected EOF after escape character.".into(),
-            "EOF".into(),
-            None,
-            span,
-        ));
-    }
-
-    let escaped_char: char = lexer.advance();
-
-    match escaped_char {
-        'n' => Ok('\n'),
-        't' => Ok('\t'),
-        'r' => Ok('\r'),
-        '\\' => Ok('\\'),
-        '0' => Ok('\0'),
-        '\'' => Ok('\''),
-        '"' => Ok('"'),
-
-        _ => {
-            lexer.end_span();
-
-            let span: Span = Span::new(lexer.span());
-
-            Err(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "Invalid escape sequence".into(),
-                "You must utilize either '\\n', '\\t', '\\r', '\\0', '\\\\', '\\'', and '\\\"'."
-                    .into(),
-                None,
-                span,
-            ))
-        }
-    }
-}
-
-fn advance_string_char(lexer: &mut Lexer) -> Result<char, CompilationIssue> {
-    let current_char: char = lexer.peek();
-
-    if current_char == '\\' {
-        self::handle_escape_sequence(lexer)
-    } else {
-        Ok(lexer.advance())
-    }
 }
 
 fn validate_and_finalize_string(

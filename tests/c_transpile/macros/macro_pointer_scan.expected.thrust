@@ -1,0 +1,126 @@
+fn __c_macro_ADVANCE[T1, T2](p: T1, n: T2) T1 @alwaysInline {
+    return (((p) + (n))) as T1;
+}
+fn __c_macro_AT[T1, T2](p: T1, i: T2) T1 @alwaysInline {
+    return ((p->[(i)])) as T1;
+}
+fn __c_macro_CLAMP[T1, T2, T3](v: T1, lo: T2, hi: T3) T1 @alwaysInline {
+    var thrust_temporary_0: bool;
+    if ((v)) < ((hi)) {
+        thrust_temporary_0 = (((v))) as bool;
+    } else {
+        thrust_temporary_0 = (((hi))) as bool;
+    }
+    var thrust_temporary_1: T1;
+    if ((v)) < ((hi)) {
+        thrust_temporary_1 = (((v))) as T1;
+    } else {
+        thrust_temporary_1 = (((hi))) as T1;
+    }
+    var thrust_temporary_2: T1;
+    if ((lo)) > ((thrust_temporary_0)) {
+        thrust_temporary_2 = (((lo))) as T1;
+    } else {
+        thrust_temporary_2 = (((thrust_temporary_1))) as T1;
+    }
+    return ((thrust_temporary_2)) as T1;
+}
+fn __c_macro_FIRST[T1](p: T1) T1 @alwaysInline {
+    return ((p->[(0)])) as T1;
+}
+fn __c_macro_LAST[T1, T2](p: T1, n: T2) T1 @alwaysInline {
+    return ((p->[((n) - 1)])) as T1;
+}
+fn __c_macro_MAX2[T1, T2](a: T1, b: T2) T1 @alwaysInline {
+    var thrust_temporary_3: T1;
+    if (a) > (b) {
+        thrust_temporary_3 = ((a)) as T1;
+    } else {
+        thrust_temporary_3 = ((b)) as T1;
+    }
+    return ((thrust_temporary_3)) as T1;
+}
+fn __c_macro_MIN2[T1, T2](a: T1, b: T2) T1 @alwaysInline {
+    var thrust_temporary_4: T1;
+    if (a) < (b) {
+        thrust_temporary_4 = ((a)) as T1;
+    } else {
+        thrust_temporary_4 = ((b)) as T1;
+    }
+    return ((thrust_temporary_4)) as T1;
+}
+
+fn macro_pointer_scan_check() s32 {
+    var values: array[s32; 6] = fixed[4, (-2) as s32, 9, 0, 7, 3];
+    var scan: ptr[s32] = (values) as ptr[s32];
+    var total: s32;
+    var clamped: s32;
+    if 1 != 1 {
+        return (1) as s32;
+    }
+    __c_macro_SET_IF[bool, s32, s32]((values->[((6) - 1)]) != (-1), values[6 - 1], 5);
+    total = sum_ptr(scan, 6);
+    if total != 23 {
+        return (2) as s32;
+    }
+    var thrust_temporary_5: s32;
+    if ((total)) < ((20)) {
+        thrust_temporary_5 = (((total))) as s32;
+    } else {
+        thrust_temporary_5 = (((20))) as s32;
+    }
+    var thrust_temporary_6: s32;
+    if ((total)) < ((20)) {
+        thrust_temporary_6 = (((total))) as s32;
+    } else {
+        thrust_temporary_6 = (((20))) as s32;
+    }
+    var thrust_temporary_7: s32;
+    if ((0)) > ((thrust_temporary_5)) {
+        thrust_temporary_7 = (((0))) as s32;
+    } else {
+        thrust_temporary_7 = (((thrust_temporary_6))) as s32;
+    }
+    clamped = (thrust_temporary_7);
+    if clamped != 20 {
+        return (3) as s32;
+    }
+    if spread_ptr(((scan)[(1)]), (5) as s32) != 11 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}
+fn spread_ptr(p: const ptr[s32], n: s32) s32 {
+    var hi: s32 = (p->[(0)]);
+    var lo: s32 = (p->[(0)]);
+    for var i: s32 = 1; i < n; i += 1; {
+        var thrust_temporary_8: s32;
+        if (hi) > ((p->[(i)])) {
+            thrust_temporary_8 = ((hi)) as s32;
+        } else {
+            thrust_temporary_8 = (((p->[(i)]))) as s32;
+        }
+        hi = (thrust_temporary_8);
+        var thrust_temporary_9: s32;
+        if (lo) < ((p->[(i)])) {
+            thrust_temporary_9 = ((lo)) as s32;
+        } else {
+            thrust_temporary_9 = (((p->[(i)]))) as s32;
+        }
+        lo = (thrust_temporary_9);
+    }
+    return (hi - lo) as s32;
+}
+fn sum_ptr(p: const ptr[s32], n: s32) s32 {
+    var s: s32 = 0;
+    for var i: s32 = 0; i < n; i += 1; {
+        s = s + ((p)[(i)])->[0];
+    }
+    return (s) as s32;
+}
+fn __c_macro_SET_IF[T1, T2, T3](cond: T1, dst: ptr[T2], val: T3) void @alwaysInline {
+    if cond {
+        dst->[0] =  ((val)) as T2;
+    }
+}
+

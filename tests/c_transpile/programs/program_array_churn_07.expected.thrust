@@ -10,7 +10,7 @@ fn churn_once_07(data: ptr[s32], n: s32) s32 {
     return (data->[0] + data->[n - 1]) as s32;
 }
 fn main() s32 @public {
-    var data: array[s32; 9] = fixed[10, 8, 2, -1, 8, 11, -7, 2, 10];
+    var data: array[s32; 9] = fixed[10, 8, 2, (-1) as s32, 8, 11, (-7) as s32, 2, 10];
     var score: s32 = 0;
     score += churn_once_07(data as ptr[s32], 9);
     score += churn_once_07(data as ptr[s32], 9);

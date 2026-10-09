@@ -1,6 +1,6 @@
 fn select_high() s32 {
     var r: s32 = 0;
-    __c_macro_SELECT[s32, s32, s32, s32](1, 10, 20, ref r);
+    __c_macro_SELECT[s32, s32, s32, s32](1, 10, 20, ref (r));
     return (r) as s32;
 }
 fn __c_macro_SELECT[T1, T2, T3, T4](tag: T1, a: T2, b: T3, out: ptr[T4]) void @alwaysInline {

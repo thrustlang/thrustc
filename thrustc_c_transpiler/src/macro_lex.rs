@@ -17,7 +17,7 @@
 
 */
 
-pub fn extract_binary_operator(
+pub fn lex_binary_operator(
     entity: &clang::Entity<'_>,
     left: &clang::Entity<'_>,
     right: &clang::Entity<'_>,
@@ -58,6 +58,7 @@ pub fn extract_binary_operator(
     if let (Some(end_file), Some(start_file)) = (operand_end.file, operand_start.file)
         && end_file == start_file
         && operand_end.offset <= operand_start.offset
+        && operand_end.line == operand_start.line
     {
         let gap: clang::source::SourceRange<'_> = clang::source::SourceRange::new(
             start_file.get_offset_location(operand_end.offset),
@@ -77,36 +78,31 @@ pub fn extract_binary_operator(
 
     // Fallback for the rare cases where the gap cannot be tokenized: recover
     // the operator from the entity text via the same gap reasoning.
-    let left_end: clang::source::Location<'_> = if use_spelling {
-        left_range.get_end().get_spelling_location()
-    } else {
-        left_range.get_end().get_expansion_location()
-    };
+    if use_spelling {
+        let spelling_tokens: Vec<String> = self::spelling_range_tokens(entity)
+            .unwrap_or_default()
+            .iter()
+            .map(|token| token.get_spelling())
+            .collect();
 
-    let right_start: clang::source::Location<'_> = if use_spelling {
-        right_range.get_start().get_spelling_location()
-    } else {
-        right_range.get_start().get_expansion_location()
-    };
+        return self::extract_binary_operator_from_tokens(&spelling_tokens).map(str::to_string);
+    }
+
+    let left_end: clang::source::Location<'_> = left_range.get_end().get_expansion_location();
+
+    let right_start: clang::source::Location<'_> = right_range.get_start().get_expansion_location();
 
     if left_end.file != right_start.file {
         return None;
     }
 
-    let source_tokens: Vec<clang::token::Token<'_>> = if use_spelling {
-        self::spelling_range_tokens(entity).unwrap_or_default()
-    } else {
-        entity_range.tokenize()
-    };
+    let source_tokens: Vec<clang::token::Token<'_>> = entity_range.tokenize();
 
     let operator_tokens: Vec<String> = source_tokens
         .iter()
         .filter_map(|token| {
-            let location: clang::source::Location<'_> = if use_spelling {
-                token.get_location().get_spelling_location()
-            } else {
-                token.get_location().get_expansion_location()
-            };
+            let location: clang::source::Location<'_> =
+                token.get_location().get_expansion_location();
 
             if location.file != left_end.file
                 || location.offset < left_end.offset
@@ -282,7 +278,9 @@ pub fn tokens_to_thrust_source(tokens: &[clang::token::Token<'_>]) -> String {
     for tk in tokens.iter() {
         let raw: String = tk.get_spelling();
         let s: String = match tk.get_kind() {
-            clang::token::TokenKind::Identifier => crate::util::sanitize_thrust_identifier(&raw),
+            clang::token::TokenKind::Identifier => {
+                crate::util::normalize_to_thrust_identifier(&raw)
+            }
             clang::token::TokenKind::Literal => self::normalize_literal_token_spelling(&raw),
             clang::token::TokenKind::Punctuation if raw == "." => "->".into(),
             _ => raw,
@@ -484,7 +482,7 @@ pub fn to_macro_tokens(
 
             let text: String = match token.get_kind() {
                 clang::token::TokenKind::Identifier => {
-                    crate::util::sanitize_thrust_identifier(&raw)
+                    crate::util::normalize_to_thrust_identifier(&raw)
                 }
                 clang::token::TokenKind::Literal => self::normalize_literal_token_spelling(&raw),
                 clang::token::TokenKind::Punctuation if raw == "." => "->".to_string(),
@@ -541,11 +539,13 @@ pub fn lex_text_to_macro_tokens(
         if ch == b'\\' {
             if bytes.get(index + 1) == Some(&b'\n') {
                 index += 2;
+
                 continue;
             }
 
             if bytes.get(index + 1) == Some(&b'\r') && bytes.get(index + 2) == Some(&b'\n') {
                 index += 3;
+
                 continue;
             }
         }
@@ -562,6 +562,7 @@ pub fn lex_text_to_macro_tokens(
                 source[start..index].to_string(),
                 origin,
             ));
+
             continue;
         }
 
@@ -577,11 +578,13 @@ pub fn lex_text_to_macro_tokens(
             }
 
             let text: String = source[start..index].to_string();
+
             out.push(crate::macro_token::MacroToken::new(
                 crate::macro_token::classify_text(&text),
                 text,
                 origin,
             ));
+
             continue;
         }
 
@@ -599,11 +602,13 @@ pub fn lex_text_to_macro_tokens(
             }
 
             let text: String = source[start..index].to_string();
+
             out.push(crate::macro_token::MacroToken::new(
                 crate::macro_token::MacroTokenKind::Literal,
                 text,
                 origin,
             ));
+
             continue;
         }
 
@@ -633,11 +638,13 @@ pub fn lex_text_to_macro_tokens(
                 source[start..index.min(bytes.len())].to_string(),
                 origin,
             ));
+
             continue;
         }
 
         if index + 1 < bytes.len() {
             let two: &str = &source[index..index + 2];
+
             if crate::macro_token::classify_text(two)
                 == crate::macro_token::MacroTokenKind::Punctuation
             {
@@ -646,17 +653,21 @@ pub fn lex_text_to_macro_tokens(
                     two.to_string(),
                     origin,
                 ));
+
                 index += 2;
+
                 continue;
             }
         }
 
         let one: &str = &source[index..index + 1];
+
         out.push(crate::macro_token::MacroToken::new(
             crate::macro_token::classify_text(one),
             one.to_string(),
             origin,
         ));
+
         index += 1;
     }
 
@@ -686,4 +697,169 @@ pub fn detokenize_macro_tokens(tokens: &[crate::macro_token::MacroToken]) -> Str
     }
 
     out
+}
+
+pub type SiteCallArguments = (
+    Vec<Vec<crate::macro_token::MacroToken>>,
+    Vec<(u32, u32)>,
+    u32,
+);
+
+pub fn lex_site_call_arguments(site: &clang::Entity<'_>, name: &str) -> Option<SiteCallArguments> {
+    let range: clang::source::SourceRange<'_> = site.get_range()?;
+    let location: clang::source::Location<'_> = range.get_start().get_expansion_location();
+    let file: clang::source::File<'_> = location.file?;
+    let contents: String = std::fs::read_to_string(file.get_path()).ok()?;
+    let bytes: &[u8] = contents.as_bytes();
+
+    let mut offset: usize = location.offset as usize;
+
+    if bytes.get(offset..offset + name.len()) != Some(name.as_bytes()) {
+        return None;
+    }
+
+    offset += name.len();
+
+    while bytes
+        .get(offset)
+        .is_some_and(|byte| byte.is_ascii_whitespace())
+    {
+        offset += 1;
+    }
+
+    if bytes.get(offset) != Some(&b'(') {
+        return None;
+    }
+
+    offset += 1;
+
+    let mut arg_ranges: Vec<(usize, usize)> = Vec::new();
+    let mut argument_start: usize = offset;
+    let mut depth: i32 = 1;
+
+    while offset < bytes.len() {
+        let byte: u8 = bytes[offset];
+
+        if byte == b'"' || byte == b'\'' {
+            offset = self::skip_c_string(bytes, offset);
+            continue;
+        }
+
+        if byte == b'/' && bytes.get(offset + 1) == Some(&b'/') {
+            while offset < bytes.len() && bytes[offset] != b'\n' {
+                offset += 1;
+            }
+
+            continue;
+        }
+
+        if byte == b'/' && bytes.get(offset + 1) == Some(&b'*') {
+            offset += 2;
+
+            while offset + 1 < bytes.len() && !(bytes[offset] == b'*' && bytes[offset + 1] == b'/')
+            {
+                offset += 1;
+            }
+
+            offset += 2;
+
+            continue;
+        }
+
+        if byte == b'(' || byte == b'[' || byte == b'{' {
+            depth += 1;
+            offset += 1;
+
+            continue;
+        }
+
+        if byte == b')' || byte == b']' || byte == b'}' {
+            depth -= 1;
+
+            if depth == 0 && byte == b')' {
+                offset += 1;
+                break;
+            }
+
+            if depth < 1 {
+                return None;
+            }
+
+            offset += 1;
+            continue;
+        }
+
+        if byte == b',' && depth == 1 {
+            arg_ranges.push((argument_start, offset));
+            offset += 1;
+            argument_start = offset;
+            continue;
+        }
+
+        offset += 1;
+    }
+
+    if depth != 0 {
+        return None;
+    }
+
+    if argument_start < offset - 1 {
+        arg_ranges.push((argument_start, offset - 1));
+    }
+
+    let mut args: Vec<Vec<crate::macro_token::MacroToken>> = Vec::new();
+
+    for (start, end) in arg_ranges.iter() {
+        if start >= end {
+            args.push(Vec::new());
+            continue;
+        }
+
+        let start_offset: u32 = u32::try_from(*start).ok()?;
+        let end_offset: u32 = u32::try_from(*end).ok()?;
+
+        let start_location: clang::source::SourceLocation<'_> =
+            file.get_offset_location(start_offset);
+        let end_location: clang::source::SourceLocation<'_> = file.get_offset_location(end_offset);
+
+        let arg_range: clang::source::SourceRange<'_> =
+            clang::source::SourceRange::new(start_location, end_location);
+
+        let tokens: Vec<clang::token::Token<'_>> = arg_range.tokenize();
+        let macro_tokens: Vec<crate::macro_token::MacroToken> = self::to_macro_tokens(
+            &tokens,
+            crate::macro_token::MacroTokenOrigin::InvocationArgument,
+        );
+
+        args.push(macro_tokens);
+    }
+
+    let ranges: Vec<(u32, u32)> = arg_ranges
+        .iter()
+        .map(|(start, end)| Some((u32::try_from(*start).ok()?, u32::try_from(*end).ok()?)))
+        .collect::<Option<Vec<(u32, u32)>>>()?;
+
+    Some((args, ranges, u32::try_from(offset).ok()?))
+}
+
+fn skip_c_string(bytes: &[u8], start: usize) -> usize {
+    let quote: u8 = bytes[start];
+    let mut offset: usize = start + 1;
+
+    while offset < bytes.len() {
+        let inner: u8 = bytes[offset];
+
+        offset += 1;
+
+        if inner == b'\\' {
+            offset += 1;
+            continue;
+        }
+
+        if inner == quote {
+            break;
+        }
+    }
+
+    offset
 }

@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if unit_scale_check() != 0 { return 1; }
+
+    return 0;
+}

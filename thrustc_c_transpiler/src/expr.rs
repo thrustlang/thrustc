@@ -20,6 +20,7 @@
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
+use crate::error::{TranspilerError, TranspilerResult};
 use crate::location::Location;
 
 pub fn translate_expr(
@@ -27,13 +28,13 @@ pub fn translate_expr(
     span: Span,
     ctx: Location,
     macro_ctx: &mut crate::macros::MacroContext,
-) -> String {
+) -> TranspilerResult<String> {
     let prefix: String = crate::macros::expansion_prefix(entity);
 
     if let Some(expression_text) =
         crate::macros::try_extract_expression_macro_call(macro_ctx, entity, span)
     {
-        return expression_text;
+        return Ok(expression_text);
     }
 
     match entity.get_kind() {
@@ -42,48 +43,157 @@ pub fn translate_expr(
         | clang::EntityKind::StringLiteral
         | clang::EntityKind::CharacterLiteral => {
             let Some(range) = entity.get_range() else {
+                let issue: String = {
+                    let detail: String = format!(
+                        "Missing source range for expression kind {:?}.",
+                        entity.get_kind()
+                    );
+
+                    format!("C translation failed:\n{prefix}{detail}")
+                };
+
                 macro_ctx
                     .get_mut_transpiler_context()
                     .add_error_fail(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        {
-                            let detail: String = format!(
-                                "Missing source range for expression kind {:?}.",
-                                entity.get_kind()
-                            );
-
-                            format!("C translation failed:\n{prefix}{detail}")
-                        },
+                        issue,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
                     ));
-                return Default::default();
+
+                return Err(TranspilerError::Abort);
             };
 
             let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
 
             if let Some(first) = tokens.first() {
+                if entity.get_kind() == clang::EntityKind::StringLiteral {
+                    let mut concatenated: String = String::new();
+
+                    for token in tokens.iter() {
+                        let token_spelling: String = token.get_spelling();
+
+                        let start: usize = token_spelling.find('"').map_or(0, |idx| idx + 1);
+                        let end: usize = token_spelling.rfind('"').unwrap_or(token_spelling.len());
+
+                        if start <= end {
+                            concatenated.push_str(&token_spelling[start..end]);
+                        }
+                    }
+
+                    return Ok(format!("\"{concatenated}\""));
+                }
+
                 let spelling: String = first.get_spelling();
 
+                if entity.get_kind() == clang::EntityKind::CharacterLiteral {
+                    let byte: Option<u8> = match entity.evaluate() {
+                        Some(clang::EvaluationResult::SignedInteger(value)) => Some(value as u8),
+                        Some(clang::EvaluationResult::UnsignedInteger(value)) => Some(value as u8),
+                        _ => None,
+                    };
+
+                    // C character literals may use escapes Thrust does not parse identically
+                    // (hex '\x41', octal '\101', etc.), so we materialize the byte through
+                    // clang's evaluation and re-emit it as a canonical Thrust char literal,
+                    // falling back to a numeric `(N as char)` for non-printable bytes.
+                    if let Some(byte) = byte {
+                        return Ok(match byte {
+                            b'\n' => "'\\n'".to_string(),
+                            b'\t' => "'\\t'".to_string(),
+                            b'\r' => "'\\r'".to_string(),
+                            0 => "'\\0'".to_string(),
+                            b'\\' => "'\\\\'".to_string(),
+                            b'\'' => "'\\''".to_string(),
+                            b'"' => "'\\\"'".to_string(),
+                            0x20..=0x7E => format!("'{}'", byte as char),
+                            other => format!("({other} as char)"),
+                        });
+                    }
+                }
+
                 if entity.get_kind() == clang::EntityKind::IntegerLiteral {
-                    return spelling.trim_end_matches(['u', 'U', 'l', 'L']).to_string();
+                    let trimmed: &str = spelling.trim_end_matches(['u', 'U', 'l', 'L']);
+
+                    let has_suffix: bool = trimmed.len() != spelling.len();
+
+                    let is_octal: bool = trimmed.len() > 1
+                        && trimmed.starts_with('0')
+                        && !trimmed.starts_with("0x")
+                        && !trimmed.starts_with("0X")
+                        && trimmed.chars().all(|ch| ch.is_ascii_digit());
+
+                    let normalized: String = if is_octal {
+                        u64::from_str_radix(&trimmed[1..], 8)
+                            .map(|value| value.to_string())
+                            .unwrap_or_else(|_| trimmed.to_string())
+                    } else {
+                        trimmed.to_string()
+                    };
+
+                    let Some(ty) = entity.get_type() else {
+                        macro_ctx.get_mut_transpiler_context().add_error_fail(
+                            CompilationIssue::Error(
+                                CompilationIssueCode::E0110,
+                                format!(
+                                    "C translation failed:\n{prefix}Missing type for integer literal."
+                                ),
+                                "Rewrite the C input to avoid the unsupported construct.".into(),
+                                None,
+                                span,
+                            ),
+                        );
+
+                        return Err(TranspilerError::Abort);
+                    };
+
+                    let type_text: String = crate::type_format::format_clang_type_thrust(
+                        &ty, macro_ctx, &prefix, span,
+                    )?;
+
+                    if has_suffix && !type_text.is_empty() && type_text != "s32" {
+                        return Ok(format!("({normalized}) as {type_text}"));
+                    }
+
+                    return Ok(normalized);
                 }
 
                 if entity.get_kind() == clang::EntityKind::FloatingLiteral {
-                    return spelling.trim_end_matches(['f', 'F', 'l', 'L']).to_string();
+                    let normalized: &str = spelling.trim_end_matches(['f', 'F', 'l', 'L']);
+
+                    let needs_normalization: bool = normalized.starts_with('.')
+                        || normalized.ends_with('.')
+                        || normalized.contains('e')
+                        || normalized.contains('E');
+
+                    if needs_normalization
+                        && let Some(clang::EvaluationResult::Float(value)) = entity.evaluate()
+                    {
+                        let text: String = format!("{value}");
+
+                        return Ok(if text.contains('.') {
+                            text
+                        } else {
+                            format!("{text}.0")
+                        });
+                    }
+
+                    return Ok(normalized.to_string());
                 }
 
-                return spelling;
+                return Ok(spelling);
             }
 
-            String::new()
+            Ok(String::new())
         }
 
-        clang::EntityKind::DeclRefExpr => self::translate_decl_ref_expr(entity, span, macro_ctx),
-
-        clang::EntityKind::GNUNullExpr | clang::EntityKind::NullPtrLiteralExpr => "nullptr".into(),
-
+        clang::EntityKind::DeclRefExpr => {
+            Ok(self::translate_decl_ref_expr(entity, span, macro_ctx)?)
+        }
+        clang::EntityKind::GNUNullExpr | clang::EntityKind::NullPtrLiteralExpr => {
+            Ok("nullptr".into())
+        }
         clang::EntityKind::MemberRefExpr => {
             let children: Vec<clang::Entity<'_>> = entity.get_children();
 
@@ -99,7 +209,8 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                return Default::default();
+
+                return Err(TranspilerError::Abort);
             };
 
             let Some(field_name) = entity.get_name() else {
@@ -112,10 +223,11 @@ pub fn translate_expr(
                     None,
                     span,
                 ));
-                return Default::default();
+
+                return Err(TranspilerError::Abort);
             };
 
-            let base: String = self::translate_expr(base_node, span, Location::RValue, macro_ctx);
+            let base: String = self::translate_expr(base_node, span, Location::RValue, macro_ctx)?;
 
             // Cadena de decisión LValue/RValue (Location) × clase de la base.
             // `ref` (AddressOf) anula cualquier RValue: el operando debe
@@ -135,9 +247,9 @@ pub fn translate_expr(
                 "->"
             };
 
-            let field_name: String = { crate::util::sanitize_thrust_identifier(&field_name) };
+            let field_name: String = { crate::util::normalize_to_thrust_identifier(&field_name) };
 
-            format!("{base}{operator}{field_name}")
+            Ok(format!("{base}{operator}{field_name}"))
         }
 
         clang::EntityKind::ParenExpr => {
@@ -147,7 +259,7 @@ pub fn translate_expr(
                 .iter()
                 .find(|c| crate::clang_util::is_supported_expr_kind(c.get_kind()))
             {
-                let inner: String = self::translate_expr(child, span, ctx, macro_ctx);
+                let inner: String = self::translate_expr(child, span, ctx, macro_ctx)?;
 
                 if matches!(
                     child.get_kind(),
@@ -158,14 +270,14 @@ pub fn translate_expr(
                         | clang::EntityKind::DeclRefExpr
                         | clang::EntityKind::MemberRefExpr
                 ) {
-                    return inner;
+                    return Ok(inner);
                 }
 
                 if !entity.is_in_main_file() {
-                    return inner;
+                    return Ok(inner);
                 }
 
-                return format!("({inner})");
+                return Ok(format!("({inner})"));
             }
 
             let Some(range) = entity.get_range() else {
@@ -178,10 +290,11 @@ pub fn translate_expr(
                     None,
                     span,
                 ));
-                return Default::default();
+
+                return Err(TranspilerError::Abort);
             };
 
-            crate::macro_lex::tokens_to_thrust_source(&range.tokenize())
+            Ok(crate::macro_lex::tokens_to_thrust_source(&range.tokenize()))
         }
 
         clang::EntityKind::UnexposedExpr => {
@@ -207,10 +320,11 @@ pub fn translate_expr(
                     None,
                     span,
                 ));
-                return Default::default();
+
+                return Err(TranspilerError::Abort);
             };
 
-            crate::macro_lex::tokens_to_thrust_source(&range.tokenize())
+            Ok(crate::macro_lex::tokens_to_thrust_source(&range.tokenize()))
         }
 
         clang::EntityKind::CallExpr => {
@@ -226,47 +340,44 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                return Default::default();
+
+                return Err(TranspilerError::Abort);
             }
 
             let callee: String =
-                self::translate_expr(&children[0], span, Location::RValue, macro_ctx);
+                self::translate_expr(&children[0], span, Location::RValue, macro_ctx)?;
 
-            let mut expected_parameter_types: Vec<clang::Type<'_>> = if let Some(reference) =
-                entity.get_reference()
-                && let Some(arguments) = reference.get_arguments()
-            {
-                arguments
-                    .into_iter()
-                    .filter_map(|argument| argument.get_type())
-                    .collect()
-            } else if matches!(
+            // Resolve the callee's parameter types for implicit argument casts. Prefer the
+            // call's own reference; otherwise unwrap a single parenthesized/exposed callee
+            // and fall back to the callee expression's reference. The first reference that
+            // actually exposes arguments wins.
+            let callee_reference: Option<clang::Entity<'_>> = if matches!(
                 children[0].get_kind(),
                 clang::EntityKind::ParenExpr | clang::EntityKind::UnexposedExpr
             ) {
                 let nested_children: Vec<clang::Entity<'_>> = children[0].get_children();
 
-                if nested_children.len() == 1
-                    && let Some(reference) = nested_children[0].get_reference()
-                    && let Some(arguments) = reference.get_arguments()
-                {
-                    arguments
-                        .into_iter()
-                        .filter_map(|argument| argument.get_type())
-                        .collect()
+                if nested_children.len() == 1 {
+                    nested_children[0].get_reference()
                 } else {
-                    Vec::new()
+                    None
                 }
-            } else if let Some(reference) = children[0].get_reference()
-                && let Some(arguments) = reference.get_arguments()
-            {
-                arguments
-                    .into_iter()
-                    .filter_map(|argument| argument.get_type())
-                    .collect()
             } else {
-                Vec::new()
+                children[0].get_reference()
             };
+
+            let mut expected_parameter_types: Vec<clang::Type<'_>> =
+                [entity.get_reference(), callee_reference]
+                    .into_iter()
+                    .flatten()
+                    .find_map(|reference| reference.get_arguments())
+                    .map(|arguments| {
+                        arguments
+                            .into_iter()
+                            .filter_map(|argument| argument.get_type())
+                            .collect()
+                    })
+                    .unwrap_or_default();
 
             if expected_parameter_types.is_empty()
                 && let Some(callee_type) = children[0].get_type()
@@ -294,7 +405,7 @@ pub fn translate_expr(
                     _ => Location::RValue,
                 };
 
-                let translated: String = self::translate_expr(arg, span, arg_ctx, macro_ctx);
+                let translated: String = self::translate_expr(arg, span, arg_ctx, macro_ctx)?;
 
                 let mut argument_type: Option<clang::Type<'_>> = arg.get_type();
                 let mut probe: clang::Entity<'_> = *arg;
@@ -361,12 +472,10 @@ pub fn translate_expr(
                                 && extents.len() > 1
                             {
                                 let zero_count: usize = extents.len();
-
                                 let zero_iter = (0..zero_count).map(|_| "[0]");
-
                                 let zero_path: String = zero_iter.collect();
 
-                                args.push(format!("ref {translated}{zero_path}"));
+                                args.push(format!("{translated}{zero_path}"));
                                 continue;
                             }
 
@@ -374,16 +483,17 @@ pub fn translate_expr(
                                 element_type.get_canonical_type();
 
                             if canonical_element_type.get_kind() == clang::TypeKind::Record {
-                                args.push(format!("ref {translated}[0]"));
+                                args.push(format!("{translated}[0]"));
                                 continue;
                             }
 
-                            let element_text: String = crate::type_format::format_clang_type_thrust(
-                                &element_type,
-                                macro_ctx,
-                                &prefix,
-                                span,
-                            );
+                            let element_text: String =
+                                crate::type_format::format_clang_type_thrust(
+                                    &element_type,
+                                    macro_ctx,
+                                    &prefix,
+                                    span,
+                                )?;
 
                             args.push(format!("{translated} as ptr[{element_text}]"));
                             continue;
@@ -391,14 +501,26 @@ pub fn translate_expr(
                     }
                 }
 
-                if let Some(expected_type) = expected_parameter_types.get(index) {
+                let expected_is_record: bool =
+                    expected_parameter_types.get(index).is_some_and(|expected| {
+                        expected.get_canonical_type().get_kind() == clang::TypeKind::Record
+                    });
+
+                let arg_is_place: bool = matches!(
+                    crate::expr_analysis::clean_expression_wrappers(arg).get_kind(),
+                    clang::EntityKind::ArraySubscriptExpr
+                );
+
+                if expected_is_record && arg_is_place {
+                    args.push(format!("deref {translated}"));
+                } else if let Some(expected_type) = expected_parameter_types.get(index) {
                     args.push(crate::type_format::cast_expression_to_type(
                         arg,
                         translated,
                         expected_type,
                         span,
                         macro_ctx,
-                    ));
+                    )?);
                 } else {
                     args.push(translated);
                 }
@@ -408,7 +530,7 @@ pub fn translate_expr(
                 crate::builtins::CanonicalBuiltin::from_called_function_name(&callee)
                 && let Some(canonical_text) = canonical.rewrite_builtin_call(&children[1..], &args)
             {
-                return canonical_text;
+                return Ok(canonical_text);
             }
 
             if let Some(heap_operation) =
@@ -417,7 +539,7 @@ pub fn translate_expr(
                 if let Some(halloc_text) =
                     heap_operation.try_lower_heap_call(entity, None, macro_ctx, &prefix, span)
                 {
-                    return halloc_text;
+                    return Ok(halloc_text);
                 }
 
                 macro_ctx
@@ -432,10 +554,11 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                return Default::default();
+
+                return Err(TranspilerError::Abort);
             }
 
-            format!("{callee}({})", args.join(", "))
+            Ok(format!("{callee}({})", args.join(", ")))
         }
 
         clang::EntityKind::UnaryOperator => {
@@ -449,7 +572,7 @@ pub fn translate_expr(
                     None,
                     span,
                 ));
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             let spellings: Vec<String> = crate::macro_lex::range_spellings(&range, entity);
@@ -466,7 +589,7 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             let is_increment: bool = spellings.contains(&"++".to_string());
@@ -493,7 +616,7 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                    return Default::default();
+                    return Err(TranspilerError::Abort);
                 }
 
                 let cleaned: clang::Entity<'_> =
@@ -526,7 +649,9 @@ pub fn translate_expr(
                     )
                 });
 
-                if !is_arithmetic_target {
+                let is_pointer_target: bool = target_type_kind == Some(clang::TypeKind::Pointer);
+
+                if !is_arithmetic_target && !is_pointer_target {
                     macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
                         format!(
@@ -536,12 +661,13 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                    return Default::default();
+
+                    return Err(TranspilerError::Abort);
                 }
 
                 if target_kind == clang::EntityKind::DeclRefExpr {
                     let name: String =
-                        self::translate_expr(operand, span, Location::RValue, macro_ctx);
+                        self::translate_expr(operand, span, Location::RValue, macro_ctx)?;
 
                     if name.contains("::") {
                         macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
@@ -553,14 +679,31 @@ pub fn translate_expr(
                             None,
                             span,
                         ));
-                        return Default::default();
+                        return Err(TranspilerError::Abort);
+                    }
+
+                    if is_pointer_target {
+                        let pointee_is_pointer: bool = cleaned
+                            .get_type()
+                            .map(|ty| ty.get_canonical_type())
+                            .and_then(|canonical| canonical.get_pointee_type())
+                            .is_some_and(|inner| {
+                                inner.get_canonical_type().get_kind() == clang::TypeKind::Pointer
+                            });
+
+                        return Ok(crate::pointer::Pointer::lower_advance(
+                            &name,
+                            "1",
+                            is_increment,
+                            pointee_is_pointer,
+                        ));
                     }
 
                     if is_prefix {
-                        return format!("{operator_text}{name}");
+                        return Ok(format!("{operator_text}{name}"));
                     }
 
-                    return format!("{name}{operator_text}");
+                    return Ok(format!("{name}{operator_text}"));
                 }
 
                 let cleaned_spellings: Vec<String> = crate::macro_lex::entity_spellings(&cleaned);
@@ -583,17 +726,17 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                    return Default::default();
+                    return Err(TranspilerError::Abort);
                 }
 
                 let place_text: String =
-                    self::translate_expr(&cleaned, span, Location::RValue, macro_ctx);
+                    self::translate_expr(&cleaned, span, Location::RValue, macro_ctx)?;
 
                 if is_prefix {
-                    return format!("{operator_text}({place_text})");
+                    return Ok(format!("{operator_text}({place_text})"));
                 }
 
-                return format!("({place_text}){operator_text}");
+                return Ok(format!("({place_text}){operator_text}"));
             }
 
             let op: Option<&str> = spellings.iter().find_map(|s| match s.as_str() {
@@ -614,7 +757,7 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             let operand_ctx: Location = if op == "&" {
@@ -623,15 +766,28 @@ pub fn translate_expr(
                 Location::RValue
             };
 
-            let operand_text: String = self::translate_expr(operand, span, operand_ctx, macro_ctx);
+            let operand_text: String = self::translate_expr(operand, span, operand_ctx, macro_ctx)?;
 
             match op {
-                "&" => format!("ref {operand_text}"),
+                "&" => {
+                    let is_place_operand: bool = matches!(
+                        crate::expr_analysis::clean_expression_wrappers(operand).get_kind(),
+                        clang::EntityKind::ArraySubscriptExpr
+                            | clang::EntityKind::MemberRef
+                            | clang::EntityKind::MemberRefExpr
+                    );
+
+                    if is_place_operand {
+                        Ok(operand_text)
+                    } else {
+                        Ok(format!("ref ({operand_text})"))
+                    }
+                }
                 "*" => {
                     if let Some(pointer_target) =
-                        self::translate_pointer_target_expr(operand, span, macro_ctx)
+                        self::translate_transform_pointer_arithmetic(operand, span, macro_ctx)
                     {
-                        return pointer_target;
+                        return Ok(pointer_target);
                     }
 
                     let needs_parens: bool = matches!(
@@ -641,14 +797,23 @@ pub fn translate_expr(
                     );
 
                     if needs_parens {
-                        format!("(deref ({operand_text}))")
+                        Ok(format!("(deref ({operand_text}))"))
                     } else {
-                        format!("(deref {operand_text})")
+                        Ok(format!("(deref {operand_text})"))
                     }
                 }
-                "!" => format!("!{operand_text}"),
-                "+" => operand_text,
-                "-" => format!("-{operand_text}"),
+                "!" => Ok(format!("!{operand_text}")),
+                "+" => Ok(operand_text),
+                "-" => {
+                    let result_type: String = match entity.get_type() {
+                        Some(ty) => crate::type_format::format_clang_type_thrust(
+                            &ty, macro_ctx, &prefix, span,
+                        )?,
+                        None => "s32".to_string(),
+                    };
+
+                    Ok(format!("(-{operand_text}) as {result_type}"))
+                }
                 "~" => {
                     let cleaned_operand: clang::Entity<'_> =
                         crate::expr_analysis::clean_expression_wrappers(operand);
@@ -672,7 +837,7 @@ pub fn translate_expr(
                     });
 
                     if needs_widening {
-                        return format!("~({operand_text} as s32)");
+                        return Ok(format!("~({operand_text} as s32)"));
                     }
 
                     let is_integer_operand: bool = operand_type_kind.is_some_and(|kind| {
@@ -695,7 +860,18 @@ pub fn translate_expr(
                     });
 
                     if is_integer_operand {
-                        return format!("~{operand_text}");
+                        if operand_text.contains(" as ") {
+                            return Ok(format!("~({operand_text})"));
+                        }
+
+                        let operand_type_text: String = match cleaned_operand.get_type() {
+                            Some(ty) => crate::type_format::format_clang_type_thrust(
+                                &ty, macro_ctx, &prefix, span,
+                            )?,
+                            None => "s32".to_string(),
+                        };
+
+                        return Ok(format!("~({operand_text} as {operand_type_text})"));
                     }
 
                     macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
@@ -708,7 +884,7 @@ pub fn translate_expr(
                         span,
                     ));
 
-                    Default::default()
+                    Err(TranspilerError::Abort)
                 }
                 _ => {
                     macro_ctx
@@ -724,7 +900,7 @@ pub fn translate_expr(
                             span,
                         ));
 
-                    Default::default()
+                    Err(TranspilerError::Abort)
                 }
             }
         }
@@ -740,7 +916,7 @@ pub fn translate_expr(
                     None,
                     span,
                 ));
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             let tokens: Vec<String> = crate::macro_lex::range_spellings(&range, entity);
@@ -762,7 +938,7 @@ pub fn translate_expr(
                 });
 
                 let anonymous_record_operand: bool = operand_type.as_ref().is_some_and(|operand| {
-                    let canonical = operand.get_canonical_type();
+                    let canonical: clang::Type<'_> = operand.get_canonical_type();
 
                     canonical.get_kind() == clang::TypeKind::Record
                         && canonical
@@ -799,7 +975,7 @@ pub fn translate_expr(
                 };
 
                 if let Some(literal_size) = literal_size {
-                    return format!("{literal_size}");
+                    return Ok(format!("{literal_size}"));
                 }
 
                 let Some(operand_type) = operand_type else {
@@ -812,7 +988,8 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                    return Default::default();
+
+                    return Err(TranspilerError::Abort);
                 };
 
                 let operand_type_text: String = crate::type_format::format_clang_type_thrust(
@@ -820,7 +997,7 @@ pub fn translate_expr(
                     macro_ctx,
                     &prefix,
                     span,
-                );
+                )?;
 
                 if operand_type_text.is_empty() {
                     match operand_type.get_sizeof() {
@@ -830,7 +1007,7 @@ pub fn translate_expr(
                                 clang::TypeKind::LongDouble | clang::TypeKind::Complex
                             ) =>
                         {
-                            return format!("{evaluated_size}");
+                            return Ok(format!("{evaluated_size}"));
                         }
 
                         _ => {}
@@ -845,12 +1022,12 @@ pub fn translate_expr(
                         macro_ctx,
                         &prefix,
                         span,
-                    );
+                    )?;
 
                     sizeof_text = format!("({sizeof_text}) as {result_type_text}");
                 }
 
-                return sizeof_text;
+                return Ok(sizeof_text);
             }
 
             macro_ctx
@@ -863,7 +1040,7 @@ pub fn translate_expr(
                     span,
                 ));
 
-            Default::default()
+            Err(TranspilerError::Abort)
         }
 
         clang::EntityKind::BinaryOperator | clang::EntityKind::CompoundAssignOperator => {
@@ -879,7 +1056,8 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                return Default::default();
+
+                return Err(TranspilerError::Abort);
             }
 
             let lhs_ctx: Location = if crate::macro_lex::is_assignment_expression(entity) {
@@ -888,21 +1066,22 @@ pub fn translate_expr(
                 Location::RValue
             };
 
-            let left: String = self::translate_expr(&children[0], span, lhs_ctx, macro_ctx);
+            let left: String = self::translate_expr(&children[0], span, lhs_ctx, macro_ctx)?;
 
             let right: String =
-                self::translate_expr(&children[1], span, Location::RValue, macro_ctx);
+                self::translate_expr(&children[1], span, Location::RValue, macro_ctx)?;
 
             let Some(op) =
-                crate::macro_lex::extract_binary_operator(entity, &children[0], &children[1])
-                    .or_else(|| {
+                crate::macro_lex::lex_binary_operator(entity, &children[0], &children[1]).or_else(
+                    || {
                         entity.get_range().and_then(|range| {
                             crate::macro_lex::extract_binary_operator_from_tokens(
                                 &crate::macro_lex::range_spellings(&range, entity),
                             )
                             .map(|operator| operator.to_string())
                         })
-                    })
+                    },
+                )
             else {
                 macro_ctx
                     .get_mut_transpiler_context()
@@ -916,7 +1095,8 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                return Default::default();
+
+                return Err(TranspilerError::Abort);
             };
 
             if op == "," {
@@ -929,13 +1109,184 @@ pub fn translate_expr(
                     None,
                     span,
                 ));
-                return Default::default();
+
+                return Err(TranspilerError::Abort);
+            }
+
+            if matches!(op.as_str(), "&&" | "||") {
+                let left: String = self::translate_condition_expr(
+                    &children[0],
+                    span,
+                    Location::RValue,
+                    macro_ctx,
+                )?;
+                let right: String = self::translate_condition_expr(
+                    &children[1],
+                    span,
+                    Location::RValue,
+                    macro_ctx,
+                )?;
+
+                return Ok(format!("({left}) {op} ({right})"));
+            }
+
+            let folds_as_constant: bool = !matches!(
+                op.as_str(),
+                "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>="
+            ) && matches!(
+                op.as_str(),
+                "+" | "-" | "*" | "/" | "%" | "<<" | ">>" | "&" | "|" | "^"
+            );
+
+            if folds_as_constant && let Some(result_type) = entity.get_type() {
+                let evaluated: Option<String> = match entity.evaluate() {
+                    Some(clang::EvaluationResult::SignedInteger(value)) => Some(value.to_string()),
+                    Some(clang::EvaluationResult::UnsignedInteger(value)) => {
+                        Some(value.to_string())
+                    }
+                    _ => None,
+                };
+
+                if let Some(value) = evaluated {
+                    let result_type_text: String = crate::type_format::format_clang_type_thrust(
+                        &result_type,
+                        macro_ctx,
+                        &prefix,
+                        span,
+                    )?;
+
+                    if !result_type_text.is_empty() {
+                        return Ok(format!("({value}) as {result_type_text}"));
+                    }
+                }
             }
 
             let is_assignment: bool = matches!(
                 op.as_str(),
                 "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>="
             );
+
+            let left_type_kind: Option<clang::TypeKind> = children[0]
+                .get_type()
+                .map(|ty| ty.get_canonical_type().get_kind());
+
+            let right_type_kind: Option<clang::TypeKind> = children[1]
+                .get_type()
+                .map(|ty| ty.get_canonical_type().get_kind());
+
+            let left_is_pointer: bool = left_type_kind.is_some_and(|kind| {
+                matches!(
+                    kind,
+                    clang::TypeKind::Pointer
+                        | clang::TypeKind::ConstantArray
+                        | clang::TypeKind::IncompleteArray
+                )
+            });
+
+            let right_is_pointer: bool = right_type_kind.is_some_and(|kind| {
+                matches!(
+                    kind,
+                    clang::TypeKind::Pointer
+                        | clang::TypeKind::ConstantArray
+                        | clang::TypeKind::IncompleteArray
+                )
+            });
+
+            let pointee_is_pointer: bool = if left_is_pointer {
+                children[0]
+            } else {
+                children[1]
+            }
+            .get_type()
+            .map(|ty| ty.get_canonical_type())
+            .and_then(|canonical| {
+                canonical
+                    .get_pointee_type()
+                    .or_else(|| canonical.get_element_type())
+            })
+            .is_some_and(|inner| inner.get_canonical_type().get_kind() == clang::TypeKind::Pointer);
+
+            if is_assignment && left_is_pointer && (op == "+=" || op == "-=") {
+                return Ok(crate::pointer::Pointer::lower_advance(
+                    &left,
+                    &right,
+                    op == "+=",
+                    pointee_is_pointer,
+                ));
+            }
+
+            if !is_assignment
+                && let Some(transformed) = crate::pointer::Pointer::lower_binary(
+                    left_is_pointer,
+                    right_is_pointer,
+                    pointee_is_pointer,
+                    &op,
+                    &left,
+                    &right,
+                )
+            {
+                return Ok(transformed);
+            }
+
+            let is_arithmetic_operation: bool = matches!(
+                op.as_str(),
+                "+" | "-" | "*" | "/" | "%" | "<<" | ">>" | "&" | "|" | "^"
+            );
+
+            if !is_assignment
+                && is_arithmetic_operation
+                && !left_is_pointer
+                && !right_is_pointer
+                && let Some(result_type) = entity.get_type()
+            {
+                let left_entity: clang::Entity<'_> =
+                    crate::expr_analysis::clean_expression_wrappers(&children[0]);
+                let right_entity: clang::Entity<'_> =
+                    crate::expr_analysis::clean_expression_wrappers(&children[1]);
+
+                let left_char: bool = left_entity.get_kind() == clang::EntityKind::CharacterLiteral
+                    || left_entity.get_type().is_some_and(|ty| {
+                        matches!(
+                            ty.get_canonical_type().get_kind(),
+                            clang::TypeKind::CharS | clang::TypeKind::CharU
+                        )
+                    });
+
+                let right_char: bool = right_entity.get_kind()
+                    == clang::EntityKind::CharacterLiteral
+                    || right_entity.get_type().is_some_and(|ty| {
+                        matches!(
+                            ty.get_canonical_type().get_kind(),
+                            clang::TypeKind::CharS | clang::TypeKind::CharU
+                        )
+                    });
+
+                let left_casted: String = if left_char {
+                    format!("({left}) as s32")
+                } else {
+                    crate::type_format::cast_expression_to_type(
+                        &children[0],
+                        left.clone(),
+                        &result_type,
+                        span,
+                        macro_ctx,
+                    )?
+                };
+
+                let right_casted: String = if right_char {
+                    format!("({right}) as s32")
+                } else {
+                    crate::type_format::cast_expression_to_type(
+                        &children[1],
+                        right.clone(),
+                        &result_type,
+                        span,
+                        macro_ctx,
+                    )?
+                };
+
+                return Ok(format!("{left_casted} {op} {right_casted}"));
+            }
 
             let mut right: String = right;
 
@@ -954,12 +1305,12 @@ pub fn translate_expr(
                             &lhs_type,
                             span,
                             macro_ctx,
-                        );
+                        )?;
                     }
                 }
             }
 
-            format!("{left} {op} {right}")
+            Ok(format!("{left} {op} {right}"))
         }
 
         clang::EntityKind::CStyleCastExpr => {
@@ -980,7 +1331,7 @@ pub fn translate_expr(
                         span,
                     ));
 
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             let Some(to_ty) = entity.get_type() else {
@@ -994,7 +1345,7 @@ pub fn translate_expr(
                         span,
                     ));
 
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             if let Some((heap_operation, heap_call)) =
@@ -1010,7 +1361,7 @@ pub fn translate_expr(
                     &prefix,
                     span,
                 ) {
-                    return halloc_text;
+                    return Ok(halloc_text);
                 }
 
                 macro_ctx
@@ -1026,19 +1377,20 @@ pub fn translate_expr(
                         span,
                     ));
 
-                return Default::default();
+                return Err(TranspilerError::Abort);
             }
 
-            let value: String = self::translate_expr(value_node, span, Location::RValue, macro_ctx);
+            let value: String =
+                self::translate_expr(value_node, span, Location::RValue, macro_ctx)?;
 
             if to_ty.get_canonical_type().get_kind() == clang::TypeKind::Void {
-                return value;
+                return Ok(value);
             }
 
             let to_ty_text: String =
-                crate::type_format::format_clang_type_thrust(&to_ty, macro_ctx, &prefix, span);
+                crate::type_format::format_clang_type_thrust(&to_ty, macro_ctx, &prefix, span)?;
 
-            format!("{value} as {to_ty_text}")
+            Ok(format!("({value}) as {to_ty_text}"))
         }
 
         clang::EntityKind::ConditionalOperator => {
@@ -1054,21 +1406,24 @@ pub fn translate_expr(
                         None,
                         span,
                     ));
-                return Default::default();
+                return Err(TranspilerError::Abort);
             }
 
             let cond: String =
-                self::translate_condition_expr(&children[0], span, Location::RValue, macro_ctx);
+                self::translate_condition_expr(&children[0], span, Location::RValue, macro_ctx)?;
             let then_expr: String =
-                self::translate_expr(&children[1], span, Location::RValue, macro_ctx);
+                self::translate_expr(&children[1], span, Location::RValue, macro_ctx)?;
             let else_expr: String =
-                self::translate_expr(&children[2], span, Location::RValue, macro_ctx);
+                self::translate_expr(&children[2], span, Location::RValue, macro_ctx)?;
 
             let result_type: Option<clang::Type<'_>> = entity.get_type();
 
-            let type_text: Option<String> = result_type.as_ref().map(|ty| {
-                crate::type_format::format_clang_type_thrust(ty, macro_ctx, &prefix, span)
-            });
+            let type_text: Option<String> = match result_type.as_ref() {
+                Some(ty) => Some(crate::type_format::format_clang_type_thrust(
+                    ty, macro_ctx, &prefix, span,
+                )?),
+                None => None,
+            };
 
             let type_text: String = match type_text {
                 Some(text) if !text.is_empty() => text,
@@ -1082,7 +1437,7 @@ pub fn translate_expr(
                     expected,
                     span,
                     macro_ctx,
-                ),
+                )?,
                 None => then_expr,
             };
 
@@ -1093,7 +1448,7 @@ pub fn translate_expr(
                     expected,
                     span,
                     macro_ctx,
-                ),
+                )?,
                 None => else_expr,
             };
 
@@ -1106,7 +1461,7 @@ pub fn translate_expr(
             macro_ctx.push_pending_statement(format!("    {temporary} = {else_expr};"));
             macro_ctx.push_pending_statement("}".into());
 
-            temporary
+            Ok(temporary)
         }
 
         clang::EntityKind::CompoundLiteralExpr => {
@@ -1123,10 +1478,15 @@ pub fn translate_expr(
                         span,
                     ));
 
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
-            crate::top_level::translate_global_initializer(entity, &compound_type, span, macro_ctx)
+            Ok(crate::top_level::translate_global_initializer(
+                entity,
+                &compound_type,
+                span,
+                macro_ctx,
+            )?)
         }
 
         clang::EntityKind::InitListExpr => {
@@ -1143,10 +1503,12 @@ pub fn translate_expr(
                         span,
                     ));
 
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
-            crate::top_level::translate_global_initializer(entity, &init_type, span, macro_ctx)
+            Ok(crate::top_level::translate_global_initializer(
+                entity, &init_type, span, macro_ctx,
+            )?)
         }
 
         clang::EntityKind::ArraySubscriptExpr => {
@@ -1165,7 +1527,7 @@ pub fn translate_expr(
                         span,
                     ));
 
-                return Default::default();
+                return Err(TranspilerError::Abort);
             }
 
             let base_node: &clang::Entity<'_> = &children[0];
@@ -1177,18 +1539,17 @@ pub fn translate_expr(
             // propaga el contexto (cadena `&s.arr[i]`); el índice se
             // lee como valor.
             if ctx.is_address_of() {
-                let base: String = self::translate_expr(base_node, span, ctx, macro_ctx);
+                let base: String = self::translate_expr(base_node, span, ctx, macro_ctx)?;
 
                 let index: String =
-                    self::translate_expr(index_node, span, Location::RValue, macro_ctx);
+                    self::translate_expr(index_node, span, Location::RValue, macro_ctx)?;
 
-                return format!("{base}[{index}]");
+                return Ok(format!("{base}[{index}]"));
             }
 
-            if let Some(linearized) =
-                self::try_translate_linearized_array_subscript(entity, span, macro_ctx)
+            if let Some(linearized) = self::try_translate_linearized_array(entity, span, macro_ctx)
             {
-                return linearized;
+                return Ok(linearized);
             }
 
             // La base de un subíndice se indexa sobre su dirección (GEP
@@ -1207,11 +1568,12 @@ pub fn translate_expr(
                     Location::RValue
                 };
 
-            let base: String = self::translate_expr(base_node, span, base_ctx, macro_ctx);
+            let base: String = self::translate_expr(base_node, span, base_ctx, macro_ctx)?;
             let base_type: Option<clang::Type<'_>> =
                 crate::expr_analysis::resolve_expression_type(base_node);
 
-            let index: String = self::translate_expr(index_node, span, Location::RValue, macro_ctx);
+            let index: String =
+                self::translate_expr(index_node, span, Location::RValue, macro_ctx)?;
 
             let uses_place_index: bool = base_type.is_some_and(|base_type| {
                 let canonical_type: clang::Type<'_> = base_type.get_canonical_type();
@@ -1252,9 +1614,9 @@ pub fn translate_expr(
             });
 
             if uses_place_index {
-                format!("{base}[{index}]")
+                Ok(format!("{base}[{index}]"))
             } else {
-                format!("{base}->[{index}]")
+                Ok(format!("{base}->[{index}]"))
             }
         }
 
@@ -1273,7 +1635,7 @@ pub fn translate_expr(
                     span,
                 ));
 
-            Default::default()
+            Err(TranspilerError::Abort)
         }
     }
 }
@@ -1284,7 +1646,7 @@ pub fn translate_condition_expr(
     span: Span,
     ctx: Location,
     macro_ctx: &mut crate::macros::MacroContext,
-) -> String {
+) -> TranspilerResult<String> {
     let prefix: String = crate::macros::expansion_prefix(entity);
 
     match entity.get_kind() {
@@ -1295,14 +1657,14 @@ pub fn translate_condition_expr(
                 .iter()
                 .find(|candidate| crate::clang_util::is_supported_expr_kind(candidate.get_kind()))
             {
-                let inner: String = self::translate_condition_expr(child, span, ctx, macro_ctx);
+                let inner: String = self::translate_condition_expr(child, span, ctx, macro_ctx)?;
 
-                return format!("({inner})");
+                return Ok(format!("({inner})"));
             }
 
-            let value: String = self::translate_expr(entity, span, Location::RValue, macro_ctx);
+            let value: String = self::translate_expr(entity, span, Location::RValue, macro_ctx)?;
 
-            format!("({value}) != 0")
+            Ok(format!("({value}) != 0"))
         }
 
         clang::EntityKind::UnexposedExpr => {
@@ -1314,9 +1676,9 @@ pub fn translate_condition_expr(
                 return self::translate_condition_expr(&children[0], span, ctx, macro_ctx);
             }
 
-            let value: String = self::translate_expr(entity, span, Location::RValue, macro_ctx);
+            let value: String = self::translate_expr(entity, span, Location::RValue, macro_ctx)?;
 
-            format!("({value}) != 0")
+            Ok(format!("({value}) != 0"))
         }
 
         clang::EntityKind::UnaryOperator => {
@@ -1330,7 +1692,7 @@ pub fn translate_condition_expr(
                     None,
                     span,
                 ));
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             let tokens: Vec<String> = crate::macro_lex::range_spellings(&range, entity);
@@ -1347,18 +1709,18 @@ pub fn translate_condition_expr(
                             None,
                             span,
                         ));
-                    return Default::default();
+                    return Err(TranspilerError::Abort);
                 };
 
                 let operand_text: String =
-                    self::translate_condition_expr(operand, span, ctx, macro_ctx);
+                    self::translate_condition_expr(operand, span, ctx, macro_ctx)?;
 
-                return format!("!({operand_text})");
+                return Ok(format!("!({operand_text})"));
             }
 
-            let value: String = self::translate_expr(entity, span, Location::RValue, macro_ctx);
+            let value: String = self::translate_expr(entity, span, Location::RValue, macro_ctx)?;
 
-            format!("({value}) != 0")
+            Ok(format!("({value}) != 0"))
         }
 
         clang::EntityKind::BinaryOperator | clang::EntityKind::CompoundAssignOperator => {
@@ -1374,19 +1736,20 @@ pub fn translate_condition_expr(
                         None,
                         span,
                     ));
-                return Default::default();
+                return Err(TranspilerError::Abort);
             }
 
             let Some(op) =
-                crate::macro_lex::extract_binary_operator(entity, &children[0], &children[1])
-                    .or_else(|| {
+                crate::macro_lex::lex_binary_operator(entity, &children[0], &children[1]).or_else(
+                    || {
                         entity.get_range().and_then(|range| {
                             crate::macro_lex::extract_binary_operator_from_tokens(
                                 &crate::macro_lex::range_spellings(&range, entity),
                             )
                             .map(|operator| operator.to_string())
                         })
-                    })
+                    },
+                )
             else {
                 macro_ctx
                     .get_mut_transpiler_context()
@@ -1401,39 +1764,47 @@ pub fn translate_condition_expr(
                         span,
                     ));
 
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             if matches!(op.as_str(), "&&" | "||") {
                 let left: String =
-                    self::translate_condition_expr(&children[0], span, ctx, macro_ctx);
+                    self::translate_condition_expr(&children[0], span, ctx, macro_ctx)?;
                 let right: String =
-                    self::translate_condition_expr(&children[1], span, ctx, macro_ctx);
+                    self::translate_condition_expr(&children[1], span, ctx, macro_ctx)?;
 
-                return format!("({left}) {op} ({right})");
+                return Ok(format!("({left}) {op} ({right})"));
             }
 
             if matches!(op.as_str(), "==" | "!=" | "<" | "<=" | ">" | ">=") {
-                let left_type: Option<clang::Type<'_>> = children[0].get_type();
-                let right_type: Option<clang::Type<'_>> = children[1].get_type();
+                let left_entity: clang::Entity<'_> =
+                    crate::expr_analysis::clean_expression_wrappers(&children[0]);
+                let right_entity: clang::Entity<'_> =
+                    crate::expr_analysis::clean_expression_wrappers(&children[1]);
+
+                let left_type: Option<clang::Type<'_>> = left_entity.get_type();
+                let right_type: Option<clang::Type<'_>> = right_entity.get_type();
+
                 let left_char: bool = left_type.as_ref().is_some_and(|ty| {
                     matches!(
                         ty.get_canonical_type().get_kind(),
                         clang::TypeKind::CharS | clang::TypeKind::CharU
                     )
-                });
+                }) || left_entity.get_kind()
+                    == clang::EntityKind::CharacterLiteral;
 
                 let right_char: bool = right_type.as_ref().is_some_and(|ty| {
                     matches!(
                         ty.get_canonical_type().get_kind(),
                         clang::TypeKind::CharS | clang::TypeKind::CharU
                     )
-                });
+                }) || right_entity.get_kind()
+                    == clang::EntityKind::CharacterLiteral;
 
                 let left_value: String =
-                    self::translate_expr(&children[0], span, Location::RValue, macro_ctx);
+                    self::translate_expr(&children[0], span, Location::RValue, macro_ctx)?;
                 let right_value: String =
-                    self::translate_expr(&children[1], span, Location::RValue, macro_ctx);
+                    self::translate_expr(&children[1], span, Location::RValue, macro_ctx)?;
 
                 let left: String = if left_char {
                     format!("({left_value}) as s32")
@@ -1447,30 +1818,30 @@ pub fn translate_condition_expr(
                     right_value
                 };
 
-                return format!("{left} {op} {right}");
+                return Ok(format!("{left} {op} {right}"));
             }
 
-            let value: String = self::translate_expr(entity, span, Location::RValue, macro_ctx);
+            let value: String = self::translate_expr(entity, span, Location::RValue, macro_ctx)?;
 
-            format!("({value}) != 0")
+            Ok(format!("({value}) != 0"))
         }
 
         _ => {
-            let value: String = self::translate_expr(entity, span, Location::RValue, macro_ctx);
+            let value: String = self::translate_expr(entity, span, Location::RValue, macro_ctx)?;
 
             if entity
                 .get_type()
                 .is_some_and(|ty| ty.get_canonical_type().get_kind() == clang::TypeKind::Bool)
             {
-                value
+                Ok(value)
             } else {
-                format!("({value}) != 0")
+                Ok(format!("({value}) != 0"))
             }
         }
     }
 }
 
-fn try_translate_linearized_array_subscript(
+fn try_translate_linearized_array(
     entity: &clang::Entity<'_>,
     span: Span,
     macro_ctx: &mut crate::macros::MacroContext,
@@ -1526,11 +1897,10 @@ fn try_translate_linearized_array_subscript(
         return None;
     }
 
-    let mut root_text: String = self::translate_expr(&probe, span, Location::RValue, macro_ctx);
+    let mut root_text: String =
+        self::translate_expr(&probe, span, Location::RValue, macro_ctx).ok()?;
 
     if !pointer_root && !parameter_array_root {
-        root_text = format!("ref {root_text}");
-
         for _ in 0..extents.len() {
             root_text.push_str("[0]");
         }
@@ -1540,7 +1910,7 @@ fn try_translate_linearized_array_subscript(
 
     for (index_position, index_node) in indices_rev.iter().enumerate() {
         let index_text: String =
-            self::translate_expr(index_node, span, Location::RValue, macro_ctx);
+            self::translate_expr(index_node, span, Location::RValue, macro_ctx).ok()?;
 
         let start_extent: usize = if pointer_root {
             index_position
@@ -1572,50 +1942,70 @@ fn translate_decl_ref_expr(
     entity: &clang::Entity<'_>,
     span: Span,
     macro_ctx: &mut crate::macros::MacroContext,
-) -> String {
+) -> TranspilerResult<String> {
     let prefix: String = crate::macros::expansion_prefix(entity);
     let Some(range) = entity.get_range() else {
+        let issue: String = {
+            let detail: String = format!(
+                "Missing source range for expression kind {:?}.",
+                entity.get_kind()
+            );
+
+            format!("C translation failed:\n{prefix}{detail}")
+        };
+
         macro_ctx
             .get_mut_transpiler_context()
             .add_error_fail(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
-                {
-                    let detail: String = format!(
-                        "Missing source range for expression kind {:?}.",
-                        entity.get_kind()
-                    );
-
-                    format!("C translation failed:\n{prefix}{detail}")
-                },
+                issue,
                 "Rewrite the C input to avoid the unsupported construct.".into(),
                 None,
                 span,
             ));
 
-        return Default::default();
+        return Err(TranspilerError::Abort);
     };
 
     let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
     let fallback: String = crate::macro_lex::tokens_to_thrust_source(&tokens);
 
     let Some(reference) = entity.get_reference() else {
-        return fallback;
+        return Ok(fallback);
     };
 
+    if reference.get_kind() == clang::EntityKind::EnumConstantDecl {
+        let variant_name: String = {
+            let name: String = reference.get_name().unwrap_or_else(|| fallback.clone());
+
+            crate::util::normalize_to_thrust_identifier(&name)
+        };
+
+        let enum_name: Option<String> = reference
+            .get_semantic_parent()
+            .and_then(|parent| parent.get_name())
+            .map(|name| crate::util::normalize_to_thrust_identifier(&name));
+
+        return match enum_name {
+            Some(enum_name) => Ok(format!("{enum_name}=>{variant_name}")),
+            None => Ok(variant_name),
+        };
+    }
+
     let Some(reference_location) = reference.get_location() else {
-        return fallback;
+        return Ok(fallback);
     };
 
     let Some(reference_file) = reference_location.get_file_location().file else {
-        return fallback;
+        return Ok(fallback);
     };
 
     let Some(usage_location) = entity.get_location() else {
-        return fallback;
+        return Ok(fallback);
     };
 
     let Some(usage_file) = usage_location.get_expansion_location().file else {
-        return fallback;
+        return Ok(fallback);
     };
 
     let reference_path: std::path::PathBuf = reference_file.get_path();
@@ -1628,26 +2018,26 @@ fn translate_decl_ref_expr(
     let usage_path: std::path::PathBuf = usage_path.canonicalize().unwrap_or(usage_path.clone());
 
     if reference_path == usage_path {
-        return fallback;
+        return Ok(fallback);
     }
 
     let Some(module_stem) = reference_path.file_stem() else {
-        return fallback;
+        return Ok(fallback);
     };
 
     let Some(reference_name) = reference.get_name().or_else(|| entity.get_name()) else {
-        return fallback;
+        return Ok(fallback);
     };
 
     let module_name: String =
-        { crate::util::sanitize_thrust_identifier(module_stem.to_string_lossy()) };
+        crate::util::normalize_to_thrust_identifier(module_stem.to_string_lossy());
 
-    let symbol_name: String = { crate::util::sanitize_thrust_identifier(&reference_name) };
+    let symbol_name: String = crate::util::normalize_to_thrust_identifier(&reference_name);
 
-    format!("{module_name}::{symbol_name}")
+    Ok(format!("{module_name}::{symbol_name}"))
 }
 
-fn translate_pointer_target_expr(
+fn translate_transform_pointer_arithmetic(
     entity: &clang::Entity<'_>,
     span: Span,
     macro_ctx: &mut crate::macros::MacroContext,
@@ -1660,28 +2050,69 @@ fn translate_pointer_target_expr(
 
         if children.len() == 1 && crate::clang_util::is_supported_expr_kind(children[0].get_kind())
         {
-            return self::translate_pointer_target_expr(&children[0], span, macro_ctx);
+            return self::translate_transform_pointer_arithmetic(&children[0], span, macro_ctx);
         }
     }
+
+    let pointee_is_pointer: bool = entity
+        .get_type()
+        .map(|ty| ty.get_canonical_type())
+        .and_then(|canonical| canonical.get_pointee_type())
+        .is_some_and(|inner| inner.get_canonical_type().get_kind() == clang::TypeKind::Pointer);
 
     if entity.get_kind() == clang::EntityKind::BinaryOperator {
         let children: Vec<clang::Entity<'_>> = entity.get_children();
 
         if children.len() >= 2
             && let Some(op) =
-                crate::macro_lex::extract_binary_operator(entity, &children[0], &children[1])
-            && op == "+"
+                crate::macro_lex::lex_binary_operator(entity, &children[0], &children[1])
+            && (op == "+" || op == "-")
         {
-            let base: String =
-                self::translate_expr(&children[0], span, Location::RValue, macro_ctx);
-            let index: String =
-                self::translate_expr(&children[1], span, Location::RValue, macro_ctx);
+            let left_is_pointer: bool = children[0]
+                .get_type()
+                .map(|ty| ty.get_canonical_type().get_kind())
+                .is_some_and(|kind| {
+                    matches!(
+                        kind,
+                        clang::TypeKind::Pointer
+                            | clang::TypeKind::ConstantArray
+                            | clang::TypeKind::IncompleteArray
+                    )
+                });
 
-            return Some(format!("{base}->[{index}]"));
+            let (base, index): (String, String) = if left_is_pointer {
+                let base: String =
+                    self::translate_expr(&children[0], span, Location::RValue, macro_ctx).ok()?;
+                let right_text: String =
+                    self::translate_expr(&children[1], span, Location::RValue, macro_ctx).ok()?;
+
+                if op == "-" {
+                    (base, format!("0 - {right_text}"))
+                } else {
+                    (base, right_text)
+                }
+            } else {
+                let base: String =
+                    self::translate_expr(&children[1], span, Location::RValue, macro_ctx).ok()?;
+                let index: String =
+                    self::translate_expr(&children[0], span, Location::RValue, macro_ctx).ok()?;
+
+                (base, index)
+            };
+
+            return Some(crate::pointer::Pointer::lower_deref(
+                &base,
+                &index,
+                pointee_is_pointer,
+            ));
         }
     }
 
-    let base: String = self::translate_expr(entity, span, Location::RValue, macro_ctx);
+    let base: String = self::translate_expr(entity, span, Location::RValue, macro_ctx).ok()?;
 
-    Some(format!("{base}->[0]"))
+    Some(crate::pointer::Pointer::lower_deref(
+        &base,
+        "0",
+        pointee_is_pointer,
+    ))
 }

@@ -19,7 +19,7 @@ fn filter_records_02(records: ptr[Record02]) s32 {
 }
 fn main() s32 @public {
     var records: array[Record02; 7] = fixed[new Record02 { key: 1, value: 6, active: 1 }, new Record02 { key: 2, value: 4, active: 1 }, new Record02 { key: 3, value: 11, active: 1 }, new Record02 { key: 4, value: 8, active: 0 }, new Record02 { key: 5, value: 7, active: 1 }, new Record02 { key: 6, value: 5, active: 1 }, new Record02 { key: 7, value: 9, active: 1 }];
-    var total: s32 = filter_records_02(ref records[0]);
+    var total: s32 = filter_records_02(records[0]);
     if kept_records_02 < 4 {
         return (1) as s32;
     }

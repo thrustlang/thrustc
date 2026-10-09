@@ -1,0 +1,68 @@
+static mut loop_scope_tally: s32 = 0;
+
+fn filter_scan(limit: s32) s32 {
+    var kept: s32 = 0;
+    for var n: s32 = 1; n <= limit; n += 1; {
+        if n % 2 == 0 {
+            var doubled: s32 = n * 2;
+            kept += doubled;
+        }
+        var viewed: s32 = n;
+        {
+            var n: s32 = viewed + 1;
+            var thrust_temporary_0: s32;
+            if (n > 2) {
+                thrust_temporary_0 = 1;
+            } else {
+                thrust_temporary_0 = 0;
+            }
+            loop_scope_tally += thrust_temporary_0;
+        }
+    }
+    return (kept) as s32;
+}
+fn grid_walk(rows: s32, cols: s32) s32 {
+    var sum: s32 = 0;
+    for var r: s32 = 0; r < rows; r += 1; {
+        var row_base: s32 = r * cols;
+        for var c: s32 = 0; c < cols; c += 1; {
+            var cell: s32 = row_base + c;
+            sum += cell;
+        }
+    }
+    return (sum) as s32;
+}
+fn loop_scope_check() s32 {
+    loop_scope_tally = 0;
+    if sum_range(1, 4) != 115 {
+        return (1) as s32;
+    }
+    if sum_range(0, 2) != 105 {
+        return (2) as s32;
+    }
+    if filter_scan(5) != 12 {
+        return (3) as s32;
+    }
+    if loop_scope_tally != 4 {
+        return (4) as s32;
+    }
+    if grid_walk(3, 4) != 66 {
+        return (5) as s32;
+    }
+    if grid_walk(2, 2) != 6 {
+        return (6) as s32;
+    }
+    return (0) as s32;
+}
+fn sum_range(start: s32, stop: s32) s32 {
+    var acc: s32 = 0;
+    for var i: s32 = start; i < stop; i += 1; {
+        var i_shadow: s32 = i * 2;
+        acc += i_shadow;
+    }
+    var i: s32 = 100;
+    for var i: s32 = 0; i < 3; i += 1; {
+        acc += i;
+    }
+    return (acc + i) as s32;
+}

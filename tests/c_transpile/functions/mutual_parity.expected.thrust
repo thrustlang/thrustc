@@ -1,0 +1,59 @@
+fn collatz_steps(n_param: s64) s32 {
+    var n: s64 = n_param;
+
+    var steps: s32 = 0;
+    while n > 1 {
+        if n % (2) as s64 == 0 {
+            n = n / (2) as s64;
+        } else {
+            n = (3) as s64 * n + (1) as s64;
+        }
+        steps = steps + 1;
+    }
+    return (steps) as s32;
+}
+fn count_even_pairs(limit: s32) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < limit; i = i + 1; {
+        if (is_even(i)) != 0 {
+            total = total + 1;
+        }
+    }
+    return (total) as s32;
+}
+fn is_even(n: s32) s32 {
+    if n == 0 {
+        return (1) as s32;
+    }
+    return (is_odd(n - 1)) as s32;
+}
+fn is_odd(n: s32) s32 {
+    if n == 0 {
+        return (0) as s32;
+    }
+    return (is_even(n - 1)) as s32;
+}
+fn mutual_parity_check() s32 {
+    if is_even(10) != 1 {
+        return (1) as s32;
+    }
+    if is_odd(10) != 0 {
+        return (2) as s32;
+    }
+    if is_even(7) != 0 {
+        return (3) as s32;
+    }
+    if is_odd(7) != 1 {
+        return (4) as s32;
+    }
+    if collatz_steps((6) as s64) != 8 {
+        return (5) as s32;
+    }
+    if collatz_steps((27) as s64) != 111 {
+        return (6) as s32;
+    }
+    if count_even_pairs(10) != 5 {
+        return (7) as s32;
+    }
+    return (0) as s32;
+}

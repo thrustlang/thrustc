@@ -4,7 +4,7 @@ static mut scanned_lines_07: s32 = 0;
 fn count_words_07(text: const ptr[char]) s32 {
     var words: s32 = 0;
     var length: s32 = 0;
-    for var i: s32 = 0; text->[i] != '\0'; i += 1; {
+    for var i: s32 = 0; (text->[i]) as s32 != ('\0') as s32; i += 1; {
         if (is_letter_07(text->[i])) != 0 {
             length += 1;
         } else {
@@ -20,10 +20,10 @@ fn count_words_07(text: const ptr[char]) s32 {
     return (words) as s32;
 }
 fn is_digit_07(c: char) s32 {
-    return ((c >= '0') && (c <= '9')) as s32;
+    return (((c) as s32 >= ('0') as s32) && ((c) as s32 <= ('9') as s32)) as s32;
 }
 fn is_letter_07(c: char) s32 {
-    return ((((c >= 'a') && (c <= 'z'))) || (((c >= 'A') && (c <= 'Z')))) as s32;
+    return (((((c) as s32 >= ('a') as s32) && ((c) as s32 <= ('z') as s32))) || ((((c) as s32 >= ('A') as s32) && ((c) as s32 <= ('Z') as s32)))) as s32;
 }
 fn main() s32 @public {
     var items: array[const ptr[char]; 4] = fixed[("grid+11 alpha lane") as const ptr[char], ("TRACE plus 454") as const ptr[char], ("quiet cell token_4") as const ptr[char], ("FINAL+STATE 700") as const ptr[char]];
@@ -44,12 +44,12 @@ fn main() s32 @public {
 }
 fn profile_line_07(text: const ptr[char]) s32 {
     var score: s32 = 0;
-    for var i: s32 = 0; (text->[i] != '\0') && (i < 70); i += 1; {
+    for var i: s32 = 0; ((text->[i]) as s32 != ('\0') as s32) && (i < 70); i += 1; {
         if (is_digit_07(text->[i])) != 0 {
             score += 2;
-        } else if (text->[i] >= 'A') && (text->[i] <= 'Z') {
+        } else if ((text->[i]) as s32 >= ('A') as s32) && ((text->[i]) as s32 <= ('Z') as s32) {
             score += 2;
-        } else if text->[i] == '+' {
+        } else if (text->[i]) as s32 == ('+') as s32 {
             score += 1;
         }
     }

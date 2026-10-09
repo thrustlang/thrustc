@@ -1,6 +1,6 @@
 fn abs_neg_seven() s32 {
-    var k: s32 = -7;
-    __c_macro_ABSSET[s32](ref k);
+    var k: s32 = (-7) as s32;
+    __c_macro_ABSSET[s32](ref (k));
     return (k) as s32;
 }
 fn __c_macro_ABSSET[T1](x: ptr[T1]) void @alwaysInline {

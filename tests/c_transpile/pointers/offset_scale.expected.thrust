@@ -1,0 +1,51 @@
+fn maximum(xs: const ptr[s32], n: s32) s32 {
+    var best: s32 = xs->[0];
+    for var i: s32 = 1; i < n; i += 1; {
+        if xs->[i] > best {
+            best = xs->[i];
+        }
+    }
+    return (best) as s32;
+}
+fn offset_scale_check() s32 {
+    var xs: array[s32; 7] = fixed[3, 1, 4, 1, 5, 9, 2];
+    var p: ptr[s32] = (xs) as ptr[s32];
+    if p->[0] != 3 {
+        return (1) as s32;
+    }
+    if p->[5] != 9 {
+        return (2) as s32;
+    }
+    if p->[6] != 2 {
+        return (3) as s32;
+    }
+    scale(xs as ptr[s32], 7, 2);
+    if (xs->[0] != 6) || (xs->[6] != 4) {
+        return (4) as s32;
+    }
+    prefix(xs as ptr[s32], 7);
+    if xs->[6] != 50 {
+        return (5) as s32;
+    }
+    if maximum(xs as ptr[s32], 7) != xs->[6] {
+        return (6) as s32;
+    }
+    var count: s32 = 0;
+    for var i: s32 = 6; i >= 0; i -= 1; {
+        count++;
+    }
+    if count != 7 {
+        return (7) as s32;
+    }
+    return (0) as s32;
+}
+fn prefix(xs: ptr[s32], n: s32) void {
+    for var i: s32 = 1; i < n; i += 1; {
+        xs->[i] = xs->[i] + xs->[i - 1];
+    }
+}
+fn scale(xs: ptr[s32], n: s32, factor: s32) void {
+    for var i: s32 = 0; i < n; i += 1; {
+        xs->[i] = xs->[i] * factor;
+    }
+}

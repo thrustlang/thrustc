@@ -6,5 +6,5 @@ fn __c_macro_SZINT[T1]() T1 @alwaysInline {
 }
 
 fn negate_plus_size() s32 {
-    return ((-(5)) + ((abiSizeOf(s32)) as s32)) as s32;
+    return ((-1) as s32) as s32;
 }

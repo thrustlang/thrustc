@@ -1,6 +1,6 @@
 enum Mode {
-    ModeA,
-    ModeB,
+    ModeA: u32 = 0;
+    ModeB: u32 = 1;
 }
 
 fn mode_b() s32 {
@@ -19,5 +19,5 @@ fn mode_b() s32 {
     }
     var memo_typedef_enum_1: s32 = carry_typedef_enum_1;
     carry_typedef_enum_1 = memo_typedef_enum_1;
-    return (ModeB) as s32;
+    return (Mode=>ModeB) as s32;
 }

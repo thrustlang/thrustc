@@ -11,5 +11,5 @@ fn load_double_pointer(pp: ptr[ptr[s32]]) s32 {
     }
     var memo_double_pointer_1: s32 = count_double_pointer_1;
     count_double_pointer_1 = memo_double_pointer_1;
-    return (pp->[0]->[0]) as s32;
+    return ((load pp[0])->[0]) as s32;
 }

@@ -59,6 +59,8 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
     let body: BasicBlock = block::append_block(codegen.get_context(), llvm_function);
     let exit: BasicBlock = block::append_block(codegen.get_context(), llvm_function);
 
+    codegen.get_mut_context().begin_scope();
+
     if let Some(node) = variable {
         codegen.codegen_variables(node);
     }
@@ -134,6 +136,8 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
     }
 
     codegen.get_mut_context().get_mut_loop_context().pop();
+
+    codegen.get_mut_context().end_scope();
 }
 
 fn short_circuit_comparison<'ctx>(

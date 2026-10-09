@@ -150,12 +150,3 @@ impl TranspilerContext {
         self.errors.push(issue);
     }
 }
-
-impl TranspilerContext {
-    #[inline]
-    pub fn fail_macro<T: Default>(&mut self, issue: CompilationIssue) -> T {
-        self.add_macros_error(issue);
-
-        T::default()
-    }
-}

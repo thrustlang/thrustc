@@ -29,15 +29,15 @@ fn gcd_03(a_param: s32, b_param: s32) s32 {
         b = next;
     }
     if a < 0 {
-        return (-a) as s32;
+        return ((-a) as s32) as s32;
     } else {
         return (a) as s32;
     }
 }
 fn main() s32 @public {
     var pairs: array[array[s32; 2]; 6] = fixed[fixed[5, 11], fixed[7, 9], fixed[4, 13], fixed[8, 6], fixed[10, 3], fixed[6, 12]];
-    var total: s32 = fold_all_03(ref pairs[0][0]);
-    var guard: s32 = gcd_03(total, 52 + 5);
+    var total: s32 = fold_all_03(pairs[0][0]);
+    var guard: s32 = gcd_03(total, (57) as s32);
     if reductions_03 != 6 {
         return (1) as s32;
     }

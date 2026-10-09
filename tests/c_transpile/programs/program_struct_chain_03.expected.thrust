@@ -19,8 +19,8 @@ fn eval_chain_03(items: ptr[Chain_03], n: s32) s32 {
     return (total) as s32;
 }
 fn main() s32 @public {
-    var items: array[Chain_03; 6] = fixed[new Chain_03 { left: 12, right: 16 }, new Chain_03 { left: -2, right: 2 }, new Chain_03 { left: -2, right: 2 }, new Chain_03 { left: -5, right: -1 }, new Chain_03 { left: -8, right: -4 }, new Chain_03 { left: -6, right: -2 }];
-    var score: s32 = eval_chain_03(ref items[0], 6);
+    var items: array[Chain_03; 6] = fixed[new Chain_03 { left: 12, right: 16 }, new Chain_03 { left: (-2) as s32, right: 2 }, new Chain_03 { left: (-2) as s32, right: 2 }, new Chain_03 { left: (-5) as s32, right: (-1) as s32 }, new Chain_03 { left: (-8) as s32, right: (-4) as s32 }, new Chain_03 { left: (-6) as s32, right: (-2) as s32 }];
+    var score: s32 = eval_chain_03(items[0], 6);
     if chain_steps_03 != 6 {
         return (1) as s32;
     }

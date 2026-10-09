@@ -1,0 +1,67 @@
+enum EntryKind {
+    ENTRY_DEBIT: u32 = 0;
+    ENTRY_CREDIT: u32 = 1;
+    ENTRY_FEE: u32 = 2;
+}
+
+struct Entry {
+    kind: s32,
+    amount: s32,
+    account: s32,
+}
+
+static opening_balance: const s32 @public @extern("opening_balance") = 20;
+static mut posted_entries: s32 = 0;
+
+fn apply_fee(amount: s32) s32 {
+    var fee: s32 = amount / 4;
+    if fee < 1 {
+        return (1) as s32;
+    } else {
+        return (fee) as s32;
+    }
+}
+fn ledger_balance_check() s32 {
+    var entries: array[Entry; 8] = fixed[new Entry { kind: EntryKind=>ENTRY_CREDIT, amount: 9, account: 0 }, new Entry { kind: EntryKind=>ENTRY_DEBIT, amount: 4, account: 1 }, new Entry { kind: EntryKind=>ENTRY_FEE, amount: 12, account: 2 }, new Entry { kind: EntryKind=>ENTRY_CREDIT, amount: 6, account: 1 }, new Entry { kind: EntryKind=>ENTRY_DEBIT, amount: 3, account: 0 }, new Entry { kind: EntryKind=>ENTRY_FEE, amount: 8, account: 0 }, new Entry { kind: EntryKind=>ENTRY_CREDIT, amount: 5, account: 2 }, new Entry { kind: EntryKind=>ENTRY_DEBIT, amount: 2, account: 1 }];
+    var balances: array[s32; 3] = fixed[opening_balance, opening_balance, opening_balance];
+    var touched: s32 = settle(entries[0], balances as ptr[s32]);
+    if posted_entries != 8 {
+        return (1) as s32;
+    }
+    if touched != 8 {
+        return (2) as s32;
+    }
+    if balances->[0] <= 5 {
+        return (3) as s32;
+    }
+    if balances->[1] <= 0 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}
+fn post_entry(entry: ptr[Entry], balances: ptr[s32]) s32 {
+    var account: s32 = entry->account;
+    if (account < 0) || (account >= 3) {
+        return ((-1) as s32) as s32;
+    }
+    if entry->kind == EntryKind=>ENTRY_DEBIT {
+        balances->[account] -= entry->amount;
+    } else if entry->kind == EntryKind=>ENTRY_CREDIT {
+        balances->[account] += entry->amount;
+    } else if entry->kind == EntryKind=>ENTRY_FEE {
+        balances->[account] -= apply_fee(entry->amount);
+    } else {
+        return ((-1) as s32) as s32;
+    }
+    posted_entries += 1;
+    return (account) as s32;
+}
+fn settle(entries: ptr[Entry], balances: ptr[s32]) s32 {
+    var touched: s32 = 0;
+    for var i: s32 = 0; i < 8; i += 1; {
+        if post_entry(entries[i], balances) >= 0 {
+            touched += 1;
+        }
+    }
+    return (touched) as s32;
+}

@@ -1,0 +1,72 @@
+fn mix_fold(n: s32) s32 {
+    var total: s32 = 0;
+    var i: s32;
+    i = 1;
+    while i <= n {
+        total += (i * i - i) / 2 + (i % 3);
+        i += 1;
+    }
+    return (total) as s32;
+}
+fn mix_precedence(a: s32, b: s32, c: s32) s32 {
+    return (a + b * c - a / b + c % 3) as s32;
+}
+fn mix_shift_arith(seed: s32) s32 {
+    var acc: s32 = seed;
+    acc = acc * 2 + 7;
+    acc = acc - acc / 3;
+    acc = (acc % 11) * 3 + 1;
+    acc += (acc << 1) - (acc >> 2);
+    return (acc) as s32;
+}
+fn operator_mix_check() s32 {
+    var a: s32 = 14;
+    var b: s32 = 5;
+    var c: s32 = (-3) as s32;
+    var sum: s32 = a + b * c;
+    var ratio: s32 = (a + b) * c / 2;
+    var mask: s32 = (a ^ b) & (a | c);
+    var flag: s32 = ((sum > ratio) != (a < b)) as s32;
+    var d: s32 = a;
+    d += b;
+    d -= c;
+    d *= 2;
+    d /= 3;
+    d %= 7;
+    d <<= 2;
+    d >>= 1;
+    d ^= mask & 0xff;
+    d |= (16) as s32;
+    d &= ~(((8) as s32));
+    if sum != (-1) as s32 {
+        return (1) as s32;
+    }
+    if ratio != (-28) as s32 {
+        return (2) as s32;
+    }
+    if a % b != 4 {
+        return (3) as s32;
+    }
+    if a / b != 2 {
+        return (4) as s32;
+    }
+    if (-a) as s32 / 2 != (-7) as s32 {
+        return (5) as s32;
+    }
+    if mix_precedence(6, 7, 8) != 64 {
+        return (6) as s32;
+    }
+    if mix_shift_arith(9) != 53 {
+        return (7) as s32;
+    }
+    if mix_fold(5) != 26 {
+        return (8) as s32;
+    }
+    if flag != 1 {
+        return (9) as s32;
+    }
+    if (d ^ (d & (-1) as s32)) != 0 {
+        return (10) as s32;
+    }
+    return (0) as s32;
+}

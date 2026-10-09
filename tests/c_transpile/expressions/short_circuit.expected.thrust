@@ -1,0 +1,47 @@
+fn safe_div(a: s32, b: s32) s32 {
+    if b == 0 {
+        return (0) as s32;
+    }
+    return (a / b > 1) as s32;
+}
+fn short_circuit_check() s32 {
+    var a: s32 = 4;
+    var b: s32 = 0;
+    var r1: s32 = (((a > 0)) && ((a < 10))) as s32;
+    var r2: s32 = (((b != 0)) && ((a > 0))) as s32;
+    var r3: s32 = (((a < 0)) || ((b == 0))) as s32;
+    var r4: s32 = (((b > 0)) || ((a == 4))) as s32;
+    var div_ok: s32 = safe_div(a, b);
+    var div_one: s32 = safe_div(a, 2);
+    var chain: s32 = ((((a > 0)) && ((b == 0))) && ((a + b > 0))) as s32;
+    var orchain: s32 = ((((a < 0)) || ((b > 0))) || ((a == 4))) as s32;
+    var mixed: s32 = (((((a > b)) && ((b < a)))) || (((a % 2) == 0))) as s32;
+    if r1 != 1 {
+        return (1) as s32;
+    }
+    if r2 != 0 {
+        return (2) as s32;
+    }
+    if r3 != 1 {
+        return (3) as s32;
+    }
+    if r4 != 1 {
+        return (4) as s32;
+    }
+    if div_ok != 0 {
+        return (5) as s32;
+    }
+    if div_one != 1 {
+        return (6) as s32;
+    }
+    if chain != 1 {
+        return (7) as s32;
+    }
+    if orchain != 1 {
+        return (8) as s32;
+    }
+    if mixed != 1 {
+        return (9) as s32;
+    }
+    return (0) as s32;
+}

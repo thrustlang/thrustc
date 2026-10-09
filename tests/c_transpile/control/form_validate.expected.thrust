@@ -1,0 +1,75 @@
+fn form_validate_check() s32 {
+    var kinds: array[s32; 3] = fixed[1, 0, 2];
+    var values: array[s32; 3] = fixed[25, 0, 9];
+    if validate_form(kinds as ptr[s32], values as ptr[s32], 3) != 3 {
+        return (1) as s32;
+    }
+    var skipped: array[s32; 4] = fixed[1, 1, 0, 3];
+    var skipped_values: array[s32; 4] = fixed[10, 5, 0, 1];
+    if validate_form(skipped as ptr[s32], skipped_values as ptr[s32], 2) != (-1) as s32 {
+        return (2) as s32;
+    }
+    if validate_form(skipped[2], skipped_values[2], 2) != (-2) as s32 {
+        return (3) as s32;
+    }
+    if (valid_age(131) != 0) || (valid_age(13) != 1) {
+        return (4) as s32;
+    }
+    if (validate_field(2, 12) != 1) || (validate_field(9, 1) != (-2) as s32) {
+        return (5) as s32;
+    }
+    return (0) as s32;
+}
+fn valid_age(age: s32) s32 {
+    if age < 0 {
+        return (0) as s32;
+    }
+    if age >= 18 {
+        if age > 130 {
+            return (0) as s32;
+        }
+        return (2) as s32;
+    } else if age >= 13 {
+        return (1) as s32;
+    }
+    return (0) as s32;
+}
+fn validate_field(kind: s32, value: s32) s32 {
+    if kind == 0 {
+        if value == 0 {
+            return ((-1) as s32) as s32;
+        }
+        return (valid_age(value)) as s32;
+    } else if kind == 1 {
+        return (valid_age(value)) as s32;
+    } else if kind == 2 {
+        return (value % 3 == 0) as s32;
+    } else {
+        return ((-2) as s32) as s32;
+    }
+}
+fn validate_form(kinds: const ptr[s32], values: const ptr[s32], n: s32) s32 {
+    var score: s32 = 0;
+    var checked: s32 = 0;
+    for var i: s32 = 0; i < n; i += 1; {
+        var result: s32 = validate_field(kinds->[i], values->[i]);
+        if result < 0 {
+            continue;
+        }
+        if result == 0 {
+            return ((-1) as s32) as s32;
+        }
+        checked++;
+        if result == 2 {
+            score += 2;
+        } else if result == 1 {
+            score += 1;
+        } else {
+            score += 0;
+        }
+    }
+    if checked == 0 {
+        return ((-2) as s32) as s32;
+    }
+    return (score) as s32;
+}

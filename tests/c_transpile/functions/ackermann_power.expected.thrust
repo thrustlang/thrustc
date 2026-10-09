@@ -1,0 +1,77 @@
+fn ackermann(m: s32, n: s32) s32 {
+    if m == 0 {
+        return (n + 1) as s32;
+    }
+    if n == 0 {
+        return (ackermann(m - 1, 1)) as s32;
+    }
+    return (ackermann(m - 1, ackermann(m, n - 1))) as s32;
+}
+fn ackermann_band(m: s32, lo: s32, hi: s32) s32 {
+    var total: s32 = 0;
+    for var n: s32 = lo; n <= hi; n = n + 1; {
+        total = total + ackermann(m, n);
+    }
+    return (total) as s32;
+}
+fn ackermann_power_check() s32 {
+    if ackermann(0, 5) != 6 {
+        return (1) as s32;
+    }
+    if ackermann(1, 5) != 7 {
+        return (2) as s32;
+    }
+    if ackermann(2, 3) != 9 {
+        return (3) as s32;
+    }
+    if ackermann(3, 3) != 61 {
+        return (4) as s32;
+    }
+    if power(2, 10) != 1024 {
+        return (5) as s32;
+    }
+    if power(3, 4) != 81 {
+        return (6) as s32;
+    }
+    var data: array[s32; 6] = fixed[7, (-3) as s32, 19, 4, 0, 11];
+    var lo: s32 = 0;
+    var hi: s32 = 0;
+    var total: s32 = 0;
+    stats(data as ptr[s32], 6, ref (lo), ref (hi), ref (total));
+    if lo != (-3) as s32 {
+        return (7) as s32;
+    }
+    if hi != 19 {
+        return (8) as s32;
+    }
+    if total != 38 {
+        return (9) as s32;
+    }
+    if ackermann_band(2, 0, 3) != (24) as s32 {
+        return (10) as s32;
+    }
+    return (0) as s32;
+}
+fn power(base: s32, exp: s32) s32 {
+    if exp == 0 {
+        return (1) as s32;
+    }
+    return (base * power(base, exp - 1)) as s32;
+}
+fn stats(data: const ptr[s32], len: s32, min_out: ptr[s32], max_out: ptr[s32], sum_out: ptr[s32]) void {
+    var lo: s32 = data->[0];
+    var hi: s32 = data->[0];
+    var total: s32 = 0;
+    for var i: s32 = 0; i < len; i = i + 1; {
+        if data->[i] < lo {
+            lo = data->[i];
+        }
+        if data->[i] > hi {
+            hi = data->[i];
+        }
+        total = total + data->[i];
+    }
+    min_out->[0] = lo;
+    max_out->[0] = hi;
+    sum_out->[0] = total;
+}

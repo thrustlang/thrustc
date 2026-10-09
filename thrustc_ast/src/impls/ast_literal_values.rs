@@ -100,23 +100,30 @@ impl AstLiteralExtensions for Ast<'_> {
 
     #[inline]
     fn is_literal_value(&self) -> bool {
-        matches!(
-            self,
+        match self {
             Ast::Integer { .. }
-                | Ast::Float { .. }
-                | Ast::Boolean { .. }
-                | Ast::Char { .. }
-                | Ast::CString { .. }
-                | Ast::CNString { .. }
-                | Ast::NullPtr { .. }
-                | Ast::Array { .. }
-                | Ast::FixedArray { .. }
-                | Ast::NativeVector { .. }
-        )
+            | Ast::Float { .. }
+            | Ast::Boolean { .. }
+            | Ast::Char { .. }
+            | Ast::CString { .. }
+            | Ast::CNString { .. }
+            | Ast::NullPtr { .. }
+            | Ast::Array { .. }
+            | Ast::FixedArray { .. }
+            | Ast::NativeVector { .. } => true,
+
+            Ast::Group { node, .. } => node.is_literal_value(),
+
+            _ => false,
+        }
     }
 
     #[inline]
     fn is_literal_ptr_value(&self) -> bool {
-        matches!(self, Ast::CString { .. } | Ast::CNString { .. })
+        match self {
+            Ast::CString { .. } | Ast::CNString { .. } => true,
+            Ast::Group { node, .. } => node.is_literal_ptr_value(),
+            _ => false,
+        }
     }
 }

@@ -2,7 +2,7 @@
   "name": "thrustlang-vscode",
   "displayName": "Thrust Programming Language",
   "description": "Syntax highlighting, theme, file icons, and language server support for the Thrust Programming Language",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "publisher": "thrustlang",
   "license": "GPL-3.0",
   "repository": "https://github.com/thrustlang/thrustc",

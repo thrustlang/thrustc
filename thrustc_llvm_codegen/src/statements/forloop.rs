@@ -81,6 +81,8 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
 
     llvm_builder.position_at_end(start);
 
+    codegen.get_mut_context().begin_scope();
+
     codegen.codegen_variables(local);
 
     llvm_builder
@@ -202,6 +204,8 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
             .get_mut_loop_context()
             .pop_superior_branch();
     }
+
+    codegen.get_mut_context().end_scope();
 
     llvm_builder.position_at_end(exit);
 }

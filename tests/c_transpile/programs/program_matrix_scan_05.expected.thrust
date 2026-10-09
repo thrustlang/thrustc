@@ -10,15 +10,15 @@ fn fill_matrix_05(matrix: ptr[s32]) void {
 }
 fn main() s32 @public {
     var matrix: array[array[s32; 5]; 5];
-    fill_matrix_05(ref matrix[0][0]);
-    var total: s32 = trace_band_05(ref matrix[0][0]);
-    if visited_cells_05 != 5 * 5 {
+    fill_matrix_05(matrix[0][0]);
+    var total: s32 = trace_band_05(matrix[0][0]);
+    if visited_cells_05 != (25) as s32 {
         return (1) as s32;
     }
     if total <= 70 {
         return (2) as s32;
     }
-    if (ref matrix[0][0])->[((4) * 5) + (4)] <= matrix_bias_05 {
+    if (matrix[0][0])->[((4) * 5) + (4)] <= matrix_bias_05 {
         return (3) as s32;
     }
     return (0) as s32;

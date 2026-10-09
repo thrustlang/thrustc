@@ -1,17 +1,54 @@
-struct SmallSet {
-    slots: array[s32; 4],
+fn deep(pp: ptr[ptr[s32]]) s32 {
+    var a: ptr[s32] = load pp[0];
+    var v: s32 = pp[0]->[0];
+    return (v + a->[0]) as s32;
 }
-
-fn probe_hand() s32 {
-    var set: SmallSet;
-    set.slots->[0] = 7;
-    set.slots->[3] = 9;
-    return (set.slots->[0] + set.slots->[3]) as s32;
+fn pick(xs: ptr[s32]) s32 {
+    var a: s32 = xs->[2];
+    var q: ptr[s32] = xs[1];
+    var b: s32 = q->[0];
+    return (a + b) as s32;
 }
-
-fn main() s32 @public {
-    if probe_hand() != 16 {
-        return 1;
+fn pp_check() s32 {
+    var d: array[s32; 4] = fixed[1, 2, 3, 4];
+    if walk(d as ptr[s32], 4) != 10 {
+        return (1) as s32;
     }
-    return 0;
+    if stride(d as ptr[s32], 2) != 4 {
+        return (2) as s32;
+    }
+    if pick(d as ptr[s32]) != 5 {
+        return (3) as s32;
+    }
+    var p: ptr[s32] = (d) as ptr[s32];
+    var pp: ptr[ptr[s32]] = ref p;
+    if deep(pp) != 2 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}
+fn stride(xs: ptr[s32], n_param: s32) s32 {
+    var n: s32 = n_param;
+
+    var total: s32 = 0;
+    var p: ptr[s32] = xs;
+
+    while n > 0 {
+        total = total + p->[0];
+        p = p[2];
+        n = n - 1;
+    }
+    
+    return (total) as s32;
+}
+fn walk(xs: ptr[s32], n: s32) s32 {
+    var total: s32 = 0;
+    var p: ptr[s32] = xs;
+
+    for var i: s32 = 0; i < n; i += 1; {
+        total = total + p->[0];
+        p = p[1];
+    }
+
+    return (total) as s32;
 }

@@ -1,0 +1,56 @@
+fn __c_macro_BLEND[T1, T2](a: T1, b: T2) T1 @alwaysInline {
+    return ((((a) + (a) + (a)) + ((b) * (b)))) as T1;
+}
+fn __c_macro_SQUARE[T1](x: T1) T1 @alwaysInline {
+    return (((x) * (x))) as T1;
+}
+fn __c_macro_TRIPLE[T1](x: T1) T1 @alwaysInline {
+    return (((x) + (x) + (x))) as T1;
+}
+
+fn fold(src: const ptr[s32], n: s32) s32 {
+    var acc: s32 = 3;
+    for var i: s32 = 0; i < n; i += 1; {
+        if src->[i] >= 0 {
+            __c_macro_GROW[s32, s32](ref (acc), src->[i]);
+        } else {
+            acc = acc - 3;
+        }
+    }
+    return (acc) as s32;
+}
+fn macro_accumulate_loop_check() s32 {
+    var src: array[s32; 4] = fixed[2, (-1) as s32, 3, 0];
+    var acc: s32 = 3;
+    if 1 != 1 {
+        return (1) as s32;
+    }
+    for var i: s32 = 0; i < 4; i += 1; {
+        acc = acc + ((src->[i]) * (src->[i]));
+    }
+    if acc != (17) as s32 {
+        return (2) as s32;
+    }
+    if fold(src as ptr[s32], 4) <= 0 {
+        return (3) as s32;
+    }
+    if run_window(src as ptr[s32]) <= 0 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}
+fn run_window(src: const ptr[s32]) s32 {
+    var acc: s32 = 0;
+    for var i: s32 = 0; i < 4; i += 1; {
+        var local: s32 = src->[i];
+        while (local > 0) && (acc < 1000) {
+            acc = acc + (((1) + (1) + (1)) + ((local) * (local)));
+            local = local - 1;
+        }
+    }
+    return (acc) as s32;
+}
+fn __c_macro_GROW[T1, T2](acc: ptr[T1], v: T2) void @alwaysInline {
+    acc->[0] =  ((acc->[0]) + ((((v)) + ((v)) + ((v))) + ((4) * (4)))) as T1;
+}
+

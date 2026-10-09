@@ -18,23 +18,23 @@
 */
 
 use thrustc_ast::{
-    traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
     Ast,
+    traits::{AstCodeLocation, AstGetType, AstLiteralExtensions},
 };
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 
 use thrustc_code_location::Span;
 use thrustc_typesystem::{
+    Type,
     traits::{
         ConstantTypeExtensions, TypeArrayEntensions, TypeCodeLocation, TypeFixedArrayEntensions,
         TypeIsExtensions, TypePointerExtensions, VoidTypeExtensions,
     },
-    Type,
 };
 
 use crate::{
-    context::TypeCheckerControlContext, operations, type_checking,
-    type_metadata::TypeCheckerNodeMetadata, TypeChecker,
+    TypeChecker, context::TypeCheckerControlContext, operations, type_cast, type_checking,
+    type_metadata::TypeCheckerNodeMetadata,
 };
 
 mod call_expr;
@@ -719,7 +719,7 @@ pub fn validate_node<'type_checker>(
             let control_context: &mut TypeCheckerControlContext =
                 typechecker.get_mut_control_context();
 
-            type_checking::check_type_cast(cast_type, from_type, metadata, span, control_context)?;
+            type_cast::check_type_cast(cast_type, from_type, metadata, span, control_context)?;
 
             control_context.reset_type_cast_depth();
 

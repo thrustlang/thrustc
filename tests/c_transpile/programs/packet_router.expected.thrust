@@ -1,0 +1,59 @@
+struct Packet {
+    src: s32,
+    dst: s32,
+    ttl: s32,
+    flags: s32,
+}
+
+struct Route {
+    target: s32,
+    next_hop: s32,
+}
+
+static default_hop: const s32 @public @extern("default_hop") = 9;
+static mut delivered: s32 = 0;
+static mut dropped: s32 = 0;
+
+fn forward(packet: ptr[Packet], table: const ptr[Route]) s32 {
+    var hop: s32 = lookup_hop(table, packet->dst);
+    if hop == packet->src {
+        dropped += 1;
+        return ((-1) as s32) as s32;
+    }
+    packet->ttl -= 2;
+    packet->flags |= 1;
+    if packet->ttl < 3 {
+        dropped += 1;
+        return ((-1) as s32) as s32;
+    }
+    delivered += 1;
+    return (hop) as s32;
+}
+fn lookup_hop(table: const ptr[Route], target: s32) s32 {
+    for var i: s32 = 0; i < 4; i += 1; {
+        if table[i]->target == target {
+            return (table[i]->next_hop) as s32;
+        }
+    }
+    return (default_hop) as s32;
+}
+fn packet_router_check() s32 {
+    var table: array[Route; 4] = fixed[new Route { target: 1, next_hop: 2 }, new Route { target: 2, next_hop: 3 }, new Route { target: 3, next_hop: 1 }, new Route { target: 4, next_hop: 0 }];
+    var packets: array[Packet; 7] = fixed[new Packet { src: 0, dst: 1, ttl: 8, flags: 0 }, new Packet { src: 1, dst: 3, ttl: 6, flags: 0 }, new Packet { src: 2, dst: 2, ttl: 4, flags: 0 }, new Packet { src: 3, dst: 4, ttl: 9, flags: 0 }, new Packet { src: 4, dst: 1, ttl: 2, flags: 0 }, new Packet { src: 5, dst: 4, ttl: 7, flags: 0 }, new Packet { src: 6, dst: 3, ttl: 5, flags: 0 }];
+    var total_ttl: s32 = 0;
+    for var i: s32 = 0; i < 7; i += 1; {
+        if forward(packets[i], table[0]) >= 0 {
+            total_ttl += packets[i]->ttl;
+        }
+    }
+    if delivered + dropped != 7 {
+        return (1) as s32;
+    }
+    if delivered <= 0 {
+        return (2) as s32;
+    }
+    if total_ttl <= 3 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}

@@ -42,7 +42,7 @@ use crate::memory::SymbolAllocated;
 use crate::metadata::LLVMMetadata;
 use crate::pointer_anchor::PointerAnchor;
 use crate::statements::{conditional, forloop, infloop, whileloop};
-use crate::toplevel::{asmfunction, function, intrinsic};
+use crate::toplevel::{asm_function, function, intrinsic};
 use crate::traits::{AstLLVMGetType, LLVMFunctionExtensions};
 use crate::types::LLVMFunction;
 use crate::{
@@ -52,7 +52,6 @@ use crate::{
 use thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators;
 
 use thrustc_ast::Ast;
-use thrustc_ast::traits::AstBaseReferenceExtensions;
 use thrustc_ast::traits::AstCodeLocation;
 use thrustc_ast::traits::AstMemoryExtensions;
 use thrustc_ast::traits::AstStandardExtensions;
@@ -108,7 +107,9 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             LLVMArchitectureAttribute::apply(module, &llvm_target_triple);
         }
     }
+}
 
+impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
     fn init_top_entities(&mut self) {
         {
             for node in self.ast.iter() {
@@ -119,7 +120,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                             thrustc_entities::compiler_intrinsic_from_ast(node),
                         );
                     }
-                    Ast::AssemblerFunction { .. } => asmfunction::compile(
+                    Ast::AssemblerFunction { .. } => asm_function::compile(
                         self.context,
                         thrustc_entities::assembler_function_from_ast(node),
                     ),
@@ -1985,7 +1986,10 @@ pub fn compile_constant_as_ptr_value<'ctx>(
     cast_type: &Type,
 ) -> BasicValueEnum<'ctx> {
     match expr {
+        Ast::Group { node, .. } => self::compile_constant_as_ptr_value(context, node, cast_type),
+
         Ast::Reference { name, .. } => context.get_table().get_symbol(name).get_ptr_value().into(),
+
         _ => codegen::compile_constant_as_value(context, expr, cast_type),
     }
 }
@@ -1997,6 +2001,8 @@ pub fn compile_as_ptr_value<'ctx>(
     cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
     match expr {
+        Ast::Group { node, .. } => self::compile_as_ptr_value(context, node, cast_type),
+
         Ast::Reference {
             name,
             kind: ty,
@@ -2056,6 +2062,23 @@ pub fn compile_as_ptr_value<'ctx>(
                 base_ptr.into()
             }
         }
+
+        Ast::Property { .. } | Ast::Index { .. } => {
+            let expr_type: Type = expr.get_type_for_llvm().remove_all_constant_type();
+
+            if expr_type.is_ptr_like_type() {
+                return self::compile_as_value(context, expr, cast_type);
+            }
+
+            context.add_codegen_location(CodeGenLocation::LValue);
+
+            let value: BasicValueEnum<'ctx> = self::compile_as_value(context, expr, cast_type);
+
+            context.pop_current_codegen_location();
+
+            value
+        }
+
         _ => codegen::compile_as_value(context, expr, cast_type),
     }
 }
@@ -2174,44 +2197,4 @@ pub fn compile_entry_point_desctructors<'ctx>(context: &mut LLVMCodeGenContext<'
 
     global.set_linkage(Linkage::Appending);
     global.set_initializer(&dtor_type.const_array(&llvm_dtors));
-}
-
-pub fn get_atomic_ordering<'ctx>(
-    context: &mut LLVMCodeGenContext<'_, 'ctx>,
-    destination: &'ctx Ast<'ctx>,
-    span: Span,
-) -> inkwell::AtomicOrdering {
-    let reference: &Ast<'ctx> = match destination.get_base_reference() {
-        Some(reference) => reference,
-
-        None => abort::abort_codegen(
-            context,
-            "The atomic operation destination is not a memory reference!",
-            span,
-            std::path::PathBuf::from(file!()),
-            line!(),
-        ),
-    };
-
-    let Ast::Reference { metadata, .. } = reference else {
-        abort::abort_codegen(
-            context,
-            "The atomic operation destination is not a memory reference!",
-            span,
-            std::path::PathBuf::from(file!()),
-            line!(),
-        );
-    };
-
-    let Some(atomic_ord) = metadata.get_atomic_ord() else {
-        abort::abort_codegen(
-            context,
-            "The atomic operation target has no atomic ordering!",
-            span,
-            std::path::PathBuf::from(file!()),
-            line!(),
-        );
-    };
-
-    atomic_ord.to_llvm()
 }

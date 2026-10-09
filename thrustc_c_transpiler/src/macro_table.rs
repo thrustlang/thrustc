@@ -76,7 +76,7 @@ impl MacroFunctionLikeDefinition {
 
 #[derive(Debug)]
 pub struct MacroTable {
-    input_source_file: PathBuf,
+    source_file: PathBuf,
     statement_macro_definitions: Vec<(String, Vec<String>, Vec<crate::macro_token::MacroToken>)>,
     function_like_macro_definitions: HashMap<String, MacroFunctionLikeDefinition>,
     object_macro_definitions: HashMap<String, Vec<crate::macro_token::MacroToken>>,
@@ -89,9 +89,9 @@ pub struct MacroTable {
 
 impl MacroTable {
     #[inline]
-    pub fn new(input_source_file: PathBuf) -> Self {
+    pub fn new(source_file: PathBuf) -> Self {
         Self {
-            input_source_file,
+            source_file,
             statement_macro_definitions: Vec::new(),
             function_like_macro_definitions: HashMap::new(),
             object_macro_definitions: HashMap::new(),
@@ -106,8 +106,8 @@ impl MacroTable {
 
 impl MacroTable {
     #[inline]
-    pub fn get_input_source_file(&self) -> &Path {
-        &self.input_source_file
+    pub fn get_source_file(&self) -> &Path {
+        &self.source_file
     }
 
     #[inline]
@@ -244,15 +244,20 @@ impl MacroTable {
             if function_like_kind == MacroFunctionLikeKind::PureFunction {
                 let spellings: Vec<String> = crate::macro_token::texts(&body);
 
-                if crate::macro_expr::MacroCursor::parse(&spellings).is_err() {
+                if crate::macro_parser::MacroParser::parse(&spellings).is_err() {
                     function_like_kind = MacroFunctionLikeKind::Unsupported(
                         crate::macro_error::MacroLimit::ExpressionMalformed,
                     );
                 }
             }
 
+            let statement_spellings: Vec<String> = crate::macro_token::texts(&body);
+
+            let mut statement_parser: crate::macro_parser::MacroParser<'_> =
+                crate::macro_parser::MacroParser::new(&statement_spellings);
+
             if function_like_kind == MacroFunctionLikeKind::Statement
-                && crate::macro_stmt::parse_statement_body_tokens(&body).is_err()
+                && statement_parser.parse_statement_body().is_err()
             {
                 function_like_kind = MacroFunctionLikeKind::Unsupported(
                     crate::macro_error::MacroLimit::StatementMalformed,
@@ -287,7 +292,12 @@ impl MacroTable {
             return;
         }
 
-        if crate::macro_stmt::parse_statement_body_tokens(&body_tokens).is_err() {
+        let statement_spellings: Vec<String> = crate::macro_token::texts(&body_tokens);
+
+        let mut statement_parser: crate::macro_parser::MacroParser<'_> =
+            crate::macro_parser::MacroParser::new(&statement_spellings);
+
+        if statement_parser.parse_statement_body().is_err() {
             return;
         }
 
@@ -436,7 +446,7 @@ impl MacroTable {
                 file.get_path()
                     .canonicalize()
                     .unwrap_or_else(|_| file.get_path())
-                    == self.input_source_file
+                    == self.source_file
             })
             .unwrap_or(false)
     }

@@ -1,0 +1,84 @@
+fn bit_tricks_check() s32 {
+    var or_all: u32 = (255) as u32;
+    var and_mask: u32 = (60) as u32;
+    var xor_all: u32 = (255) as u32;
+    var not_all: u32 = ~((0) as u32);
+    var not_byte: u32 = ~((0xff) as u32);
+    var shl: u32 = (32) as u32;
+    var shr: u32 = (2048) as u32;
+    var rot: u32 = rotl((0x80000001) as u32, (1) as u32);
+    var ones: u32 = popcount((0xf0f0) as u32);
+    var p_even: s32 = parity(3);
+    var p_odd: s32 = parity(7);
+    var g1: u32 = gray((7) as u32);
+    var g2: u32 = gray((4) as u32);
+    var chained: u32 = (and_mask ^ or_all) | (shl & shr);
+    if or_all != (0xff) as u32 {
+        return (1) as s32;
+    }
+    if and_mask != (0x3c) as u32 {
+        return (2) as s32;
+    }
+    if xor_all != (0xff) as u32 {
+        return (3) as s32;
+    }
+    if not_all != (0xffffffff) as u32 {
+        return (4) as s32;
+    }
+    if (not_byte & (0xff) as u32) != (0) as u32 {
+        return (5) as s32;
+    }
+    if shl != (32) as u32 {
+        return (6) as s32;
+    }
+    if shr != (0x800) as u32 {
+        return (7) as s32;
+    }
+    if rot != (3) as u32 {
+        return (8) as s32;
+    }
+    if ones != (8) as u32 {
+        return (9) as s32;
+    }
+    if p_even != 0 {
+        return (10) as s32;
+    }
+    if p_odd != 1 {
+        return (12) as s32;
+    }
+    if g1 != (4) as u32 {
+        return (13) as s32;
+    }
+    if g2 != (6) as u32 {
+        return (14) as s32;
+    }
+    if chained != ((195) as u32) {
+        return (15) as s32;
+    }
+    return (0) as s32;
+}
+fn gray(v: u32) u32 {
+    return (v ^ (v >> (1) as u32)) as u32;
+}
+fn parity(v: s32) s32 {
+    var u: u32 = (v) as u32;
+    u ^= u >> (16) as u32;
+    u ^= u >> (8) as u32;
+    u ^= u >> (4) as u32;
+    u ^= u >> (2) as u32;
+    u ^= u >> (1) as u32;
+    return (((u & (1) as u32)) as s32) as s32;
+}
+fn popcount(v_param: u32) u32 {
+    var v: u32 = v_param;
+
+    var c: u32 = (0) as u32;
+    while v != (0) as u32 {
+        c += v & (1) as u32;
+        v >>= (1) as u32;
+    }
+    return (c) as u32;
+}
+fn rotl(v: u32, n: u32) u32 {
+    return ((v << n) | (v >> ((32) as u32 - n))) as u32;
+}

@@ -1,0 +1,78 @@
+static big_ratio: const f32 = 1000000.0;
+static tiny_ratio: const f64 = 0.000001;
+
+fn blend(parts: s32, whole: s32) f64 {
+    if whole == 0 {
+        return (0.5) as f64;
+    }
+    var r: f64 = (parts) as f64 / (whole) as f64;
+    return (r * 1.0) as f64;
+}
+fn scaled_units(meters: s32) s32 {
+    var base: s32 = 100;
+    var fine: s32 = 8;
+    var bump: s32 = 0x10;
+    var mask: s32 = (15) as s32;
+    return (meters * base + fine + bump - mask) as s32;
+}
+fn tag_start(s: const ptr[char]) s32 {
+    return (((s->[0]) as s32 == ('u') as s32) && ((s->[1]) as s32 == ('n') as s32)) as s32;
+}
+fn unit_scale_check() s32 {
+    var fail: s32 = 0;
+    if scaled_units(3) != (309) as s32 {
+        fail = 1;
+    }
+    var flags: u32 = (0) as u32;
+    flags |= (0x1) as u32;
+    flags |= ((0x2) as usize) as u32;
+    flags |= ((8) as ssize) as u32;
+    if (flags != ((11) as u32)) && (fail == 0) {
+        fail = 2;
+    }
+    var span: ssize = (2500000) as ssize;
+    var cap: usize = (4000000000) as usize;
+    if (span / (1000) as ssize != (2500) as ssize) && (fail == 0) {
+        fail = 3;
+    }
+    if (cap != (4000000000) as usize) && (fail == 0) {
+        fail = 4;
+    }
+    if (blend(1, 4) != 0.25) && (fail == 0) {
+        fail = 5;
+    }
+    if (tiny_ratio > 1.0) && (fail == 0) {
+        fail = 6;
+    }
+    if (big_ratio != 1000000.0) && (fail == 0) {
+        fail = 7;
+    }
+    var nl: char = ('\n') as char;
+    var tab: char = ('\t') as char;
+    var nul: char = ('\0') as char;
+    var bs: char = ('\\') as char;
+    var sq: char = ('\'') as char;
+    var hx: char = ('A') as char;
+    var oc: char = ('A') as char;
+    if (((((nl) as s32 != 10) || ((tab) as s32 != 9)) || ((nul) as s32 != 0))) && (fail == 0) {
+        fail = 8;
+    }
+    if ((((bs) as s32 != 92) || ((sq) as s32 != 39))) && (fail == 0) {
+        fail = 9;
+    }
+    if ((((hx) as s32 != (oc) as s32) || ((hx) as s32 != 65))) && (fail == 0) {
+        fail = 10;
+    }
+    var msg: const ptr[char] = ("unitscale\tready\n") as const ptr[char];
+    var esc: const ptr[char] = ("A=\x41 B=\101 q=\" b=\\") as const ptr[char];
+    if (!((tag_start(msg)) != 0)) && (fail == 0) {
+        fail = 11;
+    }
+    if ((((esc->[2]) as s32 != ('A') as s32) || ((esc->[6]) as s32 != ('A') as s32))) && (fail == 0) {
+        fail = 12;
+    }
+    if ((((esc->[10]) as s32 != ('\"') as s32) || ((esc->[14]) as s32 != ('\\') as s32))) && (fail == 0) {
+        fail = 13;
+    }
+    return (fail) as s32;
+}

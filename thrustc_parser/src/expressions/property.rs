@@ -29,7 +29,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition
 use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
-    traits::{TypeCodeLocation, TypeExtensions, TypePointerExtensions},
+    traits::{ConstantTypeExtensions, TypeCodeLocation, TypeExtensions, TypePointerExtensions},
     Type,
 };
 
@@ -112,7 +112,9 @@ fn decompose_struct_property<'parser>(
         return Ok((base_type.clone(), indices));
     }
 
-    let current_type: &Type = match base_type {
+    let base_type_without_const: Type = base_type.remove_all_constant_type();
+
+    let current_type: &Type = match &base_type_without_const {
         Type::Ptr {
             subtype: Some(inner_type),
             ..
@@ -121,7 +123,7 @@ fn decompose_struct_property<'parser>(
             inner_type
         }
 
-        _ => base_type,
+        _ => &base_type_without_const,
     };
 
     let current_property_name: &str = property_names.get(position).unwrap_or_else(|| {

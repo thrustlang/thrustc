@@ -1,7 +1,7 @@
 static mut loop_hits_08: s32 = 0;
 
 fn main() s32 @public {
-    var data: array[s32; 12] = fixed[-2, 6, 2, -1, 11, -4, -1, -2, -7, 4, -2, 5];
+    var data: array[s32; 12] = fixed[(-2) as s32, 6, 2, (-1) as s32, 11, (-4) as s32, (-1) as s32, (-2) as s32, (-7) as s32, 4, (-2) as s32, 5];
     var total: s32 = walk_tensor_08(data as ptr[s32]);
     if loop_hits_08 != 12 {
         return (1) as s32;

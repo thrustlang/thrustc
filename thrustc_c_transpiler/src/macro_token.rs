@@ -244,7 +244,7 @@ pub fn is_keyword(text: &str) -> bool {
 }
 
 #[inline]
-fn is_punctuation(text: &str) -> bool {
+pub fn is_punctuation(text: &str) -> bool {
     matches!(
         text,
         "(" | ")"

@@ -1,0 +1,45 @@
+fn matrix_trace_check() s32 {
+    var r0: array[s32; 3] = fixed[1, 2, 3];
+    var r1: array[s32; 3] = fixed[4, 5, 6];
+    var r2: array[s32; 3] = fixed[7, 8, 9];
+    var rows: array[ptr[s32]; 3] = fixed[(r0) as ptr[s32], (r1) as ptr[s32], (r2) as ptr[s32]];
+    var grid: ptr[ptr[s32]] = (rows) as ptr[ptr[s32]];
+    var trace: s32 = 0;
+    for var i: s32 = 0; i < 3; i += 1; {
+        trace += grid->[i]->[i];
+    }
+    if trace != 15 {
+        return (1) as s32;
+    }
+    var total: s32 = 0;
+    var rp: ptr[ptr[s32]] = grid;
+    for var i: s32 = 0; i < 3; i += 1; {
+        total += row_sum(load rp[0], 3);
+        rp = ref (rp[1]);
+    }
+    if total != 45 {
+        return (2) as s32;
+    }
+    var cell: ptr[s32] = r1[1];
+    cell->[0] = cell->[0] * 10;
+    if r1->[1] != 50 {
+        return (3) as s32;
+    }
+    var walker: ptr[s32] = r2[2];
+    var back: s32 = 0;
+    for var i: s32 = 0; i < 3; i += 1; {
+        back = back * 10 + walker->[0];
+        walker = walker[0 - 1];
+    }
+    if back != 987 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}
+fn row_sum(row: const ptr[s32], cols: s32) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < cols; i += 1; {
+        total = total + row->[i];
+    }
+    return (total) as s32;
+}

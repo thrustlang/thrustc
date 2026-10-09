@@ -1,8 +1,8 @@
 static mut stride_steps_06: s32 = 0;
 
 fn main() s32 @public {
-    var left: array[s32; 7] = fixed[-2, -8, -4, 12, 10, 11, 8];
-    var right: array[s32; 7] = fixed[-1, 1, -7, -3, -2, -3, 9];
+    var left: array[s32; 7] = fixed[(-2) as s32, (-8) as s32, (-4) as s32, 12, 10, 11, 8];
+    var right: array[s32; 7] = fixed[(-1) as s32, 1, (-7) as s32, (-3) as s32, (-2) as s32, (-3) as s32, 9];
     var out: array[s32; 7] = fixed[0, 0, 0, 0, 0, 0, 0];
     var total: s32 = stride_merge_06(out as ptr[s32], left as ptr[s32], right as ptr[s32], 7);
     if stride_steps_06 != 7 {

@@ -1,0 +1,64 @@
+static mut global_shadow_scale: s32 = 4;
+static mut global_shadow_total: s32 = 3;
+
+fn fold_global_shadow(value: s32) s32 {
+    var scale: s32 = value + 1;
+    global_shadow_total += scale;
+    {
+        var global_shadow_total: s32 = scale * 2;
+        global_shadow_total += value;
+        scale = global_shadow_total;
+    }
+    return (scale + global_shadow_total) as s32;
+}
+fn global_shadow_check() s32 {
+    global_shadow_total = 3;
+    global_shadow_scale = 4;
+    if global_shadow_total != 3 {
+        return (1) as s32;
+    }
+    if global_shadow_scale != 4 {
+        return (2) as s32;
+    }
+    if fold_global_shadow(5) != 26 {
+        return (3) as s32;
+    }
+    if global_shadow_total != 9 {
+        return (4) as s32;
+    }
+    if global_shadow_scale != 4 {
+        return (5) as s32;
+    }
+    if rebind_names(2) != 9 {
+        return (6) as s32;
+    }
+    if order_probe(3, 4) != 47 {
+        return (7) as s32;
+    }
+    return (0) as s32;
+}
+fn order_probe(a: s32, b: s32) s32 {
+    var first: s32 = a + b;
+    var second: s32 = first * 2;
+    var third: s32 = second - a;
+    {
+        var first: s32 = third + b;
+        second = first + second;
+    }
+    return (first + second + third) as s32;
+}
+fn rebind_names(seed_param: s32) s32 {
+    var seed: s32 = seed_param;
+
+    var value: s32 = seed;
+    {
+        var value: s32 = seed + 1;
+        {
+            var value: s32 = seed + 2;
+            seed = value;
+        }
+        seed += value;
+    }
+    value += seed;
+    return (value) as s32;
+}

@@ -21,12 +21,14 @@ use thrustc_compile_time::BuiltinValue;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::Type;
 
+use crate::error::{TranspilerError, TranspilerResult};
+
 pub fn format_clang_type_thrust(
     ty: &clang::Type<'_>,
     macro_ctx: &mut crate::macros::MacroContext,
     prefix: &str,
     span: thrustc_code_location::Span,
-) -> String {
+) -> TranspilerResult<String> {
     let is_const: bool = ty.is_const_qualified();
     let canonical: clang::Type<'_> = ty.get_canonical_type();
 
@@ -57,7 +59,7 @@ pub fn format_clang_type_thrust(
 
         clang::TypeKind::Pointer => {
             let Some(pointee) = canonical.get_pointee_type() else {
-                return "ptr".into();
+                return Ok("ptr".into());
             };
 
             let pointee_kind = pointee.get_canonical_type().get_kind();
@@ -70,16 +72,16 @@ pub fn format_clang_type_thrust(
             }
 
             if pointee_kind == clang::TypeKind::Void {
-                return "ptr".into();
+                return Ok("ptr".into());
             }
 
             let inner_ty: clang::Type<'_> = pointee.get_canonical_type();
             let pointee_const: bool = pointee.is_const_qualified();
             let mut inner: String =
-                self::format_clang_type_thrust(&inner_ty, macro_ctx, prefix, span);
+                self::format_clang_type_thrust(&inner_ty, macro_ctx, prefix, span)?;
 
             if inner.is_empty() {
-                return String::new();
+                return Err(TranspilerError::Abort);
             }
 
             if let Some(stripped) = inner.strip_prefix("const ") {
@@ -106,7 +108,7 @@ pub fn format_clang_type_thrust(
                         span,
                     ),
                 );
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             let Some(size) = canonical.get_size().and_then(|s| u32::try_from(s).ok()) else {
@@ -121,14 +123,14 @@ pub fn format_clang_type_thrust(
                         span,
                     ),
                 );
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             let inner: String =
-                self::format_clang_type_thrust(&element_type, macro_ctx, prefix, span);
+                self::format_clang_type_thrust(&element_type, macro_ctx, prefix, span)?;
 
             if inner.is_empty() {
-                return String::new();
+                return Err(TranspilerError::Abort);
             }
 
             format!("array[{inner}; {size}]")
@@ -147,14 +149,14 @@ pub fn format_clang_type_thrust(
                         span,
                     ),
                 );
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             let return_type_text: String =
-                self::format_clang_type_thrust(&return_type, macro_ctx, prefix, span);
+                self::format_clang_type_thrust(&return_type, macro_ctx, prefix, span)?;
 
             if return_type_text.is_empty() {
-                return String::new();
+                return Err(TranspilerError::Abort);
             }
 
             let mut parameter_types_text: Vec<String> = Vec::new();
@@ -162,10 +164,10 @@ pub fn format_clang_type_thrust(
             if let Some(argument_types) = canonical.get_argument_types() {
                 for argument_type in argument_types.iter() {
                     let parameter_text: String =
-                        self::format_parameter_type_thrust(argument_type, macro_ctx, prefix, span);
+                        self::format_parameter_type_thrust(argument_type, macro_ctx, prefix, span)?;
 
                     if parameter_text.is_empty() {
-                        return String::new();
+                        return Err(TranspilerError::Abort);
                     }
 
                     parameter_types_text.push(parameter_text);
@@ -200,7 +202,7 @@ pub fn format_clang_type_thrust(
                         span,
                     ),
                 );
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             let Some(name) = decl.get_name() else {
@@ -215,22 +217,24 @@ pub fn format_clang_type_thrust(
                         span,
                     ),
                 );
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
-            crate::util::sanitize_thrust_identifier(&name)
+            crate::util::normalize_to_thrust_identifier(&name)
         }
 
         clang::TypeKind::Enum => {
-            // Use the enum name in source when available.
-
             let Some(decl) = canonical.get_declaration() else {
-                return "s32".into();
+                return Ok("s32".into());
             };
 
-            decl.get_name()
-                .map(|name| crate::util::sanitize_thrust_identifier(&name))
-                .unwrap_or_else(|| "s32".into())
+            match decl.get_enum_underlying_type() {
+                Some(underlying) => {
+                    self::format_clang_type_thrust(&underlying, macro_ctx, prefix, span)?
+                }
+
+                None => "s32".into(),
+            }
         }
 
         other => {
@@ -243,7 +247,8 @@ pub fn format_clang_type_thrust(
                     None,
                     span,
                 ));
-            return Default::default();
+
+            return Err(TranspilerError::Abort);
         }
     };
 
@@ -251,7 +256,7 @@ pub fn format_clang_type_thrust(
         out = format!("const {out}");
     }
 
-    out
+    Ok(out)
 }
 
 pub fn cast_expression_to_type(
@@ -260,14 +265,14 @@ pub fn cast_expression_to_type(
     expected_type: &clang::Type<'_>,
     span: thrustc_code_location::Span,
     macro_ctx: &mut crate::macros::MacroContext,
-) -> String {
+) -> TranspilerResult<String> {
     let prefix: String = crate::macros::expansion_prefix(entity);
 
     let thrust_type: String =
-        self::format_clang_type_thrust(expected_type, macro_ctx, &prefix, span);
+        self::format_clang_type_thrust(expected_type, macro_ctx, &prefix, span)?;
 
     if thrust_type.is_empty() {
-        return translated;
+        return Ok(translated);
     }
 
     let mut argument_type: Option<clang::Type<'_>> = entity.get_type();
@@ -302,7 +307,7 @@ pub fn cast_expression_to_type(
 
     let argument_text: String = match argument_type.as_ref() {
         Some(argument_type) => {
-            self::format_clang_type_thrust(argument_type, macro_ctx, &prefix, span)
+            self::format_clang_type_thrust(argument_type, macro_ctx, &prefix, span)?
         }
         None => String::new(),
     };
@@ -314,7 +319,7 @@ pub fn cast_expression_to_type(
     let thrust_stripped: &str = thrust_type.strip_prefix("const ").unwrap_or(&thrust_type);
 
     if !argument_text.is_empty() && argument_stripped == thrust_stripped {
-        return translated;
+        return Ok(translated);
     }
 
     let src_kind: Option<clang::TypeKind> = argument_type
@@ -414,7 +419,7 @@ pub fn cast_expression_to_type(
         || (argument_text.is_empty());
 
     if is_valid {
-        return format!("({translated}) as {thrust_type}");
+        return Ok(format!("({translated}) as {thrust_type}"));
     }
 
     macro_ctx
@@ -427,7 +432,7 @@ pub fn cast_expression_to_type(
             span,
         ));
 
-    Default::default()
+    Err(TranspilerError::Abort)
 }
 
 pub fn format_parameter_type_thrust(
@@ -435,7 +440,7 @@ pub fn format_parameter_type_thrust(
     macro_ctx: &mut crate::macros::MacroContext,
     prefix: &str,
     span: thrustc_code_location::Span,
-) -> String {
+) -> TranspilerResult<String> {
     let canonical: clang::Type<'_> = ty.get_canonical_type();
 
     if matches!(
@@ -463,7 +468,7 @@ pub fn format_parameter_type_thrust(
                         span,
                     ),
                 );
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             current = element.get_canonical_type();
@@ -477,13 +482,13 @@ pub fn format_parameter_type_thrust(
                     | clang::TypeKind::Record
             )
         {
-            let inner: String = self::format_clang_type_thrust(&current, macro_ctx, prefix, span);
+            let inner: String = self::format_clang_type_thrust(&current, macro_ctx, prefix, span)?;
 
             if inner.is_empty() {
-                return String::new();
+                return Err(TranspilerError::Abort);
             }
 
-            return format!("ptr[{inner}]");
+            return Ok(format!("ptr[{inner}]"));
         }
 
         let Some(element_type) = canonical.get_element_type() else {
@@ -498,16 +503,22 @@ pub fn format_parameter_type_thrust(
                     span,
                 ),
             );
-            return Default::default();
+            return Err(TranspilerError::Abort);
         };
 
-        let inner: String = self::format_clang_type_thrust(&element_type, macro_ctx, prefix, span);
+        let inner: String = self::format_clang_type_thrust(&element_type, macro_ctx, prefix, span)?;
 
         if inner.is_empty() {
-            return String::new();
+            return Err(TranspilerError::Abort);
         }
 
-        return format!("ptr[{inner}]");
+        if (canonical.is_const_qualified() || element_type.is_const_qualified())
+            && !inner.starts_with("const ")
+        {
+            return Ok(format!("const ptr[{inner}]"));
+        }
+
+        return Ok(format!("ptr[{inner}]"));
     }
 
     if canonical.get_kind() == clang::TypeKind::Pointer {
@@ -536,7 +547,7 @@ pub fn format_parameter_type_thrust(
                         span,
                     ),
                 );
-                return Default::default();
+                return Err(TranspilerError::Abort);
             };
 
             current = element.get_canonical_type();
@@ -550,13 +561,13 @@ pub fn format_parameter_type_thrust(
                     | clang::TypeKind::Record
             )
         {
-            let inner: String = self::format_clang_type_thrust(&current, macro_ctx, prefix, span);
+            let inner: String = self::format_clang_type_thrust(&current, macro_ctx, prefix, span)?;
 
             if inner.is_empty() {
-                return String::new();
+                return Err(TranspilerError::Abort);
             }
 
-            return format!("ptr[{inner}]");
+            return Ok(format!("ptr[{inner}]"));
         }
     }
 

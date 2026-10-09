@@ -2,5 +2,5 @@ fn flip_byte(byte: u8) s32 {
     return (~(byte as s32)) as s32;
 }
 fn flip_mask(mask: u32) u32 {
-    return (~mask) as u32;
+    return (~(mask as u32)) as u32;
 }

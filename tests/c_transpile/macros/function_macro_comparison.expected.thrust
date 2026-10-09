@@ -1,9 +1,9 @@
 fn __c_macro_CLAMP10[T1](x: T1) T1 @alwaysInline {
-    var thrust_temporary_0: T1;
+    var thrust_temporary_0: s32;
     if (x) > 10 {
-        thrust_temporary_0 = (10) as T1;
+        thrust_temporary_0 = (10) as s32;
     } else {
-        thrust_temporary_0 = ((x)) as T1;
+        thrust_temporary_0 = ((x)) as s32;
     }
     return ((thrust_temporary_0)) as T1;
 }
@@ -21,5 +21,5 @@ fn clamp_sum() s32 {
     } else {
         thrust_temporary_2 = ((7)) as s32;
     }
-    return ((thrust_temporary_1) + (thrust_temporary_2)) as s32;
+    return ((17) as s32) as s32;
 }

@@ -1,0 +1,77 @@
+enum SensorState {
+    STATE_LOW: u32 = 0;
+    STATE_OK: u32 = 1;
+    STATE_HIGH: u32 = 2;
+}
+
+struct Range {
+    lo: s32,
+    hi: s32,
+}
+
+struct Sensor {
+    id: s32,
+    reading: s32,
+    limits: Range,
+}
+
+fn grid_count_state(grid: ptr[Sensor], n: s32, want: u32) s32 {
+    var count: s32 = 0;
+    for var i: s32 = 0; i < n; i += 1; {
+        if sensor_state(deref grid[i]) == want {
+            count++;
+        }
+    }
+    return (count) as s32;
+}
+fn grid_max_reading(grid: const ptr[Sensor], n: s32) s32 {
+    var best: s32 = grid[0]->reading;
+    for var i: s32 = 1; i < n; i += 1; {
+        if grid[i]->reading > best {
+            best = grid[i]->reading;
+        }
+    }
+    return (best) as s32;
+}
+fn sensor_grid_check() s32 {
+    var grid: array[Sensor; 4] = fixed[new Sensor { id: 1, reading: 5, limits: new Range { lo: 0, hi: 10 } }, new Sensor { id: 2, reading: 20, limits: new Range { lo: 0, hi: 10 } }, new Sensor { id: 3, reading: (-3) as s32, limits: new Range { lo: 0, hi: 10 } }, new Sensor { id: 4, reading: 10, limits: new Range { lo: 0, hi: 10 } }];
+    if grid_count_state(grid[0], 4, (SensorState=>STATE_OK) as u32) != 2 {
+        return (1) as s32;
+    }
+    if grid_count_state(grid[0], 4, (SensorState=>STATE_HIGH) as u32) != 1 {
+        return (2) as s32;
+    }
+    if grid_count_state(grid[0], 4, (SensorState=>STATE_LOW) as u32) != 1 {
+        return (3) as s32;
+    }
+    if grid_max_reading(grid[0], 4) != 20 {
+        return (4) as s32;
+    }
+    sensor_scale(grid[0], 3);
+    if grid[0]->reading != 15 {
+        return (5) as s32;
+    }
+    if sensor_state(deref grid[0]) != SensorState=>STATE_OK {
+        return (6) as s32;
+    }
+    if grid[3]->limits->hi != 10 {
+        return (7) as s32;
+    }
+    return (0) as s32;
+}
+fn sensor_scale(s: ptr[Sensor], factor: s32) void {
+    s->reading = s->reading * factor;
+    s->limits->lo = s->limits->lo * factor;
+    s->limits->hi = s->limits->hi * factor;
+}
+fn sensor_state(s_param: Sensor) u32 {
+    var s: Sensor = s_param;
+
+    if s->reading < s->limits->lo {
+        return (SensorState=>STATE_LOW) as u32;
+    }
+    if s->reading > s->limits->hi {
+        return (SensorState=>STATE_HIGH) as u32;
+    }
+    return (SensorState=>STATE_OK) as u32;
+}

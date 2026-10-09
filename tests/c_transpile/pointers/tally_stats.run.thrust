@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if tally_stats_check() != 0 { return 1; }
+
+    return 0;
+}

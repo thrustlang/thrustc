@@ -1,7 +1,7 @@
 importC "stdlib.h" as cstdlib;
 
 fn main() s32 @public {
-    var end: ptr[ptr] = nullptr;
+    var end: ptr[char] = nullptr;
     var parsed := cstdlib::strtol("0x2A!" as const ptr[char], ref end, 0);
 
     if parsed != 42 { return 1; }

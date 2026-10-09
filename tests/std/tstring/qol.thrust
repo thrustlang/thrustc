@@ -115,7 +115,7 @@ fn main() s32 @public {
     var i: usize = 0;
 
     while i < vec::getLength[tstring::TString](ref parts) {
-        tstring::dropTString(ref partsData[i]);
+        tstring::dropTString(partsData[i]);
         i = i + 1;
     }
 
@@ -125,7 +125,7 @@ fn main() s32 @public {
     i = 0;
 
     while i < vec::getLength[tstring::TString](ref words) {
-        tstring::dropTString(ref wordsData[i]);
+        tstring::dropTString(wordsData[i]);
         i = i + 1;
     }
 
@@ -135,7 +135,7 @@ fn main() s32 @public {
     i = 0;
 
     while i < vec::getLength[tstring::TString](ref lineParts) {
-        tstring::dropTString(ref lineData[i]);
+        tstring::dropTString(lineData[i]);
         i = i + 1;
     }
 
@@ -145,7 +145,7 @@ fn main() s32 @public {
     i = 0;
 
     while i < vec::getLength[tstring::TString](ref chars) {
-        tstring::dropTString(ref charsData[i]);
+        tstring::dropTString(charsData[i]);
         i = i + 1;
     }
 

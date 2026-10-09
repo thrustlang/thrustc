@@ -1,0 +1,73 @@
+importC "stdbool.h";
+
+struct ledger_entry {
+    weight: s16,
+    count: u32,
+    running: s64,
+}
+
+type binop_t = Fn[s32, s32] -> s32;
+type score_row_t = array[s16; 6];
+type score_t = s16;
+type total_t = s64;
+
+fn add_scores(a: s32, b: s32) s32 {
+    return (a + b) as s32;
+}
+fn clamp_score(s: s16, lo: s16, hi: s16) s16 {
+    if s < lo {
+        return (lo) as s16;
+    }
+    if s > hi {
+        return (hi) as s16;
+    }
+    return (s) as s16;
+}
+fn entry_valid(e: const ptr[ledger_entry], floor: u32) bool {
+    return (e->count >= floor) && (e->weight >= 0);
+}
+fn max_scores(a: s32, b: s32) s32 {
+    if a > b {
+        return (a) as s32;
+    } else {
+        return (b) as s32;
+    }
+}
+fn sum_row(row: const ptr[s16], len: s32, combine: Fn[s32, s32] -> s32) s64 {
+    var acc: s64 = (0) as s64;
+    for var i: s32 = 0; i < len; i = i + 1; {
+        acc = (combine((acc) as s32, (row->[i]) as s32)) as s64;
+    }
+    return (acc) as s64;
+}
+fn typedef_ledger_check() s32 {
+    var row: array[s16; 6] = fixed[(4) as s16, (9) as s16, (2) as s16, (7) as s16, (5) as s16, (1) as s16];
+    if sum_row(row as ptr[s16], 6, add_scores) != 28 {
+        return (1) as s32;
+    }
+    if sum_row(row as ptr[s16], 6, max_scores) != 9 {
+        return (2) as s32;
+    }
+    var e: ledger_entry;
+    e->weight = clamp_score((12) as s16, (0) as s16, (10) as s16);
+    e->count = (3) as u32;
+    e->running = sum_row(row as ptr[s16], 6, add_scores);
+    if e->weight != 10 {
+        return (3) as s32;
+    }
+    if !(entry_valid(ref (e), (1) as u32)) {
+        return (4) as s32;
+    }
+    if e->running != 28 {
+        return (5) as s32;
+    }
+    var other: array[s16; 6] = fixed[(1) as s16, (2) as s16, (3) as s16, (4) as s16, (5) as s16, (6) as s16];
+    var diff: s32 = 0;
+    for var i: u32 = (0) as u32; i < (6) as u32; i = i + (1) as u32; {
+        diff = diff + (((other->[i]) as s32 - (row->[i]) as s32)) as s32;
+    }
+    if diff != (-7) as s32 {
+        return (6) as s32;
+    }
+    return (0) as s32;
+}

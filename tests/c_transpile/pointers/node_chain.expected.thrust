@@ -1,0 +1,57 @@
+struct Node {
+    key: s32,
+    sum: s32,
+}
+
+fn find_key_index(nodes: ptr[Node], n: s32, key: s32) s32 {
+    for var i: s32 = 0; i < n; i += 1; {
+        if nodes[i]->key == key {
+            return (i) as s32;
+        }
+    }
+    return (0) as s32;
+}
+fn fold_node(node: ptr[Node], extra: s32) void {
+    node->sum = node->key + extra;
+}
+fn node_chain_check() s32 {
+    var nodes: array[Node; 5] = fixed[new Node { key: 1, sum: 0 }, new Node { key: 2, sum: 0 }, new Node { key: 3, sum: 0 }, new Node { key: 4, sum: 0 }, new Node { key: 5, sum: 0 }];
+    var head: ptr[Node] = (nodes) as ptr[Node];
+    var slot: ptr[ptr[Node]] = ref (head);
+    if (load slot[0])->key != 1 {
+        return (1) as s32;
+    }
+    for var i: s32 = 0; i < 5; i += 1; {
+        fold_node(head[i], i * 10);
+    }
+    if nodes[0]->sum != 1 {
+        return (2) as s32;
+    }
+    if nodes[4]->sum != 45 {
+        return (3) as s32;
+    }
+    if sum_nodes(nodes[0], 5) != 115 {
+        return (4) as s32;
+    }
+    var found: s32 = find_key_index(nodes[0], 5, 3);
+    if nodes[found]->key != 3 {
+        return (5) as s32;
+    }
+    nodes[found]->sum = nodes[found]->sum + 100;
+    if nodes[2]->sum != 123 {
+        return (6) as s32;
+    }
+    var tail: s32 = nodes[4]->key;
+    tail = tail + nodes[3]->key;
+    if tail != 9 {
+        return (7) as s32;
+    }
+    return (0) as s32;
+}
+fn sum_nodes(nodes: ptr[Node], n: s32) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < n; i += 1; {
+        total += nodes[i]->sum;
+    }
+    return (total) as s32;
+}

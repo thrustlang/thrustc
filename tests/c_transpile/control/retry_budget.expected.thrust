@@ -1,0 +1,76 @@
+fn attempt_backoff(attempt: s32) s32 {
+    var delay: s32 = 1;
+    var step: s32 = 0;
+    loop {
+        delay *= 2;
+        step++;
+        if !((step < attempt) && (delay < 64)) {
+            break;
+        }
+    }
+    return (delay) as s32;
+}
+fn cap_rounds(seed: s32, cap: s32) s32 {
+    var total: s32 = 0;
+    for var r: s32 = 0; r < cap; r += 1; {
+        if r % 2 == 0 {
+            continue;
+        }
+        total += seed + r;
+        if total > 100 {
+            break;
+        }
+    }
+    return (total) as s32;
+}
+fn retry_budget_check() s32 {
+    if attempt_backoff(0) != 2 {
+        return (1) as s32;
+    }
+    if attempt_backoff(3) != 8 {
+        return (2) as s32;
+    }
+    if attempt_backoff(100) != 64 {
+        return (3) as s32;
+    }
+    if cap_rounds(10, 5) != 24 {
+        return (4) as s32;
+    }
+    if cap_rounds(10, 100) != 119 {
+        return (5) as s32;
+    }
+    if spend_budget(4, 9) != 10 {
+        return (6) as s32;
+    }
+    if spend_budget(0, 5) != 0 {
+        return (7) as s32;
+    }
+    if spend_budget(1, 1000) != (-1000) as s32 {
+        return (8) as s32;
+    }
+    return (0) as s32;
+}
+fn spend_budget(operations: s32, budget: s32) s32 {
+    var used: s32 = 0;
+    var round: s32 = 0;
+    while used < budget {
+        round++;
+        var cost: s32 = 0;
+        var op: s32 = 0;
+        while op < operations {
+            if used + cost > budget {
+                break;
+            }
+            cost += 1 + (op % 3);
+            op++;
+        }
+        if cost == 0 {
+            return ((-used) as s32) as s32;
+        }
+        used += cost;
+        if round > 50 {
+            return ((-1000) as s32) as s32;
+        }
+    }
+    return (used) as s32;
+}

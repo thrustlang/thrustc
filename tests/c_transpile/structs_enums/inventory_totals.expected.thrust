@@ -1,0 +1,76 @@
+enum Category {
+    CAT_TOOL: u32 = 1;
+    CAT_FOOD: u32 = 3;
+    CAT_MISC: u32 = 7;
+}
+
+struct Item {
+    id: s32,
+    cat: u32,
+    qty: s32,
+    price: s32,
+}
+
+struct Inventory {
+    items: array[Item; 8],
+    count: s32,
+}
+
+fn category_weight(c: u32) s32 {
+    if c == Category=>CAT_TOOL {
+        return (4) as s32;
+    } else if c == Category=>CAT_FOOD {
+        return (2) as s32;
+    } else if c == Category=>CAT_MISC {
+        return (1) as s32;
+    } else {
+        return (0) as s32;
+    }
+}
+fn inventory_add(inv: ptr[Inventory], id: s32, cat: u32, qty: s32, price: s32) void {
+    if inv->count >= 8 {
+        return;
+    }
+    var it: Item = new Item { id: id, cat: cat, qty: qty, price: price };
+    inv.items[inv->count] = it;
+    (inv->count)++;
+}
+fn inventory_total(inv: const ptr[Inventory]) s32 {
+    var total: s32 = 0;
+    for var i: s32 = 0; i < inv->count; i += 1; {
+        total += item_value(deref inv.items[i]);
+    }
+    return (total) as s32;
+}
+fn inventory_totals_check() s32 {
+    var inv: Inventory = new Inventory { items: fixed[new Item { id: 0, cat: 0 as u32, qty: 0, price: 0 }, new Item { id: 0, cat: 0 as u32, qty: 0, price: 0 }, new Item { id: 0, cat: 0 as u32, qty: 0, price: 0 }, new Item { id: 0, cat: 0 as u32, qty: 0, price: 0 }, new Item { id: 0, cat: 0 as u32, qty: 0, price: 0 }, new Item { id: 0, cat: 0 as u32, qty: 0, price: 0 }, new Item { id: 0, cat: 0 as u32, qty: 0, price: 0 }, new Item { id: 0, cat: 0 as u32, qty: 0, price: 0 }], count: 0 };
+    inventory_add(ref (inv), 1, (Category=>CAT_TOOL) as u32, 2, 10);
+    inventory_add(ref (inv), 2, (Category=>CAT_FOOD) as u32, 5, 3);
+    inventory_add(ref (inv), 3, (Category=>CAT_MISC) as u32, 1, 7);
+    inventory_add(ref (inv), 4, (Category=>CAT_TOOL) as u32, 1, 25);
+    if inv->count != 4 {
+        return (1) as s32;
+    }
+    if inventory_total(ref (inv)) != (67) as s32 {
+        return (2) as s32;
+    }
+    if inventory_weight(ref (inv)) != (23) as s32 {
+        return (3) as s32;
+    }
+    if item_value(deref inv.items[3]) != 25 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}
+fn inventory_weight(inv: const ptr[Inventory]) s32 {
+    var weight: s32 = 0;
+    for var i: s32 = 0; i < inv->count; i += 1; {
+        weight += category_weight(inv.items[i]->cat) * inv.items[i]->qty;
+    }
+    return (weight) as s32;
+}
+fn item_value(it_param: Item) s32 {
+    var it: Item = it_param;
+
+    return (it->qty * it->price) as s32;
+}

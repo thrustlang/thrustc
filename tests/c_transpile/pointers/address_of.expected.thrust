@@ -13,6 +13,6 @@ fn read_address() s32 {
     var memo_address_of_1: s32 = carry_address_of_1;
     carry_address_of_1 = memo_address_of_1;
     var x: s32 = 7;
-    var p: ptr[s32] = ref x;
+    var p: ptr[s32] = ref (x);
     return (p->[0]) as s32;
 }

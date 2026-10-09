@@ -25,15 +25,10 @@ use thrustc_token_type::TokenType;
 use crate::Lexer;
 
 pub fn lex(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
-    let char: char = match lexer.advance() {
-        '\\' => {
-            lexer.end_span();
-            let span: Span = Span::new(lexer.span());
-
-            self::handle_char_scape_sequence(lexer, span)?
-        }
-
-        c => c,
+    let char: char = if lexer.peek() == '\\' {
+        crate::escape::read(lexer)?
+    } else {
+        lexer.advance()
     };
 
     lexer.end_span();
@@ -62,22 +57,4 @@ pub fn lex(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
     Ok(())
 }
 
-fn handle_char_scape_sequence(lexer: &mut Lexer, span: Span) -> Result<char, CompilationIssue> {
-    match lexer.advance() {
-        'n' => Ok('\n'),
-        't' => Ok('\t'),
-        'r' => Ok('\r'),
-        '\\' => Ok('\\'),
-        '0' => Ok('\0'),
-        '\'' => Ok('\''),
-        '"' => Ok('"'),
 
-        _ => Err(CompilationIssue::Error(
-            CompilationIssueCode::E0001,
-            "Invalid escape sequence".into(),
-            "You must utilize either '\\n', '\\t', '\\r', '\\0', '\\\\', '\\'', and '\\\"'.".into(),
-            None,
-            span,
-        )),
-    }
-}

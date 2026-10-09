@@ -158,40 +158,7 @@ pub fn lower_precedence<'parser>(
                 .get_position()
                 .is_expression_position();
 
-            let source: &[u8] = content.as_bytes();
-
-            let mut processed: Vec<u8> = Vec::with_capacity(source.len());
-            let mut idx: usize = 0;
-
-            while idx < source.len() {
-                if let Some(byte) = source.get(idx) {
-                    if *byte == b'\\' {
-                        idx = idx.saturating_add(1);
-
-                        match source.get(idx) {
-                            Some(b'n') => processed.push(b'\n'),
-                            Some(b't') => processed.push(b'\t'),
-                            Some(b'r') => processed.push(b'\r'),
-                            Some(b'\\') => processed.push(b'\\'),
-                            Some(b'0') => processed.push(b'\0'),
-                            Some(b'\'') => processed.push(b'\''),
-                            Some(b'"') => processed.push(b'"'),
-
-                            _ => (),
-                        }
-
-                        idx = idx.saturating_add(1);
-
-                        continue;
-                    }
-
-                    if let Some(byte) = source.get(idx) {
-                        processed.push(*byte);
-                    }
-
-                    idx = idx.saturating_add(1);
-                }
-            }
+            let processed: Vec<u8> = content.as_bytes().to_vec();
 
             let fixed_array_type: Type = Type::FixedArray {
                 base_type: Type::Char { span }.into(),

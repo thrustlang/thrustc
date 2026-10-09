@@ -1,7 +1,7 @@
 static mut branch_hits_02: s32 = 0;
 
 fn main() s32 @public {
-    var values: array[s32; 10] = fixed[-1, 11, 2, 11, -5, 3, 1, 9, 9, -2];
+    var values: array[s32; 10] = fixed[(-1) as s32, 11, 2, 11, (-5) as s32, 3, 1, 9, 9, (-2) as s32];
     var total: s32 = 0;
     for var i: s32 = 0; i < 10; i += 1; {
         total += mesh_eval_02(values->[i], i);

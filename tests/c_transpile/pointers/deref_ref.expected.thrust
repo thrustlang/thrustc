@@ -16,6 +16,6 @@ fn load_add(ptr_: ptr[s32]) s32 {
 }
 fn store_local() s32 {
     var x: s32 = 41;
-    var p: ptr[s32] = ref x;
+    var p: ptr[s32] = ref (x);
     return (p->[0]) as s32;
 }

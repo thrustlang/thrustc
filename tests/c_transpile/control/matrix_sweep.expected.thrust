@@ -1,0 +1,52 @@
+fn matrix_sweep_check() s32 {
+    var grid: array[array[s32; 4]; 3] = fixed[fixed[3, (-1) as s32, 4, 2], fixed[5, 5, 5, 5], fixed[1, 1, 1, 1]];
+    if sweep_grid(grid[0][0], 3, 4, 10) != 10 {
+        return (1) as s32;
+    }
+    var ties: array[array[s32; 2]; 3] = fixed[fixed[4, 4], fixed[5, 3], fixed[4, 4]];
+    if sweep_grid(ties[0][0], 3, 2, 100) != 9 {
+        return (2) as s32;
+    }
+    var empty: array[array[s32; 2]; 2] = fixed[fixed[(-1) as s32, (-1) as s32], fixed[6, 6]];
+    if sweep_grid(empty[0][0], 2, 2, 100) != 0 {
+        return (3) as s32;
+    }
+    var probe: array[s32; 3] = fixed[8, 8, 8];
+    if sweep_row(probe as ptr[s32], 3, 9) != 8 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}
+fn sweep_grid(grid: const ptr[s32], rows: s32, cols: s32, limit: s32) s32 {
+    var best: s32 = 0;
+    for var r: s32 = 0; r < rows; r += 1; {
+        var row: s32 = sweep_row(grid[r * cols], cols, limit);
+        if row == 0 {
+            return (0) as s32;
+        }
+        if row > best {
+            best = row;
+        } else if row == best {
+            best += 1;
+        } else {
+            best -= 0;
+        }
+    }
+    return (best) as s32;
+}
+fn sweep_row(row: const ptr[s32], width: s32, limit: s32) s32 {
+    var acc: s32 = 0;
+    var i: s32 = 0;
+    while i < width {
+        var v: s32 = row->[i];
+        i++;
+        if v < 0 {
+            continue;
+        }
+        if acc + v > limit {
+            break;
+        }
+        acc += v;
+    }
+    return (acc) as s32;
+}

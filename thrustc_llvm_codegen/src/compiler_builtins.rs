@@ -25,6 +25,7 @@ use inkwell::{
 use thrustc_ast::traits::AstCodeLocation;
 use thrustc_atomic_ordering::{ThrustAtomicOrdering, ThrustAtomicRMWOperation};
 use thrustc_code_location::Span;
+use thrustc_llvm_codegen_atomic::context::LLVMAtomicCodeGenContext;
 use thrustc_typesystem::Type;
 
 use thrustc_ast::{Ast, ast_builtins::AstBuiltin};
@@ -190,10 +191,9 @@ pub fn into_llvm_builtin<'ctx>(ast_builtin: &'ctx AstBuiltin) -> LLVMBuiltin<'ct
             source,
             span: *span,
         },
-        AstBuiltin::ArbitraryArgsEnd { list, span } => LLVMBuiltin::ArbitraryArgsEnd {
-            list,
-            span: *span,
-        },
+        AstBuiltin::ArbitraryArgsEnd { list, span } => {
+            LLVMBuiltin::ArbitraryArgsEnd { list, span: *span }
+        }
         AstBuiltin::ArbitraryArgFrom { list, ty, span } => LLVMBuiltin::ArbitraryArgFrom {
             list,
             ty,
@@ -452,8 +452,15 @@ pub fn compile<'ctx>(
             let value: IntValue =
                 codegen::compile_as_value(context, value, Some(destination_type)).into_int_value();
 
+            let atomic_context: &mut LLVMAtomicCodeGenContext<'_> =
+                context.get_mut_atomic_context();
+
             let ordering: inkwell::AtomicOrdering =
-                codegen::get_atomic_ordering(context, destination, span);
+                thrustc_llvm_codegen_atomic::behavior::get_atomic_ordering(
+                    atomic_context,
+                    destination,
+                    span,
+                );
 
             let atomic_context: &mut thrustc_llvm_codegen_atomic::context::LLVMAtomicCodeGenContext<'_> =
                 context.get_mut_atomic_context();

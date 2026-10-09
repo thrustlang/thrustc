@@ -12,5 +12,5 @@ fn unsigned_literal() u32 {
         var edge_unsigned_literal_1: s32 = memo_unsigned_literal_1;
         memo_unsigned_literal_1 = edge_unsigned_literal_1;
     }
-    return (10) as u32;
+    return ((10) as u32) as u32;
 }

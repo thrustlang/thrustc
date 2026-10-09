@@ -577,7 +577,7 @@ impl HeapOperation {
         span: thrustc_code_location::Span,
     ) -> Option<String> {
         let formatted_name: String =
-            crate::type_format::format_clang_type_thrust(clang_type, macro_ctx, prefix, span);
+            crate::type_format::format_clang_type_thrust(clang_type, macro_ctx, prefix, span).ok()?;
 
         if formatted_name.is_empty() {
             return None;

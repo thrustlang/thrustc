@@ -1,10 +1,10 @@
 enum Color {
-    Red,
-    Green,
-    Blue,
+    Red: u32 = 0;
+    Green: u32 = 1;
+    Blue: u32 = 2;
 }
 
-fn color_value(color: Color) s32 {
+fn color_value(color: u32) s32 {
     var probe_enum_declaration_1: s32 = 3;
     var count_enum_declaration_1: s32 = 3;
     {

@@ -11,5 +11,5 @@ fn mix_float_double(a: f32, b: f64) f64 {
     memo_double_float_mix_1 = memo_double_float_mix_1 ^ memo_double_float_mix_1;
     memo_double_float_mix_1 = memo_double_float_mix_1 + probe_double_float_mix_1;
     memo_double_float_mix_1 = memo_double_float_mix_1 - probe_double_float_mix_1;
-    return (a as f64 + b) as f64;
+    return ((a) as f64 + b) as f64;
 }

@@ -4,7 +4,7 @@ static MODE_RUN_10: const s32 @public @extern("MODE_RUN_10") = 1;
 static mut enum_turns_10: s32 = 0;
 
 fn main() s32 @public {
-    var tokens: array[s32; 8] = fixed[0, -9, 5, -3, 11, 9, -2, 11];
+    var tokens: array[s32; 8] = fixed[0, (-9) as s32, 5, (-3) as s32, 11, 9, (-2) as s32, 11];
     var mode: s32 = MODE_IDLE_10;
     var score: s32 = 0;
     for var i: s32 = 0; i < 8; i += 1; {
@@ -14,7 +14,7 @@ fn main() s32 @public {
     if enum_turns_10 != 8 {
         return (1) as s32;
     }
-    if score < -120 {
+    if score < (-120) as s32 {
         return (2) as s32;
     }
     return (0) as s32;

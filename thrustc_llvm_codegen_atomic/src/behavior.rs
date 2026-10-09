@@ -21,6 +21,8 @@ use std::path::PathBuf;
 
 use inkwell::AtomicOrdering;
 use inkwell::values::InstructionValue;
+use thrustc_ast::Ast;
+use thrustc_ast::traits::AstBaseReferenceExtensions;
 use thrustc_code_location::Span;
 
 use crate::abort;
@@ -115,4 +117,44 @@ pub fn set_atomic_behavior_store_instruction<'ctx>(
                 )
             });
     }
+}
+
+pub fn get_atomic_ordering<'ctx>(
+    context: &mut LLVMAtomicCodeGenContext<'ctx>,
+    destination: &'ctx Ast<'ctx>,
+    span: Span,
+) -> inkwell::AtomicOrdering {
+    let reference: &Ast<'ctx> = match destination.get_base_reference() {
+        Some(reference) => reference,
+
+        None => abort::abort_atomic_codegen(
+            context,
+            "The atomic operation destination is not a memory reference!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        ),
+    };
+
+    let Ast::Reference { metadata, .. } = reference else {
+        abort::abort_atomic_codegen(
+            context,
+            "The atomic operation destination is not a memory reference!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        );
+    };
+
+    let Some(atomic_ord) = metadata.get_atomic_ord() else {
+        abort::abort_atomic_codegen(
+            context,
+            "The atomic operation target has no atomic ordering!",
+            span,
+            std::path::PathBuf::from(file!()),
+            line!(),
+        );
+    };
+
+    atomic_ord.to_llvm()
 }

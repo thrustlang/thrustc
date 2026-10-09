@@ -1,6 +1,6 @@
 enum Status {
-    StatusOk = 0,
-    StatusFail = 2,
+    StatusOk: u32 = 0;
+    StatusFail: u32 = 2;
 }
 
 fn status_fail() s32 {
@@ -17,5 +17,5 @@ fn status_fail() s32 {
     }
     probe_enum_explicit_values_1 = probe_enum_explicit_values_1 + count_enum_explicit_values_1;
     probe_enum_explicit_values_1 = probe_enum_explicit_values_1 - count_enum_explicit_values_1;
-    return (StatusFail) as s32;
+    return (Status=>StatusFail) as s32;
 }

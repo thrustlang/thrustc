@@ -11,7 +11,7 @@ fn count_peaks_04(values: const ptr[s32]) s32 {
     return (peaks) as s32;
 }
 fn main() s32 @public {
-    var raw: array[s32; 14] = fixed[4, -5, 2, 7, 3, 8, -2, 6, 1, 9, 5, -1, 4, 7];
+    var raw: array[s32; 14] = fixed[4, (-5) as s32, 2, 7, 3, 8, (-2) as s32, 6, 1, 9, 5, (-1) as s32, 4, 7];
     var cooked: array[s32; 14];
     var best: s32 = 0;
     var score: s32 = 0;
@@ -31,7 +31,7 @@ fn main() s32 @public {
         }
     }
     score += count_peaks_04(cooked as ptr[s32]);
-    if processed_windows_04 != 14 - 5 + 1 {
+    if processed_windows_04 != (10) as s32 {
         return (1) as s32;
     }
     if best <= 26 {
@@ -44,7 +44,7 @@ fn main() s32 @public {
 }
 fn normalize_04(value: s32) s32 {
     if value < 0 {
-        return (-value + global_offset_04 + 1) as s32;
+        return ((-value) as s32 + global_offset_04 + 1) as s32;
     }
     return (value + global_offset_04) as s32;
 }

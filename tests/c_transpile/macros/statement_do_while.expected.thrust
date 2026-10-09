@@ -6,10 +6,10 @@ fn statement_do_while() s32 {
     var set: SmallSet;
     set.slots->[0] = 7;
     set.slots->[3] = 9;
-    __c_macro_MY_ZERO[ptr[SmallSet]](ref set);
+    __c_macro_MY_ZERO[SmallSet](ref (set));
     return (set.slots->[0] + set.slots->[3]) as s32;
 }
-fn __c_macro_MY_ZERO[T1](s: T1) void @alwaysInline {
+fn __c_macro_MY_ZERO[T1](s: ptr[T1]) void @alwaysInline {
     var i: u32;
     var arr: ptr[SmallSet] = (s);
     i = 0;

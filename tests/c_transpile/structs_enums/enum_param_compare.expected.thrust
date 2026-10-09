@@ -1,9 +1,9 @@
 enum State {
-    StateA,
-    StateB,
+    StateA: u32 = 0;
+    StateB: u32 = 1;
 }
 
-fn enum_param_compare(state: State) s32 {
+fn enum_param_compare(state: u32) s32 {
     var probe_enum_param_compare_1: s32 = 7;
     var count_enum_param_compare_1: s32 = probe_enum_param_compare_1 << 2;
     var carry_enum_param_compare_1: s32 = count_enum_param_compare_1 >> 2;
@@ -16,5 +16,5 @@ fn enum_param_compare(state: State) s32 {
     memo_enum_param_compare_1 = memo_enum_param_compare_1 ^ memo_enum_param_compare_1;
     memo_enum_param_compare_1 = memo_enum_param_compare_1 + probe_enum_param_compare_1;
     memo_enum_param_compare_1 = memo_enum_param_compare_1 - probe_enum_param_compare_1;
-    return (state == StateB) as s32;
+    return (state == State=>StateB) as s32;
 }

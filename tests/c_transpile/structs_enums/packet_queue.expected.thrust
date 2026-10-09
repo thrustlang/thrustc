@@ -1,0 +1,88 @@
+enum PktFlags {
+    PKT_ACK: u32 = 1;
+    PKT_DATA: u32 = 2;
+    PKT_NAK: u32 = 4;
+}
+
+struct Payload {
+    word: s32,
+    bytes: array[u8; 4],
+}
+
+struct Packet {
+    seq: s32,
+    flags: u32,
+    payload: Payload,
+}
+
+struct Queue {
+    slots: array[Packet; 6],
+    head: s32,
+    tail: s32,
+}
+
+fn packet_has(p_param: Packet, flag: u32) s32 {
+    var p: Packet = p_param;
+
+    return ((p->flags & flag) != 0) as s32;
+}
+fn packet_queue_check() s32 {
+    var q: Queue = new Queue { slots: fixed[new Packet { seq: 0, flags: 0 as u32, payload: new Payload { word: 0, bytes: fixed[0, 0, 0, 0] } }, new Packet { seq: 0, flags: 0 as u32, payload: new Payload { word: 0, bytes: fixed[0, 0, 0, 0] } }, new Packet { seq: 0, flags: 0 as u32, payload: new Payload { word: 0, bytes: fixed[0, 0, 0, 0] } }, new Packet { seq: 0, flags: 0 as u32, payload: new Payload { word: 0, bytes: fixed[0, 0, 0, 0] } }, new Packet { seq: 0, flags: 0 as u32, payload: new Payload { word: 0, bytes: fixed[0, 0, 0, 0] } }, new Packet { seq: 0, flags: 0 as u32, payload: new Payload { word: 0, bytes: fixed[0, 0, 0, 0] } }], head: 0, tail: 0 };
+    var a: Packet = new Packet { seq: 1, flags: (PktFlags=>PKT_DATA) as u32, payload: new Payload { word: 0x01020304, bytes: fixed[(0x04) as u8, (0x03) as u8, (0x02) as u8, (0x01) as u8] } };
+    var b: Packet = new Packet { seq: 2, flags: (((5) as s32)) as u32, payload: new Payload { word: 0, bytes: fixed[(0) as u8, (0) as u8, (0) as u8, (0) as u8] } };
+    if queue_push(ref (q), a) != 0 {
+        return (1) as s32;
+    }
+    if queue_push(ref (q), b) != 0 {
+        return (2) as s32;
+    }
+    if q->tail != 2 {
+        return (3) as s32;
+    }
+    if queue_count_flags(ref (q), (PktFlags=>PKT_ACK) as u32) != 1 {
+        return (4) as s32;
+    }
+    if queue_count_flags(ref (q), (PktFlags=>PKT_DATA) as u32) != 1 {
+        return (5) as s32;
+    }
+    if payload_byte(a->payload, 0) != (0x04) as u8 {
+        return (6) as s32;
+    }
+    if payload_byte(b->payload, 3) != 0 {
+        return (7) as s32;
+    }
+    if !((packet_has(a, (PktFlags=>PKT_DATA) as u32)) != 0) {
+        return (8) as s32;
+    }
+    return (0) as s32;
+}
+fn payload_byte(p_param: Payload, index: s32) u8 {
+    var p: Payload = p_param;
+
+    if (index < 0) || (index > 3) {
+        return (0) as u8;
+    }
+    return (p.bytes->[index]) as u8;
+}
+fn queue_count_flags(q: const ptr[Queue], flag: u32) s32 {
+    var n: s32 = 0;
+    var i: s32 = q->head;
+    while i != q->tail {
+        if (packet_has(deref q.slots[i], flag)) != 0 {
+            n++;
+        }
+        i = (i + 1) % 6;
+    }
+    return (n) as s32;
+}
+fn queue_push(q: ptr[Queue], p_param: Packet) s32 {
+    var p: Packet = p_param;
+
+    var next: s32 = (q->tail + 1) % 6;
+    if next == q->head {
+        return ((-1) as s32) as s32;
+    }
+    q.slots[q->tail] = p;
+    q->tail = next;
+    return (0) as s32;
+}

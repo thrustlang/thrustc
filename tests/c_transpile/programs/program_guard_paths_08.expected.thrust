@@ -2,7 +2,7 @@ static guard_base_08: const s32 @public @extern("guard_base_08") = 7;
 static mut guard_turns_08: s32 = 0;
 
 fn main() s32 @public {
-    var seq: array[s32; 9] = fixed[-5, 8, 3, -6, -8, 3, 3, 2, -5];
+    var seq: array[s32; 9] = fixed[(-5) as s32, 8, 3, (-6) as s32, (-8) as s32, 3, 3, 2, (-5) as s32];
     var state: s32 = 1;
     var score: s32 = 0;
     for var i: s32 = 0; i < 9; i += 1; {

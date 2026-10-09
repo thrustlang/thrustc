@@ -1,0 +1,70 @@
+enum FusionState {
+    FUSE_IDLE: u32 = 0;
+    FUSE_ACCUM: u32 = 1;
+    FUSE_READY: u32 = 2;
+}
+
+struct Sample {
+    id: s32,
+    raw: s32,
+    weight: s32,
+}
+
+static mut fused_frames: s32 = 0;
+static fusion_bias: const s32 @public @extern("fusion_bias") = 7;
+
+fn clamp_weight(value: s32) s32 {
+    if value < 0 {
+        return (0) as s32;
+    }
+    if value > 5 {
+        return (5) as s32;
+    }
+    return (value) as s32;
+}
+fn fold_sample(sample: ptr[Sample], drift: s32) s32 {
+    var weight: s32 = clamp_weight(sample->weight + (drift % 3));
+    var adjusted: s32 = (sample->raw * weight) - drift + fusion_bias;
+    sample->weight = weight;
+    fused_frames += 1;
+    return (adjusted) as s32;
+}
+fn fuse_all(samples: ptr[Sample], drifts: const ptr[s32]) s32 {
+    var total: s32 = 0;
+    var state: s32 = FusionState=>FUSE_IDLE;
+    for var i: s32 = 0; i < 6; i += 1; {
+        var value: s32 = fold_sample(samples[i], drifts->[i]);
+        if value > 40 {
+            state = FusionState=>FUSE_ACCUM;
+            total += value;
+        } else if value > 0 {
+            state = FusionState=>FUSE_READY;
+            total += value / 2;
+        } else {
+            total -= fusion_bias;
+        }
+    }
+    if state == FusionState=>FUSE_READY {
+        return (total + fusion_bias) as s32;
+    } else {
+        return (total) as s32;
+    }
+}
+fn sensor_fusion_check() s32 {
+    var samples: array[Sample; 6] = fixed[new Sample { id: 1, raw: 9, weight: 2 }, new Sample { id: 2, raw: 4, weight: 5 }, new Sample { id: 3, raw: 12, weight: 1 }, new Sample { id: 4, raw: 7, weight: 3 }, new Sample { id: 5, raw: 10, weight: 4 }, new Sample { id: 6, raw: 6, weight: 0 }];
+    var drifts: array[s32; 6] = fixed[3, 5, 1, 8, 2, 6];
+    var total: s32 = fuse_all(samples[0], drifts as ptr[s32]);
+    if fused_frames != 6 {
+        return (1) as s32;
+    }
+    if samples[1]->weight > 5 {
+        return (2) as s32;
+    }
+    if total <= 40 {
+        return (3) as s32;
+    }
+    if samples[0]->raw != 9 {
+        return (4) as s32;
+    }
+    return (0) as s32;
+}

@@ -12,8 +12,8 @@ fn truncate_double(x: f64) s32 {
     }
     probe_casts_1 = probe_casts_1 + count_casts_1;
     probe_casts_1 = probe_casts_1 - count_casts_1;
-    return (x as s32) as s32;
+    return ((x) as s32) as s32;
 }
 fn widen_int(x: s32) f64 {
-    return (x as f64) as f64;
+    return ((x) as f64) as f64;
 }

@@ -82,11 +82,8 @@ pub fn translate_single_c_to_thrust(
     };
 
     let mut has_errors: bool = false;
-
     let mut error_count: usize = 0;
-
     let mut warning_count: usize = 0;
-
     let mut fatal_diagnostics: Vec<String> = Vec::new();
 
     for diagnostic in translation_unit.get_diagnostics() {
@@ -194,15 +191,22 @@ pub fn translate_single_c_to_thrust(
     let mut macro_ctx: crate::macros::MacroContext<'_> =
         crate::macros::MacroContext::new(canonical_input.clone());
 
-    crate::top_level::append_translated_top_level_declarations(
-        &root,
-        &mut macro_ctx,
-        &mut out,
-        span,
-    );
+    let translation: crate::error::TranspilerResult<()> =
+        crate::top_level::append_translated_top_level_declarations(
+            &root,
+            &mut macro_ctx,
+            &mut out,
+            span,
+        );
 
-    let had_errors: bool = macro_ctx.get_mut_transpiler_context().has_errors()
-        || macro_ctx.get_mut_transpiler_context().has_macros_errors();
+    let had_errors: bool = match translation {
+        Ok(()) => {
+            macro_ctx.get_mut_transpiler_context().has_errors()
+                || macro_ctx.get_mut_transpiler_context().has_macros_errors()
+        }
+
+        Err(crate::error::TranspilerError::Abort) => true,
+    };
 
     issues.extend(macro_ctx.get_mut_transpiler_context().take_warnings());
     issues.extend(macro_ctx.get_mut_transpiler_context().take_errors());
@@ -241,7 +245,7 @@ pub fn emit_c_bindings_thrust(
     import_opts: &ImportCOptions,
     emit_opts: &EmitCBindingsOptions,
 ) -> Result<(PathBuf, String, Vec<CompilationIssue>), String> {
-    let span = thrustc_code_location::Span::nothing();
+    let span: thrustc_code_location::Span = thrustc_code_location::Span::nothing();
 
     let clang_args: Vec<String> = crate::clang_util::build_clang_arguments(import_opts);
 
@@ -273,7 +277,6 @@ pub fn emit_c_bindings_thrust(
 
     for diagnostic in ctx.diagnostics() {
         let code: CompilationIssueCode = match diagnostic.kind() {
-
             thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::ClangDiagnostic => {
                 CompilationIssueCode::W0100
             }
@@ -339,11 +342,11 @@ fn collect_import_c_includes(
 
     let mut import_c_specs: Vec<String> = Vec::new();
 
-    for inc in includes.iter() {
-        if let Some(spec) = crate::macros::extract_include_spec(inc) {
+    for entity in includes.iter() {
+        if let Some(spec) = self::extract_include_spec(entity) {
             import_c_specs.push(spec);
 
-            if let Some(file) = inc.get_file() {
+            if let Some(file) = entity.get_file() {
                 let path: PathBuf = file.get_path();
 
                 if let Some(parent) = path.parent() {
@@ -364,4 +367,41 @@ fn collect_import_c_includes(
     }
 
     (import_c_include_dirs, import_c_specs)
+}
+
+fn extract_include_spec(entity: &clang::Entity<'_>) -> Option<String> {
+    let range: clang::source::SourceRange<'_> = entity.get_range()?;
+    let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
+    let spellings: Vec<String> = tokens.into_iter().map(|t| t.get_spelling()).collect();
+
+    for s in spellings.iter() {
+        if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
+            return Some(s[1..s.len() - 1].to_string());
+        }
+
+        if s.starts_with('<') && s.ends_with('>') && s.len() >= 2 {
+            return Some(s[1..s.len() - 1].to_string());
+        }
+    }
+
+    let angle_start: Option<usize> = spellings.iter().position(|s| s == "<");
+
+    let angle_content: String = angle_start
+        .map(|start| {
+            spellings[start.saturating_add(1)..]
+                .iter()
+                .take_while(|s| s.as_str() != ">")
+                .fold(String::new(), |mut acc, s| {
+                    acc.push_str(s);
+
+                    acc
+                })
+        })
+        .unwrap_or_default();
+
+    if !angle_content.is_empty() {
+        return Some(angle_content);
+    }
+
+    None
 }

@@ -1,0 +1,52 @@
+fn __c_macro_FITS_DAY[T1, T2, T3](h: T1, m: T2, s: T3) T1 @alwaysInline {
+    return ((((h) * 3600 + ((m) * 60 + (s))) < 86400)) as T1;
+}
+fn __c_macro_REMAINDER[T1](sec: T1) T1 @alwaysInline {
+    return (((sec) % 60)) as T1;
+}
+fn __c_macro_TOTAL_DAY_SECONDS[T1, T2, T3](h: T1, m: T2, s: T3) T1 @alwaysInline {
+    return (((h) * 3600 + ((m) * 60 + (s)))) as T1;
+}
+fn __c_macro_TO_MINUTES[T1](sec: T1) T1 @alwaysInline {
+    return (((sec) / 60)) as T1;
+}
+fn __c_macro_TO_SECONDS[T1, T2](min: T1, sec: T2) T1 @alwaysInline {
+    return (((min) * 60 + (sec))) as T1;
+}
+
+fn day_seconds(hours: u32, minutes: u32, secs: u32) s32 {
+    return (((hours) * 3600 + ((minutes) * 60 + (secs)))) as s32;
+}
+fn macro_units_convert_check() s32 {
+    var span: u32;
+    var norm: s32;
+    if (1 != 1) || (7 != 7) {
+        return (1) as s32;
+    }
+    if ((2) * 60 + (30)) != 150 {
+        return (2) as s32;
+    }
+    if 3600 != 3600 {
+        return (3) as s32;
+    }
+    span = (day_seconds((1) as u32, (0) as u32, (0) as u32)) as u32;
+    if span != 3600 {
+        return (4) as s32;
+    }
+    if !(((((23) * 3600 + ((59) * 60 + (59))) < 86400) == (((23) * 3600 + ((59) * 60 + (59))) < 86400))) {
+        return (5) as s32;
+    }
+    norm = (86405) as s32;
+    __c_macro_NORMALIZE[s32, s32](ref (norm), ref (norm));
+    if ((norm != 5) || (((150) / 60) != 2)) || (((150) % 60) != 30) {
+        return (6) as s32;
+    }
+    return (0) as s32;
+}
+fn __c_macro_NORMALIZE[T1, T2](sec: ptr[T1], slot: ptr[T2]) void @alwaysInline {
+    while (sec->[0]) >= 86400 {
+        sec->[0] =  ((sec->[0]) - 86400) as T1;
+    }
+    slot->[0] =  ((sec->[0])) as T2;
+}
+

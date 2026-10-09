@@ -1,0 +1,74 @@
+importC "stdbool.h";
+importC "stdint.h";
+
+type i64 = s64;
+type i8 = s8;
+
+fn average_floor(vals: const ptr[s32], n: s32) s32 {
+    if n <= 0 {
+        return (0) as s32;
+    }
+    var total: s64 = fold_i32(vals, n);
+    return (((total / (n) as s64)) as s32) as s32;
+}
+fn fits_i8(value: s32) bool {
+    return (value >= (-128) as s32) && (value <= 127);
+}
+fn fold_i32(vals: const ptr[s32], n: s32) s64 {
+    var acc: s64 = (0) as s64;
+    for var i: s32 = 0; i < n; i += 1; {
+        acc += (vals->[i]) as s64;
+    }
+    return (acc) as s64;
+}
+fn fold_u32(vals: const ptr[u32], n: s32) u64 {
+    var acc: u64 = (0) as u64;
+    for var i: s32 = 0; i < n; i += 1; {
+        acc = acc + (vals->[i]) as u64;
+    }
+    return (acc) as u64;
+}
+fn mixed_width_accum_check() s32 {
+    var signed_vals: array[s32; 5] = fixed[10, (-20) as s32, 30, (-40) as s32, 50];
+    var unsigned_vals: array[u32; 5] = fixed[(1) as u32, (2) as u32, (3) as u32, (4) as u32, (5) as u32];
+    if fold_i32(signed_vals as ptr[s32], 5) != 30 {
+        return (1) as s32;
+    }
+    if fold_u32(unsigned_vals as ptr[u32], 5) != (15) as u32 {
+        return (2) as s32;
+    }
+    if average_floor(signed_vals as ptr[s32], 5) != 6 {
+        return (3) as s32;
+    }
+    var wide: s64 = (fold_u32(unsigned_vals as ptr[u32], 5)) as s64 * (1000000) as s64;
+    if wide != (15000000) as s64 {
+        return (4) as s32;
+    }
+    var big: u32 = (4294967295) as u32;
+    if wrap16(big) != (0) as u32 {
+        return (5) as s32;
+    }
+    var small: s8 = (((-100) as s32)) as s8;
+    var promoted: s32 = (small) as s32;
+    if promoted != (-100) as s32 {
+        return (6) as s32;
+    }
+    if !(fits_i8(promoted)) {
+        return (7) as s32;
+    }
+    var s: s16 = (70000) as s16;
+    var widened: s32 = (s) as s32;
+    if widened == 70000 {
+        return (8) as s32;
+    }
+    var l: ssize = (100000) as ssize;
+    var narrowed: s32 = ((l + (5) as ssize)) as s32;
+    if narrowed != 100005 {
+        return (9) as s32;
+    }
+    return (0) as s32;
+}
+fn wrap16(value: u32) u16 {
+    var low: u16 = (value) as u16;
+    return ((((low) as u32 + (1) as u32)) as u16) as u16;
+}

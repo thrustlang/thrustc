@@ -48,7 +48,11 @@ mod ast_literal_values;
 impl AstStandardExtensions for Ast<'_> {
     #[inline]
     fn is_reference(&self) -> bool {
-        matches!(self, Ast::Reference { .. })
+        match self {
+            Ast::Reference { .. } => true,
+            Ast::Group { node, .. } => node.is_reference(),
+            _ => false,
+        }
     }
 
     #[inline]
@@ -78,12 +82,22 @@ impl AstStandardExtensions for Ast<'_> {
 
     #[inline]
     fn is_cstring(&self) -> bool {
-        matches!(self, Ast::CString { .. })
+        match self {
+            Ast::CString { .. } => true,
+            Ast::Group { node, .. } => node.is_cstring(),
+
+            _ => false,
+        }
     }
 
     #[inline]
     fn is_cnstring(&self) -> bool {
-        matches!(self, Ast::CNString { .. })
+        match self {
+            Ast::CNString { .. } => true,
+            Ast::Group { node, .. } => node.is_cnstring(),
+
+            _ => false,
+        }
     }
 
     #[inline]
@@ -98,7 +112,12 @@ impl AstStandardExtensions for Ast<'_> {
 
     #[inline]
     fn is_integer(&self) -> bool {
-        matches!(self, Ast::Integer { .. })
+        match self {
+            Ast::Integer { .. } => true,
+            Ast::Group { node, .. } => node.is_integer(),
+
+            _ => false,
+        }
     }
 
     #[inline]
@@ -221,7 +240,12 @@ impl AstStandardExtensions for Ast<'_> {
 
     #[inline]
     fn is_invalid_ast_node(&self) -> bool {
-        matches!(self, Ast::Invalid { .. })
+        match self {
+            Ast::Invalid { .. } => true,
+            Ast::Group { node, .. } => node.is_invalid_ast_node(),
+
+            _ => false,
+        }
     }
 }
 
@@ -511,6 +535,8 @@ impl AstMemoryExtensions for Ast<'_> {
                 Ok(metadata.is_allocated() || kind.is_ptr_like_type())
             }
 
+            Ast::Group { node, .. } => node.is_memory_assigned_value(),
+
             _ => {
                 let value_ty: &Type = self.get_value_type()?;
                 let is_ptr_ty: bool = value_ty.is_ptr_like_type();
@@ -524,6 +550,10 @@ impl AstMemoryExtensions for Ast<'_> {
     fn is_memory_assigned_reference(&self) -> bool {
         if let Ast::Reference { metadata, .. } = self {
             return metadata.is_allocated();
+        }
+
+        if let Ast::Group { node, .. } = self {
+            return node.is_memory_assigned_reference();
         }
 
         false
