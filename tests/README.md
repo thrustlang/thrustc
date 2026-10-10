@@ -4,7 +4,7 @@
 
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt= "standard-separator" style= "width: 1hv;"> </img>
 
-The `tests/` directory contains executable and negative Thrust source tests used to validate the compiler pipeline end to end.
+The `tests/` directory contains executable and negative Thrust source tests used to validate the compiler pipeline.
 
 The automation scripts live in `tests/scripts/` and are intended to be executed from the repository root.
 
@@ -58,7 +58,7 @@ $ tests/scripts/run-tests.py --no-build --filter "std/math"
 Run a single test:
 
 ```console
-$ tests/scripts/run-tests.py --no-build --filter "basics/test.thrust"
+$ tests/scripts/run-tests.py --no-build --filter "arbitrary/const_arithmetic.thrust"
 ```
 
 Use a custom compiler binary:
@@ -113,6 +113,25 @@ All flags of `tests/scripts/run-tests.py`:
 
 When no `--compiler` is given and `--no-build` is off, the runner builds `thrustc` with `cargo build --bin thrustc` from the repository root. When filters match zero tests it exits `1` with `no tests found`.
 
+## Test Layout
+
+Tests are organized by feature area. Each directory holds executable `.thrust` roots (files declaring `fn main`) plus importable libraries (files without `fn main`, included via `import "..."`).
+
+| Directory | Contents |
+|---|---|
+| `arbitrary/` | Miscellaneous smoke tests. |
+| `builtins/` + `builtins/introspection/` | Compile-time and type builtins (`sizeOf`, `alignOf`, predicates, `staticAssert`, target builtins). |
+| `compiletime/if/` | `@if`/`@elif`/`@else` conditional compilation. |
+| `compiletime/if_imports/` | Conditional imports, with a local `stdroot/` (`-std-version 0.1.8`) used by `if_std_import*` tests. |
+| `compiletime/target/` | Target and host introspection (`targetArch`, `hostOsName`, …). |
+| `linter/` | Warning suppression via `directive "--disable-warnings=..."`. |
+| `memory/` + `memory/deref/` + `memory/load/` | Stack allocations, `->` dereference properties, and `load`/`ref` semantics. |
+| `modules/` + `modules/reexportation/` | Module imports, aliases, and re-exports; `reexport_a.thrust` expects exit code `3`. |
+| `c_transpile/` | C-to-Thrust transpiler goldens (separate runner phase, see below). |
+| `std/` | Standard library module tests. |
+| `stress/` | Excluded from discovery (see below). |
+| other `api`-like areas (`abi/`, `atomics/`, `import_c/`, `sanitizers/`, `optimization/`, …) | Feature-specific end-to-end tests; `atomics/` and `importC` compile with `-mode unstable`. |
+
 ## Runner Behavior
 
 The runner discovers test roots by scanning `.thrust` files under `tests/` (sorted) and selecting files that declare `fn main`. Files without `fn main` are treated as importable libraries, not tests. The following directories are never scanned: `dist`, `scripts`, `build`, `c_transpile`, `stdroot`, `stress`.
@@ -121,7 +140,7 @@ For each discovered test, the runner:
 
 - Resolves user imports written as `import "file.thrust"` recursively.
 - Adds imported user modules to the same compiler invocation as the root test.
-- Resolves `std::...` imports from the repository's `std/` directory (via `-std`), except `compiletime_if_imports`/`if_std_import*` tests, which use their local `stdroot` with `-std-version 0.1.8`.
+- Resolves `std::...` imports from the repository's `std/` directory (via `-std`), except `compiletime/if_imports`/`if_std_import*` tests, which use their local `stdroot` with `-std-version 0.1.8`.
 - Adds `-lm` automatically for tests that use `std::math`, `std::ffi::c::math`, or floating-point modulo operations.
 - Adds `-mode unstable` automatically for tests under `atomics/` or using `importC`, plus `--import-c-system-include <dir>` for each Clang system include directory it detects (via `clang -E -x c - -v`, 10s timeout).
 - Compiles with `-build-dir tests/dist/build/<test-id>` into `tests/dist/bin/<test-id>`.
@@ -168,7 +187,7 @@ Some legacy tests intentionally return a non-zero value as the observed result:
 | `imports/struct_only.thrust` | `3` |
 | `imports/struct_qualified.thrust` | `3` |
 | `functions/named_args.thrust` | `139` |
-| `module_reexportation/reexport_a.thrust` | `3` |
+| `modules/reexportation/reexport_a.thrust` | `3` |
 | `modules/named_args_module.thrust` | `3` |
 | `optimization/disable_default_optimization.thrust` | `173` |
 | `abi/wasm/variadic.thrust` | `1` |
@@ -199,7 +218,7 @@ $ target/debug/thrustc --translate-c-to-thrust tests/c_transpile/macros/foo.c --
 $ cp /tmp/out/foo.thrust tests/c_transpile/macros/foo.expected.thrust
 ```
 
-Tip: run with `--keep-dist` to inspect the generated files under `tests/dist/c_transpile/<test-id>/` before copying.
+Note: run with `--keep-dist` to inspect the generated files under `tests/dist/c_transpile/<test-id>/` before copying.
 
 Tests using `importC` (for example everything under `tests/import_c/`) compile with `-mode unstable` automatically; they assert through exit codes only and have no golden files.
 
@@ -208,8 +227,8 @@ Tests using `importC` (for example everything under `tests/import_c/`) compile w
 The runner currently skips these tests explicitly:
 
 - `stress/stress_test_80k.thrust`
-- `load/load_index.thrust`
-- `module_reexportation/std_reexport.thrust`
+- `memory/load/load_index.thrust`
+- `modules/reexportation/std_reexport.thrust`
 
 Entire directories are also excluded from discovery: `dist`, `scripts`, `build`, `c_transpile` (covered by its own phase), `stdroot`, and `stress`.
 
@@ -220,26 +239,26 @@ These files remain in the repository, but are not part of the automated run.
 Create a test with literal content:
 
 ```console
-$ tests/scripts/create-test.py -path basics/new_test.thrust -content 'fn main() s32 @public { return 0; }' --append-newline
+$ tests/scripts/create-test.py -path arbitrary/new_test.thrust -content 'fn main() s32 @public { return 0; }' --append-newline
 ```
 
 Create a test from a template file:
 
 ```console
-$ tests/scripts/create-test.py -path basics/new_test.thrust -content path/to/template.thrust
+$ tests/scripts/create-test.py -path arbitrary/new_test.thrust -content path/to/template.thrust
 ```
 
 Overwrite an existing test:
 
 ```console
-$ tests/scripts/create-test.py -path basics/new_test.thrust -content path/to/template.thrust --force
+$ tests/scripts/create-test.py -path arbitrary/new_test.thrust -content path/to/template.thrust --force
 ```
 
 Relative paths are created inside `tests/`. These two commands target the same destination:
 
 ```console
-$ tests/scripts/create-test.py -path basics/new_test.thrust -content 'fn main() s32 @public { return 0; }'
-$ tests/scripts/create-test.py -path tests/basics/new_test.thrust -content 'fn main() s32 @public { return 0; }'
+$ tests/scripts/create-test.py -path arbitrary/new_test.thrust -content 'fn main() s32 @public { return 0; }'
+$ tests/scripts/create-test.py -path tests/arbitrary/new_test.thrust -content 'fn main() s32 @public { return 0; }'
 ```
 
 The destination must use the `.thrust` extension and must stay inside `tests/`.

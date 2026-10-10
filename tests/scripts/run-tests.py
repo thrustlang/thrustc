@@ -19,21 +19,22 @@
 
 import argparse
 import difflib
-import os
 import re
 import shutil
 import subprocess
 import sys
 import time
+
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 
-IMPORT_PATH_RE = re.compile(r'import\s+"([^"]+)"')
-IMPORT_C_RE = re.compile(r'^\s*importC\b', re.MULTILINE)
-MAIN_FUNCTION_RE = re.compile(r'^\s*fn\s+main\b', re.MULTILINE)
-STD_MATH_RE = re.compile(r'import\s+std::(?:math|ffi::c::math)\b')
-FLOAT_VALUE_RE = re.compile(r'\bf(?:32|64)\b|\b\d+\.\d+')
+IMPORT_PATH_RE: re.Pattern[str] = re.compile(r'import\s+"([^"]+)"')
+IMPORT_C_RE: re.Pattern[str] = re.compile(r'^\s*importC\b', re.MULTILINE)
+MAIN_FUNCTION_RE: re.Pattern[str] = re.compile(r'^\s*fn\s+main\b', re.MULTILINE)
+STD_MATH_RE: re.Pattern[str] = re.compile(r'import\s+std::(?:math|ffi::c::math)\b')
+FLOAT_VALUE_RE: re.Pattern[str] = re.compile(r'\bf(?:32|64)\b|\b\d+\.\d+')
 
 NEGATIVE_NAME_MARKERS = (
     "_invalid",
@@ -46,13 +47,13 @@ NEGATIVE_NAME_MARKERS = (
     "invalid_",
 )
 
-NEGATIVE_TEST_PATHS = {
+NEGATIVE_TEST_PATHS: set[str] = {
     "arithmetic/const_assign.thrust",
     "functions/named_args_positional_after.thrust",
     "functions/named_args_varargs.thrust",
 }
 
-EXPECTED_RUN_CODES = {
+EXPECTED_RUN_CODES: dict[str, int] = {
     "imports/module_a.thrust": 123,
     "imports/module_alias_multi.thrust": 130,
     "imports/only_multi.thrust": 15,
@@ -60,22 +61,20 @@ EXPECTED_RUN_CODES = {
     "imports/struct_only.thrust": 3,
     "imports/struct_qualified.thrust": 3,
     "functions/named_args.thrust": 139,
-    "module_reexportation/reexport_a.thrust": 3,
+    "modules/reexportation/reexport_a.thrust": 3,
     "modules/named_args_module.thrust": 3,
     "optimization/disable_default_optimization.thrust": 173,
     "abi/wasm/variadic.thrust": 1,
 }
 
-SKIPPED_TEST_PATHS = {
-    "load/load_index.thrust",
-    "module_reexportation/std_reexport.thrust",
+SKIPPED_TEST_PATHS: set[str] = {
+    "memory/load/load_index.thrust",
+    "modules/reexportation/std_reexport.thrust",
     "stress/stress_test_80k.thrust",
 }
 
-
 @dataclass
 class TestResult:
-
     path: Path
     kind: str
     passed: bool
@@ -87,7 +86,6 @@ class TestResult:
     compile_stderr: str
     run_stdout: str
     run_stderr: str
-
 
 
 def parse_args() -> argparse.Namespace:
@@ -168,25 +166,17 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
-
 def project_root() -> Path:
-
     return Path(__file__).resolve().parents[2]
 
-
 def tests_root(root: Path) -> Path:
-
     return root / "tests"
 
-
 def dist_root(root: Path) -> Path:
-
     return tests_root(root) / "dist"
 
-
 def should_skip_path(path: Path, tests_dir: Path) -> bool:
-
-    skipped_parts = {
+    skipped_parts: set[str] = {
         "dist",
         "scripts",
         "build",
@@ -195,24 +185,16 @@ def should_skip_path(path: Path, tests_dir: Path) -> bool:
         "stress",
     }
 
-    relative_parts = path.relative_to(tests_dir).parts
-    relative_path = path.relative_to(tests_dir).as_posix()
+    relative_parts: tuple[str, ...] = path.relative_to(tests_dir).parts
+    relative_path: str = path.relative_to(tests_dir).as_posix()
 
     if relative_path in SKIPPED_TEST_PATHS:
         return True
 
     return any(part in skipped_parts for part in relative_parts)
 
-
-def read_text(path: Path) -> str:
-
-    return path.read_text(encoding="utf-8")
-
-
 def has_main_function(path: Path) -> bool:
-
-    return MAIN_FUNCTION_RE.search(read_text(path)) is not None
-
+    return MAIN_FUNCTION_RE.search(path.read_text(encoding="utf-8")) is not None
 
 def discover_test_roots(
     tests_dir: Path,
@@ -227,7 +209,7 @@ def discover_test_roots(
         if should_skip_path(path, tests_dir):
             continue
 
-        relative = path.relative_to(tests_dir).as_posix()
+        relative: str = path.relative_to(tests_dir).as_posix()
 
         if filter_text and filter_text not in relative:
             continue
@@ -240,22 +222,20 @@ def discover_test_roots(
 
     return test_roots
 
-
 def discover_c_transpile_tests(
     tests_dir: Path,
     filter_text: str,
     exclude_text: str,
 ) -> list[Path]:
-
     test_roots: list[Path] = []
-    root = tests_dir / "c_transpile"
+    root: Path = tests_dir / "c_transpile"
 
     if not root.exists():
         return test_roots
 
     for path in sorted(root.rglob("*.c")):
 
-        relative = path.relative_to(tests_dir).as_posix()
+        relative: str = path.relative_to(tests_dir).as_posix()
 
         if filter_text and filter_text not in relative:
             continue
@@ -268,21 +248,18 @@ def discover_c_transpile_tests(
 
     return test_roots
 
-
 def is_negative_test(path: Path) -> bool:
 
-    name = path.name
-    normalized_path = path.as_posix()
+    name: str = path.name
+    normalized_path: str = path.as_posix()
 
     if any(normalized_path.endswith(expected) for expected in NEGATIVE_TEST_PATHS):
         return True
 
     return any(marker in name for marker in NEGATIVE_NAME_MARKERS)
 
-
 def expected_run_code(path: Path) -> int:
-
-    normalized_path = path.as_posix()
+    normalized_path: str = path.as_posix()
 
     for expected_path, expected_code in EXPECTED_RUN_CODES.items():
         if normalized_path.endswith(expected_path):
@@ -290,9 +267,7 @@ def expected_run_code(path: Path) -> int:
 
     return 0
 
-
 def resolve_import_path(source_path: Path, imported: str) -> Path:
-
     import_path = Path(imported)
 
     if import_path.is_absolute():
@@ -300,18 +275,15 @@ def resolve_import_path(source_path: Path, imported: str) -> Path:
 
     return (source_path.parent / import_path).resolve()
 
-
 def discover_user_dependencies(root_file: Path) -> list[Path]:
-
     dependencies: list[Path] = []
     visited: set[Path] = {root_file.resolve()}
 
     def visit(source_path: Path) -> None:
-
-        content = read_text(source_path)
+        content: str = source_path.read_text(encoding="utf-8")
 
         for import_match in IMPORT_PATH_RE.finditer(content):
-            dependency = resolve_import_path(source_path, import_match.group(1))
+            dependency: Path = resolve_import_path(source_path, import_match.group(1))
 
             if dependency in visited:
                 continue
@@ -327,14 +299,10 @@ def discover_user_dependencies(root_file: Path) -> list[Path]:
 
     return dependencies
 
-
 def uses_import_c(test_path: Path) -> bool:
-
-    return IMPORT_C_RE.search(read_text(test_path)) is not None
-
+    return IMPORT_C_RE.search(test_path.read_text(encoding="utf-8")) is not None
 
 def detect_clang_system_include_dirs() -> list[str]:
-
     include_dirs: list[str] = []
 
     for command in ("clang", "clang-17", "clang-18"):
@@ -350,12 +318,12 @@ def detect_clang_system_include_dirs() -> list[str]:
         except (FileNotFoundError, subprocess.TimeoutExpired):
             continue
 
-        output = result.stderr or ""
-        lines = output.splitlines()
+        output: str = result.stderr or ""
+        lines: list[str] = output.splitlines()
         in_search_list = False
 
         for line in lines:
-            stripped = line.strip()
+            stripped: str = line.strip()
 
             if stripped == "#include <...> search starts here:":
                 in_search_list = True
@@ -368,7 +336,7 @@ def detect_clang_system_include_dirs() -> list[str]:
             if not in_search_list:
                 continue
 
-            normalized = stripped.replace(" (framework directory)", "").strip()
+            normalized: str = stripped.replace(" (framework directory)", "").strip()
 
             if not normalized:
                 continue
@@ -387,7 +355,7 @@ def detect_clang_system_include_dirs() -> list[str]:
     for command in ("clang", "clang-17", "clang-18"):
 
         try:
-            result = subprocess.run(
+            result: subprocess.CompletedProcess[str] = subprocess.run(
                 [command, "-print-resource-dir"],
                 capture_output=True,
                 text=True,
@@ -399,12 +367,12 @@ def detect_clang_system_include_dirs() -> list[str]:
         if result.returncode != 0:
             continue
 
-        resource_dir = result.stdout.strip()
+        resource_dir: str = result.stdout.strip()
 
         if not resource_dir:
             continue
 
-        include_dir = Path(resource_dir) / "include"
+        include_dir: Path = Path(resource_dir) / "include"
 
         if include_dir.is_dir():
             resolved = str(include_dir.resolve())
@@ -417,15 +385,13 @@ def detect_clang_system_include_dirs() -> list[str]:
 
     return include_dirs
 
-
 def needs_math_linkage(files: list[Path]) -> bool:
-
     for path in files:
 
         if not path.exists():
             continue
 
-        content = read_text(path)
+        content: str = path.read_text(encoding="utf-8")
 
         if STD_MATH_RE.search(content) is not None:
             return True
@@ -438,13 +404,13 @@ def needs_math_linkage(files: list[Path]) -> bool:
 
 def compiletime_std_args(test_path: Path, root: Path) -> list[str]:
 
-    tests_dir = tests_root(root)
-    relative = test_path.relative_to(tests_dir).as_posix()
+    tests_dir: Path = tests_root(root)
+    relative: str = test_path.relative_to(tests_dir).as_posix()
 
-    if not relative.startswith("compiletime_if_imports/if_std_import"):
+    if not relative.startswith("compiletime/if_imports/if_std_import"):
         return ["-std", str(root / "std")]
 
-    stdroot = tests_dir / "compiletime_if_imports" / "stdroot"
+    stdroot: Path = tests_dir / "compiletime" / "if_imports" / "stdroot"
 
     return [
         "-std",
@@ -453,27 +419,22 @@ def compiletime_std_args(test_path: Path, root: Path) -> list[str]:
         "0.1.8",
     ]
 
-
 def test_identifier(test_path: Path, root: Path) -> str:
-
-    relative = test_path.relative_to(tests_root(root)).with_suffix("")
+    relative: Path = test_path.relative_to(tests_root(root)).with_suffix("")
 
     return "__".join(relative.parts)
 
-
 def compiler_path(args: argparse.Namespace, root: Path) -> Path:
-
     if args.compiler is not None:
         return args.compiler.resolve()
 
     return root / "target" / "debug" / "thrustc"
 
-
 def build_compiler(root: Path) -> int:
 
     print("Building thrustc...", flush=True)
 
-    result = subprocess.run(
+    result: subprocess.CompletedProcess[str] = subprocess.run(
         ["cargo", "build", "--bin", "thrustc"],
         cwd=root,
         text=True,
@@ -481,14 +442,11 @@ def build_compiler(root: Path) -> int:
 
     return result.returncode
 
-
 def quote_cc_arg(argument: str) -> str:
-
     if not any(char.isspace() or char == ";" for char in argument):
         return argument
 
     return "'" + argument.replace("'", "'\\''") + "'"
-
 
 def merge_cc_args(auto_args: list[str], user_args: str) -> str:
 
@@ -501,9 +459,7 @@ def merge_cc_args(auto_args: list[str], user_args: str) -> str:
 
     return ";".join(all_args)
 
-
 def timeout_output(value: str | bytes | None) -> str:
-
     if value is None:
         return ""
 
@@ -520,11 +476,11 @@ def compile_test(
     args: argparse.Namespace,
 ) -> tuple[subprocess.CompletedProcess[str], Path, list[Path]]:
 
-    identifier = test_identifier(test_path, root)
-    build_dir = dist_root(root) / "build" / identifier
-    binary_path = dist_root(root) / "bin" / identifier
-    dependencies = discover_user_dependencies(test_path)
-    files = [test_path.resolve(), *dependencies]
+    identifier: str = test_identifier(test_path, root)
+    build_dir: Path = dist_root(root) / "build" / identifier
+    binary_path: Path = dist_root(root) / "bin" / identifier
+    dependencies: list[Path] = discover_user_dependencies(test_path)
+    files: list[Path] = [test_path.resolve(), *dependencies]
     auto_cc_args: list[str] = []
     import_c_test: bool = uses_import_c(test_path)
 
@@ -533,7 +489,7 @@ def compile_test(
     if needs_math_linkage(files):
         auto_cc_args.append("-lm")
 
-    cc_args = merge_cc_args(auto_cc_args, args.cc_args)
+    cc_args: str = merge_cc_args(auto_cc_args, args.cc_args)
     command: list[str] = [
         str(compiler),
         "-build-dir",
@@ -541,7 +497,6 @@ def compile_test(
     ]
 
     command.extend(compiletime_std_args(test_path, root))
-
     command.extend(args.compiler_arg)
 
     for emit in args.emit:
@@ -559,7 +514,7 @@ def compile_test(
     if cc_args:
         command.extend(["-cc-args", cc_args])
 
-    result = subprocess.run(
+    result: subprocess.CompletedProcess[str] = subprocess.run(
         command,
         cwd=root,
         capture_output=True,
@@ -578,8 +533,8 @@ def compile_translated_output(
     args: argparse.Namespace,
 ) -> subprocess.CompletedProcess[str]:
 
-    identifier = test_identifier(source_test_path, root) + "__translated"
-    build_dir = dist_root(root) / "build" / identifier
+    identifier: str = test_identifier(source_test_path, root) + "__translated"
+    build_dir: Path = dist_root(root) / "build" / identifier
     command: list[str] = [
         str(compiler),
         "-build-dir",
@@ -609,17 +564,17 @@ def compile_runtime_driver(
     identifier: str,
 ) -> tuple[subprocess.CompletedProcess[str], Path]:
 
-    build_dir = dist_root(root) / "build" / identifier
-    binary_path = dist_root(root) / "bin" / identifier
-    dependencies = discover_user_dependencies(driver_path)
-    files = [driver_path.resolve(), *dependencies]
+    build_dir: Path = dist_root(root) / "build" / identifier
+    binary_path: Path = dist_root(root) / "bin" / identifier
+    dependencies: list[Path] = discover_user_dependencies(driver_path)
+    files: list[Path] = [driver_path.resolve(), *dependencies]
     auto_cc_args: list[str] = ["-o", str(binary_path)]
-    import_c_test = any(uses_import_c(path) for path in files if path.exists())
+    import_c_test: bool = any(uses_import_c(path) for path in files if path.exists())
 
     if needs_math_linkage(files):
         auto_cc_args.append("-lm")
 
-    cc_args = merge_cc_args(auto_cc_args, args.cc_args)
+    cc_args: str = merge_cc_args(auto_cc_args, args.cc_args)
     command: list[str] = [
         str(compiler),
         "-build-dir",
@@ -644,7 +599,7 @@ def compile_runtime_driver(
     if cc_args:
         command.extend(["-cc-args", cc_args])
 
-    result = subprocess.run(
+    result: subprocess.CompletedProcess[str] = subprocess.run(
         command,
         cwd=root,
         capture_output=True,
@@ -654,13 +609,12 @@ def compile_runtime_driver(
 
     return result, binary_path
 
-
 def should_skip_translated_compile_check(translated_path: Path) -> bool:
 
-    content = read_text(translated_path)
+    content: str = translated_path.read_text(encoding="utf-8")
 
     for line in content.splitlines():
-        stripped = line.strip()
+        stripped: str = line.strip()
 
         if stripped.startswith("directive "):
             return True
@@ -679,30 +633,25 @@ def should_skip_translated_compile_check(translated_path: Path) -> bool:
 
     return False
 
-
 def runtime_driver_path_for_c_transpile(test_path: Path) -> Path:
-
     return test_path.with_suffix(".run.thrust")
-
 
 def materialize_c_transpile_runtime_driver(
     test_path: Path,
     translated_path: Path,
     output_dir: Path,
 ) -> Path:
+    source_driver_path: Path = runtime_driver_path_for_c_transpile(test_path)
+    materialized_driver_path: Path = output_dir / source_driver_path.name
 
-    source_driver_path = runtime_driver_path_for_c_transpile(test_path)
-    materialized_driver_path = output_dir / source_driver_path.name
-
-    translated_source = read_text(translated_path)
-    driver_source = read_text(source_driver_path)
+    translated_source: str = translated_path.read_text(encoding="utf-8")
+    driver_source: str = source_driver_path.read_text(encoding="utf-8")
     materialized_driver_path.write_text(
         translated_source + "\n\n" + driver_source,
         encoding="utf-8",
     )
 
     return materialized_driver_path
-
 
 def run_translated_runtime(
     source_test_path: Path,
@@ -714,7 +663,7 @@ def run_translated_runtime(
     start: float,
 ) -> TestResult:
 
-    runtime_identifier = identifier + "__translated_runtime"
+    runtime_identifier: str = identifier + "__translated_runtime"
 
     try:
         runtime_compile_result, runtime_binary_path = compile_runtime_driver(
@@ -727,7 +676,7 @@ def run_translated_runtime(
         )
     except subprocess.TimeoutExpired as error:
 
-        elapsed = time.monotonic() - start
+        elapsed: float = time.monotonic() - start
 
         return TestResult(
             path=source_test_path,
@@ -780,7 +729,7 @@ def run_translated_runtime(
         )
 
     try:
-        runtime_run_result = run_binary(runtime_binary_path, root, runtime_identifier, args)
+        runtime_run_result: subprocess.CompletedProcess[str] = run_binary(runtime_binary_path, root, runtime_identifier, args)
     except subprocess.TimeoutExpired as error:
 
         elapsed = time.monotonic() - start
@@ -800,8 +749,8 @@ def run_translated_runtime(
         )
 
     elapsed = time.monotonic() - start
-    passed = runtime_run_result.returncode == 0
-    message = "ok" if passed else "translated program runtime failure, expected 0"
+    passed: bool = runtime_run_result.returncode == 0
+    message: Literal['ok', 'translated program runtime failure, expected 0'] = "ok" if passed else "translated program runtime failure, expected 0"
 
     return TestResult(
         path=source_test_path,
@@ -825,8 +774,7 @@ def run_binary(
     args: argparse.Namespace,
 ) -> subprocess.CompletedProcess[str]:
 
-    run_dir = dist_root(root) / "run" / identifier
-
+    run_dir: Path = dist_root(root) / "run" / identifier
     run_dir.mkdir(parents=True, exist_ok=True)
 
     return subprocess.run(
@@ -845,14 +793,14 @@ def run_test(
     args: argparse.Namespace,
 ) -> TestResult:
 
-    start = time.monotonic()
-    negative = is_negative_test(test_path)
+    start: float = time.monotonic()
+    negative: bool = is_negative_test(test_path)
 
     try:
         compile_result, binary_path, _dependencies = compile_test(test_path, compiler, root, args)
     except subprocess.TimeoutExpired as error:
 
-        elapsed = time.monotonic() - start
+        elapsed: float = time.monotonic() - start
 
         return TestResult(
             path=test_path,
@@ -871,9 +819,8 @@ def run_test(
     elapsed = time.monotonic() - start
 
     if negative:
-
-        passed = compile_result.returncode != 0 or not binary_path.exists()
-        message = "compile failed as expected" if passed else "expected compile failure"
+        passed: bool = compile_result.returncode != 0 or not binary_path.exists()
+        message: Literal['compile failed as expected', 'expected compile failure'] = "compile failed as expected" if passed else "expected compile failure"
 
         return TestResult(
             path=test_path,
@@ -890,7 +837,6 @@ def run_test(
         )
 
     if compile_result.returncode != 0:
-
         return TestResult(
             path=test_path,
             kind="positive",
@@ -906,7 +852,6 @@ def run_test(
         )
 
     if not binary_path.exists():
-
         if args.emit:
             return TestResult(
                 path=test_path,
@@ -936,10 +881,10 @@ def run_test(
             run_stderr="",
         )
 
-    identifier = test_identifier(test_path, root)
+    identifier: str = test_identifier(test_path, root)
 
     try:
-        run_result = run_binary(binary_path, root, identifier, args)
+        run_result: subprocess.CompletedProcess[str] = run_binary(binary_path, root, identifier, args)
     except subprocess.TimeoutExpired as error:
 
         elapsed = time.monotonic() - start
@@ -959,7 +904,7 @@ def run_test(
         )
 
     elapsed = time.monotonic() - start
-    expected_code = expected_run_code(test_path)
+    expected_code: int = expected_run_code(test_path)
     passed = run_result.returncode == expected_code
     message = "ok" if passed else f"runtime failure, expected {expected_code}"
 
@@ -985,12 +930,12 @@ def run_c_transpile_test(
     args: argparse.Namespace,
 ) -> TestResult:
 
-    start = time.monotonic()
-    identifier = test_identifier(test_path, root)
-    output_dir = dist_root(root) / "c_transpile" / identifier
-    expected_path = test_path.with_suffix(".expected.thrust")
-    output_path = output_dir / test_path.with_suffix(".thrust").name
-    command = [
+    start: float = time.monotonic()
+    identifier: str = test_identifier(test_path, root)
+    output_dir: Path = dist_root(root) / "c_transpile" / identifier
+    expected_path: Path = test_path.with_suffix(".expected.thrust")
+    output_path: Path = output_dir / test_path.with_suffix(".thrust").name
+    command: list[str] = [
         str(compiler),
         "-mode",
         "unstable",
@@ -1001,7 +946,7 @@ def run_c_transpile_test(
     ]
 
     try:
-        result = subprocess.run(
+        result: subprocess.CompletedProcess[str] = subprocess.run(
             command,
             cwd=root,
             capture_output=True,
@@ -1026,10 +971,9 @@ def run_c_transpile_test(
             run_stderr="",
         )
 
-    elapsed = time.monotonic() - start
+    elapsed: float = time.monotonic() - start
 
     if result.returncode != 0:
-
         return TestResult(
             path=test_path,
             kind="c-transpile",
@@ -1045,7 +989,6 @@ def run_c_transpile_test(
         )
 
     if not output_path.exists():
-
         return TestResult(
             path=test_path,
             kind="c-transpile",
@@ -1060,12 +1003,12 @@ def run_c_transpile_test(
             run_stderr="",
         )
 
-    expected = read_text(expected_path)
-    actual = read_text(output_path)
+    expected: str = expected_path.read_text(encoding="utf-8")
+    actual: str = output_path.read_text(encoding="utf-8")
 
     if actual != expected:
 
-        diff = "".join(difflib.unified_diff(
+        diff: str = "".join(difflib.unified_diff(
             expected.splitlines(keepends=True),
             actual.splitlines(keepends=True),
             fromfile=expected_path.name,
@@ -1087,8 +1030,7 @@ def run_c_transpile_test(
         )
 
     if not should_skip_translated_compile_check(output_path):
-
-        translated_compile_result = compile_translated_output(
+        translated_compile_result: subprocess.CompletedProcess[str] = compile_translated_output(
             test_path,
             output_path,
             compiler,
@@ -1097,7 +1039,6 @@ def run_c_transpile_test(
         )
 
         if translated_compile_result.returncode != 0:
-
             return TestResult(
                 path=test_path,
                 kind="c-transpile",
@@ -1123,7 +1064,7 @@ def run_c_transpile_test(
             start,
         )
 
-    runtime_driver_source_path = runtime_driver_path_for_c_transpile(test_path)
+    runtime_driver_source_path: Path = runtime_driver_path_for_c_transpile(test_path)
 
     if not runtime_driver_source_path.exists():
         return TestResult(
@@ -1140,12 +1081,12 @@ def run_c_transpile_test(
             run_stderr="",
         )
 
-    runtime_driver_path = materialize_c_transpile_runtime_driver(
+    runtime_driver_path: Path = materialize_c_transpile_runtime_driver(
         test_path,
         output_path,
         output_dir,
     )
-    runtime_identifier = identifier + "__runtime"
+    runtime_identifier: str = identifier + "__runtime"
 
     try:
         runtime_compile_result, runtime_binary_path = compile_runtime_driver(
@@ -1157,7 +1098,6 @@ def run_c_transpile_test(
             runtime_identifier,
         )
     except subprocess.TimeoutExpired as error:
-
         elapsed = time.monotonic() - start
 
         return TestResult(
@@ -1175,7 +1115,6 @@ def run_c_transpile_test(
         )
 
     if runtime_compile_result.returncode != 0:
-
         return TestResult(
             path=test_path,
             kind="c-transpile",
@@ -1191,7 +1130,6 @@ def run_c_transpile_test(
         )
 
     if not runtime_binary_path.exists():
-
         return TestResult(
             path=test_path,
             kind="c-transpile",
@@ -1207,7 +1145,7 @@ def run_c_transpile_test(
         )
 
     try:
-        runtime_run_result = run_binary(runtime_binary_path, root, runtime_identifier, args)
+        runtime_run_result: subprocess.CompletedProcess[str] = run_binary(runtime_binary_path, root, runtime_identifier, args)
     except subprocess.TimeoutExpired as error:
 
         elapsed = time.monotonic() - start
@@ -1227,8 +1165,8 @@ def run_c_transpile_test(
         )
 
     elapsed = time.monotonic() - start
-    passed = runtime_run_result.returncode == 0
-    message = "ok" if passed else "translated output runtime failure, expected 0"
+    passed: bool = runtime_run_result.returncode == 0
+    message: Literal['ok', 'translated output runtime failure, expected 0'] = "ok" if passed else "translated output runtime failure, expected 0"
 
     return TestResult(
         path=test_path,
@@ -1247,13 +1185,12 @@ def run_c_transpile_test(
 
 def prepare_dist(root: Path) -> None:
 
-    dist = dist_root(root)
+    dist: Path = dist_root(root)
 
     shutil.rmtree(dist, ignore_errors=True)
     (dist / "bin").mkdir(parents=True, exist_ok=True)
     (dist / "build").mkdir(parents=True, exist_ok=True)
     (dist / "run").mkdir(parents=True, exist_ok=True)
-
 
 def cleanup_dist(root: Path, keep_dist: bool) -> None:
 
@@ -1265,9 +1202,9 @@ def cleanup_dist(root: Path, keep_dist: bool) -> None:
 
 def print_test_result(result: TestResult, root: Path) -> None:
 
-    relative = result.path.relative_to(tests_root(root)).as_posix()
-    status = "PASS" if result.passed else "FAIL"
-    run_code = "-" if result.run_code is None else str(result.run_code)
+    relative: str = result.path.relative_to(tests_root(root)).as_posix()
+    status: Literal['FAIL', 'PASS'] = "PASS" if result.passed else "FAIL"
+    run_code: str = "-" if result.run_code is None else str(result.run_code)
 
     print(
         f"[{status}] {relative} "
@@ -1281,20 +1218,15 @@ def print_test_result(result: TestResult, root: Path) -> None:
 
 
 def print_running_test(test_path: Path, root: Path) -> None:
-
-    relative = test_path.relative_to(tests_root(root)).as_posix()
-
+    relative: str = test_path.relative_to(tests_root(root)).as_posix()
     print(f"[RUNNING] {relative}", flush=True)
 
 
 def print_failure_details(result: TestResult, root: Path) -> None:
-
-    relative = result.path.relative_to(tests_root(root)).as_posix()
+    relative: str = result.path.relative_to(tests_root(root)).as_posix()
 
     print(f"\n--- {relative} ---")
-
     print(f"message: {result.message}")
-
     print(f"compile exit: {result.compile_code}")
 
     if result.run_code is not None:
@@ -1319,12 +1251,12 @@ def print_failure_details(result: TestResult, root: Path) -> None:
 
 def print_summary(results: list[TestResult], root: Path) -> None:
 
-    total = len(results)
-    passed = sum(1 for result in results if result.passed)
-    failed = total - passed
-    positives = sum(1 for result in results if result.kind == "positive")
-    negatives = sum(1 for result in results if result.kind == "negative")
-    c_transpiles = sum(1 for result in results if result.kind == "c-transpile")
+    total: int = len(results)
+    passed: int = sum(1 for result in results if result.passed)
+    failed: int = total - passed
+    positives: int = sum(1 for result in results if result.kind == "positive")
+    negatives: int = sum(1 for result in results if result.kind == "negative")
+    c_transpiles: int = sum(1 for result in results if result.kind == "c-transpile")
 
     print("\nTest report", flush=True)
     print(f"total: {total}", flush=True)
@@ -1334,26 +1266,24 @@ def print_summary(results: list[TestResult], root: Path) -> None:
     print(f"negative: {negatives}", flush=True)
     print(f"c-transpile: {c_transpiles}", flush=True)
 
-    failures = [result for result in results if not result.passed]
+    failures: list[TestResult] = [result for result in results if not result.passed]
 
     if failures:
         print("\nFailures", flush=True)
-
         for result in failures:
             print_failure_details(result, root)
 
 
 def main() -> int:
 
-    args = parse_args()
-    root = project_root()
-    tests_dir = tests_root(root)
-    compiler = compiler_path(args, root)
+    args: argparse.Namespace = parse_args()
+    root: Path = project_root()
+    tests_dir: Path = tests_root(root)
+    compiler: Path = compiler_path(args, root)
 
     if not args.no_build and args.compiler is None:
 
-        build_code = build_compiler(root)
-
+        build_code: int = build_compiler(root)
         if build_code != 0:
             return build_code
 
@@ -1361,8 +1291,8 @@ def main() -> int:
         print(f"compiler not found: {compiler}", file=sys.stderr)
         return 1
 
-    test_roots = discover_test_roots(tests_dir, args.filter, args.exclude_only)
-    c_transpile_roots = discover_c_transpile_tests(
+    test_roots: list[Path] = discover_test_roots(tests_dir, args.filter, args.exclude_only)
+    c_transpile_roots: list[Path] = discover_c_transpile_tests(
         tests_dir,
         args.filter,
         args.exclude_only,
@@ -1373,17 +1303,14 @@ def main() -> int:
         return 1
 
     prepare_dist(root)
-
     results: list[TestResult] = []
 
     try:
 
         for test_path in test_roots:
-
             print_running_test(test_path, root)
 
-            result = run_test(test_path, compiler, root, args)
-
+            result: TestResult = run_test(test_path, compiler, root, args)
             results.append(result)
 
             print_test_result(result, root)
@@ -1398,7 +1325,6 @@ def main() -> int:
                 print_running_test(test_path, root)
 
                 result = run_c_transpile_test(test_path, compiler, root, args)
-
                 results.append(result)
 
                 print_test_result(result, root)
@@ -1411,7 +1337,6 @@ def main() -> int:
         return 0 if all(result.passed for result in results) else 1
 
     finally:
-
         cleanup_dist(root, args.keep_dist)
 
 
