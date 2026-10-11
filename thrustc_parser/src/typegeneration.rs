@@ -166,13 +166,13 @@ fn build_type_inner<'parser>(
                 };
 
                 if let Some((qualified_type, type_params)) =
-                    thrustc_import_synthesis::synthesis::resolve_qualified_generic(
+                    thrustc_import::synthesis::resolve_qualified_generic(
                         &ctx.import_context(),
                         &access,
                         symbol,
                     )
                 {
-                    thrustc_import_synthesis::synthesis::synthesize_only_import(
+                    thrustc_import::synthesis::synthesize_only_import(
                         &mut ctx.import_context(),
                         &access,
                         &[symbol.to_string()],

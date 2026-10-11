@@ -102,11 +102,6 @@ impl<'module_parser> ModuleParser<'module_parser> {
 }
 
 impl<'module_parser> ModuleParser<'module_parser> {
-    #[inline]
-    pub fn get_module_name(&self) -> &str {
-        self.module.get_name()
-    }
-
     pub fn parse(mut self) -> Result<Module, ()> {
         while !self.is_eof() {
             let _ = self.forward_declare();
@@ -119,7 +114,8 @@ impl<'module_parser> ModuleParser<'module_parser> {
             let _ = self.start();
         }
 
-        let warnings_to_disable = thrustc_directive::combine_warnings_to_disable(self.file_options);
+        let warnings_to_disable: std::borrow::Cow<'_, [thrustc_errors::CompilationIssueCode]> =
+            thrustc_directive::combine_warnings_to_disable(self.file_options);
 
         thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 
@@ -143,22 +139,6 @@ impl<'module_parser> ModuleParser<'module_parser> {
 
 impl<'module_parser> ModuleParser<'module_parser> {
     #[inline]
-    pub fn enter_type(&mut self) -> Result<(), ()> {
-        self.type_depth = self.type_depth.saturating_add(1);
-
-        if self.type_depth > thrustc_constants::COMPILER_TOO_MANY_TYPE_DEPTH {
-            return Err(());
-        }
-
-        Ok(())
-    }
-
-    #[inline]
-    pub fn leave_type(&mut self) {
-        self.type_depth = self.type_depth.saturating_sub(1);
-    }
-
-    #[inline]
     pub fn enter_block(&mut self) -> Result<(), ()> {
         self.block_depth = self.block_depth.saturating_add(1);
 
@@ -173,7 +153,27 @@ impl<'module_parser> ModuleParser<'module_parser> {
     pub fn leave_block(&mut self) {
         self.block_depth = self.block_depth.saturating_sub(1);
     }
+}
 
+impl<'module_parser> ModuleParser<'module_parser> {
+    #[inline]
+    pub fn enter_type(&mut self) -> Result<(), ()> {
+        self.type_depth = self.type_depth.saturating_add(1);
+
+        if self.type_depth > thrustc_constants::COMPILER_TOO_MANY_TYPE_DEPTH {
+            return Err(());
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    pub fn leave_type(&mut self) {
+        self.type_depth = self.type_depth.saturating_sub(1);
+    }
+}
+
+impl<'module_parser> ModuleParser<'module_parser> {
     #[inline]
     pub fn reset_depths(&mut self) {
         self.type_depth = 0;
@@ -616,6 +616,7 @@ impl TypeParseContext for ModuleParser<'_> {
         self.add_error(error)
     }
 
+    #[inline]
     fn resolve_type_parameter(&self, name: &str) -> Option<Span> {
         self.type_parameter_scope.resolve(name)
     }

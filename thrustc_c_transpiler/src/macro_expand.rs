@@ -42,11 +42,6 @@ impl MacroExpansionContext {
 }
 
 impl MacroExpansionContext {
-    #[inline]
-    pub fn new_default() -> Self {
-        Self::new(64, 128)
-    }
-
     fn try_enter(&mut self, macro_name: &str) -> Result<(), MacroLimit> {
         if self.depth >= self.max_depth {
             return Err(MacroLimit::ExpansionDepthExceeded);
@@ -70,7 +65,6 @@ impl MacroExpansionContext {
 impl MacroExpansionContext {
     fn leave(&mut self) {
         self.active_expansions.pop();
-
         self.depth = self.depth.saturating_sub(1);
     }
 }

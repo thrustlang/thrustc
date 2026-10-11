@@ -45,7 +45,7 @@ pub fn build_qualified_expression<'parser>(
     span: Span,
 ) -> Result<thrustc_ast::Ast<'parser>, CompilationIssue> {
     let qualified_symbol: String =
-        thrustc_import_synthesis::synthesis::qualified_symbol_name(access, symbol);
+        thrustc_import::synthesis::qualified_symbol_name(access, symbol);
 
     let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
         .resolve(access)
@@ -53,7 +53,7 @@ pub fn build_qualified_expression<'parser>(
 
     if ctx.match_token(TokenType::FatArrow)? {
         let Some(Signature::Enum { fields, .. }) =
-            thrustc_import_synthesis::synthesis::resolve_signature(
+            thrustc_import::synthesis::resolve_signature(
                 &ctx.import_context(),
                 access,
                 symbol,
@@ -106,7 +106,7 @@ pub fn build_qualified_expression<'parser>(
             parameters,
             attributes,
             ..
-        }) = thrustc_import_synthesis::synthesis::resolve_signature(
+        }) = thrustc_import::synthesis::resolve_signature(
             &ctx.import_context(),
             access,
             symbol,
@@ -151,7 +151,7 @@ pub fn build_qualified_expression<'parser>(
                         .record_import_origin(qualified_symbol.clone(), path.clone());
                 }
 
-                thrustc_import_synthesis::synthesis::synthesize_compiler_intrinsic(
+                thrustc_import::synthesis::synthesize_compiler_intrinsic(
                     &mut ctx.import_context(),
                     &qualified_symbol,
                     external_name,
@@ -179,7 +179,7 @@ pub fn build_qualified_expression<'parser>(
             attributes,
             type_params,
             ..
-        }) = thrustc_import_synthesis::synthesis::resolve_signature(
+        }) = thrustc_import::synthesis::resolve_signature(
             &ctx.import_context(),
             access,
             symbol,
@@ -241,11 +241,11 @@ pub fn build_qualified_expression<'parser>(
             }
         };
 
-        if !thrustc_import_synthesis::synthesis::has_any_synthetized_function(
+        if !thrustc_import::synthesis::has_any_synthetized_function(
             &ctx.import_context(),
             &qualified_symbol,
         ) {
-            thrustc_import_synthesis::synthesis::synthesize_function(
+            thrustc_import::synthesis::synthesize_function(
                 &mut ctx.import_context(),
                 &qualified_symbol,
                 symbol,
@@ -274,14 +274,14 @@ pub fn build_qualified_expression<'parser>(
         modificators,
         value,
         ..
-    }) = thrustc_import_synthesis::synthesis::resolve_signature(
+    }) = thrustc_import::synthesis::resolve_signature(
         &ctx.import_context(),
         access,
         symbol,
         Variant::Constant,
     ) {
         let qualified_symbol: String =
-            thrustc_import_synthesis::synthesis::qualified_symbol_name(access, symbol);
+            thrustc_import::synthesis::qualified_symbol_name(access, symbol);
 
         if !ctx.get_symbols().has_global_constant(&qualified_symbol) {
             let folded_value: Option<Ast> = value.as_ref().map(|v| v.to_ast(kind.clone(), span));
@@ -311,7 +311,7 @@ pub fn build_qualified_expression<'parser>(
                 ));
             };
 
-            thrustc_import_synthesis::synthesis::synthesize_constant(
+            thrustc_import::synthesis::synthesize_constant(
                 &mut ctx.import_context(),
                 &qualified_symbol,
                 kind.clone(),
@@ -340,18 +340,18 @@ pub fn build_qualified_expression<'parser>(
         attributes,
         modificators,
         ..
-    }) = thrustc_import_synthesis::synthesis::resolve_signature(
+    }) = thrustc_import::synthesis::resolve_signature(
         &ctx.import_context(),
         access,
         symbol,
         Variant::Static,
     ) {
         let qualified_symbol: String =
-            thrustc_import_synthesis::synthesis::qualified_symbol_name(access, symbol);
+            thrustc_import::synthesis::qualified_symbol_name(access, symbol);
 
         if !ctx.get_symbols().has_global_static(&qualified_symbol) {
             let metadata: thrustc_ast::ast_metadata::StaticMetadata =
-                thrustc_import_synthesis::synthesis::build_static_metadata(
+                thrustc_import::synthesis::build_static_metadata(
                     *is_mutable,
                     attributes,
                     modificators,
@@ -367,7 +367,7 @@ pub fn build_qualified_expression<'parser>(
                     .record_import_origin(qualified_symbol.clone(), path.clone());
             }
 
-            thrustc_import_synthesis::synthesis::synthesize_global(
+            thrustc_import::synthesis::synthesize_global(
                 &mut ctx.import_context(),
                 &qualified_symbol,
                 kind.clone(),
@@ -414,7 +414,7 @@ fn build_qualified_generic_call<'parser>(
         .map(|module| module.get_path().to_path_buf());
 
     let qualified_symbol: String =
-        thrustc_import_synthesis::synthesis::qualified_symbol_name(access, symbol);
+        thrustc_import::synthesis::qualified_symbol_name(access, symbol);
 
     let parameter_types: Vec<Type> = parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
     let parameter_names: Vec<String> = parameters.iter().map(|(name, ..)| name.clone()).collect();
@@ -547,7 +547,7 @@ fn build_qualified_generic_call<'parser>(
         .map(|path| path.to_string_lossy().to_string());
     let key: String = thrustc_generics::instantiation_key(origin_key.as_deref(), symbol, &env);
 
-    if !thrustc_import_synthesis::synthesis::has_any_synthetized_function(
+    if !thrustc_import::synthesis::has_any_synthetized_function(
         &ctx.import_context(),
         &key,
     ) {
@@ -565,7 +565,7 @@ fn build_qualified_generic_call<'parser>(
                 |module| format!("{}.{}", module.to_string_lossy(), key),
             );
 
-        thrustc_import_synthesis::synthesis::synthesize_function(
+        thrustc_import::synthesis::synthesize_function(
             &mut ctx.import_context(),
             &key,
             symbol,

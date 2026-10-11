@@ -36,47 +36,46 @@ use crate::{
 };
 
 #[derive(Debug)]
-struct ImportRequest {
+struct ImportC {
     import_str: String,
-    span: Span,
-    import_spec_path: PathBuf,
+    import_path: PathBuf,
     header_path: PathBuf,
-    treat_as_header_spec: bool,
+    outside_header: bool,
     resolved_from_import_search: bool,
-    parse_via_header_spec: bool,
+    parse_outside_header: bool,
     alias: Option<Vec<String>>,
     import_opts: thrustc_options::ImportCOptions,
+    span: Span,
 }
 
-impl ImportRequest {
-    #[inline]
+impl ImportC {
     #[allow(clippy::too_many_arguments)]
     fn new(
         import_str: String,
-        span: Span,
-        import_spec_path: PathBuf,
+        import_path: PathBuf,
         header_path: PathBuf,
-        treat_as_header_spec: bool,
+        outside_header: bool,
         resolved_from_import_search: bool,
-        parse_via_header_spec: bool,
+        parse_outside_header: bool,
         alias: Option<Vec<String>>,
         import_opts: thrustc_options::ImportCOptions,
+        span: Span,
     ) -> Self {
         Self {
             import_str,
-            span,
-            import_spec_path,
+            import_path,
             header_path,
-            treat_as_header_spec,
+            outside_header,
             resolved_from_import_search,
-            parse_via_header_spec,
+            parse_outside_header,
             alias,
             import_opts,
+            span,
         }
     }
 }
 
-impl ImportRequest {
+impl ImportC {
     #[inline]
     fn import_str(&self) -> &String {
         &self.import_str
@@ -88,8 +87,8 @@ impl ImportRequest {
     }
 
     #[inline]
-    fn import_spec_path(&self) -> &PathBuf {
-        &self.import_spec_path
+    fn import_path(&self) -> &PathBuf {
+        &self.import_path
     }
 
     #[inline]
@@ -98,8 +97,8 @@ impl ImportRequest {
     }
 
     #[inline]
-    fn treat_as_header_spec(&self) -> bool {
-        self.treat_as_header_spec
+    fn outside_header(&self) -> bool {
+        self.outside_header
     }
 
     #[inline]
@@ -108,8 +107,8 @@ impl ImportRequest {
     }
 
     #[inline]
-    fn parse_via_header_spec(&self) -> bool {
-        self.parse_via_header_spec
+    fn parse_outside_header(&self) -> bool {
+        self.parse_outside_header
     }
 
     #[inline]
@@ -123,9 +122,93 @@ impl ImportRequest {
     }
 }
 
+pub fn parse_import_c<'preprocessor>(
+    parser: &mut PreprocessorContext<'preprocessor>,
+) -> Result<Option<Module>, ()> {
+    let request: ImportC = self::parse_import_request(parser)?;
+
+    let base_name: String = Path::new(if request.outside_header() {
+        request.import_path()
+    } else {
+        request.header_path()
+    })
+    .file_stem()
+    .map_or_else(String::new, |stem| stem.to_string_lossy().to_string());
+
+    let mut module: Module = Module::new(base_name, request.header_path().clone());
+
+    if let Some(alias) = request.alias().clone() {
+        module.set_alias(alias);
+    }
+
+    let options: thrustc_import_c::options::CImportOptions = self::build_import_options(
+        request.import_opts(),
+        request.outside_header(),
+        request.resolved_from_import_search(),
+    );
+
+    let context: thrustc_import_c::context::CImportContext =
+        self::synthesize_imported_header(parser, &request, options)?;
+
+    self::emit_import_diagnostics(parser, &context, request.span());
+
+    self::emit_imported_symbols(&mut module, &context, request.span());
+
+    parser.get_registry().borrow_mut().register(&module);
+
+    Ok(Some(module))
+}
+
+fn emit_import_diagnostics(
+    parser: &mut PreprocessorContext,
+    context: &thrustc_import_c::context::CImportContext,
+    span: Span,
+) {
+    for diagnostic in context.diagnostics() {
+        let code: CompilationIssueCode = match diagnostic.kind() {
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::ClangDiagnostic => {
+                CompilationIssueCode::W0100
+            }
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::InventedFieldName => {
+                CompilationIssueCode::W0101
+            }
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedUnion => {
+                CompilationIssueCode::W0102
+            }
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedBitfieldStruct => {
+                CompilationIssueCode::W0103
+            }
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention => {
+                CompilationIssueCode::E0100
+            }
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedDeclaration => {
+                CompilationIssueCode::W0104
+            }
+        };
+
+        if diagnostic.kind()
+            == thrustc_import_c::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention
+        {
+            parser.add_error(CompilationIssue::Error(
+                code,
+                diagnostic.message().to_string(),
+                "Use a function with a calling convention that Thrust can import, or remove the importC dependency on that declaration.".into(),
+                None,
+                span,
+            ));
+        } else {
+            parser.add_warning(CompilationIssue::Warning(
+                code,
+                diagnostic.message().to_string(),
+                span,
+            ));
+        }
+    }
+}
+
 fn emit_imported_symbols(
     module: &mut Module,
-    context: &thrustc_c_import_synthesis::context::CImportContext,
+    context: &thrustc_import_c::context::CImportContext,
     span: Span,
 ) {
     for function in context.functions() {
@@ -313,7 +396,7 @@ fn emit_imported_symbols(
     }
 }
 
-fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportRequest, ()> {
+fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportC, ()> {
     parser.consume(TokenType::ImportC)?;
 
     let current_path: PathBuf = parser.get_compilation_unit().get_path().to_path_buf();
@@ -333,11 +416,11 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportReques
 
     let span: Span = header_path_tk.get_span();
 
-    let import_spec_path: PathBuf = PathBuf::from(&import_str);
-    let mut header_path: PathBuf = import_spec_path.clone();
-    let mut treat_as_header_spec: bool = false;
+    let import_path: PathBuf = PathBuf::from(&import_str);
+    let mut header_path: PathBuf = import_path.clone();
+    let mut outside_header: bool = false;
     let mut resolved_from_import_search: bool = false;
-    let mut parse_via_header_spec: bool = false;
+    let mut parse_outside_header: bool = false;
 
     if parser.check(TokenType::Only) {
         let only_span: Span = parser.peek().get_span();
@@ -396,14 +479,14 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportReques
             if let Some(candidate) = found {
                 header_path = candidate;
                 resolved_from_import_search = true;
-                parse_via_header_spec = true;
+                parse_outside_header = true;
             } else {
-                treat_as_header_spec = true;
+                outside_header = true;
             }
         }
     }
 
-    if !treat_as_header_spec && let Ok(canonicalized) = header_path.canonicalize() {
+    if !outside_header && let Ok(canonicalized) = header_path.canonicalize() {
         header_path = canonicalized;
     }
 
@@ -413,7 +496,7 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportReques
         current_file_path = canonicalized_current;
     }
 
-    if !treat_as_header_spec && header_path == current_file_path {
+    if !outside_header && header_path == current_file_path {
         parser.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0035,
             "The header cannot be imported itself.".into(),
@@ -425,11 +508,11 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportReques
         return Err(());
     }
 
-    if !treat_as_header_spec && !header_path.exists() {
+    if !outside_header && !header_path.exists() {
         parser.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0035,
             "The path does not exist.".into(),
-            "Use an existing local header path or pass '--import-c-include <dir>' / '--import-c-system-include <dir>' so Clang can resolve the header spec.".into(),
+            "Use an existing local header path or pass '--import-c-include <dir>' / '--import-c-system-include <dir>' so Clang can resolve the outside header.".into(),
             None,
             span,
         ));
@@ -437,7 +520,7 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportReques
         return Err(());
     }
 
-    if !treat_as_header_spec && !header_path.is_file() {
+    if !outside_header && !header_path.is_file() {
         parser.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0035,
             "The path does not point to a file.".into(),
@@ -449,44 +532,44 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportReques
         return Err(());
     }
 
-    Ok(ImportRequest::new(
+    Ok(ImportC::new(
         import_str,
-        span,
-        import_spec_path,
+        import_path,
         header_path,
-        treat_as_header_spec,
+        outside_header,
         resolved_from_import_search,
-        parse_via_header_spec,
+        parse_outside_header,
         alias,
         import_opts,
+        span,
     ))
 }
 
 fn build_import_options(
     import_opts: &thrustc_options::ImportCOptions,
-    treat_as_header_spec: bool,
+    outside_header: bool,
     resolved_from_import_search: bool,
-) -> thrustc_c_import_synthesis::options::CImportOptions {
-    let mut options: thrustc_c_import_synthesis::options::CImportOptions =
-        thrustc_c_import_synthesis::options::CImportOptions::new();
+) -> thrustc_import_c::options::CImportOptions {
+    let mut options: thrustc_import_c::options::CImportOptions =
+        thrustc_import_c::options::CImportOptions::new();
 
     let effective_scope: thrustc_options::ImportCScope = if import_opts.import_scope_overridden() {
         import_opts.import_scope()
-    } else if treat_as_header_spec || resolved_from_import_search {
+    } else if outside_header || resolved_from_import_search {
         thrustc_options::ImportCScope::TransitiveAll
     } else {
         thrustc_options::ImportCScope::MainOnly
     };
 
-    let import_scope: thrustc_c_import_synthesis::options::CImportScope = match effective_scope {
+    let import_scope: thrustc_import_c::options::CImportScope = match effective_scope {
         thrustc_options::ImportCScope::MainOnly => {
-            thrustc_c_import_synthesis::options::CImportScope::MainOnly
+            thrustc_import_c::options::CImportScope::MainOnly
         }
         thrustc_options::ImportCScope::TransitiveNoSystem => {
-            thrustc_c_import_synthesis::options::CImportScope::TransitiveNoSystem
+            thrustc_import_c::options::CImportScope::TransitiveNoSystem
         }
         thrustc_options::ImportCScope::TransitiveAll => {
-            thrustc_c_import_synthesis::options::CImportScope::TransitiveAll
+            thrustc_import_c::options::CImportScope::TransitiveAll
         }
     };
 
@@ -496,7 +579,9 @@ fn build_import_options(
     {
         let clang_args: &mut Vec<String> = options.clang_args_mut();
 
-        if let Some(resource_dir) = self::detect_clang_resource_include_dir() {
+        if let Some(resource_dir) =
+            crate::highmodule_parsing::util::detect_clang_resource_include_dir()
+        {
             clang_args.push(format!("-isystem{}", resource_dir.display()));
         }
 
@@ -509,7 +594,7 @@ fn build_import_options(
         }
 
         let auto_system: Vec<PathBuf> = if import_opts.system_include_paths().is_empty() {
-            self::detect_host_system_include_dirs()
+            crate::highmodule_parsing::util::detect_host_system_include_dirs()
         } else {
             Vec::new()
         };
@@ -551,34 +636,34 @@ fn build_import_options(
 
 fn synthesize_imported_header(
     parser: &mut PreprocessorContext,
-    request: &ImportRequest,
-    options: thrustc_c_import_synthesis::options::CImportOptions,
-) -> Result<thrustc_c_import_synthesis::context::CImportContext, ()> {
-    let importer_header_path: PathBuf = if request.parse_via_header_spec() {
-        request.import_spec_path().clone()
+    import_c: &ImportC,
+    options: thrustc_import_c::options::CImportOptions,
+) -> Result<thrustc_import_c::context::CImportContext, ()> {
+    let importer_header_path: PathBuf = if import_c.parse_outside_header() {
+        import_c.import_path().clone()
     } else {
-        request.header_path().clone()
+        import_c.header_path().clone()
     };
 
-    let mut context: thrustc_c_import_synthesis::context::CImportContext =
-        thrustc_c_import_synthesis::context::CImportContext::new(
+    let mut context: thrustc_import_c::context::CImportContext =
+        thrustc_import_c::context::CImportContext::new(
             importer_header_path,
-            request.span(),
+            import_c.span(),
             options,
         );
 
     if let Err(message) = context.import_header() {
-        let treat_as_spec: bool = request.treat_as_header_spec();
+        let outside_header: bool = import_c.outside_header();
 
-        let import_str: &String = request.import_str();
+        let import_str: &String = import_c.import_str();
 
-        let header_display: String = if treat_as_spec {
+        let header_display: String = if outside_header {
             import_str.clone()
         } else {
-            request.header_path().display().to_string()
+            import_c.header_path().display().to_string()
         };
 
-        let help: String = if treat_as_spec {
+        let help: String = if outside_header {
             "Pass '--import-c-system-include <dir>' for system headers or '--import-c-include <dir>' for local/vendor headers so importC can resolve the header.".into()
         } else {
             "Pass '--import-c-system-include <dir>' or '--import-c-include <dir>' so Clang can resolve the header and its dependencies.".into()
@@ -586,7 +671,7 @@ fn synthesize_imported_header(
 
         let has_diagnostics: bool = !context.diagnostics().is_empty();
 
-        let looks_like_spec: bool =
+        let looks_like_outside_header: bool =
             import_str.ends_with(".h") && !import_str.contains(std::path::MAIN_SEPARATOR);
 
         let diagnostic_count: usize = context.diagnostics().len();
@@ -604,8 +689,8 @@ fn synthesize_imported_header(
             format!("Failed to import C header '{header_display}':\n{joined}")
         };
 
-        let hint: Option<String> = match (has_diagnostics, treat_as_spec, looks_like_spec) {
-            (true, _, _) if treat_as_spec => Some(
+        let hint: Option<String> = match (has_diagnostics, outside_header, looks_like_outside_header) {
+            (true, _, _) if outside_header => Some(
                 "Try '--import-c-system-include <dir>' for system headers or '--import-c-include <dir>' for local/vendor headers.".into(),
             ),
             (true, _, _) => None,
@@ -614,7 +699,7 @@ fn synthesize_imported_header(
                     .into(),
             ),
             (false, true, true) => Some(
-                "This looks like a header spec. Try '--import-c-system-include <dir>' for system headers or '--import-c-include <dir>' for local/vendor headers."
+                "This looks like an outside header. Try '--import-c-system-include <dir>' for system headers or '--import-c-include <dir>' for local/vendor headers."
                     .into(),
             ),
             (false, true, false) => None,
@@ -633,243 +718,11 @@ fn synthesize_imported_header(
             message_text,
             help,
             note,
-            request.span(),
+            import_c.span(),
         ));
 
         return Err(());
     }
 
     Ok(context)
-}
-
-fn verbose_include_dirs(command: &str) -> Vec<PathBuf> {
-    let mut dirs: Vec<PathBuf> = Vec::new();
-
-    let output: std::process::Output = match std::process::Command::new(command)
-        .args(["-E", "-xc", "-v", "-"])
-        .stdin(std::process::Stdio::null())
-        .output()
-    {
-        Ok(output) => output,
-        Err(_) => return dirs,
-    };
-
-    let stderr: std::borrow::Cow<'_, str> = String::from_utf8_lossy(&output.stderr);
-
-    let mut tokens: Vec<String> = Vec::new();
-
-    for token in stderr.split_whitespace() {
-        tokens.push(token.to_string());
-    }
-
-    let mut idx: usize = 0;
-
-    while idx < tokens.len() {
-        if tokens[idx] == "-internal-isystem" || tokens[idx] == "-internal-externc-isystem" {
-            if let Some(dir) = tokens.get(idx.saturating_add(1)) {
-                dirs.push(PathBuf::from(dir));
-            }
-
-            idx = idx.saturating_add(2);
-        } else {
-            idx = idx.saturating_add(1);
-        }
-    }
-
-    let mut in_list: bool = false;
-
-    for line in stderr.lines() {
-        let trimmed: &str = line.trim();
-
-        if trimmed == "#include <...> search starts here:" {
-            in_list = true;
-        } else if trimmed == "End of search list." {
-            in_list = false;
-        } else if in_list && !trimmed.is_empty() {
-            dirs.push(PathBuf::from(trimmed));
-        }
-    }
-
-    dirs
-}
-
-fn detect_host_system_include_dirs() -> Vec<PathBuf> {
-    let mut collected: Vec<PathBuf> = Vec::new();
-
-    let mut push_unique = |candidate: PathBuf| {
-        let canonical: PathBuf = candidate
-            .canonicalize()
-            .unwrap_or_else(|_| candidate.clone());
-
-        let already: bool = collected.iter().any(|known: &PathBuf| {
-            known.canonicalize().unwrap_or_else(|_| known.clone()) == canonical
-        });
-
-        if !already && canonical.is_dir() {
-            collected.push(canonical);
-        }
-    };
-
-    let from_verbose: Vec<PathBuf> = self::clang_commands()
-        .into_iter()
-        .map(|command| self::verbose_include_dirs(&command))
-        .find(|dirs| !dirs.is_empty())
-        .unwrap_or_default();
-
-    from_verbose.into_iter().for_each(&mut push_unique);
-
-    let env_iter = ["C_INCLUDE_PATH", "CPATH", "INCLUDE"]
-        .iter()
-        .filter_map(std::env::var_os)
-        .flat_map(|paths| {
-            std::env::split_paths(&paths)
-                .filter(|entry| !entry.as_os_str().is_empty())
-                .collect::<Vec<PathBuf>>()
-        });
-
-    env_iter.for_each(&mut push_unique);
-
-    let fallback_dirs: Vec<PathBuf> = if cfg!(windows) {
-        Vec::new()
-    } else {
-        ["/usr/local/include", "/usr/include"]
-            .iter()
-            .map(PathBuf::from)
-            .collect()
-    };
-
-    fallback_dirs.into_iter().for_each(&mut push_unique);
-
-    collected
-}
-
-fn emit_import_diagnostics(
-    parser: &mut PreprocessorContext,
-    context: &thrustc_c_import_synthesis::context::CImportContext,
-    span: Span,
-) {
-    for diagnostic in context.diagnostics() {
-        let code: CompilationIssueCode = match diagnostic.kind() {
-
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::ClangDiagnostic => {
-                CompilationIssueCode::W0100
-            }
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::InventedFieldName => {
-                CompilationIssueCode::W0101
-            }
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::SkippedUnion => {
-                CompilationIssueCode::W0102
-            }
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::SkippedBitfieldStruct => {
-                CompilationIssueCode::W0103
-            }
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention => {
-                CompilationIssueCode::E0100
-            }
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::SkippedDeclaration => {
-                CompilationIssueCode::W0104
-            }
-        };
-
-        if diagnostic.kind()
-            == thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention
-        {
-            parser.add_error(CompilationIssue::Error(
-                code,
-                diagnostic.message().to_string(),
-                "Use a function with a calling convention that Thrust can import, or remove the importC dependency on that declaration.".into(),
-                None,
-                span,
-            ));
-        } else {
-            parser.add_warning(CompilationIssue::Warning(
-                code,
-                diagnostic.message().to_string(),
-                span,
-            ));
-        }
-    }
-}
-
-pub fn parse_import_c<'preprocessor>(
-    parser: &mut PreprocessorContext<'preprocessor>,
-) -> Result<Option<Module>, ()> {
-    let request: ImportRequest = self::parse_import_request(parser)?;
-
-    let base_name: String = Path::new(if request.treat_as_header_spec() {
-        request.import_spec_path()
-    } else {
-        request.header_path()
-    })
-    .file_stem()
-    .map_or_else(String::new, |stem| stem.to_string_lossy().to_string());
-
-    let mut module: Module = Module::new(base_name, request.header_path().clone());
-
-    if let Some(alias) = request.alias().clone() {
-        module.set_alias(alias);
-    }
-
-    let options: thrustc_c_import_synthesis::options::CImportOptions = self::build_import_options(
-        request.import_opts(),
-        request.treat_as_header_spec(),
-        request.resolved_from_import_search(),
-    );
-
-    let context: thrustc_c_import_synthesis::context::CImportContext =
-        self::synthesize_imported_header(parser, &request, options)?;
-
-    self::emit_import_diagnostics(parser, &context, request.span());
-
-    self::emit_imported_symbols(&mut module, &context, request.span());
-
-    parser.get_registry().borrow_mut().register(&module);
-
-    Ok(Some(module))
-}
-
-fn detect_clang_resource_include_dir() -> Option<PathBuf> {
-    let commands: Vec<String> = self::clang_commands();
-
-    let outputs = commands.iter().filter_map(|command| {
-        std::process::Command::new(command)
-            .arg("-print-resource-dir")
-            .output()
-            .ok()
-    });
-
-    let successful = outputs.filter(|output| output.status.success());
-
-    let mut include_dirs = successful.filter_map(|output| {
-        let resource_dir: std::borrow::Cow<'_, str> = String::from_utf8_lossy(&output.stdout);
-
-        let trimmed: &str = resource_dir.trim();
-
-        if trimmed.is_empty() {
-            None
-        } else {
-            Some(PathBuf::from(trimmed).join("include"))
-        }
-    });
-
-    include_dirs.find(|include_dir| include_dir.is_dir())
-}
-
-fn clang_commands() -> Vec<String> {
-    let env_opt: Option<String> = std::env::var("CLANG")
-        .ok()
-        .filter(|value| !value.trim().is_empty());
-
-    let mut commands: Vec<String> = env_opt.into_iter().collect();
-
-    let fallback_iter = [
-        "clang", "clang-16", "clang-17", "clang-18", "clang-19", "clang-20", "clang-21",
-        "clang-22", "clang-23", "cc",
-    ]
-    .iter()
-    .map(|name| name.to_string());
-
-    commands.extend(fallback_iter);
-
-    commands
 }

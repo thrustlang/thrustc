@@ -186,7 +186,7 @@ fn ensure_deallocator<'parser>(
         return Ok(());
     }
 
-    let _ = thrustc_import_synthesis::synthesis::ensure_deallocator_for_type(
+    let _ = thrustc_import::synthesis::ensure_deallocator_for_type(
         &mut ctx.import_context(),
         kind,
         attr_span,

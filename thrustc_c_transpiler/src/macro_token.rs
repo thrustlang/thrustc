@@ -31,7 +31,7 @@ pub enum MacroTokenKind {
 pub enum MacroTokenOrigin {
     DefinitionBody,
     InvocationArgument,
-    ExpansionSpelling,
+    ExpansionLexeme,
     FallbackLexed,
 }
 
@@ -179,8 +179,8 @@ pub fn texts(tokens: &[MacroToken]) -> Vec<String> {
 }
 
 #[inline]
-pub fn from_spellings(spellings: &[String], origin: MacroTokenOrigin) -> Vec<MacroToken> {
-    spellings
+pub fn from_lexemes(lexemes: &[String], origin: MacroTokenOrigin) -> Vec<MacroToken> {
+    lexemes
         .iter()
         .map(|text| MacroToken::new(classify_text(text), text.clone(), origin))
         .collect()

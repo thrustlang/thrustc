@@ -92,7 +92,7 @@ pub fn build_constructor<'parser>(
             fields: signature_fields,
             type_params: signature_type_params,
             ..
-        }) = thrustc_import_synthesis::synthesis::resolve_signature(
+        }) = thrustc_import::synthesis::resolve_signature(
             &ctx.import_context(),
             &access,
             symbol,
@@ -135,7 +135,7 @@ pub fn build_constructor<'parser>(
 
         if let Some(generic_type_params) = type_params.as_ref() {
             if ctx.get_symbols().has_generic_struct(symbol) {
-                thrustc_import_synthesis::synthesis::check_qualified_collision(
+                thrustc_import::synthesis::check_qualified_collision(
                     &ctx.import_context(),
                     symbol,
                     &access,
@@ -166,7 +166,7 @@ pub fn build_constructor<'parser>(
                 }
             }
         } else if ctx.get_symbols().has_global_struct(symbol) {
-            thrustc_import_synthesis::synthesis::check_qualified_collision(
+            thrustc_import::synthesis::check_qualified_collision(
                 &ctx.import_context(),
                 symbol,
                 &access,

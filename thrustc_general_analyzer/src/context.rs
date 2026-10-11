@@ -38,7 +38,9 @@ impl AnalyzerContext {
     pub fn set_has_global_assembler(&mut self) {
         self.global_assembler = true;
     }
+}
 
+impl AnalyzerContext {
     #[inline]
     pub fn enter_node(&mut self) {
         self.node_depth = self.node_depth.saturating_add(1);
@@ -57,12 +59,14 @@ impl AnalyzerContext {
 
 impl AnalyzerContext {
     #[inline]
-    pub fn has_global_assembler(&self) -> bool {
-        self.global_assembler
-    }
-
-    #[inline]
     pub fn get_node_depth(&self) -> u32 {
         self.node_depth
+    }
+}
+
+impl AnalyzerContext {
+    #[inline]
+    pub fn has_global_assembler(&self) -> bool {
+        self.global_assembler
     }
 }

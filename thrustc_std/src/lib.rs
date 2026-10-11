@@ -17,6 +17,8 @@
 
 */
 
+pub mod util;
+
 use std::{
     fs::OpenOptions,
     io::Write,
@@ -33,35 +35,6 @@ pub const STD_VERSION_FILE_NAME: &str = "VERSION.txt";
 pub enum StdError {
     VersionNotFound(String),
     Io(std::io::Error),
-}
-
-pub fn default_std_root() -> PathBuf {
-    match std::env::consts::FAMILY {
-        "unix" => PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| {
-            thrustc_logging::print_critical_error(
-                thrustc_logging::LoggingType::Panic,
-                "Missing $HOME environment variable. It is required to locate the standard library.",
-            )
-        }))
-        .join(".thrustlang")
-        .join(STD_ROOT_DIR_NAME),
-
-        "windows" => PathBuf::from(std::env::var("APPDATA").unwrap_or_else(|_| {
-            thrustc_logging::print_critical_error(
-                thrustc_logging::LoggingType::Panic,
-                "Missing $APPDATA environment variable. It is required to locate the standard library.",
-            )
-        }))
-        .join(".thrustlang")
-        .join(STD_ROOT_DIR_NAME),
-
-        _ => {
-            thrustc_logging::print_critical_error(
-                thrustc_logging::LoggingType::Panic,
-                "OS unsupported for the Thrust standard library.",
-            )
-        }
-    }
 }
 
 pub fn ensure_std_present(root: &Path, version: &str) -> Result<PathBuf, StdError> {
@@ -224,7 +197,7 @@ fn dump_dir_files(root: &Path, directory: &Dir, overwrite: bool) -> Result<(), S
 
 #[inline]
 pub fn resolve_std_root(custom: Option<&Path>) -> PathBuf {
-    custom.map_or_else(self::default_std_root, |path| path.to_path_buf())
+    custom.map_or_else(util::default_std_root, |path| path.to_path_buf())
 }
 
 #[inline]

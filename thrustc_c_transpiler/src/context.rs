@@ -63,6 +63,13 @@ impl TranspilerContext {
     }
 
     #[inline]
+    pub fn macros_error_count(&self) -> usize {
+        self.macros_errors.len()
+    }
+}
+
+impl TranspilerContext {
+    #[inline]
     pub fn has_errors(&self) -> bool {
         !self.errors.is_empty()
     }
@@ -70,11 +77,6 @@ impl TranspilerContext {
     #[inline]
     pub fn has_macros_errors(&self) -> bool {
         !self.macros_errors.is_empty()
-    }
-
-    #[inline]
-    pub fn macros_error_count(&self) -> usize {
-        self.macros_errors.len()
     }
 }
 
@@ -128,7 +130,9 @@ impl TranspilerContext {
             self.macros_errors.push(issue);
         }
     }
+}
 
+impl TranspilerContext {
     #[inline]
     pub fn take_macros_errors(&mut self) -> Vec<CompilationIssue> {
         std::mem::take(&mut self.macros_errors)
@@ -141,12 +145,5 @@ impl TranspilerContext {
         }
 
         self.errors.split_off(base_error_count)
-    }
-}
-
-impl TranspilerContext {
-    #[inline]
-    pub fn add_error_fail(&mut self, issue: CompilationIssue) {
-        self.errors.push(issue);
     }
 }

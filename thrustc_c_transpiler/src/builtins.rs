@@ -18,7 +18,7 @@
 */
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CanonicalBuiltin {
+pub enum Builtin {
     MemSet,
     MemCpy,
     MemMove,
@@ -26,7 +26,7 @@ pub enum CanonicalBuiltin {
     Expect,
 }
 
-impl CanonicalBuiltin {
+impl Builtin {
     pub fn rewrite_builtin_call(
         self,
         argument_entities: &[clang::Entity<'_>],
@@ -43,13 +43,11 @@ impl CanonicalBuiltin {
                 }
 
                 let destination: String =
-                    Self::ensure_pointer_text(&argument_entities[0], &arguments[0]);
+                    Self::cast_to_pointer(&argument_entities[0], &arguments[0]);
 
-                let byte_value: String =
-                    Self::ensure_byte_value_text(&argument_entities[1], &arguments[1]);
+                let byte_value: String = Self::cast_to_byte(&argument_entities[1], &arguments[1]);
 
-                let byte_size: String =
-                    Self::ensure_size_value_text(&argument_entities[2], &arguments[2]);
+                let byte_size: String = Self::cast_to_u64(&argument_entities[2], &arguments[2]);
 
                 Some(format!("memset({destination}, {byte_value}, {byte_size})"))
             }
@@ -59,14 +57,12 @@ impl CanonicalBuiltin {
                     return None;
                 }
 
-                let source: String =
-                    Self::ensure_pointer_text(&argument_entities[1], &arguments[1]);
+                let source: String = Self::cast_to_pointer(&argument_entities[1], &arguments[1]);
 
                 let destination: String =
-                    Self::ensure_pointer_text(&argument_entities[0], &arguments[0]);
+                    Self::cast_to_pointer(&argument_entities[0], &arguments[0]);
 
-                let byte_size: String =
-                    Self::ensure_signed_size_value_text(&argument_entities[2], &arguments[2]);
+                let byte_size: String = Self::cast_to_int(&argument_entities[2], &arguments[2]);
 
                 Some(format!("memcpy({source}, {destination}, {byte_size})"))
             }
@@ -76,14 +72,12 @@ impl CanonicalBuiltin {
                     return None;
                 }
 
-                let source: String =
-                    Self::ensure_pointer_text(&argument_entities[1], &arguments[1]);
+                let source: String = Self::cast_to_pointer(&argument_entities[1], &arguments[1]);
 
                 let destination: String =
-                    Self::ensure_pointer_text(&argument_entities[0], &arguments[0]);
+                    Self::cast_to_pointer(&argument_entities[0], &arguments[0]);
 
-                let byte_size: String =
-                    Self::ensure_size_value_text(&argument_entities[2], &arguments[2]);
+                let byte_size: String = Self::cast_to_u64(&argument_entities[2], &arguments[2]);
 
                 Some(format!("memmove({source}, {destination}, {byte_size})"))
             }
@@ -94,10 +88,9 @@ impl CanonicalBuiltin {
                 }
 
                 let destination: String =
-                    Self::ensure_pointer_text(&argument_entities[0], &arguments[0]);
+                    Self::cast_to_pointer(&argument_entities[0], &arguments[0]);
 
-                let byte_size: String =
-                    Self::ensure_size_value_text(&argument_entities[1], &arguments[1]);
+                let byte_size: String = Self::cast_to_u64(&argument_entities[1], &arguments[1]);
 
                 Some(format!("memset({destination}, (0) as u8, {byte_size})"))
             }
@@ -107,9 +100,9 @@ impl CanonicalBuiltin {
     }
 }
 
-impl CanonicalBuiltin {
+impl Builtin {
     #[inline]
-    pub fn from_called_function_name(called_function_name: &str) -> Option<Self> {
+    pub fn get_from_called_function_name(called_function_name: &str) -> Option<Self> {
         let unqualified_name: &str = called_function_name
             .rsplit("::")
             .next()
@@ -126,8 +119,8 @@ impl CanonicalBuiltin {
     }
 }
 
-impl CanonicalBuiltin {
-    fn ensure_pointer_text(argument_entity: &clang::Entity<'_>, expression_text: &str) -> String {
+impl Builtin {
+    fn cast_to_pointer(argument_entity: &clang::Entity<'_>, expression_text: &str) -> String {
         if let Some(argument_clang_type) = argument_entity.get_type() {
             let canonical_clang_type: clang::Type<'_> = argument_clang_type.get_canonical_type();
 
@@ -142,14 +135,9 @@ impl CanonicalBuiltin {
 
         format!("({expression_text}) as ptr")
     }
-}
 
-impl CanonicalBuiltin {
-    fn ensure_byte_value_text(
-        argument_entity: &clang::Entity<'_>,
-        expression_text: &str,
-    ) -> String {
-        if let Some(integer_literal) = Self::bare_integer_literal_spelling(argument_entity) {
+    fn cast_to_byte(argument_entity: &clang::Entity<'_>, expression_text: &str) -> String {
+        if let Some(integer_literal) = Self::bare_integer_literal_lexeme(argument_entity) {
             return format!("({integer_literal}) as u8");
         }
 
@@ -159,14 +147,9 @@ impl CanonicalBuiltin {
 
         format!("({expression_text}) as u8")
     }
-}
 
-impl CanonicalBuiltin {
-    fn ensure_size_value_text(
-        argument_entity: &clang::Entity<'_>,
-        expression_text: &str,
-    ) -> String {
-        if let Some(integer_literal) = Self::bare_integer_literal_spelling(argument_entity) {
+    fn cast_to_u64(argument_entity: &clang::Entity<'_>, expression_text: &str) -> String {
+        if let Some(integer_literal) = Self::bare_integer_literal_lexeme(argument_entity) {
             return format!("({integer_literal}) as u64");
         }
 
@@ -176,14 +159,9 @@ impl CanonicalBuiltin {
 
         format!("({expression_text}) as u64")
     }
-}
 
-impl CanonicalBuiltin {
-    fn ensure_signed_size_value_text(
-        argument_entity: &clang::Entity<'_>,
-        expression_text: &str,
-    ) -> String {
-        if let Some(integer_literal) = Self::bare_integer_literal_spelling(argument_entity) {
+    fn cast_to_int(argument_entity: &clang::Entity<'_>, expression_text: &str) -> String {
+        if let Some(integer_literal) = Self::bare_integer_literal_lexeme(argument_entity) {
             return format!("({integer_literal}) as s32");
         }
 
@@ -275,7 +253,7 @@ impl HeapOperation {
         call_entity: &clang::Entity<'_>,
         pointee_type: Option<&clang::Type<'_>>,
         macro_ctx: &mut crate::macros::MacroContext,
-        prefix: &str,
+        prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
         match self {
@@ -309,7 +287,7 @@ impl HeapOperation {
         call_entity: &clang::Entity<'_>,
         pointee_type: Option<&clang::Type<'_>>,
         macro_ctx: &mut crate::macros::MacroContext,
-        prefix: &str,
+        prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
         let child_entities: Vec<clang::Entity<'_>> = call_entity.get_children();
@@ -401,7 +379,7 @@ impl HeapOperation {
         sizeof_entity: &clang::Entity<'_>,
         element_count: u64,
         macro_ctx: &mut crate::macros::MacroContext,
-        prefix: &str,
+        prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
         let thrust_type_name: String =
@@ -465,7 +443,7 @@ impl HeapOperation {
     fn sizeof_operand_name(
         sizeof_entity: &clang::Entity<'_>,
         macro_ctx: &mut crate::macros::MacroContext,
-        prefix: &str,
+        prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
         if let Some(sizeof_operand) = Self::sizeof_operand_clang_type(sizeof_entity) {
@@ -484,40 +462,40 @@ impl HeapOperation {
     fn sizeof_spelled_type_name(sizeof_entity: &clang::Entity<'_>) -> Option<String> {
         let range: clang::source::SourceRange<'_> = sizeof_entity.get_range()?;
 
-        let token_spellings: Vec<String> = range
+        let token_lexemes: Vec<String> = range
             .tokenize()
             .into_iter()
             .map(|source_token| source_token.get_spelling())
             .collect();
 
-        if token_spellings.len() < 4 {
+        if token_lexemes.len() < 4 {
             return None;
         }
 
-        if token_spellings
+        if token_lexemes
             .first()
             .is_some_and(|source_token| source_token != "sizeof")
         {
             return None;
         }
 
-        if token_spellings
+        if token_lexemes
             .get(1)
             .is_some_and(|source_token| source_token != "(")
         {
             return None;
         }
 
-        if token_spellings
+        if token_lexemes
             .last()
             .is_some_and(|source_token| source_token != ")")
         {
             return None;
         }
 
-        let inner_spelling: String = token_spellings[2..token_spellings.len() - 1].join(" ");
+        let inner_lexeme: String = token_lexemes[2..token_lexemes.len() - 1].join(" ");
 
-        crate::macro_lex::macro_type_name(&inner_spelling)
+        crate::macro_lex::lex_macro_type(&inner_lexeme)
     }
 }
 
@@ -534,13 +512,13 @@ impl HeapOperation {
 
         let range: clang::source::SourceRange<'_> = sizeof_entity.get_range()?;
 
-        let first_spelling: String = range
+        let first_lexeme: String = range
             .tokenize()
             .first()
             .map(|source_token| source_token.get_spelling())
             .unwrap_or_default();
 
-        if first_spelling != "sizeof" {
+        if first_lexeme != "sizeof" {
             return None;
         }
 
@@ -573,11 +551,12 @@ impl HeapOperation {
     fn format_thrust_type(
         clang_type: &clang::Type<'_>,
         macro_ctx: &mut crate::macros::MacroContext,
-        prefix: &str,
+        prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
         let formatted_name: String =
-            crate::type_format::format_clang_type_thrust(clang_type, macro_ctx, prefix, span).ok()?;
+            crate::type_format::format_clang_type_thrust(clang_type, macro_ctx, prefix, span)
+                .ok()?;
 
         if formatted_name.is_empty() {
             return None;
@@ -592,8 +571,8 @@ impl HeapOperation {
     }
 }
 
-impl CanonicalBuiltin {
-    fn bare_integer_literal_spelling(argument_entity: &clang::Entity<'_>) -> Option<String> {
+impl Builtin {
+    fn bare_integer_literal_lexeme(argument_entity: &clang::Entity<'_>) -> Option<String> {
         let mut cursor_entity: clang::Entity<'_> = *argument_entity;
 
         while matches!(
@@ -615,25 +594,25 @@ impl CanonicalBuiltin {
 
         let range: clang::source::SourceRange<'_> = cursor_entity.get_range()?;
 
-        let literal_spelling: String = range
+        let literal_lexeme: String = range
             .tokenize()
             .first()
             .map(|source_token| source_token.get_spelling())
             .unwrap_or_default();
 
-        if literal_spelling.is_empty() {
+        if literal_lexeme.is_empty() {
             return None;
         }
 
         Some(
-            literal_spelling
+            literal_lexeme
                 .trim_end_matches(['u', 'U', 'l', 'L'])
                 .to_string(),
         )
     }
 }
 
-impl CanonicalBuiltin {
+impl Builtin {
     fn remove_cast_suffix(expression_text: &str) -> Option<String> {
         let cast_suffixes: [&str; 13] = [
             " as s32",

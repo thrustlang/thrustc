@@ -17,7 +17,7 @@
 
 */
 
-use std::path::PathBuf;
+use std::{borrow::Borrow, path::PathBuf};
 
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
@@ -190,13 +190,26 @@ pub fn add_macro_error(
     help: &str,
     span: Span,
 ) {
-    let prefix: String = crate::macros::expansion_prefix(entity);
-    let origin: String = crate::macros::origin_note(entity);
+    let prefix: Option<String> = self::prefix(entity);
+    let origin: Option<String> = self::origin_note(entity);
+
+    let message: String = match (prefix.as_deref(), origin.as_deref()) {
+        (Some(prefix), Some(origin)) => {
+            format!("{prefix}Macro '{macro_name}' translation failed: {detail}{origin}")
+        }
+        (Some(prefix), None) => {
+            format!("{prefix}Macro '{macro_name}' translation failed: {detail}")
+        }
+        (None, Some(origin)) => {
+            format!("Macro '{macro_name}' translation failed: {detail}{origin}")
+        }
+        (None, None) => format!("Macro '{macro_name}' translation failed: {detail}"),
+    };
 
     ctx.get_mut_transpiler_context()
         .add_macros_error(CompilationIssue::Error(
             CompilationIssueCode::E0110,
-            format!("{prefix}Macro '{macro_name}' translation failed: {detail}{origin}"),
+            message,
             help.to_string(),
             None,
             span,
@@ -210,15 +223,28 @@ pub fn add_macro_parameter_type_error(
     parameter: &str,
     span: Span,
 ) {
-    let prefix: String = crate::macros::expansion_prefix(entity);
-    let origin: String = crate::macros::origin_note(entity);
+    let prefix: Option<String> = self::prefix(entity);
+    let origin: Option<String> = self::origin_note(entity);
+
+    let message: String = match (prefix.as_deref(), origin.as_deref()) {
+        (Some(prefix), Some(origin)) => format!(
+            "{prefix}Macro '{macro_name}' translation failed: could not infer the type of parameter '{parameter}'.{origin}"
+        ),
+        (Some(prefix), None) => format!(
+            "{prefix}Macro '{macro_name}' translation failed: could not infer the type of parameter '{parameter}'."
+        ),
+        (None, Some(origin)) => format!(
+            "Macro '{macro_name}' translation failed: could not infer the type of parameter '{parameter}'.{origin}"
+        ),
+        (None, None) => format!(
+            "Macro '{macro_name}' translation failed: could not infer the type of parameter '{parameter}'."
+        ),
+    };
 
     ctx.get_mut_transpiler_context()
         .add_macros_error(CompilationIssue::Error(
             CompilationIssueCode::E0112,
-            format!(
-                "{prefix}Macro '{macro_name}' translation failed: could not infer the type of parameter '{parameter}'.{origin}"
-            ),
+            message,
             "Give the parameter a typed context (for example a typed local declaration or a cast) so its type can be determined.".to_string(),
             None,
             span,
@@ -239,8 +265,7 @@ pub fn collapse_macro_site_errors(
         return;
     }
 
-    let site_key: String =
-        crate::macro_table::MacroTable::make_location_key(site).unwrap_or_default();
+    let site_key: String = crate::macro_table::MacroTable::get_location(site).unwrap_or_default();
 
     let definition_site: String = ctx
         .get_macro_table()
@@ -298,8 +323,7 @@ pub fn collapse_macro_site_errors_with_failed_at(
         return;
     }
 
-    let site_key: String =
-        crate::macro_table::MacroTable::make_location_key(site).unwrap_or_default();
+    let site_key: String = crate::macro_table::MacroTable::get_location(site).unwrap_or_default();
 
     let definition_site: String = ctx
         .get_macro_table()
@@ -319,14 +343,14 @@ pub fn collapse_macro_site_errors_with_failed_at(
     let failed_at: String = failed_child
         .get_range()
         .map(|range| {
-            let spelling = range.get_start().get_spelling_location();
+            let lexeme = range.get_start().get_spelling_location();
 
-            match spelling.file {
+            match lexeme.file {
                 Some(file) => format!(
                     "{}:{}:{}",
                     file.get_path().display(),
-                    spelling.line,
-                    spelling.column
+                    lexeme.line,
+                    lexeme.column
                 ),
                 None => String::new(),
             }
@@ -336,20 +360,20 @@ pub fn collapse_macro_site_errors_with_failed_at(
     if !failed_at.is_empty() {
         notes.push(format!("failed at {failed_at}"));
 
-        if let Some(spelling_file) = failed_child
+        if let Some(lexeme_file) = failed_child
             .get_range()
             .and_then(|range| range.get_start().get_spelling_location().file)
         {
-            let spelling_offset: u32 = failed_child
+            let lexeme_offset: u32 = failed_child
                 .get_range()
                 .map(|range| range.get_start().get_spelling_location().offset)
                 .unwrap_or(0);
 
             let mut chain: Vec<String> = Vec::new();
 
-            let mut current_file: PathBuf = spelling_file.get_path();
+            let mut current_file: PathBuf = lexeme_file.get_path();
 
-            let mut current_offset: u32 = spelling_offset;
+            let mut current_offset: u32 = lexeme_offset;
 
             for _ in 0..8 {
                 let Some(inner) = ctx
@@ -405,4 +429,47 @@ pub fn collapse_macro_site_errors_with_failed_at(
             ctx.get_mut_transpiler_context().add_macros_error(other);
         }
     }
+}
+
+pub fn prefix<'clang>(entity: impl Borrow<clang::Entity<'clang>>) -> Option<String> {
+    let entity: &clang::Entity<'clang> = entity.borrow();
+    let location: clang::source::SourceLocation<'_> = entity.get_location()?;
+    let expansion: clang::source::Location<'_> = location.get_expansion_location();
+    let file: clang::source::File<'_> = expansion.file?;
+    let path: PathBuf = file.get_path();
+
+    let display: String = path.display().to_string();
+
+    if display.trim().is_empty() {
+        return None;
+    }
+
+    Some(format!(
+        "{}:{}:{}: ",
+        display, expansion.line, expansion.column
+    ))
+}
+
+pub fn origin_note(entity: &clang::Entity<'_>) -> Option<String> {
+    if !crate::macro_lex::is_lexeme_from_macro_expansion(entity) {
+        return None;
+    }
+
+    let display: String = entity
+        .get_range()
+        .map(|range| {
+            range
+                .get_start()
+                .get_spelling_location()
+                .file
+                .map(|file| file.get_path().display().to_string())
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
+
+    if display.trim().is_empty() {
+        return None;
+    }
+
+    Some(format!(" (from macro expansion in {display})"))
 }

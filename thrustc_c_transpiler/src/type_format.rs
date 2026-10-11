@@ -26,7 +26,7 @@ use crate::error::{TranspilerError, TranspilerResult};
 pub fn format_clang_type_thrust(
     ty: &clang::Type<'_>,
     macro_ctx: &mut crate::macros::MacroContext,
-    prefix: &str,
+    prefix: Option<&str>,
     span: thrustc_code_location::Span,
 ) -> TranspilerResult<String> {
     let is_const: bool = ty.is_const_qualified();
@@ -97,32 +97,42 @@ pub fn format_clang_type_thrust(
 
         clang::TypeKind::ConstantArray => {
             let Some(element_type) = canonical.get_element_type() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Unsupported C type: constant array without element type"
+                    ),
+                    None => "C translation failed:\nUnsupported C type: constant array without element type".to_string(),
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!(
-                            "C translation failed:\n{prefix}Unsupported C type: constant array without element type"
-                        ),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
                 return Err(TranspilerError::Abort);
             };
 
             let Some(size) = canonical.get_size().and_then(|s| u32::try_from(s).ok()) else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Unsupported C type: constant array with unknown or too-large size"
+                    ),
+                    None => "C translation failed:\nUnsupported C type: constant array with unknown or too-large size".to_string(),
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!(
-                            "C translation failed:\n{prefix}Unsupported C type: constant array with unknown or too-large size"
-                        ),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
                 return Err(TranspilerError::Abort);
             };
 
@@ -138,17 +148,23 @@ pub fn format_clang_type_thrust(
 
         clang::TypeKind::FunctionPrototype | clang::TypeKind::FunctionNoPrototype => {
             let Some(return_type) = canonical.get_result_type() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Unsupported C type: function type without return type"
+                    ),
+                    None => "C translation failed:\nUnsupported C type: function type without return type".to_string(),
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!(
-                            "C translation failed:\n{prefix}Unsupported C type: function type without return type"
-                        ),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
+
                 return Err(TranspilerError::Abort);
             };
 
@@ -191,32 +207,44 @@ pub fn format_clang_type_thrust(
 
         clang::TypeKind::Record => {
             let Some(decl) = canonical.get_declaration() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Unsupported C type: record without declaration"
+                    ),
+                    None => "C translation failed:\nUnsupported C type: record without declaration"
+                        .to_string(),
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!(
-                            "C translation failed:\n{prefix}Unsupported C type: record without declaration"
-                        ),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
                 return Err(TranspilerError::Abort);
             };
 
             let Some(name) = decl.get_name() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Unsupported C type: anonymous record type"
+                    ),
+                    None => "C translation failed:\nUnsupported C type: anonymous record type"
+                        .to_string(),
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!(
-                            "C translation failed:\n{prefix}Unsupported C type: anonymous record type"
-                        ),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
                 return Err(TranspilerError::Abort);
             };
 
@@ -238,11 +266,18 @@ pub fn format_clang_type_thrust(
         }
 
         other => {
+            let message: String = match prefix {
+                Some(prefix) => {
+                    format!("C translation failed:\n{prefix}Unsupported C type kind: {other:?}")
+                }
+                None => format!("C translation failed:\nUnsupported C type kind: {other:?}"),
+            };
+
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Unsupported C type kind: {other:?}"),
+                    message,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
@@ -266,10 +301,10 @@ pub fn cast_expression_to_type(
     span: thrustc_code_location::Span,
     macro_ctx: &mut crate::macros::MacroContext,
 ) -> TranspilerResult<String> {
-    let prefix: String = crate::macros::expansion_prefix(entity);
+    let prefix: Option<String> = crate::macro_error::prefix(entity);
 
     let thrust_type: String =
-        self::format_clang_type_thrust(expected_type, macro_ctx, &prefix, span)?;
+        self::format_clang_type_thrust(expected_type, macro_ctx, prefix.as_deref(), span)?;
 
     if thrust_type.is_empty() {
         return Ok(translated);
@@ -307,7 +342,7 @@ pub fn cast_expression_to_type(
 
     let argument_text: String = match argument_type.as_ref() {
         Some(argument_type) => {
-            self::format_clang_type_thrust(argument_type, macro_ctx, &prefix, span)?
+            self::format_clang_type_thrust(argument_type, macro_ctx, prefix.as_deref(), span)?
         }
         None => String::new(),
     };
@@ -422,11 +457,18 @@ pub fn cast_expression_to_type(
         return Ok(format!("({translated}) as {thrust_type}"));
     }
 
+    let message: String = match prefix.as_deref() {
+        Some(prefix) => {
+            format!("C translation failed:\n{prefix}Cannot cast expression to '{thrust_type}'.")
+        }
+        None => format!("C translation failed:\nCannot cast expression to '{thrust_type}'."),
+    };
+
     macro_ctx
         .get_mut_transpiler_context()
-        .add_error_fail(CompilationIssue::Error(
+        .add_error(CompilationIssue::Error(
             CompilationIssueCode::E0110,
-            format!("C translation failed:\n{prefix}Cannot cast expression to '{thrust_type}'."),
+            message,
             "Rewrite the C input to avoid the unsupported construct.".into(),
             None,
             span,
@@ -438,7 +480,7 @@ pub fn cast_expression_to_type(
 pub fn format_parameter_type_thrust(
     ty: &clang::Type<'_>,
     macro_ctx: &mut crate::macros::MacroContext,
-    prefix: &str,
+    prefix: Option<&str>,
     span: thrustc_code_location::Span,
 ) -> TranspilerResult<String> {
     let canonical: clang::Type<'_> = ty.get_canonical_type();
@@ -457,17 +499,22 @@ pub fn format_parameter_type_thrust(
             depth = depth.saturating_add(1);
 
             let Some(element) = current.get_element_type() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Unsupported C type: array parameter without element type"
+                    ),
+                    None => "C translation failed:\nUnsupported C type: array parameter without element type".to_string(),
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!(
-                            "C translation failed:\n{prefix}Unsupported C type: array parameter without element type"
-                        ),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
                 return Err(TranspilerError::Abort);
             };
 
@@ -492,17 +539,22 @@ pub fn format_parameter_type_thrust(
         }
 
         let Some(element_type) = canonical.get_element_type() else {
-            macro_ctx.get_mut_transpiler_context().add_error_fail(
-                CompilationIssue::Error(
+            let message: String = match prefix {
+                Some(prefix) => format!(
+                    "C translation failed:\n{prefix}Unsupported C type: array parameter without element type"
+                ),
+                None => "C translation failed:\nUnsupported C type: array parameter without element type".to_string(),
+            };
+
+            macro_ctx
+                .get_mut_transpiler_context()
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    format!(
-                        "C translation failed:\n{prefix}Unsupported C type: array parameter without element type"
-                    ),
+                    message,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
-                ),
-            );
+                ));
             return Err(TranspilerError::Abort);
         };
 
@@ -536,17 +588,22 @@ pub fn format_parameter_type_thrust(
             depth = depth.saturating_add(1);
 
             let Some(element) = current.get_element_type() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Unsupported C type: pointer-to-array parameter without element type"
+                    ),
+                    None => "C translation failed:\nUnsupported C type: pointer-to-array parameter without element type".to_string(),
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!(
-                            "C translation failed:\n{prefix}Unsupported C type: pointer-to-array parameter without element type"
-                        ),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
                 return Err(TranspilerError::Abort);
             };
 
@@ -810,7 +867,7 @@ pub fn format_builtin_value_thrust(
                     ));
             }
 
-            let escaped: String = crate::clang_util::escape_string_for_thrust_literal(&text_lossy);
+            let escaped: String = crate::lex::escape_string_for_thrust_literal(&text_lossy);
 
             if is_cstring {
                 format!("\"{escaped}\"")
@@ -835,7 +892,7 @@ pub fn format_builtin_value_thrust(
     }
 }
 
-pub fn format_clang_calling_convention_thrust(
+pub fn format_clang_calling_convention_to_thrust(
     convention: Option<clang::CallingConvention>,
 ) -> Result<&'static str, String> {
     match convention.unwrap_or(clang::CallingConvention::Cdecl) {

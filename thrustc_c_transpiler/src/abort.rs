@@ -18,6 +18,7 @@
 */
 
 use crate::context::TranspilerContext;
+
 use thrustc_code_location::Span;
 
 impl TranspilerContext {

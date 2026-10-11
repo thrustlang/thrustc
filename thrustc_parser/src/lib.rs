@@ -31,7 +31,7 @@ use thrustc_parser_table::SymbolTable;
 use thrustc_preprocessor::module::Module;
 
 use thrustc_generics_monomorphization::context::GenericsContext;
-use thrustc_import_synthesis::context::ImportContext;
+use thrustc_import::context::ImportContext;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 

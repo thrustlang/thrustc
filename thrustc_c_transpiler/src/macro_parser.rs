@@ -126,9 +126,9 @@ impl<'tokens> MacroParser<'tokens> {
             let init: Option<MacroExpr> = if decl.2.is_empty() {
                 None
             } else {
-                let spellings: Vec<String> = decl.2.to_vec();
+                let lexemes: Vec<String> = decl.2.to_vec();
 
-                Some(MacroParser::parse(&spellings)?)
+                Some(MacroParser::parse(&lexemes)?)
             };
 
             return Ok(MacroStmt::VarDecl {
@@ -138,9 +138,9 @@ impl<'tokens> MacroParser<'tokens> {
             });
         }
 
-        let spellings: Vec<String> = stmt_tokens.to_vec();
+        let lexemes: Vec<String> = stmt_tokens.to_vec();
 
-        Ok(MacroStmt::Expr(MacroParser::parse(&spellings)?))
+        Ok(MacroStmt::Expr(MacroParser::parse(&lexemes)?))
     }
 }
 
@@ -186,9 +186,9 @@ impl<'tokens> MacroParser<'tokens> {
         let first_init: Option<MacroExpr> = if first_decl.2.is_empty() {
             None
         } else {
-            let spellings: Vec<String> = first_decl.2.to_vec();
+            let lexemes: Vec<String> = first_decl.2.to_vec();
 
-            Some(MacroParser::parse(&spellings)?)
+            Some(MacroParser::parse(&lexemes)?)
         };
 
         let mut out: Vec<MultiDeclEntry> =
@@ -203,9 +203,9 @@ impl<'tokens> MacroParser<'tokens> {
                 let init: Option<MacroExpr> = if explicit_decl.2.is_empty() {
                     None
                 } else {
-                    let spellings: Vec<String> = explicit_decl.2.to_vec();
+                    let lexemes: Vec<String> = explicit_decl.2.to_vec();
 
-                    Some(MacroParser::parse(&spellings)?)
+                    Some(MacroParser::parse(&lexemes)?)
                 };
 
                 out.push((explicit_decl.0, explicit_decl.1, init));
@@ -272,7 +272,7 @@ impl<'tokens> MacroParser<'tokens> {
             && core[core.len() - 1].as_str() == "]"
         {
             let normalized: String =
-                crate::macro_lex::normalize_literal_token_spelling(core[core.len() - 2].as_str());
+                crate::macro_lex::normalize_literal_token_lexeme(core[core.len() - 2].as_str());
 
             if !normalized
                 .chars()
@@ -443,9 +443,9 @@ impl<'tokens> MacroParser<'tokens> {
             let decl_init: Option<MacroExpr> = if decl.2.is_empty() {
                 None
             } else {
-                let spellings: Vec<String> = decl.2.to_vec();
+                let lexemes: Vec<String> = decl.2.to_vec();
 
-                Some(MacroParser::parse(&spellings)?)
+                Some(MacroParser::parse(&lexemes)?)
             };
 
             Some(ForInit::Decl {
@@ -461,25 +461,25 @@ impl<'tokens> MacroParser<'tokens> {
                     .collect(),
             ))
         } else {
-            let spellings: Vec<String> = parts[0].to_vec();
+            let lexemes: Vec<String> = parts[0].to_vec();
 
-            Some(ForInit::Expr(MacroParser::parse(&spellings)?))
+            Some(ForInit::Expr(MacroParser::parse(&lexemes)?))
         };
 
         let cond: Option<MacroExpr> = if parts[1].is_empty() {
             None
         } else {
-            let spellings: Vec<String> = parts[1].to_vec();
+            let lexemes: Vec<String> = parts[1].to_vec();
 
-            Some(MacroParser::parse(&spellings)?)
+            Some(MacroParser::parse(&lexemes)?)
         };
 
         let inc: Option<MacroExpr> = if parts[2].is_empty() {
             None
         } else {
-            let spellings: Vec<String> = parts[2].to_vec();
+            let lexemes: Vec<String> = parts[2].to_vec();
 
-            Some(MacroParser::parse(&spellings)?)
+            Some(MacroParser::parse(&lexemes)?)
         };
 
         let body: Vec<MacroStmt> = self.parse_single_or_compound()?;
@@ -519,9 +519,9 @@ impl<'tokens> MacroParser<'tokens> {
 
         let end: usize = self.find_matching_paren(start)?;
 
-        let spellings: Vec<String> = self.tokens[start..end].to_vec();
+        let lexemes: Vec<String> = self.tokens[start..end].to_vec();
 
-        let cond: MacroExpr = MacroParser::parse(&spellings)?;
+        let cond: MacroExpr = MacroParser::parse(&lexemes)?;
 
         self.position = end + 1;
 
@@ -569,9 +569,9 @@ impl<'tokens> MacroParser<'tokens> {
 
         let end: usize = self.find_matching_paren(start)?;
 
-        let spellings: Vec<String> = self.tokens[start..end].to_vec();
+        let lexemes: Vec<String> = self.tokens[start..end].to_vec();
 
-        let cond: MacroExpr = MacroParser::parse(&spellings)?;
+        let cond: MacroExpr = MacroParser::parse(&lexemes)?;
 
         self.position = end + 1;
 
@@ -613,9 +613,9 @@ impl<'tokens> MacroParser<'tokens> {
 
         let end: usize = self.find_matching_paren(start)?;
 
-        let spellings: Vec<String> = self.tokens[start..end].to_vec();
+        let lexemes: Vec<String> = self.tokens[start..end].to_vec();
 
-        let cond: MacroExpr = MacroParser::parse(&spellings)?;
+        let cond: MacroExpr = MacroParser::parse(&lexemes)?;
 
         self.position = end + 1;
 
@@ -844,8 +844,7 @@ impl<'tokens> MacroParser<'tokens> {
 
         let joined: String = words.join(" ");
 
-        let base: Option<String> = if let Some(mapped) = crate::macro_lex::macro_type_name(&joined)
-        {
+        let base: Option<String> = if let Some(mapped) = crate::macro_lex::lex_macro_type(&joined) {
             Some(mapped)
         } else {
             match words.as_slice() {
@@ -879,7 +878,7 @@ impl<'tokens> MacroParser<'tokens> {
             }
 
             let size_text: String =
-                crate::macro_lex::normalize_literal_token_spelling(size_token.as_str());
+                crate::macro_lex::normalize_literal_token_lexeme(size_token.as_str());
 
             if !size_text
                 .chars()
@@ -904,9 +903,7 @@ impl<'tokens> MacroParser<'tokens> {
         let mut parts: Vec<&[String]> = Vec::new();
 
         let mut depth: i32 = 0;
-
         let mut start: usize = 0;
-
         let mut index: usize = 0;
 
         while index < tokens.len() {
@@ -1337,7 +1334,7 @@ impl<'tokens> MacroParser<'tokens> {
 
             let _ignored: Option<&'tokens str> = self.advance();
 
-            if let Some(target) = self.parse_cast_target() {
+            if let Some(target) = self.parse_cast_target_type() {
                 if self.eat(")") {
                     if target == "void" {
                         return self.parse_unary();
@@ -1360,7 +1357,7 @@ impl<'tokens> MacroParser<'tokens> {
 }
 
 impl<'tokens> MacroParser<'tokens> {
-    pub fn parse_cast_target(&mut self) -> Option<String> {
+    pub fn parse_cast_target_type(&mut self) -> Option<String> {
         let mut words: Vec<String> = Vec::new();
         let mut stars: usize = 0;
 
@@ -1389,7 +1386,7 @@ impl<'tokens> MacroParser<'tokens> {
         }
 
         let key: String = words.join(" ");
-        let base: String = macro_lex::macro_type_name(&key)?;
+        let base: String = macro_lex::lex_macro_type(&key)?;
 
         if base == "void" {
             if stars > 0 {
@@ -1471,7 +1468,7 @@ impl<'tokens> MacroParser<'tokens> {
             if self.eat("(") {
                 let saved: usize = self.position;
 
-                if let Some(target) = self.parse_cast_target() {
+                if let Some(target) = self.parse_cast_target_type() {
                     if self.eat(")") {
                         return Ok(MacroExpr::SizeOf(target));
                     }
@@ -1481,7 +1478,7 @@ impl<'tokens> MacroParser<'tokens> {
 
                 self.position = saved;
 
-                if let Some(target) = self.parse_sizeof_user_target() {
+                if let Some(target) = self.parse_sizeof_user_target_type() {
                     return Ok(MacroExpr::SizeOf(target));
                 }
 
@@ -1500,7 +1497,7 @@ impl<'tokens> MacroParser<'tokens> {
 }
 
 impl<'tokens> MacroParser<'tokens> {
-    pub fn parse_sizeof_user_target(&mut self) -> Option<String> {
+    pub fn parse_sizeof_user_target_type(&mut self) -> Option<String> {
         if matches!(self.peek(), Some("struct") | Some("enum") | Some("union")) {
             let _ignored: Option<&'tokens str> = self.advance();
         }
@@ -1652,7 +1649,7 @@ impl<'tokens> MacroParser<'tokens> {
             || token.starts_with('"')
             || token.starts_with('\'')
         {
-            let literal: String = macro_lex::normalize_literal_token_spelling(token);
+            let literal: String = macro_lex::normalize_literal_token_lexeme(token);
 
             let _ignored: Option<&'tokens str> = self.advance();
 

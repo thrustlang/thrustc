@@ -219,7 +219,9 @@ impl MacroNodeMetadata {
     pub fn get_mut_kind(&mut self) -> &mut Type {
         &mut self.kind
     }
+}
 
+impl MacroNodeMetadata {
     #[inline]
     pub fn set_span(&mut self, span: Span) {
         self.span = span;

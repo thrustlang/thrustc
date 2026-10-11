@@ -220,12 +220,12 @@ pub fn append_translated_top_level_declarations(
             }
 
             _ => {
-                let prefix: String = crate::macros::expansion_prefix(typedef_decl);
+                let prefix: Option<String> = crate::macro_error::prefix(typedef_decl);
 
                 let target: String = crate::type_format::format_clang_type_thrust(
                     &underlying,
                     macro_ctx,
-                    &prefix,
+                    prefix.as_deref(),
                     span,
                 )?;
 
@@ -261,7 +261,7 @@ pub fn append_translated_top_level_declarations(
 
     let mut macro_fns: String = String::new();
 
-    crate::macros::append_translated_macro_constants(
+    crate::macro_translation::append_translated_macro_constants(
         &macro_decls,
         out,
         &mut macro_fns,
@@ -280,7 +280,7 @@ pub fn append_translated_top_level_declarations(
             function_prototype
                 .get_name()
                 .map(|name| {
-                    crate::builtins::CanonicalBuiltin::from_called_function_name(&name).is_none()
+                    crate::builtins::Builtin::get_from_called_function_name(&name).is_none()
                         && crate::builtins::HeapOperation::from_called_function_name(&name)
                             .is_none()
                 })
@@ -327,7 +327,7 @@ pub fn translate_global_initializer(
     span: Span,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
 ) -> TranspilerResult<String> {
-    let prefix: String = crate::macros::expansion_prefix(entity);
+    let prefix: Option<String> = crate::macro_error::prefix(entity);
 
     if entity.get_kind() == clang::EntityKind::CompoundLiteralExpr {
         let children: Vec<clang::Entity<'_>> = entity.get_children();
@@ -366,15 +366,23 @@ pub fn translate_global_initializer(
             clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray
         ) {
             let Some(element_type) = canonical_type.get_element_type() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix.as_deref() {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Array initializer is missing an element type."
+                    ),
+                    None => "C translation failed:\nArray initializer is missing an element type."
+                        .to_string(),
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!("C translation failed:\n{prefix}Array initializer is missing an element type."),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
 
                 return Err(TranspilerError::Abort);
             };
@@ -392,27 +400,44 @@ pub fn translate_global_initializer(
 
             if canonical_type.get_kind() == clang::TypeKind::ConstantArray {
                 let Some(size) = canonical_type.get_size() else {
-                    macro_ctx.get_mut_transpiler_context().add_error_fail(
-                        CompilationIssue::Error(
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => format!(
+                            "C translation failed:\n{prefix}Constant array initializer has unknown size."
+                        ),
+                        None => {
+                            "C translation failed:\nConstant array initializer has unknown size."
+                                .to_string()
+                        }
+                    };
+
+                    macro_ctx
+                        .get_mut_transpiler_context()
+                        .add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            format!("C translation failed:\n{prefix}Constant array initializer has unknown size."),
+                            message,
                             "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
-                        ),
-                    );
+                        ));
 
                     return Err(TranspilerError::Abort);
                 };
 
                 if values.len() > size {
-                    macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                        CompilationIssueCode::E0110,
-                        format!("C translation failed:\n{prefix}Array initializer has more elements than the destination array."),
-                        "Rewrite the C input to avoid the unsupported construct.".into(),
-                        None,
-                        span,
-                    ));
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => format!("C translation failed:\n{prefix}Array initializer has more elements than the destination array."),
+                        None => "C translation failed:\nArray initializer has more elements than the destination array.".to_string(),
+                    };
+
+                    macro_ctx
+                        .get_mut_transpiler_context()
+                        .add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0110,
+                            message,
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
+                            None,
+                            span,
+                        ));
 
                     return Err(TranspilerError::Abort);
                 }
@@ -432,13 +457,23 @@ pub fn translate_global_initializer(
 
         if canonical_type.get_kind() == clang::TypeKind::Record {
             let Some(record_decl) = canonical_type.get_declaration() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Record initializer is missing a declaration."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                let message: String = match prefix.as_deref() {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Record initializer is missing a declaration."
+                    ),
+                    None => "C translation failed:\nRecord initializer is missing a declaration."
+                        .to_string(),
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        message,
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
 
                 return Err(TranspilerError::Abort);
             };
@@ -446,7 +481,7 @@ pub fn translate_global_initializer(
             let record_name: String = crate::type_format::format_clang_type_thrust(
                 &canonical_type,
                 macro_ctx,
-                &prefix,
+                prefix.as_deref(),
                 span,
             )?;
 
@@ -460,13 +495,26 @@ pub fn translate_global_initializer(
                 .collect();
 
             if initializer_children.len() > fields.len() {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Record initializer has more values than fields."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                let message: String = match prefix.as_deref() {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Record initializer has more values than fields."
+                    ),
+                    None => {
+                        "C translation failed:\nRecord initializer has more values than fields."
+                            .to_string()
+                    }
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        message,
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
+
                 return Err(TranspilerError::Abort);
             }
 
@@ -497,29 +545,38 @@ pub fn translate_global_initializer(
 
             for (field_index, field) in fields.iter().enumerate() {
                 let Some(field_name) = field.get_name() else {
-                    macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                        CompilationIssueCode::E0110,
-                        format!("C translation failed:\n{prefix}Unnamed fields are not supported in record initializers."),
-                        "Rewrite the C input to avoid the unsupported construct.".into(),
-                        None,
-                        span,
-                    ));
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => format!("C translation failed:\n{prefix}Unnamed fields are not supported in record initializers."),
+                        None => "C translation failed:\nUnnamed fields are not supported in record initializers.".to_string(),
+                    };
+
+                    macro_ctx
+                        .get_mut_transpiler_context()
+                        .add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0110,
+                            message,
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
+                            None,
+                            span,
+                        ));
 
                     return Err(TranspilerError::Abort);
                 };
 
                 let Some(field_type) = field.get_type() else {
+                    let detail: String =
+                        format!("Missing type for field '{field_name}' in record initializer.");
+
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                        None => format!("C translation failed:\n{detail}"),
+                    };
+
                     macro_ctx
                         .get_mut_transpiler_context()
-                        .add_error_fail(CompilationIssue::Error(
+                        .add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            {
-                                let detail: String = format!(
-                                    "Missing type for field '{field_name}' in record initializer."
-                                );
-
-                                format!("C translation failed:\n{prefix}{detail}")
-                            },
+                            message,
                             "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
@@ -555,11 +612,18 @@ pub fn translate_global_initializer(
             ));
         }
 
+        let message: String = match prefix.as_deref() {
+            Some(prefix) => {
+                format!("C translation failed:\n{prefix}Unsupported aggregate initializer.")
+            }
+            None => "C translation failed:\nUnsupported aggregate initializer.".to_string(),
+        };
+
         macro_ctx
             .get_mut_transpiler_context()
-            .add_error_fail(CompilationIssue::Error(
+            .add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
-                format!("C translation failed:\n{prefix}Unsupported aggregate initializer."),
+                message,
                 "Rewrite the C input to avoid the unsupported construct.".into(),
                 None,
                 span,
@@ -578,19 +642,27 @@ pub fn translate_global_initializer(
             &heap_call,
             pointee.as_ref(),
             macro_ctx,
-            &prefix,
+            prefix.as_deref(),
             span,
         ) {
             halloc_text
         } else {
+            let message: String = match prefix.as_deref() {
+                Some(prefix) => format!(
+                    "C translation failed:\n{prefix}{}",
+                    heap_operation.rejection_reason()
+                ),
+                None => format!(
+                    "C translation failed:\n{}",
+                    heap_operation.rejection_reason()
+                ),
+            };
+
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    format!(
-                        "C translation failed:\n{prefix}{}",
-                        heap_operation.rejection_reason()
-                    ),
+                    message,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
@@ -623,8 +695,12 @@ pub fn translate_global_initializer(
     );
 
     if expected_is_integer && crate::stmt_analysis::expression_produces_condition(entity) {
-        let type_text: String =
-            crate::type_format::format_clang_type_thrust(expected_type, macro_ctx, &prefix, span)?;
+        let type_text: String = crate::type_format::format_clang_type_thrust(
+            expected_type,
+            macro_ctx,
+            prefix.as_deref(),
+            span,
+        )?;
 
         return Ok(format!("({translated}) as {type_text}"));
     }
@@ -638,7 +714,7 @@ fn translate_record_decl(
     span: Span,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
 ) -> TranspilerResult<String> {
-    let prefix: String = crate::macros::expansion_prefix(entity);
+    let prefix: Option<String> = crate::macro_error::prefix(entity);
     let children: Vec<clang::Entity<'_>> = entity.get_children();
 
     let name: Option<String> = entity.get_name().or_else(|| {
@@ -651,13 +727,20 @@ fn translate_record_decl(
     });
 
     let Some(name) = name else {
-        macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-            CompilationIssueCode::E0110,
-            format!("C translation failed:\n{prefix}Anonymous structs are not supported in C translation output."),
-            "Rewrite the C input to avoid the unsupported construct.".into(),
-            None,
-            span,
-        ));
+        let message: String = match prefix.as_deref() {
+            Some(prefix) => format!("C translation failed:\n{prefix}Anonymous structs are not supported in C translation output."),
+            None => "C translation failed:\nAnonymous structs are not supported in C translation output.".to_string(),
+        };
+
+        macro_ctx
+            .get_mut_transpiler_context()
+            .add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                message,
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
 
         return Err(TranspilerError::Abort);
     };
@@ -709,12 +792,15 @@ fn translate_record_decl(
             let issue: String = {
                 let detail: String = format!("Bitfields are not supported in {keyword} '{name}'.");
 
-                format!("C translation failed:\n{prefix}{detail}")
+                match prefix.as_deref() {
+                    Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                    None => format!("C translation failed:\n{detail}"),
+                }
             };
 
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
                     issue,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -730,12 +816,15 @@ fn translate_record_decl(
                 let detail: String =
                     format!("Unnamed fields are not supported in {keyword} '{name}'.");
 
-                format!("C translation failed:\n{prefix}{detail}")
+                match prefix.as_deref() {
+                    Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                    None => format!("C translation failed:\n{detail}"),
+                }
             };
 
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
                     issue,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -753,12 +842,15 @@ fn translate_record_decl(
                 let detail: String =
                     format!("Missing type for field '{field_name}' in struct '{name}'.");
 
-                format!("C translation failed:\n{prefix}{detail}")
+                match prefix.as_deref() {
+                    Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                    None => format!("C translation failed:\n{detail}"),
+                }
             };
 
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
                     issue,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -785,12 +877,15 @@ fn translate_record_decl(
                         "Anonymous inline record members are not supported in {keyword} '{name}'."
                     );
 
-                    format!("C translation failed:\n{prefix}{detail}")
+                    match prefix.as_deref() {
+                        Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                        None => format!("C translation failed:\n{detail}"),
+                    }
                 };
 
                 macro_ctx
                     .get_mut_transpiler_context()
-                    .add_error_fail(CompilationIssue::Error(
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
                         issue,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -806,12 +901,15 @@ fn translate_record_decl(
             let issue: String = {
                 let detail: String = format!("VLA fields are not supported in {keyword} '{name}'.");
 
-                format!("C translation failed:\n{prefix}{detail}")
+                match prefix.as_deref() {
+                    Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                    None => format!("C translation failed:\n{detail}"),
+                }
             };
 
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
                     issue,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -828,12 +926,15 @@ fn translate_record_decl(
                     "Dependent-sized array fields are not supported in {keyword} '{name}'."
                 );
 
-                format!("C translation failed:\n{prefix}{detail}")
+                match prefix.as_deref() {
+                    Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                    None => format!("C translation failed:\n{detail}"),
+                }
             };
 
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
                     issue,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -845,17 +946,22 @@ fn translate_record_decl(
         }
 
         if canonical_field_kind == clang::TypeKind::IncompleteArray {
-            let message: String = if field_index + 1 == fields.len() {
+            let detail: String = if field_index + 1 == fields.len() {
                 format!("Flexible array members are not supported in {keyword} '{name}'.")
             } else {
                 format!("Incomplete array fields are not supported in {keyword} '{name}'.")
             };
 
+            let message: String = match prefix.as_deref() {
+                Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                None => format!("C translation failed:\n{detail}"),
+            };
+
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}{message}"),
+                    message,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
@@ -864,8 +970,12 @@ fn translate_record_decl(
             return Err(TranspilerError::Abort);
         }
 
-        let ty_text: String =
-            crate::type_format::format_clang_type_thrust(&field_ty, macro_ctx, &prefix, span)?;
+        let ty_text: String = crate::type_format::format_clang_type_thrust(
+            &field_ty,
+            macro_ctx,
+            prefix.as_deref(),
+            span,
+        )?;
 
         out.push_str("    ");
         out.push_str(&field_name);
@@ -884,15 +994,22 @@ fn translate_global_var_decl(
     span: Span,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
 ) -> TranspilerResult<String> {
-    let prefix: String = crate::macros::expansion_prefix(entity);
+    let prefix: Option<String> = crate::macro_error::prefix(entity);
     let Some(raw_name) = entity.get_name() else {
+        let message: String = match prefix.as_deref() {
+            Some(prefix) => format!(
+                "C translation failed:\n{prefix}Encountered a global variable without a name."
+            ),
+            None => {
+                "C translation failed:\nEncountered a global variable without a name.".to_string()
+            }
+        };
+
         macro_ctx
             .get_mut_transpiler_context()
-            .add_error_fail(CompilationIssue::Error(
+            .add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
-                format!(
-                    "C translation failed:\n{prefix}Encountered a global variable without a name."
-                ),
+                message,
                 "Rewrite the C input to avoid the unsupported construct.".into(),
                 None,
                 span,
@@ -907,12 +1024,15 @@ fn translate_global_var_decl(
         let issue: String = {
             let detail: String = format!("Missing type for global '{name}'.");
 
-            format!("C translation failed:\n{prefix}{detail}")
+            match prefix.as_deref() {
+                Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                None => format!("C translation failed:\n{detail}"),
+            }
         };
 
         macro_ctx
             .get_mut_transpiler_context()
-            .add_error_fail(CompilationIssue::Error(
+            .add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
                 issue,
                 "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -935,17 +1055,25 @@ fn translate_global_var_decl(
             if macro_ctx.pending_statements_len() > base_pending {
                 let _ = macro_ctx.take_pending_statements_since(base_pending);
 
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix.as_deref() {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Ternary in global initializer is not supported."
+                    ),
+                    None => {
+                        "C translation failed:\nTernary in global initializer is not supported."
+                            .to_string()
+                    }
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!(
-                            "C translation failed:\n{prefix}Ternary in global initializer is not supported."
-                        ),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
 
                 return Err(TranspilerError::Abort);
             }
@@ -981,7 +1109,7 @@ fn translate_global_var_decl(
                         | clang::EntityKind::UnexposedExpr
                 )
             {
-                let maybe_bitwise_expr: bool = crate::macro_lex::entity_spellings(&initializer)
+                let maybe_bitwise_expr: bool = crate::macro_lex::entity_lexemes(&initializer)
                     .iter()
                     .any(|token| matches!(token.as_str(), "|" | "&" | "^" | "<<" | ">>"));
 
@@ -989,7 +1117,7 @@ fn translate_global_var_decl(
                     let expected_type_text: String = crate::type_format::format_clang_type_thrust(
                         &canonical_type,
                         macro_ctx,
-                        &prefix,
+                        prefix.as_deref(),
                         span,
                     )?;
 
@@ -1025,11 +1153,16 @@ fn translate_global_var_decl(
                     let detail: String =
                         format!("Incomplete array global '{name}' is missing an element type.");
 
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                        None => format!("C translation failed:\n{detail}"),
+                    };
+
                     macro_ctx
                         .get_mut_transpiler_context()
-                        .add_error_fail(CompilationIssue::Error(
+                        .add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            format!("C translation failed:\n{prefix}{detail}"),
+                            message,
                             "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
@@ -1041,7 +1174,7 @@ fn translate_global_var_decl(
                 let element_type_text: String = crate::type_format::format_clang_type_thrust(
                     &element_type,
                     macro_ctx,
-                    &prefix,
+                    prefix.as_deref(),
                     span,
                 )?;
 
@@ -1049,19 +1182,27 @@ fn translate_global_var_decl(
 
                 format!("array[{element_type_text}; {element_count}]")
             } else {
-                crate::type_format::format_clang_type_thrust(&var_type, macro_ctx, &prefix, span)?
+                crate::type_format::format_clang_type_thrust(
+                    &var_type,
+                    macro_ctx,
+                    prefix.as_deref(),
+                    span,
+                )?
             }
         } else {
             let issue: String = {
                 let detail: String =
                     format!("Incomplete array global '{name}' requires an initializer.");
 
-                format!("C translation failed:\n{prefix}{detail}")
+                match prefix.as_deref() {
+                    Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                    None => format!("C translation failed:\n{detail}"),
+                }
             };
 
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
                     issue,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -1072,7 +1213,7 @@ fn translate_global_var_decl(
             return Err(TranspilerError::Abort);
         }
     } else {
-        crate::type_format::format_clang_type_thrust(&var_type, macro_ctx, &prefix, span)?
+        crate::type_format::format_clang_type_thrust(&var_type, macro_ctx, prefix.as_deref(), span)?
     };
 
     let is_mutable: bool = !var_type.is_const_qualified();
@@ -1118,19 +1259,24 @@ pub fn translate_zero_initializer(
     origin: Option<&clang::Entity<'_>>,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
 ) -> TranspilerResult<String> {
-    let prefix: String = origin
-        .map(crate::macros::expansion_prefix)
-        .unwrap_or_default();
+    let prefix: Option<String> = origin.and_then(crate::macro_error::prefix);
 
     let canonical: clang::Type<'_> = ty.get_canonical_type();
 
     match canonical.get_kind() {
         clang::TypeKind::Void => {
+            let message: String = match prefix.as_deref() {
+                Some(prefix) => {
+                    format!("C translation failed:\n{prefix}Cannot zero-initialize a void object.")
+                }
+                None => "C translation failed:\nCannot zero-initialize a void object.".to_string(),
+            };
+
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Cannot zero-initialize a void object."),
+                    message,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
@@ -1158,8 +1304,12 @@ pub fn translate_zero_initializer(
         clang::TypeKind::Float | clang::TypeKind::Double => Ok("0.0".into()),
 
         clang::TypeKind::Enum => {
-            let type_text: String =
-                crate::type_format::format_clang_type_thrust(&canonical, macro_ctx, &prefix, span)?;
+            let type_text: String = crate::type_format::format_clang_type_thrust(
+                &canonical,
+                macro_ctx,
+                prefix.as_deref(),
+                span,
+            )?;
 
             Ok(format!("0 as {type_text}"))
         }
@@ -1168,29 +1318,44 @@ pub fn translate_zero_initializer(
 
         clang::TypeKind::ConstantArray => {
             let Some(element_type) = canonical.get_element_type() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix.as_deref() {
+                    Some(prefix) => format!("C translation failed:\n{prefix}Constant array zero initializer is missing an element type."),
+                    None => "C translation failed:\nConstant array zero initializer is missing an element type.".to_string(),
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!("C translation failed:\n{prefix}Constant array zero initializer is missing an element type."),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
 
                 return Err(TranspilerError::Abort);
             };
 
             let Some(size) = canonical.get_size() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(
-                    CompilationIssue::Error(
+                let message: String = match prefix.as_deref() {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Constant array zero initializer has unknown size."
+                    ),
+                    None => {
+                        "C translation failed:\nConstant array zero initializer has unknown size."
+                            .to_string()
+                    }
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!("C translation failed:\n{prefix}Constant array zero initializer has unknown size."),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
-                    ),
-                );
+                    ));
 
                 return Err(TranspilerError::Abort);
             };
@@ -1211,19 +1376,35 @@ pub fn translate_zero_initializer(
 
         clang::TypeKind::Record => {
             let Some(record_decl) = canonical.get_declaration() else {
-                macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Record zero initializer is missing a declaration."),
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+                let message: String = match prefix.as_deref() {
+                    Some(prefix) => format!(
+                        "C translation failed:\n{prefix}Record zero initializer is missing a declaration."
+                    ),
+                    None => {
+                        "C translation failed:\nRecord zero initializer is missing a declaration."
+                            .to_string()
+                    }
+                };
+
+                macro_ctx
+                    .get_mut_transpiler_context()
+                    .add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        message,
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
 
                 return Err(TranspilerError::Abort);
             };
 
-            let record_name: String =
-                crate::type_format::format_clang_type_thrust(&canonical, macro_ctx, &prefix, span)?;
+            let record_name: String = crate::type_format::format_clang_type_thrust(
+                &canonical,
+                macro_ctx,
+                prefix.as_deref(),
+                span,
+            )?;
 
             let record_definition: clang::Entity<'_> =
                 record_decl.get_definition().unwrap_or(record_decl);
@@ -1238,13 +1419,20 @@ pub fn translate_zero_initializer(
 
             for field in fields.iter() {
                 let Some(field_name) = field.get_name() else {
-                    macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                        CompilationIssueCode::E0110,
-                        format!("C translation failed:\n{prefix}Unnamed fields are not supported in record zero initializers."),
-                        "Rewrite the C input to avoid the unsupported construct.".into(),
-                        None,
-                        span,
-                    ));
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => format!("C translation failed:\n{prefix}Unnamed fields are not supported in record zero initializers."),
+                        None => "C translation failed:\nUnnamed fields are not supported in record zero initializers.".to_string(),
+                    };
+
+                    macro_ctx
+                        .get_mut_transpiler_context()
+                        .add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0110,
+                            message,
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
+                            None,
+                            span,
+                        ));
 
                     return Err(TranspilerError::Abort);
                 };
@@ -1254,12 +1442,15 @@ pub fn translate_zero_initializer(
                         let detail: String =
                             format!("Missing field type for '{field_name}' in zero initializer.");
 
-                        format!("C translation failed:\n{prefix}{detail}")
+                        match prefix.as_deref() {
+                            Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                            None => format!("C translation failed:\n{detail}"),
+                        }
                     };
 
                     macro_ctx
                         .get_mut_transpiler_context()
-                        .add_error_fail(CompilationIssue::Error(
+                        .add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
                             issue,
                             "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -1284,11 +1475,16 @@ pub fn translate_zero_initializer(
         }
 
         clang::TypeKind::IncompleteArray => {
+            let message: String = match prefix.as_deref() {
+                Some(prefix) => format!("C translation failed:\n{prefix}Incomplete arrays require an initializer in source translation."),
+                None => "C translation failed:\nIncomplete arrays require an initializer in source translation.".to_string(),
+            };
+
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Incomplete arrays require an initializer in source translation."),
+                    message,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
@@ -1298,13 +1494,20 @@ pub fn translate_zero_initializer(
         }
 
         clang::TypeKind::VariableArray => {
+            let message: String = match prefix.as_deref() {
+                Some(prefix) => format!(
+                    "C translation failed:\n{prefix}VLA zero initializers are not supported."
+                ),
+                None => {
+                    "C translation failed:\nVLA zero initializers are not supported.".to_string()
+                }
+            };
+
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    format!(
-                        "C translation failed:\n{prefix}VLA zero initializers are not supported."
-                    ),
+                    message,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
@@ -1314,11 +1517,16 @@ pub fn translate_zero_initializer(
         }
 
         clang::TypeKind::DependentSizedArray => {
+            let message: String = match prefix.as_deref() {
+                Some(prefix) => format!("C translation failed:\n{prefix}Dependent-sized array zero initializers are not supported."),
+                None => "C translation failed:\nDependent-sized array zero initializers are not supported.".to_string(),
+            };
+
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Dependent-sized array zero initializers are not supported."),
+                    message,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
@@ -1331,12 +1539,15 @@ pub fn translate_zero_initializer(
             let issue: String = {
                 let detail: String = format!("Unsupported zero initializer type: {other:?}");
 
-                format!("C translation failed:\n{prefix}{detail}")
+                match prefix.as_deref() {
+                    Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                    None => format!("C translation failed:\n{detail}"),
+                }
             };
 
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
                     issue,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -1350,13 +1561,13 @@ pub fn translate_zero_initializer(
 }
 
 pub fn append_imported_top_level_declarations(
-    ctx: &thrustc_c_import_synthesis::context::CImportContext,
+    ctx: &thrustc_import_c::context::CImportContext,
     span: Span,
     out: &mut String,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
 ) {
     {
-        let mut structs: Vec<&thrustc_c_import_synthesis::model::CImportedStruct> =
+        let mut structs: Vec<&thrustc_import_c::model::CImportedStruct> =
             ctx.structs().iter().collect();
 
         structs.sort_by(|a, b| a.name().cmp(b.name()));
@@ -1400,7 +1611,7 @@ pub fn append_imported_top_level_declarations(
     }
 
     {
-        let mut typedefs: Vec<&thrustc_c_import_synthesis::model::CImportedTypedef> =
+        let mut typedefs: Vec<&thrustc_import_c::model::CImportedTypedef> =
             ctx.typedefs().iter().collect();
 
         typedefs.sort_by(|a, b| a.name().cmp(b.name()));
@@ -1419,8 +1630,7 @@ pub fn append_imported_top_level_declarations(
     }
 
     {
-        let mut enums: Vec<&thrustc_c_import_synthesis::model::CImportedEnum> =
-            ctx.enums().iter().collect();
+        let mut enums: Vec<&thrustc_import_c::model::CImportedEnum> = ctx.enums().iter().collect();
 
         enums.sort_by(|a, b| a.name().cmp(b.name()));
 
@@ -1444,7 +1654,7 @@ pub fn append_imported_top_level_declarations(
     }
 
     {
-        let mut consts: Vec<&thrustc_c_import_synthesis::model::CImportedConstant> =
+        let mut consts: Vec<&thrustc_import_c::model::CImportedConstant> =
             ctx.constants().iter().collect();
 
         consts.sort_by(|a, b| a.name().cmp(b.name()));
@@ -1469,7 +1679,7 @@ pub fn append_imported_top_level_declarations(
     }
 
     {
-        let mut funcs: Vec<&thrustc_c_import_synthesis::model::CImportedFunction> =
+        let mut funcs: Vec<&thrustc_import_c::model::CImportedFunction> =
             ctx.functions().iter().collect();
 
         funcs.sort_by(|a, b| a.name().cmp(b.name()));
@@ -1524,13 +1734,20 @@ fn translate_function(
     span: Span,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
 ) -> TranspilerResult<String> {
-    let prefix: String = crate::macros::expansion_prefix(entity);
+    let prefix: Option<String> = crate::macro_error::prefix(entity);
     let Some(name) = entity.get_name() else {
+        let message: String = match prefix.as_deref() {
+            Some(prefix) => {
+                format!("C translation failed:\n{prefix}Encountered a function without a name.")
+            }
+            None => "C translation failed:\nEncountered a function without a name.".to_string(),
+        };
+
         macro_ctx
             .get_mut_transpiler_context()
-            .add_error_fail(CompilationIssue::Error(
+            .add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
-                format!("C translation failed:\n{prefix}Encountered a function without a name."),
+                message,
                 "Rewrite the C input to avoid the unsupported construct.".into(),
                 None,
                 span,
@@ -1542,7 +1759,9 @@ fn translate_function(
     let name: String = { crate::util::normalize_to_thrust_identifier(&name) };
 
     let ret_ty: String = match entity.get_result_type() {
-        Some(ty) => crate::type_format::format_clang_type_thrust(&ty, macro_ctx, &prefix, span)?,
+        Some(ty) => {
+            crate::type_format::format_clang_type_thrust(&ty, macro_ctx, prefix.as_deref(), span)?
+        }
         None => "void".to_string(),
     };
 
@@ -1585,12 +1804,15 @@ fn translate_function(
                     let detail: String =
                         format!("Missing type for parameter '{param_name}' in function '{name}'.");
 
-                    format!("C translation failed:\n{prefix}{detail}")
+                    match prefix.as_deref() {
+                        Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                        None => format!("C translation failed:\n{detail}"),
+                    }
                 };
 
                 macro_ctx
                     .get_mut_transpiler_context()
-                    .add_error_fail(CompilationIssue::Error(
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
                         issue,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -1602,7 +1824,10 @@ fn translate_function(
             };
 
             let ty_text: String = crate::type_format::format_parameter_type_thrust(
-                &param_ty, macro_ctx, &prefix, span,
+                &param_ty,
+                macro_ctx,
+                prefix.as_deref(),
+                span,
             )?;
 
             let needs_local_copy: bool = mutated_parameters.contains(&original_name);
@@ -1639,12 +1864,15 @@ fn translate_function(
         let issue: String = {
             let detail: String = format!("Missing function body for '{name}'.");
 
-            format!("C translation failed:\n{prefix}{detail}")
+            match prefix.as_deref() {
+                Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                None => format!("C translation failed:\n{detail}"),
+            }
         };
 
         macro_ctx
             .get_mut_transpiler_context()
-            .add_error_fail(CompilationIssue::Error(
+            .add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
                 issue,
                 "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -1693,15 +1921,25 @@ fn translate_function_prototype(
     span: Span,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
 ) -> TranspilerResult<String> {
-    let prefix: String = crate::macros::expansion_prefix(entity);
+    let prefix: Option<String> = crate::macro_error::prefix(entity);
     let Some(raw_name) = entity.get_name() else {
-        macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-            CompilationIssueCode::E0110,
-            format!("C translation failed:\n{prefix}Encountered a function prototype without a name."),
-            "Rewrite the C input to avoid the unsupported construct.".into(),
-            None,
-            span,
-        ));
+        let message: String = match prefix.as_deref() {
+            Some(prefix) => format!(
+                "C translation failed:\n{prefix}Encountered a function prototype without a name."
+            ),
+            None => "C translation failed:\nEncountered a function prototype without a name."
+                .to_string(),
+        };
+
+        macro_ctx
+            .get_mut_transpiler_context()
+            .add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                message,
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
 
         return Err(TranspilerError::Abort);
     };
@@ -1718,12 +1956,15 @@ fn translate_function_prototype(
                 "Static/internal function prototype '{raw_name}' without a body is not supported."
             );
 
-            format!("C translation failed:\n{prefix}{detail}")
+            match prefix.as_deref() {
+                Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                None => format!("C translation failed:\n{detail}"),
+            }
         };
 
         macro_ctx
             .get_mut_transpiler_context()
-            .add_error_fail(CompilationIssue::Error(
+            .add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
                 issue,
                 "Rewrite the C input to avoid the unsupported construct.".into(),
@@ -1737,7 +1978,9 @@ fn translate_function_prototype(
     let name: String = { crate::util::normalize_to_thrust_identifier(&raw_name) };
 
     let return_type: String = match entity.get_result_type() {
-        Some(ty) => crate::type_format::format_clang_type_thrust(&ty, macro_ctx, &prefix, span)?,
+        Some(ty) => {
+            crate::type_format::format_clang_type_thrust(&ty, macro_ctx, prefix.as_deref(), span)?
+        }
         None => "void".to_string(),
     };
 
@@ -1751,17 +1994,19 @@ fn translate_function_prototype(
                 .unwrap_or_else(|| format!("arg{index}"));
 
             let Some(parameter_type) = argument.get_type() else {
+                let detail: String =
+                    format!("Missing type for parameter '{parameter_name}' in '{name}'.");
+
+                let message: String = match prefix.as_deref() {
+                    Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                    None => format!("C translation failed:\n{detail}"),
+                };
+
                 macro_ctx
                     .get_mut_transpiler_context()
-                    .add_error_fail(CompilationIssue::Error(
+                    .add_error(CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        {
-                            let detail: String = format!(
-                                "Missing type for parameter '{parameter_name}' in '{name}'."
-                            );
-
-                            format!("C translation failed:\n{prefix}{detail}")
-                        },
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
@@ -1773,7 +2018,7 @@ fn translate_function_prototype(
             let parameter_type_text: String = crate::type_format::format_parameter_type_thrust(
                 &parameter_type,
                 macro_ctx,
-                &prefix,
+                prefix.as_deref(),
                 span,
             )?;
 
@@ -1781,7 +2026,7 @@ fn translate_function_prototype(
         }
     }
 
-    let convention: &str = match crate::type_format::format_clang_calling_convention_thrust(
+    let convention: &str = match crate::type_format::format_clang_calling_convention_to_thrust(
         entity.get_type().and_then(|ty| ty.get_calling_convention()),
     ) {
         Ok(target) => target,
@@ -1789,15 +2034,21 @@ fn translate_function_prototype(
             let detail: String =
                 format!("Unsupported calling convention for prototype '{name}': {message}");
 
+            let issue: String = match prefix.as_deref() {
+                Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                None => format!("C translation failed:\n{detail}"),
+            };
+
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}{detail}"),
+                    issue,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
                 ));
+
             return Err(TranspilerError::Abort);
         }
     };
@@ -1883,7 +2134,6 @@ fn classify_top_level_declarations<'clang>(
                 let storage_class: Option<clang::StorageClass> = e.get_storage_class();
 
                 let score_var = |has_initializer: bool,
-
                                  storage: Option<clang::StorageClass>,
                                  is_definition: bool|
                  -> u8 {
@@ -1978,7 +2228,7 @@ fn collect_mutated_parameter_names(
                 return;
             };
 
-            let tokens: Vec<String> = crate::macro_lex::range_spellings(&range, entity);
+            let tokens: Vec<String> = crate::macro_lex::range_lexemes(&range, entity);
 
             if tokens.iter().any(|token| token == "++" || token == "--") {
                 let children: Vec<clang::Entity<'_>> = entity.get_children();
@@ -2019,18 +2269,30 @@ fn translate_enum_decl(
     span: Span,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
 ) -> TranspilerResult<String> {
-    let prefix: String = crate::macros::expansion_prefix(entity);
+    let prefix: Option<String> = crate::macro_error::prefix(entity);
     let Some(name) = entity
         .get_name()
         .or_else(|| fallback_name.map(str::to_string))
     else {
-        macro_ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-            CompilationIssueCode::E0110,
-            format!("C translation failed:\n{prefix}Anonymous enums are not supported in C translation output."),
-            "Rewrite the C input to avoid the unsupported construct.".into(),
-            None,
-            span,
-        ));
+        let message: String = match prefix.as_deref() {
+            Some(prefix) => format!(
+                "C translation failed:\n{prefix}Anonymous enums are not supported in C translation output."
+            ),
+            None => {
+                "C translation failed:\nAnonymous enums are not supported in C translation output."
+                    .to_string()
+            }
+        };
+
+        macro_ctx
+            .get_mut_transpiler_context()
+            .add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                message,
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
         return Err(TranspilerError::Abort);
     };
 
@@ -2039,7 +2301,9 @@ fn translate_enum_decl(
     let mut out: String = String::new();
 
     let enum_type_text: String = match entity.get_enum_underlying_type() {
-        Some(ty) => crate::type_format::format_clang_type_thrust(&ty, macro_ctx, &prefix, span)?,
+        Some(ty) => {
+            crate::type_format::format_clang_type_thrust(&ty, macro_ctx, prefix.as_deref(), span)?
+        }
         None => "s32".to_string(),
     };
 
@@ -2088,7 +2352,7 @@ fn translate_enum_decl(
 pub fn find_var_initializer<'clang>(
     entity: &'clang clang::Entity<'clang>,
 ) -> Option<clang::Entity<'clang>> {
-    let has_initializer: bool = crate::macro_lex::entity_spellings(entity)
+    let has_initializer: bool = crate::macro_lex::entity_lexemes(entity)
         .iter()
         .any(|token| token == "=");
 

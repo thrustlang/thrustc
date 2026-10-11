@@ -209,7 +209,7 @@ fn build_dealloc_attribute<'parser>(
     if access.len() > 1 {
         let module_access: Vec<String> = access[..access.len().saturating_sub(1)].to_vec();
 
-        thrustc_import_synthesis::synthesis::ensure_qualified_function(
+        thrustc_import::synthesis::ensure_qualified_function(
             &mut ctx.import_context(),
             &module_access,
             symbol,

@@ -17,6 +17,8 @@
 
 */
 
+use crate::macro_token::MacroToken;
+
 pub fn lex_binary_operator(
     entity: &clang::Entity<'_>,
     left: &clang::Entity<'_>,
@@ -26,24 +28,24 @@ pub fn lex_binary_operator(
     // operands. Resolve that gap directly so every operator (`+`, `<<`, `==`,
     // `&&`, compound assignments, ...) is covered without hardcoding a list.
     //
-    // When the entity comes from a macro expansion, the spelling locations
+    // When the entity comes from a macro expansion, the lexeme locations
     // point into the macro definition (the only reliable text), so we prefer
     // them over the expansion locations which collapse onto the call site.
     let entity_range: clang::source::SourceRange<'_> = entity.get_range()?;
     let left_range: clang::source::SourceRange<'_> = left.get_range()?;
     let right_range: clang::source::SourceRange<'_> = right.get_range()?;
 
-    let entity_start_spelling: clang::source::Location<'_> =
+    let entity_start_lexeme: clang::source::Location<'_> =
         entity_range.get_start().get_spelling_location();
 
     let entity_start_expansion: clang::source::Location<'_> =
         entity_range.get_start().get_expansion_location();
 
-    let use_spelling: bool = entity_start_spelling.file != entity_start_expansion.file
-        || entity_start_spelling.offset != entity_start_expansion.offset;
+    let use_lexeme: bool = entity_start_lexeme.file != entity_start_expansion.file
+        || entity_start_lexeme.offset != entity_start_expansion.offset;
 
     let (operand_end, operand_start): (clang::source::Location<'_>, clang::source::Location<'_>) =
-        if use_spelling {
+        if use_lexeme {
             (
                 left_range.get_end().get_spelling_location(),
                 right_range.get_start().get_spelling_location(),
@@ -69,7 +71,7 @@ pub fn lex_binary_operator(
             .tokenize()
             .into_iter()
             .map(|token| token.get_spelling())
-            .find(|spelling| !spelling.trim().is_empty());
+            .find(|lexeme| !lexeme.trim().is_empty());
 
         if operator.is_some() {
             return operator;
@@ -78,14 +80,14 @@ pub fn lex_binary_operator(
 
     // Fallback for the rare cases where the gap cannot be tokenized: recover
     // the operator from the entity text via the same gap reasoning.
-    if use_spelling {
-        let spelling_tokens: Vec<String> = self::spelling_range_tokens(entity)
+    if use_lexeme {
+        let lexeme_tokens: Vec<String> = self::lexeme_range_tokens(entity)
             .unwrap_or_default()
             .iter()
             .map(|token| token.get_spelling())
             .collect();
 
-        return self::extract_binary_operator_from_tokens(&spelling_tokens).map(str::to_string);
+        return self::extract_binary_operator_from_tokens(&lexeme_tokens).map(str::to_string);
     }
 
     let left_end: clang::source::Location<'_> = left_range.get_end().get_expansion_location();
@@ -281,7 +283,7 @@ pub fn tokens_to_thrust_source(tokens: &[clang::token::Token<'_>]) -> String {
             clang::token::TokenKind::Identifier => {
                 crate::util::normalize_to_thrust_identifier(&raw)
             }
-            clang::token::TokenKind::Literal => self::normalize_literal_token_spelling(&raw),
+            clang::token::TokenKind::Literal => self::normalize_literal_token_lexeme(&raw),
             clang::token::TokenKind::Punctuation if raw == "." => "->".into(),
             _ => raw,
         };
@@ -302,7 +304,7 @@ pub fn tokens_to_thrust_source(tokens: &[clang::token::Token<'_>]) -> String {
 
 pub fn is_assignment_expression(entity: &clang::Entity<'_>) -> bool {
     if entity.get_kind() == clang::EntityKind::UnaryOperator {
-        return self::entity_spellings(entity)
+        return self::entity_lexemes(entity)
             .iter()
             .any(|s| s == "++" || s == "--");
     }
@@ -314,7 +316,7 @@ pub fn is_assignment_expression(entity: &clang::Entity<'_>) -> bool {
         return false;
     }
 
-    let tokens: Vec<String> = self::entity_spellings(entity);
+    let tokens: Vec<String> = self::entity_lexemes(entity);
 
     matches!(
         self::extract_binary_operator_from_tokens(&tokens),
@@ -322,9 +324,9 @@ pub fn is_assignment_expression(entity: &clang::Entity<'_>) -> bool {
     )
 }
 
-pub fn entity_spellings(entity: &clang::Entity<'_>) -> Vec<String> {
-    if self::is_from_macro_expansion(entity) {
-        if let Some(tokens) = self::spelling_range_tokens(entity) {
+pub fn entity_lexemes(entity: &clang::Entity<'_>) -> Vec<String> {
+    if self::is_lexeme_from_macro_expansion(entity) {
+        if let Some(tokens) = self::lexeme_range_tokens(entity) {
             return tokens
                 .into_iter()
                 .map(|token| token.get_spelling())
@@ -344,7 +346,7 @@ pub fn entity_spellings(entity: &clang::Entity<'_>) -> Vec<String> {
         .unwrap_or_default()
 }
 
-pub fn macro_type_name(key: &str) -> Option<String> {
+pub fn lex_macro_type(key: &str) -> Option<String> {
     match key {
         "int" | "signed" | "signed int" => Some("s32".to_string()),
         "unsigned" | "unsigned int" => Some("u32".to_string()),
@@ -366,34 +368,34 @@ pub fn macro_type_name(key: &str) -> Option<String> {
     }
 }
 
-pub fn spelling_range_tokens<'clang>(
+pub fn lexeme_range_tokens<'clang>(
     entity: &clang::Entity<'clang>,
 ) -> Option<Vec<clang::token::Token<'clang>>> {
     let range: clang::source::SourceRange<'_> = entity.get_range()?;
 
-    let spelling_start: clang::source::Location<'_> = range.get_start().get_spelling_location();
-    let spelling_end: clang::source::Location<'_> = range.get_end().get_spelling_location();
+    let lexeme_start: clang::source::Location<'_> = range.get_start().get_spelling_location();
+    let lexeme_end: clang::source::Location<'_> = range.get_end().get_spelling_location();
 
-    let start_file: clang::source::File<'_> = spelling_start.file?;
-    let end_file: clang::source::File<'_> = spelling_end.file?;
+    let start_file: clang::source::File<'_> = lexeme_start.file?;
+    let end_file: clang::source::File<'_> = lexeme_end.file?;
 
     if start_file != end_file {
         return None;
     }
 
     let start: clang::source::SourceLocation<'_> =
-        start_file.get_offset_location(spelling_start.offset);
-    let end: clang::source::SourceLocation<'_> = end_file.get_offset_location(spelling_end.offset);
+        start_file.get_offset_location(lexeme_start.offset);
+    let end: clang::source::SourceLocation<'_> = end_file.get_offset_location(lexeme_end.offset);
 
     Some(clang::source::SourceRange::new(start, end).tokenize())
 }
 
-pub fn range_spellings(
+pub fn range_lexemes(
     range: &clang::source::SourceRange<'_>,
     entity: &clang::Entity<'_>,
 ) -> Vec<String> {
-    if self::is_from_macro_expansion(entity) {
-        if let Some(tokens) = self::spelling_range_tokens(entity) {
+    if self::is_lexeme_from_macro_expansion(entity) {
+        if let Some(tokens) = self::lexeme_range_tokens(entity) {
             return tokens
                 .into_iter()
                 .map(|token| token.get_spelling())
@@ -408,32 +410,32 @@ pub fn range_spellings(
         .collect()
 }
 
-pub fn normalize_literal_token_spelling(spelling: &str) -> String {
-    if spelling.starts_with('"') || spelling.starts_with('\'') {
-        return spelling.to_string();
+pub fn normalize_literal_token_lexeme(lexeme: &str) -> String {
+    if lexeme.starts_with('"') || lexeme.starts_with('\'') {
+        return lexeme.to_string();
     }
 
-    if spelling.starts_with("0x") || spelling.starts_with("0X") {
-        return spelling.trim_end_matches(['u', 'U', 'l', 'L']).to_string();
+    if lexeme.starts_with("0x") || lexeme.starts_with("0X") {
+        return lexeme.trim_end_matches(['u', 'U', 'l', 'L']).to_string();
     }
 
-    if spelling.contains('.') || spelling.contains('e') || spelling.contains('E') {
-        return spelling.trim_end_matches(['f', 'F', 'l', 'L']).to_string();
+    if lexeme.contains('.') || lexeme.contains('e') || lexeme.contains('E') {
+        return lexeme.trim_end_matches(['f', 'F', 'l', 'L']).to_string();
     }
 
-    spelling.trim_end_matches(['u', 'U', 'l', 'L']).to_string()
+    lexeme.trim_end_matches(['u', 'U', 'l', 'L']).to_string()
 }
 
-pub fn is_from_macro_expansion(entity: &clang::Entity<'_>) -> bool {
+pub fn is_lexeme_from_macro_expansion(entity: &clang::Entity<'_>) -> bool {
     let Some(range) = entity.get_range() else {
         return false;
     };
 
     let expansion: clang::source::Location<'_> = range.get_start().get_expansion_location();
-    let spelling: clang::source::Location<'_> = range.get_start().get_spelling_location();
+    let lexeme: clang::source::Location<'_> = range.get_start().get_spelling_location();
 
-    match (expansion.file, spelling.file) {
-        (Some(expansion_file), Some(spelling_file)) => expansion_file != spelling_file,
+    match (expansion.file, lexeme.file) {
+        (Some(expansion_file), Some(lexeme_file)) => expansion_file != lexeme_file,
         _ => false,
     }
 }
@@ -484,7 +486,7 @@ pub fn to_macro_tokens(
                 clang::token::TokenKind::Identifier => {
                     crate::util::normalize_to_thrust_identifier(&raw)
                 }
-                clang::token::TokenKind::Literal => self::normalize_literal_token_spelling(&raw),
+                clang::token::TokenKind::Literal => self::normalize_literal_token_lexeme(&raw),
                 clang::token::TokenKind::Punctuation if raw == "." => "->".to_string(),
                 _ => raw,
             };
@@ -840,6 +842,132 @@ pub fn lex_site_call_arguments(site: &clang::Entity<'_>, name: &str) -> Option<S
         .collect::<Option<Vec<(u32, u32)>>>()?;
 
     Some((args, ranges, u32::try_from(offset).ok()?))
+}
+
+pub fn get_argument_clang_types<'clang>(
+    site: &clang::Entity<'clang>,
+    arg_ranges: &[(u32, u32)],
+) -> Vec<Option<clang::Type<'clang>>> {
+    let Some(range) = site.get_range() else {
+        return vec![None; arg_ranges.len()];
+    };
+
+    let Some(file) = range.get_start().get_expansion_location().file else {
+        return vec![None; arg_ranges.len()];
+    };
+
+    let path: std::path::PathBuf = file.get_path();
+
+    let mut best: Vec<(u32, Option<clang::Type<'clang>>)> = vec![(0, None); arg_ranges.len()];
+
+    self::collect_clang_argument_types(site, &path, arg_ranges, &mut best);
+
+    best.into_iter().map(|(_, ty)| ty).collect()
+}
+
+fn collect_clang_argument_types<'clang>(
+    entity: &clang::Entity<'clang>,
+    path: &std::path::Path,
+    arg_ranges: &[(u32, u32)],
+    best: &mut [(u32, Option<clang::Type<'clang>>)],
+) {
+    if let Some(range) = entity.get_range() {
+        let start: clang::source::Location<'_> = range.get_start().get_spelling_location();
+        let end: clang::source::Location<'_> = range.get_end().get_spelling_location();
+
+        let same_file: bool =
+            start
+                .file
+                .as_ref()
+                .zip(end.file.as_ref())
+                .is_some_and(|(start_file, end_file)| {
+                    start_file.get_path() == path && end_file.get_path() == path
+                });
+
+        if same_file {
+            let span: u32 = end.offset.saturating_sub(start.offset);
+
+            for (index, (arg_start, arg_end)) in arg_ranges.iter().enumerate() {
+                let inside: bool = start.offset >= *arg_start && end.offset <= *arg_end;
+
+                if inside && span > best[index].0 {
+                    best[index] = (span, entity.get_type());
+                }
+            }
+        }
+    }
+
+    for child in entity.get_children() {
+        self::collect_clang_argument_types(&child, path, arg_ranges, best);
+    }
+}
+
+pub fn is_parameter_token_written(tokens: &[MacroToken], index: usize) -> bool {
+    let assign_ops: [&str; 11] = [
+        "=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^=",
+    ];
+
+    let next = tokens
+        .get(index.saturating_add(1))
+        .map(|token| token.get_text());
+
+    if next.is_some_and(|text| text == "++" || text == "--" || assign_ops.contains(&text)) {
+        return true;
+    }
+
+    let prev = index
+        .checked_sub(1)
+        .and_then(|prev_index| tokens.get(prev_index))
+        .map(|token| token.get_text());
+
+    if prev.is_some_and(|text| text == "++" || text == "--") {
+        return true;
+    }
+
+    if prev == Some("(") && next == Some(")") {
+        let assign_after_paren: Option<&str> = tokens
+            .get(index.saturating_add(2))
+            .map(|token| token.get_text());
+
+        if assign_after_paren.is_some_and(|text| assign_ops.contains(&text)) {
+            return true;
+        }
+    }
+
+    false
+}
+
+pub fn is_macro_calling_other_statements(
+    body: &[MacroToken],
+    statement_names: &[String],
+    own_name: &str,
+) -> bool {
+    let mut index: usize = 0;
+
+    while index < body.len() {
+        let token: &str = body[index].get_text();
+
+        if token
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
+            && body
+                .get(index + 1)
+                .is_some_and(|next| next.get_text() == "(")
+            && token != own_name
+            && !matches!(
+                token,
+                "if" | "for" | "while" | "switch" | "return" | "sizeof" | "do"
+            )
+            && statement_names.iter().any(|name| name == token)
+        {
+            return true;
+        }
+
+        index += 1;
+    }
+
+    false
 }
 
 fn skip_c_string(bytes: &[u8], start: usize) -> usize {

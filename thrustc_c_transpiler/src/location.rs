@@ -41,10 +41,3 @@ impl Location {
         matches!(self, Location::AddressOf)
     }
 }
-
-impl Default for Location {
-    #[inline]
-    fn default() -> Self {
-        Location::RValue
-    }
-}

@@ -251,48 +251,47 @@ pub fn emit_c_bindings_thrust(
 
     let mut warnings: Vec<CompilationIssue> = Vec::new();
 
-    let mut opts: thrustc_c_import_synthesis::options::CImportOptions =
-        thrustc_c_import_synthesis::options::CImportOptions::new();
+    let mut opts: thrustc_import_c::options::CImportOptions =
+        thrustc_import_c::options::CImportOptions::new();
 
-    let import_scope: thrustc_c_import_synthesis::options::CImportScope =
-        match import_opts.import_scope() {
-            thrustc_options::ImportCScope::MainOnly => {
-                thrustc_c_import_synthesis::options::CImportScope::MainOnly
-            }
-            thrustc_options::ImportCScope::TransitiveNoSystem => {
-                thrustc_c_import_synthesis::options::CImportScope::TransitiveNoSystem
-            }
-            thrustc_options::ImportCScope::TransitiveAll => {
-                thrustc_c_import_synthesis::options::CImportScope::TransitiveAll
-            }
-        };
+    let import_scope: thrustc_import_c::options::CImportScope = match import_opts.import_scope() {
+        thrustc_options::ImportCScope::MainOnly => {
+            thrustc_import_c::options::CImportScope::MainOnly
+        }
+        thrustc_options::ImportCScope::TransitiveNoSystem => {
+            thrustc_import_c::options::CImportScope::TransitiveNoSystem
+        }
+        thrustc_options::ImportCScope::TransitiveAll => {
+            thrustc_import_c::options::CImportScope::TransitiveAll
+        }
+    };
 
     opts.set_import_scope(import_scope);
     *opts.clang_args_mut() = clang_args;
 
-    let mut ctx: thrustc_c_import_synthesis::context::CImportContext =
-        thrustc_c_import_synthesis::context::CImportContext::new(header.clone(), span, opts);
+    let mut ctx: thrustc_import_c::context::CImportContext =
+        thrustc_import_c::context::CImportContext::new(header.clone(), span, opts);
 
     ctx.import_header()?;
 
     for diagnostic in ctx.diagnostics() {
         let code: CompilationIssueCode = match diagnostic.kind() {
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::ClangDiagnostic => {
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::ClangDiagnostic => {
                 CompilationIssueCode::W0100
             }
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::InventedFieldName => {
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::InventedFieldName => {
                 CompilationIssueCode::W0101
             }
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::SkippedUnion => {
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedUnion => {
                 CompilationIssueCode::W0102
             }
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::SkippedBitfieldStruct => {
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedBitfieldStruct => {
                 CompilationIssueCode::W0103
             }
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention => {
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention => {
                 CompilationIssueCode::W0104
             }
-            thrustc_c_import_synthesis::diagnostics::CImportDiagnosticKind::SkippedDeclaration => {
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedDeclaration => {
                 CompilationIssueCode::W0104
             }
         };
@@ -343,7 +342,7 @@ fn collect_import_c_includes(
     let mut import_c_specs: Vec<String> = Vec::new();
 
     for entity in includes.iter() {
-        if let Some(spec) = self::extract_include_spec(entity) {
+        if let Some(spec) = self::extract_include(entity) {
             import_c_specs.push(spec);
 
             if let Some(file) = entity.get_file() {
@@ -369,12 +368,12 @@ fn collect_import_c_includes(
     (import_c_include_dirs, import_c_specs)
 }
 
-fn extract_include_spec(entity: &clang::Entity<'_>) -> Option<String> {
+fn extract_include(entity: &clang::Entity<'_>) -> Option<String> {
     let range: clang::source::SourceRange<'_> = entity.get_range()?;
     let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
-    let spellings: Vec<String> = tokens.into_iter().map(|t| t.get_spelling()).collect();
+    let lexemes: Vec<String> = tokens.into_iter().map(|t| t.get_spelling()).collect();
 
-    for s in spellings.iter() {
+    for s in lexemes.iter() {
         if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
             return Some(s[1..s.len() - 1].to_string());
         }
@@ -384,11 +383,11 @@ fn extract_include_spec(entity: &clang::Entity<'_>) -> Option<String> {
         }
     }
 
-    let angle_start: Option<usize> = spellings.iter().position(|s| s == "<");
+    let angle_start: Option<usize> = lexemes.iter().position(|s| s == "<");
 
     let angle_content: String = angle_start
         .map(|start| {
-            spellings[start.saturating_add(1)..]
+            lexemes[start.saturating_add(1)..]
                 .iter()
                 .take_while(|s| s.as_str() != ">")
                 .fold(String::new(), |mut acc, s| {

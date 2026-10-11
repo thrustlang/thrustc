@@ -148,21 +148,6 @@ impl MacroTable {
     }
 
     #[inline]
-    pub fn find_macro_name(&self, location_key: &str) -> Option<String> {
-        self.macro_expansion_sites
-            .iter()
-            .find(|entry| entry.0 == location_key)
-            .map(|entry| entry.1.clone())
-    }
-
-    #[inline]
-    pub fn has_emitted_statement_macro_function(&self, macro_name: &str) -> bool {
-        self.emitted_statement_macro_functions
-            .iter()
-            .any(|entry| entry == macro_name)
-    }
-
-    #[inline]
     pub fn get_function_like_definition(
         &self,
         macro_name: &str,
@@ -191,12 +176,20 @@ impl MacroTable {
 
 impl MacroTable {
     #[inline]
-    pub fn register_object_macro(
-        &mut self,
-        macro_name: String,
-        body: Vec<crate::macro_token::MacroToken>,
-    ) {
-        self.object_macro_definitions.insert(macro_name, body);
+    pub fn has_emitted_statement_macro_function(&self, macro_name: &str) -> bool {
+        self.emitted_statement_macro_functions
+            .iter()
+            .any(|entry| entry == macro_name)
+    }
+}
+
+impl MacroTable {
+    #[inline]
+    pub fn find_macro_name(&self, location_key: &str) -> Option<String> {
+        self.macro_expansion_sites
+            .iter()
+            .find(|entry| entry.0 == location_key)
+            .map(|entry| entry.1.clone())
     }
 }
 
@@ -242,19 +235,19 @@ impl MacroTable {
             };
 
             if function_like_kind == MacroFunctionLikeKind::PureFunction {
-                let spellings: Vec<String> = crate::macro_token::texts(&body);
+                let lexemes: Vec<String> = crate::macro_token::texts(&body);
 
-                if crate::macro_parser::MacroParser::parse(&spellings).is_err() {
+                if crate::macro_parser::MacroParser::parse(&lexemes).is_err() {
                     function_like_kind = MacroFunctionLikeKind::Unsupported(
                         crate::macro_error::MacroLimit::ExpressionMalformed,
                     );
                 }
             }
 
-            let statement_spellings: Vec<String> = crate::macro_token::texts(&body);
+            let statement_lexemes: Vec<String> = crate::macro_token::texts(&body);
 
             let mut statement_parser: crate::macro_parser::MacroParser<'_> =
-                crate::macro_parser::MacroParser::new(&statement_spellings);
+                crate::macro_parser::MacroParser::new(&statement_lexemes);
 
             if function_like_kind == MacroFunctionLikeKind::Statement
                 && statement_parser.parse_statement_body().is_err()
@@ -274,75 +267,6 @@ impl MacroTable {
                 ),
             );
         }
-    }
-
-    #[inline]
-    pub fn add_statement_macro_definition(
-        &mut self,
-        macro_name: String,
-        parameter_names: Vec<String>,
-        body_tokens: Vec<crate::macro_token::MacroToken>,
-        definition: &clang::Entity<'_>,
-    ) {
-        if self
-            .statement_macro_definitions
-            .iter()
-            .any(|entry| entry.0 == macro_name)
-        {
-            return;
-        }
-
-        let statement_spellings: Vec<String> = crate::macro_token::texts(&body_tokens);
-
-        let mut statement_parser: crate::macro_parser::MacroParser<'_> =
-            crate::macro_parser::MacroParser::new(&statement_spellings);
-
-        if statement_parser.parse_statement_body().is_err() {
-            return;
-        }
-
-        let definition_site: String = definition
-            .get_range()
-            .map(|range| {
-                let spelling = range.get_start().get_spelling_location();
-
-                match spelling.file {
-                    Some(file) => format!(
-                        "{}:{}:{}",
-                        file.get_path().display(),
-                        spelling.line,
-                        spelling.column
-                    ),
-                    None => String::new(),
-                }
-            })
-            .unwrap_or_default();
-
-        let body_range: Option<(PathBuf, u32, u32)> = definition.get_range().map(|range| {
-            let start: clang::source::Location<'_> = range.get_start().get_spelling_location();
-            let end: clang::source::Location<'_> = range.get_end().get_spelling_location();
-
-            let path: PathBuf = start
-                .file
-                .as_ref()
-                .map(|file| file.get_path())
-                .unwrap_or_else(|| PathBuf::from(""));
-
-            (path, start.offset, end.offset)
-        });
-
-        self.macro_definition_sites
-            .entry(macro_name.clone())
-            .or_insert(definition_site);
-
-        if let Some(range) = body_range {
-            self.macro_body_ranges
-                .entry(macro_name.clone())
-                .or_insert(range);
-        }
-
-        self.statement_macro_definitions
-            .push((macro_name, parameter_names, body_tokens));
     }
 
     #[inline]
@@ -376,6 +300,88 @@ impl MacroTable {
     }
 
     #[inline]
+    pub fn register_object_macro(
+        &mut self,
+        macro_name: String,
+        body: Vec<crate::macro_token::MacroToken>,
+    ) {
+        self.object_macro_definitions.insert(macro_name, body);
+    }
+}
+
+impl MacroTable {
+    #[inline]
+    pub fn add_statement_macro_definition(
+        &mut self,
+        macro_name: String,
+        parameter_names: Vec<String>,
+        body_tokens: Vec<crate::macro_token::MacroToken>,
+        definition: &clang::Entity<'_>,
+    ) {
+        if self
+            .statement_macro_definitions
+            .iter()
+            .any(|entry| entry.0 == macro_name)
+        {
+            return;
+        }
+
+        let statement_lexemes: Vec<String> = crate::macro_token::texts(&body_tokens);
+
+        let mut statement_parser: crate::macro_parser::MacroParser<'_> =
+            crate::macro_parser::MacroParser::new(&statement_lexemes);
+
+        if statement_parser.parse_statement_body().is_err() {
+            return;
+        }
+
+        let definition_site: String = definition
+            .get_range()
+            .map(|range| {
+                let lexeme = range.get_start().get_spelling_location();
+
+                match lexeme.file {
+                    Some(file) => format!(
+                        "{}:{}:{}",
+                        file.get_path().display(),
+                        lexeme.line,
+                        lexeme.column
+                    ),
+                    None => String::new(),
+                }
+            })
+            .unwrap_or_default();
+
+        let body_range: Option<(PathBuf, u32, u32)> = definition.get_range().map(|range| {
+            let start: clang::source::Location<'_> = range.get_start().get_spelling_location();
+            let end: clang::source::Location<'_> = range.get_end().get_spelling_location();
+
+            let path: PathBuf = start
+                .file
+                .as_ref()
+                .map(|file| file.get_path())
+                .unwrap_or_else(|| PathBuf::from(""));
+
+            (path, start.offset, end.offset)
+        });
+
+        self.macro_definition_sites
+            .entry(macro_name.clone())
+            .or_insert(definition_site);
+
+        if let Some(range) = body_range {
+            self.macro_body_ranges
+                .entry(macro_name.clone())
+                .or_insert(range);
+        }
+
+        self.statement_macro_definitions
+            .push((macro_name, parameter_names, body_tokens));
+    }
+}
+
+impl MacroTable {
+    #[inline]
     pub fn mark_statement_macro_function_emitted(&mut self, macro_name: &str) {
         self.emitted_statement_macro_functions
             .insert(macro_name.to_string());
@@ -397,11 +403,9 @@ impl MacroTable {
 }
 
 impl MacroTable {
-    pub fn make_location_key(entity: &clang::Entity<'_>) -> Option<String> {
+    pub fn get_location(entity: &clang::Entity<'_>) -> Option<String> {
         let range: clang::source::SourceRange<'_> = entity.get_range()?;
-
         let location: clang::source::Location<'_> = range.get_start().get_expansion_location();
-
         let file: clang::source::File<'_> = location.file?;
 
         Some(format!(
@@ -417,7 +421,7 @@ impl MacroTable {
     pub fn scan_macro_expansions(&mut self, root: &clang::Entity<'_>) {
         if root.get_kind() == clang::EntityKind::MacroExpansion {
             if let (Some(macro_name), Some(location_key)) =
-                (root.get_name(), Self::make_location_key(root))
+                (root.get_name(), Self::get_location(root))
             {
                 self.record_macro_expansion(location_key, macro_name);
             }

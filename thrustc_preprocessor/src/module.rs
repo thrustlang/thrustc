@@ -96,6 +96,13 @@ impl Module {
     }
 
     #[inline]
+    pub fn add_symbol(&mut self, symbol: Symbol) {
+        self.symbols.push(symbol);
+    }
+}
+
+impl Module {
+    #[inline]
     pub fn merge_submodule(&mut self, module: Module) {
         let path: PathBuf = module.get_path().to_path_buf();
 
@@ -109,12 +116,9 @@ impl Module {
             self.submodules.push(module);
         }
     }
+}
 
-    #[inline]
-    pub fn add_symbol(&mut self, symbol: Symbol) {
-        self.symbols.push(symbol);
-    }
-
+impl Module {
     #[inline]
     pub fn get_submodule_mut(&mut self, name: &str) -> Option<&mut Module> {
         self.submodules
@@ -159,16 +163,12 @@ impl Module {
         None
     }
 
-    pub fn search_exported_symbol(
-        &self,
-        hint: String,
-        target_variant: Variant,
-    ) -> Option<&Symbol> {
+    #[inline]
+    pub fn search_exported_symbol(&self, hint: String, target_variant: Variant) -> Option<&Symbol> {
         self.search_symbol(hint, target_variant)
             .filter(|symbol| symbol.public)
     }
 
-    #[inline]
     pub fn find_submodule(&self, access: Vec<String>) -> Option<&Module> {
         let mut current_module: &Module = self;
         let mut index: usize = 0;
@@ -223,6 +223,13 @@ impl Module {
     }
 
     #[inline]
+    pub fn get_unique_id(&self) -> &Uuid {
+        &self.unique_id
+    }
+}
+
+impl Module {
+    #[inline]
     pub fn matches_name(&self, name: &str) -> bool {
         self.base_name == name
             || self
@@ -242,10 +249,5 @@ impl Module {
         let (prefix, _) = access.split_at(alias.len());
 
         (prefix == alias).then_some(alias.len())
-    }
-
-    #[inline]
-    pub fn get_unique_id(&self) -> &Uuid {
-        &self.unique_id
     }
 }

@@ -12,7 +12,7 @@ repository.workspace = true
 [dependencies]
 clang = { workspace = true }
 
-thrustc_c_import_synthesis = { path = "../thrustc_c_import_synthesis" }
+thrustc_import_c = { path = "../thrustc_import_c" }
 thrustc_compile_time = { path = "../thrustc_compile_time" }
 thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_constants = { path = "../thrustc_constants" }

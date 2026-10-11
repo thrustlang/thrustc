@@ -23,7 +23,7 @@ use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_lexer::Lexer;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_token::{traits::TokenExtensions, Token};
+use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 
 use crate::{context::PreprocessorContext, module::Module, parser::ModuleParser, std_library};
@@ -64,7 +64,7 @@ pub fn parse_import<'preprocessor>(
     if parser.check(TokenType::Only) {
         parser.consume(TokenType::Only)?;
 
-        only = Some(self::parse_only_list(parser)?);
+        only = Some(self::parse_only(parser)?);
     }
 
     let mut alias: Option<Vec<String>> = None;
@@ -266,7 +266,7 @@ fn parse_std_import<'preprocessor>(
     if parser.check(TokenType::Only) {
         parser.consume(TokenType::Only)?;
 
-        only = Some(self::parse_only_list(parser)?);
+        only = Some(self::parse_only(parser)?);
     }
 
     let mut alias: Option<Vec<String>> = None;
@@ -325,7 +325,7 @@ fn parse_std_import<'preprocessor>(
     }
 }
 
-fn parse_only_list<'preprocessor>(
+fn parse_only<'preprocessor>(
     parser: &mut PreprocessorContext<'preprocessor>,
 ) -> Result<Vec<String>, ()> {
     parser.consume(TokenType::LBrace)?;

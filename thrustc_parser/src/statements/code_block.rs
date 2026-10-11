@@ -163,7 +163,7 @@ fn build_dealloc_defer<'parser>(
             deallocator_name = if deallocator.len() > 1 {
                 let access: &[String] = &deallocator[..deallocator.len().saturating_sub(1)];
 
-                Some(thrustc_import_synthesis::synthesis::qualified_symbol_name(
+                Some(thrustc_import::synthesis::qualified_symbol_name(
                     access, name,
                 ))
             } else {
@@ -171,7 +171,7 @@ fn build_dealloc_defer<'parser>(
             };
         }
     } else if let Some((name, args)) =
-        thrustc_import_synthesis::synthesis::ensure_deallocator_for_type(
+        thrustc_import::synthesis::ensure_deallocator_for_type(
             &mut ctx.import_context(),
             kind,
             *span,

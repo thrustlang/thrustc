@@ -20,12 +20,10 @@
 use std::collections::HashMap;
 
 use thrustc_code_location::Span;
-use thrustc_typesystem::Type;
 
 use crate::macro_ast::{ForInit, MacroExpr, MacroStmt, MacroUnOp};
 
-#[derive(Debug)]
-pub struct MacroType;
+type TypeSlots = HashMap<String, Option<InferredType>>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InferredType {
@@ -43,7 +41,8 @@ impl InferredType {
     }
 }
 
-type TypeSlots = HashMap<String, Option<InferredType>>;
+#[derive(Debug)]
+pub struct MacroType;
 
 impl MacroType {
     pub fn infer_parameter_types(
@@ -115,9 +114,7 @@ impl MacroType {
                 }
             }
 
-            MacroExpr::Literal(text) => {
-                Self::literal_spelling_type(text).or_else(|| expected.cloned())
-            }
+            MacroExpr::Literal(text) => Self::literal_type(text).or_else(|| expected.cloned()),
 
             MacroExpr::Null => expected.cloned(),
 
@@ -451,7 +448,7 @@ impl MacroType {
 }
 
 impl MacroType {
-    fn literal_spelling_type(text: &str) -> Option<InferredType> {
+    fn literal_type(text: &str) -> Option<InferredType> {
         if text.starts_with('"') {
             return None;
         }
@@ -472,7 +469,7 @@ impl MacroType {
     #[inline]
     pub fn literal_argument_type(expr: &MacroExpr) -> Option<InferredType> {
         match expr {
-            MacroExpr::Literal(text) => Self::literal_spelling_type(text),
+            MacroExpr::Literal(text) => Self::literal_type(text),
             MacroExpr::Paren(inner) => Self::literal_argument_type(inner),
             _ => None,
         }
@@ -510,13 +507,11 @@ impl MacroType {
     ) -> Option<InferredType> {
         let canonical: clang::Type<'_> = ty.get_canonical_type();
 
-        let prefix: String = String::new();
-
         if canonical.get_kind() == clang::TypeKind::Pointer {
             let pointee: clang::Type<'_> = canonical.get_pointee_type()?;
 
             let pointee_text: String =
-                crate::type_format::format_clang_type_thrust(&pointee, ctx, &prefix, span).ok()?;
+                crate::type_format::format_clang_type_thrust(&pointee, ctx, None, span).ok()?;
 
             let pointee_text: &str = pointee_text.strip_prefix("const ").unwrap_or(&pointee_text);
 
@@ -536,7 +531,7 @@ impl MacroType {
             let element: clang::Type<'_> = canonical.get_element_type()?;
 
             let element_text: String =
-                crate::type_format::format_clang_type_thrust(&element, ctx, &prefix, span).ok()?;
+                crate::type_format::format_clang_type_thrust(&element, ctx, None, span).ok()?;
 
             let element_text: &str = element_text.strip_prefix("const ").unwrap_or(&element_text);
 
@@ -549,7 +544,8 @@ impl MacroType {
             ))));
         }
 
-        let text: String = crate::type_format::format_clang_type_thrust(ty, ctx, &prefix, span).ok()?;
+        let text: String =
+            crate::type_format::format_clang_type_thrust(ty, ctx, None, span).ok()?;
 
         let text: &str = text.strip_prefix("const ").unwrap_or(&text);
 
@@ -576,46 +572,13 @@ impl MacroType {
     #[inline]
     fn bind_slot(slots: &mut TypeSlots, name: &str, ty: InferredType) {
         if let Some(slot) = slots.get_mut(name) {
-            let keep_existing_pointer: bool = matches!(slot.as_ref(), Some(InferredType::Pointer(_)))
-                && matches!(&ty, InferredType::Known(text) if text.starts_with("ptr["));
+            let keep_existing_pointer: bool =
+                matches!(slot.as_ref(), Some(InferredType::Pointer(_)))
+                    && matches!(&ty, InferredType::Known(text) if text.starts_with("ptr["));
 
             if !keep_existing_pointer {
                 *slot = Some(ty);
             }
         }
-    }
-}
-
-impl MacroType {
-    #[inline]
-    pub fn from_thrust_text(text: &str, span: Span) -> Type {
-        match text {
-            "s8" => Type::S8 { span },
-            "s16" => Type::S16 { span },
-            "s32" => Type::S32 { span },
-            "s64" => Type::S64 { span },
-            "ssize" => Type::SSize { span },
-            "u8" => Type::U8 { span },
-            "u16" => Type::U16 { span },
-            "u32" => Type::U32 { span },
-            "u64" => Type::U64 { span },
-            "u128" => Type::U128 { span },
-            "usize" => Type::USize { span },
-            "f32" => Type::F32 { span },
-            "f64" => Type::F64 { span },
-            "f128" => Type::F128 { span },
-            "bool" => Type::Bool { span },
-            "char" => Type::Char { span },
-            "void" => Type::Void { span },
-            _ => Type::Unresolved {
-                hint: text.to_string(),
-                span,
-            },
-        }
-    }
-
-    #[inline]
-    pub fn to_thrust_type(ty: &Type) -> String {
-        crate::type_format::format_type_thrust(ty)
     }
 }

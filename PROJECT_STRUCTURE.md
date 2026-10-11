@@ -111,12 +111,12 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
 - **`thrustc_generics_monomorphization`**  
   Parser-level monomorphization driver for generics: resolves generic calls and instantiates concrete templates during parsing.
 
-- **`thrustc_import_synthesis`**  
-  Import resolution and synthesis for functions, intrinsics, constants, statics, structs, enums and custom types, including collision handling. Thrust-side counterpart of `thrustc_c_import_synthesis`.
+- **`thrustc_import`**  
+  Import resolution and synthesis for functions, intrinsics, constants, statics, structs, enums and custom types, including collision handling. Thrust-side counterpart of `thrustc_import_c`.
 
 ### C Interop: Import and Transpilation
 
-- **`thrustc_c_import_synthesis`**  
+- **`thrustc_import_c`**  
   C declaration import pipeline. Thrust-side counterpart handling for C functions, types, records, and macros.
 
 - **`thrustc_c_transpiler`**  

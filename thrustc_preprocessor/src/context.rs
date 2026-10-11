@@ -92,11 +92,9 @@ impl PreprocessorContext<'_> {
         }
 
         if !self.errors.is_empty() {
-            {
-                for error in self.errors.iter() {
-                    self.diagnostician
-                        .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
-                }
+            for error in self.errors.iter() {
+                self.diagnostician
+                    .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
             }
 
             return Err(());
@@ -207,6 +205,7 @@ impl PreprocessorContext<'_> {
     pub fn match_token(&mut self, kind: TokenType) -> Result<bool, ()> {
         if self.peek().kind == kind {
             self.only_advance()?;
+
             return Ok(true);
         }
 
@@ -259,6 +258,7 @@ impl PreprocessorContext<'_> {
     pub fn only_advance(&mut self) -> Result<(), ()> {
         if !self.is_eof() {
             self.current += 1;
+
             return Ok(());
         }
 
@@ -269,6 +269,7 @@ impl PreprocessorContext<'_> {
     pub fn advance(&mut self) -> Result<&Token, ()> {
         if !self.is_eof() {
             self.current += 1;
+
             return Ok(self.previous());
         }
 

@@ -53,7 +53,9 @@ impl ModuleRegistry {
             modules.push(Rc::new(module.clone()));
         }
     }
+}
 
+impl ModuleRegistry {
     #[inline]
     pub fn find(&self, name: &str) -> Option<Rc<Module>> {
         self.modules.get(name).and_then(|modules| {

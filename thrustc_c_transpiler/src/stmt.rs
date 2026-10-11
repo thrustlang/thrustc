@@ -36,7 +36,7 @@ pub fn translate_stmt(
     let base_pending: usize = ctx.pending_statements_len();
 
     let mut lines: Vec<String> = (|| -> TranspilerResult<Vec<String>> {
-        let prefix: String = crate::macros::expansion_prefix(entity);
+        let prefix: Option<String> = crate::macro_error::prefix(entity);
         let indent_str: String = "    ".repeat(indent);
 
         if let Some(call) = crate::macros::try_extract_statement_macro_call(ctx, entity, span) {
@@ -98,29 +98,17 @@ pub fn translate_stmt(
 
                 for decl in decl_iter {
                     let Some(name) = decl.get_name() else {
-                        ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            format!(
+                        let message: String = match prefix.as_deref() {
+                            Some(prefix) => format!(
                                 "C translation failed:\n{prefix}Encountered a local variable without a name."
                             ),
-                            "Rewrite the C input to avoid the unsupported construct.".into(),
-                            None,
-                            span,
-                        ));
+                            None => "C translation failed:\nEncountered a local variable without a name.".to_string(),
+                        };
 
-                        return Err(TranspilerError::Abort);
-                    };
-
-                    let Some(var_ty) = decl.get_type() else {
                         ctx.get_mut_transpiler_context()
-                            .add_error_fail(CompilationIssue::Error(
+                            .add_error(CompilationIssue::Error(
                                 CompilationIssueCode::E0110,
-                                {
-                                    let detail: String =
-                                        format!("Missing type for local variable '{name}'.");
-
-                                    format!("C translation failed:\n{prefix}{detail}")
-                                },
+                                message,
                                 "Rewrite the C input to avoid the unsupported construct.".into(),
                                 None,
                                 span,
@@ -129,8 +117,32 @@ pub fn translate_stmt(
                         return Err(TranspilerError::Abort);
                     };
 
-                    let mut ty_text: String =
-                        crate::type_format::format_clang_type_thrust(&var_ty, ctx, &prefix, span)?;
+                    let Some(var_ty) = decl.get_type() else {
+                        let detail: String = format!("Missing type for local variable '{name}'.");
+
+                        let message: String = match prefix.as_deref() {
+                            Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                            None => format!("C translation failed:\n{detail}"),
+                        };
+
+                        ctx.get_mut_transpiler_context()
+                            .add_error(CompilationIssue::Error(
+                                CompilationIssueCode::E0110,
+                                message,
+                                "Rewrite the C input to avoid the unsupported construct.".into(),
+                                None,
+                                span,
+                            ));
+
+                        return Err(TranspilerError::Abort);
+                    };
+
+                    let mut ty_text: String = crate::type_format::format_clang_type_thrust(
+                        &var_ty,
+                        ctx,
+                        prefix.as_deref(),
+                        span,
+                    )?;
 
                     if var_ty.is_const_qualified() {
                         ty_text = ty_text
@@ -187,10 +199,17 @@ pub fn translate_stmt(
                 let children: Vec<clang::Entity<'_>> = entity.get_children();
 
                 if children.len() < 2 {
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => {
+                            format!("C translation failed:\n{prefix}Malformed if statement.")
+                        }
+                        None => "C translation failed:\nMalformed if statement.".to_string(),
+                    };
+
                     ctx.get_mut_transpiler_context()
-                        .add_error_fail(CompilationIssue::Error(
+                        .add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            format!("C translation failed:\n{prefix}Malformed if statement."),
+                            message,
                             "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
@@ -312,10 +331,17 @@ pub fn translate_stmt(
                 let children: Vec<clang::Entity<'_>> = entity.get_children();
 
                 if children.len() < 2 {
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => {
+                            format!("C translation failed:\n{prefix}Malformed while statement.")
+                        }
+                        None => "C translation failed:\nMalformed while statement.".to_string(),
+                    };
+
                     ctx.get_mut_transpiler_context()
-                        .add_error_fail(CompilationIssue::Error(
+                        .add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            format!("C translation failed:\n{prefix}Malformed while statement."),
+                            message,
                             "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
@@ -377,7 +403,7 @@ pub fn translate_stmt(
 
             clang::EntityKind::DoStmt => {
                 let macro_name: Option<String> =
-                    crate::macro_table::MacroTable::make_location_key(entity)
+                    crate::macro_table::MacroTable::get_location(entity)
                         .and_then(|key| ctx.get_macro_table().find_macro_name(&key));
 
                 let base_error_count: usize = ctx.get_transpiler_context().error_count();
@@ -385,9 +411,16 @@ pub fn translate_stmt(
                 let children: Vec<clang::Entity<'_>> = entity.get_children();
 
                 if children.len() < 2 {
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => {
+                            format!("C translation failed:\n{prefix}Malformed do-while statement.")
+                        }
+                        None => "C translation failed:\nMalformed do-while statement.".to_string(),
+                    };
+
                     let issue: CompilationIssue = CompilationIssue::Error(
                         CompilationIssueCode::E0110,
-                        format!("C translation failed:\n{prefix}Malformed do-while statement."),
+                        message,
                         "Rewrite the C input to avoid the unsupported construct.".into(),
                         None,
                         span,
@@ -406,7 +439,7 @@ pub fn translate_stmt(
                         return Ok(Vec::new());
                     }
 
-                    ctx.get_mut_transpiler_context().add_error_fail(issue);
+                    ctx.get_mut_transpiler_context().add_error(issue);
                     return Err(TranspilerError::Abort);
                 }
 
@@ -516,12 +549,19 @@ pub fn translate_stmt(
                 let children: Vec<clang::Entity<'_>> = entity.get_children();
 
                 if children.is_empty() {
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => format!(
+                            "C translation failed:\n{prefix}Unsupported for statement shape."
+                        ),
+                        None => {
+                            "C translation failed:\nUnsupported for statement shape.".to_string()
+                        }
+                    };
+
                     ctx.get_mut_transpiler_context()
-                        .add_error_fail(CompilationIssue::Error(
+                        .add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            format!(
-                                "C translation failed:\n{prefix}Unsupported for statement shape."
-                            ),
+                            message,
                             "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
@@ -551,12 +591,19 @@ pub fn translate_stmt(
                     .collect();
 
                 if normalized_header_nodes.len() > 3 {
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => format!(
+                            "C translation failed:\n{prefix}Unsupported for statement shape."
+                        ),
+                        None => {
+                            "C translation failed:\nUnsupported for statement shape.".to_string()
+                        }
+                    };
+
                     ctx.get_mut_transpiler_context()
-                        .add_error_fail(CompilationIssue::Error(
+                        .add_error(CompilationIssue::Error(
                             CompilationIssueCode::E0110,
-                            format!(
-                                "C translation failed:\n{prefix}Unsupported for statement shape."
-                            ),
+                            message,
                             "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
@@ -607,28 +654,43 @@ pub fn translate_stmt(
                             .collect();
 
                         if decls.is_empty() {
-                            ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                                CompilationIssueCode::E0110,
-                                format!(
+                            let message: String = match prefix.as_deref() {
+                                Some(prefix) => format!(
                                     "C translation failed:\n{prefix}Unsupported for-loop initializer."
                                 ),
-                                "Rewrite the C input to avoid the unsupported construct.".into(),
-                                None,
-                                span,
-                            ));
+                                None => "C translation failed:\nUnsupported for-loop initializer."
+                                    .to_string(),
+                            };
+
+                            ctx.get_mut_transpiler_context()
+                                .add_error(CompilationIssue::Error(
+                                    CompilationIssueCode::E0110,
+                                    message,
+                                    "Rewrite the C input to avoid the unsupported construct."
+                                        .into(),
+                                    None,
+                                    span,
+                                ));
                             return Err(TranspilerError::Abort);
                         }
 
                         if decls.len() > 1 {
-                            ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                                CompilationIssueCode::E0110,
-                                format!(
+                            let message: String = match prefix.as_deref() {
+                                Some(prefix) => format!(
                                     "C translation failed:\n{prefix}For-loops with multiple initializer declarations are not supported yet."
                                 ),
-                                "Rewrite the C input to avoid the unsupported construct.".into(),
-                                None,
-                                span,
-                            ));
+                                None => "C translation failed:\nFor-loops with multiple initializer declarations are not supported yet.".to_string(),
+                            };
+
+                            ctx.get_mut_transpiler_context()
+                                .add_error(CompilationIssue::Error(
+                                    CompilationIssueCode::E0110,
+                                    message,
+                                    "Rewrite the C input to avoid the unsupported construct."
+                                        .into(),
+                                    None,
+                                    span,
+                                ));
 
                             return Err(TranspilerError::Abort);
                         }
@@ -643,29 +705,43 @@ pub fn translate_stmt(
                         });
 
                         let Some(name) = var.get_name() else {
-                            ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                                CompilationIssueCode::E0110,
-                                format!(
+                            let message: String = match prefix.as_deref() {
+                                Some(prefix) => format!(
                                     "C translation failed:\n{prefix}For-loop initializer variable has no name."
                                 ),
-                                "Rewrite the C input to avoid the unsupported construct.".into(),
-                                None,
-                                span,
-                            ));
+                                None => "C translation failed:\nFor-loop initializer variable has no name.".to_string(),
+                            };
+
+                            ctx.get_mut_transpiler_context()
+                                .add_error(CompilationIssue::Error(
+                                    CompilationIssueCode::E0110,
+                                    message,
+                                    "Rewrite the C input to avoid the unsupported construct."
+                                        .into(),
+                                    None,
+                                    span,
+                                ));
 
                             return Err(TranspilerError::Abort);
                         };
 
                         let Some(var_ty) = var.get_type() else {
-                            ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                                CompilationIssueCode::E0110,
-                                format!(
+                            let message: String = match prefix.as_deref() {
+                                Some(prefix) => format!(
                                     "C translation failed:\n{prefix}For-loop initializer variable has no type."
                                 ),
-                                "Rewrite the C input to avoid the unsupported construct.".into(),
-                                None,
-                                span,
-                            ));
+                                None => "C translation failed:\nFor-loop initializer variable has no type.".to_string(),
+                            };
+
+                            ctx.get_mut_transpiler_context()
+                                .add_error(CompilationIssue::Error(
+                                    CompilationIssueCode::E0110,
+                                    message,
+                                    "Rewrite the C input to avoid the unsupported construct."
+                                        .into(),
+                                    None,
+                                    span,
+                                ));
 
                             return Err(TranspilerError::Abort);
                         };
@@ -673,7 +749,10 @@ pub fn translate_stmt(
                         let name: String = { crate::util::normalize_to_thrust_identifier(&name) };
 
                         let mut ty_text: String = crate::type_format::format_clang_type_thrust(
-                            &var_ty, ctx, &prefix, span,
+                            &var_ty,
+                            ctx,
+                            prefix.as_deref(),
+                            span,
                         )?;
 
                         if var_ty.is_const_qualified() {
@@ -707,12 +786,18 @@ pub fn translate_stmt(
                     }
 
                     Some(_) => {
+                        let message: String = match prefix.as_deref() {
+                            Some(prefix) => format!(
+                                "C translation failed:\n{prefix}Unsupported for-loop initializer."
+                            ),
+                            None => "C translation failed:\nUnsupported for-loop initializer."
+                                .to_string(),
+                        };
+
                         ctx.get_mut_transpiler_context()
-                            .add_error_fail(CompilationIssue::Error(
+                            .add_error(CompilationIssue::Error(
                                 CompilationIssueCode::E0110,
-                                format!(
-                                    "C translation failed:\n{prefix}Unsupported for-loop initializer."
-                                ),
+                                message,
                                 "Rewrite the C input to avoid the unsupported construct.".into(),
                                 None,
                                 span,
@@ -737,34 +822,69 @@ pub fn translate_stmt(
 
                     if kind == clang::EntityKind::UnaryOperator {
                         let Some(range) = node.get_range() else {
-                            ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                                CompilationIssueCode::E0110,
-                                format!(
-                                    "C translation failed:\n{prefix}Unable to translate for-loop increment{}.",
-                                    crate::macros::origin_note(node)
+                            let origin: Option<String> = crate::macro_error::origin_note(node);
+
+                            let message: String = match (prefix.as_deref(), origin.as_deref()) {
+                                (Some(prefix), Some(origin)) => format!(
+                                    "C translation failed:\n{prefix}Unable to translate for-loop increment{origin}."
                                 ),
-                                "Rewrite the C input to avoid the unsupported construct.".into(),
-                                None,
-                                span,
-                            ));
+                                (Some(prefix), None) => format!(
+                                    "C translation failed:\n{prefix}Unable to translate for-loop increment."
+                                ),
+                                (None, Some(origin)) => format!(
+                                    "C translation failed:\nUnable to translate for-loop increment{origin}."
+                                ),
+                                (None, None) => {
+                                    "C translation failed:\nUnable to translate for-loop increment."
+                                        .to_string()
+                                }
+                            };
+
+                            ctx.get_mut_transpiler_context()
+                                .add_error(CompilationIssue::Error(
+                                    CompilationIssueCode::E0110,
+                                    message,
+                                    "Rewrite the C input to avoid the unsupported construct."
+                                        .into(),
+                                    None,
+                                    span,
+                                ));
 
                             return Err(TranspilerError::Abort);
                         };
 
-                        let spellings: Vec<String> =
-                            crate::macro_lex::range_spellings(&range, node);
+                        let lexemes: Vec<String> = crate::macro_lex::range_lexemes(&range, node);
 
-                        if spellings.contains(&"++".to_string())
-                            || spellings.contains(&"--".to_string())
+                        if lexemes.contains(&"++".to_string())
+                            || lexemes.contains(&"--".to_string())
                         {
                             let Some(operand) = node.get_children().into_iter().find(|child| {
                                 crate::clang_util::is_supported_expr_kind(child.get_kind())
                             }) else {
-                                ctx.get_mut_transpiler_context().add_error_fail(
+                                let origin: Option<String> = crate::macro_error::origin_note(node);
+
+                                let message: String = match (prefix.as_deref(), origin.as_deref()) {
+                                    (Some(prefix), Some(origin)) => format!(
+                                        "C translation failed:\n{prefix}Unsupported for-loop increment{origin}."
+                                    ),
+                                    (Some(prefix), None) => format!(
+                                        "C translation failed:\n{prefix}Unsupported for-loop increment."
+                                    ),
+                                    (None, Some(origin)) => format!(
+                                        "C translation failed:\nUnsupported for-loop increment{origin}."
+                                    ),
+                                    (None, None) => {
+                                        "C translation failed:\nUnsupported for-loop increment."
+                                            .to_string()
+                                    }
+                                };
+
+                                ctx.get_mut_transpiler_context().add_error(
                                     CompilationIssue::Error(
                                         CompilationIssueCode::E0110,
-                                        format!("C translation failed:\n{prefix}Unsupported for-loop increment{}.", crate::macros::origin_note(node)),
-                                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                                        message,
+                                        "Rewrite the C input to avoid the unsupported construct."
+                                            .into(),
                                         None,
                                         span,
                                     ),
@@ -775,7 +895,7 @@ pub fn translate_stmt(
                             let name: String =
                                 crate::expr::translate_expr(&operand, span, Location::RValue, ctx)?;
 
-                            if spellings.contains(&"++".to_string()) {
+                            if lexemes.contains(&"++".to_string()) {
                                 format!("{name} += 1")
                             } else {
                                 format!("{name} -= 1")
@@ -783,28 +903,59 @@ pub fn translate_stmt(
                         } else if crate::clang_util::is_supported_expr_kind(kind) {
                             crate::expr::translate_expr(node, span, Location::RValue, ctx)?
                         } else {
-                            ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                                CompilationIssueCode::E0110,
-                                format!(
-                                    "C translation failed:\n{prefix}Unsupported for-loop increment{}.",
-                                    crate::macros::origin_note(node)
+                            let origin: Option<String> = crate::macro_error::origin_note(node);
+
+                            let message: String = match (prefix.as_deref(), origin.as_deref()) {
+                                (Some(prefix), Some(origin)) => format!(
+                                    "C translation failed:\n{prefix}Unsupported for-loop increment{origin}."
                                 ),
-                                "Rewrite the C input to avoid the unsupported construct.".into(),
-                                None,
-                                span,
-                            ));
+                                (Some(prefix), None) => format!(
+                                    "C translation failed:\n{prefix}Unsupported for-loop increment."
+                                ),
+                                (None, Some(origin)) => format!(
+                                    "C translation failed:\nUnsupported for-loop increment{origin}."
+                                ),
+                                (None, None) => {
+                                    "C translation failed:\nUnsupported for-loop increment."
+                                        .to_string()
+                                }
+                            };
+
+                            ctx.get_mut_transpiler_context()
+                                .add_error(CompilationIssue::Error(
+                                    CompilationIssueCode::E0110,
+                                    message,
+                                    "Rewrite the C input to avoid the unsupported construct."
+                                        .into(),
+                                    None,
+                                    span,
+                                ));
                             return Err(TranspilerError::Abort);
                         }
                     } else if crate::clang_util::is_supported_expr_kind(kind) {
                         crate::expr::translate_expr(node, span, Location::RValue, ctx)?
                     } else {
+                        let origin: Option<String> = crate::macro_error::origin_note(node);
+
+                        let message: String = match (prefix.as_deref(), origin.as_deref()) {
+                            (Some(prefix), Some(origin)) => format!(
+                                "C translation failed:\n{prefix}Unsupported for-loop increment{origin}."
+                            ),
+                            (Some(prefix), None) => format!(
+                                "C translation failed:\n{prefix}Unsupported for-loop increment."
+                            ),
+                            (None, Some(origin)) => format!(
+                                "C translation failed:\nUnsupported for-loop increment{origin}."
+                            ),
+                            (None, None) => {
+                                "C translation failed:\nUnsupported for-loop increment.".to_string()
+                            }
+                        };
+
                         ctx.get_mut_transpiler_context()
-                            .add_error_fail(CompilationIssue::Error(
+                            .add_error(CompilationIssue::Error(
                                 CompilationIssueCode::E0110,
-                                format!(
-                                    "C translation failed:\n{prefix}Unsupported for-loop increment{}.",
-                                    crate::macros::origin_note(node)
-                                ),
+                                message,
                                 "Rewrite the C input to avoid the unsupported construct.".into(),
                                 None,
                                 span,
@@ -925,7 +1076,7 @@ pub fn translate_stmt(
 
             clang::EntityKind::CompoundStmt => {
                 let macro_name: Option<String> =
-                    crate::macro_table::MacroTable::make_location_key(entity)
+                    crate::macro_table::MacroTable::get_location(entity)
                         .and_then(|key| ctx.get_macro_table().find_macro_name(&key));
 
                 let mut body_lines: Vec<String> = Vec::new();
@@ -968,15 +1119,18 @@ pub fn translate_stmt(
 
                     Ok(vec![format!("{indent_str}{expr};")])
                 } else {
-                    ctx.get_mut_transpiler_context()
-                        .add_error_fail(CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            {
-                                let detail: String =
-                                    format!("Unsupported statement kind: {:?}", entity.get_kind());
+                    let detail: String =
+                        format!("Unsupported statement kind: {:?}", entity.get_kind());
 
-                                format!("C translation failed:\n{prefix}{detail}")
-                            },
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => format!("C translation failed:\n{prefix}{detail}"),
+                        None => format!("C translation failed:\n{detail}"),
+                    };
+
+                    ctx.get_mut_transpiler_context()
+                        .add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0110,
+                            message,
                             "Rewrite the C input to avoid the unsupported construct.".into(),
                             None,
                             span,
@@ -1017,15 +1171,20 @@ fn translate_switch_stmt(
     loop_continue_action: Option<&str>,
     ctx: &mut crate::macros::MacroContext<'_>,
 ) -> TranspilerResult<Vec<String>> {
-    let prefix: String = crate::macros::expansion_prefix(entity);
+    let prefix: Option<String> = crate::macro_error::prefix(entity);
     let indent_str: String = "    ".repeat(indent);
     let children: Vec<clang::Entity<'_>> = entity.get_children();
 
     if children.len() < 2 {
+        let message: String = match prefix.as_deref() {
+            Some(prefix) => format!("C translation failed:\n{prefix}Malformed switch statement."),
+            None => "C translation failed:\nMalformed switch statement.".to_string(),
+        };
+
         ctx.get_mut_transpiler_context()
-            .add_error_fail(CompilationIssue::Error(
+            .add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
-                format!("C translation failed:\n{prefix}Malformed switch statement."),
+                message,
                 "Rewrite the C input to avoid the unsupported construct.".into(),
                 None,
                 span,
@@ -1072,15 +1231,21 @@ fn translate_switch_stmt(
                 ctx,
             )?;
         } else if current_labels.is_empty() {
-            ctx.get_mut_transpiler_context().add_error_fail(CompilationIssue::Error(
-                CompilationIssueCode::E0110,
-                format!(
+            let message: String = match prefix.as_deref() {
+                Some(prefix) => format!(
                     "C translation failed:\n{prefix}Switch statement contains unlabeled statements before the first case/default."
                 ),
-                "Rewrite the C input to avoid the unsupported construct.".into(),
-                None,
-                span,
-            ));
+                None => "C translation failed:\nSwitch statement contains unlabeled statements before the first case/default.".to_string(),
+            };
+
+            ctx.get_mut_transpiler_context()
+                .add_error(CompilationIssue::Error(
+                    CompilationIssueCode::E0110,
+                    message,
+                    "Rewrite the C input to avoid the unsupported construct.".into(),
+                    None,
+                    span,
+                ));
             return Err(TranspilerError::Abort);
         } else {
             current_body_nodes.push(*item);
@@ -1101,12 +1266,19 @@ fn translate_switch_stmt(
     }
 
     if segments.is_empty() {
+        let message: String = match prefix.as_deref() {
+            Some(prefix) => format!(
+                "C translation failed:\n{prefix}Switch statement has no translatable branches."
+            ),
+            None => {
+                "C translation failed:\nSwitch statement has no translatable branches.".to_string()
+            }
+        };
+
         ctx.get_mut_transpiler_context()
-            .add_error_fail(CompilationIssue::Error(
+            .add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
-                format!(
-                    "C translation failed:\n{prefix}Switch statement has no translatable branches."
-                ),
+                message,
                 "Rewrite the C input to avoid the unsupported construct.".into(),
                 None,
                 span,
@@ -1231,17 +1403,24 @@ fn collect_switch_labels_and_body<'stmt>(
     body_nodes: &mut Vec<clang::Entity<'stmt>>,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
 ) -> TranspilerResult<()> {
-    let prefix: String = crate::macros::expansion_prefix(entity);
+    let prefix: Option<String> = crate::macro_error::prefix(entity);
 
     if entity.get_kind() == clang::EntityKind::CaseStmt {
         let children: Vec<clang::Entity<'_>> = entity.get_children();
 
         if children.is_empty() {
+            let message: String = match prefix.as_deref() {
+                Some(prefix) => {
+                    format!("C translation failed:\n{prefix}Malformed case statement.")
+                }
+                None => "C translation failed:\nMalformed case statement.".to_string(),
+            };
+
             macro_ctx
                 .get_mut_transpiler_context()
-                .add_error_fail(CompilationIssue::Error(
+                .add_error(CompilationIssue::Error(
                     CompilationIssueCode::E0110,
-                    format!("C translation failed:\n{prefix}Malformed case statement."),
+                    message,
                     "Rewrite the C input to avoid the unsupported construct.".into(),
                     None,
                     span,
@@ -1353,17 +1532,24 @@ fn translate_conditional_return(
     expected_return_type: &str,
     macro_ctx: &mut crate::macros::MacroContext<'_>,
 ) -> TranspilerResult<Vec<String>> {
-    let prefix: String = crate::macros::expansion_prefix(entity);
+    let prefix: Option<String> = crate::macro_error::prefix(entity);
     let indent_str: String = "    ".repeat(indent);
     let child_indent_str: String = "    ".repeat(indent + 1);
     let children: Vec<clang::Entity<'_>> = entity.get_children();
 
     if children.len() < 3 {
+        let message: String = match prefix.as_deref() {
+            Some(prefix) => {
+                format!("C translation failed:\n{prefix}Malformed conditional operator.")
+            }
+            None => "C translation failed:\nMalformed conditional operator.".to_string(),
+        };
+
         macro_ctx
             .get_mut_transpiler_context()
-            .add_error_fail(CompilationIssue::Error(
+            .add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0110,
-                format!("C translation failed:\n{prefix}Malformed conditional operator."),
+                message,
                 "Rewrite the C input to avoid the unsupported construct.".into(),
                 None,
                 span,

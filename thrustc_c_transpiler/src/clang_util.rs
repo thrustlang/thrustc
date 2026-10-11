@@ -31,68 +31,84 @@ pub trait ClangArgumentsSource {
 }
 
 impl ClangArgumentsSource for thrustc_options::ImportCOptions {
+    #[inline]
     fn include_paths(&self) -> &[PathBuf] {
         thrustc_options::ImportCOptions::include_paths(self)
     }
 
+    #[inline]
     fn system_include_paths(&self) -> &[PathBuf] {
         thrustc_options::ImportCOptions::system_include_paths(self)
     }
 
+    #[inline]
     fn defines(&self) -> &[String] {
         thrustc_options::ImportCOptions::defines(self)
     }
 
+    #[inline]
     fn undefs(&self) -> &[String] {
         thrustc_options::ImportCOptions::undefs(self)
     }
 
+    #[inline]
     fn target(&self) -> Option<&str> {
         thrustc_options::ImportCOptions::target(self)
     }
 
+    #[inline]
     fn sysroot(&self) -> Option<&Path> {
         thrustc_options::ImportCOptions::sysroot(self)
     }
 
+    #[inline]
     fn std(&self) -> Option<&str> {
         thrustc_options::ImportCOptions::std(self)
     }
 
+    #[inline]
     fn args(&self) -> &[String] {
         thrustc_options::ImportCOptions::args(self)
     }
 }
 
 impl ClangArgumentsSource for thrustc_options::TranslateCOptions {
+    #[inline]
     fn include_paths(&self) -> &[PathBuf] {
         thrustc_options::TranslateCOptions::include_paths(self)
     }
 
+    #[inline]
     fn system_include_paths(&self) -> &[PathBuf] {
         thrustc_options::TranslateCOptions::system_include_paths(self)
     }
 
+    #[inline]
     fn defines(&self) -> &[String] {
         thrustc_options::TranslateCOptions::defines(self)
     }
 
+    #[inline]
     fn undefs(&self) -> &[String] {
         thrustc_options::TranslateCOptions::undefs(self)
     }
 
+    #[inline]
     fn target(&self) -> Option<&str> {
         thrustc_options::TranslateCOptions::target(self)
     }
 
+    #[inline]
     fn sysroot(&self) -> Option<&Path> {
         thrustc_options::TranslateCOptions::sysroot(self)
     }
 
+    #[inline]
     fn std(&self) -> Option<&str> {
         thrustc_options::TranslateCOptions::std(self)
     }
 
+    #[inline]
     fn args(&self) -> &[String] {
         thrustc_options::TranslateCOptions::args(self)
     }
@@ -330,23 +346,4 @@ fn clang_commands() -> Vec<String> {
     commands.extend(fallback_iter);
 
     commands
-}
-
-pub fn escape_string_for_thrust_literal(s: &str) -> String {
-    let mut out: String = String::with_capacity(s.len().saturating_add(8));
-
-    for ch in s.chars() {
-        match ch {
-            '\\' => out.push_str("\\\\"),
-            '"' => out.push_str("\\\""),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            '\0' => out.push_str("\\0"),
-            '\'' => out.push_str("\\'"),
-            other => out.push(other),
-        }
-    }
-
-    out
 }

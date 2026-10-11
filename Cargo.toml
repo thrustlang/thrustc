@@ -60,8 +60,8 @@ members = [
     "thrustc_std", 
     "thrustc_generics",
     "thrustc_generics_monomorphization",
-    "thrustc_import_synthesis",
-    "thrustc_c_import_synthesis",
+    "thrustc_import",
+    "thrustc_import_c",
     "thrustc_c_transpiler",
 ]
 

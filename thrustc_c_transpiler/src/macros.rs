@@ -22,15 +22,11 @@ use crate::macro_error::MacroLimit;
 use crate::macro_parser::MacroParser;
 use crate::macro_token::{MacroToken, MacroTokenOrigin};
 
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use thrustc_code_location::Span;
-use thrustc_compile_time::BuiltinValue;
-
-use thrustc_typesystem::Type;
 
 const C_MACRO_SYMBOL_PREFIX: &str = "__c_macro_";
 
@@ -172,229 +168,6 @@ pub enum MacroKind {
     Unsupported(MacroLimit),
 }
 
-pub fn append_translated_macro_constants(
-    macro_decls: &[clang::Entity<'_>],
-    out: &mut String,
-    fns_out: &mut String,
-    ctx: &mut MacroContext<'_>,
-    span: Span,
-    emitted_constants: &mut usize,
-    emitted_functions: &mut usize,
-) {
-    {
-        let valid_macros = macro_decls.iter().filter_map(|macro_decl| {
-            let raw_name: String = macro_decl.get_name()?;
-
-            Some((macro_decl, raw_name))
-        });
-
-        let object_macros = valid_macros
-            .filter(|(macro_decl, _)| unsafe { !macro_decl.is_function_like_macro_unchecked() });
-
-        for (macro_decl, raw_name) in object_macros {
-            let name: String = {
-                let base: String = crate::util::normalize_to_thrust_identifier(&raw_name);
-
-                format!("{C_MACRO_SYMBOL_PREFIX}{base}")
-            };
-
-            let object_body: Vec<MacroToken> = macro_decl
-                .get_range()
-                .map(|range| {
-                    let tokens: Vec<MacroToken> = crate::macro_lex::to_macro_tokens(
-                        &range.tokenize(),
-                        MacroTokenOrigin::DefinitionBody,
-                    );
-
-                    match tokens.iter().position(|token| token.get_text() == raw_name) {
-                        Some(index) => tokens[index + 1..].to_vec(),
-                        None => Vec::new(),
-                    }
-                })
-                .unwrap_or_default();
-
-            ctx.get_mut_macro_table()
-                .register_object_macro(raw_name.clone(), object_body);
-
-            if let Some(result) = macro_decl.evaluate() {
-                let translated: Option<(Type, BuiltinValue)> = match result {
-                    clang::EvaluationResult::SignedInteger(value) => {
-                        Some((Type::S64 { span }, BuiltinValue::Integer(value as u64)))
-                    }
-                    clang::EvaluationResult::UnsignedInteger(value) => {
-                        Some((Type::U64 { span }, BuiltinValue::Integer(value)))
-                    }
-                    clang::EvaluationResult::Float(value) => {
-                        Some((Type::F64 { span }, BuiltinValue::Float(value)))
-                    }
-                    clang::EvaluationResult::String(value)
-                    | clang::EvaluationResult::ObjCString(value) => Some((
-                        Type::Array {
-                            base_type: Box::new(Type::Char { span }),
-                            infered_type: None,
-                            metadata: thrustc_typesystem::type_metadata::ArrayTypeMetadata::new(
-                                None, None,
-                            ),
-                            span,
-                        },
-                        BuiltinValue::CString(value.to_bytes().to_vec()),
-                    )),
-                    _ => None,
-                };
-
-                if let Some((kind, builtin_value)) = translated {
-                    let kind_text: String = crate::type_format::format_type_thrust(&kind);
-                    let value_text: String =
-                        crate::type_format::format_builtin_value_thrust(&builtin_value, &kind, ctx);
-
-                    out.push_str("const ");
-                    out.push_str(&name);
-                    out.push_str(": ");
-                    out.push_str(&kind_text);
-                    out.push_str(" = ");
-                    out.push_str(&value_text);
-                    out.push_str(";\n");
-
-                    *emitted_constants = emitted_constants.saturating_add(1);
-
-                    continue;
-                }
-            }
-        }
-    }
-
-    {
-        let valid_macros = macro_decls.iter().filter_map(|macro_decl| {
-            let raw_name: String = macro_decl.get_name()?;
-
-            Some((macro_decl, raw_name))
-        });
-
-        let function_macros = valid_macros
-            .filter(|(macro_decl, _)| unsafe { macro_decl.is_function_like_macro_unchecked() });
-
-        let mut classified_macros = Vec::new();
-
-        for (macro_decl, _) in function_macros {
-            if let Some((name, kind)) = self::classify_macro_definition(macro_decl) {
-                classified_macros.push((*macro_decl, name, kind));
-            }
-        }
-
-        self::reclassify_macros_calling_statements(&mut classified_macros);
-
-        ctx.get_mut_macro_table()
-            .register_function_like_macros(&classified_macros);
-
-        ctx.get_mut_macro_table()
-            .register_statement_macros(&classified_macros);
-
-        for (macro_decl, raw_name, kind) in classified_macros.iter() {
-            match kind {
-                MacroKind::PureFunction { parameters, body } => {
-                    let mut expansion_context: crate::macro_expand::MacroExpansionContext =
-                        crate::macro_expand::MacroExpansionContext::new_default();
-
-                    let expanded_body: Vec<MacroToken> =
-                        match crate::macro_expand::expand_function_tokens(
-                            body,
-                            ctx.get_macro_table(),
-                            &mut expansion_context,
-                        ) {
-                            Ok(tokens) => tokens,
-                            Err(reason) => {
-                                let prefix: String = self::expansion_prefix(macro_decl);
-                                let (detail, help) =
-                                    crate::macro_error::get_macro_issue_help(raw_name, reason);
-
-                                crate::macro_error::add_macro_error(
-                                    ctx,
-                                    macro_decl,
-                                    raw_name,
-                                    &format!("{prefix}{detail}"),
-                                    &help,
-                                    span,
-                                );
-
-                                continue;
-                            }
-                        };
-
-                    let body_spellings: Vec<String> = crate::macro_token::texts(&expanded_body);
-                    let parsed: MacroExpr = match MacroParser::parse(&body_spellings) {
-                        Ok(parsed) => parsed,
-                        Err(reason) => {
-                            let prefix: String = self::expansion_prefix(macro_decl);
-                            let (detail, help) =
-                                crate::macro_error::get_macro_issue_help(raw_name, reason);
-
-                            crate::macro_error::add_macro_error(
-                                ctx,
-                                macro_decl,
-                                raw_name,
-                                &format!("{prefix}{detail}"),
-                                &help,
-                                span,
-                            );
-
-                            continue;
-                        }
-                    };
-
-                    let pending_base: usize = ctx.pending_statements_len();
-
-                    let body_text: String =
-                        crate::macro_expr::lower_function_body(ctx, &parsed, "T1");
-
-                    let mut body_lines: Vec<String> =
-                        ctx.take_pending_statements_since(pending_base);
-
-                    body_lines.push(format!("return {body_text};"));
-
-                    fns_out.push_str(&self::emit_function_as_macro_fn(
-                        raw_name,
-                        parameters,
-                        &body_lines,
-                    ));
-
-                    *emitted_functions = emitted_functions.saturating_add(1);
-                }
-
-                MacroKind::Statement { parameters, body } => {
-                    ctx.get_mut_macro_table().add_statement_macro_definition(
-                        raw_name.clone(),
-                        parameters.clone(),
-                        body.clone(),
-                        macro_decl,
-                    );
-                }
-                MacroKind::Object => continue,
-                MacroKind::Unsupported(limit) => {
-                    let prefix: String = self::expansion_prefix(macro_decl);
-                    let (detail, help) = crate::macro_error::get_macro_issue_help(raw_name, *limit);
-
-                    crate::macro_error::add_macro_error(
-                        ctx,
-                        macro_decl,
-                        raw_name,
-                        &format!("{prefix}{detail}"),
-                        &help,
-                        span,
-                    );
-                }
-            }
-        }
-    }
-
-    if *emitted_constants > 0 {
-        out.push('\n');
-    }
-
-    if *emitted_functions > 0 {
-        fns_out.push('\n');
-    }
-}
-
 #[derive(Debug)]
 struct MacroParameterFlags {
     mutable: HashSet<String>,
@@ -438,11 +211,17 @@ fn build_statement_macro_function(
         })
         .collect();
 
-    let mut joined_lines: String =
-        match self::lowered_statement_lines(ctx, &body_tokens, parameters, &template_args) {
-            Some(lines) => lines.join("\n"),
-            None => self::translated_expanded_lines(ctx, site, name, parameters, args, span)?,
-        };
+    let mut joined_lines: String = match self::translate_statement_body_and_expand(
+        ctx,
+        &body_tokens,
+        parameters,
+        &template_args,
+    ) {
+        Some(lines) => lines.join("\n"),
+        None => {
+            self::try_to_translate_expanded_statement_body(ctx, site, name, parameters, args, span)?
+        }
+    };
 
     if !flags.mutable.is_empty() {
         joined_lines = self::rewrite_mutable_parameter_uses(&joined_lines, &flags.mutable);
@@ -484,16 +263,17 @@ fn build_statement_macro_function(
     Some(text)
 }
 
-fn lowered_statement_lines(
+fn translate_statement_body_and_expand(
     ctx: &mut MacroContext<'_>,
     body_tokens: &[MacroToken],
     parameters: &[String],
     args: &[Vec<MacroToken>],
 ) -> Option<Vec<String>> {
-    let renamed: Vec<MacroToken> = self::substitute_tokens(body_tokens, parameters, args)?;
+    let renamed: Vec<MacroToken> =
+        crate::macro_expand::substitute_parameter_tokens(body_tokens, parameters, args)?;
 
     let mut expansion_context: crate::macro_expand::MacroExpansionContext =
-        crate::macro_expand::MacroExpansionContext::new_default();
+        crate::macro_expand::MacroExpansionContext::new(64, 128);
 
     let expanded_tokens: Vec<MacroToken> = crate::macro_expand::expand_function_tokens(
         &renamed,
@@ -502,10 +282,10 @@ fn lowered_statement_lines(
     )
     .ok()?;
 
-    let statement_spellings: Vec<String> = crate::macro_token::texts(&expanded_tokens);
+    let statement_lexemes: Vec<String> = crate::macro_token::texts(&expanded_tokens);
 
     let mut statement_parser: crate::macro_parser::MacroParser<'_> =
-        crate::macro_parser::MacroParser::new(&statement_spellings);
+        crate::macro_parser::MacroParser::new(&statement_lexemes);
 
     let parsed: Vec<crate::macro_ast::MacroStmt> = statement_parser.parse_statement_body().ok()?;
 
@@ -518,7 +298,7 @@ fn lowered_statement_lines(
     Some(lines)
 }
 
-fn translated_expanded_lines(
+fn try_to_translate_expanded_statement_body(
     ctx: &mut MacroContext<'_>,
     site: &clang::Entity<'_>,
     macro_name: &str,
@@ -582,20 +362,15 @@ fn translated_expanded_lines(
             )]
         })
         .collect();
-    let substituted_tokens: Vec<MacroToken> =
-        self::substitute_tokens(&generalized_tokens, parameters, &template_args)?;
+    let substituted_tokens: Vec<MacroToken> = crate::macro_expand::substitute_parameter_tokens(
+        &generalized_tokens,
+        parameters,
+        &template_args,
+    )?;
 
     joined_lines = crate::macro_lex::detokenize_macro_tokens(&substituted_tokens);
 
     Some(joined_lines)
-}
-
-fn substitute_tokens(
-    tokens: &[MacroToken],
-    parameters: &[String],
-    args: &[Vec<MacroToken>],
-) -> Option<Vec<MacroToken>> {
-    crate::macro_expand::substitute_parameter_tokens(tokens, parameters, args)
 }
 
 fn replace_argument_token_sequences(
@@ -671,7 +446,7 @@ fn detect_mutated_parameters(tokens: &[MacroToken], parameters: &[String]) -> Ha
                 continue;
             }
 
-            if self::parameter_token_is_written(tokens, index) {
+            if crate::macro_lex::is_parameter_token_written(tokens, index) {
                 mutable_parameters.insert(parameter.clone());
                 break;
             }
@@ -679,41 +454,6 @@ fn detect_mutated_parameters(tokens: &[MacroToken], parameters: &[String]) -> Ha
     }
 
     mutable_parameters
-}
-
-fn parameter_token_is_written(tokens: &[MacroToken], index: usize) -> bool {
-    let assign_ops: [&str; 11] = [
-        "=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^=",
-    ];
-
-    let next = tokens
-        .get(index.saturating_add(1))
-        .map(|token| token.get_text());
-
-    if next.is_some_and(|text| text == "++" || text == "--" || assign_ops.contains(&text)) {
-        return true;
-    }
-
-    let prev = index
-        .checked_sub(1)
-        .and_then(|prev_index| tokens.get(prev_index))
-        .map(|token| token.get_text());
-
-    if prev.is_some_and(|text| text == "++" || text == "--") {
-        return true;
-    }
-
-    if prev == Some("(") && next == Some(")") {
-        let assign_after_paren: Option<&str> = tokens
-            .get(index.saturating_add(2))
-            .map(|token| token.get_text());
-
-        if assign_after_paren.is_some_and(|text| assign_ops.contains(&text)) {
-            return true;
-        }
-    }
-
-    false
 }
 
 fn detect_indexed_parameters(tokens: &[MacroToken], parameters: &[String]) -> HashSet<String> {
@@ -877,64 +617,6 @@ fn cast_mutable_parameter_assignments(
     out_lines.join("\n")
 }
 
-fn collect_argument_types<'clang>(
-    entity: &clang::Entity<'clang>,
-    path: &std::path::Path,
-    arg_ranges: &[(u32, u32)],
-    best: &mut [(u32, Option<clang::Type<'clang>>)],
-) {
-    if let Some(range) = entity.get_range() {
-        let start: clang::source::Location<'_> = range.get_start().get_spelling_location();
-        let end: clang::source::Location<'_> = range.get_end().get_spelling_location();
-
-        let same_file: bool =
-            start
-                .file
-                .as_ref()
-                .zip(end.file.as_ref())
-                .is_some_and(|(start_file, end_file)| {
-                    start_file.get_path() == path && end_file.get_path() == path
-                });
-
-        if same_file {
-            let span: u32 = end.offset.saturating_sub(start.offset);
-
-            for (index, (arg_start, arg_end)) in arg_ranges.iter().enumerate() {
-                let inside: bool = start.offset >= *arg_start && end.offset <= *arg_end;
-
-                if inside && span > best[index].0 {
-                    best[index] = (span, entity.get_type());
-                }
-            }
-        }
-    }
-
-    for child in entity.get_children() {
-        self::collect_argument_types(&child, path, arg_ranges, best);
-    }
-}
-
-fn argument_clang_types<'clang>(
-    site: &clang::Entity<'clang>,
-    arg_ranges: &[(u32, u32)],
-) -> Vec<Option<clang::Type<'clang>>> {
-    let Some(range) = site.get_range() else {
-        return vec![None; arg_ranges.len()];
-    };
-
-    let Some(file) = range.get_start().get_expansion_location().file else {
-        return vec![None; arg_ranges.len()];
-    };
-
-    let path: std::path::PathBuf = file.get_path();
-
-    let mut best: Vec<(u32, Option<clang::Type<'clang>>)> = vec![(0, None); arg_ranges.len()];
-
-    self::collect_argument_types(site, &path, arg_ranges, &mut best);
-
-    best.into_iter().map(|(_, ty)| ty).collect()
-}
-
 pub fn reclassify_macros_calling_statements(
     items: &mut Vec<(clang::Entity<'_>, String, MacroKind)>,
 ) {
@@ -953,7 +635,8 @@ pub fn reclassify_macros_calling_statements(
 
         for (_, name, kind) in items.iter_mut() {
             if let MacroKind::PureFunction { parameters, body } = kind {
-                if self::macro_body_calls(body, &statement_names, name) {
+                if crate::macro_lex::is_macro_calling_other_statements(body, &statement_names, name)
+                {
                     *kind = MacroKind::Statement {
                         parameters: std::mem::take(parameters),
                         body: std::mem::take(body),
@@ -982,7 +665,7 @@ pub fn try_extract_statement_macro_call(
         return None;
     }
 
-    let key: String = crate::macro_table::MacroTable::make_location_key(site)?;
+    let key: String = crate::macro_table::MacroTable::get_location(site)?;
 
     let name: String = ctx.get_macro_table().find_macro_name(&key)?;
 
@@ -1041,7 +724,7 @@ pub fn try_extract_statement_macro_call(
     for arg_tokens in args.iter() {
         let expanded_arg: Vec<MacroToken> = {
             let mut expansion_context: crate::macro_expand::MacroExpansionContext =
-                crate::macro_expand::MacroExpansionContext::new_default();
+                crate::macro_expand::MacroExpansionContext::new(64, 128);
 
             crate::macro_expand::expand_function_tokens(
                 arg_tokens,
@@ -1051,9 +734,9 @@ pub fn try_extract_statement_macro_call(
             .unwrap_or_else(|_| arg_tokens.clone())
         };
 
-        let arg_spellings: Vec<String> = crate::macro_token::texts(&expanded_arg);
+        let arg_lexemes: Vec<String> = crate::macro_token::texts(&expanded_arg);
 
-        let parsed: MacroExpr = match MacroParser::parse(&arg_spellings) {
+        let parsed: MacroExpr = match MacroParser::parse(&arg_lexemes) {
             Ok(parsed) => parsed,
             Err(limit) => {
                 crate::macro_error::add_macro_error(
@@ -1075,7 +758,8 @@ pub fn try_extract_statement_macro_call(
         parsed_args.push(parsed);
     }
 
-    let clang_types: Vec<Option<clang::Type<'_>>> = self::argument_clang_types(site, &arg_ranges);
+    let clang_types: Vec<Option<clang::Type<'_>>> =
+        crate::macro_lex::get_argument_clang_types(site, &arg_ranges);
 
     let body_tokens: Vec<MacroToken> = ctx
         .get_macro_table()
@@ -1120,7 +804,7 @@ pub fn try_extract_statement_macro_call(
 
     let expanded_body_tokens: Vec<MacroToken> = {
         let mut expansion_context: crate::macro_expand::MacroExpansionContext =
-            crate::macro_expand::MacroExpansionContext::new_default();
+            crate::macro_expand::MacroExpansionContext::new(64, 128);
 
         crate::macro_expand::expand_function_tokens(
             &body_tokens,
@@ -1130,10 +814,10 @@ pub fn try_extract_statement_macro_call(
         .unwrap_or(body_tokens.clone())
     };
 
-    let body_spellings: Vec<String> = crate::macro_token::texts(&expanded_body_tokens);
+    let body_lexemes: Vec<String> = crate::macro_token::texts(&expanded_body_tokens);
 
     let mut body_parser: crate::macro_parser::MacroParser<'_> =
-        crate::macro_parser::MacroParser::new(&body_spellings);
+        crate::macro_parser::MacroParser::new(&body_lexemes);
 
     let body_statements: Vec<crate::macro_ast::MacroStmt> = match body_parser.parse_statement_body()
     {
@@ -1325,8 +1009,7 @@ pub fn try_extract_expression_macro_call(
     // the invocation through the macro engine instead: substitute the
     // invocation arguments into the macro body and lower the parsed body, so
     // every operator is resolved by the internal parser.
-    let key: String = crate::macro_table::MacroTable::make_location_key(site)?;
-
+    let key: String = crate::macro_table::MacroTable::get_location(site)?;
     let name: String = ctx.get_macro_table().find_macro_name(&key)?;
 
     let definition: &crate::macro_table::MacroFunctionLikeDefinition =
@@ -1355,10 +1038,11 @@ pub fn try_extract_expression_macro_call(
         return None;
     }
 
-    let renamed: Vec<MacroToken> = self::substitute_tokens(&body, &parameters, &args)?;
+    let renamed: Vec<MacroToken> =
+        crate::macro_expand::substitute_parameter_tokens(&body, &parameters, &args)?;
 
     let mut expansion_context: crate::macro_expand::MacroExpansionContext =
-        crate::macro_expand::MacroExpansionContext::new_default();
+        crate::macro_expand::MacroExpansionContext::new(64, 128);
 
     let expanded: Vec<MacroToken> = crate::macro_expand::expand_function_tokens(
         &renamed,
@@ -1367,18 +1051,21 @@ pub fn try_extract_expression_macro_call(
     )
     .ok()?;
 
-    let spellings: Vec<String> = crate::macro_token::texts(&expanded);
+    let lexemes: Vec<String> = crate::macro_token::texts(&expanded);
 
-    let parsed: MacroExpr = MacroParser::parse(&spellings).ok()?;
+    let parsed: MacroExpr = MacroParser::parse(&lexemes).ok()?;
 
-    let prefix: String = self::expansion_prefix(site);
+    let prefix: Option<String> = crate::macro_error::prefix(site);
 
     let result_type: String = match site.get_type() {
-        Some(ty) => crate::type_format::format_clang_type_thrust(&ty, ctx, &prefix, span).ok()?,
+        Some(ty) => {
+            crate::type_format::format_clang_type_thrust(&ty, ctx, prefix.as_deref(), span).ok()?
+        }
         None => "s32".to_string(),
     };
 
-    let clang_types: Vec<Option<clang::Type<'_>>> = self::argument_clang_types(site, &arg_ranges);
+    let clang_types: Vec<Option<clang::Type<'_>>> =
+        crate::macro_lex::get_argument_clang_types(site, &arg_ranges);
 
     let mut type_environment: HashMap<String, crate::macro_type::InferredType> = HashMap::new();
 
@@ -1393,7 +1080,7 @@ pub fn try_extract_expression_macro_call(
         if let Some(inferred) = inferred {
             type_environment.insert(parameter.clone(), inferred.clone());
 
-            let arg_spelling: Option<String> = args.get(index).and_then(|tokens| {
+            let arg_lexeme: Option<String> = args.get(index).and_then(|tokens| {
                 let texts: Vec<String> = crate::macro_token::texts(tokens);
 
                 if texts.len() == 1 {
@@ -1403,8 +1090,8 @@ pub fn try_extract_expression_macro_call(
                 }
             });
 
-            if let Some(arg_spelling) = arg_spelling {
-                type_environment.insert(arg_spelling, inferred);
+            if let Some(arg_lexeme) = arg_lexeme {
+                type_environment.insert(arg_lexeme, inferred);
             }
         }
     }
@@ -1571,10 +1258,10 @@ pub fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(String, Ma
         return Some((raw_name, MacroKind::PureFunction { parameters, body }));
     }
 
-    let body_spellings: Vec<String> = crate::macro_token::texts(&body);
+    let body_lexemes: Vec<String> = crate::macro_token::texts(&body);
 
     let mut body_parser: crate::macro_parser::MacroParser<'_> =
-        crate::macro_parser::MacroParser::new(&body_spellings);
+        crate::macro_parser::MacroParser::new(&body_lexemes);
 
     if body_parser.parse_statement_body().is_ok() {
         return Some((raw_name, MacroKind::Statement { parameters, body }));
@@ -1584,131 +1271,4 @@ pub fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(String, Ma
         raw_name,
         MacroKind::Unsupported(MacroLimit::StatementMalformed),
     ))
-}
-
-pub fn emit_function_as_macro_fn(
-    name: &str,
-    parameters: &[String],
-    body_lines: &[String],
-) -> String {
-    let type_names: Vec<String> = if parameters.is_empty() {
-        vec!["T1".to_string()]
-    } else {
-        (1..=parameters.len())
-            .map(|index| format!("T{index}"))
-            .collect()
-    };
-
-    let parameter_texts: Vec<String> = parameters
-        .iter()
-        .zip(type_names.iter())
-        .map(|(parameter, type_name)| {
-            let parameter_name: String = { crate::util::normalize_to_thrust_identifier(parameter) };
-
-            format!("{parameter_name}: {type_name}")
-        })
-        .collect();
-
-    let function_name: String = {
-        let base: String = crate::util::normalize_to_thrust_identifier(name);
-
-        format!("{C_MACRO_SYMBOL_PREFIX}{base}")
-    };
-
-    let mut out: String = String::new();
-
-    out.push_str("fn ");
-    out.push_str(&function_name);
-    out.push('[');
-    out.push_str(&type_names.join(", "));
-    out.push_str("](");
-    out.push_str(&parameter_texts.join(", "));
-    out.push_str(") T1 @alwaysInline {\n");
-
-    for line in body_lines.iter() {
-        out.push_str("    ");
-        out.push_str(line);
-        out.push('\n');
-    }
-
-    out.push_str("}\n");
-
-    out
-}
-
-pub fn expansion_prefix<'clang>(entity: impl Borrow<clang::Entity<'clang>>) -> String {
-    let entity: &clang::Entity<'clang> = entity.borrow();
-
-    let Some(location) = entity.get_location() else {
-        return String::new();
-    };
-
-    let expansion: clang::source::Location<'_> = location.get_expansion_location();
-
-    let Some(file) = expansion.file else {
-        return String::new();
-    };
-
-    let path: PathBuf = file.get_path();
-
-    let display: String = path.display().to_string();
-
-    if display.trim().is_empty() {
-        return String::new();
-    }
-
-    format!("{}:{}:{}: ", display, expansion.line, expansion.column)
-}
-
-pub fn origin_note(entity: &clang::Entity<'_>) -> String {
-    if !crate::macro_lex::is_from_macro_expansion(entity) {
-        return String::new();
-    }
-
-    let display: String = entity
-        .get_range()
-        .map(|range| {
-            range
-                .get_start()
-                .get_spelling_location()
-                .file
-                .map(|file| file.get_path().display().to_string())
-                .unwrap_or_default()
-        })
-        .unwrap_or_default();
-
-    if display.trim().is_empty() {
-        return String::new();
-    }
-
-    format!(" (from macro expansion in {display})")
-}
-
-fn macro_body_calls(body: &[MacroToken], statement_names: &[String], own_name: &str) -> bool {
-    let mut index: usize = 0;
-
-    while index < body.len() {
-        let token: &str = body[index].get_text();
-
-        if token
-            .chars()
-            .next()
-            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
-            && body
-                .get(index + 1)
-                .is_some_and(|next| next.get_text() == "(")
-            && token != own_name
-            && !matches!(
-                token,
-                "if" | "for" | "while" | "switch" | "return" | "sizeof" | "do"
-            )
-            && statement_names.iter().any(|name| name == token)
-        {
-            return true;
-        }
-
-        index += 1;
-    }
-
-    false
 }
