@@ -3,7 +3,7 @@ name: Suggestion
 about: Suggestions for correct compiler development.
 title: Suggestion
 labels: Suggestion
-assignees: DevCheckOG
+assignees: Danixd12, StevensBenavides
 
 ---
 
