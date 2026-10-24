@@ -216,3 +216,26 @@ jobs:
             thrustc/lsp/vscode/thrustlang-vscode-*.vsix
           draft: false
           fail_on_unmatched_files: true
+
+      - name: Updating Website
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
+          script: |
+            const version = process.env.VERSION.replace(/^v/, '');
+            const repository = process.env.GITHUB_REPOSITORY;
+            const serverUrl = process.env.GITHUB_SERVER_URL;
+
+            await github.rest.repos.createDispatchEvent({
+              owner: 'thrustlang',
+              repo: 'website',
+              event_type: 'compiler-release',
+              client_payload: {
+                platform: 'macos_intel',
+                version,
+                tag: process.env.TAG_NAME,
+                release_url: `${serverUrl}/${repository}/releases/tag/${process.env.TAG_NAME}`,
+                run_url: `${serverUrl}/${repository}/actions/runs/${process.env.GITHUB_RUN_ID}`
+              }
+            });

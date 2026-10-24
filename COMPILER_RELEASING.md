@@ -23,8 +23,9 @@ The release scripts need a few tools that are not part of the compiler itself:
 - **`git-cliff`** is used to generate the changelog from the git history. It is configured through the `cliff.toml` file at the root of the project.
 - **`sccache`** is used as the rustc wrapper for builds.
 - **`panic-analyzer`** is a helper to analyze panics.
+- **`WEBSITE_DISPATCH_TOKEN`** is a repository secret with write access to `thrustlang/website`. The release workflows use it to notify the website after each platform release.
 
-You can install the three of them with the `cargo-dependencies` script:
+You can install the three tools with the `cargo-dependencies` script:
 
 ```console
 bash scripts/cargo-dependencies.sh
@@ -98,11 +99,16 @@ This step creates the git tag for the release and optionally pushes it to the re
 
 ## After the release
 
-Once `deploy-version` finishes, the release is tagged and the documentation is live. You can:
+Once `deploy-version` finishes, the release is tagged and the documentation is live.
+
+> [!NOTE]
+> Each platform release workflow runs automatically for its tag. It creates the GitHub release, uploads the compiler, language server, stripped variants, and VS Code extension, and then sends a `compiler-release` event to the website repository. The website updates that platform's compiler download version and deploys GitHub Pages automatically.
+
+You can:
 
 - Check the generated changelog under `changelogs/<tag>/README.md`.
-- Create the GitHub release pointing at the new tag, using the changelog as the release notes.
-- Update the prebuilt binaries if the project publishes them to GitHub releases.
+- Check the platform release workflow for the tag in GitHub Actions.
+- Check the website deployment run triggered by the release.
 
 ## Release Binary Variants
 
