@@ -1,0 +1,27 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+fn atoi(text: CString)                                  s32 @public @extern("atoi")    @convention("C");
+fn atol(text: CString)                                  s64 @public @extern("atol")    @convention("C");
+fn atoll(text: CString)                                 s64 @public @extern("atoll")   @convention("C");
+
+fn strtol(text: CString, end: ptr[ptr], base: s32)      s64 @public @extern("strtol")  @convention("C");
+fn strtoll(text: CString, end: ptr[ptr], base: s32)     s64 @public @extern("strtoll") @convention("C");
+fn strtoul(text: CString, end: ptr[ptr], base: s32)     u64 @public @extern("strtoul") @convention("C");
+fn strtoull(text: CString, end: ptr[ptr], base: s32)    u64 @public @extern("strtoull") @convention("C");
