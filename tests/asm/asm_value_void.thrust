@@ -1,0 +1,19 @@
+/*
+ * Assembler value returning void used as a statement.
+ */
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        asm () void #asm{
+            nop
+        } ();
+
+        asm () void #asm{
+            nop
+        } ();
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

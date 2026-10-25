@@ -1072,8 +1072,16 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 ..
             } => {
                 let ty: Type = kind.remove_all_constant_type();
+                let left_type: Type = left.get_type_for_llvm().remove_all_constant_type();
+                let right_type: Type = right.get_type_for_llvm().remove_all_constant_type();
 
-                if ty.is_integer_type() {
+                if left_type.is_native_vector_type() || right_type.is_native_vector_type() {
+                    expressions::binaryop::native_vector::compile(
+                        self.context,
+                        (left, operator, right, *span),
+                        None,
+                    );
+                } else if ty.is_integer_type() {
                     expressions::binaryop::integer_operation::compile(
                         self.context,
                         (left, operator, right, *span),
@@ -1471,6 +1479,16 @@ pub fn compile_as_value<'ctx>(
             ..
         } => {
             let ty: Type = binaryop_type.remove_all_constant_type();
+            let left_type: Type = left.get_type_for_llvm().remove_all_constant_type();
+            let right_type: Type = right.get_type_for_llvm().remove_all_constant_type();
+
+            if left_type.is_native_vector_type() || right_type.is_native_vector_type() {
+                return expressions::binaryop::native_vector::compile(
+                    context,
+                    (left, operator, right, *span),
+                    cast_type.as_ref(),
+                );
+            }
 
             let value: BasicValueEnum<'_> = match ty {
                 t if t.is_float_type() => expressions::binaryop::floatingpoint_operation::compile(
@@ -1723,7 +1741,7 @@ pub fn compile_as_value<'ctx>(
         // Compiles inline assembly code
         Ast::AsmValue {
             assembler,
-            constraints,
+            parameters_types,
             args,
             kind,
             attributes,
@@ -1732,7 +1750,7 @@ pub fn compile_as_value<'ctx>(
         } => expressions::inlineasm_expr::compile(
             context,
             assembler,
-            constraints,
+            parameters_types,
             args,
             kind,
             thrustc_llvm_attributes::into_llvm_attributes(attributes),
@@ -1911,6 +1929,16 @@ pub fn compile_constant_as_value<'ctx>(
             ..
         } => {
             let ty: Type = binaryop_type.remove_all_constant_type();
+            let left_type: Type = left.get_type_for_llvm().remove_all_constant_type();
+            let right_type: Type = right.get_type_for_llvm().remove_all_constant_type();
+
+            if left_type.is_native_vector_type() || right_type.is_native_vector_type() {
+                return expressions::binaryop::native_vector::compile_constant(
+                    context,
+                    (left, operator, right, *span),
+                    &cast_type,
+                );
+            }
 
             if ty.is_integer_type() {
                 return expressions::binaryop::integer_operation::compile_constant(

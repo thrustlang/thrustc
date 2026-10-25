@@ -1,0 +1,24 @@
+/*
+ * Assembler value evaluated inside a conditional block.
+ */
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        var enabled: bool = true;
+        var value: s32 = 0;
+
+        if enabled {
+            value = asm () s32 #asm{
+                mov $0, 42
+            };
+        } else {
+            value = 1;
+        }
+
+        if value != 42 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

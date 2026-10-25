@@ -56,7 +56,7 @@ pub const SYNC_DECLARATIONS: [TokenType; 14] = [
     TokenType::IfAttribute,
     TokenType::ElifAttribute,
     TokenType::ElseAttribute,
-    TokenType::AsmFn,
+    TokenType::Asm,
     TokenType::Intrinsic,
     TokenType::GlobalAsm,
     TokenType::Import,

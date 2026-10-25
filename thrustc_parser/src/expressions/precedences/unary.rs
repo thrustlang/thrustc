@@ -40,13 +40,18 @@ pub fn unary_precedence<'parser>(
         let span: Span = operator_tk.get_span();
 
         let expr: Ast = precedences::indirect_call::indirect_precedence(ctx)?;
+        let expr_type: &Type = expr.get_value_type()?;
+
+        let kind: Type = expr_type
+            .get_native_vector_unary_result_type(operator)
+            .unwrap_or(Type::Bool { span });
 
         ctx.leave_expression();
 
         return Ok(Ast::UnaryOp {
             operator,
             node: expr.into(),
-            kind: Type::Bool { span },
+            kind,
             before: false,
             span,
             id: NodeId::new(),

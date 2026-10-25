@@ -1,0 +1,20 @@
+/*
+ * Assembler function returning a 64-bit immediate.
+ */
+
+@if(isLinux() && isX8664())
+asm fn answer64() s64 @public #asm{
+    mov $0, 123456789
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        if answer64() != 123456789 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

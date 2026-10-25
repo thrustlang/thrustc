@@ -1,0 +1,30 @@
+/*
+ * Multiple assembler functions in the same module.
+ */
+
+@if(isLinux() && isX8664())
+asm fn add_ten(s32) s32 @public #asm{
+    mov $0, $1,
+    add $0, 10
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+@if(isLinux() && isX8664())
+asm fn sub_ten(s32) s32 @public #asm{
+    mov $0, $1,
+    sub $0, 10
+}
+@else
+const ASM_UNAVAILABLE_SECOND: s32 = 0;
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        if add_ten(5) != 15 { return 1; }
+        if sub_ten(15) != 5 { return 2; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

@@ -1,0 +1,17 @@
+/*
+ * Assembler value with side-effect and stack-alignment attributes.
+ */
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        var value: s32 = asm () s32 @asmSideEffects @asmAlignStack #asm{
+            mov $0, 42
+        };
+
+        if value != 42 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

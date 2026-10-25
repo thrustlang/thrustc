@@ -314,7 +314,6 @@ pub enum Ast<'ast> {
         parameters: std::vec::Vec<Ast<'ast>>,
         parameters_types: std::vec::Vec<Type>,
         assembler: String,
-        constraints: String,
         return_type: Type,
         attributes: ThrustAttributes,
         span: Span,
@@ -491,7 +490,7 @@ pub enum Ast<'ast> {
 
     AsmValue {
         assembler: String,
-        constraints: String,
+        parameters_types: std::vec::Vec<Type>,
         args: std::vec::Vec<Ast<'ast>>,
         kind: Type,
         attributes: ThrustAttributes,

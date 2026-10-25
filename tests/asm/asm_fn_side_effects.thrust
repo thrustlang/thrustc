@@ -1,0 +1,21 @@
+/*
+ * Assembler function with side-effect and stack-alignment attributes.
+ */
+
+@if(isLinux() && isX8664())
+asm fn flagged() s32 @public @asmSideEffects @asmAlignStack #asm{
+    mov $0, 21,
+    add $0, 21
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        if flagged() != 42 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

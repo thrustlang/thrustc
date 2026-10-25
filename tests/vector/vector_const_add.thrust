@@ -1,0 +1,9 @@
+const LEFT: NativeVector[s32; 4] = native[1, 2, 3, 4];
+const RIGHT: NativeVector[s32; 4] = native[10, 20, 30, 40];
+const RESULT: NativeVector[s32; 4] = LEFT + RIGHT;
+
+fn main() s32 @public {
+    if RESULT[0] != 11 { return 1; }
+    if RESULT[3] != 44 { return 2; }
+    return 0;
+}

@@ -1,0 +1,9 @@
+fn main() s32 @public {
+    var a: NativeVector[bool; 4] = native[true, false, true, false];
+    var r: NativeVector[bool; 4] = !a;
+    if r[0] != false { return 1; }
+    if r[1] != true { return 2; }
+    if r[2] != false { return 3; }
+    if r[3] != true { return 4; }
+    return 0;
+}

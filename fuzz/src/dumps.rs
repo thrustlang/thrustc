@@ -31,7 +31,7 @@ use inkwell::{
     targets::{InitializationConfig, Target, TargetMachine, TargetTriple},
 };
 use thrustc_ast::ast_builtins::{AstBuiltin, DeferredBuiltinArgument};
-use thrustc_ast::traits::AstStandardExtensions;
+use thrustc_ast::traits::{AstGetType, AstStandardExtensions};
 use thrustc_ast::{Ast, ModuleExpressionValues};
 use thrustc_backends::{
     llvm::{target::LLVMTarget, LLVMBackend},
@@ -43,7 +43,7 @@ use thrustc_llvm_codegen::context::LLVMCodeGenContext;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_semantic_analysis::SemanticAnalysis;
-use thrustc_typesystem::type_layout::TargetInfo;
+use thrustc_typesystem::{Type, type_layout::TargetInfo};
 
 pub const TARGETS: &[&str] = &[
     "llvm-codegen-top-level",
@@ -91,11 +91,35 @@ pub fn classify(combined: &str) -> Option<&'static str> {
 /// compiler's `AstStandardExtensions` trait; the tree walk lives here in the
 /// fuzzer so the compiler itself stays untouched.
 pub fn contains_unstable_ast(ast: &Ast) -> bool {
-    if ast.is_unstable_feature() {
+    if ast.is_unstable_feature() || self::contains_native_vector_type(ast.get_any_type()) {
         return true;
     }
 
     contains_unstable_in_children(ast)
+}
+
+fn contains_native_vector_type(ty: &Type) -> bool {
+    match ty {
+        Type::NativeVector { .. } => true,
+        Type::Const(inner, ..) => self::contains_native_vector_type(inner),
+        Type::Ptr {
+            subtype: Some(inner),
+            ..
+        } => self::contains_native_vector_type(inner),
+        Type::Struct { fields, .. } => fields.iter().any(self::contains_native_vector_type),
+        Type::FixedArray { base_type, .. } | Type::Array { base_type, .. } => {
+            self::contains_native_vector_type(base_type)
+        }
+        Type::Fn {
+            return_type,
+            parameter_types,
+            ..
+        } => {
+            self::contains_native_vector_type(return_type)
+                || parameter_types.iter().any(self::contains_native_vector_type)
+        }
+        _ => false,
+    }
 }
 
 fn contains_unstable_in_children(ast: &Ast) -> bool {

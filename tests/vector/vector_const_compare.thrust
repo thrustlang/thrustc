@@ -1,0 +1,8 @@
+const LEFT: NativeVector[s32; 4] = native[1, 2, 3, 4];
+const RIGHT: NativeVector[s32; 4] = native[1, 2, 3, 4];
+const RESULT: bool = LEFT == RIGHT;
+
+fn main() s32 @public {
+    if RESULT != true { return 1; }
+    return 0;
+}

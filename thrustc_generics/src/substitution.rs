@@ -521,7 +521,6 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
             parameters,
             parameters_types,
             assembler,
-            constraints,
             return_type,
             attributes,
             span,
@@ -532,7 +531,6 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
             parameters: self::substitute_ast_list(parameters, env),
             parameters_types: self::substitute_type_list(parameters_types, env),
             assembler,
-            constraints,
             return_type: self::substitute(&return_type, env),
             attributes,
             span,
@@ -819,7 +817,7 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
         },
         Ast::AsmValue {
             assembler,
-            constraints,
+            parameters_types,
             args,
             kind,
             attributes,
@@ -827,7 +825,7 @@ pub fn substitute_ast<'ast>(node: Ast<'ast>, env: &TypeEnv) -> Ast<'ast> {
             id,
         } => Ast::AsmValue {
             assembler,
-            constraints,
+            parameters_types: self::substitute_type_list(parameters_types, env),
             args: self::substitute_ast_list(args, env),
             kind: self::substitute(&kind, env),
             attributes,
@@ -1402,7 +1400,15 @@ fn collect_unresolved_ast_hints(node: &Ast<'_>, out: &mut std::collections::Hash
                 self::collect_unresolved_ast_hints(arg, out);
             }
         }
-        Ast::AsmValue { args, .. } => {
+        Ast::AsmValue {
+            parameters_types,
+            args,
+            ..
+        } => {
+            for parameter_type in parameters_types.iter() {
+                self::collect_unresolved_type_hints(parameter_type, out);
+            }
+
             for arg in args.iter() {
                 self::collect_unresolved_ast_hints(arg, out);
             }

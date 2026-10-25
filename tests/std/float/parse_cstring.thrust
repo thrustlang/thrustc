@@ -6,12 +6,12 @@
 import std::float;
 
 fn main() s32 @public {
-    var native: CString = "12.5";
+    var text: CString = "12.5";
 
-    if float::parse[f64](native) != 12.5 { return 1; }
-    if float::parse[f32](native) as f64 != 12.5 { return 2; }
+    if float::parse[f64](text) != 12.5 { return 1; }
+    if float::parse[f32](text) as f64 != 12.5 { return 2; }
 
-    var positive: float::ParseF64Result = float::parseF64CString(native);
+    var positive: float::ParseF64Result = float::parseF64CString(text);
     if !(positive->ok) { return 3; }
     if positive->value != 12.5 { return 4; }
 

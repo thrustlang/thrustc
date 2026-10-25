@@ -35,6 +35,7 @@ IMPORT_C_RE: re.Pattern[str] = re.compile(r'^\s*importC\b', re.MULTILINE)
 MAIN_FUNCTION_RE: re.Pattern[str] = re.compile(r'^\s*fn\s+main\b', re.MULTILINE)
 STD_MATH_RE: re.Pattern[str] = re.compile(r'import\s+std::(?:math|ffi::c::math)\b')
 FLOAT_VALUE_RE: re.Pattern[str] = re.compile(r'\bf(?:32|64)\b|\b\d+\.\d+')
+NATIVE_VECTOR_RE: re.Pattern[str] = re.compile(r'\bNativeVector\b|\bnative\s*\[')
 
 NEGATIVE_NAME_MARKERS = (
     "_invalid",
@@ -385,6 +386,18 @@ def detect_clang_system_include_dirs() -> list[str]:
 
     return include_dirs
 
+def uses_native_vector(files: list[Path]) -> bool:
+    for path in files:
+        if not path.exists():
+            continue
+
+        content: str = path.read_text(encoding="utf-8")
+
+        if NATIVE_VECTOR_RE.search(content) is not None:
+            return True
+
+    return False
+
 def needs_math_linkage(files: list[Path]) -> bool:
     for path in files:
 
@@ -483,6 +496,7 @@ def compile_test(
     files: list[Path] = [test_path.resolve(), *dependencies]
     auto_cc_args: list[str] = []
     import_c_test: bool = uses_import_c(test_path)
+    native_vector_test: bool = uses_native_vector(files)
 
     auto_cc_args.extend(["-o", str(binary_path)])
 
@@ -502,7 +516,12 @@ def compile_test(
     for emit in args.emit:
         command.extend(["-emit", emit])
 
-    if "atomics" in test_path.parts or import_c_test:
+    if (
+        "asm" in test_path.parts
+        or "atomics" in test_path.parts
+        or import_c_test
+        or native_vector_test
+    ):
         command.extend(["-mode", "unstable"])
 
     if import_c_test:

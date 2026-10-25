@@ -17,10 +17,7 @@
 
 */
 
-use thrustc_ast::{
-    Ast, NodeId,
-    traits::{AstCodeLocation, AstStandardExtensions},
-};
+use thrustc_ast::{Ast, NodeId};
 use thrustc_attributes::ThrustAttributes;
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
@@ -41,12 +38,70 @@ pub fn build_asm_code_block<'parser>(
 
     let span: Span = asm_tk.get_span();
 
-    let mut args: Vec<Ast> = Vec::with_capacity(10);
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
 
-    let asm_type: Type = typegeneration::build_type(ctx, false)?;
+    let mut parameters_types: Vec<Type> = Vec::with_capacity(u8::MAX as usize);
+
+    loop {
+        if ctx.check(TokenType::RParen) {
+            break;
+        }
+
+        parameters_types.push(typegeneration::build_type(ctx, false)?);
+
+        if ctx.check(TokenType::RParen) {
+            break;
+        } else {
+            ctx.consume(
+                TokenType::Comma,
+                CompilationIssueCode::E0001,
+                "Expected ','.".into(),
+            )?;
+        }
+    }
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    let return_type: Type = typegeneration::build_type(ctx, false)?;
 
     let attributes: ThrustAttributes =
-        attributes::build_compiler_attributes(ctx, &[TokenType::LParen, TokenType::LBrace])?;
+        attributes::build_compiler_attributes(ctx, &[TokenType::Assembler])?;
+
+    let assembler_tk: &Token = ctx.consume(
+        TokenType::Assembler,
+        CompilationIssueCode::E0001,
+        "Expected a '#asm{' block.".into(),
+    )?;
+
+    let raw_assembler: String = assembler_tk.get_lexeme().to_string();
+    let mut assembler_lines: Vec<&str> = raw_assembler.lines().collect();
+
+    while let Some(last) = assembler_lines.last() {
+        let instruction: &str = last.trim();
+
+        if instruction.is_empty() {
+            assembler_lines.pop();
+
+            continue;
+        }
+
+        if instruction.eq_ignore_ascii_case("ret") || instruction.eq_ignore_ascii_case("retq") {
+            assembler_lines.pop();
+        }
+
+        break;
+    }
+
+    let assembler: String = assembler_lines.join("\n");
+    let mut args: Vec<Ast> = Vec::with_capacity(u8::MAX as usize);
 
     if ctx.match_token(TokenType::LParen)? {
         loop {
@@ -60,7 +115,7 @@ pub fn build_asm_code_block<'parser>(
                 break;
             } else {
                 ctx.consume(
-                    TokenType::Colon,
+                    TokenType::Comma,
                     CompilationIssueCode::E0001,
                     "Expected ','.".into(),
                 )?;
@@ -74,127 +129,11 @@ pub fn build_asm_code_block<'parser>(
         )?;
     }
 
-    ctx.consume(
-        TokenType::LBrace,
-        CompilationIssueCode::E0001,
-        "Expected '{'.".into(),
-    )?;
-
-    let mut assembler: String = String::with_capacity(u8::MAX as usize);
-    let mut assembler_pos: usize = 0;
-
-    loop {
-        if ctx.check(TokenType::RBrace) {
-            break;
-        }
-
-        let raw_str: Ast = expressions::parse_expr(ctx)?;
-        let raw_str_span: Span = raw_str.get_span();
-
-        if !raw_str.is_cstring() {
-            ctx.add_error_report(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "It is not a null terminated.".into(),
-                "You should write a literal string with null termination.".into(),
-                None,
-                raw_str_span,
-            ));
-        }
-
-        let assembly: String = if let Ast::CString { bytes, .. } = raw_str {
-            String::from_utf8_lossy(&bytes).to_string()
-        } else {
-            String::new()
-        };
-
-        if assembler_pos != 0 {
-            assembler.push('\n');
-        }
-
-        assembler.push_str(&assembly);
-
-        if ctx.check(TokenType::RBrace) {
-            break;
-        } else {
-            ctx.consume(
-                TokenType::Comma,
-                CompilationIssueCode::E0001,
-                "Expected ','.".into(),
-            )?;
-        }
-
-        assembler_pos += 1;
-    }
-
-    ctx.consume(
-        TokenType::RBrace,
-        CompilationIssueCode::E0001,
-        "Expected '}'.".into(),
-    )?;
-
-    ctx.consume(
-        TokenType::LBrace,
-        CompilationIssueCode::E0001,
-        "Expected '{'.".into(),
-    )?;
-
-    let mut constraints: String = String::with_capacity(u8::MAX as usize);
-    let mut constraint_pos: usize = 0;
-
-    loop {
-        if ctx.check(TokenType::RBrace) {
-            break;
-        }
-
-        let raw_str: Ast = expressions::parse_expr(ctx)?;
-        let raw_str_span: Span = raw_str.get_span();
-
-        if !raw_str.is_cnstring() {
-            ctx.add_error_report(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "It is not a null terminated.".into(),
-                "You should write a literal string with null termination.".into(),
-                None,
-                raw_str_span,
-            ));
-        }
-
-        let constraint: String = if let Ast::CString { bytes, .. } = raw_str {
-            String::from_utf8_lossy(&bytes).to_string()
-        } else {
-            String::new()
-        };
-
-        if constraint_pos != 0 {
-            constraints.push('\n');
-        }
-
-        constraints.push_str(&constraint);
-
-        if ctx.check(TokenType::RBrace) {
-            break;
-        } else {
-            ctx.consume(
-                TokenType::Comma,
-                CompilationIssueCode::E0001,
-                "Expected ','.".into(),
-            )?;
-        }
-
-        constraint_pos += 1;
-    }
-
-    ctx.consume(
-        TokenType::RBrace,
-        CompilationIssueCode::E0001,
-        "Expected '}'.".into(),
-    )?;
-
     Ok(Ast::AsmValue {
         assembler,
-        constraints,
+        parameters_types,
         args,
-        kind: asm_type,
+        kind: return_type,
         attributes,
         span,
         id: NodeId::new(),

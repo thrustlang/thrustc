@@ -18,7 +18,8 @@
 */
 
 use thrustc_backends::CompilerFeaturesMode;
-use thrustc_errors::CompilationIssue;
+use thrustc_code_location::Span;
+use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token_type::TokenType;
 
 use crate::Lexer;
@@ -149,6 +150,8 @@ lazy_static! {
     pub static ref TYPES: HashMap<&'static str, TokenType> = {
         let mut types: HashMap<&'static str, TokenType> = HashMap::with_capacity(u8::MAX as usize);
 
+        let compiler_mode: CompilerFeaturesMode = thrustc_backends::get_compiler_features();
+
         types.insert("s8", TokenType::S8);
         types.insert("s16", TokenType::S16);
         types.insert("s32", TokenType::S32);
@@ -169,7 +172,11 @@ lazy_static! {
         types.insert("char", TokenType::Char);
         types.insert("ptr", TokenType::Ptr);
         types.insert("array", TokenType::Array);
-        types.insert("NativeVector", TokenType::NativeVector);
+
+        if compiler_mode.is_unstable_mode() {
+            types.insert("NativeVector", TokenType::NativeVector);
+        }
+
         types.insert("void", TokenType::Void);
         types.insert("Fn", TokenType::FnRef);
 
@@ -228,9 +235,9 @@ lazy_static! {
         keywords.insert("directive", TokenType::Directive);
 
         if compiler_mode.is_unstable_mode() {
-            keywords.insert("asmfn", TokenType::AsmFn);
             keywords.insert("asm", TokenType::Asm);
             keywords.insert("global_asm", TokenType::GlobalAsm);
+            keywords.insert("native", TokenType::Native);
             keywords.insert("embedded", TokenType::Embedded);
             keywords.insert("importC", TokenType::ImportC);
         }
@@ -239,12 +246,52 @@ lazy_static! {
     };
 }
 
+const UNSTABLE_LEXEMES: &[&str] = &[
+    "asm",
+    "global_asm",
+    "native",
+    "embedded",
+    "importC",
+    "NativeVector",
+    "@promote",
+    "@asmAlignStack",
+    "@asmSyntax",
+    "@asmThrowErrors",
+    "@asmSideEffects",
+    "atomicStore",
+    "atomicAdd",
+    "atomicSubtract",
+    "atomicAnd",
+    "atomicNand",
+    "atomicOr",
+    "atomicXor",
+    "atomicSignedMaximum",
+    "atomicSignedMinimum",
+    "atomicUnsignedMaximum",
+    "atomicUnsignedMinimum",
+    "atomicCompareAndSwap",
+];
+
 pub fn lex(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
     while lexer.is_identifier_boundary(lexer.peek()) {
         lexer.advance_only();
     }
 
     let lexem: String = lexer.lexeme();
+
+    if thrustc_backends::get_compiler_features().is_stable_mode()
+        && UNSTABLE_LEXEMES.contains(&lexem.as_str())
+    {
+        lexer.end_span();
+
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0001,
+            format!("The '{}' feature is unstable.", lexem),
+            "You must pass '-mode unstable' to access it.".into(),
+            None,
+            Span::new(lexer.span()),
+        ));
+    }
 
     if let Some(keyword) = KEYWORDS.get(lexem.as_str()) {
         lexer.make(*keyword);

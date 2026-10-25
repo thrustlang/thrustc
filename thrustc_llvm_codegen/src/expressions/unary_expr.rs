@@ -35,11 +35,11 @@ use crate::type_cast;
 use crate::traits::AstLLVMGetType;
 use crate::typegeneration;
 
-use inkwell::types::FloatType;
+use inkwell::types::{FloatType, VectorType};
 use inkwell::values::PointerValue;
 use inkwell::{
     builder::Builder,
-    values::{BasicValueEnum, FloatValue, IntValue},
+    values::{BasicValueEnum, FloatValue, IntValue, VectorValue},
 };
 
 use std::path::PathBuf;
@@ -50,6 +50,12 @@ pub fn compile<'ctx>(
     before: bool,
     cast_type: Option<&Type>,
 ) -> BasicValueEnum<'ctx> {
+    let unary_type: Type = unary.1.remove_all_constant_type();
+
+    if unary_type.is_native_vector_type() {
+        return self::compile_native_vector(context, unary, cast_type);
+    }
+
     match unary {
         (
             TokenType::PlusPlus | TokenType::MinusMinus,
@@ -83,6 +89,12 @@ pub fn compile_const<'ctx>(
     unary: UnaryOperation<'ctx>,
     cast_type: &Type,
 ) -> BasicValueEnum<'ctx> {
+    let unary_type: Type = unary.1.remove_all_constant_type();
+
+    if unary_type.is_native_vector_type() {
+        return self::compile_native_vector_constant(context, unary, cast_type);
+    }
+
     match unary {
         (TokenType::PlusPlus | TokenType::MinusMinus, _, expr) => {
             self::compile_increment_decrement_const(context, unary.0, expr, cast_type)
@@ -825,4 +837,152 @@ fn compile_arithmetic_bitwise_not_const<'ctx>(
             line!(),
         ),
     }
+}
+
+fn compile_native_vector<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    unary: UnaryOperation<'ctx>,
+    cast_type: Option<&Type>,
+) -> BasicValueEnum<'ctx> {
+    let operator: &TokenType = unary.0;
+    let kind: &Type = unary.1;
+    let node: &Ast = unary.2;
+    let span: Span = node.get_span();
+
+    let value: BasicValueEnum = codegen::compile_as_value(context, node, None);
+    let vector: VectorValue = value.into_vector_value();
+
+    let Some((element_type, _)) = kind.get_native_vector_parts() else {
+        abort::abort_codegen(
+            context,
+            "Expected native vector type for native vector unary operation.",
+            span,
+            PathBuf::from(file!()),
+            line!(),
+        );
+    };
+
+    let result: BasicValueEnum = match operator {
+        TokenType::Minus if element_type.is_float_type() => context
+            .get_llvm_builder()
+            .build_float_neg(vector, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to negate a native vector.",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                )
+            })
+            .into(),
+
+        TokenType::Minus => context
+            .get_llvm_builder()
+            .build_int_neg(vector, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to negate a native vector.",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                )
+            })
+            .into(),
+
+        TokenType::Not | TokenType::Bang => context
+            .get_llvm_builder()
+            .build_not(vector, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    context,
+                    "Failed to apply logical not to a native vector.",
+                    span,
+                    PathBuf::from(file!()),
+                    line!(),
+                )
+            })
+            .into(),
+
+        _ => abort::abort_codegen(
+            context,
+            "Failed to compile a native vector unary operation.",
+            span,
+            PathBuf::from(file!()),
+            line!(),
+        ),
+    };
+
+    type_cast::try_smart_cast(context, cast_type, kind, result, span)
+}
+
+fn compile_native_vector_constant<'ctx>(
+    context: &mut LLVMCodeGenContext<'_, 'ctx>,
+    unary: UnaryOperation<'ctx>,
+    cast_type: &Type,
+) -> BasicValueEnum<'ctx> {
+    let operator: &TokenType = unary.0;
+    let kind: &Type = unary.1;
+    let node: &Ast = unary.2;
+    let span: Span = node.get_span();
+
+    let value: BasicValueEnum = codegen::compile_constant_as_value(context, node, kind);
+    let vector: VectorValue = value.into_vector_value();
+
+    let Some((element_type, element_count)) = kind.get_native_vector_parts() else {
+        abort::abort_codegen(
+            context,
+            "Expected native vector type for constant native vector unary operation.",
+            span,
+            PathBuf::from(file!()),
+            line!(),
+        );
+    };
+
+    let mut values: Vec<BasicValueEnum> = Vec::with_capacity(element_count as usize);
+
+    for index in 0..element_count {
+        let index: IntValue = context
+            .get_llvm_context()
+            .i32_type()
+            .const_int(u64::from(index), false);
+
+        let lane: BasicValueEnum = vector.const_extract_element(index);
+
+        let result: BasicValueEnum = match operator {
+            TokenType::Minus if element_type.is_float_type() => {
+                let float: FloatValue = lane.into_float_value();
+
+                let (value, ..) = float.get_constant().unwrap_or_else(|| {
+                    abort::abort_codegen(
+                        context,
+                        "Expected a constant float native vector lane.",
+                        span,
+                        PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+
+                float.get_type().const_float(-value).into()
+            }
+
+            TokenType::Minus => lane.into_int_value().const_neg().into(),
+            TokenType::Not | TokenType::Bang => lane.into_int_value().const_not().into(),
+
+            _ => abort::abort_codegen(
+                context,
+                "Failed to compile a constant native vector unary operation.",
+                span,
+                PathBuf::from(file!()),
+                line!(),
+            ),
+        };
+
+        values.push(result);
+    }
+
+    let result: BasicValueEnum = VectorType::const_vector(&values).into();
+
+    type_cast::try_smart_cast(context, Some(cast_type), kind, result, span)
 }

@@ -195,7 +195,8 @@ impl AstStandardExtensions for Ast<'_> {
             | Ast::AsmValue { .. }
             | Ast::GlobalAssembler { .. }
             | Ast::Embedded { .. }
-            | Ast::ImportC { .. } => true,
+            | Ast::ImportC { .. }
+            | Ast::NativeVector { .. } => true,
             Ast::Builtin { builtin, .. } => matches!(
                 builtin,
                 AstBuiltin::AtomicRMW { .. } | AstBuiltin::AtomicCompareAndSwap { .. }

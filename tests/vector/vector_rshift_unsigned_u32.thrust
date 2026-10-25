@@ -1,0 +1,7 @@
+fn main() s32 @public {
+    var a: NativeVector[u32; 4] = native[8, 16, 32, 64];
+    var r: NativeVector[u32; 4] = a >> 1;
+    if r[0] != 4 { return 1; }
+    if r[3] != 32 { return 2; }
+    return 0;
+}

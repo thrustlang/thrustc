@@ -29,6 +29,22 @@ pub struct Token {
 
 The lexer always appends a final `Eof` token after the last real token.
 
+## Raw assembler blocks
+
+| TokenType   | Lexeme | Source |
+|-------------|--------|--------|
+| `Assembler` | normalized body | `#asm{ ... }` |
+
+The lexer recognizes `#asm` only when the compiler runs in unstable mode. It
+consumes the `asm` word, optional whitespace, and the opening `{`, then captures
+everything until the matching closing `}`. The token lexeme contains the block
+body without `#asm{` or the final `}`.
+
+Each line is trimmed and a trailing comma is removed. Empty lines are skipped.
+Internal commas between operands are preserved. Lines are joined with `\n`.
+This means the assembler block uses one instruction per line and the trailing
+comma of the last instruction is optional.
+
 ## Delimiters & punctuation
 
 | TokenType      | Lexeme |

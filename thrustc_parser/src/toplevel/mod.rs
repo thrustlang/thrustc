@@ -52,9 +52,11 @@ pub fn parse<'parser>(ctx: &mut ParserContext<'parser>) -> Result<Ast<'parser>, 
         TokenType::Enum => Ok(global_enum::build_enum(ctx, false)?),
         TokenType::Fn => Ok(global_function::build_function(ctx, false)?),
         TokenType::IfAttribute => Ok(compiletime_conditional::build_compiletime_declaration(ctx)?),
-        TokenType::AsmFn => Ok(global_assembler_function::build_assembler_function(
-            ctx, false,
-        )?),
+        TokenType::Asm if ctx.check_to(TokenType::Fn, 1) => {
+            Ok(global_assembler_function::build_assembler_function(
+                ctx, false,
+            )?)
+        }
         TokenType::Intrinsic => Ok(compiler_intrinsic::build_compiler_intrinsic(ctx, false)?),
         TokenType::GlobalAsm => Ok(global_assembler::build_global_assembler(ctx)?),
         TokenType::Import => Ok(import::build_import(ctx)?),
@@ -106,7 +108,7 @@ pub fn parse_forward(ctx: &mut ParserContext) {
             TokenType::Fn if !at_block => {
                 let _ = global_function::build_function(ctx, true);
             }
-            TokenType::AsmFn if !at_block => {
+            TokenType::Asm if !at_block && ctx.check_to(TokenType::Fn, 1) => {
                 let _ = global_assembler_function::build_assembler_function(ctx, true);
             }
             TokenType::ImportC if !at_block => {

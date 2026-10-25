@@ -76,6 +76,9 @@ pub enum TokenType {
     Arrow,      // ->
     FatArrow,   // =>
 
+    // --- Raw Assembler ---
+    Assembler,
+
     // --- Literals ---
     Identifier,
     Integer,
@@ -148,7 +151,6 @@ pub enum TokenType {
     Write,
 
     // --- Keywords ---
-    AsmFn,
     Asm,
     Intrinsic,
     GlobalAsm,

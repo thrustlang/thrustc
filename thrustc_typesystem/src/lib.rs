@@ -22,6 +22,7 @@ mod constant_type;
 mod fixed_array_type;
 mod function_reference_type;
 mod impls;
+mod native_vector;
 mod pointer_dereference;
 mod pointer_type;
 mod structure_type;

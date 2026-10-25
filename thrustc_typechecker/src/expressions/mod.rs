@@ -750,29 +750,97 @@ pub fn validate_node<'type_checker>(
 
         Ast::Builtin { builtin, .. } => compiler_builtins::validate_node(typechecker, builtin),
 
-        Ast::AsmValue { args, kind, .. } => {
-            for node in args.iter() {
-                let node_type: &Type = node.get_value_type()?;
+        Ast::AsmValue {
+            parameters_types,
+            args,
+            span,
+            ..
+        } => {
+            let required_count: usize = parameters_types.len();
+            let provided_count: usize = args.len();
 
-                if node_type.contains_void_type() || node_type.is_void_type() {
-                    typechecker.add_error_report(CompilationIssue::Error(
-                        CompilationIssueCode::E0019,
-                        "Cannot use 'void' as a value.".into(),
-                        "You should remove whatever type or value where void type belongs.".into(),
-                        None,
-                        node_type.get_span(),
-                    ));
-                }
-            }
-
-            if kind.contains_void_type() {
+            if parameters_types
+                .iter()
+                .any(|parameter_type| {
+                    parameter_type.contains_void_type() || parameter_type.is_void_type()
+                })
+            {
                 typechecker.add_error_report(CompilationIssue::Error(
                     CompilationIssueCode::E0019,
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    *span,
                 ));
+            }
+
+            if required_count != provided_count {
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0022,
+                    format!(
+                        "Expected arguments total '{}', not '{}'.",
+                        required_count, provided_count
+                    ),
+                    "You should try to filling it out using the equals type.".into(),
+                    None,
+                    *span,
+                ));
+
+                let expected_types: String = parameters_types
+                    .iter()
+                    .map(|parameter_type| parameter_type.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                typechecker.add_error_report(CompilationIssue::Error(
+                    CompilationIssueCode::E0023,
+                    format!("Arguments were expected in the order '{}'.", expected_types),
+                    "You should reorder it equals to its type.".into(),
+                    None,
+                    *span,
+                ));
+
+                return Ok(());
+            }
+
+            for (target_type, expression) in parameters_types.iter().zip(args.iter()) {
+                let from_type: &Type = expression.get_value_type()?;
+
+                if from_type.contains_void_type() || from_type.is_void_type() {
+                    typechecker.add_error_report(CompilationIssue::Error(
+                        CompilationIssueCode::E0019,
+                        "Cannot use 'void' as a value.".into(),
+                        "You should remove whatever type or value where void type belongs.".into(),
+                        None,
+                        from_type.get_span(),
+                    ));
+                }
+
+                let metadata: TypeCheckerNodeMetadata =
+                    TypeCheckerNodeMetadata::new(expression.is_totaly_literal_value());
+
+                {
+                    let control_context: &mut TypeCheckerControlContext =
+                        typechecker.get_mut_control_context();
+
+                    control_context.reset_checking_depth();
+
+                    if let Err(error) = type_checking::check_type_together(
+                        target_type,
+                        from_type,
+                        Some(expression),
+                        None,
+                        metadata,
+                        expression.get_span(),
+                        control_context,
+                    ) {
+                        typechecker.add_error_report(error);
+                    }
+                }
+            }
+
+            for arg in args.iter() {
+                typechecker.analyze_expr(arg)?;
             }
 
             Ok(())

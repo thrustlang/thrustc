@@ -1,0 +1,20 @@
+/*
+ * Assembler function using the AT&T dialect.
+ */
+
+@if(isLinux() && isX8664())
+asm fn seven() s32 @public @asmSyntax("AT&T") #asm{
+    mov $$7, %eax
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        if seven() != 7 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

@@ -30,6 +30,7 @@ use unicode_categories::UnicodeCategories;
 
 const PREALLOCATED_TOKENS_CAPACITY: usize = 20 << 10;
 
+mod asm;
 mod character;
 mod escape;
 mod identifier;

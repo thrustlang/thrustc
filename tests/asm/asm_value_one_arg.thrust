@@ -1,0 +1,20 @@
+/*
+ * Assembler value with one typed argument.
+ */
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        var input: s32 = 40;
+
+        var value: s32 = asm (s32) s32 #asm{
+            mov $0, $1,
+            add $0, 2
+        } (input);
+
+        if value != 42 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

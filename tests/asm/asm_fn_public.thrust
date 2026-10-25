@@ -1,0 +1,20 @@
+/*
+ * Public assembler function callable from regular code.
+ */
+
+@if(isLinux() && isX8664())
+asm fn public_value() s32 @public #asm{
+    mov $0, 99
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        if public_value() != 99 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

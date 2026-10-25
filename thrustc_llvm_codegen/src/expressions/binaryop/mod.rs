@@ -20,3 +20,4 @@
 pub mod boolean_operation;
 pub mod floatingpoint_operation;
 pub mod integer_operation;
+pub mod native_vector;

@@ -1,0 +1,27 @@
+/*
+ * Repeated calls to the same assembler function.
+ */
+
+@if(isLinux() && isX8664())
+asm fn increment(s32) s32 @public #asm{
+    mov $0, $1,
+    add $0, 1
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        var value: s32 = 0;
+
+        value = increment(value);
+        value = increment(value);
+        value = increment(value);
+
+        if value != 3 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

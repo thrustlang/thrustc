@@ -32,13 +32,12 @@ use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::abort;
 use crate::context::LLVMCodeGenContext;
-use crate::toplevel::function::CompilerFunctionVariant;
 use crate::{codegen, typegeneration};
 
 pub fn compile<'ctx>(
     context: &mut LLVMCodeGenContext<'_, 'ctx>,
     assembler: &str,
-    constraints: &str,
+    parameters_types: &'ctx [Type],
     args: &'ctx [Ast],
     kind: &'ctx Type,
     attributes: LLVMAttributes,
@@ -47,20 +46,15 @@ pub fn compile<'ctx>(
     let llvm_context: &Context = context.get_llvm_context();
     let llvm_builder: &Builder = context.get_llvm_builder();
 
-    let generated_asm_function_type: (
-        FunctionType<'_>,
-        Option<thrustc_llvm_abi::LLVMABIConfiguration>,
-    ) = typegeneration::compile_as_function_type(
-        context,
-        kind,
-        args,
-        false,
-        false,
-        false,
-        CompilerFunctionVariant::AssemblerFunction,
-    );
+    let asm_function_type: FunctionType<'_> =
+        typegeneration::generate_type_function_type_to_function_type(
+            context,
+            kind,
+            parameters_types,
+            false,
+        );
 
-    let asm_function_type: FunctionType<'_> = generated_asm_function_type.0;
+    let constraints: String = self::build_constraints(kind, parameters_types);
 
     let compiled_args: Vec<BasicMetadataValueEnum> = args
         .iter()
@@ -119,6 +113,31 @@ pub fn compile<'ctx>(
             );
         }
     }
+}
+
+pub fn build_constraints(return_type: &Type, parameters_types: &[Type]) -> String {
+    let mut constraints: Vec<&str> = Vec::with_capacity(parameters_types.len() + 1);
+
+    if !return_type.is_void_type() {
+        if return_type.is_float_type() {
+            constraints.push("=x");
+        } else {
+            constraints.push("=r");
+        }
+    }
+
+    for parameter_type in parameters_types.iter() {
+        // Floating-point values live in SSE registers, so LLVM expects the 'x'
+        // constraint. Integers, pointers and other scalars use general-purpose
+        // registers through the 'r' constraint.
+        if parameter_type.is_float_type() {
+            constraints.push("x");
+        } else {
+            constraints.push("r");
+        }
+    }
+
+    constraints.join(",")
 }
 
 fn compile_null_ptr<'ctx>(context: &LLVMCodeGenContext<'_, 'ctx>) -> BasicValueEnum<'ctx> {

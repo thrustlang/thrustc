@@ -556,9 +556,18 @@ fn visit_all_types_inner<'ast>(
             None
         }
         Ast::AsmValue {
-            args, kind, span, ..
+            parameters_types,
+            args,
+            kind,
+            span,
+            ..
         } => {
             on_type(kind, *span);
+
+            for parameter_type in parameters_types {
+                on_type(parameter_type, *span);
+            }
+
             for arg in args {
                 if let Some(span) = visit_all_types_inner(arg, on_type, depth) {
                     return Some(span);

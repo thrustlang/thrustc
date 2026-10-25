@@ -29,6 +29,20 @@ pub fn validate_unary_node(
     ty: &Type,
     span: Span,
 ) -> Result<(), CompilationIssue> {
+    if ty.get_native_vector_parts().is_some() {
+        if ty.get_native_vector_unary_result_type(*operator).is_some() {
+            return Ok(());
+        }
+
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0030,
+            format!("'{}{}' isn't a valid native vector operation.", operator, ty),
+            "You should use a numeric native vector or a bool native vector with '!'.".into(),
+            None,
+            span,
+        ));
+    }
+
     match operator {
         TokenType::Minus | TokenType::PlusPlus | TokenType::MinusMinus => {
             self::validate_general_unary(operator, ty, span)

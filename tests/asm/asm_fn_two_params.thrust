@@ -1,0 +1,22 @@
+/*
+ * Assembler function with two typed parameters.
+ */
+
+@if(isLinux() && isX8664())
+asm fn sum(s32, s32) s32 @public #asm{
+    mov $0, $1,
+    add $0, $2
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        if sum(4, 5) != 9 { return 1; }
+        if sum(20, 22) != 42 { return 2; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

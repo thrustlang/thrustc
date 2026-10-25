@@ -1,0 +1,22 @@
+/*
+ * Assembler function receiving three typed parameters.
+ */
+
+@if(isLinux() && isX8664())
+asm fn sum3(s32, s32, s32) s32 @public #asm{
+    mov $0, $1,
+    add $0, $2,
+    add $0, $3
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        if sum3(10, 20, 12) != 42 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

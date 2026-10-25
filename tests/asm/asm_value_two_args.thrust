@@ -1,0 +1,21 @@
+/*
+ * Assembler value with two typed arguments.
+ */
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        var left: s32 = 21;
+        var right: s32 = 21;
+
+        var value: s32 = asm (s32, s32) s32 #asm{
+            mov $0, $1,
+            add $0, $2
+        } (left, right);
+
+        if value != 42 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

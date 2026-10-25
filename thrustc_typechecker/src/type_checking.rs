@@ -299,7 +299,7 @@ pub fn check_type_together(
                 element_count: provided_count,
                 ..
             },
-            None,
+            _,
         ) => {
             if target_count != provided_count {
                 return Err(error);

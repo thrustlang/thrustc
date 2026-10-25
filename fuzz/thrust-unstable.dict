@@ -40,9 +40,9 @@
 "import"
 "only"
 "directive"
-"asmfn"
 "asm"
 "global_asm"
+"#asm{"
 "embedded"
 "importC"
 

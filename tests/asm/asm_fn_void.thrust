@@ -1,0 +1,21 @@
+/*
+ * Assembler function returning void.
+ */
+
+@if(isLinux() && isX8664())
+asm fn touch() void @public #asm{
+    nop
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        touch();
+        touch();
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

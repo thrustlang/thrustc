@@ -17,28 +17,31 @@
 
 */
 
-use thrustc_ast::{
-    Ast, NodeId,
-    traits::{AstCodeLocation, AstStandardExtensions},
-};
+use thrustc_ast::{Ast, NodeId};
 use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::AssemblerFunctionParametersTypes;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
-use thrustc_token_type::{TokenType, traits::TokenTypeAttributesExtensions};
-use thrustc_typesystem::Type;
+use thrustc_token_type::TokenType;
+use thrustc_typesystem::{Type, traits::TypeCodeLocation};
 
-use crate::{ParserContext, attributes, expressions, typegeneration};
+use crate::{ParserContext, attributes, typegeneration};
 
 pub fn build_assembler_function<'parser>(
     ctx: &mut ParserContext<'parser>,
     parse_forward: bool,
 ) -> Result<Ast<'parser>, CompilationIssue> {
     ctx.consume(
-        TokenType::AsmFn,
+        TokenType::Asm,
         CompilationIssueCode::E0001,
-        "Expected 'asmfn' keyword.".into(),
+        "Expected 'asm' keyword.".into(),
+    )?;
+
+    ctx.consume(
+        TokenType::Fn,
+        CompilationIssueCode::E0001,
+        "Expected 'fn' keyword.".into(),
     )?;
 
     let asm_function_name_tk: &Token = ctx.consume(
@@ -68,21 +71,13 @@ pub fn build_assembler_function<'parser>(
             break;
         }
 
-        let parameter_name_tk: &Token = ctx.consume(
-            TokenType::Identifier,
-            CompilationIssueCode::E0001,
-            "Expected 'identifier'.".into(),
-        )?;
-
-        let parameter_name: &str = parameter_name_tk.get_lexeme();
-        let parameter_span: Span = parameter_name_tk.get_span();
-
         let parameter_type: Type = typegeneration::build_type(ctx, false)?;
+        let parameter_span: Span = parameter_type.get_span();
 
         parameters_types.push(parameter_type.clone());
 
         parameters.push(Ast::AssemblerFunctionParameter {
-            name: parameter_name,
+            name: "",
             kind: parameter_type,
             position: parameter_position,
             span: parameter_span,
@@ -108,141 +103,40 @@ pub fn build_assembler_function<'parser>(
         "Expected ')'.".into(),
     )?;
 
-    let return_type: Type = if ctx.check(TokenType::LBrace) || ctx.peek().get_type().is_attribute()
-    {
-        let peeked: &Token = ctx.peek();
-        let peeked_type: TokenType = peeked.get_type();
-
-        let span: Span = if peeked_type.is_attribute() {
-            peeked.get_span()
-        } else {
-            ctx.previous().get_span()
-        };
-
-        Type::Void { span }
-    } else {
-        typegeneration::build_type(ctx, false)?
-    };
+    let return_type: Type = typegeneration::build_type(ctx, false)?;
 
     let attributes: ThrustAttributes =
-        attributes::build_compiler_attributes(ctx, &[TokenType::LBrace])?;
+        attributes::build_compiler_attributes(ctx, &[TokenType::Assembler])?;
     let is_public: bool = attributes.has_public_attribute();
 
-    ctx.consume(
-        TokenType::LBrace,
+    let assembler_tk: &Token = ctx.consume(
+        TokenType::Assembler,
         CompilationIssueCode::E0001,
-        "Expected '{'.".into(),
+        "Expected a '#asm{' block.".into(),
     )?;
 
-    let mut assembler: String = String::with_capacity(u8::MAX as usize);
-    let mut assembler_pos: usize = 0;
+    let raw_assembler: String = assembler_tk.get_lexeme().to_string();
+    let mut assembler_lines: Vec<&str> = raw_assembler.lines().collect();
 
-    loop {
-        if ctx.check(TokenType::RBrace) {
-            break;
+    while let Some(last) = assembler_lines.last() {
+        let instruction: &str = last.trim();
+
+        if instruction.is_empty() {
+            assembler_lines.pop();
+
+            continue;
         }
 
-        let raw_str: Ast = expressions::parse_expr(ctx)?;
-        let raw_str_span: Span = raw_str.get_span();
-
-        if !raw_str.is_cstring() {
-            ctx.add_error_report(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "It is not a null terminated.".into(),
-                "You should write a literal string with null termination.".into(),
-                None,
-                raw_str_span,
-            ));
+        if instruction.eq_ignore_ascii_case("ret") || instruction.eq_ignore_ascii_case("retq") {
+            assembler_lines.pop();
         }
 
-        let assembly: String = if let Ast::CString { bytes, .. } = raw_str {
-            String::from_utf8_lossy(&bytes).to_string()
-        } else {
-            String::new()
-        };
-
-        if assembler_pos != 0 {
-            assembler.push('\n');
-        }
-
-        assembler.push_str(&assembly);
-
-        if ctx.check(TokenType::RBrace) {
-            break;
-        } else {
-            ctx.consume(
-                TokenType::Comma,
-                CompilationIssueCode::E0001,
-                "Expected ','.".into(),
-            )?;
-        }
-
-        assembler_pos = assembler_pos.saturating_add(1);
+        break;
     }
 
-    ctx.consume(
-        TokenType::RBrace,
-        CompilationIssueCode::E0001,
-        "Expected '}'.".into(),
-    )?;
+    let assembler: String = assembler_lines.join("\n");
 
-    ctx.consume(
-        TokenType::LBrace,
-        CompilationIssueCode::E0001,
-        "Expected '{'.".into(),
-    )?;
-
-    let mut constraints: String = String::with_capacity(u8::MAX as usize);
-    let mut constraint_pos: usize = 0;
-
-    loop {
-        if ctx.check(TokenType::RBrace) {
-            break;
-        }
-
-        let raw_str: Ast = expressions::parse_expr(ctx)?;
-        let raw_str_span: Span = raw_str.get_span();
-
-        if !raw_str.is_cstring() {
-            ctx.add_error_report(CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "It is not a null terminated.".into(),
-                "You should write a literal string with null termination.".into(),
-                None,
-                raw_str_span,
-            ));
-        }
-
-        let constraint: String = if let Ast::CString { bytes, .. } = raw_str {
-            String::from_utf8_lossy(&bytes).to_string()
-        } else {
-            String::new()
-        };
-
-        if constraint_pos != 0 {
-            constraints.push('\n');
-        }
-
-        constraints.push_str(&constraint);
-
-        if ctx.check(TokenType::RBrace) {
-            break;
-        } else {
-            ctx.consume(
-                TokenType::Comma,
-                CompilationIssueCode::E0001,
-                "Expected ','.".into(),
-            )?;
-        }
-
-        constraint_pos = constraint_pos.saturating_add(1);
-    }
-
-    ctx.consume(
-        TokenType::RBrace,
-        CompilationIssueCode::E0001,
-        "Expected '}'.".into(),
-    )?;
+    let _ = ctx.match_token(TokenType::SemiColon)?;
 
     if parse_forward {
         let parameters_types_repr: AssemblerFunctionParametersTypes =
@@ -261,7 +155,6 @@ pub fn build_assembler_function<'parser>(
             parameters,
             parameters_types,
             assembler,
-            constraints,
             return_type,
             attributes,
             span,

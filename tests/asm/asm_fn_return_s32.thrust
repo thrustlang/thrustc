@@ -1,0 +1,21 @@
+/*
+ * Assembler function returning a 32-bit immediate.
+ */
+
+@if(isLinux() && isX8664())
+asm fn answer() s32 @public #asm{
+    mov $0, 42,
+    ret
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        if answer() != 42 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

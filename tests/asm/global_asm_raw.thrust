@@ -1,0 +1,15 @@
+/*
+ * Global assembler using the raw '#asm' block.
+ */
+
+@if(isLinux() && isX8664())
+global_asm #asm{
+    .globl __thrust_global_asm_test,
+    __thrust_global_asm_test:
+}
+@else
+const ASM_UNAVAILABLE: s32 = 0;
+
+fn main() s32 @public {
+    return 0;
+}

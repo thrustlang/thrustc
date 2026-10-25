@@ -1,0 +1,17 @@
+/*
+ * Assembler value used to initialize a variable.
+ */
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        var value: s64 = asm () s64 #asm{
+            mov $0, 4096
+        };
+
+        if value != 4096 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

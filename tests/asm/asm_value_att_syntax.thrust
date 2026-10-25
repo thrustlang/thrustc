@@ -1,0 +1,17 @@
+/*
+ * Assembler value using the AT&T dialect.
+ */
+
+fn main() s32 @public {
+    @if(isLinux() && isX8664()) {
+        var value: s32 = asm () s32 @asmSyntax("AT&T") #asm{
+            mov $$42, %eax
+        };
+
+        if value != 42 { return 1; }
+    } @else {
+        return 0;
+    }
+
+    return 0;
+}

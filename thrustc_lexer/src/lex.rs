@@ -21,7 +21,7 @@ use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token_type::TokenType;
 
-use crate::{Lexer, character, identifier, number, string};
+use crate::{Lexer, asm, character, identifier, number, string};
 
 pub fn analyze(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
     match lexer.advance() {
@@ -124,6 +124,8 @@ pub fn analyze(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
         }
 
         '\'' => character::lex(lexer)?,
+
+        '#' => asm::lex(lexer)?,
 
         'n' if lexer.char_match('#') && lexer.char_match('"') => string::lex(lexer, false)?,
         '"' => string::lex(lexer, true)?,

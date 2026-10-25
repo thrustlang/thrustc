@@ -57,13 +57,15 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
     let ascii_name: &str = &asm_fn.1.replace("\0", "");
 
     let assembler: String = asm_fn.2.to_string();
-    let constraints: String = asm_fn.3.to_string();
-    let return_type: &Type = asm_fn.4;
-    let parameters: &[Ast] = asm_fn.5;
-    let parameters_types: &[Type] = asm_fn.6;
-    let attributes: LLVMAttributes = thrustc_llvm_attributes::into_llvm_attributes(asm_fn.7);
+    let return_type: &Type = asm_fn.3;
+    let parameters: &[Ast] = asm_fn.4;
+    let parameters_types: &[Type] = asm_fn.5;
+    let attributes: LLVMAttributes = thrustc_llvm_attributes::into_llvm_attributes(asm_fn.6);
 
-    let span: Span = asm_fn.8;
+    let span: Span = asm_fn.7;
+
+    let constraints: String =
+        crate::expressions::inlineasm_expr::build_constraints(return_type, parameters_types);
 
     let sideeffects: bool = attributes.has_asmsideffects_attribute();
     let align_stack: bool = attributes.has_asmalignstack_attribute();
@@ -135,7 +137,7 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
 
     AttributeBuilder::add_function_attributes(context, &attributes, applicant);
 
-    let last_block: BasicBlock = context.get_last_builder_block(span);
+    let last_block: Option<BasicBlock> = llvm_builder.get_insert_block();
     let function_block: BasicBlock = block::append_block(context, asm_function);
 
     llvm_builder.position_at_end(function_block);
@@ -191,7 +193,9 @@ pub fn compile<'ctx>(context: &mut LLVMCodeGenContext<'_, 'ctx>, asm_fn: Assembl
         );
     }
 
-    llvm_builder.position_at_end(last_block);
+    if let Some(last_block) = last_block {
+        llvm_builder.position_at_end(last_block);
+    }
 
     let prototype: LLVMFunction = (
         asm_function,

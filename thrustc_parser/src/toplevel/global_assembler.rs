@@ -17,17 +17,14 @@
 
 */
 
-use thrustc_ast::{
-    Ast, NodeId,
-    traits::{AstCodeLocation, AstStandardExtensions},
-};
+use thrustc_ast::{Ast, NodeId};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 
-use crate::{ParserContext, expressions};
+use crate::ParserContext;
 
 pub fn build_global_assembler<'parser>(
     ctx: &mut ParserContext<'parser>,
@@ -40,42 +37,15 @@ pub fn build_global_assembler<'parser>(
 
     let span: Span = tk.get_span();
 
-    ctx.consume(
-        TokenType::LParen,
+    let assembler_tk: &Token = ctx.consume(
+        TokenType::Assembler,
         CompilationIssueCode::E0001,
-        "Expected '('.".into(),
+        "Expected a '#asm{' block.".into(),
     )?;
 
-    let assembler: Ast = expressions::parse_expr(ctx)?;
-    let asssembler_span: Span = assembler.get_span();
+    let asm: String = assembler_tk.get_lexeme().to_string();
 
-    ctx.consume(
-        TokenType::RParen,
-        CompilationIssueCode::E0001,
-        "Expected ')'.".into(),
-    )?;
-
-    ctx.consume(
-        TokenType::SemiColon,
-        CompilationIssueCode::E0001,
-        "Expected ';'.".into(),
-    )?;
-
-    if !assembler.is_cstring() {
-        ctx.add_error_report(CompilationIssue::Error(
-            CompilationIssueCode::E0001,
-            "It is not a null terminated.".into(),
-            "You should write a literal string with null termination.".into(),
-            None,
-            asssembler_span,
-        ));
-    }
-
-    let asm: String = if let Ast::CString { bytes, .. } = assembler {
-        String::from_utf8_lossy(&bytes).to_string()
-    } else {
-        String::new()
-    };
+    let _ = ctx.match_token(TokenType::SemiColon)?;
 
     Ok(Ast::GlobalAssembler {
         asm,

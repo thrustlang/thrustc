@@ -38,6 +38,23 @@ pub fn validate_binary_node(
         return self::validate_binary_node(operator, left, inner, span);
     }
 
+    if left.get_native_vector_parts().is_some() || right.get_native_vector_parts().is_some() {
+        if left.get_native_vector_binary_result_type(right, *operator).is_some() {
+            return Ok(());
+        }
+
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0030,
+            format!(
+                "'{} {} {}' isn't a valid native vector operation.",
+                left, operator, right
+            ),
+            "You should use vectors with the same element type and count, or a compatible scalar.".into(),
+            None,
+            span,
+        ));
+    }
+
     match *operator {
         TokenType::Arith
         | TokenType::ArithEq

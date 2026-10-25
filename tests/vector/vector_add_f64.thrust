@@ -1,0 +1,8 @@
+fn main() s32 @public {
+    var a: NativeVector[f64; 4] = native[1.0, 2.0, 3.0, 4.0];
+    var b: NativeVector[f64; 4] = native[10.0, 20.0, 30.0, 40.0];
+    var r: NativeVector[f64; 4] = a + b;
+    if r[0] != 11.0 { return 1; }
+    if r[3] != 44.0 { return 2; }
+    return 0;
+}

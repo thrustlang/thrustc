@@ -120,6 +120,8 @@ Tests are organized by feature area. Each directory holds executable `.thrust` r
 | Directory | Contents |
 |---|---|
 | `arbitrary/` | Miscellaneous smoke tests. |
+| `asm/` | Inline assembler functions, assembler values, and global assembler. Compiles with `-mode unstable`. |
+| `vector/` | NativeVector arithmetic, bitwise, shifts, unary, comparison, logical, compound, const and static operations. |
 | `builtins/` + `builtins/introspection/` | Compile-time and type builtins (`sizeOf`, `alignOf`, predicates, `staticAssert`, target builtins). |
 | `compiletime/if/` | `@if`/`@elif`/`@else` conditional compilation. |
 | `compiletime/if_imports/` | Conditional imports, with a local `stdroot/` (`-std-version 0.1.8`) used by `if_std_import*` tests. |
@@ -130,7 +132,7 @@ Tests are organized by feature area. Each directory holds executable `.thrust` r
 | `c_transpile/` | C-to-Thrust transpiler goldens (separate runner phase, see below). |
 | `std/` | Standard library module tests. |
 | `stress/` | Excluded from discovery (see below). |
-| other `api`-like areas (`abi/`, `atomics/`, `import_c/`, `sanitizers/`, `optimization/`, …) | Feature-specific end-to-end tests; `atomics/` and `importC` compile with `-mode unstable`. |
+| other `api`-like areas (`abi/`, `asm/`, `atomics/`, `import_c/`, `sanitizers/`, `optimization/`, …) | Feature-specific end-to-end tests; `asm/`, `atomics/`, tests using `NativeVector`/`native[...]`, and `importC` compile with `-mode unstable`. |
 
 ## Runner Behavior
 
@@ -142,7 +144,7 @@ For each discovered test, the runner:
 - Adds imported user modules to the same compiler invocation as the root test.
 - Resolves `std::...` imports from the repository's `std/` directory (via `-std`), except `compiletime/if_imports`/`if_std_import*` tests, which use their local `stdroot` with `-std-version 0.1.8`.
 - Adds `-lm` automatically for tests that use `std::math`, `std::ffi::c::math`, or floating-point modulo operations.
-- Adds `-mode unstable` automatically for tests under `atomics/` or using `importC`, plus `--import-c-system-include <dir>` for each Clang system include directory it detects (via `clang -E -x c - -v`, 10s timeout).
+- Adds `-mode unstable` automatically for tests under `asm/`, `atomics/`, files or dependencies that use `NativeVector`/`native[...]`, or tests using `importC`, plus `--import-c-system-include <dir>` for each Clang system include directory it detects (via `clang -E -x c - -v`, 10s timeout).
 - Compiles with `-build-dir tests/dist/build/<test-id>` into `tests/dist/bin/<test-id>`.
 - Runs the binary from `tests/dist/run/<test-id>` so temporary runtime files stay isolated.
 - Removes `tests/dist/` when finished, unless `--keep-dist` is used.

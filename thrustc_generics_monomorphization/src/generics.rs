@@ -1030,7 +1030,6 @@ fn resolve_children<'parser>(
             parameters,
             parameters_types,
             assembler,
-            constraints,
             return_type,
             attributes,
             span,
@@ -1041,7 +1040,6 @@ fn resolve_children<'parser>(
             parameters: self::resolve_node_ast_list(ctx, parameters, templates, memo, output),
             parameters_types,
             assembler,
-            constraints,
             return_type,
             attributes,
             span,
@@ -1364,7 +1362,7 @@ fn resolve_children<'parser>(
         },
         Ast::AsmValue {
             assembler,
-            constraints,
+            parameters_types,
             args,
             kind,
             attributes,
@@ -1372,7 +1370,7 @@ fn resolve_children<'parser>(
             id,
         } => Ast::AsmValue {
             assembler,
-            constraints,
+            parameters_types,
             args: self::resolve_node_ast_list(ctx, args, templates, memo, output),
             kind,
             attributes,
