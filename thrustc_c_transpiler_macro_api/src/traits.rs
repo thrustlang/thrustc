@@ -21,12 +21,6 @@ use thrustc_errors::CompilationIssue;
 
 pub trait MacroDiagnostic {
     fn add_error(&mut self, issue: CompilationIssue);
-
     fn add_warning(&mut self, issue: CompilationIssue);
-
-    fn add_macro_error(&mut self, issue: CompilationIssue) {
-        self.add_error(issue);
-    }
-
     fn take_diagnostics(&mut self) -> Vec<CompilationIssue>;
 }
