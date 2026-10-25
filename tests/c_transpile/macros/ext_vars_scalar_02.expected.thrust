@@ -1,0 +1,17 @@
+fn main() s32 @public {
+    var out: s32 = 0;
+    __c_macro_COMPUTE_2[s32](ref (out));
+    if out == 24 {
+        return (0) as s32;
+    } else {
+        return (1) as s32;
+    }
+}
+fn __c_macro_COMPUTE_2[T1](out: ptr[T1]) void @alwaysInline {
+    var first: s32 = 5;
+    var second: s32 = 6;
+    const bias: s32 = 7;
+    var total: s32 = first + second * 2 + bias;
+    out->[0] =  (total) as T1;
+}
+

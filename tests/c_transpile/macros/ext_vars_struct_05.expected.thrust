@@ -1,0 +1,20 @@
+struct Pair5 {
+    left: s32,
+    right: s32,
+}
+
+fn main() s32 @public {
+    var out: s32 = 0;
+    __c_macro_PAIR_5[s32](ref (out));
+    if out == 133 {
+        return (0) as s32;
+    } else {
+        return (1) as s32;
+    }
+}
+fn __c_macro_PAIR_5[T1](out: ptr[T1]) void @alwaysInline {
+    var pair: Pair5 = new Pair5 { right: 5, left: 12 };
+    var extra: s32 = 8;
+    out->[0] =  (pair->left * 10 + pair->right + extra) as T1;
+}
+

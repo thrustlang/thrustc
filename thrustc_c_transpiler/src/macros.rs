@@ -30,6 +30,40 @@ use thrustc_code_location::Span;
 
 const C_MACRO_SYMBOL_PREFIX: &str = "__c_macro_";
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MacroLoopContext {
+    Loop {
+        continue_action: Option<String>,
+    },
+    Switch {
+        continue_flag: String,
+    },
+    DoWhileZero,
+}
+
+impl MacroLoopContext {
+    #[inline]
+    pub fn is_switch(&self) -> bool {
+        matches!(self, Self::Switch { .. })
+    }
+
+    #[inline]
+    pub fn continue_action(&self) -> Option<&str> {
+        match self {
+            Self::Loop { continue_action } => continue_action.as_deref(),
+            Self::Switch { .. } | Self::DoWhileZero => None,
+        }
+    }
+
+    #[inline]
+    pub fn continue_flag(&self) -> Option<&str> {
+        match self {
+            Self::Switch { continue_flag } => Some(continue_flag),
+            Self::Loop { .. } | Self::DoWhileZero => None,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct MacroContext<'clang> {
     table: crate::macro_table::MacroTable,
@@ -38,6 +72,12 @@ pub struct MacroContext<'clang> {
     temporary_counter: u64,
     pending_statements: Vec<String>,
     type_environment: HashMap<String, crate::macro_type::InferredType>,
+    inline_bindings: HashMap<String, MacroExpr>,
+    value_types: HashMap<String, crate::macro_type::MacroValueType>,
+    record_fields:
+        HashMap<String, HashMap<String, crate::macro_type::MacroValueType>>,
+    return_type: Option<String>,
+    loop_contexts: Vec<MacroLoopContext>,
     marker: PhantomData<&'clang ()>,
 }
 
@@ -51,6 +91,11 @@ impl<'clang> MacroContext<'clang> {
             temporary_counter: 0,
             pending_statements: Vec::new(),
             type_environment: HashMap::new(),
+            inline_bindings: HashMap::new(),
+            value_types: HashMap::new(),
+            record_fields: HashMap::new(),
+            return_type: None,
+            loop_contexts: Vec::new(),
             marker: PhantomData,
         }
     }
@@ -141,6 +186,17 @@ impl<'clang> MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
+    pub fn set_type_binding(
+        &mut self,
+        name: String,
+        kind: crate::macro_type::InferredType,
+    ) {
+        self.type_environment.insert(name, kind);
+    }
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
     pub fn set_type_environment(
         &mut self,
         environment: HashMap<String, crate::macro_type::InferredType>,
@@ -151,6 +207,104 @@ impl<'clang> MacroContext<'clang> {
     #[inline]
     pub fn clear_type_environment(&mut self) {
         self.type_environment.clear();
+    }
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub fn get_inline_binding(&self, name: &str) -> Option<&MacroExpr> {
+        self.inline_bindings.get(name)
+    }
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub fn set_inline_bindings(&mut self, bindings: HashMap<String, MacroExpr>) {
+        self.inline_bindings = bindings;
+    }
+
+    #[inline]
+    pub fn clear_inline_bindings(&mut self) {
+        self.inline_bindings.clear();
+    }
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub fn get_return_type(&self) -> Option<&str> {
+        self.return_type.as_deref()
+    }
+
+    #[inline]
+    pub fn set_return_type(&mut self, return_type: Option<String>) {
+        self.return_type = return_type;
+    }
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub fn push_loop_context(&mut self, context: MacroLoopContext) {
+        self.loop_contexts.push(context);
+    }
+
+    #[inline]
+    pub fn pop_loop_context(&mut self) {
+        self.loop_contexts.pop();
+    }
+
+    #[inline]
+    pub fn get_last_loop_context(&self) -> Option<&MacroLoopContext> {
+        self.loop_contexts.last()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StatementMacroExpansion {
+    Call(String),
+    Inline(Vec<String>),
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub fn get_value_type(
+        &self,
+        name: &str,
+    ) -> Option<&crate::macro_type::MacroValueType> {
+        self.value_types.get(name)
+    }
+
+    #[inline]
+    pub fn set_value_type(
+        &mut self,
+        name: String,
+        kind: crate::macro_type::MacroValueType,
+    ) {
+        self.value_types.insert(name, kind);
+    }
+
+    #[inline]
+    pub fn clear_value_types(&mut self) {
+        self.value_types.clear();
+    }
+
+    #[inline]
+    pub fn get_record_field(
+        &self,
+        record: &str,
+        field: &str,
+    ) -> Option<&crate::macro_type::MacroValueType> {
+        self.record_fields
+            .get(record)
+            .and_then(|fields| fields.get(field))
+    }
+
+    #[inline]
+    pub fn register_record_fields(
+        &mut self,
+        record: String,
+        fields: HashMap<String, crate::macro_type::MacroValueType>,
+    ) {
+        self.record_fields.insert(record, fields);
     }
 }
 
@@ -190,15 +344,6 @@ fn build_statement_macro_function(
     };
 
     let body_tokens: Vec<MacroToken> = ctx.get_macro_table().get_body_macro_tokens(name)?;
-
-    if body_tokens.iter().any(|token| {
-        token.get_text() == "return"
-            || token.get_text() == "continue"
-            || token.get_text() == "break"
-            || token.get_text() == "goto"
-    }) {
-        return None;
-    }
 
     let template_args: Vec<Vec<MacroToken>> = parameters
         .iter()
@@ -561,12 +706,17 @@ fn rewrite_mutable_parameter_uses(lines: &str, mutable_parameters: &HashSet<Stri
 
 fn strip_parenthesized_mutable_lhs(lines: &str, mutable_parameters: &HashSet<String>) -> String {
     let mut out: String = lines.to_string();
+    let operators: [&str; 11] = [
+        "=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^=",
+    ];
 
     for parameter in mutable_parameters.iter() {
-        let with_parens: String = format!("({parameter}->[0]) =");
-        let without_parens: String = format!("{parameter}->[0] =");
+        for operator in operators.iter() {
+            let with_parens: String = format!("({parameter}->[0]) {operator}");
+            let without_parens: String = format!("{parameter}->[0] {operator}");
 
-        out = out.replace(&with_parens, &without_parens);
+            out = out.replace(&with_parens, &without_parens);
+        }
     }
 
     out
@@ -578,6 +728,19 @@ fn cast_mutable_parameter_assignments(
     mutable_parameters: &HashSet<String>,
 ) -> String {
     let mut out_lines: Vec<String> = Vec::new();
+    let operators: [(&str, Option<&str>); 11] = [
+        ("=", None),
+        ("+=", Some("+")),
+        ("-=", Some("-")),
+        ("*=", Some("*")),
+        ("/=", Some("/")),
+        ("%=", Some("%")),
+        ("<<=", Some("<<")),
+        (">>=", Some(">>")),
+        ("&=", Some("&")),
+        ("|=", Some("|")),
+        ("^=", Some("^")),
+    ];
 
     for line in lines.lines() {
         let mut rewritten_line: String = line.to_string();
@@ -587,28 +750,45 @@ fn cast_mutable_parameter_assignments(
                 continue;
             }
 
-            let lhs: String = format!("{parameter}->[0] =");
+            for (operator, binary_operator) in operators.iter() {
+                let lhs: String = format!("{parameter}->[0] {operator}");
 
-            if !rewritten_line.contains(&lhs) || !rewritten_line.trim_end().ends_with(';') {
-                continue;
+                if !rewritten_line.contains(&lhs) || !rewritten_line.trim_end().ends_with(';') {
+                    continue;
+                }
+
+                let Some(eq_pos) = rewritten_line.find(&lhs) else {
+                    continue;
+                };
+
+                let rhs_start: usize = eq_pos.saturating_add(lhs.len());
+                let rhs_with_semicolon: &str = &rewritten_line[rhs_start..];
+                let rhs_expression: &str =
+                    rhs_with_semicolon.trim().trim_end_matches(';').trim();
+                let type_name: String = format!("T{}", index.saturating_add(1));
+                let lhs_text: String = format!("{parameter}->[0]");
+
+                rewritten_line = match binary_operator {
+                    Some(binary_operator) => format!(
+                        "{}{} = (({}) {} ({})) as {};",
+                        &rewritten_line[..eq_pos],
+                        lhs_text,
+                        lhs_text,
+                        binary_operator,
+                        rhs_expression,
+                        type_name
+                    ),
+                    None => format!(
+                        "{}{} ({}) as {};",
+                        &rewritten_line[..rhs_start],
+                        " ",
+                        rhs_expression,
+                        type_name
+                    ),
+                };
+
+                break;
             }
-
-            let Some(eq_pos) = rewritten_line.find(&lhs) else {
-                continue;
-            };
-
-            let rhs_start: usize = eq_pos.saturating_add(lhs.len());
-            let rhs_with_semicolon: &str = &rewritten_line[rhs_start..];
-            let rhs_expression: &str = rhs_with_semicolon.trim().trim_end_matches(';').trim();
-            let type_name: String = format!("T{}", index.saturating_add(1));
-
-            rewritten_line = format!(
-                "{}{} ({}) as {};",
-                &rewritten_line[..rhs_start],
-                " ",
-                rhs_expression,
-                type_name
-            );
         }
 
         out_lines.push(rewritten_line);
@@ -657,7 +837,8 @@ pub fn try_extract_statement_macro_call(
     ctx: &mut MacroContext<'_>,
     site: &clang::Entity<'_>,
     span: Span,
-) -> Option<String> {
+    function_return_type: Option<&str>,
+) -> Option<StatementMacroExpansion> {
     if !matches!(
         site.get_kind(),
         clang::EntityKind::DoStmt | clang::EntityKind::CompoundStmt
@@ -670,14 +851,25 @@ pub fn try_extract_statement_macro_call(
     let name: String = ctx.get_macro_table().find_macro_name(&key)?;
 
     let Some(parameters) = ctx.get_macro_table().get_parameter_names(&name) else {
-        crate::macro_error::add_macro_error(
-            ctx,
-            site,
-            &name,
-            "Missing macro parameter metadata for statement macro function extraction.",
-            "Ensure this macro is captured by the transpiler macro table before expansion.",
-            span,
-        );
+        if let Some(definition) = ctx.get_macro_table().get_function_like_definition(&name)
+            && let crate::macro_table::MacroFunctionLikeKind::Unsupported(limit) =
+                definition.get_kind()
+        {
+            let (detail, help) = crate::macro_error::get_macro_issue_help(&name, limit);
+
+            crate::macro_error::add_macro_error(
+                ctx, site, &name, &detail, &help, span,
+            );
+        } else {
+            crate::macro_error::add_macro_error(
+                ctx,
+                site,
+                &name,
+                "Missing macro parameter metadata for statement macro function extraction.",
+                "Ensure this macro is captured by the transpiler macro table before expansion.",
+                span,
+            );
+        }
 
         return None;
     };
@@ -766,42 +958,6 @@ pub fn try_extract_statement_macro_call(
         .get_body_macro_tokens(&name)
         .unwrap_or_default();
 
-    let mutable_parameters: HashSet<String> =
-        self::detect_mutated_parameters(&body_tokens, &parameters);
-
-    let mut pointer_parameters: HashSet<String> = {
-        let mut combined: HashSet<String> = mutable_parameters.clone();
-
-        combined.extend(self::detect_pointer_parameters(&body_tokens, &parameters));
-
-        combined
-    };
-
-    for (index, clang_type) in clang_types.iter().enumerate() {
-        let is_pointer: bool = clang_type.as_ref().is_some_and(|ty| {
-            matches!(
-                ty.get_canonical_type().get_kind(),
-                clang::TypeKind::Pointer
-                    | clang::TypeKind::ConstantArray
-                    | clang::TypeKind::IncompleteArray
-            )
-        });
-
-        if is_pointer {
-            pointer_parameters.insert(parameters[index].clone());
-        }
-    }
-
-    let indexed_parameters: HashSet<String> =
-        self::detect_indexed_parameters(&body_tokens, &parameters);
-
-    let mut arg_texts: Vec<String> = parsed_args
-        .iter()
-        .map(|parsed| {
-            crate::macro_expr::lower(ctx, parsed, crate::location::Location::RValue, "T1")
-        })
-        .collect();
-
     let expanded_body_tokens: Vec<MacroToken> = {
         let mut expansion_context: crate::macro_expand::MacroExpansionContext =
             crate::macro_expand::MacroExpansionContext::new(64, 128);
@@ -813,6 +969,57 @@ pub fn try_extract_statement_macro_call(
         )
         .unwrap_or(body_tokens.clone())
     };
+
+    let mutable_parameters: HashSet<String> =
+        self::detect_mutated_parameters(&expanded_body_tokens, &parameters);
+
+    let mut pointer_parameters: HashSet<String> = {
+        let mut combined: HashSet<String> = mutable_parameters.clone();
+
+        combined.extend(self::detect_pointer_parameters(
+            &expanded_body_tokens,
+            &parameters,
+        ));
+
+        combined
+    };
+
+    let mut array_parameters: HashSet<String> = HashSet::new();
+
+    for (index, clang_type) in clang_types.iter().enumerate() {
+        let kind: Option<clang::TypeKind> =
+            clang_type.as_ref().map(|ty| ty.get_canonical_type().get_kind());
+
+        let is_pointer: bool = matches!(
+            kind,
+            Some(
+                clang::TypeKind::Pointer
+                    | clang::TypeKind::ConstantArray
+                    | clang::TypeKind::IncompleteArray
+            )
+        );
+
+        if is_pointer {
+            pointer_parameters.insert(parameters[index].clone());
+        }
+
+        if matches!(
+            kind,
+            Some(clang::TypeKind::ConstantArray | clang::TypeKind::IncompleteArray)
+        ) {
+            array_parameters.insert(parameters[index].clone());
+        }
+    }
+
+    let indexed_parameters: HashSet<String> =
+        self::detect_indexed_parameters(&expanded_body_tokens, &parameters);
+
+    let mut arg_texts: Vec<String> = parsed_args
+        .iter()
+        .map(|parsed| {
+            crate::macro_expr::lower(ctx, parsed, crate::location::Location::RValue, "T1")
+        })
+        .collect();
 
     let body_lexemes: Vec<String> = crate::macro_token::texts(&expanded_body_tokens);
 
@@ -868,10 +1075,124 @@ pub fn try_extract_statement_macro_call(
         }
     };
 
+    let needs_inline: bool = body_statements
+        .iter()
+        .any(|statement| statement.requires_caller_context(0, 0));
+
+    if needs_inline {
+        let bindings: HashMap<String, MacroExpr> = parameters
+            .iter()
+            .cloned()
+            .zip(parsed_args.iter().cloned())
+            .collect();
+
+        let environment: HashMap<String, crate::macro_type::InferredType> = parameters
+            .iter()
+            .enumerate()
+            .map(|(index, parameter)| {
+                let seed: Option<crate::macro_type::InferredType> =
+                    seeds.get(index).cloned().flatten();
+
+                let kind: crate::macro_type::InferredType = match seed {
+                    Some(crate::macro_type::InferredType::Pointer(_)) => {
+                        seed.unwrap_or_else(|| {
+                            crate::macro_type::InferredType::Known(
+                                type_args
+                                    .get(index)
+                                    .cloned()
+                                    .unwrap_or_else(|| "s32".to_string()),
+                            )
+                        })
+                    }
+                    _ => crate::macro_type::InferredType::Known(
+                        type_args
+                            .get(index)
+                            .cloned()
+                            .unwrap_or_else(|| "s32".to_string()),
+                    ),
+                };
+
+                (parameter.clone(), kind)
+            })
+            .collect();
+
+        let previous_return_type: Option<String> = ctx.get_return_type().map(str::to_string);
+        let previous_environment: HashMap<String, crate::macro_type::InferredType> =
+            ctx.get_type_environment().clone();
+
+        ctx.set_inline_bindings(bindings);
+        ctx.set_type_environment(environment);
+        ctx.set_return_type(function_return_type.map(str::to_string));
+
+        for (parameter, kind) in ctx.get_type_environment().clone() {
+            ctx.set_value_type(
+                parameter,
+                crate::macro_type::MacroValueType::from_inferred_type(&kind),
+            );
+        }
+
+        for (index, clang_type) in clang_types.iter().enumerate() {
+            let Some(clang_type) = clang_type.as_ref() else {
+                continue;
+            };
+
+            let Some(shape) = crate::macro_type::MacroValueType::from_clang_type(clang_type)
+            else {
+                continue;
+            };
+
+            ctx.set_value_type(parameters[index].clone(), shape.clone());
+
+            if let Some(MacroExpr::Ident(argument)) = parsed_args.get(index) {
+                ctx.set_value_type(argument.clone(), shape);
+            }
+        }
+
+        let mut lines: Vec<String> = vec!["{".to_string()];
+
+        for statement in body_statements.iter() {
+            let lowered: Result<Vec<String>, MacroLimit> = statement.lower(ctx, 1);
+
+            let Ok(lowered) = lowered else {
+                ctx.clear_inline_bindings();
+                ctx.clear_value_types();
+                ctx.set_type_environment(previous_environment);
+                ctx.set_return_type(previous_return_type);
+
+                crate::macro_error::add_macro_error(
+                    ctx,
+                    site,
+                    &name,
+                    "Could not lower inline statement macro body.",
+                    "Simplify the macro body or extend macro parser coverage.",
+                    span,
+                );
+
+                return None;
+            };
+
+            lines.extend(lowered);
+        }
+
+        lines.push("}".to_string());
+
+        ctx.clear_inline_bindings();
+        ctx.clear_value_types();
+        ctx.set_type_environment(previous_environment);
+        ctx.set_return_type(previous_return_type);
+
+        return Some(StatementMacroExpansion::Inline(lines));
+    }
+
     for (index, argument_text) in arg_texts.iter_mut().enumerate() {
         let parameter: &String = &parameters[index];
 
         if !pointer_parameters.contains(parameter) {
+            continue;
+        }
+
+        if array_parameters.contains(parameter) {
+            *argument_text = format!("{argument_text} as ptr[{}]", type_args[index]);
             continue;
         }
 
@@ -931,7 +1252,7 @@ pub fn try_extract_statement_macro_call(
         .get_macro_table()
         .has_emitted_statement_macro_function(&name)
     {
-        return Some(call_text);
+        return Some(StatementMacroExpansion::Call(call_text));
     }
 
     if ctx.push_expansion(&name) {
@@ -949,16 +1270,40 @@ pub fn try_extract_statement_macro_call(
 
     let function_environment: HashMap<String, crate::macro_type::InferredType> = parameters
         .iter()
-        .zip(type_args.iter())
-        .map(|(parameter, type_arg)| {
-            (
-                parameter.clone(),
-                crate::macro_type::InferredType::Known(type_arg.clone()),
-            )
+        .enumerate()
+        .map(|(index, parameter)| {
+            let seed: Option<crate::macro_type::InferredType> =
+                seeds.get(index).cloned().flatten();
+
+            let inferred: crate::macro_type::InferredType = match seed {
+                Some(crate::macro_type::InferredType::Pointer(_)) => seed.unwrap_or_else(|| {
+                    crate::macro_type::InferredType::Known(
+                        type_args
+                            .get(index)
+                            .cloned()
+                            .unwrap_or_else(|| "s32".to_string()),
+                    )
+                }),
+                _ => crate::macro_type::InferredType::Known(
+                    type_args
+                        .get(index)
+                        .cloned()
+                        .unwrap_or_else(|| "s32".to_string()),
+                ),
+            };
+
+            (parameter.clone(), inferred)
         })
         .collect();
 
     ctx.set_type_environment(function_environment);
+
+    for (parameter, kind) in ctx.get_type_environment().clone() {
+        ctx.set_value_type(
+            parameter,
+            crate::macro_type::MacroValueType::from_inferred_type(&kind),
+        );
+    }
 
     let statement_macro_function: Option<String> = self::build_statement_macro_function(
         ctx,
@@ -974,6 +1319,7 @@ pub fn try_extract_statement_macro_call(
     );
 
     ctx.clear_type_environment();
+    ctx.clear_value_types();
 
     ctx.pop_expansion();
 
@@ -995,7 +1341,7 @@ pub fn try_extract_statement_macro_call(
     ctx.get_mut_macro_table()
         .mark_statement_macro_function_emitted(&name);
 
-    Some(call_text)
+    Some(StatementMacroExpansion::Call(call_text))
 }
 
 pub fn try_extract_expression_macro_call(

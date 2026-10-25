@@ -1,0 +1,21 @@
+fn main() s32 @public {
+    var out: s32 = 0;
+    __c_macro_POINTER_1[s32](ref (out));
+    if out == 5 {
+        return (0) as s32;
+    } else {
+        return (1) as s32;
+    }
+}
+fn __c_macro_POINTER_1[T1](out: ptr[T1]) void @alwaysInline {
+    var value: s32 = 1;
+    var cursor: ptr[s32] = ref (value);
+    var index: s32;
+    index = 0;
+    while index < 4 {
+        cursor->[0] += 1;
+        index += 1;
+    }
+    out->[0] =  (value) as T1;
+}
+

@@ -32,6 +32,8 @@ impl MacroExpr {
                 | MacroExpr::Index { .. }
                 | MacroExpr::Member { .. }
                 | MacroExpr::Postfix { .. }
+                | MacroExpr::SizeOfExpr(_)
+                | MacroExpr::CompoundLiteral { .. }
         )
     }
 }
@@ -65,6 +67,167 @@ impl MacroExpr {
     }
 }
 
+impl MacroExpr {
+    fn resolved_value_type(
+        &self,
+        ctx: &crate::macros::MacroContext<'_>,
+    ) -> Option<crate::macro_type::MacroValueType> {
+        match self {
+            MacroExpr::Ident(name) => {
+                if let Some(binding) = ctx.get_inline_binding(name) {
+                    if !matches!(binding, MacroExpr::Ident(bound) if bound == name) {
+                        return binding.resolved_value_type(ctx);
+                    }
+                }
+
+                ctx.get_value_type(name).cloned()
+            }
+
+            MacroExpr::Index { base, .. } => base
+                .resolved_value_type(ctx)
+                .and_then(|kind| kind.index_element()),
+
+            MacroExpr::Member { base, field } => {
+                let base_type: crate::macro_type::MacroValueType =
+                    base.resolved_value_type(ctx)?;
+
+                let record: &crate::macro_type::MacroValueType = base_type.strip_const();
+
+                let record_name: Option<&str> = match record {
+                    crate::macro_type::MacroValueType::Struct { name } => Some(name),
+                    crate::macro_type::MacroValueType::Pointer { pointee } => {
+                        match pointee.strip_const() {
+                            crate::macro_type::MacroValueType::Struct { name } => Some(name),
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                };
+
+                record_name
+                    .and_then(|name| ctx.get_record_field(name, field))
+                    .cloned()
+            }
+
+            MacroExpr::Paren(inner) => inner.resolved_value_type(ctx),
+
+            MacroExpr::Cast { target, .. } => {
+                Some(crate::macro_type::MacroValueType::from_text(target))
+            }
+
+            MacroExpr::CompoundLiteral { ty, .. } => {
+                Some(crate::macro_type::MacroValueType::from_text(ty))
+            }
+
+            MacroExpr::Literal(_) | MacroExpr::Null => {
+                Some(crate::macro_type::MacroValueType::Scalar)
+            }
+
+            MacroExpr::Unary { arg, .. }
+            | MacroExpr::Postfix { arg, .. }
+            | MacroExpr::Assign { value: arg, .. } => arg.resolved_value_type(ctx),
+
+            MacroExpr::Call { .. }
+            | MacroExpr::Binary { .. }
+            | MacroExpr::Comma(_)
+            | MacroExpr::Ternary { .. }
+            | MacroExpr::SizeOf(_)
+            | MacroExpr::SizeOfExpr(_)
+            | MacroExpr::InitList(_) => None,
+        }
+    }
+}
+
+impl MacroExpr {
+    fn index_is_complex(&self, ctx: &crate::macros::MacroContext<'_>) -> bool {
+        match self {
+            MacroExpr::Index { .. } => true,
+            MacroExpr::Ident(name) => ctx
+                .get_inline_binding(name)
+                .is_some_and(|binding| binding.index_is_complex(ctx)),
+            MacroExpr::Paren(inner) => inner.index_is_complex(ctx),
+            _ => false,
+        }
+    }
+}
+
+impl MacroExpr {
+    fn lower_index_base(
+        &self,
+        ctx: &mut crate::macros::MacroContext,
+        result_type: &str,
+    ) -> String {
+        match self {
+            MacroExpr::Ident(name) => {
+                if let Some(binding) = ctx.get_inline_binding(name).cloned() {
+                    return binding.lower_index_base(ctx, result_type);
+                }
+
+                name.to_string()
+            }
+
+            MacroExpr::Paren(inner) => inner.lower_index_base(ctx, result_type),
+
+            MacroExpr::Member { base, field } => {
+                let base_text: String = base.lower_index_base(ctx, result_type);
+
+                format!("{base_text}.{field}")
+            }
+
+            _ => format!(
+                "({})",
+                self::lower(ctx, self, crate::location::Location::RValue, result_type)
+            ),
+        }
+    }
+}
+
+impl MacroExpr {
+    fn lower_index_address(
+        &self,
+        ctx: &mut crate::macros::MacroContext,
+        result_type: &str,
+    ) -> String {
+        match self {
+            MacroExpr::Index { base, index } => {
+                let base_text: String = base.lower_index_address_base(ctx, result_type);
+                let index_text: String =
+                    self::lower(ctx, index, crate::location::Location::RValue, result_type);
+
+                format!("{base_text}[{index_text}]")
+            }
+
+            _ => self.lower_index_base(ctx, result_type),
+        }
+    }
+
+    fn lower_index_address_base(
+        &self,
+        ctx: &mut crate::macros::MacroContext,
+        result_type: &str,
+    ) -> String {
+        match self {
+            MacroExpr::Ident(name) => {
+                if let Some(binding) = ctx.get_inline_binding(name).cloned() {
+                    return binding.lower_index_address_base(ctx, result_type);
+                }
+
+                name.to_string()
+            }
+
+            MacroExpr::Index { .. } => self.lower_index_address(ctx, result_type),
+
+            MacroExpr::Member { .. } => {
+                self::lower(ctx, self, crate::location::Location::RValue, result_type)
+            }
+
+            MacroExpr::Paren(inner) => inner.lower_index_address_base(ctx, result_type),
+
+            _ => self::lower(ctx, self, crate::location::Location::AddressOf, result_type),
+        }
+    }
+}
+
 pub fn lower(
     ctx: &mut crate::macros::MacroContext,
     expr: &MacroExpr,
@@ -72,7 +235,17 @@ pub fn lower(
     result_type: &str,
 ) -> String {
     match expr {
-        MacroExpr::Ident(name) => name.to_string(),
+        MacroExpr::Ident(name) => {
+            if let Some(binding) = ctx.get_inline_binding(name).cloned() {
+                if matches!(&binding, MacroExpr::Ident(bound) if bound == name) {
+                    return name.to_string();
+                }
+
+                return self::lower(ctx, &binding, location, result_type);
+            }
+
+            name.to_string()
+        }
         MacroExpr::Literal(text) => text.to_string(),
         MacroExpr::Null => "nullptr".to_string(),
 
@@ -84,6 +257,23 @@ pub fn lower(
 
         MacroExpr::Unary { op, arg } => {
             if matches!(op, MacroUnOp::Ref) {
+                if matches!(
+                    arg.as_ref(),
+                    MacroExpr::Index { .. }
+                        | MacroExpr::Member { .. }
+                        | MacroExpr::Unary {
+                            op: MacroUnOp::Deref,
+                            ..
+                        }
+                ) {
+                    return self::lower(
+                        ctx,
+                        arg,
+                        crate::location::Location::AddressOf,
+                        result_type,
+                    );
+                }
+
                 let arg_text: String =
                     self::lower(ctx, arg, crate::location::Location::AddressOf, result_type);
 
@@ -120,7 +310,8 @@ pub fn lower(
 
             match op {
                 MacroUnOp::Ref => format!("ref ({grouped})"),
-                MacroUnOp::Deref => format!("deref {grouped}"),
+                MacroUnOp::Deref if location.is_direct() => format!("{grouped}->[0]"),
+                MacroUnOp::Deref => format!("(deref {grouped})"),
                 MacroUnOp::Not => format!("!{grouped}"),
                 MacroUnOp::Invert => format!("~{grouped}"),
                 MacroUnOp::Negate => format!("-{grouped}"),
@@ -196,6 +387,23 @@ pub fn lower(
         }
 
         MacroExpr::Assign { op, target, value } => {
+            if op != "="
+                && matches!(target.as_ref(), MacroExpr::Index { .. })
+                && target.index_is_complex(ctx)
+            {
+                let target_address: String =
+                    self::lower(ctx, target, crate::location::Location::LValue, result_type);
+                let target_value: String =
+                    self::lower(ctx, target, crate::location::Location::RValue, result_type);
+                let value_text: String =
+                    self::lower(ctx, value, crate::location::Location::RValue, result_type);
+                let binary_operator: &str = &op[..op.len().saturating_sub(1)];
+
+                return format!(
+                    "{target_address} = {target_value} {binary_operator} {value_text}"
+                );
+            }
+
             let target_text: String =
                 self::lower(ctx, target, crate::location::Location::LValue, result_type);
             let value_text: String =
@@ -292,39 +500,40 @@ pub fn lower(
         }
 
         MacroExpr::Index { base, index } => {
-            fn lower_base(
-                ctx: &mut crate::macros::MacroContext,
-                expr: &MacroExpr,
-                result_type: &str,
-            ) -> String {
-                match expr {
-                    MacroExpr::Ident(name) => name.to_string(),
-
-                    MacroExpr::Paren(inner) => lower_base(ctx, inner, result_type),
-
-                    MacroExpr::Member { base, field } => {
-                        let base_text: String = lower_base(ctx, base, result_type);
-
-                        format!("{base_text}.{field}")
-                    }
-
-                    _ => format!(
-                        "({})",
-                        self::lower(ctx, expr, crate::location::Location::RValue, result_type)
-                    ),
-                }
-            }
-
             let index_text: String =
                 self::lower(ctx, index, crate::location::Location::RValue, result_type);
 
-            if location.is_address_of() {
-                let base_text: String = self::lower(ctx, base, location, result_type);
+            let base_type: Option<crate::macro_type::MacroValueType> =
+                base.resolved_value_type(ctx);
 
-                return format!("{base_text}[{index_text}]");
+            let result_shape: Option<crate::macro_type::MacroValueType> =
+                base_type.as_ref().and_then(|kind| kind.index_element());
+
+            let complex: bool = base.index_is_complex(ctx);
+
+            if location.is_address_of() || (location.is_direct() && complex) {
+                let address: String = base.lower_index_address(ctx, result_type);
+
+                return format!("{address}[{index_text}]");
             }
 
-            let base_text: String = lower_base(ctx, base, result_type);
+            let base_text: String = base.lower_index_base(ctx, result_type);
+
+            if complex {
+                let address: String = base.lower_index_address(ctx, result_type);
+
+                let address: String = format!("{address}[{index_text}]");
+
+                let returns_pointer: bool = result_shape
+                    .as_ref()
+                    .is_some_and(|kind| kind.is_pointer_or_array());
+
+                if returns_pointer {
+                    return address;
+                }
+
+                return format!("(deref {address})");
+            }
 
             format!("{base_text}->[{index_text}]")
         }
@@ -356,7 +565,86 @@ pub fn lower(
         MacroExpr::SizeOf(target) => {
             format!("abiSizeOf({target})")
         }
+
+        MacroExpr::SizeOfExpr(inner) => {
+            let target: String = crate::macro_type::MacroType::expression_type(ctx, inner)
+                .map(|ty| ty.text())
+                .unwrap_or_else(|| result_type.to_string());
+
+            format!("abiSizeOf({target})")
+        }
+
+        MacroExpr::InitList(_) => self::lower_initializer(ctx, expr, result_type),
+
+        MacroExpr::CompoundLiteral { ty, init } => {
+            let _ = init;
+
+            self::lower_initializer(ctx, expr, ty)
+        }
     }
+}
+
+pub fn lower_initializer(
+    ctx: &mut crate::macros::MacroContext,
+    expr: &MacroExpr,
+    target_type: &str,
+) -> String {
+    let MacroExpr::InitList(items) = expr else {
+        if let MacroExpr::CompoundLiteral { ty, init } = expr {
+            return self::lower_initializer(ctx, init, ty);
+        }
+
+        return self::lower(ctx, expr, crate::location::Location::RValue, target_type);
+    };
+
+    let array_element: Option<String> = target_type
+        .strip_prefix("array[")
+        .and_then(|value| value.strip_suffix(']'))
+        .and_then(|value| value.rsplit_once("; ").map(|(inner, _)| inner.to_string()));
+
+    if let Some(element_type) = array_element {
+        let values: Vec<String> = items
+            .iter()
+            .map(|item| self::lower_initializer(ctx, item.get_value(), &element_type))
+            .collect();
+
+        return format!("fixed[{}]", values.join(", "));
+    }
+
+    let fields: Vec<String> = items
+        .iter()
+        .filter_map(|item| match item.get_designator() {
+            Some(crate::macro_ast::MacroDesignator::Field(field)) => {
+                let value: String = self::lower(
+                    ctx,
+                    item.get_value(),
+                    crate::location::Location::RValue,
+                    target_type,
+                );
+
+                Some(format!("{field}: {value}"))
+            }
+            _ => None,
+        })
+        .collect();
+
+    if !fields.is_empty() {
+        return format!("new {target_type} {{ {} }}", fields.join(", "));
+    }
+
+    let values: Vec<String> = items
+        .iter()
+        .map(|item| {
+            self::lower(
+                ctx,
+                item.get_value(),
+                crate::location::Location::RValue,
+                target_type,
+            )
+        })
+        .collect();
+
+    format!("fixed[{}]", values.join(", "))
 }
 
 pub fn lower_function_body(

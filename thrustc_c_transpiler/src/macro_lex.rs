@@ -361,6 +361,7 @@ pub fn lex_macro_type(key: &str) -> Option<String> {
         "char" => Some("char".to_string()),
         "signed char" => Some("s8".to_string()),
         "unsigned char" => Some("u8".to_string()),
+        "_Bool" => Some("bool".to_string()),
         "float" => Some("f32".to_string()),
         "double" => Some("f64".to_string()),
         "void" => Some("void".to_string()),

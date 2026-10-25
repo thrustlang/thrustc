@@ -1,0 +1,37 @@
+fn main() s32 @public {
+    var out: s32 = 0;
+    __c_macro_SELECT_1[s32, s32, s32](1, 2, ref (out));
+    var thrust_temporary_0: s32;
+    if (1 == 2) {
+        thrust_temporary_0 = ((6) as s32);
+    } else {
+        thrust_temporary_0 = ((4) as s32);
+    }
+    var thrust_temporary_1: s32;
+    if ((1 > 2) && (3 > 0)) {
+        thrust_temporary_1 = ((13) as s32);
+    } else {
+        thrust_temporary_1 = (thrust_temporary_0);
+    }
+    var expected: s32 = (thrust_temporary_1) as s32;
+    if out == expected {
+        return (0) as s32;
+    } else {
+        return (1) as s32;
+    }
+}
+fn __c_macro_SELECT_1[T1, T2, T3](a: T1, b: T2, out: ptr[T3]) void @alwaysInline {
+    var x: s32 = (a);
+    var y: s32 = (b);
+    var z: s32 = 3;
+    if x > y && z > 0 {
+        out->[0] =  (x * 10 + z) as T3;
+    } else {
+        if x == y {
+            out->[0] =  (x + y + z) as T3;
+        } else {
+            out->[0] =  (y - x + z) as T3;
+        }
+    }
+}
+

@@ -39,8 +39,21 @@ pub fn translate_stmt(
         let prefix: Option<String> = crate::macro_error::prefix(entity);
         let indent_str: String = "    ".repeat(indent);
 
-        if let Some(call) = crate::macros::try_extract_statement_macro_call(ctx, entity, span) {
-            return Ok(vec![format!("{indent_str}{call};")]);
+        if let Some(expansion) = crate::macros::try_extract_statement_macro_call(
+            ctx,
+            entity,
+            span,
+            function_return_type,
+        ) {
+            return Ok(match expansion {
+                crate::macros::StatementMacroExpansion::Call(call) => {
+                    vec![format!("{indent_str}{call};")]
+                }
+                crate::macros::StatementMacroExpansion::Inline(lines) => lines
+                    .into_iter()
+                    .map(|line| format!("{indent_str}{line}"))
+                    .collect(),
+            });
         }
 
         match entity.get_kind() {
@@ -357,6 +370,10 @@ pub fn translate_stmt(
                     ctx,
                 )?;
 
+                ctx.push_loop_context(crate::macros::MacroLoopContext::Loop {
+                    continue_action: None,
+                });
+
                 let body_lines: Vec<String> =
                     if children[1].get_kind() == clang::EntityKind::CompoundStmt {
                         let mut out: Vec<String> = Vec::new();
@@ -391,6 +408,8 @@ pub fn translate_stmt(
 
                         lines
                     };
+
+                ctx.pop_loop_context();
 
                 let mut lines: Vec<String> = Vec::new();
 
@@ -442,6 +461,10 @@ pub fn translate_stmt(
                     ctx.get_mut_transpiler_context().add_error(issue);
                     return Err(TranspilerError::Abort);
                 }
+
+                ctx.push_loop_context(crate::macros::MacroLoopContext::Loop {
+                    continue_action: None,
+                });
 
                 let body_lines: Vec<String> =
                     if children[0].get_kind() == clang::EntityKind::CompoundStmt {
@@ -501,6 +524,8 @@ pub fn translate_stmt(
 
                         lines
                     };
+
+                ctx.pop_loop_context();
 
                 let cond_base: usize = ctx.get_transpiler_context().error_count();
 
@@ -973,6 +998,10 @@ pub fn translate_stmt(
                         None
                     };
 
+                ctx.push_loop_context(crate::macros::MacroLoopContext::Loop {
+                    continue_action: body_continue_action.map(str::to_string),
+                });
+
                 let body_lines: Vec<String> =
                     if body_node.get_kind() == clang::EntityKind::CompoundStmt {
                         let mut out: Vec<String> = Vec::new();
@@ -1007,6 +1036,8 @@ pub fn translate_stmt(
 
                         lines
                     };
+
+                ctx.pop_loop_context();
 
                 let mut lines: Vec<String> = Vec::new();
 

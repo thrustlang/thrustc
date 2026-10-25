@@ -33,6 +33,7 @@ pub enum MacroLimit {
     DeclaratorMalformed,
     DeclaratorUnsupported,
     ForHeaderUnsupported,
+    GotoUnsupported,
     UnsupportedStatementKeyword,
     ExpectedToken,
     UnexpectedEndOfTokens,
@@ -76,6 +77,9 @@ pub fn get_macro_issue_help(name: &str, limit: MacroLimit) -> (String, String) {
         MacroLimit::ForHeaderUnsupported => {
             format!("The C macro '{name}' uses a for-loop header form that is not supported yet.")
         }
+        MacroLimit::GotoUnsupported => format!(
+            "The C macro '{name}' uses goto or a label, which cannot be represented in Thrust."
+        ),
         MacroLimit::UnsupportedStatementKeyword => format!(
             "The C macro '{name}' uses a statement keyword that is not supported in macro statement lowering."
         ),
@@ -140,6 +144,9 @@ pub fn get_macro_issue_help(name: &str, limit: MacroLimit) -> (String, String) {
         }
         MacroLimit::ForHeaderUnsupported => {
             "Rewrite the for header to a simpler init/cond/inc form.".to_string()
+        }
+        MacroLimit::GotoUnsupported => {
+            "Refactor the C macro to structured control flow without goto or labels.".to_string()
         }
         MacroLimit::UnsupportedStatementKeyword => {
             "Rewrite the macro statement body to if/while/do/for/block/expr/decl forms supported by macro lowering.".to_string()
@@ -370,9 +377,7 @@ pub fn collapse_macro_site_errors_with_failed_at(
                 .unwrap_or(0);
 
             let mut chain: Vec<String> = Vec::new();
-
             let mut current_file: PathBuf = lexeme_file.get_path();
-
             let mut current_offset: u32 = lexeme_offset;
 
             for _ in 0..8 {

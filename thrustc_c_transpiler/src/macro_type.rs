@@ -41,6 +41,177 @@ impl InferredType {
     }
 }
 
+/*
+ * Internal type shape used only by the C macro lowering. It is not a complete
+ * Thrust type: it records the structural information needed to choose between
+ * address and value index forms, including array nesting, pointer layers,
+ * struct identity and const wrappers, without duplicating the compiler type
+ * system.
+ */
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MacroValueType {
+    Scalar,
+    Array {
+        element: Box<MacroValueType>,
+        len: Option<u64>,
+    },
+    Pointer {
+        pointee: Box<MacroValueType>,
+    },
+    Struct {
+        name: String,
+    },
+    Const(Box<MacroValueType>),
+}
+
+impl MacroValueType {
+    pub fn from_text(text: &str) -> Self {
+        let text: &str = text.trim();
+
+        if let Some(inner) = text.strip_prefix("const ") {
+            return Self::Const(Box::new(Self::from_text(inner)));
+        }
+
+        if let Some(inner) = text.strip_prefix("array[").and_then(|value| value.strip_suffix(']'))
+        {
+            if let Some((element, len)) = inner.rsplit_once("; ") {
+                return Self::Array {
+                    element: Box::new(Self::from_text(element)),
+                    len: len.trim().parse().ok(),
+                };
+            }
+        }
+
+        if let Some(inner) = text.strip_prefix("ptr[").and_then(|value| value.strip_suffix(']')) {
+            return Self::Pointer {
+                pointee: Box::new(Self::from_text(inner)),
+            };
+        }
+
+        if matches!(
+            text,
+            "void"
+                | "bool"
+                | "char"
+                | "s8"
+                | "s16"
+                | "s32"
+                | "s64"
+                | "ssize"
+                | "u8"
+                | "u16"
+                | "u32"
+                | "u64"
+                | "u128"
+                | "usize"
+                | "f32"
+                | "f64"
+        ) {
+            return Self::Scalar;
+        }
+
+        Self::Struct {
+            name: text.to_string(),
+        }
+    }
+}
+
+impl MacroValueType {
+    #[inline]
+    pub fn strip_const(&self) -> &Self {
+        match self {
+            Self::Const(inner) => inner.strip_const(),
+            _ => self,
+        }
+    }
+
+    #[inline]
+    pub fn index_element(&self) -> Option<Self> {
+        match self.strip_const() {
+            Self::Array { element, .. } => Some((**element).clone()),
+            Self::Pointer { pointee } => Some((**pointee).clone()),
+            Self::Scalar | Self::Struct { .. } | Self::Const(_) => None,
+        }
+    }
+
+    #[inline]
+    pub fn is_array(&self) -> bool {
+        matches!(self.strip_const(), Self::Array { .. })
+    }
+
+    #[inline]
+    pub fn is_pointer(&self) -> bool {
+        matches!(self.strip_const(), Self::Pointer { .. })
+    }
+
+    #[inline]
+    pub fn is_pointer_or_array(&self) -> bool {
+        matches!(self.strip_const(), Self::Array { .. } | Self::Pointer { .. })
+    }
+}
+
+impl MacroValueType {
+    pub fn from_inferred_type(ty: &InferredType) -> Self {
+        match ty {
+            InferredType::Known(text) => Self::from_text(text),
+            InferredType::Pointer(inner) => Self::Pointer {
+                pointee: Box::new(Self::from_inferred_type(inner)),
+            },
+        }
+    }
+}
+
+impl MacroValueType {
+    pub fn from_clang_type(ty: &clang::Type<'_>) -> Option<Self> {
+        if ty.is_const_qualified() {
+            let canonical: clang::Type<'_> = ty.get_canonical_type();
+
+            return Self::from_clang_type(&canonical)
+                .map(|inner| Self::Const(Box::new(inner)));
+        }
+
+        let canonical: clang::Type<'_> = ty.get_canonical_type();
+
+        match canonical.get_kind() {
+            clang::TypeKind::ConstantArray => {
+                let element: clang::Type<'_> = canonical.get_element_type()?;
+                let len: Option<u64> = canonical.get_size().and_then(|size| size.try_into().ok());
+
+                Some(Self::Array {
+                    element: Box::new(Self::from_clang_type(&element)?),
+                    len,
+                })
+            }
+
+            clang::TypeKind::IncompleteArray | clang::TypeKind::VariableArray => {
+                let element: clang::Type<'_> = canonical.get_element_type()?;
+
+                Some(Self::Array {
+                    element: Box::new(Self::from_clang_type(&element)?),
+                    len: None,
+                })
+            }
+
+            clang::TypeKind::Pointer => {
+                let pointee: clang::Type<'_> = canonical.get_pointee_type()?;
+
+                Some(Self::Pointer {
+                    pointee: Box::new(Self::from_clang_type(&pointee)?),
+                })
+            }
+
+            clang::TypeKind::Record => {
+                let declaration: clang::Entity<'_> = canonical.get_declaration()?;
+                let name: String = declaration.get_name()?;
+
+                Some(Self::Struct { name })
+            }
+
+            _ => Some(Self::Scalar),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct MacroType;
 
@@ -271,6 +442,15 @@ impl MacroType {
 
                         match base_type {
                             Some(InferredType::Pointer(inner)) => Some(*inner),
+                            Some(InferredType::Known(text))
+                                if text.starts_with("array[") && text.ends_with(']') =>
+                            {
+                                let inner: &str = &text[6..text.len() - 1];
+
+                                inner
+                                    .rsplit_once("; ")
+                                    .map(|(element, _)| InferredType::Known(element.to_string()))
+                            }
                             _ => None,
                         }
                     }
@@ -322,7 +502,46 @@ impl MacroType {
                 None
             }
 
-            MacroExpr::SizeOf(_) => Some(InferredType::Known("usize".to_string())),
+            MacroExpr::SizeOf(_) | MacroExpr::SizeOfExpr(_) => {
+                Some(InferredType::Known("usize".to_string()))
+            }
+
+            MacroExpr::InitList(items) => {
+                let item_expected: Option<InferredType> = expected.and_then(|kind| match kind {
+                    InferredType::Known(text)
+                        if text.starts_with("array[") && text.ends_with(']') =>
+                    {
+                        let inner: &str = &text[6..text.len() - 1];
+
+                        inner.rsplit_once("; ").map(|(element, _)| {
+                            InferredType::Known(element.to_string())
+                        })
+                    }
+                    _ => None,
+                });
+
+                let item_expected: Option<&InferredType> = item_expected.as_ref().or(expected);
+
+                for item in items.iter() {
+                    if let Some(crate::macro_ast::MacroDesignator::Index(index)) =
+                        item.get_designator()
+                    {
+                        Self::infer_expression(slots, index, None);
+                    }
+
+                    Self::infer_expression(slots, item.get_value(), item_expected);
+                }
+
+                expected.cloned()
+            }
+
+            MacroExpr::CompoundLiteral { ty, init } => {
+                let target: InferredType = InferredType::Known(ty.clone());
+
+                Self::infer_expression(slots, init, Some(&target));
+
+                Some(target)
+            }
         }
     }
 }
@@ -330,7 +549,11 @@ impl MacroType {
 impl MacroType {
     fn infer_statement(slots: &mut TypeSlots, statement: &MacroStmt) {
         match statement {
-            MacroStmt::VarDecl { ty, name, init } => {
+            MacroStmt::Empty | MacroStmt::Break | MacroStmt::Continue => {}
+
+            MacroStmt::VarDecl {
+                ty, name, init, ..
+            } => {
                 slots.insert(name.clone(), Some(InferredType::Known(ty.clone())));
 
                 if let Some(init) = init {
@@ -340,8 +563,24 @@ impl MacroType {
                 }
             }
 
-            MacroStmt::Expr(expr) => {
+            MacroStmt::Expr(expr) | MacroStmt::Return(Some(expr)) => {
                 Self::infer_expression(slots, expr, None);
+            }
+
+            MacroStmt::Return(None) | MacroStmt::Goto(_) | MacroStmt::Label(_) => {}
+
+            MacroStmt::Switch { cond, arms } => {
+                Self::infer_expression(slots, cond, None);
+
+                for arm in arms.iter() {
+                    for label in arm.get_labels().iter().flatten() {
+                        Self::infer_expression(slots, label, None);
+                    }
+
+                    for statement in arm.get_body().iter() {
+                        Self::infer_statement(slots, statement);
+                    }
+                }
             }
 
             MacroStmt::If {

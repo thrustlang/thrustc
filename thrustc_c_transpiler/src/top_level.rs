@@ -747,6 +747,7 @@ fn translate_record_decl(
 
     let name: String = { crate::util::normalize_to_thrust_identifier(&name) };
 
+    let mut field_shapes: HashMap<String, crate::macro_type::MacroValueType> = HashMap::new();
     let mut out: String = String::new();
     let is_packed: bool = children
         .iter()
@@ -977,6 +978,11 @@ fn translate_record_decl(
             span,
         )?;
 
+        field_shapes.insert(
+            field_name.clone(),
+            crate::macro_type::MacroValueType::from_text(&ty_text),
+        );
+
         out.push_str("    ");
         out.push_str(&field_name);
         out.push_str(": ");
@@ -985,6 +991,8 @@ fn translate_record_decl(
     }
 
     out.push_str("}\n");
+
+    macro_ctx.register_record_fields(name.clone(), field_shapes);
 
     Ok(out)
 }

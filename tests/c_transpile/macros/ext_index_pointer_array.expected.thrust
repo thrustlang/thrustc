@@ -1,0 +1,29 @@
+fn main() s32 @public {
+    var rows_result: s32 = 0;
+    var matrix_result: s32 = 0;
+    __c_macro_STORE_ROWS[s32](ref (rows_result));
+    __c_macro_STORE_MATRIX[s32](ref (matrix_result));
+    if rows_result != 56 {
+        return (1) as s32;
+    }
+    if matrix_result != 79 {
+        return (2) as s32;
+    }
+    return (0) as s32;
+}
+fn __c_macro_STORE_ROWS[T1](out: ptr[T1]) void @alwaysInline {
+    var first: array[s32; 2] = fixed[0, 0];
+    var second: array[s32; 2] = fixed[0, 0];
+    var rows: array[ptr[s32]; 2] = fixed[(first) as ptr[s32], (second) as ptr[s32]];
+    rows[0][0] = 5;
+    rows[1][1] = 6;
+    out->[0] =  (first->[0] * 10 + second->[1]) as T1;
+}
+
+fn __c_macro_STORE_MATRIX[T1](out: ptr[T1]) void @alwaysInline {
+    var matrix: array[array[s32; 2]; 2] = fixed[fixed[0, 0], fixed[0, 0]];
+    matrix[0][1] = 7;
+    matrix[1][0] = 9;
+    out->[0] =  ((deref matrix[0][1]) * 10 + (deref matrix[1][0])) as T1;
+}
+

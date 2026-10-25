@@ -1,0 +1,15 @@
+fn main() s32 @public {
+    var out: s32 = 0;
+    __c_macro_ARRAY_5[s32](ref (out));
+    if out == 14 {
+        return (0) as s32;
+    } else {
+        return (1) as s32;
+    }
+}
+fn __c_macro_ARRAY_5[T1](out: ptr[T1]) void @alwaysInline {
+    var values: array[s32; 4] = fixed[2, 8, 5, 6];
+    var matrix: array[array[s32; 2]; 2] = fixed[fixed[2, 8], fixed[5, 6]];
+    out->[0] =  (values->[0] + values->[3] + (deref matrix[1][1])) as T1;
+}
+

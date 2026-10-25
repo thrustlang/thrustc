@@ -38,6 +38,73 @@ pub enum MacroPostOp {
     Decrement,
 }
 
+/*
+ * This enum is named after the storage class because it controls how a macro
+ * local is lowered, but it intentionally groups three C concepts: storage
+ * classes (Static, Extern), the const qualifier (Const), and an ordinary
+ * Thrust local (Var). It is therefore a lowering category, not a strict C
+ * storage-class classification.
+ */
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MacroStorageClass {
+    Var,
+    Const,
+    Static,
+    Extern,
+}
+
+/*
+ * A C initializer designator is the optional prefix inside a braced
+ * initializer that says which member or element receives the value. Without a
+ * designator, values are assigned by position, for example `{1, 2}`. With a
+ * designator, the target is explicit: `.x = 1` assigns the struct member `x`,
+ * and `[2] = 3` assigns array element 2. This enum represents those two forms
+ * so macro lowering can build Thrust struct fields or indexed fixed-array
+ * values from braced initializers.
+ */
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MacroDesignator {
+    Field(String),
+    Index(MacroExpr),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MacroInitItem {
+    designator: Option<MacroDesignator>,
+    value: MacroExpr,
+}
+
+impl MacroInitItem {
+    #[inline]
+    pub fn new(designator: Option<MacroDesignator>, value: MacroExpr) -> Self {
+        Self { designator, value }
+    }
+}
+
+impl MacroInitItem {
+    #[inline]
+    pub fn get_designator(&self) -> Option<&MacroDesignator> {
+        self.designator.as_ref()
+    }
+
+    #[inline]
+    pub fn get_value(&self) -> &MacroExpr {
+        &self.value
+    }
+}
+
+impl MacroInitItem {
+    #[inline]
+    pub fn get_mut_designator(&mut self) -> &mut Option<MacroDesignator> {
+        &mut self.designator
+    }
+
+    #[inline]
+    pub fn get_mut_value(&mut self) -> &mut MacroExpr {
+        &mut self.value
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MacroExpr {
     Ident(String),
@@ -85,6 +152,12 @@ pub enum MacroExpr {
         value: Box<MacroExpr>,
     },
     SizeOf(String),
+    SizeOfExpr(Box<MacroExpr>),
+    InitList(Vec<MacroInitItem>),
+    CompoundLiteral {
+        ty: String,
+        init: Box<MacroExpr>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -147,17 +220,67 @@ pub enum ForInit {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MacroSwitchArm {
+    labels: Vec<Option<MacroExpr>>,
+    body: Vec<MacroStmt>,
+}
+
+impl MacroSwitchArm {
+    #[inline]
+    pub fn new(labels: Vec<Option<MacroExpr>>, body: Vec<MacroStmt>) -> Self {
+        Self { labels, body }
+    }
+}
+
+impl MacroSwitchArm {
+    #[inline]
+    pub fn get_labels(&self) -> &[Option<MacroExpr>] {
+        &self.labels
+    }
+
+    #[inline]
+    pub fn get_body(&self) -> &[MacroStmt] {
+        &self.body
+    }
+}
+
+impl MacroSwitchArm {
+    #[inline]
+    pub fn get_mut_labels(&mut self) -> &mut Vec<Option<MacroExpr>> {
+        &mut self.labels
+    }
+
+    #[inline]
+    pub fn get_mut_body(&mut self) -> &mut Vec<MacroStmt> {
+        &mut self.body
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MacroStmt {
+    Empty,
     VarDecl {
         ty: String,
         name: String,
         init: Option<MacroExpr>,
+        storage: MacroStorageClass,
+        is_const: bool,
+        is_volatile: bool,
     },
     Expr(MacroExpr),
+    Break,
+    Continue,
+    Return(Option<MacroExpr>),
+    Goto(String),
+    Label(String),
     If {
         cond: MacroExpr,
         then_branch: Vec<MacroStmt>,
         else_branch: Vec<MacroStmt>,
+    },
+    Switch {
+        cond: MacroExpr,
+        arms: Vec<MacroSwitchArm>,
     },
     While {
         cond: MacroExpr,

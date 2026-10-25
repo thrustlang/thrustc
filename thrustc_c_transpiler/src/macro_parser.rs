@@ -17,11 +17,24 @@
 
 */
 
-use crate::macro_ast::{ForDecl, ForInit, MacroExpr, MacroPostOp, MacroStmt, MacroUnOp};
+use crate::macro_ast::{
+    ForDecl, ForInit, MacroDesignator, MacroExpr, MacroInitItem, MacroPostOp, MacroStmt,
+    MacroStorageClass, MacroSwitchArm, MacroUnOp,
+};
 use crate::macro_error::MacroLimit;
 use crate::macro_lex;
 
-type SplitDecl<'tokens> = Result<Option<(String, String, &'tokens [String])>, MacroLimit>;
+type SplitDecl<'tokens> = Result<
+    Option<(
+        String,
+        String,
+        &'tokens [String],
+        MacroStorageClass,
+        bool,
+        bool,
+    )>,
+    MacroLimit,
+>;
 type MultiDeclEntry = (String, String, Option<MacroExpr>);
 
 #[derive(Debug)]
@@ -71,10 +84,37 @@ impl<'tokens> MacroParser<'tokens> {
 impl<'tokens> MacroParser<'tokens> {
     pub fn parse_statement(&mut self) -> Result<MacroStmt, MacroLimit> {
         match self.tokens.get(self.position).map(|token| token.as_str()) {
+            Some(";") => {
+                let _ignored: Option<&'tokens str> = self.advance();
+
+                Ok(MacroStmt::Empty)
+            }
             Some("for") => self.parse_for(),
             Some("while") => self.parse_while(),
             Some("do") => self.parse_do(),
             Some("if") => self.parse_if(),
+            Some("switch") => self.parse_switch(),
+            Some("break") => {
+                let _ignored: Option<&'tokens str> = self.advance();
+
+                if self.position < self.tokens.len() {
+                    self.expect(";")?;
+                }
+
+                Ok(MacroStmt::Break)
+            }
+            Some("continue") => {
+                let _ignored: Option<&'tokens str> = self.advance();
+
+                if self.position < self.tokens.len() {
+                    self.expect(";")?;
+                }
+
+                Ok(MacroStmt::Continue)
+            }
+            Some("return") => self.parse_return(),
+            Some("goto") => Err(MacroLimit::GotoUnsupported),
+            Some("case") | Some("default") => Err(MacroLimit::StatementMalformed),
             Some("{") => {
                 let _ignored: Option<&'tokens str> = self.advance();
 
@@ -92,11 +132,168 @@ impl<'tokens> MacroParser<'tokens> {
 
                 Ok(MacroStmt::Compound(inner))
             }
+            Some(text)
+                if text != "else"
+                    && text != "sizeof"
+                    && self
+                        .tokens
+                        .get(self.position.saturating_add(1))
+                        .is_some_and(|next| next == ":")
+                    && text
+                        .chars()
+                        .next()
+                        .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_') =>
+            {
+                Err(MacroLimit::GotoUnsupported)
+            }
             Some(text) if text != "else" && text != "sizeof" && Self::is_reserved_word(text) => {
                 Err(MacroLimit::UnsupportedStatementKeyword)
             }
             Some(_) => self.parse_decl_or_expr(),
             None => Err(MacroLimit::UnexpectedEndOfTokens),
+        }
+    }
+}
+
+impl<'tokens> MacroParser<'tokens> {
+    fn parse_return(&mut self) -> Result<MacroStmt, MacroLimit> {
+        let _ignored: Option<&'tokens str> = self.advance();
+
+        let start: usize = self.position;
+
+        let end: usize = self.find_semicolon(start)?;
+
+        let lexemes: Vec<String> = self.tokens[start..end].to_vec();
+
+        self.position = end + 1;
+
+        if lexemes.is_empty() {
+            return Ok(MacroStmt::Return(None));
+        }
+
+        Ok(MacroStmt::Return(Some(MacroParser::parse(&lexemes)?)))
+    }
+}
+
+impl<'tokens> MacroParser<'tokens> {
+    fn parse_switch(&mut self) -> Result<MacroStmt, MacroLimit> {
+        let _ignored: Option<&'tokens str> = self.advance();
+
+        self.expect("(")?;
+
+        let start: usize = self.position;
+        let end: usize = self.find_matching_paren(start)?;
+        let cond_lexemes: Vec<String> = self.tokens[start..end].to_vec();
+        let cond: MacroExpr = MacroParser::parse(&cond_lexemes)?;
+
+        self.position = end + 1;
+
+        self.expect("{")?;
+
+        let mut arms: Vec<MacroSwitchArm> = Vec::new();
+        let mut labels: Vec<Option<MacroExpr>> = Vec::new();
+        let mut body: Vec<MacroStmt> = Vec::new();
+
+        while self.position < self.tokens.len() && self.peek() != Some("}") {
+            if self.eat("case") {
+                if !labels.is_empty() && !body.is_empty() {
+                    arms.push(MacroSwitchArm::new(
+                        std::mem::take(&mut labels),
+                        std::mem::take(&mut body),
+                    ));
+                }
+
+                let value: MacroExpr = self.parse_assign()?;
+
+                self.expect(":")?;
+
+                labels.push(Some(value));
+
+                continue;
+            }
+
+            if self.eat("default") {
+                if !labels.is_empty() && !body.is_empty() {
+                    arms.push(MacroSwitchArm::new(
+                        std::mem::take(&mut labels),
+                        std::mem::take(&mut body),
+                    ));
+                }
+
+                self.expect(":")?;
+
+                labels.push(None);
+
+                continue;
+            }
+
+            if labels.is_empty() {
+                return Err(MacroLimit::StatementMalformed);
+            }
+
+            body.push(self.parse_statement()?);
+        }
+
+        if !labels.is_empty() || !body.is_empty() {
+            arms.push(MacroSwitchArm::new(labels, body));
+        }
+
+        self.expect("}")?;
+
+        Ok(MacroStmt::Switch { cond, arms })
+    }
+}
+
+impl<'tokens> MacroParser<'tokens> {
+    fn strip_declaration_qualifiers(
+        tokens: &'tokens [String],
+    ) -> (&'tokens [String], MacroStorageClass, bool, bool) {
+        let mut index: usize = 0;
+        let mut storage: MacroStorageClass = MacroStorageClass::Var;
+        let mut is_const: bool = false;
+        let mut is_volatile: bool = false;
+
+        while let Some(token) = tokens.get(index) {
+            match token.as_str() {
+                "static" => storage = MacroStorageClass::Static,
+                "extern" => storage = MacroStorageClass::Extern,
+                "const" => is_const = true,
+                "volatile" => is_volatile = true,
+                "register" | "auto" | "inline" => {}
+                _ => break,
+            }
+
+            index = index.saturating_add(1);
+        }
+
+        (&tokens[index..], storage, is_const, is_volatile)
+    }
+}
+
+impl<'tokens> MacroParser<'tokens> {
+    fn apply_declaration_flags(
+        stmt: &mut MacroStmt,
+        storage: MacroStorageClass,
+        is_const: bool,
+        is_volatile: bool,
+    ) {
+        let MacroStmt::VarDecl {
+            ty,
+            storage: current_storage,
+            is_const: current_const,
+            is_volatile: current_volatile,
+            ..
+        } = stmt
+        else {
+            return;
+        };
+
+        *current_storage = storage;
+        *current_const = (*current_const || is_const) && !ty.contains("ptr[");
+        *current_volatile = *current_volatile || is_volatile;
+
+        if *current_const && *current_storage == MacroStorageClass::Var {
+            *current_storage = MacroStorageClass::Const;
         }
     }
 }
@@ -111,7 +308,14 @@ impl<'tokens> MacroParser<'tokens> {
 
         self.position = end + 1;
 
-        if let Some(multidecl) = Self::parse_multi_var_decl_simple(stmt_tokens)? {
+        let (decl_tokens, storage, is_const, is_volatile) =
+            Self::strip_declaration_qualifiers(stmt_tokens);
+
+        if let Some(mut multidecl) = Self::parse_multi_var_decl_simple(decl_tokens)? {
+            for statement in multidecl.iter_mut() {
+                Self::apply_declaration_flags(statement, storage, is_const, is_volatile);
+            }
+
             if multidecl.len() == 1 {
                 return Ok(multidecl
                     .into_iter()
@@ -122,7 +326,7 @@ impl<'tokens> MacroParser<'tokens> {
             return Ok(MacroStmt::Compound(multidecl));
         }
 
-        if let Some(decl) = Self::split_var_decl(stmt_tokens)? {
+        if let Some(decl) = Self::split_var_decl(decl_tokens)? {
             let init: Option<MacroExpr> = if decl.2.is_empty() {
                 None
             } else {
@@ -131,10 +335,20 @@ impl<'tokens> MacroParser<'tokens> {
                 Some(MacroParser::parse(&lexemes)?)
             };
 
+            let is_const: bool = is_const && !decl.0.contains("ptr[");
+            let storage: MacroStorageClass = if is_const && storage == MacroStorageClass::Var {
+                MacroStorageClass::Const
+            } else {
+                storage
+            };
+
             return Ok(MacroStmt::VarDecl {
                 ty: decl.0,
                 name: decl.1,
                 init,
+                storage,
+                is_const,
+                is_volatile,
             });
         }
 
@@ -155,7 +369,14 @@ impl<'tokens> MacroParser<'tokens> {
         Ok(Some(
             entries
                 .into_iter()
-                .map(|(ty, name, init)| MacroStmt::VarDecl { ty, name, init })
+                .map(|(ty, name, init)| MacroStmt::VarDecl {
+                    ty,
+                    name,
+                    init,
+                    storage: MacroStorageClass::Var,
+                    is_const: false,
+                    is_volatile: false,
+                })
                 .collect(),
         ))
     }
@@ -221,7 +442,7 @@ impl<'tokens> MacroParser<'tokens> {
                 let shape: DeclaratorShape = DeclaratorShape {
                     stars: 0,
                     name: bare_name,
-                    array_size: None,
+                    array_sizes: Vec::new(),
                 };
 
                 let ty: String = Self::apply_shape_to_type(&base_ty, &shape)?;
@@ -245,7 +466,7 @@ impl<'tokens> MacroParser<'tokens> {
             let shape: DeclaratorShape = DeclaratorShape {
                 stars: 0,
                 name: target_name,
-                array_size: None,
+                array_sizes: Vec::new(),
             };
 
             let ty: String = Self::apply_shape_to_type(&base_ty, &shape)?;
@@ -265,12 +486,17 @@ impl<'tokens> MacroParser<'tokens> {
         }
 
         let mut core: &[String] = decl_part;
-        let mut array_size: Option<String> = None;
+        let mut array_sizes: Vec<String> = Vec::new();
 
-        if core.len() > 2
-            && core[core.len() - 3].as_str() == "["
-            && core[core.len() - 1].as_str() == "]"
-        {
+        loop {
+            if core.len() < 3 {
+                break;
+            }
+
+            if core[core.len() - 3].as_str() != "[" || core[core.len() - 1].as_str() != "]" {
+                break;
+            }
+
             let normalized: String =
                 crate::macro_lex::normalize_literal_token_lexeme(core[core.len() - 2].as_str());
 
@@ -282,7 +508,7 @@ impl<'tokens> MacroParser<'tokens> {
                 return Err(MacroLimit::DeclaratorMalformed);
             }
 
-            array_size = Some(normalized);
+            array_sizes.push(normalized);
             core = &core[..core.len() - 3];
         }
 
@@ -319,14 +545,14 @@ impl<'tokens> MacroParser<'tokens> {
         Ok(DeclaratorShape {
             stars,
             name: name.to_string(),
-            array_size,
+            array_sizes,
         })
     }
 
     fn peel_type_by_shape(full_type: &str, shape: &DeclaratorShape) -> Result<String, MacroLimit> {
         let mut current: String = full_type.to_string();
 
-        if let Some(size_text) = &shape.array_size {
+        for size_text in shape.array_sizes.iter().rev() {
             if !current.starts_with("array[") || !current.ends_with(']') {
                 return Err(MacroLimit::DeclaratorMalformed);
             }
@@ -372,7 +598,7 @@ impl<'tokens> MacroParser<'tokens> {
             ty = format!("ptr[{ty}]");
         }
 
-        if let Some(size_text) = &shape.array_size {
+        for size_text in shape.array_sizes.iter() {
             if size_text.is_empty() {
                 return Err(MacroLimit::DeclaratorMalformed);
             }
@@ -399,7 +625,7 @@ impl<'tokens> MacroParser<'tokens> {
 struct DeclaratorShape {
     stars: usize,
     name: String,
-    array_size: Option<String>,
+    array_sizes: Vec<String>,
 }
 
 impl<'tokens> MacroParser<'tokens> {
@@ -678,11 +904,11 @@ impl<'tokens> MacroParser<'tokens> {
             let token: &str = self.tokens[index].as_str();
 
             if crate::macro_token::is_punctuation(self.tokens[index].as_str())
-                && (token == "(" || token == "[")
+                && (token == "(" || token == "[" || token == "{")
             {
                 depth += 1;
             } else if crate::macro_token::is_punctuation(self.tokens[index].as_str())
-                && (token == ")" || token == "]")
+                && (token == ")" || token == "]" || token == "}")
             {
                 depth -= 1;
             } else if crate::macro_token::is_punctuation(self.tokens[index].as_str())
@@ -698,6 +924,10 @@ impl<'tokens> MacroParser<'tokens> {
             }
 
             index += 1;
+        }
+
+        if depth == 0 {
+            return Ok(self.tokens.len());
         }
 
         Err(MacroLimit::TokenBalanceError)
@@ -733,6 +963,102 @@ impl<'tokens> MacroParser<'tokens> {
 }
 
 impl<'tokens> MacroParser<'tokens> {
+    fn parse_pointer_to_array_decl(tokens: &[String]) -> Option<(String, String)> {
+        let open: usize = tokens.iter().position(|token| token == "(")?;
+
+        if tokens.get(open.saturating_add(1))?.as_str() != "*" {
+            return None;
+        }
+
+        let name: &str = tokens.get(open.saturating_add(2))?.as_str();
+
+        if !name
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
+            || Self::is_reserved_word(name)
+        {
+            return None;
+        }
+
+        if tokens.get(open.saturating_add(3))?.as_str() != ")" {
+            return None;
+        }
+
+        let mut index: usize = open.saturating_add(4);
+        let mut sizes: Vec<String> = Vec::new();
+
+        while index < tokens.len() {
+            if tokens.get(index)?.as_str() != "[" {
+                return None;
+            }
+
+            let size: String = crate::macro_lex::normalize_literal_token_lexeme(
+                tokens.get(index.saturating_add(1))?.as_str(),
+            );
+
+            if !size
+                .chars()
+                .next()
+                .is_some_and(|ch| ch.is_ascii_digit())
+                || tokens.get(index.saturating_add(2))?.as_str() != "]"
+            {
+                return None;
+            }
+
+            sizes.push(size);
+            index = index.saturating_add(3);
+        }
+
+        if sizes.is_empty() {
+            return None;
+        }
+
+        let type_tokens: &[String] = &tokens[..open];
+
+        let words: Vec<String> = type_tokens
+            .iter()
+            .filter(|token| {
+                token.as_str() != "*" && token.as_str() != "const" && token.as_str() != "volatile"
+            })
+            .map(|token| token.as_str().to_string())
+            .collect();
+
+        if words.is_empty() {
+            return None;
+        }
+
+        let joined: String = words.join(" ");
+
+        let base: String = if let Some(mapped) = crate::macro_lex::lex_macro_type(&joined) {
+            mapped
+        } else {
+            match words.as_slice() {
+                [single] if !crate::macro_token::is_keyword(single) => single.clone(),
+                [head, tail]
+                    if (head == "struct" || head == "enum" || head == "union")
+                        && tail
+                            .chars()
+                            .next()
+                            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_') =>
+                {
+                    tail.clone()
+                }
+                _ => return None,
+            }
+        };
+
+        let mut array_type: String = base;
+
+        for size in sizes.iter().rev() {
+            array_type = format!("array[{array_type}; {size}]");
+        }
+
+        Some((format!("ptr[{array_type}]"), name.to_string()))
+    }
+}
+
+impl<'tokens> MacroParser<'tokens> {
     fn split_var_decl(tokens: &[String]) -> SplitDecl<'_> {
         let assign: Option<usize> = tokens
             .iter()
@@ -764,21 +1090,43 @@ impl<'tokens> MacroParser<'tokens> {
             return Ok(None);
         }
 
+        if let Some((ty, name)) = Self::parse_pointer_to_array_decl(decl_part) {
+            return Ok(Some((
+                ty,
+                name,
+                init_part,
+                MacroStorageClass::Var,
+                false,
+                false,
+            )));
+        }
+
         let mut core: &[String] = decl_part;
 
-        let mut array_suffix: Option<&[String]> = None;
+        let mut array_sizes: Vec<String> = Vec::new();
 
-        if let Some((close, without_close)) = core.split_last() {
-            if close.as_str() == "]" {
-                if let Some((size_token, without_size)) = without_close.split_last() {
-                    if let Some((open, head)) = without_size.split_last() {
-                        if open.as_str() == "[" {
-                            array_suffix = Some(std::slice::from_ref(size_token));
-                            core = head;
-                        }
-                    }
-                }
+        while let Some((close, without_close)) = core.split_last() {
+            if close.as_str() != "]" {
+                break;
             }
+
+            let Some((size_token, without_size)) = without_close.split_last() else {
+                break;
+            };
+
+            let Some((open, head)) = without_size.split_last() else {
+                break;
+            };
+
+            if open.as_str() != "[" {
+                break;
+            }
+
+            array_sizes.push(crate::macro_lex::normalize_literal_token_lexeme(
+                size_token.as_str(),
+            ));
+
+            core = head;
         }
 
         if core.is_empty() {
@@ -868,18 +1216,7 @@ impl<'tokens> MacroParser<'tokens> {
 
         let mut out: String = (0..stars).fold(base_text, |acc, _| format!("ptr[{acc}]"));
 
-        if let Some(size_tokens) = array_suffix {
-            let Some((size_token, rest)) = size_tokens.split_first() else {
-                return Err(MacroLimit::DeclaratorMalformed);
-            };
-
-            if !rest.is_empty() {
-                return Err(MacroLimit::DeclaratorMalformed);
-            }
-
-            let size_text: String =
-                crate::macro_lex::normalize_literal_token_lexeme(size_token.as_str());
-
+        for size_text in array_sizes.iter() {
             if !size_text
                 .chars()
                 .next()
@@ -891,7 +1228,14 @@ impl<'tokens> MacroParser<'tokens> {
             out = format!("array[{out}; {size_text}]");
         }
 
-        Ok(Some((out, last.to_string(), init_part)))
+        Ok(Some((
+            out,
+            last.to_string(),
+            init_part,
+            MacroStorageClass::Var,
+            false,
+            false,
+        )))
     }
 }
 
@@ -910,11 +1254,11 @@ impl<'tokens> MacroParser<'tokens> {
             let token: &str = tokens[index].as_str();
 
             if crate::macro_token::is_punctuation(tokens[index].as_str())
-                && (token == "(" || token == "[")
+                && (token == "(" || token == "[" || token == "{")
             {
                 depth += 1;
             } else if crate::macro_token::is_punctuation(tokens[index].as_str())
-                && (token == ")" || token == "]")
+                && (token == ")" || token == "]" || token == "}")
             {
                 depth -= 1;
             } else if crate::macro_token::is_punctuation(tokens[index].as_str())
@@ -1340,6 +1684,15 @@ impl<'tokens> MacroParser<'tokens> {
                         return self.parse_unary();
                     }
 
+                    if self.peek() == Some("{") {
+                        let init: MacroExpr = self.parse_initializer_list()?;
+
+                        return Ok(MacroExpr::CompoundLiteral {
+                            ty: target,
+                            init: Box::new(init),
+                        });
+                    }
+
                     let arg: MacroExpr = self.parse_cast()?;
 
                     return Ok(MacroExpr::Cast {
@@ -1360,6 +1713,24 @@ impl<'tokens> MacroParser<'tokens> {
     pub fn parse_cast_target_type(&mut self) -> Option<String> {
         let mut words: Vec<String> = Vec::new();
         let mut stars: usize = 0;
+
+        if matches!(self.peek(), Some("struct") | Some("enum") | Some("union")) {
+            let _ignored: Option<&'tokens str> = self.advance();
+
+            let name: String = self.peek()?.to_string();
+
+            if !name
+                .chars()
+                .next()
+                .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
+            {
+                return None;
+            }
+
+            let _ignored: Option<&'tokens str> = self.advance();
+
+            words.push(name);
+        }
 
         loop {
             match self.peek() {
@@ -1484,9 +1855,11 @@ impl<'tokens> MacroParser<'tokens> {
 
                 self.position = saved;
 
-                if self.parse_comma().is_ok() && self.eat(")") {
-                    return Err(MacroLimit::SizeOfExpression);
-                }
+                let expression: MacroExpr = self.parse_comma()?;
+
+                self.expect(")")?;
+
+                return Ok(MacroExpr::SizeOfExpr(Box::new(expression)));
             }
 
             return Err(MacroLimit::SizeOfMalformed);
@@ -1536,6 +1909,16 @@ impl<'tokens> MacroParser<'tokens> {
                 | "enum"
                 | "union"
         ) {
+            return None;
+        }
+
+        let looks_like_type: bool = name
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_uppercase())
+            || name.ends_with("_t");
+
+        if !looks_like_type {
             return None;
         }
 
@@ -1628,7 +2011,76 @@ impl<'tokens> MacroParser<'tokens> {
 }
 
 impl<'tokens> MacroParser<'tokens> {
+    pub fn parse_initializer_list(&mut self) -> Result<MacroExpr, MacroLimit> {
+        self.expect("{")?;
+
+        let mut items: Vec<MacroInitItem> = Vec::new();
+
+        if self.eat("}") {
+            return Ok(MacroExpr::InitList(items));
+        }
+
+        loop {
+            let designator: Option<MacroDesignator> = if self.eat(".") || self.eat("->") {
+                let field: String = match self.peek() {
+                    Some(name)
+                        if name
+                            .chars()
+                            .next()
+                            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_') =>
+                    {
+                        let name: String = name.to_string();
+
+                        let _ignored: Option<&'tokens str> = self.advance();
+
+                        name
+                    }
+                    _ => return Err(MacroLimit::ExpressionMalformed),
+                };
+
+                self.expect("=")?;
+
+                Some(MacroDesignator::Field(field))
+            } else if self.eat("[") {
+                let index: MacroExpr = self.parse_assign()?;
+
+                self.expect("]")?;
+                self.expect("=")?;
+
+                Some(MacroDesignator::Index(index))
+            } else {
+                None
+            };
+
+            let value: MacroExpr = self.parse_assign()?;
+
+            items.push(MacroInitItem::new(designator, value));
+
+            if self.eat(",") {
+                if self.eat("}") {
+                    break;
+                }
+
+                continue;
+            }
+
+            self.expect("}")?;
+
+            break;
+        }
+
+        Ok(MacroExpr::InitList(items))
+    }
+}
+
+impl<'tokens> MacroParser<'tokens> {
     pub fn parse_primary(&mut self) -> Result<MacroExpr, MacroLimit> {
+        if self.eat("{") {
+            self.position = self.position.saturating_sub(1);
+
+            return self.parse_initializer_list();
+        }
+
         if self.eat("(") {
             let inner: MacroExpr = self.parse_assign()?;
 
@@ -1649,9 +2101,28 @@ impl<'tokens> MacroParser<'tokens> {
             || token.starts_with('"')
             || token.starts_with('\'')
         {
-            let literal: String = macro_lex::normalize_literal_token_lexeme(token);
+            let mut literal: String = macro_lex::normalize_literal_token_lexeme(token);
 
             let _ignored: Option<&'tokens str> = self.advance();
+
+            while self.peek().is_some_and(|next| next.starts_with('"'))
+                && literal.starts_with('"')
+                && literal.ends_with('"')
+            {
+                let Some(next) = self.peek() else {
+                    break;
+                };
+
+                let next_literal: String = macro_lex::normalize_literal_token_lexeme(next);
+
+                let _ignored: Option<&'tokens str> = self.advance();
+
+                literal = format!(
+                    "\"{}{}\"",
+                    &literal[1..literal.len() - 1],
+                    &next_literal[1..next_literal.len() - 1]
+                );
+            }
 
             return Ok(MacroExpr::Literal(literal));
         }

@@ -250,11 +250,9 @@ impl MacroTable {
                 crate::macro_parser::MacroParser::new(&statement_lexemes);
 
             if function_like_kind == MacroFunctionLikeKind::Statement
-                && statement_parser.parse_statement_body().is_err()
+                && let Err(limit) = statement_parser.parse_statement_body()
             {
-                function_like_kind = MacroFunctionLikeKind::Unsupported(
-                    crate::macro_error::MacroLimit::StatementMalformed,
-                );
+                function_like_kind = MacroFunctionLikeKind::Unsupported(limit);
             }
 
             self.function_like_macro_definitions.insert(

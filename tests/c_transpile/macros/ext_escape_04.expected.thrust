@@ -1,0 +1,55 @@
+fn main() s32 @public {
+    var thrust_temporary_0: s32;
+    if 10 > 4 {
+        thrust_temporary_0 = 4;
+    } else {
+        thrust_temporary_0 = 10;
+    }
+    if test_return_4(10) != (thrust_temporary_0) {
+        return (1) as s32;
+    }
+    var thrust_temporary_1: s32;
+    if (5) as s32 < 10 {
+        thrust_temporary_1 = (5) as s32;
+    } else {
+        thrust_temporary_1 = 10;
+    }
+    if test_break_4() != (thrust_temporary_1) {
+        return (2) as s32;
+    }
+    if test_continue_4() != 16 {
+        return (3) as s32;
+    }
+    return (0) as s32;
+}
+fn test_break_4() s32 {
+    var i: s32;
+    i = 0;
+    while i < 10 {
+        if i > 4 {
+            break;
+        }
+        i += 1;
+    }
+    return (i) as s32;
+}
+fn test_continue_4() s32 {
+    var i: s32;
+    var total: s32 = 0;
+    i = 0;
+    while i < 8 {
+        if i % 2 == 0 {
+            i += 1;
+            continue;
+        }
+        total += i;
+        i += 1;
+    }
+    return (total) as s32;
+}
+fn test_return_4(x: s32) s32 {
+    if x > 4 {
+        return (4) as s32;
+    }
+    return (x) as s32;
+}

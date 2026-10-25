@@ -1,0 +1,49 @@
+fn main() s32 @public {
+    var out: s32 = 0;
+    __c_macro_SWITCH_5[s32, s32](9, ref (out));
+    if out == 50 {
+        return (0) as s32;
+    } else {
+        return (1) as s32;
+    }
+}
+fn __c_macro_SWITCH_5[T1, T2](x: T1, out: ptr[T2]) void @alwaysInline {
+    var score: s32 = 0;
+    var thrust_temporary_0: s32 = x;
+    var thrust_temporary_1: bool = false;
+    var thrust_temporary_3: bool = false;
+    var thrust_temporary_2: bool = thrust_temporary_0 == 0 || thrust_temporary_0 == 1 || thrust_temporary_0 == 2 || thrust_temporary_0 == 3 || thrust_temporary_0 == 5 || thrust_temporary_0 == 7;
+    loop {
+        if thrust_temporary_0 == 0 || thrust_temporary_1 {
+            thrust_temporary_1 = true;
+            score = 10;
+            break;
+        }
+        if thrust_temporary_0 == 1 || thrust_temporary_0 == 2 || thrust_temporary_1 {
+            thrust_temporary_1 = true;
+            score = 20;
+        }
+        if thrust_temporary_0 == 3 || thrust_temporary_1 {
+            thrust_temporary_1 = true;
+            score += 5;
+            break;
+        }
+        if thrust_temporary_0 == 5 || thrust_temporary_1 {
+            thrust_temporary_1 = true;
+            score = 30;
+            break;
+        }
+        if thrust_temporary_0 == 7 || thrust_temporary_1 {
+            thrust_temporary_1 = true;
+            score = 40;
+            break;
+        }
+        if !thrust_temporary_2 || thrust_temporary_1 {
+            thrust_temporary_1 = true;
+            score = 50;
+        }
+        break;
+    }
+    out->[0] =  (score) as T2;
+}
+

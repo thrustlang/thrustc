@@ -1,0 +1,31 @@
+fn main() s32 @public {
+    var out: s32 = 0;
+    __c_macro_EXPR_2[s32, s32, s32](7, 2, ref (out));
+    var thrust_temporary_1: s32;
+    if 7 > 2 {
+        thrust_temporary_1 = (14) as s32;
+    } else {
+        thrust_temporary_1 = (6) as s32;
+    }
+    var mixed: s32 = (thrust_temporary_1);
+    var bits: s32 = (27) as s32;
+    if out == mixed + bits + 4 {
+        return (0) as s32;
+    } else {
+        return (1) as s32;
+    }
+}
+fn __c_macro_EXPR_2[T1, T2, T3](a: T1, b: T2, out: ptr[T3]) void @alwaysInline {
+    var x: s32 = (a);
+    var y: s32 = (b);
+    var thrust_temporary_0: s32;
+    if x > y {
+        thrust_temporary_0 = (x * 2) as s32;
+    } else {
+        thrust_temporary_0 = (y * 3) as s32;
+    }
+    var mixed: s32 = (thrust_temporary_0);
+    var bits: s32 = ((x << 2) | (y & 3)) ^ 5;
+    out->[0] =  (mixed + bits + (abiSizeOf(s32)) as s32) as T3;
+}
+
