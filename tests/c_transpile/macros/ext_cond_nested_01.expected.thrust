@@ -1,0 +1,3 @@
+fn ext_cond_nested_01_value() s32 {
+    return (41) as s32;
+}

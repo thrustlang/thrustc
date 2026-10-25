@@ -21,6 +21,7 @@ thrustc_generics = { path = "../thrustc_generics" }
 thrustc_generics_monomorphization = { path = "../thrustc_generics_monomorphization" }
 thrustc_import = { path = "../thrustc_import" }
 thrustc_preprocessor = { path = "../thrustc_preprocessor" }
+thrustc_c_transpiler_macro_api = { path = "../thrustc_c_transpiler_macro_api" }
 thrustc_entities = { path = "../thrustc_entities" }
 thrustc_ast_modificators = { path = "../thrustc_ast_modificators" }
 thrustc_atomic_ordering = { path = "../thrustc_atomic_ordering" }

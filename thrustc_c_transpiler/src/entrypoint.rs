@@ -19,13 +19,15 @@
 
 use std::io::Write;
 use std::path::PathBuf;
+
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_logging::{LoggingType, OutputIn};
 use thrustc_options::TranslateCOptions;
 
-use crate::options::TranslateCOutput;
+use crate::context::TranspilerContext;
+use crate::unit::TranslateCUnit;
 
-pub fn handle_emit_c_bindings_thrust(
+pub fn emit_c_bindings_thrust(
     header: Option<PathBuf>,
     out_dir: Option<PathBuf>,
     output: Option<PathBuf>,
@@ -46,144 +48,119 @@ pub fn handle_emit_c_bindings_thrust(
         emit_opts.set_output(output);
     }
 
-    match crate::manager::emit_c_bindings_thrust(header, import_opts, &emit_opts) {
-        Ok((out_path, contents, warnings)) => {
-            if let Some(parent) = out_path.parent() {
-                let _ = std::fs::create_dir_all(parent);
-            }
+    let mut unit: TranslateCUnit =
+        crate::manager::emit_c_bindings_thrust(header, import_opts, &emit_opts);
 
-            let mut open_options: std::fs::OpenOptions = std::fs::File::options();
+    let had_errors: bool = unit.get_mut_context().report_all();
 
-            open_options.create(true);
-            open_options.truncate(true);
-            open_options.write(true);
-
-            if let Ok(mut file) = open_options.open(&out_path) {
-                let _ = file.write_all(contents.as_bytes());
-            } else {
-                thrustc_logging::print_critical_error(
-                    LoggingType::Error,
-                    &format!("Unable to write output '{}'.", out_path.display()),
-                );
-            }
-
-            for warning in warnings {
-                if let CompilationIssue::Warning(code, message, ..) = warning {
-                    thrustc_logging::print_warning(
-                        LoggingType::Warning,
-                        &format!("{}: {}", code.to_title(), message),
-                    );
-                }
-            }
-
-            thrustc_logging::write(
-                OutputIn::Stdout,
-                &format!("Emitted C bindings to '{}'.\n", out_path.display()),
-            );
-
-            std::process::exit(thrustc_constants::SUCCESFUL_CODE);
-        }
-        Err(message) => {
-            thrustc_logging::print_critical_error(LoggingType::Error, &message);
-        }
+    if had_errors {
+        std::process::exit(thrustc_constants::FAILURE_CODE);
     }
+
+    let Some(out_path) = unit.get_output_path() else {
+        thrustc_logging::print_critical_error(
+            LoggingType::Error,
+            "Unable to determine the C bindings output path.",
+        );
+    };
+
+    let Some(contents) = unit.get_contents() else {
+        thrustc_logging::print_critical_error(
+            LoggingType::Error,
+            "Unable to produce the C bindings contents.",
+        );
+    };
+
+    if let Some(parent) = out_path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+
+    let mut open_options: std::fs::OpenOptions = std::fs::File::options();
+
+    open_options.create(true);
+    open_options.truncate(true);
+    open_options.write(true);
+
+    if let Ok(mut file) = open_options.open(out_path) {
+        let _ = file.write_all(contents.as_bytes());
+    } else {
+        thrustc_logging::print_critical_error(
+            LoggingType::Error,
+            &format!("Unable to write output '{}'.", out_path.display()),
+        );
+    }
+
+    thrustc_logging::write(
+        OutputIn::Stdout,
+        &format!("Emitted C bindings to '{}'.\n", out_path.display()),
+    );
+
+    std::process::exit(thrustc_constants::SUCCESFUL_CODE);
 }
 
-pub fn handle_translate_c_to_thrust(inputs: &[PathBuf], translate_opts: &TranslateCOptions) {
+pub fn translate_c_to_thrust(inputs: &[PathBuf], translate_opts: &TranslateCOptions) {
     if inputs.is_empty() {
         return;
     }
 
-    match self::translate_c_to_thrust(inputs, translate_opts) {
-        Ok(results) => {
-            for (out_path, contents, issues) in results {
-                if let Some(parent) = out_path.parent() {
-                    let _ = std::fs::create_dir_all(parent);
-                }
+    let mut units: Vec<TranslateCUnit> = self::start_translate_c_to_thrust(inputs, translate_opts);
 
-                let mut open_options: std::fs::OpenOptions = std::fs::File::options();
+    let mut had_errors: bool = false;
 
-                open_options.create(true);
-                open_options.truncate(true);
-                open_options.write(true);
-
-                if let Ok(mut file) = open_options.open(&out_path) {
-                    let _ = file.write_all(contents.as_bytes());
-                } else {
-                    thrustc_logging::print_critical_error(
-                        LoggingType::Error,
-                        &format!("Unable to write output '{}'.", out_path.display()),
-                    );
-                }
-
-                for issue in issues {
-                    match issue {
-                        CompilationIssue::Warning(code, message, ..) => {
-                            thrustc_logging::print_warning(
-                                LoggingType::Warning,
-                                &format!("{}: {}\n", code.to_title(), message),
-                            );
-                        }
-                        CompilationIssue::Error(code, message, help, note, ..) => {
-                            let mut full: String =
-                                format!("{}: {}\nhelp: {}", code.to_title(), message, help);
-
-                            if let Some(note) = note {
-                                full.push_str("\nnote: ");
-                                full.push_str(&note);
-                            }
-
-                            thrustc_logging::print_error(LoggingType::Error, &full);
-                        }
-                        _ => {}
-                    }
-                }
-            }
-
-            thrustc_logging::write(OutputIn::Stdout, "C successfully translated to Thrust.\n");
-
-            std::process::exit(thrustc_constants::SUCCESFUL_CODE);
-        }
-
-        Err(issues) => {
-            for issue in issues {
-                match issue {
-                    CompilationIssue::Warning(code, message, ..) => {
-                        thrustc_logging::print_warning(
-                            LoggingType::Warning,
-                            &format!("{}: {}\n", code.to_title(), message),
-                        );
-                    }
-                    CompilationIssue::Error(code, message, help, note, ..) => {
-                        let mut full: String =
-                            format!("{}: {}\nhelp: {}", code.to_title(), message, help);
-
-                        if let Some(note) = note {
-                            full.push_str("\nnote: ");
-                            full.push_str(&note);
-                        }
-
-                        thrustc_logging::print_error(LoggingType::Error, &full);
-                    }
-                    _ => {}
-                }
-            }
-
-            std::process::exit(thrustc_constants::FAILURE_CODE);
+    for unit in units.iter_mut() {
+        if unit.get_mut_context().report_all() {
+            had_errors = true;
         }
     }
+
+    if had_errors {
+        std::process::exit(thrustc_constants::FAILURE_CODE);
+    }
+
+    for unit in units.iter() {
+        let Some(out_path) = unit.get_output_path() else {
+            continue;
+        };
+
+        let Some(contents) = unit.get_contents() else {
+            continue;
+        };
+
+        if let Some(parent) = out_path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+
+        let mut open_options: std::fs::OpenOptions = std::fs::File::options();
+
+        open_options.create(true);
+        open_options.truncate(true);
+        open_options.write(true);
+
+        if let Ok(mut file) = open_options.open(out_path) {
+            let _ = file.write_all(contents.as_bytes());
+        } else {
+            thrustc_logging::print_critical_error(
+                LoggingType::Error,
+                &format!("Unable to write output '{}'.", out_path.display()),
+            );
+        }
+    }
+
+    thrustc_logging::write(OutputIn::Stdout, "C successfully translated to Thrust.\n");
+
+    std::process::exit(thrustc_constants::SUCCESFUL_CODE);
 }
 
-pub fn translate_c_to_thrust(
+fn start_translate_c_to_thrust(
     inputs: &[PathBuf],
     translate_opts: &TranslateCOptions,
-) -> Result<Vec<TranslateCOutput>, Vec<CompilationIssue>> {
-    let mut outputs: Vec<TranslateCOutput> = Vec::new();
-
-    let mut errors: Vec<CompilationIssue> = Vec::new();
+) -> Vec<TranslateCUnit> {
+    let mut units: Vec<TranslateCUnit> = Vec::new();
 
     if inputs.is_empty() {
-        errors.push(CompilationIssue::Error(
+        let mut context: TranspilerContext = TranspilerContext::new();
+
+        context.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0110,
             "No input C files were provided.".into(),
             "Pass at least one '.c' file.".into(),
@@ -191,11 +168,15 @@ pub fn translate_c_to_thrust(
             thrustc_code_location::Span::nothing(),
         ));
 
-        return Err(errors);
+        units.push(TranslateCUnit::new(None, None, context));
+
+        return units;
     }
 
     if inputs.len() > 1 && translate_opts.output().is_some() {
-        errors.push(CompilationIssue::Error(
+        let mut context: TranspilerContext = TranspilerContext::new();
+
+        context.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0110,
             "'--translate-c-output' only supports a single input file.".into(),
             "Use '--translate-c-out-dir' or omit '--translate-c-output' when translating multiple inputs.".into(),
@@ -203,19 +184,17 @@ pub fn translate_c_to_thrust(
             thrustc_code_location::Span::nothing(),
         ));
 
-        return Err(errors);
+        units.push(TranslateCUnit::new(None, None, context));
+
+        return units;
     }
 
     for input in inputs {
-        match crate::manager::translate_single_c_to_thrust(input, translate_opts) {
-            Ok(result) => outputs.push(result),
-            Err(mut issues) => errors.append(&mut issues),
-        }
+        units.push(crate::manager::translate_single_c_to_thrust(
+            input,
+            translate_opts,
+        ));
     }
 
-    if errors.is_empty() {
-        Ok(outputs)
-    } else {
-        Err(errors)
-    }
+    units
 }

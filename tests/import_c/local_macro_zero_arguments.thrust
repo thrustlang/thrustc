@@ -1,0 +1,9 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/macro_zero_arguments.h";
+
+fn main() s32 @public {
+    if macro_zero_arguments::MACRO_ZERO() != 7 { return 1; }
+
+    return 0;
+}

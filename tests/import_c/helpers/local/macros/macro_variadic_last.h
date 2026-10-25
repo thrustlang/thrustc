@@ -1,0 +1,6 @@
+#ifndef IMPORT_C_HELPER_MACRO_VARIADIC_LAST_H
+#define IMPORT_C_HELPER_MACRO_VARIADIC_LAST_H
+
+#define MACRO_VAR_LAST(first, ...) (first)
+
+#endif

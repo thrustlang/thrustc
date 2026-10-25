@@ -1,0 +1,18 @@
+fn ext_varargs_va_opt_value() s32 {
+    var total: s32 = 0;
+    var i: s32;
+    total = total + ((3) + (4));
+    total = total + ((3));
+    total = total + ((2) * (5));
+    total = total + ((7));
+    i = 1;
+    while i <= 3 {
+        total = total + ((i) + (i + 1));
+        i += 1;
+    }
+    total = total + ((scale(1)) * (scale(2)));
+    return (total) as s32;
+}
+fn scale(value: s32) s32 {
+    return (value * 2) as s32;
+}

@@ -1,0 +1,20 @@
+fn ext_varargs_named_value() s32 {
+    var total: s32 = 0;
+    var i: s32;
+    total = total + ((9) - (4));
+    total = total + ((20) - (3));
+    i = 0;
+    while i < 4 {
+        total = total + ((i) + (i + 1));
+        i += 1;
+    }
+    i = 0;
+    while i < 5 {
+        total = total + ((offset(i)) + (i + 1));
+        i += 1;
+    }
+    return (total) as s32;
+}
+fn offset(value: s32) s32 {
+    return (value + 2) as s32;
+}

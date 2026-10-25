@@ -19,16 +19,7 @@
 
 use std::path::{Path, PathBuf};
 
-pub trait ClangArgumentsSource {
-    fn include_paths(&self) -> &[PathBuf];
-    fn system_include_paths(&self) -> &[PathBuf];
-    fn defines(&self) -> &[String];
-    fn undefs(&self) -> &[String];
-    fn target(&self) -> Option<&str>;
-    fn sysroot(&self) -> Option<&Path>;
-    fn std(&self) -> Option<&str>;
-    fn args(&self) -> &[String];
-}
+use crate::traits::ClangArgumentsSource;
 
 impl ClangArgumentsSource for thrustc_options::ImportCOptions {
     #[inline]
@@ -330,20 +321,16 @@ pub fn is_supported_expr_kind(kind: clang::EntityKind) -> bool {
 }
 
 fn clang_commands() -> Vec<String> {
-    let env_opt: Option<String> = std::env::var("CLANG")
-        .ok()
-        .filter(|value| !value.trim().is_empty());
+    let mut commands: Vec<String> = Vec::new();
 
-    let mut commands: Vec<String> = env_opt.into_iter().collect();
-
-    let fallback_iter = [
+    let fallback_commands_iter = [
         "clang", "clang-16", "clang-17", "clang-18", "clang-19", "clang-20", "clang-21",
         "clang-22", "clang-23", "cc",
     ]
     .iter()
     .map(|name| name.to_string());
 
-    commands.extend(fallback_iter);
+    commands.extend(fallback_commands_iter);
 
     commands
 }

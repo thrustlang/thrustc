@@ -48,6 +48,7 @@ use thrustc_entities::parser_entities::{
     Struct,
 };
 
+use thrustc_parser_external_table::ExternalSymbolTable;
 use thrustc_parser_table::traits::{
     ConstantSymbolExtensions, FoundSymbolEitherExtensions, FoundSymbolExtensions,
     StructSymbolExtensions,
@@ -165,6 +166,48 @@ fn build_type_inner<'parser>(
                     }
                 };
 
+                if let Some(module) =
+                    ExternalSymbolTable::new(ctx.get_modules()).resolve(&access)
+                {
+                    if !module
+                        .get_symbols()
+                        .iter()
+                        .any(|module_symbol| module_symbol.public && module_symbol.name == symbol)
+                    {
+                        if let Some(type_macro) = module.find_macro(symbol) {
+                            if type_macro.get_kind()
+                                == thrustc_c_transpiler_macro_api::types::MacroType::Type
+                            {
+                                let macros: Vec<
+                                    thrustc_c_transpiler_macro_api::types::Macro,
+                                > = module.get_macros().to_vec();
+
+                                let expansion: thrustc_c_transpiler_macro_api::types::MacroExpansion =
+                                    thrustc_c_transpiler_macro_api::expand::expand_type(
+                                        &macros, symbol,
+                                    )
+                                    .map_err(|error| {
+                                        CompilationIssue::Error(
+                                            CompilationIssueCode::E0042,
+                                            error.get_message(),
+                                            "The C macro does not describe a supported Thrust type."
+                                                .into(),
+                                            None,
+                                            symbol_span,
+                                        )
+                                    })?;
+
+                                return ctx.parse_expanded_macro_type(
+                                    &expansion,
+                                    module,
+                                    &access,
+                                    symbol_span,
+                                );
+                            }
+                        }
+                    }
+                }
+
                 if let Some((qualified_type, type_params)) =
                     thrustc_import::synthesis::resolve_qualified_generic(
                         &ctx.import_context(),
@@ -244,7 +287,45 @@ fn build_type_inner<'parser>(
                 ctx.get_symbols().get_symbols_id(name, span);
 
             match object {
-                Err(_) => self::resolve_builtin_type_or_unknown(ctx, name, span),
+                Err(_) => {
+                    if let Some((access, module, type_macro)) =
+                        crate::imported_scope::find_type_macro(ctx, name, span)?
+                    {
+                        let macros: Vec<thrustc_c_transpiler_macro_api::types::Macro> =
+                            module.get_macros().to_vec();
+                        let expansion: thrustc_c_transpiler_macro_api::types::MacroExpansion =
+                            thrustc_c_transpiler_macro_api::expand::expand_type(
+                                &macros,
+                                type_macro.get_name(),
+                            )
+                            .map_err(|error| {
+                                CompilationIssue::Error(
+                                    CompilationIssueCode::E0042,
+                                    error.get_message(),
+                                    "The C macro does not describe a supported Thrust type.".into(),
+                                    None,
+                                    span,
+                                )
+                            })?;
+
+                        return ctx.parse_expanded_macro_type(
+                            &expansion,
+                            module,
+                            &access,
+                            span,
+                        );
+                    }
+
+                    if let Some((access, symbol)) =
+                        crate::imported_scope::find_symbol(ctx, name, span)?
+                    {
+                        return crate::imported_scope::synthesize_type(
+                            ctx, &access, symbol, span,
+                        );
+                    }
+
+                    self::resolve_builtin_type_or_unknown(ctx, name, span)
+                }
                 Ok(object) if object.is_structure() => {
                     let (id, scope_idx) = object.expected_struct(span)?;
                     let reference: Result<Struct, CompilationIssue> =

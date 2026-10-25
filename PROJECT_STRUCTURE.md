@@ -61,10 +61,10 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
   Source span and location tracking used throughout the compiler.
 
 - **`thrustc_preprocessor`**  
-  Preprocessor for modules, imports, and early processing of source code. Handles high-level and submodule parsing, module tables, signatures, the standard library resolver, and compile-time conditionals.
+  Preprocessor for modules, imports, and early processing of source code. Handles high-level and submodule parsing, module tables, signatures, C import modules and macro definitions, the standard library resolver, and compile-time conditionals.
 
 - **`thrustc_parser`**  
-  Handwritten recursive descent parser with layered precedence climbing. Parses expressions with precedence levels, statements, top-level declarations, attributes, modificators, and imports.
+  Handwritten recursive descent parser with layered precedence climbing. Parses expressions with precedence levels, statements, top-level declarations, attributes, modificators, and imports. Expands imported C macros at the call site and resolves their C symbols through module-scoped fallback.
 
 - **`thrustc_parser_context`**  
   Context state maintained by the parser during recursive descent.
@@ -112,12 +112,18 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
   Parser-level monomorphization driver for generics: resolves generic calls and instantiates concrete templates during parsing.
 
 - **`thrustc_import`**  
-  Import resolution and synthesis for functions, intrinsics, constants, statics, structs, enums and custom types, including collision handling. Thrust-side counterpart of `thrustc_import_c`.
+  Import resolution and synthesis for functions, intrinsics, constants, statics, structs, enums and custom types, including collision handling and `ensure_qualified_*` helpers used by parser fallback resolution. Thrust-side counterpart of `thrustc_import_c`.
 
 ### C Interop: Import and Transpilation
 
 - **`thrustc_import_c`**  
-  C declaration import pipeline. Thrust-side counterpart handling for C functions, types, records, and macros.
+  C declaration import pipeline. Handles C functions, records, enums, typedefs, statics, constants, and macros. Function-like and object macros are translated through the high-level macro API; named enum fields are exported as module constants for macro resolution.
+
+- **`thrustc_c_transpiler_macro`**
+  C macro parsing, classification, variadic expansion, token rescanning, type inference, diagnostics, and statement lowering. Owns the neutral `MacroAst`, `ThrustType`, and `Variadic` model in `thrust.rs`, shared by the C transpiler and the macro API.
+
+- **`thrustc_c_transpiler_macro_api`**
+  High-level, macro-only API consumed by `importC`. Exposes `MacroType`, `Entity`, `Macro`, `Constant`, `MacroAst`, `MacroExpansion` with argument provenance, `Options`, diagnostics, and expression/statement/type expansion. It does not depend on the parser.
 
 - **`thrustc_c_transpiler`**  
   C to Thrust transpiler behind `--import-c`, `--translate-c-*`, and `--emit-c-bindings-*`.
@@ -213,6 +219,20 @@ The frontend uses a handwritten recursive descent parser. The backend generates 
 
 ---
 
+## C Macro Import Flow
+
+Imported C macros move through the following layers:
+
+1. `thrustc_import_c` reads Clang declarations and macro definitions.
+2. `thrustc_c_transpiler_macro_api` translates macros into neutral `Entity` values and builds `MacroAst`/`MacroExpansion` data.
+3. `thrustc_preprocessor` stores imported symbols and macro definitions in `Module`.
+4. `thrustc_parser` detects qualified macro calls, expands expressions/statements/types at the call site, and resolves unqualified C names through the macro's module scope.
+5. `thrustc_import` synthesizes missing qualified functions, constants, statics, structs, enums and custom types on demand.
+
+Macro arguments keep call-site name lookup through argument provenance ranges; macro-body identifiers can fall back to the defining module and to a unique transitive module candidate.
+
+---
+
 ## LLVM Vendor Crates (`crates/llvm/`)
 
 Vendored forks of LLVM Rust bindings, patched for thrustc compatibility:
@@ -298,31 +318,10 @@ Per-platform changelogs for release versions. Each release is a directory with a
 
 ---
 
-## Assets and Examples (`assets/`)
-
-- **`assets/examples/diagnostics/`**: Example diagnostic output files.
-
----
-
 ## References
 
 - **`LINKER_REFERENCE.md`**: Linker documentation.
 - **`LLVM_REFERENCE.md`**: LLVM integration and ABI documentation.
-
----
-
-## Showcase (`showcase/`)
-
-Example Thrust projects demonstrating language capabilities:
-
-- **`showcase/Algorithms/`**: Algorithm implementations.
-- **`showcase/Cuda/`**: CUDA integration examples.
-- **`showcase/HttpServer/`**: HTTP server implementation.
-- **`showcase/OpenGL/`**: OpenGL graphics examples.
-
-## Tests (`tests/`)
-
-Test suites organized by feature area, plus a test runner and documentation. `tests/std/` mirrors standard library modules under test.
 
 ---
 

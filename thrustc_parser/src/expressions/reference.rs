@@ -323,6 +323,14 @@ pub fn build_reference<'parser>(
         }
 
         Err(error) => {
+            if let Some((access, symbol)) =
+                crate::imported_scope::find_symbol(ctx, name, span)?
+            {
+                return crate::imported_scope::synthesize_reference(
+                    ctx, &access, symbol, span,
+                );
+            }
+
             ctx.add_error_report(error);
             Ok(Ast::invalid_ast(span))
         }

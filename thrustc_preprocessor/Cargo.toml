@@ -11,6 +11,7 @@ repository.workspace = true
 
 [dependencies]
 thrustc_import_c = { path = "../thrustc_import_c" }
+thrustc_c_transpiler_macro_api = { path = "../thrustc_c_transpiler_macro_api" }
 thrustc_directive = { path = "../thrustc_directive" }
 ahash = "0.8.11"
 uuid = { version = "1.19.0", features = ["v4"] }

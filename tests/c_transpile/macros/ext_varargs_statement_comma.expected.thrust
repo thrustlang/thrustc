@@ -1,0 +1,29 @@
+fn printf(fmt: const ptr[char]) s32 @public @extern("printf") @convention("C") @arbitraryArgs @noArgCount;
+
+fn ext_varargs_statement_comma_value() s32 {
+    var i: s32;
+    var checksum: s32 = 0;
+    {
+        printf((("start\n")) as ptr[char]);
+    }
+    i = 0;
+    while i < 4 {
+        {
+            printf((("%d\n")) as ptr[char], i * 2);
+        }
+        checksum = checksum + i;
+        i += 1;
+    }
+    i = 1;
+    while i <= 3 {
+        {
+            printf((("%d\n")) as ptr[char], i * 10);
+        }
+        checksum = checksum + i;
+        i += 1;
+    }
+    {
+        printf((("end\n")) as ptr[char]);
+    }
+    return (21 + checksum) as s32;
+}

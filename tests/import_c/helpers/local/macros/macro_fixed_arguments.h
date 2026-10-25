@@ -1,0 +1,6 @@
+#ifndef IMPORT_C_HELPER_MACRO_FIXED_ARGUMENTS_H
+#define IMPORT_C_HELPER_MACRO_FIXED_ARGUMENTS_H
+
+#define MACRO_ADD(a, b) ((a) + (b))
+
+#endif

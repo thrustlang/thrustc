@@ -1,0 +1,9 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/macro_fixed_arguments.h";
+
+fn main() s32 @public {
+    if macro_fixed_arguments::MACRO_ADD(2, 3) != 5 { return 1; }
+
+    return 0;
+}

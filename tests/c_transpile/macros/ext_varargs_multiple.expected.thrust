@@ -1,0 +1,22 @@
+fn add(a: s32, b: s32) s32 {
+    return (a + b) as s32;
+}
+fn add3(a: s32, b: s32, c: s32) s32 {
+    return (a + b + c) as s32;
+}
+fn add4(a: s32, b: s32, c: s32, d: s32) s32 {
+    return (a + b + c + d) as s32;
+}
+fn ext_varargs_multiple_value() s32 {
+    var total: s32 = 0;
+    var i: s32;
+    total = total + add(4, 5);
+    total = total + add3(1, 2, 3);
+    total = total + add4(1, 2, 3, 4);
+    i = 0;
+    while i < 3 {
+        total = total + add(i, i + 10);
+        i += 1;
+    }
+    return (total) as s32;
+}

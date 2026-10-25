@@ -1,0 +1,9 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/macro_variadic_named.h";
+
+fn main() s32 @public {
+    if macro_variadic_named::MACRO_VAR_NAMED(1, 9) != 9 { return 1; }
+
+    return 0;
+}

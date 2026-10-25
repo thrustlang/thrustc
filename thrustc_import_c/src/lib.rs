@@ -17,8 +17,8 @@
 
 */
 
+pub mod clang_decl_index;
 pub mod context;
-pub mod decl_index;
 pub mod diagnostics;
 pub mod import;
 pub mod model;

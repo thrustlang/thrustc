@@ -1,0 +1,10 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/macro_variadic_va_opt.h";
+
+fn main() s32 @public {
+    if macro_variadic_va_opt::MACRO_VAR_OPTIONAL(5) != 5 { return 1; }
+    if macro_variadic_va_opt::MACRO_VAR_OPTIONAL(5, 3) != 8 { return 2; }
+
+    return 0;
+}

@@ -13,6 +13,8 @@ repository.workspace = true
 clang = { workspace = true, features = ["clang_3_6", "clang_3_9"] }
 
 thrustc_attributes = { path = "../thrustc_attributes" }
+thrustc_c_transpiler_macro_api = { path = "../thrustc_c_transpiler_macro_api" }
 thrustc_code_location = { path = "../thrustc_code_location" }
 thrustc_compile_time = { path = "../thrustc_compile_time" }
+thrustc_errors = { path = "../thrustc_errors" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }

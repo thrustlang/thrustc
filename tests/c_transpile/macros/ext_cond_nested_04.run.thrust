@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if ext_cond_nested_04_value() != 64 { return 1; }
+
+    return 0;
+}

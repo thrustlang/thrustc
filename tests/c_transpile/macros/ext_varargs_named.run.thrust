@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if ext_varargs_named_value() != 73 { return 1; }
+
+    return 0;
+}

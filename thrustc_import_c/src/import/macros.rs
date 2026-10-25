@@ -22,14 +22,50 @@ use thrustc_typesystem::Type;
 use thrustc_typesystem::type_metadata::ArrayTypeMetadata;
 
 use crate::diagnostics::{CImportDiagnostic, CImportDiagnosticKind};
-use crate::import::ImportState;
+use crate::import::ImportC;
 use crate::model::CImportedConstant;
+
+use thrustc_c_transpiler_macro_api::diagnostics::Diagnostics;
+use thrustc_c_transpiler_macro_api::options::Options;
+use thrustc_c_transpiler_macro_api::traits::MacroDiagnostic;
+use thrustc_c_transpiler_macro_api::translate;
+use thrustc_c_transpiler_macro_api::types::Entity;
 
 pub fn import_macros<'clang>(
     macro_decls: &[clang::Entity<'clang>],
-    state: &mut ImportState<'clang>,
+    import_c: &mut ImportC<'clang>,
 ) {
-    let span: thrustc_code_location::Span = state.span();
+    let span: thrustc_code_location::Span = import_c.span();
+
+    let function_like_macros: Vec<clang::Entity<'clang>> = macro_decls
+        .iter()
+        .filter(|entity| unsafe { entity.is_function_like_macro_unchecked() })
+        .copied()
+        .collect();
+
+    let mut macro_diagnostics: Diagnostics = Diagnostics::new();
+
+    let translated: Vec<Entity> = translate::translate_function_macros(
+        &function_like_macros,
+        span,
+        &Options::new(),
+        &mut macro_diagnostics,
+    );
+
+    for entity in translated.into_iter() {
+        if let Entity::Macro(macro_definition) = entity {
+            import_c.macros_mut().push(macro_definition);
+        }
+    }
+
+    for diagnostic in macro_diagnostics.take_diagnostics() {
+        import_c
+            .diagnostics_mut()
+            .push(CImportDiagnostic::from_compilation_issue(
+                CImportDiagnosticKind::UnsupportedMacro,
+                diagnostic,
+            ));
+    }
 
     for entity in macro_decls.iter() {
         let Some(macro_name) = entity.get_name() else {
@@ -66,13 +102,13 @@ pub fn import_macros<'clang>(
             .map(|token| token.get_spelling())
             .collect();
 
-        // Token heuristics misclassify object-like macros such as `#define FOO (1)` as function-like.
-        // Use libclang's cursor query directly so we only reject real function-like macros.
+        // Function-like macros are translated by the high-level macro API.
         if unsafe { entity.is_function_like_macro_unchecked() } {
-            state.diagnostics_mut().push(CImportDiagnostic::new(
-                CImportDiagnosticKind::SkippedDeclaration,
-                format!("macro '{macro_name}' skipped: function-like macros are not supported"),
-            ));
+            continue;
+        }
+
+        if let Some(Entity::Macro(type_macro)) = translate::translate_type_macro(entity, span) {
+            import_c.macros_mut().push(type_macro);
 
             continue;
         }
@@ -80,7 +116,7 @@ pub fn import_macros<'clang>(
         if let Some(result) = entity.evaluate() {
             match result {
                 clang::EvaluationResult::SignedInteger(value) => {
-                    state.constants_mut().push(CImportedConstant::new(
+                    import_c.constants_mut().push(CImportedConstant::new(
                         macro_name,
                         Type::S64 { span },
                         BuiltinValue::Integer(value as u64),
@@ -89,7 +125,7 @@ pub fn import_macros<'clang>(
                     continue;
                 }
                 clang::EvaluationResult::UnsignedInteger(value) => {
-                    state.constants_mut().push(CImportedConstant::new(
+                    import_c.constants_mut().push(CImportedConstant::new(
                         macro_name,
                         Type::U64 { span },
                         BuiltinValue::Integer(value),
@@ -98,7 +134,7 @@ pub fn import_macros<'clang>(
                     continue;
                 }
                 clang::EvaluationResult::Float(value) => {
-                    state.constants_mut().push(CImportedConstant::new(
+                    import_c.constants_mut().push(CImportedConstant::new(
                         macro_name,
                         Type::F64 { span },
                         BuiltinValue::Float(value),
@@ -106,8 +142,9 @@ pub fn import_macros<'clang>(
 
                     continue;
                 }
-                clang::EvaluationResult::String(value) | clang::EvaluationResult::ObjCString(value) => {
-                    state.constants_mut().push(CImportedConstant::new(
+                clang::EvaluationResult::String(value)
+                | clang::EvaluationResult::ObjCString(value) => {
+                    import_c.constants_mut().push(CImportedConstant::new(
                         macro_name,
                         Type::Array {
                             base_type: Box::new(Type::Char { span }),
@@ -140,45 +177,44 @@ pub fn import_macros<'clang>(
             }
         }
 
-        let min_expression_value: Option<u64> = if is_negative
-            && body.len() == 3
-            && body[1] == "-"
-            && body[2] == "1"
-        {
-            let head: &str = &body[0];
+        let min_expression_value: Option<u64> =
+            if is_negative && body.len() == 3 && body[1] == "-" && body[2] == "1" {
+                let head: &str = &body[0];
 
-            let existing_head_value: Option<u64> = state
-                .constants_mut()
-                .iter()
-                .find(|constant| constant.name() == head)
-                .and_then(|constant| match constant.value() {
-                    BuiltinValue::Integer(value) => Some(*value),
-                    _ => None,
-                });
+                let existing_head_value: Option<u64> = import_c
+                    .constants_mut()
+                    .iter()
+                    .find(|constant| constant.name() == head)
+                    .and_then(|constant| match constant.value() {
+                        BuiltinValue::Integer(value) => Some(*value),
+                        _ => None,
+                    });
 
-            let parsed_head_value: Option<u64> = if let Some(existing_head_value) = existing_head_value {
-                Some(existing_head_value)
-            } else {
-                let cleaned: String = head.trim_end_matches(['u', 'U', 'l', 'L']).to_string();
-
-                if cleaned.starts_with("0x") || cleaned.starts_with("0X") {
-                    u64::from_str_radix(
-                        cleaned.trim_start_matches("0x").trim_start_matches("0X"),
-                        16,
-                    )
-                    .ok()
+                let parsed_head_value: Option<u64> = if let Some(existing_head_value) =
+                    existing_head_value
+                {
+                    Some(existing_head_value)
                 } else {
-                    cleaned.parse::<u64>().ok()
-                }
+                    let cleaned: String = head.trim_end_matches(['u', 'U', 'l', 'L']).to_string();
+
+                    if cleaned.starts_with("0x") || cleaned.starts_with("0X") {
+                        u64::from_str_radix(
+                            cleaned.trim_start_matches("0x").trim_start_matches("0X"),
+                            16,
+                        )
+                        .ok()
+                    } else {
+                        cleaned.parse::<u64>().ok()
+                    }
+                };
+
+                parsed_head_value.and_then(|value| value.checked_add(1))
+            } else {
+                None
             };
 
-            parsed_head_value.and_then(|value| value.checked_add(1))
-        } else {
-            None
-        };
-
         if let Some(min_expression_value) = min_expression_value {
-            state.constants_mut().push(CImportedConstant::new(
+            import_c.constants_mut().push(CImportedConstant::new(
                 macro_name,
                 Type::S64 { span },
                 BuiltinValue::Integer(min_expression_value.wrapping_neg()),
@@ -188,8 +224,16 @@ pub fn import_macros<'clang>(
         }
 
         if body.len() != 1 {
-            state.diagnostics_mut().push(CImportDiagnostic::new(
-                CImportDiagnosticKind::SkippedDeclaration,
+            if let Some(Entity::Macro(object_macro)) =
+                translate::translate_object_macro(entity)
+            {
+                import_c.macros_mut().push(object_macro);
+
+                continue;
+            }
+
+            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+                CImportDiagnosticKind::UnsupportedMacro,
                 format!("macro '{macro_name}' skipped: unsupported macro body"),
             ));
 
@@ -208,14 +252,14 @@ pub fn import_macros<'clang>(
             }
         }
 
-        let existing_constant: Option<(Type, BuiltinValue)> = state
+        let existing_constant: Option<(Type, BuiltinValue)> = import_c
             .constants_mut()
             .iter()
             .find(|constant| constant.name() == token)
             .map(|constant| (constant.kind().clone(), constant.value().clone()));
 
         if let Some((kind, value)) = existing_constant {
-            state
+            import_c
                 .constants_mut()
                 .push(CImportedConstant::new(macro_name, kind, value));
 
@@ -223,9 +267,12 @@ pub fn import_macros<'clang>(
         }
 
         {
-            let cleaned: String = numeric_token.trim_end_matches(['u', 'U', 'l', 'L']).to_string();
+            let cleaned: String = numeric_token
+                .trim_end_matches(['u', 'U', 'l', 'L'])
+                .to_string();
 
-            let parsed_int: Option<u64> = if cleaned.starts_with("0x") || cleaned.starts_with("0X") {
+            let parsed_int: Option<u64> = if cleaned.starts_with("0x") || cleaned.starts_with("0X")
+            {
                 u64::from_str_radix(
                     cleaned.trim_start_matches("0x").trim_start_matches("0X"),
                     16,
@@ -237,9 +284,13 @@ pub fn import_macros<'clang>(
 
             if let Some(value) = parsed_int {
                 let kind: Type = if is_negative {
-                    Type::S64 { span: state.span() }
+                    Type::S64 {
+                        span: import_c.span(),
+                    }
                 } else {
-                    Type::U64 { span: state.span() }
+                    Type::U64 {
+                        span: import_c.span(),
+                    }
                 };
 
                 let integer_value: u64 = if is_negative {
@@ -248,7 +299,7 @@ pub fn import_macros<'clang>(
                     value
                 };
 
-                state.constants_mut().push(CImportedConstant::new(
+                import_c.constants_mut().push(CImportedConstant::new(
                     macro_name,
                     kind,
                     BuiltinValue::Integer(integer_value),
@@ -259,14 +310,16 @@ pub fn import_macros<'clang>(
         }
 
         {
-            let cleaned: String = numeric_token.trim_end_matches(['f', 'F', 'l', 'L']).to_string();
+            let cleaned: String = numeric_token
+                .trim_end_matches(['f', 'F', 'l', 'L'])
+                .to_string();
 
             if let Ok(mut value) = cleaned.parse::<f64>() {
                 if is_negative {
                     value = -value;
                 }
 
-                state.constants_mut().push(CImportedConstant::new(
+                import_c.constants_mut().push(CImportedConstant::new(
                     macro_name,
                     Type::F64 { span },
                     BuiltinValue::Float(value),
@@ -282,8 +335,8 @@ pub fn import_macros<'clang>(
             let literal: &str = if is_wide { &token[1..] } else { token };
 
             if !literal.starts_with('"') || !literal.ends_with('"') || literal.len() < 2 {
-                state.diagnostics_mut().push(CImportDiagnostic::new(
-                    CImportDiagnosticKind::SkippedDeclaration,
+                import_c.diagnostics_mut().push(CImportDiagnostic::new(
+                    CImportDiagnosticKind::UnsupportedMacro,
                     format!("macro '{macro_name}' skipped: unsupported string literal"),
                 ));
 
@@ -326,8 +379,8 @@ pub fn import_macros<'clang>(
             }
 
             if invalid_escape {
-                state.diagnostics_mut().push(CImportDiagnostic::new(
-                    CImportDiagnosticKind::SkippedDeclaration,
+                import_c.diagnostics_mut().push(CImportDiagnostic::new(
+                    CImportDiagnosticKind::UnsupportedMacro,
                     format!(
                         "macro '{macro_name}' skipped: unsupported escape sequence in string literal"
                     ),
@@ -344,13 +397,13 @@ pub fn import_macros<'clang>(
             };
 
             if is_wide {
-                state.constants_mut().push(CImportedConstant::new(
+                import_c.constants_mut().push(CImportedConstant::new(
                     macro_name,
                     kind,
                     BuiltinValue::CNString(bytes),
                 ));
             } else {
-                state.constants_mut().push(CImportedConstant::new(
+                import_c.constants_mut().push(CImportedConstant::new(
                     macro_name,
                     kind,
                     BuiltinValue::CString(bytes),
@@ -383,7 +436,7 @@ pub fn import_macros<'clang>(
             };
 
             if let Some(byte) = byte {
-                state.constants_mut().push(CImportedConstant::new(
+                import_c.constants_mut().push(CImportedConstant::new(
                     macro_name,
                     Type::Char { span },
                     BuiltinValue::Char(byte),
@@ -393,8 +446,14 @@ pub fn import_macros<'clang>(
             }
         }
 
-        state.diagnostics_mut().push(CImportDiagnostic::new(
-            CImportDiagnosticKind::SkippedDeclaration,
+        if let Some(Entity::Macro(object_macro)) = translate::translate_object_macro(entity) {
+            import_c.macros_mut().push(object_macro);
+
+            continue;
+        }
+
+        import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            CImportDiagnosticKind::UnsupportedMacro,
             format!("macro '{macro_name}' skipped: unsupported macro body"),
         ));
     }

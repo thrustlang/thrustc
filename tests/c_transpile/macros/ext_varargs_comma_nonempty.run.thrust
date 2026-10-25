@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if ext_varargs_comma_nonempty_value() != 23 { return 1; }
+
+    return 0;
+}

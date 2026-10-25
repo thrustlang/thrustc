@@ -26,6 +26,7 @@ use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
 
 use thrustc_parser_table::traits::{EnumExtensions, FoundSymbolEitherExtensions};
+use thrustc_preprocessor::signatures::{Signature, Variant};
 
 use crate::ParserContext;
 
@@ -92,6 +93,68 @@ pub fn build_enum_value<'parser>(
         }
 
         Err(error) => {
+            if let Some((access, imported_symbol)) =
+                crate::imported_scope::find_symbol(ctx, name, span)?
+                && imported_symbol.variant == Variant::Enum
+            {
+                let _qualified_enum: String =
+                    thrustc_import::synthesis::ensure_qualified_enum(
+                        &mut ctx.import_context(),
+                        &access,
+                        &imported_symbol.name,
+                        span,
+                    )?;
+
+                let Some(Signature::Enum { fields, .. }) =
+                    thrustc_import::synthesis::resolve_signature(
+                        &ctx.import_context(),
+                        &access,
+                        &imported_symbol.name,
+                        Variant::Enum,
+                    )
+                    .cloned()
+                else {
+                    return Err(CompilationIssue::Error(
+                        CompilationIssueCode::E0028,
+                        format!(
+                            "'{}::{}' was not resolved.",
+                            access.join("::"),
+                            imported_symbol.name
+                        ),
+                        "The imported enum is unavailable.".into(),
+                        None,
+                        span,
+                    ));
+                };
+
+                let field_name: &str = field_tk.get_lexeme();
+
+                return match fields
+                    .iter()
+                    .find(|(candidate, ..)| candidate == field_name)
+                {
+                    Some((_, field_type, Some(value), _)) => Ok(Ast::EnumValue {
+                        name: format!(
+                            "{}::{}::{}",
+                            access.join("::"),
+                            imported_symbol.name,
+                            field_name
+                        ),
+                        value: Box::new(value.to_ast(field_type.clone(), field_span)),
+                        kind: field_type.clone(),
+                        span,
+                        id: NodeId::new(),
+                    }),
+                    _ => Err(CompilationIssue::Error(
+                        CompilationIssueCode::E0028,
+                        "Unknown field.".into(),
+                        "You should make sure that it exist in the enum definition.".into(),
+                        None,
+                        field_span,
+                    )),
+                };
+            }
+
             ctx.add_error_report(error);
             Ok(Ast::invalid_ast(span))
         }

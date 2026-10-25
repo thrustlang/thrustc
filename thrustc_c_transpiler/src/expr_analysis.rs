@@ -17,7 +17,41 @@
 
 */
 
-pub fn resolve_expression_type<'clang>(
+pub fn expression_produces_condition(entity: &clang::Entity<'_>) -> bool {
+    match entity.get_kind() {
+        clang::EntityKind::ConditionalOperator => true,
+        clang::EntityKind::UnaryOperator => {
+            thrustc_c_transpiler_macro::macro_lex::entity_lexemes(entity)
+                .iter()
+                .any(|token| token == "!")
+        }
+        clang::EntityKind::BinaryOperator | clang::EntityKind::CompoundAssignOperator => {
+            let children: Vec<clang::Entity<'_>> = entity.get_children();
+
+            if children.len() < 2 {
+                return false;
+            }
+
+            thrustc_c_transpiler_macro::macro_lex::lex_binary_operator(
+                entity,
+                &children[0],
+                &children[1],
+            )
+            .map(|op| {
+                matches!(
+                    op.as_str(),
+                    "&&" | "||" | "==" | "!=" | "<" | "<=" | ">" | ">="
+                )
+            })
+            .unwrap_or(false)
+        }
+        _ => entity
+            .get_type()
+            .is_some_and(|ty| ty.get_canonical_type().get_kind() == clang::TypeKind::Bool),
+    }
+}
+
+pub fn try_resolve_expression_type<'clang>(
     entity: &clang::Entity<'clang>,
 ) -> Option<clang::Type<'clang>> {
     let mut resolved: Option<clang::Type<'clang>> = entity.get_type();

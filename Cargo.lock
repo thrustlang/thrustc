@@ -1617,6 +1617,7 @@ name = "thrustc_c_transpiler"
 version = "0.2.4"
 dependencies = [
  "clang",
+ "thrustc_c_transpiler_macro",
  "thrustc_code_location",
  "thrustc_compile_time",
  "thrustc_constants",
@@ -1624,6 +1625,30 @@ dependencies = [
  "thrustc_import_c",
  "thrustc_logging",
  "thrustc_options",
+ "thrustc_typesystem",
+]
+
+[[package]]
+name = "thrustc_c_transpiler_macro"
+version = "0.2.4"
+dependencies = [
+ "clang",
+ "thrustc_code_location",
+ "thrustc_compile_time",
+ "thrustc_constants",
+ "thrustc_errors",
+ "thrustc_typesystem",
+]
+
+[[package]]
+name = "thrustc_c_transpiler_macro_api"
+version = "0.2.4"
+dependencies = [
+ "clang",
+ "thrustc_c_transpiler_macro",
+ "thrustc_code_location",
+ "thrustc_compile_time",
+ "thrustc_errors",
  "thrustc_typesystem",
 ]
 
@@ -1853,8 +1878,10 @@ version = "0.2.4"
 dependencies = [
  "clang",
  "thrustc_attributes",
+ "thrustc_c_transpiler_macro_api",
  "thrustc_code_location",
  "thrustc_compile_time",
+ "thrustc_errors",
  "thrustc_typesystem",
 ]
 
@@ -2192,6 +2219,7 @@ dependencies = [
  "thrustc_attributes",
  "thrustc_backends",
  "thrustc_builtins",
+ "thrustc_c_transpiler_macro_api",
  "thrustc_code_location",
  "thrustc_compile_time",
  "thrustc_constants",
@@ -2275,6 +2303,7 @@ dependencies = [
  "thrustc_attributes",
  "thrustc_backends",
  "thrustc_builtins",
+ "thrustc_c_transpiler_macro_api",
  "thrustc_code_location",
  "thrustc_compile_time",
  "thrustc_constants",

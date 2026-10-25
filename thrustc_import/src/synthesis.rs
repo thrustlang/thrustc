@@ -485,6 +485,506 @@ pub fn ensure_qualified_function<'parser>(
     Ok(qualified_symbol)
 }
 
+pub fn ensure_qualified_compiler_intrinsic<'parser>(
+    ctx: &mut ImportContext<'parser, '_>,
+    access: &[String],
+    symbol: &'parser str,
+    span: Span,
+) -> Result<String, CompilationIssue> {
+    let qualified_symbol: String = self::qualified_symbol_name(access, symbol);
+
+    if ctx.get_symbols().has_compiler_intrinsic(&qualified_symbol) {
+        return Ok(qualified_symbol);
+    }
+
+    let Some(signature) = self::resolve_signature(
+        ctx,
+        access,
+        symbol,
+        Variant::CompilerIntrinsic,
+    )
+    .cloned()
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' not found.", access.join("::"), symbol),
+            "The module does not export a compiler intrinsic with that name.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let Signature::CompilerIntrinsic {
+        kind,
+        external_name,
+        parameters,
+        attributes,
+        ..
+    } = signature
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' is not a compiler intrinsic.", access.join("::"), symbol),
+            "A compiler intrinsic was expected.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let parameter_types: Vec<Type> = parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
+    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+        .resolve(access)
+        .map(|module| module.get_path().to_path_buf());
+
+    let _ = ctx.get_mut_symbols().new_compiler_intrinsic(
+        qualified_symbol.clone(),
+        (
+            kind.clone(),
+            thrustc_entities::parser_entities::IntrinsicParametersTypes(parameter_types.clone()),
+            attributes.has_ignore_attribute(),
+        ),
+    );
+
+    if let Some(path) = origin {
+        ctx.get_mut_symbols()
+            .record_import_origin(qualified_symbol.clone(), path);
+    }
+
+    self::synthesize_compiler_intrinsic(
+        ctx,
+        &qualified_symbol,
+        &external_name,
+        kind,
+        parameter_types,
+        attributes,
+        span,
+    );
+
+    Ok(qualified_symbol)
+}
+
+pub fn ensure_qualified_constant<'parser>(
+    ctx: &mut ImportContext<'parser, '_>,
+    access: &[String],
+    symbol: &'parser str,
+    span: Span,
+) -> Result<String, CompilationIssue> {
+    let qualified_symbol: String = self::qualified_symbol_name(access, symbol);
+
+    if ctx.get_symbols().has_global_constant(&qualified_symbol) {
+        return Ok(qualified_symbol);
+    }
+
+    let Some(signature) =
+        self::resolve_signature(ctx, access, symbol, Variant::Constant).cloned()
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' not found.", access.join("::"), symbol),
+            "The module does not export a constant with that name.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let Signature::Constant {
+        kind,
+        attributes,
+        modificators,
+        value,
+        ..
+    } = signature
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' is not a constant.", access.join("::"), symbol),
+            "A constant was expected.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let folded_value: Option<Ast> = value.as_ref().map(|value| value.to_ast(kind.clone(), span));
+
+    let Some(value_ast) = folded_value.clone() else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!(
+                "'{}::{}' cannot be resolved to a compile-time value.",
+                access.join("::"),
+                symbol
+            ),
+            "The referenced constant cannot be resolved to a compile-time value; it must be resolvable to a literal."
+                .into(),
+            None,
+            span,
+        ));
+    };
+
+    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+        .resolve(access)
+        .map(|module| module.get_path().to_path_buf());
+
+    let _ = ctx.get_mut_symbols().new_global_constant(
+        qualified_symbol.clone(),
+        (kind.clone(), attributes.clone(), folded_value),
+    );
+
+    if let Some(path) = origin {
+        ctx.get_mut_symbols()
+            .record_import_origin(qualified_symbol.clone(), path);
+    }
+
+    self::synthesize_constant(
+        ctx,
+        &qualified_symbol,
+        kind,
+        &value_ast,
+        &attributes,
+        &modificators,
+        span,
+    );
+
+    Ok(qualified_symbol)
+}
+
+pub fn ensure_qualified_static<'parser>(
+    ctx: &mut ImportContext<'parser, '_>,
+    access: &[String],
+    symbol: &'parser str,
+    span: Span,
+) -> Result<String, CompilationIssue> {
+    let qualified_symbol: String = self::qualified_symbol_name(access, symbol);
+
+    if ctx.get_symbols().has_global_static(&qualified_symbol) {
+        return Ok(qualified_symbol);
+    }
+
+    let Some(signature) =
+        self::resolve_signature(ctx, access, symbol, Variant::Static).cloned()
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' not found.", access.join("::"), symbol),
+            "The module does not export a static with that name.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let Signature::Static {
+        kind,
+        is_mutable,
+        attributes,
+        modificators,
+        ..
+    } = signature
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' is not a static.", access.join("::"), symbol),
+            "A static was expected.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let metadata: StaticMetadata =
+        self::build_static_metadata(is_mutable, &attributes, &modificators);
+    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+        .resolve(access)
+        .map(|module| module.get_path().to_path_buf());
+
+    let _ = ctx.get_mut_symbols().new_global_static(
+        qualified_symbol.clone(),
+        (kind.clone(), metadata, attributes.clone()),
+    );
+
+    if let Some(path) = origin {
+        ctx.get_mut_symbols()
+            .record_import_origin(qualified_symbol.clone(), path);
+    }
+
+    self::synthesize_global(
+        ctx,
+        &qualified_symbol,
+        kind,
+        &attributes,
+        is_mutable,
+        &modificators,
+        span,
+    );
+
+    Ok(qualified_symbol)
+}
+
+pub fn ensure_qualified_struct<'parser>(
+    ctx: &mut ImportContext<'parser, '_>,
+    access: &[String],
+    symbol: &'parser str,
+    span: Span,
+) -> Result<String, CompilationIssue> {
+    let qualified_symbol: String = self::qualified_symbol_name(access, symbol);
+
+    if ctx.get_symbols().has_global_struct(&qualified_symbol)
+        || ctx.get_symbols().has_generic_struct(&qualified_symbol)
+    {
+        return Ok(qualified_symbol);
+    }
+
+    let Some(signature) =
+        self::resolve_signature(ctx, access, symbol, Variant::Struct).cloned()
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' not found.", access.join("::"), symbol),
+            "The module does not export a structure with that name.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let Signature::Struct {
+        kind,
+        fields,
+        type_params,
+        ..
+    } = signature
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' is not a structure.", access.join("::"), symbol),
+            "A structure was expected.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let metadata: StructTypeMetadata = match kind {
+        Type::Struct { metadata, .. } => metadata,
+        _ => {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0028,
+                format!("'{}::{}' is not a structure.", access.join("::"), symbol),
+                "A structure was expected.".into(),
+                None,
+                span,
+            ));
+        }
+    };
+
+    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+        .resolve(access)
+        .map(|module| module.get_path().to_path_buf());
+
+    if let Some(type_params) = type_params {
+        ctx.get_mut_symbols().new_generic_struct(
+            qualified_symbol.clone(),
+            GenericStructEntry::new(
+                type_params,
+                fields.iter().map(|(name, ..)| name.clone()).collect(),
+                fields.iter().map(|(_, ty, _)| ty.clone()).collect(),
+                metadata,
+                span,
+            ),
+        );
+
+        if let Some(path) = origin {
+            ctx.get_mut_symbols()
+                .record_import_origin(qualified_symbol.clone(), path);
+        }
+
+        return Ok(qualified_symbol);
+    }
+
+    let mut data: Vec<(String, Type, u32, Span)> = Vec::with_capacity(fields.len());
+    let mut position: u32 = 0;
+
+    for (field_name, field_type, field_span) in fields.iter() {
+        data.push((
+            field_name.clone(),
+            field_type.clone(),
+            position,
+            *field_span,
+        ));
+
+        position = position.saturating_add(1);
+    }
+
+    let _ = ctx.get_mut_symbols().new_global_struct(
+        qualified_symbol.clone(),
+        (
+            qualified_symbol.clone(),
+            data.clone(),
+            ThrustAttributes::new(),
+            metadata,
+            span,
+        ),
+    );
+
+    if let Some(path) = origin {
+        ctx.get_mut_symbols()
+            .record_import_origin(qualified_symbol.clone(), path);
+    }
+
+    ctx.add_ast_node(Ast::Struct {
+        name: qualified_symbol.clone(),
+        data: (qualified_symbol.clone(), data, metadata, span),
+        kind,
+        attributes: ThrustAttributes::new(),
+        span,
+        id: NodeId::new(),
+    });
+
+    Ok(qualified_symbol)
+}
+
+pub fn ensure_qualified_enum<'parser>(
+    ctx: &mut ImportContext<'parser, '_>,
+    access: &[String],
+    symbol: &'parser str,
+    span: Span,
+) -> Result<String, CompilationIssue> {
+    let qualified_symbol: String = self::qualified_symbol_name(access, symbol);
+
+    if ctx.get_symbols().has_global_enum(&qualified_symbol) {
+        return Ok(qualified_symbol);
+    }
+
+    let Some(signature) = self::resolve_signature(ctx, access, symbol, Variant::Enum).cloned()
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' not found.", access.join("::"), symbol),
+            "The module does not export an enum with that name.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let Signature::Enum {
+        fields,
+        attributes,
+        ..
+    } = signature
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' is not an enum.", access.join("::"), symbol),
+            "An enum was expected.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let data: thrustc_ast::ast_logic_data::EnumData<'parser> =
+        self::build_enum_data(&fields, span)?;
+    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+        .resolve(access)
+        .map(|module| module.get_path().to_path_buf());
+
+    let _ = ctx.get_mut_symbols().new_global_enum(
+        qualified_symbol.clone(),
+        (data.clone(), attributes.clone()),
+    );
+
+    if let Some(path) = origin {
+        ctx.get_mut_symbols()
+            .record_import_origin(qualified_symbol.clone(), path);
+    }
+
+    ctx.add_ast_node(Ast::Enum {
+        name: qualified_symbol.clone(),
+        data,
+        attributes,
+        kind: Type::Void { span },
+        span,
+        id: NodeId::new(),
+    });
+
+    Ok(qualified_symbol)
+}
+
+pub fn ensure_qualified_custom_type<'parser>(
+    ctx: &mut ImportContext<'parser, '_>,
+    access: &[String],
+    symbol: &'parser str,
+    span: Span,
+) -> Result<String, CompilationIssue> {
+    let qualified_symbol: String = self::qualified_symbol_name(access, symbol);
+
+    if ctx.get_symbols().has_global_custom_type(&qualified_symbol)
+        || ctx.get_symbols().has_generic_custom_type(&qualified_symbol)
+    {
+        return Ok(qualified_symbol);
+    }
+
+    let Some(signature) =
+        self::resolve_signature(ctx, access, symbol, Variant::CustomType).cloned()
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' not found.", access.join("::"), symbol),
+            "The module does not export a type with that name.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let Signature::CustomType {
+        kind,
+        attributes,
+        type_params,
+        ..
+    } = signature
+    else {
+        return Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' is not a type.", access.join("::"), symbol),
+            "A type was expected.".into(),
+            None,
+            span,
+        ));
+    };
+
+    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+        .resolve(access)
+        .map(|module| module.get_path().to_path_buf());
+
+    if let Some(type_params) = type_params {
+        ctx.get_mut_symbols().new_generic_custom_type(
+            qualified_symbol.clone(),
+            GenericCustomTypeEntry::new(type_params, kind),
+        );
+
+        if let Some(path) = origin {
+            ctx.get_mut_symbols()
+                .record_import_origin(qualified_symbol.clone(), path);
+        }
+
+        return Ok(qualified_symbol);
+    }
+
+    let _ = ctx.get_mut_symbols().new_global_custom_type(
+        qualified_symbol.clone(),
+        (kind.clone(), attributes.clone()),
+    );
+
+    if let Some(path) = origin {
+        ctx.get_mut_symbols()
+            .record_import_origin(qualified_symbol.clone(), path);
+    }
+
+    ctx.add_ast_node(Ast::CustomType {
+        name: qualified_symbol.clone(),
+        kind,
+        span,
+        id: NodeId::new(),
+    });
+
+    Ok(qualified_symbol)
+}
+
 pub fn ensure_deallocator_for_type<'parser>(
     ctx: &mut ImportContext<'parser, '_>,
     kind: &Type,
@@ -826,7 +1326,7 @@ pub fn synthesize_compiler_intrinsic<'parser>(
 }
 
 fn build_enum_data<'parser>(
-    fields: &'parser [(
+    fields: &[(
         String,
         Type,
         Option<thrustc_compile_time::BuiltinValue>,

@@ -1,0 +1,22 @@
+fn adjust(value: s32) s32 {
+    return (value - 1) as s32;
+}
+fn ext_varargs_expression_value() s32 {
+    var total: s32 = 0;
+    var i: s32;
+    i = 0;
+    while i < 5 {
+        var value: s32 = seed(i);
+        total = total + ((value) + (i + 1));
+        i += 1;
+    }
+    i = 1;
+    while i <= 3 {
+        total = total + ((adjust(i)) + (i * 2));
+        i += 1;
+    }
+    return (total) as s32;
+}
+fn seed(value: s32) s32 {
+    return (value * 2 + 1) as s32;
+}

@@ -18,6 +18,7 @@
 */
 
 use thrustc_errors::CompilationIssue;
+use thrustc_logging::LoggingType;
 
 #[derive(Debug)]
 pub struct TranspilerContext {
@@ -145,5 +146,87 @@ impl TranspilerContext {
         }
 
         self.errors.split_off(base_error_count)
+    }
+}
+
+impl TranspilerContext {
+    #[inline]
+    pub fn merge_macro_context(
+        &mut self,
+        context: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    ) {
+        for issue in context.take_warnings() {
+            self.add_warning(issue);
+        }
+
+        for issue in context.take_errors() {
+            self.add_error(issue);
+        }
+
+        for issue in context.take_macros_errors() {
+            self.add_macros_error(issue);
+        }
+    }
+
+    #[inline]
+    pub fn merge(&mut self, other: &mut TranspilerContext) {
+        for issue in other.take_warnings() {
+            self.add_warning(issue);
+        }
+
+        for issue in other.take_errors() {
+            self.add_error(issue);
+        }
+
+        for issue in other.take_macros_errors() {
+            self.add_macros_error(issue);
+        }
+    }
+}
+
+impl TranspilerContext {
+    #[inline]
+    pub fn has_any_errors(&self) -> bool {
+        self.has_errors() || self.has_macros_errors()
+    }
+}
+
+impl TranspilerContext {
+    pub fn report_all(&mut self) -> bool {
+        let mut issues: Vec<CompilationIssue> = self.take_warnings();
+
+        issues.extend(self.take_errors());
+        issues.extend(self.take_macros_errors());
+
+        let has_errors: bool = issues
+            .iter()
+            .any(|issue| matches!(issue, CompilationIssue::Error(..)));
+
+        for issue in issues {
+            match issue {
+                CompilationIssue::Warning(code, message, ..) => {
+                    thrustc_logging::print_warning(
+                        LoggingType::Warning,
+                        &format!("{}: {}\n", code.to_title(), message),
+                    );
+                }
+
+                CompilationIssue::Error(code, message, help, note, ..) => {
+                    let mut full: String =
+                        format!("{}: {}\nhelp: {}", code.to_title(), message, help);
+
+                    if let Some(note) = note {
+                        full.push_str("\nnote: ");
+                        full.push_str(&note);
+                    }
+
+                    thrustc_logging::print_error(LoggingType::Error, &full);
+                }
+
+                _ => {}
+            }
+        }
+
+        has_errors
     }
 }

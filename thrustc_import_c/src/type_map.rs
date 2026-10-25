@@ -18,6 +18,7 @@
 */
 
 use clang::TypeKind;
+
 use thrustc_code_location::Span;
 use thrustc_typesystem::Type;
 use thrustc_typesystem::type_metadata::ArrayTypeMetadata;
@@ -184,7 +185,7 @@ pub fn map_type<'clang>(
         TypeKind::VariableArray => return Err("VLA is not supported yet".into()),
 
         TypeKind::DependentSizedArray => {
-            return Err("dependent-sized arrays are not supported yet".into())
+            return Err("dependent-sized arrays are not supported yet".into());
         }
 
         TypeKind::Record => {

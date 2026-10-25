@@ -46,7 +46,6 @@ impl Builtin {
                     Self::cast_to_pointer(&argument_entities[0], &arguments[0]);
 
                 let byte_value: String = Self::cast_to_byte(&argument_entities[1], &arguments[1]);
-
                 let byte_size: String = Self::cast_to_u64(&argument_entities[2], &arguments[2]);
 
                 Some(format!("memset({destination}, {byte_value}, {byte_size})"))
@@ -252,7 +251,7 @@ impl HeapOperation {
         self,
         call_entity: &clang::Entity<'_>,
         pointee_type: Option<&clang::Type<'_>>,
-        macro_ctx: &mut crate::macros::MacroContext,
+        macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
         prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
@@ -286,7 +285,7 @@ impl HeapOperation {
     fn lower_malloc_call(
         call_entity: &clang::Entity<'_>,
         pointee_type: Option<&clang::Type<'_>>,
-        macro_ctx: &mut crate::macros::MacroContext,
+        macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
         prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
@@ -378,7 +377,7 @@ impl HeapOperation {
     fn sized_heap_allocate(
         sizeof_entity: &clang::Entity<'_>,
         element_count: u64,
-        macro_ctx: &mut crate::macros::MacroContext,
+        macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
         prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
@@ -442,7 +441,7 @@ impl HeapOperation {
 impl HeapOperation {
     fn sizeof_operand_name(
         sizeof_entity: &clang::Entity<'_>,
-        macro_ctx: &mut crate::macros::MacroContext,
+        macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
         prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
@@ -495,7 +494,7 @@ impl HeapOperation {
 
         let inner_lexeme: String = token_lexemes[2..token_lexemes.len() - 1].join(" ");
 
-        crate::macro_lex::lex_macro_type(&inner_lexeme)
+        thrustc_c_transpiler_macro::macro_lex::lex_macro_type(&inner_lexeme)
     }
 }
 
@@ -550,13 +549,15 @@ impl HeapOperation {
 impl HeapOperation {
     fn format_thrust_type(
         clang_type: &clang::Type<'_>,
-        macro_ctx: &mut crate::macros::MacroContext,
+        macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
         prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
         let formatted_name: String =
-            crate::type_format::format_clang_type_thrust(clang_type, macro_ctx, prefix, span)
-                .ok()?;
+            thrustc_c_transpiler_macro::type_format::format_clang_type_thrust(
+                clang_type, macro_ctx, prefix, span,
+            )
+            .ok()?;
 
         if formatted_name.is_empty() {
             return None;

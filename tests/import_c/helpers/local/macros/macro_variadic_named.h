@@ -1,0 +1,6 @@
+#ifndef IMPORT_C_HELPER_MACRO_VARIADIC_NAMED_H
+#define IMPORT_C_HELPER_MACRO_VARIADIC_NAMED_H
+
+#define MACRO_VAR_NAMED(first, rest...) (rest)
+
+#endif

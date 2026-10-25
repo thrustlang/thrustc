@@ -1,0 +1,9 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/macro_call_function.h";
+
+fn main() s32 @public {
+    if macro_call_function::MACRO_ABS(-6) != 6 { return 1; }
+
+    return 0;
+}

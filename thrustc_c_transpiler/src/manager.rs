@@ -23,15 +23,17 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::ImportCOptions;
 use thrustc_options::TranslateCOptions;
 
-use crate::options::{EmitCBindingsOptions, TranslateCOutput};
+use crate::context::TranspilerContext;
+use crate::options::EmitCBindingsOptions;
+use crate::unit::TranslateCUnit;
 
 pub fn translate_single_c_to_thrust(
     input: &Path,
     translate_opts: &TranslateCOptions,
-) -> Result<TranslateCOutput, Vec<CompilationIssue>> {
+) -> TranslateCUnit {
     let span: thrustc_code_location::Span = thrustc_code_location::Span::nothing();
 
-    let mut issues: Vec<CompilationIssue> = Vec::new();
+    let mut context: TranspilerContext = TranspilerContext::new();
 
     let input_path: PathBuf = input.to_path_buf();
 
@@ -49,13 +51,15 @@ pub fn translate_single_c_to_thrust(
     let clang: clang::Clang = match clang::Clang::new() {
         Ok(c) => c,
         Err(_) => {
-            return Err(vec![CompilationIssue::Error(
+            context.add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0111,
                 "Failed to initialize libclang.".into(),
                 "Ensure libclang is available in this build.".into(),
                 None,
                 span,
-            )]);
+            ));
+
+            return TranslateCUnit::new(None, None, context);
         }
     };
 
@@ -70,14 +74,16 @@ pub fn translate_single_c_to_thrust(
 
     let translation_unit: clang::TranslationUnit<'_> = match parser.parse() {
         Ok(translation_unit) => translation_unit,
-        Err(e) => {
-            return Err(vec![CompilationIssue::Error(
+        Err(error) => {
+            context.add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0111,
                 format!("Failed to parse C file '{}'.", canonical_input.display()),
-                format!("Clang error: {e}"),
+                format!("Clang error: {error}"),
                 None,
                 span,
-            )]);
+            ));
+
+            return TranslateCUnit::new(None, None, context);
         }
     };
 
@@ -116,7 +122,7 @@ pub fn translate_single_c_to_thrust(
             warning_count = warning_count.saturating_add(1);
         }
 
-        issues.push(CompilationIssue::Warning(
+        context.add_warning(CompilationIssue::Warning(
             CompilationIssueCode::W0100,
             format!("{prefix}{severity:?}: {text}"),
             span,
@@ -132,25 +138,27 @@ pub fn translate_single_c_to_thrust(
         let note: String =
             format!("{error_count} errors, {warning_count} warnings emitted by clang.");
 
-        return Err(vec![CompilationIssue::Error(
+        context.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0111,
             message,
             "Fix the C input or provide the correct --translate-c-* options.".into(),
             Some(note),
             span,
-        )]);
+        ));
+
+        return TranslateCUnit::new(None, None, context);
     }
 
     let Some(main_file) = translation_unit.get_file(&canonical_input) else {
-        let errors: Vec<CompilationIssue> = vec![CompilationIssue::Error(
+        context.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0111,
             "Unable to locate the main file inside the translation unit.".into(),
             "Ensure the input path points to a real file.".into(),
             None,
             span,
-        )];
+        ));
 
-        return Err(errors);
+        return TranslateCUnit::new(None, None, context);
     };
 
     let cwd: PathBuf = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
@@ -188,10 +196,10 @@ pub fn translate_single_c_to_thrust(
 
     let root: clang::Entity<'_> = translation_unit.get_entity();
 
-    let mut macro_ctx: crate::macros::MacroContext<'_> =
-        crate::macros::MacroContext::new(canonical_input.clone());
+    let mut macro_ctx: thrustc_c_transpiler_macro::macro_context::MacroContext<'_> =
+        thrustc_c_transpiler_macro::macro_context::MacroContext::new(canonical_input.clone());
 
-    let translation: crate::error::TranspilerResult<()> =
+    let translation: thrustc_c_transpiler_macro::error::TranspilerResult<()> =
         crate::top_level::append_translated_top_level_declarations(
             &root,
             &mut macro_ctx,
@@ -199,21 +207,22 @@ pub fn translate_single_c_to_thrust(
             span,
         );
 
-    let had_errors: bool = match translation {
-        Ok(()) => {
-            macro_ctx.get_mut_transpiler_context().has_errors()
-                || macro_ctx.get_mut_transpiler_context().has_macros_errors()
-        }
+    context.merge_macro_context(&mut macro_ctx);
 
-        Err(crate::error::TranspilerError::Abort) => true,
-    };
+    if matches!(translation, Err(thrustc_c_transpiler_macro::error::TranspilerError::Abort))
+        && !context.has_any_errors()
+    {
+        context.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0110,
+            "C translation aborted.".into(),
+            "Review the reported C translation diagnostics.".into(),
+            None,
+            span,
+        ));
+    }
 
-    issues.extend(macro_ctx.get_mut_transpiler_context().take_warnings());
-    issues.extend(macro_ctx.get_mut_transpiler_context().take_errors());
-    issues.extend(macro_ctx.get_mut_transpiler_context().take_macros_errors());
-
-    if had_errors {
-        return Err(issues);
+    if context.has_any_errors() {
+        return TranslateCUnit::new(None, None, context);
     }
 
     let output_path: PathBuf = translate_opts
@@ -237,19 +246,19 @@ pub fn translate_single_c_to_thrust(
                 .unwrap_or_else(|| PathBuf::from(file_name))
         });
 
-    Ok((output_path, out, issues))
+    TranslateCUnit::new(Some(output_path), Some(out), context)
 }
 
 pub fn emit_c_bindings_thrust(
     header: PathBuf,
     import_opts: &ImportCOptions,
     emit_opts: &EmitCBindingsOptions,
-) -> Result<(PathBuf, String, Vec<CompilationIssue>), String> {
+) -> TranslateCUnit {
     let span: thrustc_code_location::Span = thrustc_code_location::Span::nothing();
 
     let clang_args: Vec<String> = crate::clang_util::build_clang_arguments(import_opts);
 
-    let mut warnings: Vec<CompilationIssue> = Vec::new();
+    let mut context: TranspilerContext = TranspilerContext::new();
 
     let mut opts: thrustc_import_c::options::CImportOptions =
         thrustc_import_c::options::CImportOptions::new();
@@ -269,12 +278,22 @@ pub fn emit_c_bindings_thrust(
     opts.set_import_scope(import_scope);
     *opts.clang_args_mut() = clang_args;
 
-    let mut ctx: thrustc_import_c::context::CImportContext =
+    let mut import_context: thrustc_import_c::context::CImportContext =
         thrustc_import_c::context::CImportContext::new(header.clone(), span, opts);
 
-    ctx.import_header()?;
+    if let Err(error) = import_context.import_header() {
+        context.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0111,
+            error,
+            "Fix the C header or provide the correct --import-c-* options.".into(),
+            None,
+            span,
+        ));
 
-    for diagnostic in ctx.diagnostics() {
+        return TranslateCUnit::new(None, None, context);
+    }
+
+    for diagnostic in import_context.diagnostics() {
         let code: CompilationIssueCode = match diagnostic.kind() {
             thrustc_import_c::diagnostics::CImportDiagnosticKind::ClangDiagnostic => {
                 CompilationIssueCode::W0100
@@ -291,28 +310,49 @@ pub fn emit_c_bindings_thrust(
             thrustc_import_c::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention => {
                 CompilationIssueCode::W0104
             }
-            thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedDeclaration => {
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedDeclaration
+            | thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedMacro
+            | thrustc_import_c::diagnostics::CImportDiagnosticKind::UnsupportedMacro => {
                 CompilationIssueCode::W0104
             }
         };
 
-        warnings.push(CompilationIssue::Warning(
+        let mut message: String = diagnostic.message().to_string();
+
+        if let Some(help) = diagnostic.help() {
+            message.push_str("\nhelp: ");
+            message.push_str(help);
+        }
+
+        if let Some(note) = diagnostic.note() {
+            message.push_str("\nnote: ");
+            message.push_str(note);
+        }
+
+        context.add_warning(CompilationIssue::Warning(
             code,
-            diagnostic.message().to_string(),
-            span,
+            message,
+            diagnostic.span().unwrap_or(span),
         ));
     }
 
     let mut out: String = String::with_capacity(32 * 1024);
 
-    let mut macro_ctx: crate::macros::MacroContext<'_> =
-        crate::macros::MacroContext::new(header.clone());
+    let mut macro_ctx: thrustc_c_transpiler_macro::macro_context::MacroContext<'_> =
+        thrustc_c_transpiler_macro::macro_context::MacroContext::new(header.clone());
 
-    crate::top_level::append_imported_top_level_declarations(&ctx, span, &mut out, &mut macro_ctx);
+    crate::top_level::append_imported_top_level_declarations(
+        &import_context,
+        span,
+        &mut out,
+        &mut macro_ctx,
+    );
 
-    warnings.extend(macro_ctx.get_mut_transpiler_context().take_warnings());
-    warnings.extend(macro_ctx.get_mut_transpiler_context().take_errors());
-    warnings.extend(macro_ctx.get_mut_transpiler_context().take_macros_errors());
+    context.merge_macro_context(&mut macro_ctx);
+
+    if context.has_any_errors() {
+        return TranslateCUnit::new(None, None, context);
+    }
 
     let output_path: PathBuf = emit_opts
         .output()
@@ -330,7 +370,7 @@ pub fn emit_c_bindings_thrust(
                 .unwrap_or_else(|| PathBuf::from(file_name))
         });
 
-    Ok((output_path, out, warnings))
+    TranslateCUnit::new(Some(output_path), Some(out), context)
 }
 
 fn collect_import_c_includes(

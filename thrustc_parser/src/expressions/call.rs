@@ -21,6 +21,7 @@ use thrustc_ast::{
     traits::{AstCodeLocation, AstGetType},
     Ast, NodeId,
 };
+use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{FoundSymbolId, Function, Intrinsic};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
@@ -28,6 +29,7 @@ use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{traits::FunctionReferenceExtensions, Type};
 
+use thrustc_preprocessor::signatures::{Signature, Symbol, Variant};
 use thrustc_parser_table::traits::{
     FoundSymbolEitherExtensions, FoundSymbolExtensions, FunctionAssemblerExtensions,
     FunctionExtensions, IntrinsicExtensions,
@@ -314,9 +316,170 @@ pub fn build_call<'parser>(
         }
 
         Err(error) => {
+            if let Some((access, symbol)) =
+                crate::imported_scope::find_symbol(ctx, name, span)?
+            {
+                return self::build_imported_call(
+                    ctx,
+                    name,
+                    span,
+                    &access,
+                    symbol,
+                    arguments,
+                );
+            }
+
             ctx.add_error_report(error);
             Ok(Ast::invalid_ast(span))
         }
+    }
+}
+
+fn build_imported_call<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    name: &'parser str,
+    span: Span,
+    access: &[String],
+    symbol: &'parser Symbol,
+    arguments: ParsedCallArguments<'parser>,
+) -> Result<Ast<'parser>, CompilationIssue> {
+    match symbol.variant {
+        Variant::CompilerIntrinsic => {
+            let qualified_symbol: String =
+                thrustc_import::synthesis::ensure_qualified_compiler_intrinsic(
+                    &mut ctx.import_context(),
+                    access,
+                    &symbol.name,
+                    span,
+                )?;
+
+            let Some(Signature::CompilerIntrinsic {
+                kind,
+                parameters,
+                ..
+            }) = thrustc_import::synthesis::resolve_signature(
+                &ctx.import_context(),
+                access,
+                &symbol.name,
+                Variant::CompilerIntrinsic,
+            )
+            .cloned()
+            else {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0028,
+                    format!("'{}::{}' not found.", access.join("::"), symbol.name),
+                    "The module does not export that compiler intrinsic.".into(),
+                    None,
+                    span,
+                ));
+            };
+
+            if !arguments.named.is_empty() {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0044,
+                    "Named arguments are not supported for compiler intrinsics.".into(),
+                    "You should use only positional arguments.".into(),
+                    None,
+                    span,
+                ));
+            }
+
+            let _parameter_types: Vec<Type> =
+                parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
+
+            Ok(Ast::Call {
+                name: qualified_symbol,
+                args: arguments.positional,
+                generic_args: Vec::new(),
+                kind,
+                span,
+                id: NodeId::new(),
+            })
+        }
+
+        Variant::Function => {
+            let qualified_symbol: String =
+                thrustc_import::synthesis::ensure_qualified_function(
+                    &mut ctx.import_context(),
+                    access,
+                    &symbol.name,
+                    span,
+                )?;
+
+            let Some(Signature::Function {
+                kind,
+                parameters,
+                attributes,
+                type_params,
+                ..
+            }) = thrustc_import::synthesis::resolve_signature(
+                &ctx.import_context(),
+                access,
+                &symbol.name,
+                Variant::Function,
+            )
+            .cloned()
+            else {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0028,
+                    format!("'{}::{}' not found.", access.join("::"), symbol.name),
+                    "The module does not export that function.".into(),
+                    None,
+                    span,
+                ));
+            };
+
+            if type_params.is_some() {
+                return Err(CompilationIssue::Error(
+                    CompilationIssueCode::E0042,
+                    format!(
+                        "'{}::{}' is a generic function and cannot be resolved from a C macro.",
+                        access.join("::"),
+                        symbol.name
+                    ),
+                    "Use the qualified generic function call explicitly.".into(),
+                    None,
+                    span,
+                ));
+            }
+
+            let parameter_names: Vec<String> =
+                parameters.iter().map(|(name, ..)| name.clone()).collect();
+            let parameter_names_refs: Vec<&str> =
+                parameter_names.iter().map(String::as_str).collect();
+            let has_ignore: bool = attributes.has_ignore_attribute();
+
+            let args: Vec<Ast> = match self::reorder_call_arguments(
+                name,
+                span,
+                arguments,
+                &parameter_names_refs,
+                has_ignore,
+            ) {
+                Ok(args) => args,
+                Err(error) => {
+                    ctx.add_error_report(error);
+                    return Ok(Ast::invalid_ast(span));
+                }
+            };
+
+            Ok(Ast::Call {
+                name: qualified_symbol,
+                args,
+                generic_args: Vec::new(),
+                kind,
+                span,
+                id: NodeId::new(),
+            })
+        }
+
+        _ => Err(CompilationIssue::Error(
+            CompilationIssueCode::E0028,
+            format!("'{}::{}' is not callable.", access.join("::"), symbol.name),
+            "The imported symbol is not a function.".into(),
+            None,
+            span,
+        )),
     }
 }
 

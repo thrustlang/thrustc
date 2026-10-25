@@ -1,0 +1,9 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/macro_nested_function.h";
+
+fn main() s32 @public {
+    if macro_nested_function::MACRO_ABS_NESTED(-6) != 7 { return 1; }
+
+    return 0;
+}

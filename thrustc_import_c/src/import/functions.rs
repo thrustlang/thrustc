@@ -18,7 +18,7 @@
 */
 
 use crate::diagnostics::{CImportDiagnostic, CImportDiagnosticKind};
-use crate::import::ImportState;
+use crate::import::ImportC;
 use crate::model::CImportedFunction;
 use crate::type_map;
 
@@ -27,15 +27,14 @@ use thrustc_typesystem::Type;
 
 pub fn import_functions<'clang>(
     function_decls: &[clang::Entity<'clang>],
-    state: &mut ImportState<'clang>,
+    import_c: &mut ImportC<'clang>,
 ) {
-    let span: thrustc_code_location::Span = state.span();
+    let span: thrustc_code_location::Span = import_c.span();
 
     for entity in function_decls.iter() {
         let canonical_decl: clang::Entity<'clang> = entity.get_canonical_entity();
-        let resolved_decl: clang::Entity<'clang> = canonical_decl
-            .get_definition()
-            .unwrap_or(canonical_decl);
+        let resolved_decl: clang::Entity<'clang> =
+            canonical_decl.get_definition().unwrap_or(canonical_decl);
 
         let Some(name) = canonical_decl.get_name().or_else(|| entity.get_name()) else {
             continue;
@@ -48,7 +47,7 @@ pub fn import_functions<'clang>(
             resolved_decl.get_storage_class(),
             Some(StorageClass::Static | StorageClass::PrivateExtern)
         ) {
-            state.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.diagnostics_mut().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!(
                     "C function '{name}' skipped: static/private storage functions are not importable"
@@ -65,11 +64,9 @@ pub fn import_functions<'clang>(
             resolved_decl.get_linkage(),
             Some(Linkage::Internal | Linkage::Automatic | Linkage::UniqueExternal)
         ) {
-            state.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.diagnostics_mut().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
-                format!(
-                    "C function '{name}' skipped: function does not have external C linkage"
-                ),
+                format!("C function '{name}' skipped: function does not have external C linkage"),
             ));
 
             continue;
@@ -82,7 +79,7 @@ pub fn import_functions<'clang>(
             resolved_decl.get_language(),
             Some(Language::Cpp | Language::ObjectiveC | Language::Swift)
         ) {
-            state.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.diagnostics_mut().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!(
                     "C function '{name}' skipped: only C declarations are supported by importC"
@@ -93,11 +90,9 @@ pub fn import_functions<'clang>(
         }
 
         if canonical_decl.is_inline_function() || resolved_decl.is_inline_function() {
-            state.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.diagnostics_mut().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
-                format!(
-                    "C function '{name}' skipped: inline-only functions are not importable"
-                ),
+                format!("C function '{name}' skipped: inline-only functions are not importable"),
             ));
 
             continue;
@@ -107,7 +102,11 @@ pub fn import_functions<'clang>(
             let convention = canonical_decl
                 .get_type()
                 .and_then(|ty| ty.get_calling_convention())
-                .or_else(|| resolved_decl.get_type().and_then(|ty| ty.get_calling_convention()));
+                .or_else(|| {
+                    resolved_decl
+                        .get_type()
+                        .and_then(|ty| ty.get_calling_convention())
+                });
 
             match convention.unwrap_or(CallingConvention::Cdecl) {
                 CallingConvention::Cdecl => "C".into(),
@@ -125,7 +124,7 @@ pub fn import_functions<'clang>(
                 CallingConvention::IntelOcl => "Intel_OCL_BI".into(),
                 CallingConvention::RegCall => "X86RegCall".into(),
                 other => {
-                    state.diagnostics_mut().push(CImportDiagnostic::new(
+                    import_c.diagnostics_mut().push(CImportDiagnostic::new(
                         CImportDiagnosticKind::UnsupportedCallingConvention,
                         format!(
                             "C function '{name}' skipped: unsupported calling convention {other:?}"
@@ -141,7 +140,7 @@ pub fn import_functions<'clang>(
             .get_result_type()
             .or_else(|| resolved_decl.get_result_type())
         else {
-            state.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.diagnostics_mut().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!("C function '{name}' skipped: missing result type"),
             ));
@@ -150,7 +149,7 @@ pub fn import_functions<'clang>(
         };
 
         let return_type_result: Result<Type, String> = {
-            let (struct_cache, diagnostics) = state.struct_cache_and_diagnostics_mut();
+            let (struct_cache, diagnostics) = import_c.struct_cache_and_diagnostics_mut();
 
             type_map::map_type(&result_type, span, struct_cache, diagnostics)
         };
@@ -158,7 +157,7 @@ pub fn import_functions<'clang>(
         let return_type: Type = match return_type_result {
             Ok(ty) => ty,
             Err(message) => {
-                state.diagnostics_mut().push(CImportDiagnostic::new(
+                import_c.diagnostics_mut().push(CImportDiagnostic::new(
                     CImportDiagnosticKind::SkippedDeclaration,
                     format!("C function '{name}' skipped: {message}"),
                 ));
@@ -167,19 +166,19 @@ pub fn import_functions<'clang>(
             }
         };
 
-        let parameters_result: Result<(Vec<Type>, Vec<String>), ()> =
-            if let Some(arguments) = canonical_decl
+        let parameters_result: Result<(Vec<Type>, Vec<String>), ()> = if let Some(arguments) =
+            canonical_decl
                 .get_arguments()
                 .or_else(|| resolved_decl.get_arguments())
-            {
-                arguments.iter().enumerate().try_fold(
+        {
+            arguments.iter().enumerate().try_fold(
                     (Vec::new(), Vec::new()),
                     |(mut parameter_types, mut parameter_names), (idx, argument)| {
                         let arg_name: String =
                             argument.get_name().unwrap_or_else(|| format!("arg{idx}"));
 
                         let Some(arg_ty) = argument.get_type() else {
-                            state.diagnostics_mut().push(CImportDiagnostic::new(
+                            import_c.diagnostics_mut().push(CImportDiagnostic::new(
                                 CImportDiagnosticKind::SkippedDeclaration,
                                 format!(
                                     "C function '{name}' skipped: missing type for parameter '{arg_name}'"
@@ -192,7 +191,7 @@ pub fn import_functions<'clang>(
                         let arg_kind: TypeKind = arg_ty.get_canonical_type().get_kind();
 
                         if arg_kind == TypeKind::VariableArray {
-                            state.diagnostics_mut().push(CImportDiagnostic::new(
+                            import_c.diagnostics_mut().push(CImportDiagnostic::new(
                                 CImportDiagnosticKind::SkippedDeclaration,
                                 format!(
                                     "C function '{name}' skipped: parameter '{arg_name}' uses a VLA, which is not supported"
@@ -203,7 +202,7 @@ pub fn import_functions<'clang>(
                         }
 
                         if arg_kind == TypeKind::DependentSizedArray {
-                            state.diagnostics_mut().push(CImportDiagnostic::new(
+                            import_c.diagnostics_mut().push(CImportDiagnostic::new(
                                 CImportDiagnosticKind::SkippedDeclaration,
                                 format!(
                                     "C function '{name}' skipped: parameter '{arg_name}' uses a dependent-sized array, which is not supported"
@@ -215,7 +214,7 @@ pub fn import_functions<'clang>(
 
                         if matches!(arg_kind, TypeKind::ConstantArray | TypeKind::IncompleteArray) {
                             let Some(element_type) = arg_ty.get_element_type() else {
-                                state.diagnostics_mut().push(CImportDiagnostic::new(
+                                import_c.diagnostics_mut().push(CImportDiagnostic::new(
                                     CImportDiagnosticKind::SkippedDeclaration,
                                     format!(
                                         "C function '{name}' skipped: parameter '{arg_name}' array is missing an element type"
@@ -227,7 +226,7 @@ pub fn import_functions<'clang>(
 
                             let arg_ty_result: Result<Type, String> = {
                                 let (struct_cache, diagnostics) =
-                                    state.struct_cache_and_diagnostics_mut();
+                                    import_c.struct_cache_and_diagnostics_mut();
 
                                 type_map::map_type(&element_type, span, struct_cache, diagnostics)
                             };
@@ -239,7 +238,7 @@ pub fn import_functions<'clang>(
                                     span,
                                 },
                                 Err(message) => {
-                                    state.diagnostics_mut().push(CImportDiagnostic::new(
+                                    import_c.diagnostics_mut().push(CImportDiagnostic::new(
                                         CImportDiagnosticKind::SkippedDeclaration,
                                         format!("C function '{name}' skipped: parameter '{arg_name}' array element type is unsupported ({message})"),
                                     ));
@@ -256,7 +255,7 @@ pub fn import_functions<'clang>(
 
                         let arg_ty_result: Result<Type, String> = {
                             let (struct_cache, diagnostics) =
-                                state.struct_cache_and_diagnostics_mut();
+                                import_c.struct_cache_and_diagnostics_mut();
 
                             type_map::map_type(&arg_ty, span, struct_cache, diagnostics)
                         };
@@ -264,7 +263,7 @@ pub fn import_functions<'clang>(
                         let arg_ty: Type = match arg_ty_result {
                             Ok(ty) => ty,
                             Err(message) => {
-                                state.diagnostics_mut().push(CImportDiagnostic::new(
+                                import_c.diagnostics_mut().push(CImportDiagnostic::new(
                                     CImportDiagnosticKind::SkippedDeclaration,
                                     format!("C function '{name}' skipped: parameter '{arg_name}' has unsupported type ({message})"),
                                 ));
@@ -279,22 +278,21 @@ pub fn import_functions<'clang>(
                         Ok((parameter_types, parameter_names))
                     },
                 )
-            } else {
-                Ok((Vec::new(), Vec::new()))
-            };
+        } else {
+            Ok((Vec::new(), Vec::new()))
+        };
 
-        let (parameter_types, parameter_names): (Vec<Type>, Vec<String>) =
-            match parameters_result {
-                Ok(parameters) => parameters,
-                Err(()) => continue,
-            };
+        let (parameter_types, parameter_names): (Vec<Type>, Vec<String>) = match parameters_result {
+            Ok(parameters) => parameters,
+            Err(()) => continue,
+        };
 
         let variadic: bool = canonical_decl
             .get_type()
             .or_else(|| resolved_decl.get_type())
             .is_some_and(|ty| ty.is_variadic());
 
-        state.functions_mut().push(CImportedFunction::new(
+        import_c.functions_mut().push(CImportedFunction::new(
             name.clone(),
             name,
             convention,

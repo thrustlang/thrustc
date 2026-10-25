@@ -28,6 +28,7 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 
 use clang::{Clang, Index};
+use thrustc_c_transpiler_macro_api::types::Macro;
 use thrustc_code_location::Span;
 
 use crate::context::CImportContext;
@@ -38,11 +39,10 @@ use crate::model::{
 };
 use crate::options::CImportScope;
 use crate::record_layout::StructCache;
-use crate::{decl_index, parse};
+use crate::{clang_decl_index, parse};
 
 #[derive(Debug)]
-pub struct ImportState<'clang> {
-    span: Span,
+pub struct ImportC<'clang> {
     struct_cache: StructCache<'clang>,
     functions: Vec<CImportedFunction>,
     structs: Vec<CImportedStruct>,
@@ -50,16 +50,17 @@ pub struct ImportState<'clang> {
     typedefs: Vec<CImportedTypedef>,
     statics: Vec<CImportedStatic>,
     constants: Vec<CImportedConstant>,
+    macros: Vec<Macro>,
     diagnostics: Vec<CImportDiagnostic>,
     exported_structs: HashSet<String>,
     exported_typedefs: HashSet<String>,
+    span: Span,
 }
 
-impl<'clang> ImportState<'clang> {
+impl<'clang> ImportC<'clang> {
     #[inline]
     pub fn new(span: Span) -> Self {
         Self {
-            span,
             struct_cache: StructCache::new(),
             functions: Vec::new(),
             structs: Vec::new(),
@@ -67,21 +68,24 @@ impl<'clang> ImportState<'clang> {
             typedefs: Vec::new(),
             statics: Vec::new(),
             constants: Vec::new(),
+            macros: Vec::new(),
             diagnostics: Vec::new(),
             exported_structs: HashSet::new(),
             exported_typedefs: HashSet::new(),
+
+            span,
         }
     }
 }
 
-impl<'clang> ImportState<'clang> {
+impl<'clang> ImportC<'clang> {
     #[inline]
     pub fn span(&self) -> Span {
         self.span
     }
 }
 
-impl<'clang> ImportState<'clang> {
+impl<'clang> ImportC<'clang> {
     #[inline]
     pub fn functions_mut(&mut self) -> &mut Vec<CImportedFunction> {
         &mut self.functions
@@ -113,6 +117,11 @@ impl<'clang> ImportState<'clang> {
     }
 
     #[inline]
+    pub fn macros_mut(&mut self) -> &mut Vec<Macro> {
+        &mut self.macros
+    }
+
+    #[inline]
     pub fn diagnostics_mut(&mut self) -> &mut Vec<CImportDiagnostic> {
         &mut self.diagnostics
     }
@@ -140,7 +149,7 @@ impl<'clang> ImportState<'clang> {
     }
 }
 
-pub fn run_import(context: &mut CImportContext) -> Result<(), String> {
+pub fn run_import_c(context: &mut CImportContext) -> Result<(), String> {
     let header_path: PathBuf = context.header_path().clone();
     let span: Span = context.span();
 
@@ -155,7 +164,7 @@ pub fn run_import(context: &mut CImportContext) -> Result<(), String> {
         .collect();
 
     let (header_exists, wrapper_path, parse_path, unsaved_files) =
-        parse::build_parse_inputs(&header_path);
+        parse::parse_header(&header_path);
 
     let mut parser: clang::Parser<'_> = index.parser(&parse_path);
 
@@ -192,38 +201,49 @@ pub fn run_import(context: &mut CImportContext) -> Result<(), String> {
         &wrapper_path,
     );
 
-    let decl_index: decl_index::DeclIndex<'_> =
-        decl_index::collect_decl_index(tu.get_entity().get_children(), import_scope, main_only_file);
+    let decl_index: clang_decl_index::ClangDeclIndex<'_> = clang_decl_index::collect_decl_index(
+        tu.get_entity().get_children(),
+        import_scope,
+        main_only_file,
+    );
 
-    let mut state: ImportState<'_> = ImportState::new(span);
+    let mut import_c: ImportC<'_> = ImportC::new(span);
 
-    *state.diagnostics_mut() = diagnostics;
+    *import_c.diagnostics_mut() = diagnostics;
 
     self::records::import_structs(
         decl_index.struct_decls(),
         decl_index.union_decls(),
-        &mut state,
+        &mut import_c,
     );
-    self::macros::import_macros(decl_index.macro_decls(), &mut state);
+    self::macros::import_macros(decl_index.macro_decls(), &mut import_c);
     self::enums::import_enums(
         decl_index.enum_decls(),
         decl_index.typedef_decls(),
-        &mut state,
+        &mut import_c,
     );
-    self::typedefs::import_typedefs(decl_index.typedef_decls(), &mut state);
-    self::statics::import_statics(decl_index.var_decls(), &mut state);
-    self::functions::import_functions(decl_index.function_decls(), &mut state);
+    self::typedefs::import_typedefs(decl_index.typedef_decls(), &mut import_c);
+    self::statics::import_statics(decl_index.var_decls(), &mut import_c);
+    self::functions::import_functions(decl_index.function_decls(), &mut import_c);
 
-    let ImportState {
+    let ImportC {
         functions,
         structs,
         enums,
         typedefs,
         statics,
         constants,
+        macros,
         diagnostics,
         ..
-    } = state;
+    } = import_c;
+
+    let mut exported_constants: HashSet<String> = HashSet::new();
+
+    let constants: Vec<CImportedConstant> = constants
+        .into_iter()
+        .filter(|constant| exported_constants.insert(constant.name().to_string()))
+        .collect();
 
     *context.functions_mut() = functions;
     *context.structs_mut() = structs;
@@ -231,6 +251,7 @@ pub fn run_import(context: &mut CImportContext) -> Result<(), String> {
     *context.typedefs_mut() = typedefs;
     *context.statics_mut() = statics;
     *context.constants_mut() = constants;
+    *context.macros_mut() = macros;
     *context.diagnostics_mut() = diagnostics;
 
     Ok(())

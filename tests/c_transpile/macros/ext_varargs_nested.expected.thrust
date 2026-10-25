@@ -1,0 +1,21 @@
+fn __c_macro_INNER[T1, T2](a: T1, b: T2) T1 @alwaysInline {
+    return (((a) + (b))) as T1;
+}
+fn __c_macro_INNER3[T1, T2, T3](a: T1, b: T2, c: T3) T1 @alwaysInline {
+    return (((a) + (b) + (c))) as T1;
+}
+
+fn ext_varargs_nested_value() s32 {
+    var total: s32 = 0;
+    var i: s32;
+    total = total + (13) as s32;
+    total = total + (((1)) + ((2)));
+    total = total + (6) as s32;
+    total = total + (15) as s32;
+    i = 0;
+    while i < 3 {
+        total = total + (((i)) + ((i + 1)));
+        i += 1;
+    }
+    return (total) as s32;
+}

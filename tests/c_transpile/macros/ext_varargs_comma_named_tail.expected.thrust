@@ -1,0 +1,20 @@
+fn printf(fmt: const ptr[char]) s32 @public @extern("printf") @convention("C") @arbitraryArgs @noArgCount;
+
+fn ext_varargs_comma_named_tail_value() s32 {
+    var i: s32;
+    var total: s32 = 0;
+    i = 0;
+    while i < 3 {
+        printf((("%d\n")) as ptr[char], scale(i), 0);
+        total = total + scale(i);
+        i += 1;
+    }
+    printf((("tail\n")) as ptr[char], 0);
+    return (finish(19 + total)) as s32;
+}
+fn finish(value: s32) s32 {
+    return (value + 1) as s32;
+}
+fn scale(value: s32) s32 {
+    return (value * 2) as s32;
+}

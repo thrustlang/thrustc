@@ -1,0 +1,23 @@
+fn clamp_40(value: s32) s32 {
+    if value > 40 {
+        return (40) as s32;
+    }
+    return (value) as s32;
+}
+fn ext_varargs_statement_value() s32 {
+    var values: array[s32; 3] = fixed[7, 4, 12];
+    var i: s32;
+    i = 0;
+    while i < 3 {
+        {
+            var step: s32 = (i + 2);
+            (values[i])->[0] = (values[i])->[0] * (5) + step;
+            if (values[i])->[0] > 40 {
+                (values[i])->[0] = 40;
+            }
+            (values[i])->[0] = clamp_40((values[i])->[0] - step);
+        }
+        i += 1;
+    }
+    return (values->[0] * 100 + values->[1] * 10 + values->[2]) as s32;
+}

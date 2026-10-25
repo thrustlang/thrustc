@@ -181,7 +181,9 @@ fn emit_import_diagnostics(
             thrustc_import_c::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention => {
                 CompilationIssueCode::E0100
             }
-            thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedDeclaration => {
+            thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedDeclaration
+            | thrustc_import_c::diagnostics::CImportDiagnosticKind::SkippedMacro
+            | thrustc_import_c::diagnostics::CImportDiagnosticKind::UnsupportedMacro => {
                 CompilationIssueCode::W0104
             }
         };
@@ -192,15 +194,32 @@ fn emit_import_diagnostics(
             parser.add_error(CompilationIssue::Error(
                 code,
                 diagnostic.message().to_string(),
-                "Use a function with a calling convention that Thrust can import, or remove the importC dependency on that declaration.".into(),
-                None,
-                span,
+                diagnostic
+                    .help()
+                    .unwrap_or(
+                        "Use a function with a calling convention that Thrust can import, or remove the importC dependency on that declaration.",
+                    )
+                    .to_string(),
+                diagnostic.note().map(str::to_string),
+                diagnostic.span().unwrap_or(span),
             ));
         } else {
+            let mut message: String = diagnostic.message().to_string();
+
+            if let Some(help) = diagnostic.help() {
+                message.push_str("\nhelp: ");
+                message.push_str(help);
+            }
+
+            if let Some(note) = diagnostic.note() {
+                message.push_str("\nnote: ");
+                message.push_str(note);
+            }
+
             parser.add_warning(CompilationIssue::Warning(
                 code,
-                diagnostic.message().to_string(),
-                span,
+                message,
+                diagnostic.span().unwrap_or(span),
             ));
         }
     }
@@ -211,6 +230,10 @@ fn emit_imported_symbols(
     context: &thrustc_import_c::context::CImportContext,
     span: Span,
 ) {
+    for macro_definition in context.macros() {
+        module.add_macro(macro_definition.clone());
+    }
+
     for function in context.functions() {
         let name: String = function.name().to_string();
 
@@ -325,6 +348,30 @@ fn emit_imported_symbols(
         };
 
         module.add_symbol(symbol);
+
+        for (field_name, value) in imported_enum.fields().iter() {
+            if module
+                .get_symbols()
+                .iter()
+                .any(|symbol| symbol.name == *field_name)
+            {
+                continue;
+            }
+
+            module.add_symbol(Symbol {
+                name: field_name.clone(),
+                signature: Signature::Constant {
+                    kind: underlying_type.clone(),
+                    invalid_kind: Type::Void { span },
+                    value: Some(thrustc_compile_time::BuiltinValue::Integer(*value)),
+                    attributes: Vec::new(),
+                    modificators: Modificators::new(),
+                    span,
+                },
+                variant: Variant::Constant,
+                public: true,
+            });
+        }
     }
 
     for imported_type in context.typedefs() {

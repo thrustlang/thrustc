@@ -27,6 +27,7 @@ use thrustc_ast::{
 use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
+use thrustc_c_transpiler_macro_api::options::Options;
 use thrustc_parser_external_table::ExternalSymbolTable;
 use thrustc_parser_table::GenericFunctionEntry;
 use thrustc_preprocessor::signatures::{Signature, Variant};
@@ -50,6 +51,14 @@ pub fn build_qualified_expression<'parser>(
     let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
+
+    if ctx.check(TokenType::LParen) {
+        if let Some(macro_expansion) =
+            self::build_qualified_macro(ctx, access, symbol, span)?
+        {
+            return Ok(macro_expansion);
+        }
+    }
 
     if ctx.match_token(TokenType::FatArrow)? {
         let Some(Signature::Enum { fields, .. }) =
@@ -390,6 +399,41 @@ pub fn build_qualified_expression<'parser>(
         });
     }
 
+    if let Some(module) = ExternalSymbolTable::new(ctx.get_modules()).resolve(access) {
+        if let Some(macro_definition) = module.find_macro(symbol) {
+            if macro_definition.get_kind()
+                == thrustc_c_transpiler_macro_api::types::MacroType::Object
+            {
+                let macros: Vec<thrustc_c_transpiler_macro_api::types::Macro> =
+                    module.get_macros().to_vec();
+
+                let expansion: thrustc_c_transpiler_macro_api::types::MacroExpansion =
+                    thrustc_c_transpiler_macro_api::expand::expand_object(
+                        &macros,
+                        symbol,
+                        &Options::new(),
+                    )
+                    .map_err(|error| {
+                        CompilationIssue::Error(
+                            CompilationIssueCode::E0028,
+                            error.get_message(),
+                            "You should adjust the C macro invocation or mark it as unsupported."
+                                .into(),
+                            None,
+                            span,
+                        )
+                    })?;
+
+                return ctx.parse_expanded_macro_expression(
+                    &expansion,
+                    module,
+                    access,
+                    span,
+                );
+            }
+        }
+    }
+
     Err(CompilationIssue::Error(
         CompilationIssueCode::E0028,
         format!("'{}::{}' not found.", access.join("::"), symbol),
@@ -397,6 +441,154 @@ pub fn build_qualified_expression<'parser>(
         None,
         span,
     ))
+}
+
+fn build_qualified_macro<'parser>(
+    ctx: &mut ParserContext<'parser>,
+    access: &[String],
+    symbol: &str,
+    span: Span,
+) -> Result<Option<thrustc_ast::Ast<'parser>>, CompilationIssue> {
+    let Some(module): Option<&thrustc_preprocessor::module::Module> =
+        ExternalSymbolTable::new(ctx.get_modules()).resolve(access)
+    else {
+        return Ok(None);
+    };
+
+    if module
+        .get_symbols()
+        .iter()
+        .any(|module_symbol| module_symbol.public && module_symbol.name == symbol)
+    {
+        return Ok(None);
+    }
+
+    let Some(macro_definition): Option<
+        &thrustc_c_transpiler_macro_api::types::Macro,
+    > = module.find_macro(symbol)
+    else {
+        return Ok(None);
+    };
+
+    let macros: Vec<thrustc_c_transpiler_macro_api::types::Macro> =
+        module.get_macros().to_vec();
+
+    let name: String = macro_definition.get_name().to_string();
+
+    let arguments: Vec<String> = self::parse_macro_arguments(ctx)?;
+
+    if macro_definition.get_kind()
+        == thrustc_c_transpiler_macro_api::types::MacroType::Statement
+    {
+        let expansion: thrustc_c_transpiler_macro_api::types::MacroExpansion =
+            thrustc_c_transpiler_macro_api::expand::expand_statement(
+                &macros,
+                &name,
+                &arguments,
+                &Options::new(),
+            )
+            .map_err(|error| {
+                CompilationIssue::Error(
+                    CompilationIssueCode::E0028,
+                    error.get_message(),
+                    "You should adjust the C macro invocation or mark it as unsupported.".into(),
+                    None,
+                    span,
+                )
+            })?;
+
+        return ctx
+            .parse_expanded_macro_block(&expansion, module, access, span)
+            .map(Some);
+    }
+
+    let expansion: thrustc_c_transpiler_macro_api::types::MacroExpansion =
+        thrustc_c_transpiler_macro_api::expand::expand_expression(
+            &macros,
+            &name,
+            &arguments,
+            &Options::new(),
+        )
+        .map_err(|error| {
+            CompilationIssue::Error(
+                CompilationIssueCode::E0028,
+                error.get_message(),
+                "You should adjust the C macro invocation or mark it as unsupported.".into(),
+                None,
+                span,
+            )
+        })?;
+
+    ctx.parse_expanded_macro_expression(&expansion, module, access, span)
+        .map(Some)
+}
+
+fn parse_macro_arguments<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<Vec<String>, CompilationIssue> {
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    let mut arguments: Vec<String> = Vec::new();
+    let mut current: Vec<String> = Vec::new();
+    let mut depth: usize = 0;
+
+    loop {
+        if ctx.is_eof() {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Unexpected end of file inside a C macro invocation.".into(),
+                "You should close the macro argument list with ')'.".into(),
+                None,
+                ctx.previous().get_span(),
+            ));
+        }
+
+        let kind: TokenType = ctx.peek().get_type();
+
+        if kind == TokenType::RParen && depth == 0 {
+            ctx.consume(
+                TokenType::RParen,
+                CompilationIssueCode::E0001,
+                "Expected ')'.".into(),
+            )?;
+
+            if !current.is_empty() || !arguments.is_empty() {
+                arguments.push(current.join(" "));
+            }
+
+            return Ok(arguments);
+        }
+
+        if kind == TokenType::Comma && depth == 0 {
+            ctx.consume(
+                TokenType::Comma,
+                CompilationIssueCode::E0001,
+                "Expected ','.".into(),
+            )?;
+
+            arguments.push(current.join(" "));
+            current.clear();
+
+            continue;
+        }
+
+        match kind {
+            TokenType::LParen | TokenType::LBracket | TokenType::LBrace => {
+                depth = depth.saturating_add(1);
+            }
+            TokenType::RParen | TokenType::RBracket | TokenType::RBrace => {
+                depth = depth.saturating_sub(1);
+            }
+            _ => {}
+        }
+
+        current.push(ctx.peek().get_lexeme().to_string());
+        ctx.advance()?;
+    }
 }
 
 fn build_qualified_generic_call<'parser>(

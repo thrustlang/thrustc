@@ -62,6 +62,8 @@ members = [
     "thrustc_generics_monomorphization",
     "thrustc_import",
     "thrustc_import_c",
+    "thrustc_c_transpiler_macro",
+    "thrustc_c_transpiler_macro_api",
     "thrustc_c_transpiler",
 ]
 

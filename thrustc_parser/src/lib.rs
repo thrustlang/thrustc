@@ -24,21 +24,26 @@ use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::FileOptions;
 use thrustc_entities::parser_entities::{AssemblerFunctions, Functions};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
+use thrustc_lexer::Lexer;
 use thrustc_logging::LoggingType;
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_parser_context::{ControlContext, TypeContext};
 use thrustc_parser_table::SymbolTable;
 use thrustc_preprocessor::module::Module;
+use thrustc_c_transpiler_macro_api::types::MacroExpansion;
 
 use thrustc_generics_monomorphization::context::GenericsContext;
 use thrustc_import::context::ImportContext;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
+use thrustc_typesystem::Type;
 
 mod abort;
 mod attributes;
 mod builtins;
 mod expressions;
+mod imported_scope;
+mod macro_scope;
 mod modificators;
 mod reinterpret;
 mod statements;
@@ -70,6 +75,8 @@ pub struct ParserContext<'parser> {
 
     position: usize,
     scope: usize,
+    macro_expansion_depth: usize,
+    macro_scopes: Vec<crate::macro_scope::MacroScope<'parser>>,
 }
 
 #[derive(Debug)]
@@ -204,7 +211,229 @@ impl<'parser> ParserContext<'parser> {
 
             position: 0,
             scope: 0,
+            macro_expansion_depth: 0,
+            macro_scopes: Vec::new(),
         }
+    }
+}
+
+impl<'parser> ParserContext<'parser> {
+    pub fn parse_expanded_macro_expression(
+        &mut self,
+        expansion: &MacroExpansion,
+        module: &'parser Module,
+        access: &[String],
+        span: Span,
+    ) -> Result<Ast<'parser>, CompilationIssue> {
+        let source: &str = expansion.get_source();
+        if self.macro_expansion_depth >= 64 {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many nested C macro expansions.".into(),
+                "You should simplify the macro expansion chain.".into(),
+                None,
+                span,
+            ));
+        }
+
+        let unit: CompilationUnit = CompilationUnit::new(
+            self.file.get_name().to_string(),
+            self.file.get_path().to_path_buf(),
+            source.to_string(),
+            self.file.get_base_name(),
+        );
+
+        let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&unit, self.options).map_err(|_| {
+            CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Failed to lex the expanded C macro expression.".into(),
+                "You should report this macro as unsupported.".into(),
+                None,
+                span,
+            )
+        })?;
+
+        let expanded: &'static [Token] = Box::leak(tokens.into_boxed_slice());
+
+        let original_tokens: &'parser [Token] = self.tokens;
+        let original_position: usize = self.position;
+
+        self.macro_expansion_depth = self.macro_expansion_depth.saturating_add(1);
+        self.macro_scopes.push(crate::macro_scope::MacroScope::new(
+            module,
+            access.to_vec(),
+            expansion.get_argument_ranges().to_vec(),
+        ));
+        self.tokens = expanded;
+        self.position = 0;
+
+        let parsed: Result<Ast<'parser>, CompilationIssue> = crate::expressions::parse_expr(self);
+
+        let has_trailing_tokens: bool = !self.is_eof();
+
+        self.tokens = original_tokens;
+        self.position = original_position;
+        self.macro_expansion_depth = self.macro_expansion_depth.saturating_sub(1);
+        self.macro_scopes.pop();
+
+        if has_trailing_tokens {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Unexpected tokens after the C macro expansion.".into(),
+                "The macro produced more than one expression.".into(),
+                None,
+                span,
+            ));
+        }
+
+        parsed
+    }
+}
+
+impl<'parser> ParserContext<'parser> {
+    pub fn parse_expanded_macro_block(
+        &mut self,
+        expansion: &MacroExpansion,
+        module: &'parser Module,
+        access: &[String],
+        span: Span,
+    ) -> Result<Ast<'parser>, CompilationIssue> {
+        let source: &str = expansion.get_source();
+        if self.macro_expansion_depth >= 64 {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many nested C macro expansions.".into(),
+                "You should simplify the macro expansion chain.".into(),
+                None,
+                span,
+            ));
+        }
+
+        let unit: CompilationUnit = CompilationUnit::new(
+            self.file.get_name().to_string(),
+            self.file.get_path().to_path_buf(),
+            source.to_string(),
+            self.file.get_base_name(),
+        );
+
+        let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&unit, self.options).map_err(|_| {
+            CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Failed to lex the expanded C macro statement.".into(),
+                "You should report this macro as unsupported.".into(),
+                None,
+                span,
+            )
+        })?;
+
+        let expanded: &'static [Token] = Box::leak(tokens.into_boxed_slice());
+
+        let original_tokens: &'parser [Token] = self.tokens;
+        let original_position: usize = self.position;
+
+        self.macro_expansion_depth = self.macro_expansion_depth.saturating_add(1);
+        self.macro_scopes.push(crate::macro_scope::MacroScope::new(
+            module,
+            access.to_vec(),
+            expansion.get_argument_ranges().to_vec(),
+        ));
+        self.tokens = expanded;
+        self.position = 0;
+
+        let parsed: Result<Ast<'parser>, CompilationIssue> =
+            crate::statements::code_block::parse_code_block_stmt(self);
+
+        let has_trailing_tokens: bool = !self.is_eof();
+
+        self.tokens = original_tokens;
+        self.position = original_position;
+        self.macro_expansion_depth = self.macro_expansion_depth.saturating_sub(1);
+        self.macro_scopes.pop();
+
+        if has_trailing_tokens {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Unexpected tokens after the C macro statement expansion.".into(),
+                "The macro produced more than one code block.".into(),
+                None,
+                span,
+            ));
+        }
+
+        parsed
+    }
+}
+
+impl<'parser> ParserContext<'parser> {
+    pub fn parse_expanded_macro_type(
+        &mut self,
+        expansion: &MacroExpansion,
+        module: &'parser Module,
+        access: &[String],
+        span: Span,
+    ) -> Result<Type, CompilationIssue> {
+        let source: &str = expansion.get_source();
+        if self.macro_expansion_depth >= 64 {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0037,
+                "Too many nested C macro expansions.".into(),
+                "You should simplify the macro expansion chain.".into(),
+                None,
+                span,
+            ));
+        }
+
+        let unit: CompilationUnit = CompilationUnit::new(
+            self.file.get_name().to_string(),
+            self.file.get_path().to_path_buf(),
+            source.to_string(),
+            self.file.get_base_name(),
+        );
+
+        let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&unit, self.options).map_err(|_| {
+            CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Failed to lex the expanded C macro type.".into(),
+                "You should report this macro as unsupported.".into(),
+                None,
+                span,
+            )
+        })?;
+
+        let expanded: &'static [Token] = Box::leak(tokens.into_boxed_slice());
+
+        let original_tokens: &'parser [Token] = self.tokens;
+        let original_position: usize = self.position;
+
+        self.macro_expansion_depth = self.macro_expansion_depth.saturating_add(1);
+        self.macro_scopes.push(crate::macro_scope::MacroScope::new(
+            module,
+            access.to_vec(),
+            expansion.get_argument_ranges().to_vec(),
+        ));
+        self.tokens = expanded;
+        self.position = 0;
+
+        let parsed: Result<Type, CompilationIssue> = crate::typegeneration::build_type(self, false);
+
+        let has_trailing_tokens: bool = !self.is_eof();
+
+        self.tokens = original_tokens;
+        self.position = original_position;
+        self.macro_expansion_depth = self.macro_expansion_depth.saturating_sub(1);
+        self.macro_scopes.pop();
+
+        if has_trailing_tokens {
+            return Err(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                "Unexpected tokens after the C macro type expansion.".into(),
+                "The macro produced more than one type.".into(),
+                None,
+                span,
+            ));
+        }
+
+        parsed
     }
 }
 
@@ -212,6 +441,18 @@ impl<'parser> ParserContext<'parser> {
     #[inline(always)]
     pub fn get_modules(&self) -> &'parser [Module] {
         self.modules
+    }
+
+    #[inline]
+    pub fn get_macro_scope(&self) -> Option<&crate::macro_scope::MacroScope<'parser>> {
+        self.macro_scopes.last()
+    }
+
+    #[inline]
+    pub fn is_macro_argument_token(&self, span: Span) -> bool {
+        self.macro_scopes
+            .last()
+            .is_some_and(|scope| scope.is_argument_token(span))
     }
 
     pub(crate) fn get_mut_ast(&mut self) -> &mut Vec<Ast<'parser>> {

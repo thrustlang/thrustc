@@ -1,0 +1,11 @@
+#ifndef IMPORT_C_HELPER_MACRO_ENUM_CONSTANT_H
+#define IMPORT_C_HELPER_MACRO_ENUM_CONSTANT_H
+
+enum MacroColor {
+    MACRO_RED = 5,
+    MACRO_BLUE = 8
+};
+
+#define MACRO_RED_VALUE() (MACRO_RED)
+
+#endif

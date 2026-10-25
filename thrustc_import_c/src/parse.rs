@@ -1,19 +1,19 @@
 /*
 
-    Copyright (C) 2026  Stevens Benavides
+Copyright (C) 2026  Stevens Benavides
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
@@ -24,7 +24,28 @@ use clang::diagnostic::Severity;
 use crate::diagnostics::{CImportDiagnostic, CImportDiagnosticKind};
 use crate::options::CImportScope;
 
-pub fn build_parse_inputs(header_path: &Path) -> (bool, PathBuf, PathBuf, Vec<clang::Unsaved>) {
+pub fn resolve_main_only_file<'clang>(
+    import_scope: CImportScope,
+    tu: &'clang clang::TranslationUnit<'_>,
+    header_exists: bool,
+    header_path: &PathBuf,
+    wrapper_path: &PathBuf,
+) -> Option<clang::source::File<'clang>> {
+    if import_scope != CImportScope::MainOnly {
+        return None;
+    }
+
+    if header_exists {
+        return tu.get_file(header_path);
+    }
+
+    let wrapper_file: Option<clang::source::File<'clang>> = tu.get_file(wrapper_path);
+    let includes: Vec<clang::Entity<'_>> = wrapper_file.map_or_else(Vec::new, |f| f.get_includes());
+
+    includes.first().and_then(|inc| inc.get_file())
+}
+
+pub fn parse_header(header_path: &Path) -> (bool, PathBuf, PathBuf, Vec<clang::Unsaved>) {
     let header_exists: bool = header_path.exists();
     let wrapper_path: PathBuf = PathBuf::from("__thrustc_importc_wrapper.c");
 
@@ -75,25 +96,4 @@ pub fn collect_diagnostics(
     }
 
     (diagnostics, has_errors)
-}
-
-pub fn resolve_main_only_file<'clang>(
-    import_scope: CImportScope,
-    tu: &'clang clang::TranslationUnit<'_>,
-    header_exists: bool,
-    header_path: &PathBuf,
-    wrapper_path: &PathBuf,
-) -> Option<clang::source::File<'clang>> {
-    if import_scope != CImportScope::MainOnly {
-        return None;
-    }
-
-    if header_exists {
-        return tu.get_file(header_path);
-    }
-
-    let wrapper_file: Option<clang::source::File<'clang>> = tu.get_file(wrapper_path);
-    let includes: Vec<clang::Entity<'_>> = wrapper_file.map_or_else(Vec::new, |f| f.get_includes());
-
-    includes.first().and_then(|inc| inc.get_file())
 }

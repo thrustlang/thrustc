@@ -1,0 +1,8 @@
+#ifndef IMPORT_C_HELPER_MACRO_TYPE_SCALAR_H
+#define IMPORT_C_HELPER_MACRO_TYPE_SCALAR_H
+
+#define MACRO_TYPE_INT int
+#define MACRO_TYPE_WIDE unsigned long
+#define MACRO_TYPE_FLOAT float
+
+#endif

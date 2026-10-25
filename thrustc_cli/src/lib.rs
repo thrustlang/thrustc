@@ -39,15 +39,15 @@ use thrustc_options::PrintableUnit;
 
 use ahash::AHashMap as HashMap;
 
+use thrustc_backends::ThrustRelocMode;
 use thrustc_backends::llvm;
-use thrustc_backends::llvm::debug::DwarfVersion;
-use thrustc_backends::llvm::passes::LLVMModificatorPasses;
 use thrustc_backends::llvm::DenormalFloatingPointBehavior;
 use thrustc_backends::llvm::DenormalFloatingPointBehavior32BitFloatingPoint;
 use thrustc_backends::llvm::Sanitizer;
 use thrustc_backends::llvm::SanitizerConfiguration;
 use thrustc_backends::llvm::SymbolLinkageMergeStrategy;
-use thrustc_backends::ThrustRelocMode;
+use thrustc_backends::llvm::debug::DwarfVersion;
+use thrustc_backends::llvm::passes::LLVMModificatorPasses;
 use thrustc_options::linkage::LinkingCompilersConfiguration;
 
 mod help;
@@ -167,7 +167,7 @@ impl CommandLine {
         let emit_bindings: &thrustc_options::EmitCBindingsOptions =
             self.get_options().get_emit_c_bindings_options();
 
-        thrustc_c_transpiler::entrypoint::handle_emit_c_bindings_thrust(
+        thrustc_c_transpiler::entrypoint::emit_c_bindings_thrust(
             emit_bindings.thrust().map(PathBuf::from),
             emit_bindings.out_dir().map(PathBuf::from),
             emit_bindings.output().map(PathBuf::from),
@@ -178,7 +178,7 @@ impl CommandLine {
 
 impl CommandLine {
     fn handle_translate_c_to_thrust(&self) {
-        thrustc_c_transpiler::entrypoint::handle_translate_c_to_thrust(
+        thrustc_c_transpiler::entrypoint::translate_c_to_thrust(
             self.get_options().get_translate_c_to_thrust_inputs(),
             self.get_options().get_translate_c_options(),
         );

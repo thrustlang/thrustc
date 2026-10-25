@@ -1,0 +1,15 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/macro_type_scalar.h";
+
+fn main() s32 @public {
+    var integer_value: macro_type_scalar::MACRO_TYPE_INT = 2;
+    var wide_value: macro_type_scalar::MACRO_TYPE_WIDE = 3;
+    var float_value: macro_type_scalar::MACRO_TYPE_FLOAT = 1.5;
+
+    if integer_value != 2 { return 1; }
+    if wide_value != 3 { return 2; }
+    if float_value <= 1.0 { return 3; }
+
+    return 0;
+}

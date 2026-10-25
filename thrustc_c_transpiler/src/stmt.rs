@@ -17,13 +17,17 @@
 
 */
 
+#![allow(clippy::too_many_arguments)]
+
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
-use crate::error::{TranspilerError, TranspilerResult};
-use crate::location::Location;
+use thrustc_c_transpiler_macro::error::{TranspilerError, TranspilerResult};
+use thrustc_c_transpiler_macro::location::Location;
 
-type SwitchSegment = (Vec<Option<String>>, Vec<String>, bool);
+use crate::abort;
+
+type CSwitchSegment = (Vec<Option<String>>, Vec<String>, bool);
 
 pub fn translate_stmt(
     entity: &clang::Entity<'_>,
@@ -31,25 +35,28 @@ pub fn translate_stmt(
     span: Span,
     function_return_type: Option<&str>,
     loop_continue_action: Option<&str>,
-    ctx: &mut crate::macros::MacroContext<'_>,
+    ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
 ) -> TranspilerResult<Vec<String>> {
     let base_pending: usize = ctx.pending_statements_len();
 
     let mut lines: Vec<String> = (|| -> TranspilerResult<Vec<String>> {
-        let prefix: Option<String> = crate::macro_error::prefix(entity);
+        let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
         let indent_str: String = "    ".repeat(indent);
 
-        if let Some(expansion) = crate::macros::try_extract_statement_macro_call(
-            ctx,
-            entity,
-            span,
-            function_return_type,
-        ) {
+        if let Some(expansion) =
+            thrustc_c_transpiler_macro::macros::try_extract_statement_macro_call(
+                ctx,
+                entity,
+                span,
+                function_return_type,
+                self::translate_stmt_for_macro,
+            )
+        {
             return Ok(match expansion {
-                crate::macros::StatementMacroExpansion::Call(call) => {
+                thrustc_c_transpiler_macro::macros::StatementMacroExpansion::Call(call) => {
                     vec![format!("{indent_str}{call};")]
                 }
-                crate::macros::StatementMacroExpansion::Inline(lines) => lines
+                thrustc_c_transpiler_macro::macros::StatementMacroExpansion::Inline(lines) => lines
                     .into_iter()
                     .map(|line| format!("{indent_str}{line}"))
                     .collect(),
@@ -118,14 +125,13 @@ pub fn translate_stmt(
                             None => "C translation failed:\nEncountered a local variable without a name.".to_string(),
                         };
 
-                        ctx.get_mut_transpiler_context()
-                            .add_error(CompilationIssue::Error(
-                                CompilationIssueCode::E0110,
-                                message,
-                                "Rewrite the C input to avoid the unsupported construct.".into(),
-                                None,
-                                span,
-                            ));
+                        ctx.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0110,
+                            message,
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
+                            None,
+                            span,
+                        ));
 
                         return Err(TranspilerError::Abort);
                     };
@@ -138,24 +144,24 @@ pub fn translate_stmt(
                             None => format!("C translation failed:\n{detail}"),
                         };
 
-                        ctx.get_mut_transpiler_context()
-                            .add_error(CompilationIssue::Error(
-                                CompilationIssueCode::E0110,
-                                message,
-                                "Rewrite the C input to avoid the unsupported construct.".into(),
-                                None,
-                                span,
-                            ));
+                        ctx.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0110,
+                            message,
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
+                            None,
+                            span,
+                        ));
 
                         return Err(TranspilerError::Abort);
                     };
 
-                    let mut ty_text: String = crate::type_format::format_clang_type_thrust(
-                        &var_ty,
-                        ctx,
-                        prefix.as_deref(),
-                        span,
-                    )?;
+                    let mut ty_text: String =
+                        thrustc_c_transpiler_macro::type_format::format_clang_type_thrust(
+                            &var_ty,
+                            ctx,
+                            prefix.as_deref(),
+                            span,
+                        )?;
 
                     if var_ty.is_const_qualified() {
                         ty_text = ty_text
@@ -164,7 +170,8 @@ pub fn translate_stmt(
                             .to_string();
                     }
 
-                    let name: String = crate::util::normalize_to_thrust_identifier(&name);
+                    let name: String =
+                        thrustc_c_transpiler_macro::util::normalize_to_thrust_identifier(&name);
 
                     let init_entity: Option<clang::Entity<'_>> =
                         crate::top_level::find_var_initializer(&decl);
@@ -219,14 +226,13 @@ pub fn translate_stmt(
                         None => "C translation failed:\nMalformed if statement.".to_string(),
                     };
 
-                    ctx.get_mut_transpiler_context()
-                        .add_error(CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            message,
-                            "Rewrite the C input to avoid the unsupported construct.".into(),
-                            None,
-                            span,
-                        ));
+                    ctx.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        message,
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
 
                     return Err(TranspilerError::Abort);
                 }
@@ -351,14 +357,13 @@ pub fn translate_stmt(
                         None => "C translation failed:\nMalformed while statement.".to_string(),
                     };
 
-                    ctx.get_mut_transpiler_context()
-                        .add_error(CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            message,
-                            "Rewrite the C input to avoid the unsupported construct.".into(),
-                            None,
-                            span,
-                        ));
+                    ctx.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        message,
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
 
                     return Err(TranspilerError::Abort);
                 }
@@ -370,9 +375,11 @@ pub fn translate_stmt(
                     ctx,
                 )?;
 
-                ctx.push_loop_context(crate::macros::MacroLoopContext::Loop {
-                    continue_action: None,
-                });
+                ctx.push_loop_context(
+                    thrustc_c_transpiler_macro::macro_context::MacroLoopContext::Loop {
+                        continue_action: None,
+                    },
+                );
 
                 let body_lines: Vec<String> =
                     if children[1].get_kind() == clang::EntityKind::CompoundStmt {
@@ -422,10 +429,10 @@ pub fn translate_stmt(
 
             clang::EntityKind::DoStmt => {
                 let macro_name: Option<String> =
-                    crate::macro_table::MacroTable::get_location(entity)
+                    thrustc_c_transpiler_macro::macro_table::MacroTable::get_location(entity)
                         .and_then(|key| ctx.get_macro_table().find_macro_name(&key));
 
-                let base_error_count: usize = ctx.get_transpiler_context().error_count();
+                let base_error_count: usize = ctx.error_count();
 
                 let children: Vec<clang::Entity<'_>> = entity.get_children();
 
@@ -446,9 +453,9 @@ pub fn translate_stmt(
                     );
 
                     if let Some(name) = macro_name.as_deref() {
-                        ctx.get_mut_transpiler_context().add_macros_error(issue);
+                        ctx.add_macros_error(issue);
 
-                        crate::macro_error::collapse_macro_site_errors(
+                        thrustc_c_transpiler_macro::macro_error::collapse_macro_site_errors(
                             ctx,
                             entity,
                             name,
@@ -458,47 +465,26 @@ pub fn translate_stmt(
                         return Ok(Vec::new());
                     }
 
-                    ctx.get_mut_transpiler_context().add_error(issue);
+                    ctx.add_error(issue);
                     return Err(TranspilerError::Abort);
                 }
 
-                ctx.push_loop_context(crate::macros::MacroLoopContext::Loop {
-                    continue_action: None,
-                });
+                ctx.push_loop_context(
+                    thrustc_c_transpiler_macro::macro_context::MacroLoopContext::Loop {
+                        continue_action: None,
+                    },
+                );
 
-                let body_lines: Vec<String> =
-                    if children[0].get_kind() == clang::EntityKind::CompoundStmt {
-                        let mut out: Vec<String> = Vec::new();
+                let body_lines: Vec<String> = if children[0].get_kind()
+                    == clang::EntityKind::CompoundStmt
+                {
+                    let mut out: Vec<String> = Vec::new();
 
-                        for child in children[0].get_children() {
-                            let child_base: usize = ctx.get_transpiler_context().error_count();
+                    for child in children[0].get_children() {
+                        let child_base: usize = ctx.error_count();
 
-                            let lines: Vec<String> = self::translate_stmt(
-                                &child,
-                                indent + 1,
-                                span,
-                                function_return_type,
-                                None,
-                                ctx,
-                            )?;
-
-                            if let Some(name) = macro_name.as_deref() {
-                                if ctx.get_transpiler_context().error_count() > child_base {
-                                    crate::macro_error::collapse_macro_site_errors_with_failed_at(
-                                        ctx, entity, name, &child, child_base,
-                                    );
-                                }
-                            }
-
-                            out.extend(lines);
-                        }
-
-                        out
-                    } else {
-                        let child_base: usize = ctx.get_transpiler_context().error_count();
-
-                        let mut lines: Vec<String> = self::translate_stmt(
-                            &children[0],
+                        let lines: Vec<String> = self::translate_stmt(
+                            &child,
                             indent + 1,
                             span,
                             function_return_type,
@@ -507,27 +493,51 @@ pub fn translate_stmt(
                         )?;
 
                         if let Some(name) = macro_name.as_deref() {
-                            if ctx.get_transpiler_context().error_count() > child_base {
-                                crate::macro_error::collapse_macro_site_errors_with_failed_at(
+                            if ctx.error_count() > child_base {
+                                thrustc_c_transpiler_macro::macro_error::collapse_macro_site_errors_with_failed_at(
+                                        ctx, entity, name, &child, child_base,
+                                    );
+                            }
+                        }
+
+                        out.extend(lines);
+                    }
+
+                    out
+                } else {
+                    let child_base: usize = ctx.error_count();
+
+                    let mut lines: Vec<String> = self::translate_stmt(
+                        &children[0],
+                        indent + 1,
+                        span,
+                        function_return_type,
+                        None,
+                        ctx,
+                    )?;
+
+                    if let Some(name) = macro_name.as_deref() {
+                        if ctx.error_count() > child_base {
+                            thrustc_c_transpiler_macro::macro_error::collapse_macro_site_errors_with_failed_at(
                                     ctx,
                                     entity,
                                     name,
                                     &children[0],
                                     child_base,
                                 );
-                            }
                         }
+                    }
 
-                        if lines.is_empty() {
-                            lines.push("    ".repeat(indent + 1));
-                        }
+                    if lines.is_empty() {
+                        lines.push("    ".repeat(indent + 1));
+                    }
 
-                        lines
-                    };
+                    lines
+                };
 
                 ctx.pop_loop_context();
 
-                let cond_base: usize = ctx.get_transpiler_context().error_count();
+                let cond_base: usize = ctx.error_count();
 
                 let cond: String = crate::expr::translate_condition_expr(
                     &children[1],
@@ -537,8 +547,8 @@ pub fn translate_stmt(
                 )?;
 
                 if let Some(name) = macro_name.as_deref() {
-                    if ctx.get_transpiler_context().error_count() > cond_base {
-                        crate::macro_error::collapse_macro_site_errors_with_failed_at(
+                    if ctx.error_count() > cond_base {
+                        thrustc_c_transpiler_macro::macro_error::collapse_macro_site_errors_with_failed_at(
                             ctx,
                             entity,
                             name,
@@ -583,19 +593,18 @@ pub fn translate_stmt(
                         }
                     };
 
-                    ctx.get_mut_transpiler_context()
-                        .add_error(CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            message,
-                            "Rewrite the C input to avoid the unsupported construct.".into(),
-                            None,
-                            span,
-                        ));
+                    ctx.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        message,
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
                     return Err(TranspilerError::Abort);
                 }
 
                 let body_node: &clang::Entity<'_> = children.last().unwrap_or_else(|| {
-                    crate::context::TranspilerContext::abort_transpilation(
+                    abort::abort_transpilation(
                         "For statement without body node in clang AST.",
                         span,
                         std::path::PathBuf::from(file!()),
@@ -625,14 +634,13 @@ pub fn translate_stmt(
                         }
                     };
 
-                    ctx.get_mut_transpiler_context()
-                        .add_error(CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            message,
-                            "Rewrite the C input to avoid the unsupported construct.".into(),
-                            None,
-                            span,
-                        ));
+                    ctx.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        message,
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
 
                     return Err(TranspilerError::Abort);
                 }
@@ -657,7 +665,7 @@ pub fn translate_stmt(
                         normalized_header_nodes[2],
                     )
                 } else {
-                    crate::context::TranspilerContext::abort_transpilation(
+                    abort::abort_transpilation(
                         "For statement header exceeds three nodes.",
                         span,
                         std::path::PathBuf::from(file!()),
@@ -687,15 +695,13 @@ pub fn translate_stmt(
                                     .to_string(),
                             };
 
-                            ctx.get_mut_transpiler_context()
-                                .add_error(CompilationIssue::Error(
-                                    CompilationIssueCode::E0110,
-                                    message,
-                                    "Rewrite the C input to avoid the unsupported construct."
-                                        .into(),
-                                    None,
-                                    span,
-                                ));
+                            ctx.add_error(CompilationIssue::Error(
+                                CompilationIssueCode::E0110,
+                                message,
+                                "Rewrite the C input to avoid the unsupported construct.".into(),
+                                None,
+                                span,
+                            ));
                             return Err(TranspilerError::Abort);
                         }
 
@@ -707,21 +713,19 @@ pub fn translate_stmt(
                                 None => "C translation failed:\nFor-loops with multiple initializer declarations are not supported yet.".to_string(),
                             };
 
-                            ctx.get_mut_transpiler_context()
-                                .add_error(CompilationIssue::Error(
-                                    CompilationIssueCode::E0110,
-                                    message,
-                                    "Rewrite the C input to avoid the unsupported construct."
-                                        .into(),
-                                    None,
-                                    span,
-                                ));
+                            ctx.add_error(CompilationIssue::Error(
+                                CompilationIssueCode::E0110,
+                                message,
+                                "Rewrite the C input to avoid the unsupported construct.".into(),
+                                None,
+                                span,
+                            ));
 
                             return Err(TranspilerError::Abort);
                         }
 
                         let var: &clang::Entity<'_> = decls.first().unwrap_or_else(|| {
-                            crate::context::TranspilerContext::abort_transpilation(
+                            abort::abort_transpilation(
                                 "For-loop initializer without variable declaration.",
                                 span,
                                 std::path::PathBuf::from(file!()),
@@ -737,15 +741,13 @@ pub fn translate_stmt(
                                 None => "C translation failed:\nFor-loop initializer variable has no name.".to_string(),
                             };
 
-                            ctx.get_mut_transpiler_context()
-                                .add_error(CompilationIssue::Error(
-                                    CompilationIssueCode::E0110,
-                                    message,
-                                    "Rewrite the C input to avoid the unsupported construct."
-                                        .into(),
-                                    None,
-                                    span,
-                                ));
+                            ctx.add_error(CompilationIssue::Error(
+                                CompilationIssueCode::E0110,
+                                message,
+                                "Rewrite the C input to avoid the unsupported construct.".into(),
+                                None,
+                                span,
+                            ));
 
                             return Err(TranspilerError::Abort);
                         };
@@ -758,27 +760,28 @@ pub fn translate_stmt(
                                 None => "C translation failed:\nFor-loop initializer variable has no type.".to_string(),
                             };
 
-                            ctx.get_mut_transpiler_context()
-                                .add_error(CompilationIssue::Error(
-                                    CompilationIssueCode::E0110,
-                                    message,
-                                    "Rewrite the C input to avoid the unsupported construct."
-                                        .into(),
-                                    None,
-                                    span,
-                                ));
+                            ctx.add_error(CompilationIssue::Error(
+                                CompilationIssueCode::E0110,
+                                message,
+                                "Rewrite the C input to avoid the unsupported construct.".into(),
+                                None,
+                                span,
+                            ));
 
                             return Err(TranspilerError::Abort);
                         };
 
-                        let name: String = { crate::util::normalize_to_thrust_identifier(&name) };
+                        let name: String = {
+                            thrustc_c_transpiler_macro::util::normalize_to_thrust_identifier(&name)
+                        };
 
-                        let mut ty_text: String = crate::type_format::format_clang_type_thrust(
-                            &var_ty,
-                            ctx,
-                            prefix.as_deref(),
-                            span,
-                        )?;
+                        let mut ty_text: String =
+                            thrustc_c_transpiler_macro::type_format::format_clang_type_thrust(
+                                &var_ty,
+                                ctx,
+                                prefix.as_deref(),
+                                span,
+                            )?;
 
                         if var_ty.is_const_qualified() {
                             ty_text = ty_text
@@ -819,14 +822,13 @@ pub fn translate_stmt(
                                 .to_string(),
                         };
 
-                        ctx.get_mut_transpiler_context()
-                            .add_error(CompilationIssue::Error(
-                                CompilationIssueCode::E0110,
-                                message,
-                                "Rewrite the C input to avoid the unsupported construct.".into(),
-                                None,
-                                span,
-                            ));
+                        ctx.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0110,
+                            message,
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
+                            None,
+                            span,
+                        ));
 
                         return Err(TranspilerError::Abort);
                     }
@@ -847,7 +849,8 @@ pub fn translate_stmt(
 
                     if kind == clang::EntityKind::UnaryOperator {
                         let Some(range) = node.get_range() else {
-                            let origin: Option<String> = crate::macro_error::origin_note(node);
+                            let origin: Option<String> =
+                                thrustc_c_transpiler_macro::macro_error::origin_note(node);
 
                             let message: String = match (prefix.as_deref(), origin.as_deref()) {
                                 (Some(prefix), Some(origin)) => format!(
@@ -865,20 +868,19 @@ pub fn translate_stmt(
                                 }
                             };
 
-                            ctx.get_mut_transpiler_context()
-                                .add_error(CompilationIssue::Error(
-                                    CompilationIssueCode::E0110,
-                                    message,
-                                    "Rewrite the C input to avoid the unsupported construct."
-                                        .into(),
-                                    None,
-                                    span,
-                                ));
+                            ctx.add_error(CompilationIssue::Error(
+                                CompilationIssueCode::E0110,
+                                message,
+                                "Rewrite the C input to avoid the unsupported construct.".into(),
+                                None,
+                                span,
+                            ));
 
                             return Err(TranspilerError::Abort);
                         };
 
-                        let lexemes: Vec<String> = crate::macro_lex::range_lexemes(&range, node);
+                        let lexemes: Vec<String> =
+                            thrustc_c_transpiler_macro::macro_lex::range_lexemes(&range, node);
 
                         if lexemes.contains(&"++".to_string())
                             || lexemes.contains(&"--".to_string())
@@ -886,7 +888,8 @@ pub fn translate_stmt(
                             let Some(operand) = node.get_children().into_iter().find(|child| {
                                 crate::clang_util::is_supported_expr_kind(child.get_kind())
                             }) else {
-                                let origin: Option<String> = crate::macro_error::origin_note(node);
+                                let origin: Option<String> =
+                                    thrustc_c_transpiler_macro::macro_error::origin_note(node);
 
                                 let message: String = match (prefix.as_deref(), origin.as_deref()) {
                                     (Some(prefix), Some(origin)) => format!(
@@ -904,16 +907,14 @@ pub fn translate_stmt(
                                     }
                                 };
 
-                                ctx.get_mut_transpiler_context().add_error(
-                                    CompilationIssue::Error(
-                                        CompilationIssueCode::E0110,
-                                        message,
-                                        "Rewrite the C input to avoid the unsupported construct."
-                                            .into(),
-                                        None,
-                                        span,
-                                    ),
-                                );
+                                ctx.add_error(CompilationIssue::Error(
+                                    CompilationIssueCode::E0110,
+                                    message,
+                                    "Rewrite the C input to avoid the unsupported construct."
+                                        .into(),
+                                    None,
+                                    span,
+                                ));
                                 return Err(TranspilerError::Abort);
                             };
 
@@ -928,7 +929,8 @@ pub fn translate_stmt(
                         } else if crate::clang_util::is_supported_expr_kind(kind) {
                             crate::expr::translate_expr(node, span, Location::RValue, ctx)?
                         } else {
-                            let origin: Option<String> = crate::macro_error::origin_note(node);
+                            let origin: Option<String> =
+                                thrustc_c_transpiler_macro::macro_error::origin_note(node);
 
                             let message: String = match (prefix.as_deref(), origin.as_deref()) {
                                 (Some(prefix), Some(origin)) => format!(
@@ -946,21 +948,20 @@ pub fn translate_stmt(
                                 }
                             };
 
-                            ctx.get_mut_transpiler_context()
-                                .add_error(CompilationIssue::Error(
-                                    CompilationIssueCode::E0110,
-                                    message,
-                                    "Rewrite the C input to avoid the unsupported construct."
-                                        .into(),
-                                    None,
-                                    span,
-                                ));
+                            ctx.add_error(CompilationIssue::Error(
+                                CompilationIssueCode::E0110,
+                                message,
+                                "Rewrite the C input to avoid the unsupported construct.".into(),
+                                None,
+                                span,
+                            ));
                             return Err(TranspilerError::Abort);
                         }
                     } else if crate::clang_util::is_supported_expr_kind(kind) {
                         crate::expr::translate_expr(node, span, Location::RValue, ctx)?
                     } else {
-                        let origin: Option<String> = crate::macro_error::origin_note(node);
+                        let origin: Option<String> =
+                            thrustc_c_transpiler_macro::macro_error::origin_note(node);
 
                         let message: String = match (prefix.as_deref(), origin.as_deref()) {
                             (Some(prefix), Some(origin)) => format!(
@@ -977,14 +978,13 @@ pub fn translate_stmt(
                             }
                         };
 
-                        ctx.get_mut_transpiler_context()
-                            .add_error(CompilationIssue::Error(
-                                CompilationIssueCode::E0110,
-                                message,
-                                "Rewrite the C input to avoid the unsupported construct.".into(),
-                                None,
-                                span,
-                            ));
+                        ctx.add_error(CompilationIssue::Error(
+                            CompilationIssueCode::E0110,
+                            message,
+                            "Rewrite the C input to avoid the unsupported construct.".into(),
+                            None,
+                            span,
+                        ));
                         return Err(TranspilerError::Abort);
                     }
                 } else {
@@ -998,9 +998,11 @@ pub fn translate_stmt(
                         None
                     };
 
-                ctx.push_loop_context(crate::macros::MacroLoopContext::Loop {
-                    continue_action: body_continue_action.map(str::to_string),
-                });
+                ctx.push_loop_context(
+                    thrustc_c_transpiler_macro::macro_context::MacroLoopContext::Loop {
+                        continue_action: body_continue_action.map(str::to_string),
+                    },
+                );
 
                 let body_lines: Vec<String> =
                     if body_node.get_kind() == clang::EntityKind::CompoundStmt {
@@ -1107,13 +1109,13 @@ pub fn translate_stmt(
 
             clang::EntityKind::CompoundStmt => {
                 let macro_name: Option<String> =
-                    crate::macro_table::MacroTable::get_location(entity)
+                    thrustc_c_transpiler_macro::macro_table::MacroTable::get_location(entity)
                         .and_then(|key| ctx.get_macro_table().find_macro_name(&key));
 
                 let mut body_lines: Vec<String> = Vec::new();
 
                 for child in entity.get_children() {
-                    let child_base: usize = ctx.get_transpiler_context().error_count();
+                    let child_base: usize = ctx.error_count();
 
                     let lines: Vec<String> = self::translate_stmt(
                         &child,
@@ -1125,8 +1127,8 @@ pub fn translate_stmt(
                     )?;
 
                     if let Some(name) = macro_name.as_deref() {
-                        if ctx.get_transpiler_context().error_count() > child_base {
-                            crate::macro_error::collapse_macro_site_errors_with_failed_at(
+                        if ctx.error_count() > child_base {
+                            thrustc_c_transpiler_macro::macro_error::collapse_macro_site_errors_with_failed_at(
                                 ctx, entity, name, &child, child_base,
                             );
                         }
@@ -1158,14 +1160,13 @@ pub fn translate_stmt(
                         None => format!("C translation failed:\n{detail}"),
                     };
 
-                    ctx.get_mut_transpiler_context()
-                        .add_error(CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            message,
-                            "Rewrite the C input to avoid the unsupported construct.".into(),
-                            None,
-                            span,
-                        ));
+                    ctx.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        message,
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
 
                     Err(TranspilerError::Abort)
                 }
@@ -1173,9 +1174,8 @@ pub fn translate_stmt(
         }
     })()?;
 
-    let pending: Vec<String> = ctx.take_pending_statements_since(base_pending);
-
     let indent_str: String = "    ".repeat(indent);
+    let pending: Vec<String> = ctx.take_pending_statements_since(base_pending);
 
     let mut indented_pending: Vec<String> = Vec::with_capacity(pending.len());
 
@@ -1194,15 +1194,34 @@ pub fn translate_stmt(
     Ok(indented_pending)
 }
 
+fn translate_stmt_for_macro<'clang, 'context, 'return_type, 'continue_action>(
+    entity: &clang::Entity<'clang>,
+    indent: usize,
+    span: Span,
+    function_return_type: Option<&'return_type str>,
+    loop_continue_action: Option<&'continue_action str>,
+    ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'context>,
+) -> Option<Vec<String>> {
+    self::translate_stmt(
+        entity,
+        indent,
+        span,
+        function_return_type,
+        loop_continue_action,
+        ctx,
+    )
+    .ok()
+}
+
 fn translate_switch_stmt(
     entity: &clang::Entity<'_>,
     indent: usize,
     span: Span,
     function_return_type: Option<&str>,
     loop_continue_action: Option<&str>,
-    ctx: &mut crate::macros::MacroContext<'_>,
+    ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
 ) -> TranspilerResult<Vec<String>> {
-    let prefix: Option<String> = crate::macro_error::prefix(entity);
+    let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
     let indent_str: String = "    ".repeat(indent);
     let children: Vec<clang::Entity<'_>> = entity.get_children();
 
@@ -1212,14 +1231,14 @@ fn translate_switch_stmt(
             None => "C translation failed:\nMalformed switch statement.".to_string(),
         };
 
-        ctx.get_mut_transpiler_context()
-            .add_error(CompilationIssue::Error(
-                CompilationIssueCode::E0110,
-                message,
-                "Rewrite the C input to avoid the unsupported construct.".into(),
-                None,
-                span,
-            ));
+        ctx.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0110,
+            message,
+            "Rewrite the C input to avoid the unsupported construct.".into(),
+            None,
+            span,
+        ));
+
         return Err(TranspilerError::Abort);
     }
 
@@ -1269,14 +1288,13 @@ fn translate_switch_stmt(
                 None => "C translation failed:\nSwitch statement contains unlabeled statements before the first case/default.".to_string(),
             };
 
-            ctx.get_mut_transpiler_context()
-                .add_error(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    message,
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+            ctx.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                message,
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
             return Err(TranspilerError::Abort);
         } else {
             current_body_nodes.push(*item);
@@ -1306,14 +1324,13 @@ fn translate_switch_stmt(
             }
         };
 
-        ctx.get_mut_transpiler_context()
-            .add_error(CompilationIssue::Error(
-                CompilationIssueCode::E0110,
-                message,
-                "Rewrite the C input to avoid the unsupported construct.".into(),
-                None,
-                span,
-            ));
+        ctx.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0110,
+            message,
+            "Rewrite the C input to avoid the unsupported construct.".into(),
+            None,
+            span,
+        ));
         return Err(TranspilerError::Abort);
     }
 
@@ -1384,12 +1401,12 @@ fn translate_return_expr(
     entity: &clang::Entity<'_>,
     span: Span,
     expected_return_type: &str,
-    macro_ctx: &mut crate::macros::MacroContext<'_>,
+    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
 ) -> TranspilerResult<String> {
     if matches!(
         expected_return_type,
         "s8" | "s16" | "s32" | "s64" | "ssize" | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-    ) && crate::stmt_analysis::expression_produces_condition(entity)
+    ) && crate::expr_analysis::expression_produces_condition(entity)
     {
         let condition: String =
             crate::expr::translate_condition_expr(entity, span, Location::RValue, macro_ctx)?;
@@ -1432,9 +1449,9 @@ fn collect_switch_labels_and_body<'stmt>(
     span: Span,
     labels: &mut Vec<Option<String>>,
     body_nodes: &mut Vec<clang::Entity<'stmt>>,
-    macro_ctx: &mut crate::macros::MacroContext<'_>,
+    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
 ) -> TranspilerResult<()> {
-    let prefix: Option<String> = crate::macro_error::prefix(entity);
+    let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
 
     if entity.get_kind() == clang::EntityKind::CaseStmt {
         let children: Vec<clang::Entity<'_>> = entity.get_children();
@@ -1447,15 +1464,13 @@ fn collect_switch_labels_and_body<'stmt>(
                 None => "C translation failed:\nMalformed case statement.".to_string(),
             };
 
-            macro_ctx
-                .get_mut_transpiler_context()
-                .add_error(CompilationIssue::Error(
-                    CompilationIssueCode::E0110,
-                    message,
-                    "Rewrite the C input to avoid the unsupported construct.".into(),
-                    None,
-                    span,
-                ));
+            macro_ctx.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0110,
+                message,
+                "Rewrite the C input to avoid the unsupported construct.".into(),
+                None,
+                span,
+            ));
 
             return Err(TranspilerError::Abort);
         }
@@ -1501,16 +1516,15 @@ fn collect_switch_labels_and_body<'stmt>(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
 fn push_switch_segment<'stmt>(
-    segments: &mut Vec<SwitchSegment>,
+    segments: &mut Vec<CSwitchSegment>,
     current_labels: &mut Vec<Option<String>>,
     current_body_nodes: &mut Vec<clang::Entity<'stmt>>,
     indent: usize,
     span: Span,
     function_return_type: Option<&str>,
     loop_continue_action: Option<&str>,
-    ctx: &mut crate::macros::MacroContext<'_>,
+    ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
 ) -> TranspilerResult<()> {
     let terminates_segment: bool = current_body_nodes.last().is_some_and(|node| {
         matches!(
@@ -1561,9 +1575,9 @@ fn translate_conditional_return(
     indent: usize,
     span: Span,
     expected_return_type: &str,
-    macro_ctx: &mut crate::macros::MacroContext<'_>,
+    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
 ) -> TranspilerResult<Vec<String>> {
-    let prefix: Option<String> = crate::macro_error::prefix(entity);
+    let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
     let indent_str: String = "    ".repeat(indent);
     let child_indent_str: String = "    ".repeat(indent + 1);
     let children: Vec<clang::Entity<'_>> = entity.get_children();
@@ -1576,15 +1590,14 @@ fn translate_conditional_return(
             None => "C translation failed:\nMalformed conditional operator.".to_string(),
         };
 
-        macro_ctx
-            .get_mut_transpiler_context()
-            .add_error(CompilationIssue::Error(
-                CompilationIssueCode::E0110,
-                message,
-                "Rewrite the C input to avoid the unsupported construct.".into(),
-                None,
-                span,
-            ));
+        macro_ctx.add_error(CompilationIssue::Error(
+            CompilationIssueCode::E0110,
+            message,
+            "Rewrite the C input to avoid the unsupported construct.".into(),
+            None,
+            span,
+        ));
+
         return Err(TranspilerError::Abort);
     }
 

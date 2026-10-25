@@ -29,6 +29,8 @@ use crate::model::{
 };
 use crate::options::CImportOptions;
 
+use thrustc_c_transpiler_macro_api::types::Macro;
+
 #[derive(Debug)]
 pub struct CImportContext {
     header_path: PathBuf,
@@ -40,6 +42,7 @@ pub struct CImportContext {
     typedefs: Vec<CImportedTypedef>,
     statics: Vec<CImportedStatic>,
     constants: Vec<CImportedConstant>,
+    macros: Vec<Macro>,
     diagnostics: Vec<CImportDiagnostic>,
 }
 
@@ -56,6 +59,7 @@ impl CImportContext {
             typedefs: Vec::new(),
             statics: Vec::new(),
             constants: Vec::new(),
+            macros: Vec::new(),
             diagnostics: Vec::new(),
         }
     }
@@ -108,6 +112,11 @@ impl CImportContext {
     }
 
     #[inline]
+    pub fn macros(&self) -> &[Macro] {
+        &self.macros
+    }
+
+    #[inline]
     pub fn diagnostics(&self) -> &[CImportDiagnostic] {
         &self.diagnostics
     }
@@ -145,6 +154,11 @@ impl CImportContext {
     }
 
     #[inline]
+    pub fn macros_mut(&mut self) -> &mut Vec<Macro> {
+        &mut self.macros
+    }
+
+    #[inline]
     pub fn diagnostics_mut(&mut self) -> &mut Vec<CImportDiagnostic> {
         &mut self.diagnostics
     }
@@ -153,6 +167,6 @@ impl CImportContext {
 impl CImportContext {
     #[inline]
     pub fn import_header(&mut self) -> Result<(), String> {
-        import::run_import(self)
+        import::run_import_c(self)
     }
 }

@@ -1,0 +1,10 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/macro_object_nested.h";
+
+fn main() s32 @public {
+    if macro_object_nested::MACRO_OBJ_ADD(1) != 14 { return 1; }
+    if macro_object_nested::MACRO_OBJ_NESTED(1) != 27 { return 2; }
+
+    return 0;
+}

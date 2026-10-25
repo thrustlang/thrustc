@@ -82,6 +82,17 @@ pub fn build_constructor<'parser>(
         }
     }
 
+    if !qualified
+        && ctx.get_symbols().get_symbols_id(symbol, span).is_err()
+        && let Some((imported_access, imported_symbol)) =
+            crate::imported_scope::find_symbol(ctx, symbol, span)?
+        && imported_symbol.variant == Variant::Struct
+    {
+        access = imported_access;
+        symbol = imported_symbol.name.as_str();
+        qualified = true;
+    }
+
     let mut type_params: Option<Vec<String>> = None;
     let metadata: StructTypeMetadata;
     let mut fields: Vec<(String, Type)> = Vec::with_capacity(u8::MAX as usize);

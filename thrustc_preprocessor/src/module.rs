@@ -21,6 +21,8 @@ use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
 
+use thrustc_c_transpiler_macro_api::types::Macro;
+
 use crate::signatures::{Symbol, Variant};
 
 #[derive(Debug, Clone)]
@@ -29,6 +31,7 @@ pub struct Module {
     alias: Option<Vec<String>>,
     only: Option<Vec<String>>,
     symbols: Vec<Symbol>,
+    macros: Vec<Macro>,
     submodules: Vec<Module>,
     path: PathBuf,
     unique_id: Uuid,
@@ -41,6 +44,7 @@ impl Module {
             alias: None,
             only: None,
             symbols: Vec::with_capacity(u8::MAX as usize),
+            macros: Vec::with_capacity(u8::MAX as usize),
             submodules: Vec::with_capacity(u8::MAX as usize),
             path,
             unique_id: Uuid::new_v4(),
@@ -63,6 +67,18 @@ impl Module {
 
         if self.alias.is_none() && other.alias.is_some() {
             self.alias = other.alias;
+        }
+
+        for macro_definition in other.macros.into_iter() {
+            if self
+                .macros
+                .iter()
+                .any(|existing| existing.get_name() == macro_definition.get_name())
+            {
+                continue;
+            }
+
+            self.macros.push(macro_definition);
         }
     }
 }
@@ -98,6 +114,11 @@ impl Module {
     #[inline]
     pub fn add_symbol(&mut self, symbol: Symbol) {
         self.symbols.push(symbol);
+    }
+
+    #[inline]
+    pub fn add_macro(&mut self, macro_definition: Macro) {
+        self.macros.push(macro_definition);
     }
 }
 
@@ -136,6 +157,18 @@ impl Module {
     #[inline]
     pub fn get_symbols(&self) -> &[Symbol] {
         &self.symbols
+    }
+
+    #[inline]
+    pub fn get_macros(&self) -> &[Macro] {
+        &self.macros
+    }
+
+    #[inline]
+    pub fn find_macro(&self, name: &str) -> Option<&Macro> {
+        self.macros
+            .iter()
+            .find(|macro_definition| macro_definition.get_name() == name)
     }
 
     #[inline]

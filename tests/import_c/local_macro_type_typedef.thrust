@@ -1,0 +1,9 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/macro_type_typedef.h";
+
+fn main() s32 @public {
+    if macro_type_typedef::MACRO_WORD_SIZE() == 0 { return 1; }
+
+    return 0;
+}
