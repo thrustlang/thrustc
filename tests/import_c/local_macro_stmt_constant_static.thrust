@@ -1,0 +1,14 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_stmt_constant_static.h";
+
+fn main() s32 @public {
+    var value: s32 = 0;
+
+    local_macro_stmt_constant_static::MACRO_STMT_STATIC(value);
+
+    if value != 5 { return 1; }
+
+    return 0;
+}

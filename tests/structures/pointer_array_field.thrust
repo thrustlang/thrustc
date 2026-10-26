@@ -1,0 +1,17 @@
+struct PointerArrayOuter {
+    cells: array[s32; 2],
+}
+
+fn main() s32 @public {
+    var item: PointerArrayOuter = new PointerArrayOuter { cells: fixed[10, 12] };
+    var pointer: ptr[PointerArrayOuter] = ref item;
+
+    if pointer.cells->[0] != 10 { return 1; }
+    if pointer.cells->[1] != 12 { return 2; }
+
+    pointer.cells->[0] = 11;
+
+    if pointer.cells->[0] != 11 { return 3; }
+
+    return 0;
+}

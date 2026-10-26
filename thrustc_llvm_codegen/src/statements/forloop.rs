@@ -22,6 +22,7 @@ use thrustc_ast::traits::AstCodeLocation;
 use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::abort;
 use crate::block;
@@ -222,6 +223,20 @@ fn short_circuit_comparison<'ctx>(
     if let Ast::Group { node, .. } = condition {
         self::short_circuit_comparison(codegen, node, target_body, target_exit, llvm_function);
         return;
+    }
+
+    if let Ast::UnaryOp { operator, node, .. } = condition {
+        if *operator == TokenType::Bang && node.get_type_for_llvm().is_bool_type() {
+            self::short_circuit_comparison(
+                codegen,
+                node,
+                target_exit,
+                target_body,
+                llvm_function,
+            );
+
+            return;
+        }
     }
 
     if let Ast::BinaryOp {

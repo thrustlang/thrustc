@@ -1,0 +1,16 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_fn_array_pointer_index.h";
+
+fn main() s32 @public {
+    var values: array[s32; 3] = fixed[10, 20, 30];
+
+    if local_macro_fn_array_pointer_index::MACRO_FN_ARRAY_SUM(values) != 60 { return 1; }
+
+    local_macro_fn_array_pointer_index::MACRO_FN_ARRAY_SET(values, 1, 5);
+
+    if values->[1] != 5 { return 2; }
+
+    return 0;
+}

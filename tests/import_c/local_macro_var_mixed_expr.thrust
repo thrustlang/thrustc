@@ -1,0 +1,11 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_var_mixed_expr.h";
+importC "stdlib.h" as cstdlib;
+
+fn main() s32 @public {
+    if local_macro_var_mixed_expr::MACRO_VAR_MIXED(10, cstdlib::abs(-11)) != 21 { return 1; }
+
+    return 0;
+}

@@ -1,0 +1,11 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_fn_nested_comma_args.h";
+
+fn main() s32 @public {
+    if local_macro_fn_nested_comma_args::MACRO_FN_ADD3(1, (2 + 3), 4) != 10 { return 1; }
+    if local_macro_fn_nested_comma_args::MACRO_FN_NESTED(12) != 39 { return 2; }
+
+    return 0;
+}

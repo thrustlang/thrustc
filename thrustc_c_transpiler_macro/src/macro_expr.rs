@@ -163,10 +163,8 @@ impl MacroExpr {
 
             MacroExpr::Paren(inner) => inner.lower_index_base(ctx, result_type),
 
-            MacroExpr::Member { base, field } => {
-                let base_text: String = base.lower_index_base(ctx, result_type);
-
-                format!("{base_text}.{field}")
+            MacroExpr::Member { .. } => {
+                self::lower(ctx, self, crate::location::Location::RValue, result_type)
             }
 
             _ => format!(
@@ -475,8 +473,13 @@ pub fn lower(
             let callee_text: String =
                 self::lower(ctx, callee, crate::location::Location::RValue, result_type);
 
-            let grouped_callee: String = if matches!(callee.as_ref(), MacroExpr::Ident(_)) {
-                callee_text
+            let grouped_callee: String = if let Some(name) = callee.base_identifier() {
+                self::lower(
+                    ctx,
+                    &MacroExpr::Ident(name.to_string()),
+                    crate::location::Location::RValue,
+                    result_type,
+                )
             } else {
                 format!("({callee_text})")
             };
@@ -525,7 +528,26 @@ pub fn lower(
                 return format!("(deref {address})");
             }
 
-            format!("{base_text}->[{index_text}]")
+            if let MacroExpr::Member {
+                base: member_base,
+                field,
+            } = base.as_ref()
+            {
+                let member_source: String =
+                    self::lower(ctx, member_base, crate::location::Location::RValue, result_type);
+
+                let grouped_member: String = if member_base.is_atomic() {
+                    member_source
+                } else {
+                    format!("({member_source})")
+                };
+
+                let member_text: String = format!("{grouped_member}.{field}");
+
+                format!("{member_text}->[{index_text}]")
+            } else {
+                format!("{base_text}->[{index_text}]")
+            }
         }
 
         MacroExpr::Member { base, field } => {

@@ -33,13 +33,6 @@ impl Options {
     }
 }
 
-impl Default for Options {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Options {
     #[inline]
     pub fn get_max_expansion_depth(&self) -> usize {

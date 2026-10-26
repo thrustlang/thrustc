@@ -29,12 +29,6 @@ impl CastTypeExtensions for Type {
             Type::U64 { span } => Type::S64 { span: *span },
             Type::USize { span } => Type::SSize { span: *span },
 
-            Type::S8 { span } => Type::U8 { span: *span },
-            Type::S16 { span } => Type::U16 { span: *span },
-            Type::S32 { span } => Type::U32 { span: *span },
-            Type::S64 { span } => Type::U64 { span: *span },
-            Type::SSize { span } => Type::USize { span: *span },
-
             _ => self.clone(),
         }
     }

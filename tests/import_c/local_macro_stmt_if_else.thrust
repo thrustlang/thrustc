@@ -1,0 +1,18 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_stmt_if_else.h";
+
+fn main() s32 @public {
+    var value: s32 = 0;
+
+    local_macro_stmt_if_else::MACRO_STMT_IF_ELSE(value, 1);
+
+    if value != 42 { return 1; }
+
+    local_macro_stmt_if_else::MACRO_STMT_IF_ELSE(value, 0);
+
+    if value != 17 { return 2; }
+
+    return 0;
+}

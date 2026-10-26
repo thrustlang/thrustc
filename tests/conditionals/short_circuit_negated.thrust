@@ -1,0 +1,16 @@
+static mut hits: s32 = 0;
+
+fn bump() bool {
+    hits += 1;
+    return true;
+}
+
+fn main() s32 @public {
+    if !(true || bump()) { return 1; }
+    if hits != 0 { return 2; }
+
+    if !(false && bump()) { } else { return 3; }
+    if hits != 0 { return 4; }
+
+    return 0;
+}

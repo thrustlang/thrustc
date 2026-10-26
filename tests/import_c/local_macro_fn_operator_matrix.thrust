@@ -1,0 +1,10 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_fn_operator_matrix.h";
+
+fn main() s32 @public {
+    if local_macro_fn_operator_matrix::MACRO_FN_MATRIX(7, 2) != 57 { return 1; }
+
+    return 0;
+}

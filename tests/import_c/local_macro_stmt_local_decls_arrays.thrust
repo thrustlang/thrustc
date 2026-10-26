@@ -1,0 +1,14 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_stmt_local_decls_arrays.h";
+
+fn main() s32 @public {
+    var total: s32 = 0;
+
+    local_macro_stmt_local_decls_arrays::MACRO_STMT_ARRAY_SUM(total);
+
+    if total != 31 { return 1; }
+
+    return 0;
+}

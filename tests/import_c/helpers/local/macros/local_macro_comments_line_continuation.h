@@ -1,0 +1,9 @@
+
+#ifndef IMPORT_C_HELPER_LOCAL_LOCAL_MACRO_COMMENTS_LINE_CONTINUATION_H
+#define IMPORT_C_HELPER_LOCAL_LOCAL_MACRO_COMMENTS_LINE_CONTINUATION_H
+
+#define MACRO_LONG_SUM(a, b) \
+    ((a) + /* middle */ \
+     (b))
+
+#endif

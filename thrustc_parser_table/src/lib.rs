@@ -31,6 +31,13 @@ use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode, CompilationPosition};
 use thrustc_options::{CompilationUnit, CompilerOptions};
+use thrustc_typesystem::{
+    Type,
+    type_modificators::{
+        FunctionReferenceTypeModificator, GCCFunctionReferenceTypeModificator,
+        LLVMFunctionReferenceTypeModificator,
+    },
+};
 
 use thrustc_entities::parser_entities::{
     AssemblerFunction, AssemblerFunctions, ConstantSymbol, CustomTypeSymbol, EnumSymbol,
@@ -575,6 +582,164 @@ impl<'parser> SymbolTable<'parser> {
 }
 
 impl<'parser> SymbolTable<'parser> {
+    pub fn get_type(&self, id: &str) -> Option<Type> {
+        for scope in self.locals.iter().rev() {
+            if let Some((kind, ..)) = scope.get(id) {
+                return Some(kind.clone());
+            }
+        }
+
+        for scope in self.local_structs.iter().rev() {
+            if let Some((name, fields, _, metadata, span)) = scope.get(id) {
+                let field_types: Vec<Type> =
+                    fields.iter().map(|(_, kind, ..)| kind.clone()).collect();
+                let struct_type: Type = Type::Struct {
+                    name: name.clone(),
+                    fields: field_types,
+                    metadata: *metadata,
+                    span: *span,
+                };
+
+                return Some(struct_type);
+            }
+        }
+
+        for scope in self.local_enums.iter().rev() {
+            if let Some((fields, _)) = scope.get(id) {
+                if let Some((_, kind, _)) = fields.first() {
+                    return Some(kind.clone());
+                }
+
+                let hint: String = id.to_string();
+                let unresolved_span: Span = Span::nothing();
+                let unresolved_type: Type = Type::Unresolved {
+                    hint,
+                    span: unresolved_span,
+                };
+
+                return Some(unresolved_type);
+            }
+        }
+
+        for scope in self.local_custom_types.iter().rev() {
+            if let Some((kind, _)) = scope.get(id) {
+                return Some(kind.clone());
+            }
+        }
+
+        for scope in self.local_constants.iter().rev() {
+            if let Some((kind, ..)) = scope.get(id) {
+                return Some(kind.clone());
+            }
+        }
+
+        for scope in self.local_statics.iter().rev() {
+            if let Some((kind, ..)) = scope.get(id) {
+                return Some(kind.clone());
+            }
+        }
+
+        if let Some((kind, ..)) = self.parameters.get(id) {
+            return Some(kind.clone());
+        }
+
+        if let Some((name, fields, _, metadata, span)) = self.global_structs.get(id) {
+            let field_types: Vec<Type> = fields.iter().map(|(_, kind, ..)| kind.clone()).collect();
+            let struct_type: Type = Type::Struct {
+                name: name.clone(),
+                fields: field_types,
+                metadata: *metadata,
+                span: *span,
+            };
+
+            return Some(struct_type);
+        }
+
+        if let Some((fields, _)) = self.global_enums.get(id) {
+            if let Some((_, kind, _)) = fields.first() {
+                return Some(kind.clone());
+            }
+
+            let hint: String = id.to_string();
+            let unresolved_span: Span = Span::nothing();
+            let unresolved_type: Type = Type::Unresolved {
+                hint,
+                span: unresolved_span,
+            };
+
+            return Some(unresolved_type);
+        }
+
+        if let Some((kind, _)) = self.global_custom_types.get(id) {
+            return Some(kind.clone());
+        }
+
+        if let Some((kind, parameters, has_ignore)) = self.intrinsics.get(id) {
+            let return_type: Box<Type> = Box::new(kind.clone());
+            let parameter_types: Vec<Type> = parameters.0.clone();
+            let modificator: FunctionReferenceTypeModificator =
+                FunctionReferenceTypeModificator::new(
+                    LLVMFunctionReferenceTypeModificator::new(*has_ignore),
+                    GCCFunctionReferenceTypeModificator::default(),
+                );
+            let function_type: Type = Type::Fn {
+                return_type,
+                parameter_types,
+                modificator,
+                span: Span::nothing(),
+            };
+
+            return Some(function_type);
+        }
+
+        if let Some((kind, parameters, _, has_ignore)) = self.functions.get(id) {
+            let return_type: Box<Type> = Box::new(kind.clone());
+            let parameter_types: Vec<Type> = parameters.0.clone();
+            let modificator: FunctionReferenceTypeModificator =
+                FunctionReferenceTypeModificator::new(
+                    LLVMFunctionReferenceTypeModificator::new(*has_ignore),
+                    GCCFunctionReferenceTypeModificator::default(),
+                );
+
+            let function_type: Type = Type::Fn {
+                return_type,
+                parameter_types,
+                modificator,
+                span: Span::nothing(),
+            };
+
+            return Some(function_type);
+        }
+
+        if let Some((kind, parameters, has_ignore)) = self.asm_functions.get(id) {
+            let return_type: Box<Type> = Box::new(kind.clone());
+            let parameter_types: Vec<Type> = parameters.0.clone();
+            let modificator: FunctionReferenceTypeModificator =
+                FunctionReferenceTypeModificator::new(
+                    LLVMFunctionReferenceTypeModificator::new(*has_ignore),
+                    GCCFunctionReferenceTypeModificator::default(),
+                );
+            let function_type: Type = Type::Fn {
+                return_type,
+                parameter_types,
+                modificator,
+                span: Span::nothing(),
+            };
+
+            return Some(function_type);
+        }
+
+        if let Some((kind, ..)) = self.global_constants.get(id) {
+            return Some(kind.clone());
+        }
+
+        if let Some((kind, ..)) = self.global_statics.get(id) {
+            return Some(kind.clone());
+        }
+
+        None
+    }
+
     pub fn get_symbols_id(
         &self,
         id: &'parser str,

@@ -1,0 +1,18 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_fn_side_effect_twice.h";
+
+static mut macro_next: s32 = 0;
+
+fn next_value() s32 {
+    macro_next = macro_next + 1;
+    return macro_next;
+}
+
+fn main() s32 @public {
+    if local_macro_fn_side_effect_twice::MACRO_FN_SQUARE(next_value()) != 2 { return 1; }
+    if macro_next != 2 { return 2; }
+
+    return 0;
+}

@@ -186,12 +186,14 @@ fn build_type_inner<'parser>(
                                     thrustc_c_transpiler_macro_api::expand::expand_type(
                                         &macros, symbol,
                                     )
-                                    .map_err(|error| {
+                                    .map_err(|_| {
                                         CompilationIssue::Error(
                                             CompilationIssueCode::E0042,
-                                            error.get_message(),
-                                            "The C macro does not describe a supported Thrust type."
-                                                .into(),
+                                            format!(
+                                                "Could not expand C type macro '{}'.",
+                                                symbol
+                                            ),
+                                            "The C macro expansion failed.".into(),
                                             None,
                                             symbol_span,
                                         )
@@ -298,11 +300,14 @@ fn build_type_inner<'parser>(
                                 &macros,
                                 type_macro.get_name(),
                             )
-                            .map_err(|error| {
+                            .map_err(|_| {
                                 CompilationIssue::Error(
                                     CompilationIssueCode::E0042,
-                                    error.get_message(),
-                                    "The C macro does not describe a supported Thrust type.".into(),
+                                    format!(
+                                        "Could not expand C type macro '{}'.",
+                                        type_macro.get_name()
+                                    ),
+                                    "The C macro expansion failed.".into(),
                                     None,
                                     span,
                                 )

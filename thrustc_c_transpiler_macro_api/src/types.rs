@@ -80,13 +80,6 @@ impl MacroExpansion {
     pub fn get_argument_ranges(&self) -> &[(u32, u32)] {
         &self.argument_ranges
     }
-
-    #[inline]
-    pub fn is_argument_range(&self, start: u32, end: u32) -> bool {
-        self.argument_ranges
-            .iter()
-            .any(|(range_start, range_end)| start < *range_end && end > *range_start)
-    }
 }
 
 impl Constant {

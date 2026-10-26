@@ -66,20 +66,6 @@ impl<'clang> MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub fn get_macro_table(&self) -> &crate::macro_table::MacroTable {
-        &self.table
-    }
-}
-
-impl<'clang> MacroContext<'clang> {
-    #[inline]
-    pub fn get_mut_macro_table(&mut self) -> &mut crate::macro_table::MacroTable {
-        &mut self.table
-    }
-}
-
-impl<'clang> MacroContext<'clang> {
-    #[inline]
     pub fn push_expansion(&mut self, name: &str) -> bool {
         if self.expansion_stack.iter().any(|entry| entry == name) {
             return true;
@@ -98,6 +84,20 @@ impl<'clang> MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
+    pub fn get_macro_table(&self) -> &crate::macro_table::MacroTable {
+        &self.table
+    }
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub fn get_mut_macro_table(&mut self) -> &mut crate::macro_table::MacroTable {
+        &mut self.table
+    }
+}
+
+impl<'clang> MacroContext<'clang> {
+    #[inline]
     pub fn next_temporary_name(&mut self) -> String {
         let index: u64 = self.temporary_counter;
 
@@ -109,17 +109,17 @@ impl<'clang> MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub fn push_pending_statement(&mut self, statement: String) {
-        self.pending_statements.push(statement);
-    }
-
-    #[inline]
     pub fn pending_statements_len(&self) -> usize {
         self.pending_statements.len()
     }
 }
 
 impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub fn push_pending_statement(&mut self, statement: String) {
+        self.pending_statements.push(statement);
+    }
+
     #[inline]
     pub fn take_pending_statements_since(&mut self, base: usize) -> Vec<String> {
         if base >= self.pending_statements.len() {
@@ -142,9 +142,7 @@ impl<'clang> MacroContext<'clang> {
     pub fn set_type_binding(&mut self, name: String, kind: crate::macro_type::InferredType) {
         self.type_environment.insert(name, kind);
     }
-}
 
-impl<'clang> MacroContext<'clang> {
     #[inline]
     pub fn set_type_environment(
         &mut self,
@@ -160,6 +158,11 @@ impl<'clang> MacroContext<'clang> {
 }
 
 impl<'clang> MacroContext<'clang> {
+    #[inline]
+    pub fn get_return_type(&self) -> Option<&str> {
+        self.return_type.as_deref()
+    }
+
     #[inline]
     pub fn get_inline_binding(&self, name: &str) -> Option<&MacroExpr> {
         self.inline_bindings.get(name)
@@ -180,11 +183,6 @@ impl<'clang> MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub fn get_return_type(&self) -> Option<&str> {
-        self.return_type.as_deref()
-    }
-
-    #[inline]
     pub fn set_return_type(&mut self, return_type: Option<String>) {
         self.return_type = return_type;
     }
@@ -200,14 +198,14 @@ impl<'clang> MacroContext<'clang> {
     pub fn pop_loop_context(&mut self) {
         self.loop_contexts.pop();
     }
+}
 
+impl<'clang> MacroContext<'clang> {
     #[inline]
     pub fn get_last_loop_context(&self) -> Option<&MacroLoopContext> {
         self.loop_contexts.last()
     }
-}
 
-impl<'clang> MacroContext<'clang> {
     #[inline]
     pub fn get_expansion_stack(&self) -> &[String] {
         &self.expansion_stack

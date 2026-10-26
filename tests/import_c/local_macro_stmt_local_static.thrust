@@ -1,0 +1,19 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_stmt_local_static.h";
+
+fn next_value() s32 {
+    var value: s32 = 0;
+
+    local_macro_stmt_local_static::MACRO_STMT_NEXT(value);
+
+    return value;
+}
+
+fn main() s32 @public {
+    if next_value() != 1 { return 1; }
+    if next_value() != 2 { return 2; }
+
+    return 0;
+}

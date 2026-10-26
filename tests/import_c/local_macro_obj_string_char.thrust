@@ -1,0 +1,12 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_obj_string_char.h";
+importC "string.h" as cstring;
+
+fn main() s32 @public {
+    if cstring::strlen(local_macro_obj_string_char::MACRO_OBJ_WORD as const ptr[char]) != 6 { return 1; }
+    if local_macro_obj_string_char::MACRO_OBJ_LETTER != 'Z' { return 2; }
+
+    return 0;
+}

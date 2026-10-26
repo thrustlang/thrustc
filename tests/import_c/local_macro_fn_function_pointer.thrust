@@ -1,0 +1,16 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_fn_function_pointer.h";
+
+fn macro_abs(value: s32) s32 {
+    if value < 0 { return -value; }
+
+    return value;
+}
+
+fn main() s32 @public {
+    if local_macro_fn_function_pointer::MACRO_FN_CALL_UNARY(macro_abs, 7) != 7 { return 1; }
+
+    return 0;
+}

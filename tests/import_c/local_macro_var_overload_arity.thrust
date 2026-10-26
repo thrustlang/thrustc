@@ -1,0 +1,11 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_var_overload_arity.h";
+
+fn main() s32 @public {
+    if local_macro_var_overload_arity::MACRO_VAR_PICK(20, 22) != 42 { return 1; }
+    if local_macro_var_overload_arity::MACRO_VAR_PICK(10, 11, 21) != 42 { return 2; }
+
+    return 0;
+}

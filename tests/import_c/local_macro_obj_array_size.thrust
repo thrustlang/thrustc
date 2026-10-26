@@ -1,0 +1,13 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_obj_array_size.h";
+
+fn main() s32 @public {
+    var values: array[s32; local_macro_obj_array_size::MACRO_OBJ_COUNT] = fixed[1, 2, 3, 4];
+
+    if sizeOf(array[s32; local_macro_obj_array_size::MACRO_OBJ_COUNT]) != 16 { return 1; }
+    if values->[0] + values->[3] != 5 { return 2; }
+
+    return 0;
+}

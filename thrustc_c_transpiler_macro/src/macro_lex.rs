@@ -476,6 +476,7 @@ pub fn to_macro_tokens(
 ) -> Vec<crate::macro_token::MacroToken> {
     tokens
         .iter()
+        .filter(|token| token.get_kind() != clang::token::TokenKind::Comment)
         .map(|token| {
             let raw: String = token.get_spelling();
 
@@ -538,6 +539,34 @@ pub fn lex_text_to_macro_tokens(
 
     while index < bytes.len() {
         let ch: u8 = bytes[index];
+
+        if ch == b'/' && bytes.get(index + 1) == Some(&b'/') {
+            index += 2;
+
+            while index < bytes.len() && bytes[index] != b'\n' {
+                index += 1;
+            }
+
+            continue;
+        }
+
+        if ch == b'/' && bytes.get(index + 1) == Some(&b'*') {
+            let mut cursor: usize = index + 2;
+
+            while cursor + 1 < bytes.len()
+                && !(bytes[cursor] == b'*' && bytes[cursor + 1] == b'/')
+            {
+                cursor += 1;
+            }
+
+            index = if cursor + 1 < bytes.len() {
+                cursor + 2
+            } else {
+                bytes.len()
+            };
+
+            continue;
+        }
 
         if ch == b'\\' {
             if bytes.get(index + 1) == Some(&b'\n') {
@@ -616,23 +645,33 @@ pub fn lex_text_to_macro_tokens(
         }
 
         if ch == b'"' || ch == b'\'' {
-            let quote: u8 = ch;
+            let quote: char = ch as char;
             let start: usize = index;
+            let mut escaped: bool = false;
 
             index += 1;
 
             while index < bytes.len() {
-                let inner: u8 = bytes[index];
+                let character: char = source[index..]
+                    .chars()
+                    .next()
+                    .expect("index must remain inside the source");
 
-                index += 1;
+                index += character.len_utf8();
 
-                if inner == b'\\' {
-                    index += 1;
+                if escaped {
+                    escaped = false;
 
                     continue;
                 }
 
-                if inner == quote {
+                if character == '\\' {
+                    escaped = true;
+
+                    continue;
+                }
+
+                if character == quote {
                     break;
                 }
             }
@@ -646,9 +685,7 @@ pub fn lex_text_to_macro_tokens(
             continue;
         }
 
-        if index + 1 < bytes.len() {
-            let two: &str = &source[index..index + 2];
-
+        if let Some(two) = source.get(index..index + 2) {
             if crate::macro_token::classify_text(two)
                 == crate::macro_token::MacroTokenKind::Punctuation
             {
@@ -664,15 +701,20 @@ pub fn lex_text_to_macro_tokens(
             }
         }
 
-        let one: &str = &source[index..index + 1];
+        let character: char = source[index..]
+            .chars()
+            .next()
+            .expect("index must remain inside the source");
+
+        let text: String = character.to_string();
 
         out.push(crate::macro_token::MacroToken::new(
-            crate::macro_token::classify_text(one),
-            one.to_string(),
+            crate::macro_token::classify_text(&text),
+            text,
             origin,
         ));
 
-        index += 1;
+        index += character.len_utf8();
     }
 
     out

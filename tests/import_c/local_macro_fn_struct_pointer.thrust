@@ -1,0 +1,17 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_fn_struct_pointer.h";
+
+fn main() s32 @public {
+    var item: local_macro_fn_struct_pointer::MacroFnPair =
+        new local_macro_fn_struct_pointer::MacroFnPair { left: 20, right: 22 };
+
+    if local_macro_fn_struct_pointer::MACRO_FN_PAIR_SUM(ref item) != 42 { return 1; }
+
+    local_macro_fn_struct_pointer::MACRO_FN_PAIR_SET(ref item, 7);
+
+    if item->left != 7 { return 2; }
+
+    return 0;
+}

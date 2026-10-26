@@ -1,0 +1,22 @@
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_var_gnu_comma.h";
+
+fn macro_sum_args(count: s32) s32 @arbitraryArgs {
+    var total: s32 = 0;
+    var i: s32 = 0;
+
+    while i < count {
+        total += arbitraryArg(s32);
+        i += 1;
+    }
+
+    return total;
+}
+
+fn main() s32 @public {
+    if local_macro_var_gnu_comma::MACRO_VAR_COMMA_SUM(0) != 0 { return 1; }
+    if local_macro_var_gnu_comma::MACRO_VAR_COMMA_SUM(2, 5, 6) != 11 { return 2; }
+
+    return 0;
+}

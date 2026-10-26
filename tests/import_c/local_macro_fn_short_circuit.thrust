@@ -1,0 +1,24 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_fn_short_circuit.h";
+
+static mut macro_hits: s32 = 0;
+
+fn hit() bool {
+    macro_hits = macro_hits + 1;
+    return true;
+}
+
+fn main() s32 @public {
+    if local_macro_fn_short_circuit::MACRO_FN_AND(false, hit()) { return 1; }
+    if macro_hits != 0 { return 2; }
+
+    if !local_macro_fn_short_circuit::MACRO_FN_OR(true, hit()) { return 3; }
+    if macro_hits != 0 { return 4; }
+
+    if !local_macro_fn_short_circuit::MACRO_FN_AND(true, hit()) { return 5; }
+    if macro_hits != 1 { return 6; }
+
+    return 0;
+}

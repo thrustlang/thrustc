@@ -1,0 +1,18 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_stmt_switch_fallthrough.h";
+
+fn main() s32 @public {
+    var total: s32 = 0;
+
+    local_macro_stmt_switch_fallthrough::MACRO_STMT_SWITCH_SCORE(total, 1);
+
+    if total != 3 { return 1; }
+
+    local_macro_stmt_switch_fallthrough::MACRO_STMT_SWITCH_SCORE(total, 3);
+
+    if total != 10 { return 2; }
+
+    return 0;
+}

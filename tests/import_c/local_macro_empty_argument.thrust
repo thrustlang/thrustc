@@ -1,0 +1,10 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_empty_argument.h";
+
+fn main() s32 @public {
+    if local_macro_empty_argument::MACRO_FIRST(7,) != 7 { return 1; }
+
+    return 0;
+}

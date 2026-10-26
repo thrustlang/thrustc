@@ -17,12 +17,14 @@
 
 */
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use thrustc_c_transpiler_macro::macro_context::MacroContext;
 use thrustc_c_transpiler_macro::macro_error::MacroLimit;
 use thrustc_c_transpiler_macro::macro_expand::MacroExpansionContext;
 use thrustc_c_transpiler_macro::macro_parser::MacroParser;
+use thrustc_c_transpiler_macro::macro_type::InferredType;
 use thrustc_c_transpiler_macro::macro_table::{
     MacroFunctionLikeDefinition, MacroFunctionLikeKind, MacroTable,
 };
@@ -36,6 +38,7 @@ pub fn expand_expression(
     macros: &[Macro],
     name: &str,
     arguments: &[String],
+    argument_types: &[Option<String>],
     options: &Options,
 ) -> Result<MacroExpansion, MacroExpansionError> {
     let table: MacroTable = self::build_macro_table(macros);
@@ -59,22 +62,23 @@ pub fn expand_expression(
         options.get_max_rescan_passes(),
     );
 
-    let expanded: Vec<MacroToken> = thrustc_c_transpiler_macro::macro_expand::expand_function_tokens(
-        &substituted,
-        &table,
-        &mut expansion_context,
-    )
-    .map_err(|limit: MacroLimit| {
-        let (detail, help) =
-            thrustc_c_transpiler_macro::macro_error::get_macro_issue_help(name, limit);
+    let expanded: Vec<MacroToken> =
+        thrustc_c_transpiler_macro::macro_expand::expand_function_tokens(
+            &substituted,
+            &table,
+            &mut expansion_context,
+        )
+        .map_err(|limit: MacroLimit| {
+            let (detail, help) =
+                thrustc_c_transpiler_macro::macro_error::get_macro_issue_help(name, limit);
 
-        MacroExpansionError::ExpansionFailed(format!("{detail}\nhelp: {help}"))
-    })?;
+            MacroExpansionError::ExpansionFailed(format!("{detail}\nhelp: {help}"))
+        })?;
 
     let lexemes: Vec<String> = thrustc_c_transpiler_macro::macro_token::texts(&expanded);
 
-    let parsed: thrustc_c_transpiler_macro::macro_ast::MacroExpr =
-        MacroParser::parse(&lexemes).map_err(|limit: MacroLimit| {
+    let parsed: thrustc_c_transpiler_macro::macro_ast::MacroExpr = MacroParser::parse(&lexemes)
+        .map_err(|limit: MacroLimit| {
             let (detail, help) =
                 thrustc_c_transpiler_macro::macro_error::get_macro_issue_help(name, limit);
 
@@ -82,6 +86,19 @@ pub fn expand_expression(
         })?;
 
     let mut context: MacroContext<'_> = MacroContext::new(PathBuf::new());
+
+    let mut type_environment: HashMap<String, InferredType> = HashMap::new();
+
+    for (index, kind) in argument_types.iter().enumerate() {
+        if let Some(kind) = kind {
+            type_environment.insert(
+                format!("__thrustc_macro_arg_{index}__"),
+                InferredType::Known(kind.clone()),
+            );
+        }
+    }
+
+    context.set_type_environment(type_environment);
 
     let pending_base: usize = context.pending_statements_len();
 
@@ -96,7 +113,11 @@ pub fn expand_expression(
         return Err(MacroExpansionError::NeedsStatements(name.to_string()));
     }
 
-    Ok(self::restore_arguments(source, arguments))
+
+    let expr: MacroExpansion = self::restore_expr_arguments(source, arguments);
+
+
+    Ok(expr)
 }
 
 pub fn expand_object(
@@ -104,13 +125,9 @@ pub fn expand_object(
     name: &str,
     options: &Options,
 ) -> Result<MacroExpansion, MacroExpansionError> {
-    let Some(macro_definition): Option<&Macro> = macros
-        .iter()
-        .find(|macro_definition| {
-            macro_definition.get_name() == name
-                && macro_definition.get_kind() == MacroType::Object
-        })
-    else {
+    let Some(macro_definition): Option<&Macro> = macros.iter().find(|macro_definition| {
+        macro_definition.get_name() == name && macro_definition.get_kind() == MacroType::Object
+    }) else {
         return Err(MacroExpansionError::UnknownMacro(name.to_string()));
     };
 
@@ -121,22 +138,23 @@ pub fn expand_object(
         options.get_max_rescan_passes(),
     );
 
-    let expanded: Vec<MacroToken> = thrustc_c_transpiler_macro::macro_expand::expand_function_tokens(
-        macro_definition.get_body(),
-        &table,
-        &mut expansion_context,
-    )
-    .map_err(|limit: MacroLimit| {
-        let (detail, help) =
-            thrustc_c_transpiler_macro::macro_error::get_macro_issue_help(name, limit);
+    let expanded: Vec<MacroToken> =
+        thrustc_c_transpiler_macro::macro_expand::expand_function_tokens(
+            macro_definition.get_body(),
+            &table,
+            &mut expansion_context,
+        )
+        .map_err(|limit: MacroLimit| {
+            let (detail, help) =
+                thrustc_c_transpiler_macro::macro_error::get_macro_issue_help(name, limit);
 
-        MacroExpansionError::ExpansionFailed(format!("{detail}\nhelp: {help}"))
-    })?;
+            MacroExpansionError::ExpansionFailed(format!("{detail}\nhelp: {help}"))
+        })?;
 
     let lexemes: Vec<String> = thrustc_c_transpiler_macro::macro_token::texts(&expanded);
 
-    let parsed: thrustc_c_transpiler_macro::macro_ast::MacroExpr =
-        MacroParser::parse(&lexemes).map_err(|limit: MacroLimit| {
+    let parsed: thrustc_c_transpiler_macro::macro_ast::MacroExpr = MacroParser::parse(&lexemes)
+        .map_err(|limit: MacroLimit| {
             let (detail, help) =
                 thrustc_c_transpiler_macro::macro_error::get_macro_issue_help(name, limit);
 
@@ -161,10 +179,7 @@ pub fn expand_object(
     Ok(MacroExpansion::new(source, Vec::new()))
 }
 
-pub fn expand_type(
-    macros: &[Macro],
-    name: &str,
-) -> Result<MacroExpansion, MacroExpansionError> {
+pub fn expand_type(macros: &[Macro], name: &str) -> Result<MacroExpansion, MacroExpansionError> {
     let Some(macro_definition): Option<&Macro> = macros
         .iter()
         .find(|macro_definition| macro_definition.get_name() == name)
@@ -226,17 +241,18 @@ pub fn expand_statement(
         options.get_max_rescan_passes(),
     );
 
-    let expanded: Vec<MacroToken> = thrustc_c_transpiler_macro::macro_expand::expand_function_tokens(
-        &substituted,
-        &table,
-        &mut expansion_context,
-    )
-    .map_err(|limit: MacroLimit| {
-        let (detail, help) =
-            thrustc_c_transpiler_macro::macro_error::get_macro_issue_help(name, limit);
+    let expanded: Vec<MacroToken> =
+        thrustc_c_transpiler_macro::macro_expand::expand_function_tokens(
+            &substituted,
+            &table,
+            &mut expansion_context,
+        )
+        .map_err(|limit: MacroLimit| {
+            let (detail, help) =
+                thrustc_c_transpiler_macro::macro_error::get_macro_issue_help(name, limit);
 
-        MacroExpansionError::ExpansionFailed(format!("{detail}\nhelp: {help}"))
-    })?;
+            MacroExpansionError::ExpansionFailed(format!("{detail}\nhelp: {help}"))
+        })?;
 
     let lexemes: Vec<String> = thrustc_c_transpiler_macro::macro_token::texts(&expanded);
 
@@ -255,22 +271,23 @@ pub fn expand_statement(
     let mut lines: Vec<String> = Vec::new();
 
     for statement in statements.iter() {
-        let lowered: Vec<String> = statement
-            .lower(&mut context, 1)
-            .map_err(|limit: MacroLimit| {
-                let (detail, help) =
-                    thrustc_c_transpiler_macro::macro_error::get_macro_issue_help(name, limit);
+        let lowered: Vec<String> =
+            statement
+                .lower(&mut context, 1)
+                .map_err(|limit: MacroLimit| {
+                    let (detail, help) =
+                        thrustc_c_transpiler_macro::macro_error::get_macro_issue_help(name, limit);
 
-                MacroExpansionError::Malformed(format!("{detail}\nhelp: {help}"))
-            })?;
+                    MacroExpansionError::Malformed(format!("{detail}\nhelp: {help}"))
+                })?;
 
         lines.extend(lowered);
     }
 
-    Ok(self::restore_arguments(
-        format!("{{\n{}\n}}", lines.join("\n")),
-        arguments,
-    ))
+    let expr: MacroExpansion =
+        self::restore_expr_arguments(format!("{{\n{}\n}}", lines.join("\n")), arguments);
+
+    Ok(expr)
 }
 
 fn build_macro_table(macros: &[Macro]) -> MacroTable {
@@ -366,7 +383,7 @@ fn substitute_arguments(
     }
 }
 
-fn restore_arguments(source: String, arguments: &[String]) -> MacroExpansion {
+fn restore_expr_arguments(source: String, arguments: &[String]) -> MacroExpansion {
     let mut source: String = source;
     let mut argument_ranges: Vec<(u32, u32)> = Vec::new();
 

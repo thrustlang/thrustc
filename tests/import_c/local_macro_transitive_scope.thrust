@@ -1,0 +1,11 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+directive "--import-c-scope=transitive-all";
+
+importC "macros/local_macro_transitive_scope_a.h";
+
+fn main() s32 @public {
+    if local_macro_transitive_scope_a::MACRO_TRANSITIVE_VALUE != 42 { return 1; }
+
+    return 0;
+}

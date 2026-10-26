@@ -1,0 +1,10 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_deep_nesting.h";
+
+fn main() s32 @public {
+    if local_macro_deep_nesting::MACRO_DEEP_20 != 21 { return 1; }
+
+    return 0;
+}

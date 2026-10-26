@@ -1,0 +1,12 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_fn_string_char_args.h";
+importC "string.h" as cstring;
+
+fn main() s32 @public {
+    if local_macro_fn_string_char_args::MACRO_FN_LEN("macro" as const ptr[char]) != 5 { return 1; }
+    if !local_macro_fn_string_char_args::MACRO_FN_IS_X('x') { return 2; }
+
+    return 0;
+}

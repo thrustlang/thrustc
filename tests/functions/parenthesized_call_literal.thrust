@@ -1,0 +1,12 @@
+fn macro_abs(value: s32) s32 {
+    if value < 0 { return -value; }
+
+    return value;
+}
+
+fn main() s32 @public {
+    if (macro_abs(7)) != 7 { return 1; }
+    if (macro_abs(-7)) != 7 { return 2; }
+
+    return 0;
+}

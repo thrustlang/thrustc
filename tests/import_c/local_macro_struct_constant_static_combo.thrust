@@ -1,0 +1,14 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_struct_constant_static_combo.h";
+
+fn main() s32 @public {
+    var item: local_macro_struct_constant_static_combo::MacroCombo =
+        new local_macro_struct_constant_static_combo::MacroCombo { value: 20, extra: 18 };
+
+    if local_macro_struct_constant_static_combo::MACRO_COMBO_SUM(ref item) != 42 { return 1; }
+    if local_macro_struct_constant_static_combo::MACRO_COMBO_OPTIND_SUM(ref item) != 43 { return 2; }
+
+    return 0;
+}

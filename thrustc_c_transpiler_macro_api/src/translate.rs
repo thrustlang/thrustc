@@ -84,7 +84,6 @@ pub fn translate_type_macro(macro_decl: &clang::Entity<'_>, _span: Span) -> Opti
     }
 
     let range: clang::source::SourceRange<'_> = macro_decl.get_range()?;
-
     let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
 
     let name_index: usize = tokens
@@ -121,14 +120,16 @@ pub fn translate_type_macro(macro_decl: &clang::Entity<'_>, _span: Span) -> Opti
         })
         .collect();
 
-    Some(Entity::Macro(Macro::new(
+    let macro_: Entity = Entity::Macro(Macro::new(
         raw_name,
         Vec::new(),
         None,
         body,
         None,
         MacroType::Type,
-    )))
+    ));
+
+    Some(macro_)
 }
 
 pub fn translate_function_macros(

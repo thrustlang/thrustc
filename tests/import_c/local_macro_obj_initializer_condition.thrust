@@ -1,0 +1,18 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_obj_initializer_condition.h";
+
+fn main() s32 @public {
+    var item: local_macro_obj_initializer_condition::MacroInitItem =
+        new local_macro_obj_initializer_condition::MacroInitItem {
+            value: local_macro_obj_initializer_condition::MACRO_INIT_VALUE as s32,
+            extra: 7,
+        };
+
+    if item->value != 42 { return 1; }
+    if local_macro_obj_initializer_condition::MACRO_INIT_FLAG != 1 { return 2; }
+    if sizeOf(array[s32; local_macro_obj_initializer_condition::MACRO_INIT_COUNT]) != 12 { return 3; }
+
+    return 0;
+}

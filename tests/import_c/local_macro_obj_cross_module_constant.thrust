@@ -1,0 +1,11 @@
+
+directive "--import-c-include=tests/import_c/helpers/local";
+
+importC "macros/local_macro_obj_cross_module_constant_a.h";
+importC "macros/local_macro_obj_cross_module_constant_b.h";
+
+fn main() s32 @public {
+    if local_macro_obj_cross_module_constant_b::MACRO_CROSS_OBJ_VALUE != 42 { return 1; }
+
+    return 0;
+}

@@ -19,6 +19,7 @@
 
 use thrustc_ast::{Ast, traits::AstStandardExtensions};
 use thrustc_builtins::BuiltinRegistry;
+use thrustc_c_transpiler_macro_api::types::MacroExpansion;
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::FileOptions;
@@ -30,7 +31,6 @@ use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_parser_context::{ControlContext, TypeContext};
 use thrustc_parser_table::SymbolTable;
 use thrustc_preprocessor::module::Module;
-use thrustc_c_transpiler_macro_api::types::MacroExpansion;
 
 use thrustc_generics_monomorphization::context::GenericsContext;
 use thrustc_import::context::ImportContext;
@@ -243,15 +243,16 @@ impl<'parser> ParserContext<'parser> {
             self.file.get_base_name(),
         );
 
-        let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&unit, self.options).map_err(|_| {
-            CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "Failed to lex the expanded C macro expression.".into(),
-                "You should report this macro as unsupported.".into(),
-                None,
-                span,
-            )
-        })?;
+        let tokens: Vec<Token> =
+            Lexer::lex_for_preprocessor(&unit, self.options).map_err(|_| {
+                CompilationIssue::Error(
+                    CompilationIssueCode::E0001,
+                    "Could not expand the C macro expression.".into(),
+                    "The C macro expansion failed.".into(),
+                    None,
+                    span,
+                )
+            })?;
 
         let expanded: &'static [Token] = Box::leak(tokens.into_boxed_slice());
 
@@ -316,17 +317,18 @@ impl<'parser> ParserContext<'parser> {
             self.file.get_base_name(),
         );
 
-        let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&unit, self.options).map_err(|_| {
-            CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "Failed to lex the expanded C macro statement.".into(),
-                "You should report this macro as unsupported.".into(),
-                None,
-                span,
-            )
-        })?;
+        let tokens: Vec<Token> =
+            Lexer::lex_for_preprocessor(&unit, self.options).map_err(|_| {
+                CompilationIssue::Error(
+                    CompilationIssueCode::E0001,
+                    "Could not expand the C macro statement.".into(),
+                    "The C macro expansion failed.".into(),
+                    None,
+                    span,
+                )
+            })?;
 
-        let expanded: &'static [Token] = Box::leak(tokens.into_boxed_slice());
+        let expanded: &'parser [Token] = Box::leak(tokens.into_boxed_slice());
 
         let original_tokens: &'parser [Token] = self.tokens;
         let original_position: usize = self.position;
@@ -390,15 +392,16 @@ impl<'parser> ParserContext<'parser> {
             self.file.get_base_name(),
         );
 
-        let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&unit, self.options).map_err(|_| {
-            CompilationIssue::Error(
-                CompilationIssueCode::E0001,
-                "Failed to lex the expanded C macro type.".into(),
-                "You should report this macro as unsupported.".into(),
-                None,
-                span,
-            )
-        })?;
+        let tokens: Vec<Token> =
+            Lexer::lex_for_preprocessor(&unit, self.options).map_err(|_| {
+                CompilationIssue::Error(
+                    CompilationIssueCode::E0001,
+                    "Could not expand the C macro type.".into(),
+                    "The C macro expansion failed.".into(),
+                    None,
+                    span,
+                )
+            })?;
 
         let expanded: &'static [Token] = Box::leak(tokens.into_boxed_slice());
 

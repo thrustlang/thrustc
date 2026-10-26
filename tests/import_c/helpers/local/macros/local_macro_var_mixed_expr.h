@@ -1,0 +1,7 @@
+
+#ifndef IMPORT_C_HELPER_LOCAL_LOCAL_MACRO_VAR_MIXED_EXPR_H
+#define IMPORT_C_HELPER_LOCAL_LOCAL_MACRO_VAR_MIXED_EXPR_H
+
+#define MACRO_VAR_MIXED(first, ...) ((first) + (__VA_ARGS__))
+
+#endif

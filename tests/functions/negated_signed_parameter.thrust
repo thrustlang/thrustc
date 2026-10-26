@@ -1,0 +1,10 @@
+fn negate(value: s32) s32 {
+    return -value;
+}
+
+fn main() s32 @public {
+    if negate(7) != -7 { return 1; }
+    if negate(-7) != 7 { return 2; }
+
+    return 0;
+}
