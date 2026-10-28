@@ -114,7 +114,7 @@ cargo fuzz-reproduce-case [<target> <artifact>]
 
 ## Continuous Compiler Fuzzing
 
-Unlike the one-shot aliases above (which stop at the first crash), the continuous supervisor runs a fuzzer in a loop, archives every crash/panic it finds (input + AST dump + LLVM IR dump) into `fuzz/backlog/`, records them in the cascading registry `fuzz/fuzz_continuous/<target>.log`, and immediately resumes fuzzing. The default mode is `stable`; pass `--mode unstable` to fuzz unstable features.
+Unlike the one-shot aliases above (which stop at the first crash), the continuous supervisor runs a fuzzer in a loop, archives every crash/panic it finds (input + AST dump + LLVM IR dump) into `fuzz/logs/`, records them in the cascading registry `fuzz/fuzz_continuous/<target>.log`, and immediately resumes fuzzing. The default mode is `stable`; pass `--mode unstable` to fuzz unstable features.
 
 ### Supervisor commands
 
@@ -130,15 +130,15 @@ cargo fuzz-continuous run-all [--mode stable|unstable]
 
 Same, one fuzzer thread per target.
 
-### Backlog management
+### Logs management
 
 ```console
-cargo fuzz-backlog list [--all]
-cargo fuzz-backlog history [<target>]
-cargo fuzz-backlog import <target>
-cargo fuzz-backlog ignore <target> <issue-id>
-cargo fuzz-backlog reopen <target> <issue-id>
-cargo fuzz-backlog fixed <target> <issue-id>
+cargo fuzz-logs list [--all]
+cargo fuzz-logs history [<target>]
+cargo fuzz-logs import <target>
+cargo fuzz-logs ignore <target> <issue-id>
+cargo fuzz-logs reopen <target> <issue-id>
+cargo fuzz-logs fixed <target> <issue-id>
 ```
 
 - `list` shows the pending (`open`) errors per target (`--all` also shows `ignored`/`fixed`).

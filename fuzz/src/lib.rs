@@ -5,5 +5,5 @@ pub mod llvm_codegen_top_level;
 pub mod names;
 pub mod parser_decisions;
 
-pub mod backlog;
+pub mod logs;
 pub mod dumps;

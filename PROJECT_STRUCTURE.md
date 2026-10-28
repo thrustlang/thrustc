@@ -1,6 +1,6 @@
 <img src="https://github.com/thrustlang/.github/blob/main/assets/logos/new%20logo/thrustlang-logo-banner-text-italic.png" alt="logo" style="width: 80%; height: 80%;">
 
-# Thrust Compiler: Project Structure
+# Project Structure
 
 <img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
 
@@ -250,15 +250,15 @@ Vendored forks of LLVM Rust bindings, patched for thrustc compatibility:
 A fuzzing infrastructure using `cargo-fuzz`:
 
 - **`fuzz_targets/`**: Fuzz targets for the lexer, LLVM codegen (local and top-level), and the full pipeline.
-- **`src/`**: Shared fuzzing helpers: corpus generation (`gen_local_common.rs`), AST and IR dumps (`dumps.rs`), backlog tracking (`backlog.rs`), and target-specific harnesses (lexer, LLVM codegen local, loops, and top-level).
+- **`src/`**: Shared fuzzing helpers: corpus generation (`gen_local_common.rs`), AST and IR dumps (`dumps.rs`), issue logs tracking (`logs.rs`), and target-specific harnesses (lexer, LLVM codegen local, loops, and top-level).
 - **`fuzz_pipeline/`**: More than 1984 valid AST corpus files used for pipeline regression fuzzing.
-- **`fuzz_continuous/`**: Continuous fuzzing setup (see `COMPILER_CONTINUOUS_FUZZING.md`).
+- **`fuzz_continuous/`**: Continuous fuzzing setup (see `fuzz/CONTINUOUS_FUZZING.md`).
 - **`corpus_stable/`**, **`corpus_universal/`**, **`corpus_unstable/`**: Categorized fuzzing corpora.
 - **`fuzz_reproduce_logs/`**: Logs from reproduced fuzzing failures.
 - **`ast_dumps/`**: AST dumps generated during fuzzing.
 - **`llvm_ir_dumps/`**: LLVM IR dumps captured from crashing inputs.
 - **`artifacts/`**: Crashes found by each fuzz target.
-- **`backlog/`**: Pending fuzzing issues per target.
+- **`logs/`**: Recorded fuzzing issues per target.
 - **`scripts/`**: Fuzzing directory setup scripts (`.sh`, `.bat`, `.ps1`, `.fish`).
 - Dictionary files (`thrust-stable.dict`, `thrust-unstable.dict`) for coverage-guided fuzzing.
 
@@ -456,18 +456,3 @@ Source File (.thrust)
     ▼
   Binary, Library, or Executable
 ```
-
----
-
-## Supported Compiler Host Platforms
-
-Matches `README.md` (`Platform | Architecture | Release tag`), ordered Linux, Windows, macOS ARM, macOS Intel:
-
-| Platform | Architecture | Release tag |
-|---|---|---|
-| Linux Ubuntu GNU | x64 `x86_64-unknown-linux-gnu` | `thrustc-x86_64-linux-ubuntu-v*.*.*` |
-| Windows MSVC | x64 `x86_64-pc-windows-msvc` | `thrustc-x86_64-windows-msvc-v*.*.*` |
-| macOS Apple Silicon | aarch64 `aarch64-apple-darwin` | `thrustc-aarch64-macos-v*.*.*` |
-| macOS Intel | x64 `x86_64-apple-darwin` | `thrustc-x86_64-macos-v*.*.*` |
-
----

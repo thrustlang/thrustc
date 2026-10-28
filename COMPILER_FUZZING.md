@@ -4,10 +4,12 @@
 
 <img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
 
-Fuzzing feeds the compiler with arbitrary input and turns every crash into a bug to fix. Everything lives under `fuzz/`. You choose between "stable" (only stable language features) and "unstable" (everything, including inline assembly).
+# Fuzzing
+
+The fuzzing suite lives under `fuzz/`. It feeds the compiler with generated input to find panics, integer overflows, invalid IR and LLVM verification errors. Every fuzzer runs against `stable` (stable language features only) or `unstable` (everything, including inline assembly).
 
 > [!IMPORTANT]
-> The `cargo fuzz-*` aliases and the continuous supervisor need **`cargo-fuzz`** (libFuzzer) and a **nightly** toolchain. The repository root pins stable, so you run the fuzzers with `cargo +nightly fuzz-...`. All prerequisites are listed below.
+> The `cargo fuzz-*` aliases and the continuous supervisor need **`cargo-fuzz`** (libFuzzer) and a **nightly** toolchain. The repository root pins stable, so run the fuzzers with `cargo +nightly fuzz-...`. All prerequisites are listed below.
 
 ## Prerequisites
 
@@ -40,59 +42,45 @@ Install these once. If a fuzz run fails in an unexpected way, check this list fi
   bash fuzz/scripts/create_fuzzing_dirs.sh
   ```
 
-- **Run from the repo root with `+nightly`.** The root toolchain is stable, cargo-fuzz needs nightly. Every fuzz command below is written as `cargo +nightly fuzz-...`; keep the `+nightly`.
+- **Run from the repo root with `+nightly`.** The root toolchain is stable and cargo-fuzz needs nightly, so every fuzz command below keeps the `+nightly` prefix.
 
 ## Fuzzing Suite Structure
 
 The fuzzing project lives under `fuzz/`:
 
-- **`Cargo.toml`**: Workspace manifest defining all fuzz targets and auxiliary binaries.
-- **`Cargo.lock`**: Lockfile for the fuzzing workspace.
-- **`rust-toolchain.toml`**: Pins the **nightly** toolchain and its cross-compilation targets for all `fuzz/` builds.
-- **`fuzz_targets/`**: Fuzzer entry points:
-  - `lexer.rs`: Generates arbitrary UTF-8 source code and feeds it to the lexer.
-  - `pipeline.rs`: Generates arbitrary ASTs via the `Arbitrary` trait, then runs semantic analysis and AST validation.
-  - `llvm_codegen_top_level.rs`: Generates ASTs with manual scoping (delegates to the shared `thrustc_fuzz::llvm_codegen_top_level::gen_root` generator) and runs semantic analysis + full LLVM codegen (top-level configuration).
-  - `llvm_codegen_local.rs`: Same as top-level but with different limits (deeper nesting, more statements per block, includes `Write` AST node).
-  - `llvm_codegen_local_loops.rs`: A fuzzer focused on loops. It builds ASTs around loops (`for`, `while`, `loop`) and makes loop control statements (`break`, `continue`, `break all`, `continue all`) common, but only inside a loop scope. Loop nesting is limited (`MAX_LOOP_NESTING`) and loop conditions use variables that are already in scope so the loop can finish.
-- **`src/`**: Shared library (thrustc_fuzz) with the scoped AST generators and the continuous-fuzzing infrastructure:
-  - `lib.rs`: Re-exports the generator and support modules.
-  - `llvm_codegen_local.rs`: Scoped AST generator used by the `llvm-codegen-local` target.
-  - `llvm_codegen_local_loops.rs`: Scoped AST generator for the `llvm-codegen-local-loops` target, loop oriented (see above).
-  - `llvm_codegen_top_level.rs`: Scoped AST generator used by the `llvm-codegen-top-level` target (`gen_root`).
-  - `dumps.rs`: Shared AST/IR reconstruction and crash classification. Defines `CRASH_MARKERS`, `classify()`, `reconstruct_ast()`, `ast_dump()`, `emit_llvm_ir()`/`emit_llvm_ir_core()` (which do **not** run `module.verify()`), and `contains_unstable_ast()`.
-  - `backlog.rs`: Persistent backlog of every recorded error. Writes the payload files under `fuzz/backlog/<target>/<issue-id>/`, the metadata (`meta.json`), and the registry log `fuzz/fuzz_continuous/<target>.log`. Handles status changes (`open`/`ignored`/`fixed`) and content-hash deduplication.
-- **`bin/`**: Auxiliary binaries:
-  - `dump_ast_top_level.rs`: Reconstructs and prints the AST from a fuzzer crash artifact (uses the `Arbitrary` trait). Matches the `pipeline` fuzzer.
-  - `dump_ast_local.rs`: Same but uses the scoped AST generator with controlled depth. Matches the `llvm-codegen-local` fuzzer.
-  - `dump_ast_local_loops.rs`: Same as `dump_ast_local` but for the loop oriented AST generator. Matches the `llvm-codegen-local-loops` fuzzer.
-  - `dump_llvm_ir.rs`: Reconstructs the AST using a scoped generator, then runs semantic analysis + LLVM codegen and dumps the module IR to `fuzz/llvm_ir_dumps/`. It does **not** run `module.verify()`, so the IR is dumped even when it is invalid. `--stable` rejects ASTs that use unstable constructs (e.g. inline assembly).
-  - `reproduce.rs`: Automates crash reproduction. It accepts a target and a crash artifact (or shows an interactive selection menu), rebuilds and runs the fuzzer against the artifact, classifies the result against known crash signatures, and writes a log under `fuzz/fuzz_reproduce_logs/<target>/`.
-  - `measure_pass_rate.rs`: Measures how many generated ASTs survive semantic analysis (the "keep rate"). Same seed plus same arguments always produce the same inputs. You can compare a generator before and after a change.
-  - `_debug.rs`: Generates the same deterministic samples. It dumps the raw input of a specific failing sample to the system temp dir. Then you feed it to a `dump-ast` binary.
-  - `fuzz_supervisor.rs`: The continuous fuzz supervisor. Runs a fuzzer in a loop, saves every crash/panic it finds, and keeps going (see [Continuous fuzzing](#continuous-fuzzing)).
-- **`corpus_stable/`**: Input corpora for stable features fuzzing, organized per fuzzer (`llvm-codegen-top-level/`, `llvm-codegen-local/`, `llvm-codegen-local-loops/`, `pipeline/`).
-- **`corpus_unstable/`**: Input corpora for unstable features fuzzing, organized per fuzzer (same layout as `corpus_stable/`).
-- **`corpus_universal/`**: Input corpus used by the lexer fuzzer (`lexer/`, no stable/unstable mode).
-- **`fuzz_pipeline/`**: Interesting ASTs saved by the pipeline fuzzer (`valid_ast_*.txt`).
-- **`thrust-stable.dict`**: Lexeme dictionary for stable fuzzing. It contains one word per entry and tracks the compiler's stable keyword, type, builtin, atomic, and attribute tables.
-- **`thrust-unstable.dict`**: Lexeme dictionary for unstable fuzzing. It extends the stable entries with unstable keywords and attributes.
-- **`artifacts/`**: Crash artifacts generated by libFuzzer.
-- **`ast_dumps/`**: Dumps of interesting ASTs produced during fuzzing.
-- **`llvm_ir_dumps/`**: Dumps of LLVM IR modules produced by the `dump_llvm_ir` binary (even when the IR is invalid).
-- **`fuzz_reproduce_logs/`**: Logs generated by the `reproduce` binary.
-- **`backlog/`**: The error backlog. One directory per issue (`<target>/<issue-id>/`) containing `input.bin` (the crashing input), `ast.txt` (reconstructed AST dump), `ir.ll` (LLVM IR) or `ir_error.txt` (panic/error message when IR generation failed), and `meta.json` (metadata). Ignored by git.
-- **`fuzz_continuous/`**: The registry log. One log per target (`<target>.log`), generated from the backlog. Ignored by git.
+- `Cargo.toml`: workspace manifest defining all fuzz targets and auxiliary binaries.
+- `Cargo.lock`: lockfile for the fuzzing workspace.
+- `rust-toolchain.toml`: pins the nightly toolchain and its cross-compilation targets for all `fuzz/` builds.
+- `fuzz_targets/`: fuzzer entry points:
+  - `lexer.rs`: feeds arbitrary UTF-8 source code to the lexer.
+  - `pipeline.rs`: generates arbitrary ASTs and runs semantic analysis.
+  - `llvm_codegen_top_level.rs`: generates ASTs with manual scoping and runs semantic analysis plus full LLVM codegen.
+  - `llvm_codegen_local.rs`: same as top-level with deeper nesting and more statements per block.
+  - `llvm_codegen_local_loops.rs`: focused on loops. It builds ASTs around loops with common loop control statements and bounded loop nesting.
+- `src/`: shared library (`thrustc_fuzz`) with the AST generators (`llvm_codegen_local.rs`, `llvm_codegen_local_loops.rs`, `llvm_codegen_top_level.rs`) and the continuous-fuzzing support (`dumps.rs` for AST/IR dumps and crash classification, `logs.rs` for the recorded issues).
+- `bin/`: auxiliary binaries to dump ASTs and IR, reproduce crashes, and run the continuous supervisor (see [Auxiliary binaries](#auxiliary-binaries)).
+- `corpus_stable/`: seed corpus for stable fuzzing, one subdirectory per fuzzer.
+- `corpus_unstable/`: seed corpus for unstable fuzzing, same layout.
+- `corpus_universal/`: seed corpus for the lexer fuzzer.
+- `fuzz_pipeline/`: interesting ASTs saved by the pipeline fuzzer.
+- `thrust-stable.dict`: token dictionary for stable fuzzing.
+- `thrust-unstable.dict`: extends the stable dictionary with unstable keywords and attributes.
+- `artifacts/`: crash artifacts generated by libFuzzer.
+- `ast_dumps/`: AST dumps produced while inspecting crashes.
+- `llvm_ir_dumps/`: LLVM IR dumps produced by the `dump_llvm_ir` binary, even when the IR is invalid.
+- `fuzz_reproduce_logs/`: logs generated by the `reproduce` binary.
+- `logs/`: recorded fuzzing issues, one directory per issue, with the crashing input, the AST dump, the IR and the metadata. Ignored by git.
+- `fuzz_continuous/`: the registry log, one file per target. Ignored by git.
 
 ## Running a fuzzer
 
-These aliases run until a crash is found. Each one stops as soon as libFuzzer finds a crash and writes the input to `fuzz/artifacts/<target>/`. The `stable` variants pass `--stable` to reject ASTs that use unstable constructs and use the stable dictionary; the `unstable` ones use the unstable dictionary and fuzz everything.
+These aliases run until a crash is found. Each one stops when libFuzzer finds a crash and writes the input to `fuzz/artifacts/<target>/`. The `stable` variants pass `--stable` to reject ASTs that use unstable constructs and use the stable dictionary; the `unstable` ones use the unstable dictionary and fuzz everything.
 
 ```console
 cargo +nightly fuzz-llvm-top-level-stable        # LLVM backend, top-level codegen, RSS 2048 MB
 cargo +nightly fuzz-llvm-local-stable            # LLVM backend, local codegen, RSS 4096 MB
 cargo +nightly fuzz-llvm-local-loops-stable      # LLVM backend, local codegen focused on loops, RSS 4096 MB
-cargo +nightly fuzz-pipeline-stable              # AST validation pipeline, RSS 2048 MB
+cargo +nightly fuzz-pipeline-stable             
 cargo +nightly fuzz-lexer                        # lexer with a universal corpus and stable dict, RSS 2048 MB
 ```
 
@@ -100,151 +88,16 @@ The same first four with `-unstable` instead of `-stable` fuzz unstable features
 
 ## Continuous fuzzing
 
+One-shot fuzzers (`cargo fuzz-<target>-<mode>`) stop at the first crash. The continuous supervisor saves each crash to the logs and restarts the fuzzer.
+
 > [!TIP]
-> A guide to the supervisor and the backlog lives in `fuzz/COMPILER_CONTINUOUS_FUZZING.md`.
+> The full guide to the supervisor, the issue logs and the registry log is in `fuzz/CONTINUOUS_FUZZING.md`.
 
-The fuzzers stop on the first crash. The **continuous supervisor** runs a fuzzer in a loop: every crash or panic it finds is saved and recorded, and the fuzzer keeps going. Over a session it collects every bug a target hits, not just the first one.
-
-### How it works
-
-1. The supervisor spawns the fuzzer exactly like the `fuzz-*` aliases do (same corpus, dictionary, RSS limits and `--stable` flag), picking the **nightly** toolchain automatically (see [Toolchain](#toolchain)).
-2. A monitor thread polls `fuzz/artifacts/<target>/` while the fuzzer runs. When libFuzzer writes a crash artifact, the supervisor:
-   - copies the input to the backlog,
-   - reconstructs and dumps the AST,
-   - runs LLVM codegen and dumps the IR (or the panic/error message if codegen failed),
-   - classifies the crash against known signatures,
-   - records it and regenerates the registry log,
-   - restarts the fuzzer.
-3. Only real crashes are kept. An artifact whose AST is rejected by semantic analysis (an expected diagnostic) is discarded; the `marker` column shows which crash signature matched (e.g. `panicked at`, `ERROR: AddressSanitizer`, `index out of bounds`), or `-` when there is none (imported artifacts).
-
-The default mode is **`stable`**. Pass `--mode unstable` explicitly to fuzz unstable features.
-
-### Commands
-
-The supervisor is `cargo fuzz-continuous <command> ...`:
-
-- `run <target> [--mode stable|unstable] [--runs N] [--max-time S]`
-  Runs the target in a loop. `--runs N` / `--max-time S` turn it into a single bounded run (libFuzzer stops after `N` runs or `S` seconds).
-- `run-all [--mode stable|unstable]`
-  Same, but one fuzzer thread per target (all 5 targets at once).
-- `import <target>`
-  Store crash artifacts that already exist under `fuzz/artifacts/<target>/` without fuzzing (useful to backfill an existing backlog).
-- `list [--all]`
-  List the pending (`open`) errors per target. With `--all`, also shows `ignored` and `fixed` ones.
-- `history [<target>]`
-  Print the registry log(s).
-- `ignore <target> <issue-id>`
-  Mark an error as ignored so the same input is never saved again.
-- `reopen <target> <issue-id>`
-  Move an error back to the pending pile.
-- `fixed <target> <issue-id>`
-  Mark an error as solved (once the compiler bug is fixed).
-
-Valid targets: `lexer`, `pipeline`, `llvm-codegen-top-level`, `llvm-codegen-local`, `llvm-codegen-local-loops`.
-
-### Shorthand aliases
-
-| Alias | Target | Mode |
-|---|---|---|
-| `cargo fuzz-continuous-llvm-top-level-stable` | `llvm-codegen-top-level` | stable |
-| `cargo fuzz-continuous-llvm-top-level-unstable` | `llvm-codegen-top-level` | unstable |
-| `cargo fuzz-continuous-llvm-local-stable` | `llvm-codegen-local` | stable |
-| `cargo fuzz-continuous-llvm-local-unstable` | `llvm-codegen-local` | unstable |
-| `cargo fuzz-continuous-llvm-local-loops-stable` | `llvm-codegen-local-loops` | stable |
-| `cargo fuzz-continuous-llvm-local-loops-unstable` | `llvm-codegen-local-loops` | unstable |
-| `cargo fuzz-continuous-pipeline-stable` | `pipeline` | stable |
-| `cargo fuzz-continuous-pipeline-unstable` | `pipeline` | unstable |
-| `cargo fuzz-continuous-lexer` | `lexer` | (universal corpus) |
-
-### The registry log
-
-Every recorded error lives in the backlog at `fuzz/backlog/<target>/<issue-id>/` with:
-
-- `input.bin`: the exact crashing input,
-- `ast.txt`: the reconstructed AST dump,
-- `ir.ll`: the generated LLVM IR, or `ir_error.txt`: the panic or error message when IR generation failed,
-- `meta.json`: metadata (id, target, mode, content hash, discovery time, status, absolute paths).
-
-The registry is a plain text log, one indented block per issue, at `fuzz/fuzz_continuous/<target>.log`:
-
-```
-# cascade log for target `llvm-codegen-local` (/path/to/thrustc/fuzz/fuzz_continuous/llvm-codegen-local.log)
-# 10 issue(s)
-
-[1] issue_089665036ccf2e0f
-    ├─ discovered_at : 2026-08-05 16:05:21
-    ├─ hash          : 089665036ccf2e0f
-    ├─ mode          : unstable
-    ├─ marker        : -
-    ├─ status        : ignored
-    ├─ input_path    : /path/to/thrustc/fuzz/backlog/llvm-codegen-local/issue_089665036ccf2e0f/input.bin
-    ├─ ast_path      : /path/to/thrustc/fuzz/backlog/llvm-codegen-local/issue_089665036ccf2e0f/ast.txt
-    └─ ir_path       : -
-```
-
-The `hash` is an FNV-1a content hash of `input.bin`; the `issue-id` is derived from it, and it is what makes deduplication work, importing or fuzzing the same input twice never creates a second entry. Issue statuses are `open`, `ignored` and `fixed`.
-
-### Toolchain
-
-Because the repository root pins a **stable** toolchain but cargo-fuzz needs nightly, the supervisor (and the `reproduce` binary) automatically prepend the channel declared in `fuzz/rust-toolchain.toml` to every `cargo` invocation (i.e. they run `cargo +nightly fuzz run ...`). You can keep working from the repo root.
-
-## Generator keep rate
-
-The AST fuzzers build programs in two steps. A generator turns the raw input bytes into an AST. Then the compiler runs semantic analysis and LLVM codegen on it. When the generator produces an invalid AST (a reference to a variable that does not exist, a cast between incompatible types, ...), semantic analysis rejects it and that sample never reaches codegen. The time is spent, but nothing past the frontend is exercised.
-
-`measure_pass_rate` tells you how often that happens. For a given seed it generates `--samples` inputs, runs semantic analysis on each, and counts how many were kept:
-
-```sh
-cargo fuzz-measure-pass-rate
-llvm-codegen-local: 200/200 kept (100.00%)  [seed=0xdecafbad]
-```
-
-The higher the keep rate, the more of the fuzzing effort actually reaches codegen. A low rate means the generator wastes most samples on ASTs the compiler rejects early. In that case the generator is what needs fixing, not the codegen.
-
-Because the inputs come from a PRNG seeded with `--seed`, the same command always produces the same inputs. That's what makes before/after comparisons meaningful: you change the generator, run the command, and any change in the number is caused by your edit, not by randomness.
-
-Options:
-- `--samples N`    number of inputs to test (default 200)
-- `--seed N`       PRNG seed (default `0xDECAF_BAD`)
-- `--max-bytes N`  input size in bytes (default 8192)
-- `--all`          test every generator and print one line per target
-- `[target]`       test a single generator (`llvm-codegen-local` by default)
-
-```sh
-cargo fuzz-measure-pass-rate --all
-pipeline: 1/2 kept (50.00%)  [seed=0xdecafbad]
-llvm-codegen-top-level: 0/2 kept (0.00%)  [seed=0xdecafbad]
-llvm-codegen-local: 2/2 kept (100.00%)  [seed=0xdecafbad]
-llvm-codegen-local-loops: 2/2 kept (100.00%)  [seed=0xdecafbad]
-```
-
-`measure_pass_rate` tells you the rate. `_debug` gives you the sample. It runs the same generation loop, then dumps the raw input of a failing sample to the system temp dir so you can inspect its AST:
-
-```sh
-cargo fuzz-debug-sample -- <samples> <seed> [index]
-```
-
-- `samples`   how many inputs to generate (default 300)
-- `seed`      PRNG seed (default 4660)
-- `index`     optional. Only dump the failing sample at this position, then stop
-
-It prints `### sample #N had errors` for every sample that fails semantic analysis. When `index` matches one of them, it writes the raw input to `fail.bin` in the system temp dir and prints the path:
-
-```sh
-wrote /tmp/fail.bin for sample #42
-```
-
-Feed that file to the matching dump binary to see the AST that failed:
-
-```sh
-cargo fuzz-dump-ast-local /tmp/fail.bin
-```
-
-`_debug` is hardcoded to the `llvm-codegen-local` generator. For the other two, run `measure_pass_rate <target>` to pick a seed. Then dump an artifact with `cargo fuzz-dump-ast-local-loops` or `cargo fuzz-dump-llvm-ir` instead.
+Because the repository root pins a stable toolchain while cargo-fuzz needs nightly, the supervisor (and the `reproduce` binary) automatically prepend the channel declared in `fuzz/rust-toolchain.toml` to every `cargo` invocation (i.e. they run `cargo +nightly fuzz run ...`). You can keep launching them from the repo root.
 
 ## Corpus directories
 
-The corpus directories (`corpus_stable/`, `corpus_unstable/`, `corpus_universal/`) are ignored by git (see `fuzz/.gitignore`), so they are **not** shipped when you clone the repository. If they are missing, fuzzing will fail. Before running any fuzzer, create them with one of the bundled scripts:
+The corpus directories (`corpus_stable/`, `corpus_unstable/`, `corpus_universal/`) are ignored by git (see `fuzz/.gitignore`), so they are not shipped when you clone the repository. If they are missing, fuzzing fails. Create them with one of the bundled scripts before running any fuzzer:
 
 ```sh
 # Bash (Linux/macOS)
@@ -260,37 +113,41 @@ powershell -ExecutionPolicy Bypass -File fuzz\scripts\create_fuzzing_dirs.ps1
 fuzz\scripts\create_fuzzing_dirs.bat
 ```
 
-All variants are idempotent: they resolve paths relative to `fuzz/` regardless of the current working directory, create any missing folder with `mkdir -p`, and leave existing ones untouched. The scripts also create the `backlog/` and `fuzz_continuous/` directories used by the continuous supervisor.
+All variants are idempotent: they resolve paths relative to `fuzz/` regardless of the current working directory, create any missing folder, and leave existing ones untouched. They also create `logs/` and `fuzz_continuous/` for the continuous supervisor.
 
 ## Fuzzing workflow
 
 This is the general workflow when a fuzzer finds an issue:
 
-1. **Create the required directories.** If this is a fresh clone, run one of the `create_fuzzing_dirs` scripts above (see [Corpus directories](#corpus-directories)).
-2. **Run the fuzzer.** Start one of the fuzzing suites (e.g. `cargo +nightly fuzz-llvm-local-unstable`). libFuzzer keeps generating inputs and feeding them to the target until the compiler crashes (a panic, an ICE, an LLVM verification error, an out of memory, etc.). When that happens the fuzzer stops and writes the crashing input under `fuzz/artifacts/<target>/`.
+1. **Create the required directories.** On a fresh clone, run one of the `create_fuzzing_dirs` scripts above (see [Corpus directories](#corpus-directories)).
+2. **Run the fuzzer.** Start one of the fuzzing suites (e.g. `cargo +nightly fuzz-llvm-local-unstable`). libFuzzer keeps generating inputs and feeding them to the target until the compiler crashes (a panic, an ICE, an LLVM verification error, an out of memory, etc.). It then stops and writes the crashing input under `fuzz/artifacts/<target>/`.
 
-   Alternatively, use the [continuous supervisor](#continuous-fuzzing) (`cargo fuzz-continuous-llvm-local-unstable`), which never stops: it saves each crash automatically, with AST and LLVM IR dumps, and keeps fuzzing. You can inspect the backlog with `cargo fuzz-backlog list`.
-3. **Take the crash artifact.** The crash file is a raw bytes input, the exact data that made the compiler panic.
-4. **Inspect the AST.** Pass the crash file to the `dump-ast` binary that matches the fuzzer that crashed, to reconstruct and print the AST:
+   Alternatively use the continuous supervisor (`cargo fuzz-continuous-llvm-local-unstable`), which never stops: it saves each crash with AST and LLVM IR dumps and keeps fuzzing. Inspect the result with `cargo fuzz-logs list`.
+3. **Take the crash artifact.** The crash file is the raw input that made the compiler crash.
+4. **Inspect the AST.** Pass the crash file to the `dump-ast` binary matching the fuzzer that crashed:
+
    - `cargo fuzz-dump-ast-top-level <crash-file>` for the `pipeline` fuzzer.
    - `cargo fuzz-dump-ast-local <crash-file>` for the `llvm-codegen-local` fuzzer.
    - `cargo fuzz-dump-ast-local-loops <crash-file>` for the `llvm-codegen-local-loops` fuzzer.
-   The dump is written to `fuzz/ast_dumps/`, so you can see which AST shape triggered the bug. For the lexer the crash file is plain UTF-8 source code, so you can inspect it directly.
+
+   The dump is written to `fuzz/ast_dumps/`. For the lexer the crash file is plain UTF-8 source code, so you can inspect it directly.
 
    For LLVM codegen crashes you can additionally dump the generated module IR:
    - `cargo fuzz-dump-llvm-ir <crash-file>` for the `llvm-codegen-local` fuzzer.
    - `cargo fuzz-dump-llvm-ir <crash-file> llvm-codegen-local-loops` for the `llvm-codegen-local-loops` fuzzer.
-   The IR is written to `fuzz/llvm_ir_dumps/` and is dumped **without** running `module.verify()`, so you get the IR even when it is invalid.
-5. **Fix the compiler bug.** With the AST in front of you, locate the faulty code in the compiler (semantic analysis, AST validation, or LLVM codegen), fix it, and rebuild.
+
+   The IR is written to `fuzz/llvm_ir_dumps/` without running `module.verify()`, so you get the IR even when it is invalid.
+5. **Fix the compiler bug.** With the AST in hand, locate the faulty code in the compiler (semantic analysis, AST validation or LLVM codegen), fix it, and rebuild.
 6. **Reproduce to verify.** Run the same artifact again with `cargo fuzz-reproduce-case [<target> <artifact>]`, which rebuilds the target fuzzer and runs it against the crash file:
-   - If the `reproduce` result is **`REAL CRASH`**, the bug is still there. Go back to step 5.
-   - If the result is **`no crash detected`**, the artifact no longer crashes the compiler, the bug was solved. The full output is logged under `fuzz/fuzz_reproduce_logs/<target>/`.
-7. **Continue fuzzing.** When verified, resume the fuzzer (`cargo +nightly fuzz-<target>-<mode>`) to look for the next issue. libFuzzer keeps the old artifacts in its corpus, so a regression that brings back the same bug is caught fast.
+
+   - `REAL CRASH`: the bug is still there. Go back to the previous step.
+   - `no crash detected`: the artifact no longer crashes the compiler and the bug is solved. The full output is logged under `fuzz/fuzz_reproduce_logs/<target>/`.
+7. **Continue fuzzing.** Resume the fuzzer (`cargo +nightly fuzz-<target>-<mode>`) to look for the next issue. libFuzzer keeps the old artifacts in its corpus, so a regression that brings back the same bug is caught fast.
 
 ## Auxiliary binaries
 
-- `cargo fuzz-dump-ast-top-level <crash-file>` Reconstructs and prints the AST from a fuzzer crash artifact (uses the `Arbitrary` trait).
-- `cargo fuzz-dump-ast-local <crash-file>` Same as `dump_ast_top_level` but uses the scoped AST generator.
-- `cargo fuzz-dump-ast-local-loops <crash-file>` Same as `dump_ast_local` but uses the loop focused scoped AST generator.
-- `cargo fuzz-dump-llvm-ir <crash-file> [generator] [--stable]` Reconstructs the AST with a scoped generator, runs semantic analysis + LLVM codegen and dumps the module IR to `fuzz/llvm_ir_dumps/` **without** running `module.verify()`, so the IR is dumped even when it is invalid. `generator` selects the AST generator (`llvm-codegen-local` by default, or `llvm-codegen-local-loops`) and `--stable` rejects ASTs that use unstable constructs (e.g. inline assembly).
-- `cargo fuzz-reproduce-case [<target> <artifact>]` Automates crash reproduction. It rebuilds and runs the target fuzzer against the crash artifact, classifies the result against known crash signatures, and writes a log under `fuzz/fuzz_reproduce_logs/<target>/`. Run without arguments to get an interactive selection menu.
+- `cargo fuzz-dump-ast-top-level <crash-file>`: reconstructs and prints the AST from a fuzzer crash artifact (uses the `Arbitrary` trait). Matches the `pipeline` fuzzer.
+- `cargo fuzz-dump-ast-local <crash-file>`: same, with the scoped AST generator. Matches the `llvm-codegen-local` fuzzer.
+- `cargo fuzz-dump-ast-local-loops <crash-file>`: same, with the loop focused scoped AST generator. Matches the `llvm-codegen-local-loops` fuzzer.
+- `cargo fuzz-dump-llvm-ir <crash-file> [generator] [--stable]`: reconstructs the AST with a scoped generator, runs semantic analysis and LLVM codegen, and dumps the module IR to `fuzz/llvm_ir_dumps/` without running `module.verify()`. `generator` selects the AST generator (`llvm-codegen-local` by default, or `llvm-codegen-local-loops`) and `--stable` rejects ASTs that use unstable constructs (e.g. inline assembly).
+- `cargo fuzz-reproduce-case [<target> <artifact>]`: automates crash reproduction. It rebuilds and runs the target fuzzer against the crash artifact, classifies the result against known crash signatures, and writes a log under `fuzz/fuzz_reproduce_logs/<target>/`. Run without arguments to get an interactive selection menu.

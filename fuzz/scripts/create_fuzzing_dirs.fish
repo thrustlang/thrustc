@@ -13,7 +13,7 @@ set corpus_dirs \
     corpus_universal/lexer \
     fuzz_reproduce_logs \
     fuzz_pipeline \
-    backlog \
+    logs \
     fuzz_continuous
 
 for relative in $corpus_dirs

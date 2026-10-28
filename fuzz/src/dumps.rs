@@ -53,13 +53,6 @@ pub const TARGETS: &[&str] = &[
     "pipeline",
 ];
 
-pub const GENERATORS: &[&str] = &[
-    "pipeline",
-    "llvm-codegen-top-level",
-    "llvm-codegen-local",
-    "llvm-codegen-local-loops",
-];
-
 pub const CODGEN_TARGETS: &[&str] = &[
     "llvm-codegen-top-level",
     "llvm-codegen-local",

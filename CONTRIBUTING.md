@@ -53,7 +53,7 @@ The `tests/` folder contains Thrust source inputs used for manual and integratio
 
 If you want a first change you can actually finish, in increasing order of difficulty:
 
-1. **Fix an issue from the fuzz backlog.** The continuous fuzzer archives crashes under `fuzz/backlog/` with the AST dump and the LLVM IR. Pick a target, reproduce with `cargo fuzz-reproduce-case <target> <input.bin>`, find the faulty crate, fix it, then mark it done with `cargo fuzz-backlog fixed <target> <issue-id>`. See `COMPILER_FUZZING.md` and `fuzz/COMPILER_CONTINUOUS_FUZZING.md`.
+1. **Fix an issue from the fuzz logs.** The continuous fuzzer archives crashes under `fuzz/logs/` with the AST dump and the LLVM IR. Pick a target, reproduce with `cargo fuzz-reproduce-case <target> <input.bin>`, find the faulty crate, fix it, then mark it done with `cargo fuzz-logs fixed <target> <issue-id>`. See `COMPILER_FUZZING.md` and `fuzz/CONTINUOUS_FUZZING.md`.
 2. **Add or improve a diagnostic.** New error and warning codes are small, self-contained changes. The codes live in `thrustc_errors`, the formatting in `thrustc_diagnostician`. Details in the [diagnostics section](#diagnostics) below.
 3. **Extend an AST trait.** Need a predicate or accessor on all AST nodes? Add a trait in `thrustc_ast/src/traits.rs` and implement it in `getters.rs` or `impls/mod.rs`. There is a mechanical pattern for it; see [AST extension traits](#ast-extension-traits).
 4. **Touch the lexer.** `thrustc_lexer` is small and self-contained (five files). Good way to learn the frontend style without the parser's complexity.
@@ -162,8 +162,8 @@ What to do before opening a PR:
 
 - `cargo build --release` and fix every warning you introduced.
 - Compile and run at least one real program end to end. `showcase/` has examples; `tests/` has test inputs if you want a quick loop.
-- If you touched the frontend, run the fuzzers that cover it. `cargo fuzz-lexer`, `cargo fuzz-pipeline-stable` for a bounded sanity check, and the continuous supervisor if you have time: `cargo fuzz-continuous-<target>-<mode>` with a `--max-time`. The fuzz docs (`COMPILER_FUZZING.md`, `fuzz/COMPILER_CONTINUOUS_FUZZING.md`) explain the workflow.
-- If you fixed a bug the fuzzer found, reproduce the old artifact first (`cargo fuzz-reproduce-case <target> <input.bin>`) to confirm it crashed before, then confirm it no longer crashes after, and finish by marking the issue `fixed` in the backlog.
+- If you touched the frontend, run the fuzzers that cover it. `cargo fuzz-lexer`, `cargo fuzz-pipeline-stable` for a bounded sanity check, and the continuous supervisor if you have time: `cargo fuzz-continuous-<target>-<mode>` with a `--max-time`. The fuzz docs (`COMPILER_FUZZING.md`, `fuzz/CONTINUOUS_FUZZING.md`) explain the workflow.
+- If you fixed a bug the fuzzer found, reproduce the old artifact first (`cargo fuzz-reproduce-case <target> <input.bin>`) to confirm it crashed before, then confirm it no longer crashes after, and finish by marking the issue `fixed` in the logs.
 
 If the lack of a test suite bothers you, that is a real gap, and adding tests is one of the most useful contributions you can make. There is room to build an integration harness on top of `tests/` or the fuzz corpus. Propose it.
 
@@ -203,7 +203,7 @@ Branch off `main`, open the PR, and fill in the description with what changed an
 - `PROJECT_STRUCTURE.md`, the full architecture and pipeline.
 - `CLI.md`, commands and flags.
 - `COMPILER_DIAGNOSTICS.md`, diagnostic examples and codes.
-- `COMPILER_FUZZING.md` and `fuzz/COMPILER_CONTINUOUS_FUZZING.md`, fuzzing, one-shot and continuous.
+- `COMPILER_FUZZING.md` and `fuzz/CONTINUOUS_FUZZING.md`, fuzzing, one-shot and continuous.
 - `COMMIT_CONVENTIONS.md`, commit titles.
 - `COMPILER_RELEASING.md`, how releases are cut (mostly scripts, mostly not your concern unless you maintain releases).
 - `CODE_OF_CONDUCT.md`, the ground rules.

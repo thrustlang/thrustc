@@ -24,7 +24,7 @@ use std::path::PathBuf;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 
-pub const BACKLOG_ROOT: &str = "fuzz/backlog";
+pub const LOGS_ROOT: &str = "fuzz/logs";
 pub const LOG_ROOT: &str = "fuzz/fuzz_continuous";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -64,7 +64,7 @@ pub fn record_issue(
 
     let id = format!("issue_{hash}");
 
-    let dir = cwd.join(BACKLOG_ROOT).join(target).join(&id);
+    let dir = cwd.join(LOGS_ROOT).join(target).join(&id);
 
     fs::create_dir_all(&dir).map_err(|e| format!("failed to create issue directory: {e}"))?;
 
@@ -120,7 +120,7 @@ pub fn record_issue(
         .map_err(|e| format!("failed to serialize metadata: {e}"))?;
 
     let meta_path = cwd
-        .join(BACKLOG_ROOT)
+        .join(LOGS_ROOT)
         .join(target)
         .join(&meta.id)
         .join("meta.json");
@@ -143,7 +143,7 @@ pub fn set_status(target: &str, id: &str, status: &str) -> Result<IssueMeta, Str
 
     let meta_path = std::env::current_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
-        .join(BACKLOG_ROOT)
+        .join(LOGS_ROOT)
         .join(target)
         .join(id)
         .join("meta.json");
@@ -158,7 +158,7 @@ pub fn set_status(target: &str, id: &str, status: &str) -> Result<IssueMeta, Str
 pub fn remove_issue(target: &str, id: &str) -> Result<(), String> {
     let dir = std::env::current_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
-        .join(BACKLOG_ROOT)
+        .join(LOGS_ROOT)
         .join(target)
         .join(id);
 
@@ -172,7 +172,7 @@ pub fn remove_issue(target: &str, id: &str) -> Result<(), String> {
 pub fn load_meta(target: &str, id: &str) -> Option<IssueMeta> {
     let path = std::env::current_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
-        .join(BACKLOG_ROOT)
+        .join(LOGS_ROOT)
         .join(target)
         .join(id)
         .join("meta.json");
@@ -203,7 +203,7 @@ pub fn load_meta(target: &str, id: &str) -> Option<IssueMeta> {
 pub fn all_issues(target: &str) -> Vec<IssueMeta> {
     let dir = std::env::current_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
-        .join(BACKLOG_ROOT)
+        .join(LOGS_ROOT)
         .join(target);
 
     let Ok(entries) = fs::read_dir(&dir) else {
@@ -305,15 +305,15 @@ pub fn print_history(targets: &[&str]) -> Result<(), String> {
 pub fn ensure_dirs() -> Result<(), String> {
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
 
-    fs::create_dir_all(cwd.join(BACKLOG_ROOT))
+    fs::create_dir_all(cwd.join(LOGS_ROOT))
         .and_then(|_| fs::create_dir_all(cwd.join(LOG_ROOT)))
-        .map_err(|e| format!("failed to create backlog directories: {e}"))
+        .map_err(|e| format!("failed to create logs directories: {e}"))
 }
 
 pub fn issue_dir(target: &str, id: &str) -> PathBuf {
     std::env::current_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
-        .join(BACKLOG_ROOT)
+        .join(LOGS_ROOT)
         .join(target)
         .join(id)
 }

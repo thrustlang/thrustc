@@ -26,7 +26,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use thrustc_fuzz::{backlog, dumps};
+use thrustc_fuzz::{logs, dumps};
 
 const ARTIFACTS_ROOT: &str = "fuzz/artifacts";
 const MONITOR_POLL_MS: u64 = 1000;
@@ -99,7 +99,7 @@ fn print_usage() {
     println!("  run <target> [--mode stable|unstable] [--runs N] [--max-time S]");
     println!("      Runs the fuzzer in a loop (mode defaults to 'stable').");
     println!("      Every crash/panic is archived to");
-    println!("      fuzz/backlog/<target>/ with AST + LLVM IR dumps, recorded in");
+    println!("      fuzz/logs/<target>/ with AST + LLVM IR dumps, recorded in");
     println!("      fuzz/fuzz_continuous/<target>.log, and fuzzing continues.");
     println!();
     println!("  run-all [--mode stable|unstable]");
@@ -206,7 +206,7 @@ fn cmd_run(args: &[String]) -> Result<(), String> {
         );
     }
 
-    backlog::ensure_dirs()?;
+    logs::ensure_dirs()?;
 
     if runs.is_some() || max_time.is_some() {
         println!(
@@ -244,7 +244,7 @@ fn cmd_run_all(args: &[String]) -> Result<(), String> {
         i += 1;
     }
 
-    backlog::ensure_dirs()?;
+    logs::ensure_dirs()?;
 
     let mut handles = Vec::new();
 
@@ -281,7 +281,7 @@ fn cmd_import(args: &[String]) -> Result<(), String> {
         ));
     }
 
-    backlog::ensure_dirs()?;
+    logs::ensure_dirs()?;
 
     let mode = "stable";
 
@@ -297,7 +297,7 @@ fn cmd_import(args: &[String]) -> Result<(), String> {
     println!(
         "[{}] import finished. Registry: {}",
         timestamp(),
-        backlog::log_path(target).display()
+        logs::log_path(target).display()
     );
 
     Ok(())
@@ -306,12 +306,12 @@ fn cmd_import(args: &[String]) -> Result<(), String> {
 fn cmd_list(args: &[String]) -> Result<(), String> {
     let show_all = args.iter().any(|a| a == "--all");
 
-    backlog::ensure_dirs()?;
+    logs::ensure_dirs()?;
 
     let mut any = false;
 
     for target in dumps::TARGETS {
-        let issues = backlog::all_issues(target);
+        let issues = logs::all_issues(target);
 
         let visible: Vec<_> = if show_all {
             issues.iter().collect()
@@ -340,7 +340,7 @@ fn cmd_list(args: &[String]) -> Result<(), String> {
                 meta.discovered_at,
                 meta.mode,
                 marker,
-                backlog::issue_dir(target, &meta.id).display()
+                logs::issue_dir(target, &meta.id).display()
             );
         }
 
@@ -361,7 +361,7 @@ fn cmd_history(args: &[String]) -> Result<(), String> {
         dumps::TARGETS.to_vec()
     };
 
-    backlog::print_history(&targets)
+    logs::print_history(&targets)
 }
 
 fn cmd_set_status(args: &[String], status: &str) -> Result<(), String> {
@@ -372,14 +372,14 @@ fn cmd_set_status(args: &[String], status: &str) -> Result<(), String> {
     let target = &args[0];
     let id = &args[1];
 
-    let meta = backlog::set_status(target, id, status)?;
+    let meta = logs::set_status(target, id, status)?;
 
     println!(
         "[{}] {} → {} ({})",
         timestamp(),
         meta.id,
         status,
-        backlog::issue_dir(target, id).display()
+        logs::issue_dir(target, id).display()
     );
 
     Ok(())
@@ -546,7 +546,7 @@ fn scan_and_process(
                     timestamp(),
                     target,
                     meta.id,
-                    backlog::issue_dir(target, &meta.id).display()
+                    logs::issue_dir(target, &meta.id).display()
                 );
             }
             Ok(None) => {}
@@ -566,17 +566,17 @@ fn process_artifact(
     mode: &str,
     path: &Path,
     marker_hint: Option<&str>,
-) -> Result<Option<backlog::IssueMeta>, String> {
+) -> Result<Option<logs::IssueMeta>, String> {
     let data = fs::read(path).map_err(|e| format!("could not read artifact: {e}"))?;
 
-    if backlog::known_hashes(target).contains(&backlog::content_hash(&data)) {
+    if logs::known_hashes(target).contains(&logs::content_hash(&data)) {
         let _ = fs::remove_file(path);
         return Ok(None);
     }
 
     let (ast_text, ir_result) = dump_ast_and_ir(target, data.clone());
 
-    let files = backlog::IssueFiles {
+    let files = logs::IssueFiles {
         input: &data,
         ast: ast_text.as_deref(),
         ir: ir_result
@@ -590,7 +590,7 @@ fn process_artifact(
             .map(String::as_str),
     };
 
-    let meta = backlog::record_issue(target, mode, &data, marker_hint, files)?;
+    let meta = logs::record_issue(target, mode, &data, marker_hint, files)?;
 
     let _ = fs::remove_file(path);
 

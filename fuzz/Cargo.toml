@@ -91,22 +91,8 @@ doc = false
 bench = false
 
 [[bin]]
-name = "_debug"
-path = "bin/_debug.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "dump_ast_local_loops"
 path = "bin/dump_ast_local_loops.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "measure_pass_rate"
-path = "bin/measure_pass_rate.rs"
 test = false
 doc = false
 bench = false
