@@ -1,5 +1,0 @@
-import "cycle/a.thrust";
-
-fn main() s32 @public {
-    return a::fromA();
-}

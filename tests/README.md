@@ -4,7 +4,7 @@
 
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt= "standard-separator" style= "width: 1hv;"> </img>
 
-The `tests/` directory contains executable and negative Thrust source tests used to validate the compiler pipeline.
+The `tests/` directory contains executable Thrust source tests used to validate the compiler pipeline.
 
 The automation scripts live in `tests/scripts/` and are intended to be executed from the repository root.
 
@@ -128,7 +128,7 @@ Tests are organized by feature area. Each directory holds executable `.thrust` r
 | `compiletime/target/` | Target and host introspection (`targetArch`, `hostOsName`, …). |
 | `linter/` | Warning suppression via `directive "--disable-warnings=..."`. |
 | `memory/` + `memory/deref/` + `memory/load/` | Stack allocations, `->` dereference properties, and `load`/`ref` semantics. |
-| `modules/` + `modules/reexportation/` | Module imports, aliases, and re-exports; `reexport_a.thrust` expects exit code `3`. |
+| `modules/` + `modules/reexportation/` | Module imports, aliases, and re-exports. |
 | `c_transpile/` | C-to-Thrust transpiler goldens (separate runner phase, see below). |
 | `std/` | Standard library module tests. |
 | `stress/` | Excluded from discovery (see below). |
@@ -149,52 +149,13 @@ For each discovered test, the runner:
 - Runs the binary from `tests/dist/run/<test-id>` so temporary runtime files stay isolated.
 - Removes `tests/dist/` when finished, unless `--keep-dist` is used.
 
-The test identifier joins the path relative to `tests/` without extension using `__` (for example `imports/module_a.thrust` becomes `imports__module_a`). Runtime variants append `__runtime` or `__translated_runtime`.
+The test identifier joins the path relative to `tests/` without extension using `__` (for example `imports/only_then_full.thrust` becomes `imports__only_then_full`). Runtime variants append `__runtime` or `__translated_runtime`.
 
 The final executable path is passed through `-cc-args` because the current linker flow receives output flags through the external linker arguments.
 
 ## Test Results
 
 Positive tests are expected to compile, link, run, and return exit code `0`.
-
-Negative tests are expected to fail during compilation and are not executed.
-
-Negative tests are detected by naming convention (substring of the file name):
-
-- `_invalid`
-- `_error`
-- `_unknown`
-- `_duplicated`
-- `_duplicate`
-- `duplicate_`
-- `_inactive`
-- `invalid_`
-
-plus these paths (matched by suffix):
-
-- `arithmetic/const_assign.thrust`
-- `functions/named_args_positional_after.thrust`
-- `functions/named_args_varargs.thrust`
-
-A negative test passes when compilation fails or when no binary is produced; it is never executed.
-
-Some legacy tests intentionally return a non-zero value as the observed result:
-
-| Test | Expected exit code |
-|---|---|
-| `imports/module_a.thrust` | `123` |
-| `imports/module_alias_multi.thrust` | `130` |
-| `imports/only_multi.thrust` | `15` |
-| `imports/only_single.thrust` | `3` |
-| `imports/struct_only.thrust` | `3` |
-| `imports/struct_qualified.thrust` | `3` |
-| `functions/named_args.thrust` | `139` |
-| `modules/reexportation/reexport_a.thrust` | `3` |
-| `modules/named_args_module.thrust` | `3` |
-| `optimization/disable_default_optimization.thrust` | `173` |
-| `abi/wasm/variadic.thrust` | `1` |
-
-Every other positive test expects exit code `0`.
 
 ## C Transpile Tests
 
@@ -224,17 +185,9 @@ Note: run with `--keep-dist` to inspect the generated files under `tests/dist/c_
 
 Tests using `importC` (for example everything under `tests/import_c/`) compile with `-mode unstable` automatically; they assert through exit codes only and have no golden files.
 
-## Skipped Tests
+## Excluded Directories
 
-The runner currently skips these tests explicitly:
-
-- `stress/stress_test_80k.thrust`
-- `memory/load/load_index.thrust`
-- `modules/reexportation/std_reexport.thrust`
-
-Entire directories are also excluded from discovery: `dist`, `scripts`, `build`, `c_transpile` (covered by its own phase), `stdroot`, and `stress`.
-
-These files remain in the repository, but are not part of the automated run.
+Entire directories are excluded from discovery: `dist`, `scripts`, `build`, `c_transpile` (covered by its own phase), `stdroot`, and `stress`.
 
 ## Create A Test
 
@@ -284,8 +237,6 @@ fn main() s32 @public {
     return 0;
 }
 ```
-
-Use `_invalid` or another negative marker in the file name when the test is expected to fail at compile time.
 
 If a test imports another user file, keep the import relative to the importing file:
 

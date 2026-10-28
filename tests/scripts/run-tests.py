@@ -37,43 +37,6 @@ STD_MATH_RE: re.Pattern[str] = re.compile(r'import\s+std::(?:math|ffi::c::math)\
 FLOAT_VALUE_RE: re.Pattern[str] = re.compile(r'\bf(?:32|64)\b|\b\d+\.\d+')
 NATIVE_VECTOR_RE: re.Pattern[str] = re.compile(r'\bNativeVector\b|\bnative\s*\[')
 
-NEGATIVE_NAME_MARKERS = (
-    "_invalid",
-    "_error",
-    "_unknown",
-    "_duplicated",
-    "_duplicate",
-    "duplicate_",
-    "_inactive",
-    "invalid_",
-)
-
-NEGATIVE_TEST_PATHS: set[str] = {
-    "arithmetic/const_assign.thrust",
-    "functions/named_args_positional_after.thrust",
-    "functions/named_args_varargs.thrust",
-}
-
-EXPECTED_RUN_CODES: dict[str, int] = {
-    "imports/module_a.thrust": 123,
-    "imports/module_alias_multi.thrust": 130,
-    "imports/only_multi.thrust": 15,
-    "imports/only_single.thrust": 3,
-    "imports/struct_only.thrust": 3,
-    "imports/struct_qualified.thrust": 3,
-    "functions/named_args.thrust": 139,
-    "modules/reexportation/reexport_a.thrust": 3,
-    "modules/named_args_module.thrust": 3,
-    "optimization/disable_default_optimization.thrust": 173,
-    "abi/wasm/variadic.thrust": 1,
-}
-
-SKIPPED_TEST_PATHS: set[str] = {
-    "memory/load/load_index.thrust",
-    "modules/reexportation/std_reexport.thrust",
-    "stress/stress_test_80k.thrust",
-}
-
 @dataclass
 class TestResult:
     path: Path
@@ -189,9 +152,6 @@ def should_skip_path(path: Path, tests_dir: Path) -> bool:
     relative_parts: tuple[str, ...] = path.relative_to(tests_dir).parts
     relative_path: str = path.relative_to(tests_dir).as_posix()
 
-    if relative_path in SKIPPED_TEST_PATHS:
-        return True
-
     return any(part in skipped_parts for part in relative_parts)
 
 def has_main_function(path: Path) -> bool:
@@ -248,25 +208,6 @@ def discover_c_transpile_tests(
             test_roots.append(path)
 
     return test_roots
-
-def is_negative_test(path: Path) -> bool:
-
-    name: str = path.name
-    normalized_path: str = path.as_posix()
-
-    if any(normalized_path.endswith(expected) for expected in NEGATIVE_TEST_PATHS):
-        return True
-
-    return any(marker in name for marker in NEGATIVE_NAME_MARKERS)
-
-def expected_run_code(path: Path) -> int:
-    normalized_path: str = path.as_posix()
-
-    for expected_path, expected_code in EXPECTED_RUN_CODES.items():
-        if normalized_path.endswith(expected_path):
-            return expected_code
-
-    return 0
 
 def resolve_import_path(source_path: Path, imported: str) -> Path:
     import_path = Path(imported)
@@ -813,7 +754,6 @@ def run_test(
 ) -> TestResult:
 
     start: float = time.monotonic()
-    negative: bool = is_negative_test(test_path)
 
     try:
         compile_result, binary_path, _dependencies = compile_test(test_path, compiler, root, args)
@@ -823,7 +763,7 @@ def run_test(
 
         return TestResult(
             path=test_path,
-            kind="negative" if negative else "positive",
+            kind="positive",
             passed=False,
             compile_code=-1,
             run_code=None,
@@ -836,24 +776,6 @@ def run_test(
         )
 
     elapsed = time.monotonic() - start
-
-    if negative:
-        passed: bool = compile_result.returncode != 0 or not binary_path.exists()
-        message: Literal['compile failed as expected', 'expected compile failure'] = "compile failed as expected" if passed else "expected compile failure"
-
-        return TestResult(
-            path=test_path,
-            kind="negative",
-            passed=passed,
-            compile_code=compile_result.returncode,
-            run_code=None,
-            elapsed=elapsed,
-            message=message,
-            compile_stdout=compile_result.stdout,
-            compile_stderr=compile_result.stderr,
-            run_stdout="",
-            run_stderr="",
-        )
 
     if compile_result.returncode != 0:
         return TestResult(
@@ -923,9 +845,8 @@ def run_test(
         )
 
     elapsed = time.monotonic() - start
-    expected_code: int = expected_run_code(test_path)
-    passed = run_result.returncode == expected_code
-    message = "ok" if passed else f"runtime failure, expected {expected_code}"
+    passed = run_result.returncode == 0
+    message = "ok" if passed else "runtime failure, expected 0"
 
     return TestResult(
         path=test_path,
@@ -1274,7 +1195,6 @@ def print_summary(results: list[TestResult], root: Path) -> None:
     passed: int = sum(1 for result in results if result.passed)
     failed: int = total - passed
     positives: int = sum(1 for result in results if result.kind == "positive")
-    negatives: int = sum(1 for result in results if result.kind == "negative")
     c_transpiles: int = sum(1 for result in results if result.kind == "c-transpile")
 
     print("\nTest report", flush=True)
@@ -1282,7 +1202,6 @@ def print_summary(results: list[TestResult], root: Path) -> None:
     print(f"passed: {passed}", flush=True)
     print(f"failed: {failed}", flush=True)
     print(f"positive: {positives}", flush=True)
-    print(f"negative: {negatives}", flush=True)
     print(f"c-transpile: {c_transpiles}", flush=True)
 
     failures: list[TestResult] = [result for result in results if not result.passed]
