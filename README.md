@@ -192,11 +192,3 @@ If you want to know the code of conduct expected from the project contributors, 
 ## License
 
 Thrust Compiler is distributed under the terms of the GNU General Public License (version 3). See LICENSE.txt file for details.
-
-## Q&A
-
-#### > Why isn't the compiler designed to use it as a bootstrap compiler?
-
-Regarding the concept of bootstrapping in compilers (For more information: https://www.bootstrappable.org/).
-
-The decision was made to fully implement all the programming language functions in the compiler written in Rust, because it proposes a development approach similar to what Gleam Team did for Gleam Programming Language, and also to lighten the workload, given that we are already using LLVM.
