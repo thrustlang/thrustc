@@ -483,7 +483,6 @@ pub struct CompilerOptions {
     export_compiler_warning_diagnostics: bool,
     clean_exported_compiler_diagnostics: bool,
 
-    copy_output_to_clipboard: bool,
     clean_tokens: bool,
     clean_assembler: bool,
     clean_object: bool,
@@ -611,7 +610,6 @@ impl CompilerOptions {
             export_compiler_warning_diagnostics: false,
             clean_exported_compiler_diagnostics: false,
 
-            copy_output_to_clipboard: false,
             clean_tokens: false,
             clean_assembler: false,
             clean_object: false,
@@ -745,11 +743,6 @@ impl CompilerOptions {
     #[inline]
     pub fn set_clean_exported_compiler_diagnostics(&mut self) {
         self.clean_exported_compiler_diagnostics = true;
-    }
-
-    #[inline]
-    pub fn set_copy_output_to_clipboard(&mut self) {
-        self.copy_output_to_clipboard = true;
     }
 
     #[inline]
@@ -907,11 +900,6 @@ impl CompilerOptions {
     #[inline]
     pub fn need_ansi_colors(&self) -> bool {
         self.enable_ansi_colors
-    }
-
-    #[inline]
-    pub fn need_copy_output_to_clipboard(&self) -> bool {
-        self.copy_output_to_clipboard
     }
 
     #[inline]

@@ -116,27 +116,4 @@ pub fn print_llvm_ir(
         thrustc_logging::write(thrustc_logging::OutputIn::Stdout, "\n");
     }
 
-    #[cfg(feature = "extra_utilities")]
-    {
-        if compiler_options.need_copy_output_to_clipboard() {
-            use clipboard::*;
-
-            let ctx: Result<ClipboardContext, Box<dyn std::error::Error>> =
-                ClipboardProvider::new();
-
-            if let Ok(mut ctx) = ctx {
-                ctx.set_contents(module_print.clone()).unwrap_or_else(|_| {
-                    thrustc_logging::print_warn(
-                        thrustc_logging::LoggingType::Warning,
-                        "Unable to copy the IR code into system clipboard.",
-                    );
-                });
-            } else {
-                thrustc_logging::print_warn(
-                    thrustc_logging::LoggingType::Warning,
-                    "Failed to initialize clipboard processes.",
-                );
-            }
-        }
-    }
 }

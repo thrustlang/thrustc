@@ -985,18 +985,6 @@ pub fn show_help() -> ! {
         &format!(
             "{} {} {}\n",
             "•".bold(),
-            "--copy-output-to-clipboard"
-                .custom_color((141, 141, 142))
-                .bold(),
-            "Copy the total printable output of the compiler into the operating system clipboard. It only works using '-print' compiler flag."
-        ),
-    );
-
-    thrustc_logging::write(
-        thrustc_logging::OutputIn::Stderr,
-        &format!(
-            "{} {} {}\n",
-            "•".bold(),
             "--debug-clang-command".custom_color((141, 141, 142)).bold(),
             "Displays the generated command for Clang in the phase of linking."
         ),

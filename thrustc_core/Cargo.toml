@@ -16,8 +16,6 @@ syntect = "5.3.0"
 
 inkwell = { workspace = true, optional = true }
 
-clipboard = { version = "0.5.0", optional = true }
-
 thrustc_llvm_abi = { path = "../thrustc_llvm_abi" }
 thrustc_llvm_abi_representation = { path = "../thrustc_llvm_abi_representation" }
 thrustc_backends = { path = "../thrustc_backends" }
@@ -48,4 +46,3 @@ default = ["llvm_backend_static"]
 llvm_backend_dynamic = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-dynamic"]
 llvm_backend_static  = ["dep:inkwell", "inkwell/llvm17-0", "inkwell/llvm17-0-force-static"]
 
-extra_utilities = ["dep:clipboard"]

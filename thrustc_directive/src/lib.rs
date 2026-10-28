@@ -1240,7 +1240,6 @@ fn is_global_only(flag: &str) -> bool {
             | "-o"
             | "-output"
             | "-debug-linker-command"
-            | "--copy-output-to-clipboard"
             | "--export-compiler-errors"
             | "--export-compiler-warnings"
             | "--export-diagnostics-path"

@@ -41,29 +41,6 @@ pub fn print_to_stdout(
     thrustc_logging::write(OutputIn::Stdout, &json);
     thrustc_logging::write(OutputIn::Stdout, "\n");
 
-    #[cfg(feature = "extra_utilities")]
-    {
-        if options.need_copy_output_to_clipboard() {
-            use clipboard::*;
-
-            let ctx: Result<ClipboardContext, Box<dyn std::error::Error>> =
-                ClipboardProvider::new();
-
-            if let Ok(mut ctx) = ctx {
-                ctx.set_contents(json).unwrap_or_else(|_| {
-                    thrustc_logging::print_warn(
-                        thrustc_logging::LoggingType::Warning,
-                        "Unable to copy the tokens stream into system clipboard.",
-                    );
-                });
-            } else {
-                thrustc_logging::print_warn(
-                    thrustc_logging::LoggingType::Warning,
-                    "Failed to initialize clipboard processes.",
-                );
-            }
-        }
-    }
 
     Ok(())
 }
@@ -83,29 +60,6 @@ pub fn print_to_stdout_pretty(
     thrustc_logging::write(OutputIn::Stdout, &json);
     thrustc_logging::write(OutputIn::Stdout, "\n");
 
-    #[cfg(feature = "extra_utilities")]
-    {
-        if options.need_copy_output_to_clipboard() {
-            use clipboard::*;
-
-            let ctx: Result<ClipboardContext, Box<dyn std::error::Error>> =
-                ClipboardProvider::new();
-
-            if let Ok(mut ctx) = ctx {
-                ctx.set_contents(json).unwrap_or_else(|_| {
-                    thrustc_logging::print_warn(
-                        thrustc_logging::LoggingType::Warning,
-                        "Unable to copy the tokens stream into system clipboard.",
-                    );
-                });
-            } else {
-                thrustc_logging::print_warn(
-                    thrustc_logging::LoggingType::Warning,
-                    "Failed to initialize clipboard processes.",
-                );
-            }
-        }
-    }
 
     Ok(())
 }

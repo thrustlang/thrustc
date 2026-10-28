@@ -42,7 +42,7 @@ jobs:
       - name: Packaging VS Code Extension
         run: |
           npm ci
-          npx --no-install vsce package
+          npx vsce package
         working-directory: thrustc/lsp/vscode
 
       - name: Reading Changelog

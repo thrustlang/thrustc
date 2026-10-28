@@ -39,5 +39,3 @@ default = []
 # Forward common toggles to the main compiler crate.
 llvm_backend_dynamic = ["thrustc_core/llvm_backend_dynamic"]
 llvm_backend_static = ["thrustc_core/llvm_backend_static"]
-
-extra_utilities = ["thrustc_core/extra_utilities"]

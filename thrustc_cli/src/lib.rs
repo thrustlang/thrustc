@@ -1315,14 +1315,6 @@ impl CommandLine {
                 self.get_mut_options().set_disable_all_warnings();
             }
 
-            "--copy-output-to-clipboard" => {
-                self.advance();
-                self.validate_llvm_required(arg);
-                self.validate_print_required(arg);
-
-                self.get_mut_options().set_copy_output_to_clipboard();
-            }
-
             "--debug-clang-command" => {
                 self.advance();
                 self.validate_llvm_required(arg);
