@@ -21,9 +21,6 @@ You can easily install the compiler toolchain latest version through **Torio**, 
 
 Repository: https://github.com/thrustlang/torio
 
-> [!TIP]  
-> Search and download torio for your system in github releases section.
-
 ![torio toolchain install](assets/GettingStarted.gif)
 
 ## Compiled
