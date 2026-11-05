@@ -1,20 +1,20 @@
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/logos/new%20logo/thrustlang-logo-banner-text-italic.png" alt= "logo" style= "width: 80%; height: 80%;"></img>
 
-# Syntax Highlighting
+# Syntax highlighting
 
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt= "standard-separator" style= "width: 1hv;"> </img>
 
-Thrust Programming Language includes syntax highlighting support for VS Code and Neovim/Vim, including editor integration, file icons, and optional themes.
+Thrust has syntax highlighting for VS Code and Neovim/Vim.
 
 ## VS Code
 
-The legacy highlighting-only extension is located at:
+The legacy highlighting-only extension is at:
 
 ```text
 highlighting/vscode/thrust-vscode/
 ```
 
-The official VS Code extension with syntax highlighting and language server support is located at:
+The official VS Code extension with syntax highlighting and language server support is at:
 
 ```text
 lsp/vscode/
@@ -26,13 +26,13 @@ Install the extension from the generated VSIX package:
 code --install-extension lsp/vscode/thrustlang-vscode-0.2.1.vsix
 ```
 
-The extension includes Thrust syntax highlighting, file icons, the available editor themes, and integration with `thrustc_lsp`.
+The extension includes Thrust syntax highlighting, file icons, optional editor themes, and integration with `thrustc_lsp`.
 
 The language server executable must be available as `thrustc_lsp` in `PATH`, or configured through `thrust.lsp.path` in VS Code settings.
 
 ## Neovim/Vim
 
-Use the bundled plugin located at:
+Use the bundled plugin at:
 
 ```text
 highlighting/neovim/thrust.nvim/
@@ -47,14 +47,12 @@ cp -r highlighting/neovim/thrust.nvim/syntax ~/.config/nvim/
 cp -r highlighting/neovim/thrust.nvim/colors ~/.config/nvim/
 ```
 
-Open any `.thrust` file and highlighting will be enabled automatically.
+Highlighting turns on when you open any `.thrust` file.
 
 To use the included Gruvbox Dark Hard theme:
 
 ```console
 :colorscheme thrust-gruvbox-dark-hard
 ```
-
-## Example
 
 ![Thrust syntax highlighting example](highlighting/assets/highlighting-example.png)

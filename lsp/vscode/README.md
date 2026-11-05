@@ -4,17 +4,17 @@
 
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt= "standard-separator" style= "width: 1hv;"> </img>
 
-This is the official Visual Studio Code extension for the **Thrust** Programming Language with syntax highlighting, file icons, themes, and Language Server Protocol integration through `thrustc_lsp`.
+This is the official Visual Studio Code extension for the **Thrust** programming language. It provides syntax highlighting, file icons, themes, and Language Server Protocol integration through `thrustc_lsp`.
 
 ## Requirements
 
 You need Visual Studio Code and the `thrustc_lsp` executable from the Thrust Compiler release.
 
-The language server is not bundled inside the extension. It must be installed manually and available from `PATH`, or configured through `thrust.lsp.path`.
+The extension does not bundle the language server. Install it manually and make it available from `PATH`, or configure it through `thrust.lsp.path`.
 
 ## Install `thrustc_lsp`
 
-Download the compiler release for your platform from:
+Download the compiler release for your platform:
 
 ```text
 https://github.com/thrustlang/thrustc/releases
@@ -58,7 +58,7 @@ Verify the installation:
 thrustc_lsp --version
 ```
 
-## Build `thrustc_lsp` From Source
+## Build `thrustc_lsp` from source
 
 From the repository root:
 
@@ -66,7 +66,7 @@ From the repository root:
 cargo build -p thrustc_lsp
 ```
 
-The debug binary is generated at:
+The debug binary is at:
 
 ```console
 target/debug/thrustc_lsp
@@ -78,7 +78,7 @@ For a release build:
 cargo build --release -p thrustc_lsp
 ```
 
-The release binary is generated at:
+The release binary is at:
 
 ```console
 target/release/thrustc_lsp
@@ -90,7 +90,7 @@ Verify the binary:
 target/release/thrustc_lsp --version
 ```
 
-To use it from the Visual Studio Code extension, either add the binary directory to `PATH` or configure the absolute path:
+To use it from the Visual Studio Code extension, add the binary directory to `PATH` or configure the absolute path:
 
 ```json
 {
@@ -98,9 +98,9 @@ To use it from the Visual Studio Code extension, either add the binary directory
 }
 ```
 
-## Install The Extension
+## Install the extension
 
-The packaged extension is generated under:
+The packaged extension is in:
 
 ```text
 lsp/vscode/packages/
@@ -114,11 +114,11 @@ code --install-extension lsp/vscode/packages/thrustlang-vscode-0.2.1.vsix
 
 After installation, open any `.thrust` file. Visual Studio Code starts `thrustc_lsp` automatically.
 
-## Configure The Language Server
+## Configure the language server
 
 If `thrustc_lsp` is available from `PATH`, no extra configuration is needed.
 
-If the executable is installed somewhere else, configure the absolute path in Visual Studio Code settings.
+If the executable is installed somewhere else, configure its absolute path in Visual Studio Code settings.
 
 Linux or macOS example:
 
@@ -136,7 +136,7 @@ Windows example:
 }
 ```
 
-You can also pass additional arguments to the language server:
+You can also pass arguments to the language server:
 
 ```json
 {
@@ -144,7 +144,7 @@ You can also pass additional arguments to the language server:
 }
 ```
 
-## Build The Extension From Source
+## Build the extension from source
 
 From this directory:
 
@@ -162,7 +162,7 @@ code --install-extension packages/thrustlang-vscode-0.2.1.vsix
 
 ## Notes
 
-The current `thrustc_lsp` binary provides the protocol entry point, editor connection, and compiler-backed module import completion. Additional compiler-backed diagnostics, hover, definition, and document symbols are expected to be connected through the compiler analysis pipeline.
+The current `thrustc_lsp` binary provides the protocol entry point, editor connection, and compiler-backed module import completion. Additional compiler-backed diagnostics, hover, definition, and document symbols are expected to connect through the compiler analysis pipeline.
 
 The legacy highlighting-only extension remains available at:
 

@@ -4,30 +4,30 @@
 
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt= "standard-separator" style= "width: 1hv;"> </img>
 
-A general-purpose, statically typed systems programming language for writing verbose, accurate, and fast code.
+A general-purpose, statically typed systems programming language. It is designed for verbose, accurate code and fast execution.
 
-## What specific problem it solves?
+## What problem does it solve?
 
-Thrust simplified C and C++ APIs in a better way that can be explained itself while integrating direct compiler control and convenience directly into the language itself.
+Thrust simplifies C and C++ APIs in a way that is easier to explain, and it integrates compiler control and common conveniences directly into the language.
 
-## Getting Started
+## Getting started
 
 > [!IMPORTANT]  
-> The compiler is in an early development phase. It still hasn't made the major releases. There are still edge cases to be handled, and the compiler is under constant testing and fuzzing.
+> The compiler is in an early development phase and has not made its major releases yet. Some edge cases still need handling, and the compiler is under constant testing and fuzzing.
 
 ## Torio
 
-You can easily install the compiler toolchain latest version through **Torio**, what is the main Thrust compiler-controller and package manager for the language.
+You can install the latest compiler toolchain through **Torio**, the main Thrust compiler-controller and package manager for the language.
 
 Repository: https://github.com/thrustlang/torio
 
 ![torio toolchain install](assets/GettingStarted.gif)
 
-## Compiled
+## Prebuilt binaries
 
-If you don't want to build the project from scratch, you can check if there are available versions in Github releases.
+If you don't want to build the project from scratch, check the available versions on GitHub releases.
 
-[Thrust Compiler - Github Releases](https://github.com/thrustlang/thrustc/releases)
+[Thrust Compiler - GitHub Releases](https://github.com/thrustlang/thrustc/releases)
 
 Supported platforms and architectures:
 
@@ -38,11 +38,11 @@ Supported platforms and architectures:
 | macOS Apple Silicon | aarch64 `aarch64-apple-darwin` | `thrustc-aarch64-macos-v*.*.*` |
 | macOS Intel | x64 `x86_64-apple-darwin` | `thrustc-x86_64-macos-v*.*.*` |
 
-## From Scratch
+## From scratch
 
-### Build dependencies 
+### Build dependencies
 
-Among the dependencies required by the compiler is LLVM compiler infrastructure.
+The compiler depends on the LLVM compiler infrastructure.
 
 Automatically:
 
@@ -61,20 +61,20 @@ $ cd compiler-dependency-builder
 $ cargo run 
 ```
 
-If you want to know a high-level command line view, you should check out: [Compiler Dependency Builder - Commands & Flags](https://github.com/thrustlang/compiler-dependency-builder/blob/master/README.md)
+For a high-level view of the command line, see [Compiler Dependency Builder - Commands & Flags](https://github.com/thrustlang/compiler-dependency-builder/blob/master/README.md).
 
-You must first clone the repository and access it locally. 
+Clone the repository and enter it:
 
 ```console
 $ git clone --depth=1 https://github.com/thrustlang/thrustc 
 $ cd thrustc
 ```
 
-### Build Cargo/rustc dependencies 
+### Build Cargo/rustc dependencies
 
-Among other mandatory dependencies, we also need additional libraries specifically for Cargo and rustc.
+Some Cargo and rustc dependencies need additional libraries.
 
-You must install each Cargo dependency automatically:
+Install each Cargo dependency automatically:
 
 #### Bash
 
@@ -100,23 +100,23 @@ scripts\cargo-dependencies.bat
 .\scripts\cargo-dependencies.ps1
 ```
 
-### Build the Compiler
+### Build the compiler
 
-Now you need to have Rust installed with a recent version.
+You need Rust installed with a recent version.
 
 - \>= [Rust](https://www.rust-lang.org/) (v1.85.0)
 - Rust 2024 Edition
 
-Now you need to compile the compiler with Rust. 
+Build the compiler with Rust:
 
 ```console
 $ cargo build --release
 $ ./target/release/thrustc --help
 ```
 
-## Cross Compilation
+## Cross compilation
 
-Thrust Compiler offers cross-compilation support, just like '[Clang](https://github.com/llvm/llvm-project/tree/main/clang)'.
+Thrust Compiler supports cross-compilation like [Clang](https://github.com/llvm/llvm-project/tree/main/clang).
 
 ### RISC-V 64-bit
 
@@ -135,59 +135,55 @@ Thrust Compiler offers cross-compilation support, just like '[Clang](https://git
   -opt O3 
 ```
 
-You can target macOS, Windows, Linux, and other platforms directly from your current system without needing to switch machines.
+You can target macOS, Windows, Linux, and other platforms from your current system without switching machines.
 
-## Commands & Flags
+## Commands and flags
 
-If you want to know a high-level command line view, you should check out: [Thrust Compiler - Commands & Flags](https://github.com/thrustlang/thrustc/blob/master/CLI.md)
+For a high-level view of the command line, see [Thrust Compiler - Commands & Flags](https://github.com/thrustlang/thrustc/blob/master/CLI.md).
 
-## Language Syntax
+## Language syntax
 
-For detailed information about the Thrust programming language syntax, check out the [Thrust Syntax repository](https://github.com/thrustlang/syntax).
+The Thrust language syntax is documented in the [Thrust Syntax repository](https://github.com/thrustlang/syntax).
 
-## Torio
+## Language server
 
-For high-level project and toolchain management, check out [Torio](https://github.com/thrustlang/torio), the package manager and compiler controller for Thrust.
+For editor integration through the Language Server Protocol, especially for Visual Studio Code, see [Thrust LSP - Visual Studio Code](https://github.com/thrustlang/thrustc/blob/master/lsp/vscode/README.md).
 
-## Language Server
+## Compiler structure
 
-If you want to configure editor integration through the Language Server Protocol, especially for Visual Studio Code, check out: [Thrust LSP - Visual Studio Code](https://github.com/thrustlang/thrustc/blob/master/lsp/vscode/README.md)
-
-## Compiler Structure
-
-If you want to know a little about the compiler's structure, you should check out: [Thrust Programming Language - Compiler Structure](https://github.com/thrustlang/thrustc/blob/master/PROJECT_STRUCTURE.md)
+The compiler's structure is described in [Thrust Programming Language - Compiler Structure](https://github.com/thrustlang/thrustc/blob/master/PROJECT_STRUCTURE.md).
 
 ## Contributing
 
-If you want to know how to contribute to the compiler, you should check out: [Thrust Programming Language - Contributing](https://github.com/thrustlang/thrustc/blob/master/CONTRIBUTING.md)
+See [Thrust Programming Language - Contributing](https://github.com/thrustlang/thrustc/blob/master/CONTRIBUTING.md) for how to contribute to the compiler.
 
-## Rust Code Documentation
+## Rust code documentation
 
-If you want to know regarding Rust code's structure that resides in the compiler, you should check out: [Thrust Programming Language - Rust Code Documentation](https://thrustlang.github.io/thrustc/)
+The Rust code structure in the compiler is documented at [Thrust Programming Language - Rust Code Documentation](https://thrustlang.github.io/thrustc/).
 
-## Cargo Alias
+## Cargo alias
 
-If you require to know the command line shorcuts available in the project across rust-cargo, you should check out: [Thrust Programming Language - Cargo Alias](https://github.com/thrustlang/thrustc/blob/master/CARGO_ALIAS.md)
+The command line shortcuts available across Rust and Cargo are listed in [Thrust Programming Language - Cargo Alias](https://github.com/thrustlang/thrustc/blob/master/CARGO_ALIAS.md).
 
-## Commit Conventions
+## Commit conventions
 
-If you want to know the commit conventions to follow in order to delivery a good Github commit, you should check out: [Thrust Programming Language - Commit Conventions](https://github.com/thrustlang/thrustc/blob/master/COMMIT_CONVENTIONS.md)
+See [Thrust Programming Language - Commit Conventions](https://github.com/thrustlang/thrustc/blob/master/COMMIT_CONVENTIONS.md) for the commit conventions to follow when delivering a GitHub commit.
 
-## Compiler Diagnostics
+## Compiler diagnostics
 
-If you want to see examples of the type of compiler diagnostics you can find in thrustc, you should check out: [Thrust Programming Language - Compiler Diagnostics](https://github.com/thrustlang/thrustc/blob/master/COMPILER_DIAGNOSTICS.md)
+Examples of the compiler diagnostics you can find in thrustc are in [Thrust Programming Language - Compiler Diagnostics](https://github.com/thrustlang/thrustc/blob/master/COMPILER_DIAGNOSTICS.md).
 
-## Compiler Fuzzing
+## Compiler fuzzing
 
-If you want to know how to fuzz the compiler with stable and unstable features to find issues, you should check out: [Thrust Programming Language - Compiler Fuzzing](https://github.com/thrustlang/thrustc/blob/master/COMPILER_FUZZING.md)
+See [Thrust Programming Language - Compiler Fuzzing](https://github.com/thrustlang/thrustc/blob/master/COMPILER_FUZZING.md) for how to fuzz the compiler with stable and unstable features.
 
-## Compiler Releasing
+## Compiler releasing
 
-If you want to know how a new compiler version is released, you should check out: [Thrust Programming Language - Compiler Releasing](https://github.com/thrustlang/thrustc/blob/master/COMPILER_RELEASING.md)
+See [Thrust Programming Language - Compiler Releasing](https://github.com/thrustlang/thrustc/blob/master/COMPILER_RELEASING.md) for how a new compiler version is released.
 
-## Code of Conduct
+## Code of conduct
 
-If you want to know the code of conduct expected from the project contributors, you should check out: [Thrust Programming Language - Code of Conduct](https://github.com/thrustlang/thrustc/blob/master/CODE_OF_CONDUCT.md)
+The code of conduct for project contributors is in [Thrust Programming Language - Code of Conduct](https://github.com/thrustlang/thrustc/blob/master/CODE_OF_CONDUCT.md).
 
 ## License
 

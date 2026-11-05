@@ -1,39 +1,35 @@
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/logos/new%20logo/thrustlang-logo-banner-text-italic.png" alt= "logo" style= "width: 80%; height: 80%;"></img>
 
-# The Thrust Compiler 
+# The Thrust compiler
 
 <img src="https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt="standard-separator" style="width: 1hv;">
 
-This is an example of the type of compiler diagnostics you can find in thrustc:
+The compiler reports diagnostics like these:
 
-These can be displayed in color using `--enable-ansi-color`, which is off by default.
-
-For example:
+Use `--enable-ansi-color` to display them in color. The option is off by default.
 
 ### Errors
 
-#### Type Mismatch
+#### Type mismatch
 
 <img src= "https://github.com/thrustlang/thrustc/blob/master/assets/examples/diagnostics/TypeMismatchDiagnostic.png"></img>
 
-#### Value Without Address
+#### Value without address
 
 <img src= "https://github.com/thrustlang/thrustc/blob/master/assets/examples/diagnostics/ValueWithoutAddressDiagnostic.png"></img>
 
-#### Invalid Atomic Operation
+#### Invalid atomic operation
 
 `E0056` reports an atomic operation whose target has no atomic ordering, or whose ordering arguments are not valid for LLVM. Use `thrustc --explain E0056` for details.
 
 ### Warnings
 
-#### Unknown Call Convention
+#### Unknown call convention
 
 <img src= "https://github.com/thrustlang/thrustc/blob/master/assets/examples/diagnostics/UnknownCallConventionWarningDiagnostic.png"></img>
 
-#### Attribute Conflict
+#### Attribute conflict
 
 <img src= "https://github.com/thrustlang/thrustc/blob/master/assets/examples/diagnostics/AttributeConflictWarningDiagnostic.png"></img>
 
-These are some examples of diagnostics that you can find in Thrust and that will be useful when using the language.
-
-You can understand a diagnostic better using `thrustc --explain W0004` or `thrustc --explain E0007`, which explains in detail why the issue exists in the code when an explanation is available.
+Use `thrustc --explain W0004` or `thrustc --explain E0007` to understand a diagnostic. The compiler explains why the issue exists in the code when an explanation is available.

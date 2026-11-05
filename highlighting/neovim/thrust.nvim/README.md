@@ -1,6 +1,6 @@
 # thrust.nvim
 
-Syntax highlighting for the [Thrust Programming Language](https://github.com/thrustlang/) language in Neovim/Vim.
+Syntax highlighting for the [Thrust Programming Language](https://github.com/thrustlang/) in Neovim/Vim.
 
 ## What gets highlighted
 
@@ -47,7 +47,7 @@ cp -r ftplugin  ~/.config/nvim/
 cp -r colors    ~/.config/nvim/
 ```
 
-That's it — open any `.thrust` file and highlighting is active.
+Highlighting turns on when you open any `.thrust` file.
 
 ## File structure
 
