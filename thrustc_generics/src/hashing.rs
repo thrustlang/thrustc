@@ -206,6 +206,7 @@ pub fn type_env_fingerprint(env: &TypeEnv) -> String {
     output
 }
 
+// Builds the unique symbol name for a monomorphized generic instantiation from its type environment fingerprint.
 pub fn instantiation_key(module: Option<&str>, name: &str, env: &TypeEnv) -> String {
     let module: &str = module.unwrap_or("");
     let content: String = format!("{module}::{name}({})", self::type_env_fingerprint(env));
@@ -213,6 +214,9 @@ pub fn instantiation_key(module: Option<&str>, name: &str, env: &TypeEnv) -> Str
     format!("__generic_{}_{:x}", name, self::fnv1a(content.as_bytes()))
 }
 
+// FNV-1a 64-bit hash, public-domain algorithm by Fowler, Noll and Vo.
+// See http://www.isthe.com/chongo/tech/comp/fnv/.
+// Offset basis 0xcbf29ce484222325 and prime 1099511628211 (0x100000001b3); used here to suffix monomorphized symbol names.
 fn fnv1a(bytes: &[u8]) -> u64 {
     let mut hash: u64 = 0xcbf29ce484222325;
 

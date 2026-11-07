@@ -151,7 +151,6 @@ pub fn parse_import_c<'preprocessor>(
         self::synthesize_imported_header(parser, &request, options)?;
 
     self::emit_import_diagnostics(parser, &context, request.span());
-
     self::emit_imported_symbols(&mut module, &context, request.span());
 
     parser.get_registry().borrow_mut().register(&module);
@@ -508,29 +507,39 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportC, ()>
     let import_opts: thrustc_options::ImportCOptions =
         thrustc_directive::combine_import_c_options(file_options);
 
-    if header_path.is_relative() {
-        let local_candidate: PathBuf = current_dir.join(&import_str);
+    let header_is_relative: bool = header_path.is_relative();
 
-        if local_candidate.exists() {
-            header_path = local_candidate;
-        } else {
-            let search_dirs = import_opts
-                .include_paths()
-                .iter()
-                .chain(import_opts.system_include_paths().iter());
+    let local_candidate: PathBuf = current_dir.join(&import_str);
 
-            let found: Option<PathBuf> = search_dirs
-                .map(|include_dir| include_dir.join(&import_str))
-                .find(|candidate| candidate.exists());
+    let local_exists: bool = header_is_relative && local_candidate.exists();
 
-            if let Some(candidate) = found {
-                header_path = candidate;
-                resolved_from_import_search = true;
-                parse_outside_header = true;
-            } else {
-                outside_header = true;
-            }
-        }
+    if local_exists {
+        header_path = local_candidate;
+    }
+
+    let should_search_import_paths: bool = header_is_relative && !local_exists;
+
+    let found: Option<PathBuf> = if should_search_import_paths {
+        import_opts
+            .include_paths()
+            .iter()
+            .chain(import_opts.system_include_paths().iter())
+            .map(|include_dir| include_dir.join(&import_str))
+            .find(|candidate| candidate.exists())
+    } else {
+        None
+    };
+
+    let found_is_missing: bool = found.is_none();
+
+    if let Some(candidate) = found {
+        header_path = candidate;
+        resolved_from_import_search = true;
+        parse_outside_header = true;
+    }
+
+    if should_search_import_paths && found_is_missing {
+        outside_header = true;
     }
 
     if !outside_header && let Ok(canonicalized) = header_path.canonicalize() {
@@ -579,7 +588,7 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportC, ()>
         return Err(());
     }
 
-    Ok(ImportC::new(
+    let import_c: ImportC = ImportC::new(
         import_str,
         import_path,
         header_path,
@@ -589,7 +598,9 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportC, ()>
         alias,
         import_opts,
         span,
-    ))
+    );
+
+    Ok(import_c)
 }
 
 fn build_import_options(

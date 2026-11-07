@@ -111,6 +111,10 @@ pub trait AstConstantExtensions {
     fn is_constant_value(&self) -> bool;
 }
 
+pub trait AstBuiltinExtensions {
+    fn contains_deferred_builtin(&self) -> bool;
+}
+
 pub trait AstStructureDataExtensions {
     fn new(name: String, metadata: StructTypeMetadata, span: Span) -> Self;
     fn get_struct_fields(&self) -> &StructureDataFields;

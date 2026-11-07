@@ -30,11 +30,11 @@ use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{type_metadata::StructTypeMetadata, Type};
 
-use thrustc_parser_external_table::ExternalSymbolTable;
+use thrustc_parser_external_table::ExternalParserSymbolTable;
 use thrustc_parser_table::traits::{
     ConstructorExtensions, FoundSymbolEitherExtensions, StructSymbolExtensions,
 };
-use thrustc_parser_table::GenericStructEntry;
+use thrustc_parser_table::GenericStruct;
 
 use crate::{expressions, ParserContext};
 
@@ -85,7 +85,7 @@ pub fn build_constructor<'parser>(
     if !qualified
         && ctx.get_symbols().get_symbols_id(symbol, span).is_err()
         && let Some((imported_access, imported_symbol)) =
-            crate::imported_scope::find_symbol(ctx, symbol, span)?
+            crate::macro_imports::find_symbol(ctx, symbol, span)?
         && imported_symbol.variant == Variant::Struct
     {
         access = imported_access;
@@ -140,7 +140,7 @@ pub fn build_constructor<'parser>(
 
         type_params = signature_type_params.clone();
 
-        let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+        let origin: Option<std::path::PathBuf> = ExternalParserSymbolTable::new(ctx.get_modules())
             .resolve(&access)
             .map(|module| module.get_path().to_path_buf());
 
@@ -156,7 +156,7 @@ pub fn build_constructor<'parser>(
             } else {
                 ctx.get_mut_symbols().new_generic_struct(
                     symbol.to_string(),
-                    GenericStructEntry::new(
+                    GenericStruct::new(
                         generic_type_params.clone(),
                         signature_fields
                             .iter()

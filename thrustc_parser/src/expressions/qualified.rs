@@ -28,8 +28,8 @@ use thrustc_attributes::{ThrustAttributes, traits::ThrustAttributesExtensions};
 use thrustc_c_transpiler_macro_api::options::Options;
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_parser_external_table::ExternalSymbolTable;
-use thrustc_parser_table::GenericFunctionEntry;
+use thrustc_parser_external_table::ExternalParserSymbolTable;
+use thrustc_parser_table::GenericFunction;
 use thrustc_preprocessor::signatures::{Signature, Variant};
 
 use thrustc_token::{Token, traits::TokenExtensions};
@@ -47,7 +47,7 @@ pub fn build_qualified_expression<'parser>(
 ) -> Result<thrustc_ast::Ast<'parser>, CompilationIssue> {
     let qualified_symbol: String = thrustc_import::synthesis::qualified_symbol_name(access, symbol);
 
-    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+    let origin: Option<std::path::PathBuf> = ExternalParserSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
@@ -394,7 +394,7 @@ pub fn build_qualified_expression<'parser>(
         });
     }
 
-    if let Some(module) = ExternalSymbolTable::new(ctx.get_modules()).resolve(access) {
+    if let Some(module) = ExternalParserSymbolTable::new(ctx.get_modules()).resolve(access) {
         if let Some(macro_definition) = module.find_macro(symbol) {
             if macro_definition.get_kind()
                 == thrustc_c_transpiler_macro_api::types::MacroType::Object
@@ -439,7 +439,7 @@ fn build_qualified_macro<'parser>(
     span: Span,
 ) -> Result<Option<thrustc_ast::Ast<'parser>>, CompilationIssue> {
     let Some(module): Option<&thrustc_preprocessor::module::Module> =
-        ExternalSymbolTable::new(ctx.get_modules()).resolve(access)
+        ExternalParserSymbolTable::new(ctx.get_modules()).resolve(access)
     else {
         return Ok(None);
     };
@@ -641,7 +641,7 @@ fn build_qualified_generic_call<'parser>(
     parameters: &[(String, Type, Span)],
     attributes: ThrustAttributes,
 ) -> Result<thrustc_ast::Ast<'parser>, CompilationIssue> {
-    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+    let origin: Option<std::path::PathBuf> = ExternalParserSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
@@ -721,7 +721,7 @@ fn build_qualified_generic_call<'parser>(
 
     if must_defer {
         if !ctx.get_symbols().has_generic_function(&qualified_symbol) {
-            let generic_function: GenericFunctionEntry = GenericFunctionEntry::new(
+            let generic_function: GenericFunction = GenericFunction::new(
                 symbol.to_string(),
                 type_params.to_vec(),
                 (

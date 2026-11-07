@@ -32,428 +32,6 @@ use thrustc_token::Token;
 use std::path::Path;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ImportCScope {
-    MainOnly,
-    TransitiveNoSystem,
-    TransitiveAll,
-}
-
-impl ImportCScope {
-    #[inline]
-    pub fn to_str(scope: &str) -> Option<Self> {
-        match scope {
-            "main-only" => Some(Self::MainOnly),
-            "transitive-no-system" => Some(Self::TransitiveNoSystem),
-            "transitive-all" => Some(Self::TransitiveAll),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ImportCOptions {
-    include_paths: Vec<PathBuf>,
-    system_include_paths: Vec<PathBuf>,
-    defines: Vec<String>,
-    undefs: Vec<String>,
-    import_scope: ImportCScope,
-    import_scope_overridden: bool,
-    target: Option<String>,
-    sysroot: Option<PathBuf>,
-    std: Option<String>,
-    args: Vec<String>,
-}
-
-impl ImportCOptions {
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            include_paths: Vec::new(),
-            system_include_paths: Vec::new(),
-            defines: Vec::new(),
-            undefs: Vec::new(),
-            import_scope: ImportCScope::TransitiveNoSystem,
-            import_scope_overridden: false,
-            target: None,
-            sysroot: None,
-            std: None,
-            args: Vec::new(),
-        }
-    }
-}
-
-impl ImportCOptions {
-    #[inline]
-    pub fn include_paths(&self) -> &[PathBuf] {
-        self.include_paths.as_slice()
-    }
-
-    #[inline]
-    pub fn system_include_paths(&self) -> &[PathBuf] {
-        self.system_include_paths.as_slice()
-    }
-
-    #[inline]
-    pub fn defines(&self) -> &[String] {
-        self.defines.as_slice()
-    }
-
-    #[inline]
-    pub fn undefs(&self) -> &[String] {
-        self.undefs.as_slice()
-    }
-
-    #[inline]
-    pub fn import_scope(&self) -> ImportCScope {
-        self.import_scope
-    }
-
-    #[inline]
-    pub fn import_scope_overridden(&self) -> bool {
-        self.import_scope_overridden
-    }
-
-    #[inline]
-    pub fn target(&self) -> Option<&str> {
-        self.target.as_deref()
-    }
-
-    #[inline]
-    pub fn sysroot(&self) -> Option<&Path> {
-        self.sysroot.as_deref()
-    }
-
-    #[inline]
-    pub fn std(&self) -> Option<&str> {
-        self.std.as_deref()
-    }
-
-    #[inline]
-    pub fn args(&self) -> &[String] {
-        self.args.as_slice()
-    }
-}
-
-impl ImportCOptions {
-    #[inline]
-    pub fn add_include_path(&mut self, path: PathBuf) {
-        self.include_paths.push(path);
-    }
-
-    #[inline]
-    pub fn add_system_include_path(&mut self, path: PathBuf) {
-        self.system_include_paths.push(path);
-    }
-
-    #[inline]
-    pub fn add_define(&mut self, def: String) {
-        self.defines.push(def);
-    }
-
-    #[inline]
-    pub fn add_undef(&mut self, name: String) {
-        self.undefs.push(name);
-    }
-
-    #[inline]
-    pub fn set_import_scope(&mut self, import_scope: ImportCScope) {
-        self.import_scope = import_scope;
-        self.import_scope_overridden = true;
-    }
-
-    #[inline]
-    pub fn set_target(&mut self, target: String) {
-        self.target = Some(target);
-    }
-
-    #[inline]
-    pub fn set_sysroot(&mut self, sysroot: PathBuf) {
-        self.sysroot = Some(sysroot);
-    }
-
-    #[inline]
-    pub fn set_std(&mut self, std: String) {
-        self.std = Some(std);
-    }
-
-    #[inline]
-    pub fn add_arg(&mut self, arg: String) {
-        self.args.push(arg);
-    }
-}
-
-impl ImportCOptions {
-    #[inline]
-    pub fn include_paths_mut(&mut self) -> &mut Vec<PathBuf> {
-        &mut self.include_paths
-    }
-
-    #[inline]
-    pub fn system_include_paths_mut(&mut self) -> &mut Vec<PathBuf> {
-        &mut self.system_include_paths
-    }
-
-    #[inline]
-    pub fn defines_mut(&mut self) -> &mut Vec<String> {
-        &mut self.defines
-    }
-
-    #[inline]
-    pub fn undefs_mut(&mut self) -> &mut Vec<String> {
-        &mut self.undefs
-    }
-
-    #[inline]
-    pub fn args_mut(&mut self) -> &mut Vec<String> {
-        &mut self.args
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct TranslateCOptions {
-    include_paths: Vec<PathBuf>,
-    system_include_paths: Vec<PathBuf>,
-    defines: Vec<String>,
-    undefs: Vec<String>,
-    target: Option<String>,
-    sysroot: Option<PathBuf>,
-    std: Option<String>,
-    args: Vec<String>,
-
-    out_dir: Option<PathBuf>,
-    output: Option<PathBuf>,
-}
-
-#[derive(Debug, Clone)]
-pub struct EmitCBindingsOptions {
-    thrust: Option<PathBuf>,
-    out_dir: Option<PathBuf>,
-    output: Option<PathBuf>,
-}
-
-impl TranslateCOptions {
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            include_paths: Vec::new(),
-            system_include_paths: Vec::new(),
-            defines: Vec::new(),
-            undefs: Vec::new(),
-            target: None,
-            sysroot: None,
-            std: None,
-            args: Vec::new(),
-
-            out_dir: None,
-            output: None,
-        }
-    }
-}
-
-impl EmitCBindingsOptions {
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            thrust: None,
-            out_dir: None,
-            output: None,
-        }
-    }
-}
-
-impl EmitCBindingsOptions {
-    #[inline]
-    pub fn thrust(&self) -> Option<&Path> {
-        self.thrust.as_deref()
-    }
-
-    #[inline]
-    pub fn out_dir(&self) -> Option<&Path> {
-        self.out_dir.as_deref()
-    }
-
-    #[inline]
-    pub fn output(&self) -> Option<&Path> {
-        self.output.as_deref()
-    }
-}
-
-impl EmitCBindingsOptions {
-    #[inline]
-    pub fn set_thrust(&mut self, thrust: PathBuf) {
-        self.thrust = Some(thrust);
-    }
-
-    #[inline]
-    pub fn set_out_dir(&mut self, out_dir: PathBuf) {
-        self.out_dir = Some(out_dir);
-    }
-
-    #[inline]
-    pub fn set_output(&mut self, output: PathBuf) {
-        self.output = Some(output);
-    }
-}
-
-impl EmitCBindingsOptions {
-    #[inline]
-    pub fn thrust_mut(&mut self) -> &mut Option<PathBuf> {
-        &mut self.thrust
-    }
-
-    #[inline]
-    pub fn out_dir_mut(&mut self) -> &mut Option<PathBuf> {
-        &mut self.out_dir
-    }
-
-    #[inline]
-    pub fn output_mut(&mut self) -> &mut Option<PathBuf> {
-        &mut self.output
-    }
-}
-
-impl TranslateCOptions {
-    #[inline]
-    pub fn include_paths(&self) -> &[PathBuf] {
-        self.include_paths.as_slice()
-    }
-
-    #[inline]
-    pub fn system_include_paths(&self) -> &[PathBuf] {
-        self.system_include_paths.as_slice()
-    }
-
-    #[inline]
-    pub fn defines(&self) -> &[String] {
-        self.defines.as_slice()
-    }
-
-    #[inline]
-    pub fn undefs(&self) -> &[String] {
-        self.undefs.as_slice()
-    }
-
-    #[inline]
-    pub fn target(&self) -> Option<&str> {
-        self.target.as_deref()
-    }
-
-    #[inline]
-    pub fn sysroot(&self) -> Option<&Path> {
-        self.sysroot.as_deref()
-    }
-
-    #[inline]
-    pub fn std(&self) -> Option<&str> {
-        self.std.as_deref()
-    }
-
-    #[inline]
-    pub fn args(&self) -> &[String] {
-        self.args.as_slice()
-    }
-
-    #[inline]
-    pub fn out_dir(&self) -> Option<&Path> {
-        self.out_dir.as_deref()
-    }
-
-    #[inline]
-    pub fn output(&self) -> Option<&Path> {
-        self.output.as_deref()
-    }
-}
-
-impl TranslateCOptions {
-    #[inline]
-    pub fn add_include_path(&mut self, path: PathBuf) {
-        self.include_paths.push(path);
-    }
-
-    #[inline]
-    pub fn add_system_include_path(&mut self, path: PathBuf) {
-        self.system_include_paths.push(path);
-    }
-
-    #[inline]
-    pub fn add_define(&mut self, def: String) {
-        self.defines.push(def);
-    }
-
-    #[inline]
-    pub fn add_undef(&mut self, name: String) {
-        self.undefs.push(name);
-    }
-
-    #[inline]
-    pub fn set_target(&mut self, target: String) {
-        self.target = Some(target);
-    }
-
-    #[inline]
-    pub fn set_sysroot(&mut self, sysroot: PathBuf) {
-        self.sysroot = Some(sysroot);
-    }
-
-    #[inline]
-    pub fn set_std(&mut self, std: String) {
-        self.std = Some(std);
-    }
-
-    #[inline]
-    pub fn add_arg(&mut self, arg: String) {
-        self.args.push(arg);
-    }
-
-    #[inline]
-    pub fn set_out_dir(&mut self, out_dir: PathBuf) {
-        self.out_dir = Some(out_dir);
-    }
-
-    #[inline]
-    pub fn set_output(&mut self, output: PathBuf) {
-        self.output = Some(output);
-    }
-}
-
-impl TranslateCOptions {
-    #[inline]
-    pub fn include_paths_mut(&mut self) -> &mut Vec<PathBuf> {
-        &mut self.include_paths
-    }
-
-    #[inline]
-    pub fn system_include_paths_mut(&mut self) -> &mut Vec<PathBuf> {
-        &mut self.system_include_paths
-    }
-
-    #[inline]
-    pub fn defines_mut(&mut self) -> &mut Vec<String> {
-        &mut self.defines
-    }
-
-    #[inline]
-    pub fn undefs_mut(&mut self) -> &mut Vec<String> {
-        &mut self.undefs
-    }
-
-    #[inline]
-    pub fn args_mut(&mut self) -> &mut Vec<String> {
-        &mut self.args
-    }
-
-    #[inline]
-    pub fn out_dir_mut(&mut self) -> &mut Option<PathBuf> {
-        &mut self.out_dir
-    }
-
-    #[inline]
-    pub fn output_mut(&mut self) -> &mut Option<PathBuf> {
-        &mut self.output
-    }
-}
-
 #[derive(Debug)]
 pub struct CompilerOptions {
     compiler_tools_path: PathBuf,
@@ -1061,5 +639,427 @@ impl CompilationUnit {
     #[inline]
     pub fn get_base_name(&self) -> String {
         self.base_name.clone()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImportCScope {
+    MainOnly,
+    TransitiveNoSystem,
+    TransitiveAll,
+}
+
+impl ImportCScope {
+    #[inline]
+    pub fn to_str(scope: &str) -> Option<Self> {
+        match scope {
+            "main-only" => Some(Self::MainOnly),
+            "transitive-no-system" => Some(Self::TransitiveNoSystem),
+            "transitive-all" => Some(Self::TransitiveAll),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportCOptions {
+    include_paths: Vec<PathBuf>,
+    system_include_paths: Vec<PathBuf>,
+    defines: Vec<String>,
+    undefs: Vec<String>,
+    import_scope: ImportCScope,
+    import_scope_overridden: bool,
+    target: Option<String>,
+    sysroot: Option<PathBuf>,
+    std: Option<String>,
+    args: Vec<String>,
+}
+
+impl ImportCOptions {
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            include_paths: Vec::new(),
+            system_include_paths: Vec::new(),
+            defines: Vec::new(),
+            undefs: Vec::new(),
+            import_scope: ImportCScope::TransitiveNoSystem,
+            import_scope_overridden: false,
+            target: None,
+            sysroot: None,
+            std: None,
+            args: Vec::new(),
+        }
+    }
+}
+
+impl ImportCOptions {
+    #[inline]
+    pub fn include_paths(&self) -> &[PathBuf] {
+        self.include_paths.as_slice()
+    }
+
+    #[inline]
+    pub fn system_include_paths(&self) -> &[PathBuf] {
+        self.system_include_paths.as_slice()
+    }
+
+    #[inline]
+    pub fn defines(&self) -> &[String] {
+        self.defines.as_slice()
+    }
+
+    #[inline]
+    pub fn undefs(&self) -> &[String] {
+        self.undefs.as_slice()
+    }
+
+    #[inline]
+    pub fn import_scope(&self) -> ImportCScope {
+        self.import_scope
+    }
+
+    #[inline]
+    pub fn import_scope_overridden(&self) -> bool {
+        self.import_scope_overridden
+    }
+
+    #[inline]
+    pub fn target(&self) -> Option<&str> {
+        self.target.as_deref()
+    }
+
+    #[inline]
+    pub fn sysroot(&self) -> Option<&Path> {
+        self.sysroot.as_deref()
+    }
+
+    #[inline]
+    pub fn std(&self) -> Option<&str> {
+        self.std.as_deref()
+    }
+
+    #[inline]
+    pub fn args(&self) -> &[String] {
+        self.args.as_slice()
+    }
+}
+
+impl ImportCOptions {
+    #[inline]
+    pub fn add_include_path(&mut self, path: PathBuf) {
+        self.include_paths.push(path);
+    }
+
+    #[inline]
+    pub fn add_system_include_path(&mut self, path: PathBuf) {
+        self.system_include_paths.push(path);
+    }
+
+    #[inline]
+    pub fn add_define(&mut self, def: String) {
+        self.defines.push(def);
+    }
+
+    #[inline]
+    pub fn add_undef(&mut self, name: String) {
+        self.undefs.push(name);
+    }
+
+    #[inline]
+    pub fn set_import_scope(&mut self, import_scope: ImportCScope) {
+        self.import_scope = import_scope;
+        self.import_scope_overridden = true;
+    }
+
+    #[inline]
+    pub fn set_target(&mut self, target: String) {
+        self.target = Some(target);
+    }
+
+    #[inline]
+    pub fn set_sysroot(&mut self, sysroot: PathBuf) {
+        self.sysroot = Some(sysroot);
+    }
+
+    #[inline]
+    pub fn set_std(&mut self, std: String) {
+        self.std = Some(std);
+    }
+
+    #[inline]
+    pub fn add_arg(&mut self, arg: String) {
+        self.args.push(arg);
+    }
+}
+
+impl ImportCOptions {
+    #[inline]
+    pub fn include_paths_mut(&mut self) -> &mut Vec<PathBuf> {
+        &mut self.include_paths
+    }
+
+    #[inline]
+    pub fn system_include_paths_mut(&mut self) -> &mut Vec<PathBuf> {
+        &mut self.system_include_paths
+    }
+
+    #[inline]
+    pub fn defines_mut(&mut self) -> &mut Vec<String> {
+        &mut self.defines
+    }
+
+    #[inline]
+    pub fn undefs_mut(&mut self) -> &mut Vec<String> {
+        &mut self.undefs
+    }
+
+    #[inline]
+    pub fn args_mut(&mut self) -> &mut Vec<String> {
+        &mut self.args
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TranslateCOptions {
+    include_paths: Vec<PathBuf>,
+    system_include_paths: Vec<PathBuf>,
+    defines: Vec<String>,
+    undefs: Vec<String>,
+    target: Option<String>,
+    sysroot: Option<PathBuf>,
+    std: Option<String>,
+    args: Vec<String>,
+
+    out_dir: Option<PathBuf>,
+    output: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone)]
+pub struct EmitCBindingsOptions {
+    thrust: Option<PathBuf>,
+    out_dir: Option<PathBuf>,
+    output: Option<PathBuf>,
+}
+
+impl TranslateCOptions {
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            include_paths: Vec::new(),
+            system_include_paths: Vec::new(),
+            defines: Vec::new(),
+            undefs: Vec::new(),
+            target: None,
+            sysroot: None,
+            std: None,
+            args: Vec::new(),
+
+            out_dir: None,
+            output: None,
+        }
+    }
+}
+
+impl EmitCBindingsOptions {
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            thrust: None,
+            out_dir: None,
+            output: None,
+        }
+    }
+}
+
+impl EmitCBindingsOptions {
+    #[inline]
+    pub fn thrust(&self) -> Option<&Path> {
+        self.thrust.as_deref()
+    }
+
+    #[inline]
+    pub fn out_dir(&self) -> Option<&Path> {
+        self.out_dir.as_deref()
+    }
+
+    #[inline]
+    pub fn output(&self) -> Option<&Path> {
+        self.output.as_deref()
+    }
+}
+
+impl EmitCBindingsOptions {
+    #[inline]
+    pub fn set_thrust(&mut self, thrust: PathBuf) {
+        self.thrust = Some(thrust);
+    }
+
+    #[inline]
+    pub fn set_out_dir(&mut self, out_dir: PathBuf) {
+        self.out_dir = Some(out_dir);
+    }
+
+    #[inline]
+    pub fn set_output(&mut self, output: PathBuf) {
+        self.output = Some(output);
+    }
+}
+
+impl EmitCBindingsOptions {
+    #[inline]
+    pub fn thrust_mut(&mut self) -> &mut Option<PathBuf> {
+        &mut self.thrust
+    }
+
+    #[inline]
+    pub fn out_dir_mut(&mut self) -> &mut Option<PathBuf> {
+        &mut self.out_dir
+    }
+
+    #[inline]
+    pub fn output_mut(&mut self) -> &mut Option<PathBuf> {
+        &mut self.output
+    }
+}
+
+impl TranslateCOptions {
+    #[inline]
+    pub fn include_paths(&self) -> &[PathBuf] {
+        self.include_paths.as_slice()
+    }
+
+    #[inline]
+    pub fn system_include_paths(&self) -> &[PathBuf] {
+        self.system_include_paths.as_slice()
+    }
+
+    #[inline]
+    pub fn defines(&self) -> &[String] {
+        self.defines.as_slice()
+    }
+
+    #[inline]
+    pub fn undefs(&self) -> &[String] {
+        self.undefs.as_slice()
+    }
+
+    #[inline]
+    pub fn target(&self) -> Option<&str> {
+        self.target.as_deref()
+    }
+
+    #[inline]
+    pub fn sysroot(&self) -> Option<&Path> {
+        self.sysroot.as_deref()
+    }
+
+    #[inline]
+    pub fn std(&self) -> Option<&str> {
+        self.std.as_deref()
+    }
+
+    #[inline]
+    pub fn args(&self) -> &[String] {
+        self.args.as_slice()
+    }
+
+    #[inline]
+    pub fn out_dir(&self) -> Option<&Path> {
+        self.out_dir.as_deref()
+    }
+
+    #[inline]
+    pub fn output(&self) -> Option<&Path> {
+        self.output.as_deref()
+    }
+}
+
+impl TranslateCOptions {
+    #[inline]
+    pub fn add_include_path(&mut self, path: PathBuf) {
+        self.include_paths.push(path);
+    }
+
+    #[inline]
+    pub fn add_system_include_path(&mut self, path: PathBuf) {
+        self.system_include_paths.push(path);
+    }
+
+    #[inline]
+    pub fn add_define(&mut self, def: String) {
+        self.defines.push(def);
+    }
+
+    #[inline]
+    pub fn add_undef(&mut self, name: String) {
+        self.undefs.push(name);
+    }
+
+    #[inline]
+    pub fn set_target(&mut self, target: String) {
+        self.target = Some(target);
+    }
+
+    #[inline]
+    pub fn set_sysroot(&mut self, sysroot: PathBuf) {
+        self.sysroot = Some(sysroot);
+    }
+
+    #[inline]
+    pub fn set_std(&mut self, std: String) {
+        self.std = Some(std);
+    }
+
+    #[inline]
+    pub fn add_arg(&mut self, arg: String) {
+        self.args.push(arg);
+    }
+
+    #[inline]
+    pub fn set_out_dir(&mut self, out_dir: PathBuf) {
+        self.out_dir = Some(out_dir);
+    }
+
+    #[inline]
+    pub fn set_output(&mut self, output: PathBuf) {
+        self.output = Some(output);
+    }
+}
+
+impl TranslateCOptions {
+    #[inline]
+    pub fn include_paths_mut(&mut self) -> &mut Vec<PathBuf> {
+        &mut self.include_paths
+    }
+
+    #[inline]
+    pub fn system_include_paths_mut(&mut self) -> &mut Vec<PathBuf> {
+        &mut self.system_include_paths
+    }
+
+    #[inline]
+    pub fn defines_mut(&mut self) -> &mut Vec<String> {
+        &mut self.defines
+    }
+
+    #[inline]
+    pub fn undefs_mut(&mut self) -> &mut Vec<String> {
+        &mut self.undefs
+    }
+
+    #[inline]
+    pub fn args_mut(&mut self) -> &mut Vec<String> {
+        &mut self.args
+    }
+
+    #[inline]
+    pub fn out_dir_mut(&mut self) -> &mut Option<PathBuf> {
+        &mut self.out_dir
+    }
+
+    #[inline]
+    pub fn output_mut(&mut self) -> &mut Option<PathBuf> {
+        &mut self.output
     }
 }

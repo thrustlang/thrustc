@@ -94,7 +94,7 @@ pub fn build_enum_value<'parser>(
 
         Err(error) => {
             if let Some((access, imported_symbol)) =
-                crate::imported_scope::find_symbol(ctx, name, span)?
+                crate::macro_imports::find_symbol(ctx, name, span)?
                 && imported_symbol.variant == Variant::Enum
             {
                 let _qualified_enum: String =

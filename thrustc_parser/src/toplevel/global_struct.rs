@@ -31,7 +31,7 @@ use thrustc_typesystem::{
 };
 
 use thrustc_ast::traits::AstStructureDataExtensions;
-use thrustc_parser_table::GenericStructEntry;
+use thrustc_parser_table::GenericStruct;
 
 use crate::{attributes, modificators, typegeneration, ParserContext};
 
@@ -157,7 +157,7 @@ pub fn build_structure<'parser>(
         if is_generic {
             ctx.get_mut_symbols().new_generic_struct(
                 name.to_string(),
-                GenericStructEntry::new(
+                GenericStruct::new(
                     type_params,
                     data.1
                         .iter()
@@ -180,7 +180,7 @@ pub fn build_structure<'parser>(
         if is_generic {
             ctx.get_mut_symbols().new_generic_struct(
                 name.to_string(),
-                GenericStructEntry::new(
+                GenericStruct::new(
                     type_params,
                     data.1
                         .iter()

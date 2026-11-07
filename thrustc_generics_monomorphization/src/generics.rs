@@ -32,7 +32,7 @@ use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_parser_table::GenericFunctionEntry;
+use thrustc_parser_table::GenericFunction;
 use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{
@@ -121,7 +121,7 @@ pub fn resolve_generics<'parser>(ctx: &mut GenericsContext<'parser, '_>) {
             Ast::Function { name, .. } => ctx
                 .get_symbols()
                 .get_generic_function(name)
-                .is_some_and(GenericFunctionEntry::has_local_template),
+                .is_some_and(GenericFunction::has_local_template),
             Ast::Struct { name, .. } => ctx.get_symbols().has_generic_struct(name),
             Ast::CustomType { name, .. } => ctx.get_symbols().has_generic_custom_type(name),
             _ => false,
@@ -420,7 +420,7 @@ fn resolve_ast<'parser>(
 fn ensure_instantiation<'parser>(
     ctx: &mut GenericsContext<'parser, '_>,
     symbol_key: &str,
-    entry: &GenericFunctionEntry,
+    entry: &GenericFunction,
     env: &thrustc_generics::TypeEnv,
     key: &str,
     templates: &HashMap<String, Ast<'parser>>,
@@ -1640,7 +1640,7 @@ fn collect_local_templates<'parser>(
             if ctx
                 .get_symbols()
                 .get_generic_function(name)
-                .is_some_and(GenericFunctionEntry::has_local_template)
+                .is_some_and(GenericFunction::has_local_template)
             {
                 templates.insert(name.clone(), node.clone());
             }

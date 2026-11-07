@@ -30,8 +30,8 @@ use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttribute, Th
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParametersTypes};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_parser_external_table::ExternalSymbolTable;
-use thrustc_parser_table::{GenericCustomTypeEntry, GenericFunctionEntry, GenericStructEntry};
+use thrustc_parser_external_table::ExternalParserSymbolTable;
+use thrustc_parser_table::{GenericCustomType, GenericFunction, GenericStruct};
 use thrustc_preprocessor::module::Module;
 use thrustc_preprocessor::signatures::{Signature, Variant};
 use thrustc_thread_mode::ThrustThreadMode;
@@ -48,7 +48,7 @@ pub fn synthesize_only_import<'parser>(
     names: &[String],
     span: Span,
 ) -> Result<(), CompilationIssue> {
-    let table: ExternalSymbolTable<'parser> = ExternalSymbolTable::new(ctx.get_modules());
+    let table: ExternalParserSymbolTable<'parser> = ExternalParserSymbolTable::new(ctx.get_modules());
 
     let Some(module) = table.resolve(access) else {
         return Ok(());
@@ -87,7 +87,7 @@ pub fn synthesize_only_import<'parser>(
 
                     ctx.get_mut_symbols().new_generic_function(
                         symbol.name.clone(),
-                        GenericFunctionEntry::new(
+                        GenericFunction::new(
                             symbol.name.clone(),
                             type_params.clone(),
                             (parameter_types, parameter_names, return_type),
@@ -274,7 +274,7 @@ pub fn synthesize_only_import<'parser>(
                 if let Some(type_params) = type_params {
                     ctx.get_mut_symbols().new_generic_custom_type(
                         symbol.name.clone(),
-                        GenericCustomTypeEntry::new(type_params.clone(), kind.clone()),
+                        GenericCustomType::new(type_params.clone(), kind.clone()),
                     );
 
                     ctx.get_mut_symbols()
@@ -319,7 +319,7 @@ pub fn synthesize_only_import<'parser>(
                 if let Some(type_params) = type_params {
                     ctx.get_mut_symbols().new_generic_struct(
                         symbol.name.clone(),
-                        GenericStructEntry::new(
+                        GenericStruct::new(
                             type_params.clone(),
                             fields.iter().map(|(name, _, _)| name.clone()).collect(),
                             fields.iter().map(|(_, ty, _)| ty.clone()).collect(),
@@ -532,7 +532,7 @@ pub fn ensure_qualified_compiler_intrinsic<'parser>(
     };
 
     let parameter_types: Vec<Type> = parameters.iter().map(|(_, ty, _)| ty.clone()).collect();
-    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+    let origin: Option<std::path::PathBuf> = ExternalParserSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
@@ -621,7 +621,7 @@ pub fn ensure_qualified_constant<'parser>(
         ));
     };
 
-    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+    let origin: Option<std::path::PathBuf> = ExternalParserSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
@@ -691,7 +691,7 @@ pub fn ensure_qualified_static<'parser>(
 
     let metadata: StaticMetadata =
         self::build_static_metadata(is_mutable, &attributes, &modificators);
-    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+    let origin: Option<std::path::PathBuf> = ExternalParserSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
@@ -773,14 +773,14 @@ pub fn ensure_qualified_struct<'parser>(
         }
     };
 
-    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+    let origin: Option<std::path::PathBuf> = ExternalParserSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
     if let Some(type_params) = type_params {
         ctx.get_mut_symbols().new_generic_struct(
             qualified_symbol.clone(),
-            GenericStructEntry::new(
+            GenericStruct::new(
                 type_params,
                 fields.iter().map(|(name, ..)| name.clone()).collect(),
                 fields.iter().map(|(_, ty, _)| ty.clone()).collect(),
@@ -879,7 +879,7 @@ pub fn ensure_qualified_enum<'parser>(
 
     let data: thrustc_ast::ast_logic_data::EnumData<'parser> =
         self::build_enum_data(&fields, span)?;
-    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+    let origin: Option<std::path::PathBuf> = ExternalParserSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
@@ -947,14 +947,14 @@ pub fn ensure_qualified_custom_type<'parser>(
         ));
     };
 
-    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+    let origin: Option<std::path::PathBuf> = ExternalParserSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
     if let Some(type_params) = type_params {
         ctx.get_mut_symbols().new_generic_custom_type(
             qualified_symbol.clone(),
-            GenericCustomTypeEntry::new(type_params, kind),
+            GenericCustomType::new(type_params, kind),
         );
 
         if let Some(path) = origin {
@@ -1033,7 +1033,7 @@ fn ensure_concrete_qualified_function<'parser>(
     generic_args: &[Type],
     span: Span,
 ) -> Result<String, CompilationIssue> {
-    let origin: Option<std::path::PathBuf> = ExternalSymbolTable::new(ctx.get_modules())
+    let origin: Option<std::path::PathBuf> = ExternalParserSymbolTable::new(ctx.get_modules())
         .resolve(access)
         .map(|module| module.get_path().to_path_buf());
 
@@ -1516,7 +1516,7 @@ pub fn resolve_signature<'parser>(
     symbol: &str,
     variant: Variant,
 ) -> Option<&'parser Signature> {
-    let table: ExternalSymbolTable<'parser> = ExternalSymbolTable::new(ctx.get_modules());
+    let table: ExternalParserSymbolTable<'parser> = ExternalParserSymbolTable::new(ctx.get_modules());
 
     table.search_signature(access, symbol, variant)
 }

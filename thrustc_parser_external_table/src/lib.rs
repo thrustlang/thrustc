@@ -23,18 +23,18 @@ use thrustc_preprocessor::{
 };
 
 #[derive(Debug)]
-pub struct ExternalSymbolTable<'parser> {
+pub struct ExternalParserSymbolTable<'parser> {
     modules: &'parser [Module],
 }
 
-impl<'parser> ExternalSymbolTable<'parser> {
+impl<'parser> ExternalParserSymbolTable<'parser> {
     #[inline]
     pub fn new(modules: &'parser [Module]) -> Self {
         Self { modules }
     }
 }
 
-impl<'parser> ExternalSymbolTable<'parser> {
+impl<'parser> ExternalParserSymbolTable<'parser> {
     pub fn resolve(&self, access: &[String]) -> Option<&'parser Module> {
         for module in self.modules.iter() {
             if let Some(length) = module.alias_prefix_len(access) {
@@ -62,14 +62,14 @@ impl<'parser> ExternalSymbolTable<'parser> {
     }
 }
 
-impl<'parser> ExternalSymbolTable<'parser> {
+impl<'parser> ExternalParserSymbolTable<'parser> {
     #[inline]
     pub fn find_module(&self, name: &str) -> Option<&'parser Module> {
         self.modules.iter().find(|module| module.matches_name(name))
     }
 }
 
-impl<'parser> ExternalSymbolTable<'parser> {
+impl<'parser> ExternalParserSymbolTable<'parser> {
     pub fn find_symbol(
         &self,
         access: &[String],
@@ -82,7 +82,7 @@ impl<'parser> ExternalSymbolTable<'parser> {
     }
 }
 
-impl<'parser> ExternalSymbolTable<'parser> {
+impl<'parser> ExternalParserSymbolTable<'parser> {
     pub fn search_signature(
         &self,
         access: &[String],

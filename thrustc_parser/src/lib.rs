@@ -42,7 +42,7 @@ mod abort;
 mod attributes;
 mod builtins;
 mod expressions;
-mod imported_scope;
+mod macro_imports;
 mod macro_scope;
 mod modificators;
 mod reinterpret;

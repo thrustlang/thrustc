@@ -18,7 +18,7 @@
 */
 
 use thrustc_ast::ast_builtins::{AstBuiltin, DeferredBuiltinArgument};
-use thrustc_ast::traits::AstCodeLocation;
+use thrustc_ast::traits::{AstBuiltinExtensions, AstCodeLocation};
 use thrustc_ast::{Ast, NodeId};
 use thrustc_builtins::BuiltinFunctionSignature;
 use thrustc_code_location::Span;
@@ -95,7 +95,7 @@ pub fn build_builtin_call<'parser>(
                         value,
                         span: argument_span,
                     },
-                    None if self::contains_deferred_builtin(&expr) => {
+                    None if expr.contains_deferred_builtin() => {
                         should_defer = true;
 
                         BuiltinArgument::Value {
@@ -173,20 +173,4 @@ pub fn build_builtin_call<'parser>(
     }
 
     ctx.evaluate_builtin(name, &args, span)
-}
-
-fn contains_deferred_builtin(node: &Ast<'_>) -> bool {
-    match node {
-        Ast::Builtin {
-            builtin: AstBuiltin::DeferredCompileTime { .. },
-            ..
-        } => true,
-        Ast::Group { node, .. } => self::contains_deferred_builtin(node),
-        Ast::BinaryOp { left, right, .. } => {
-            self::contains_deferred_builtin(left) || self::contains_deferred_builtin(right)
-        }
-        Ast::UnaryOp { node, .. } => self::contains_deferred_builtin(node),
-        Ast::As { from, .. } => self::contains_deferred_builtin(from),
-        _ => false,
-    }
 }

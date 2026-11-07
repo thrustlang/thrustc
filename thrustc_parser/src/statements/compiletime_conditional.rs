@@ -18,7 +18,7 @@
 */
 
 use thrustc_ast::Ast;
-use thrustc_ast::ast_builtins::AstBuiltin;
+use thrustc_ast::traits::AstBuiltinExtensions;
 use thrustc_code_location::Span;
 use thrustc_compile_time::BuiltinValue;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
@@ -193,7 +193,7 @@ fn parse_deferred_compiletime_conditional<'parser>(
         break;
     }
 
-    Ok(Ast::CompileTimeIf {
+    let compile_time_if: Ast<'_> = Ast::CompileTimeIf {
         condition: std::boxed::Box::new(condition),
         then_branch: std::boxed::Box::new(then_branch),
         else_if_branch,
@@ -201,7 +201,43 @@ fn parse_deferred_compiletime_conditional<'parser>(
         kind: Type::Void { span },
         span,
         id: thrustc_ast::NodeId::new(),
-    })
+    };
+
+    Ok(compile_time_if)
+}
+
+pub(crate) fn evaluate_condition<'parser>(
+    ctx: &mut ParserContext<'parser>,
+) -> Result<CompileTimeCondition<'parser>, CompilationIssue> {
+    let if_tk: &Token = ctx.advance()?;
+
+    ctx.consume(
+        TokenType::LParen,
+        CompilationIssueCode::E0001,
+        "Expected '('.".into(),
+    )?;
+
+    let expression: Ast = expressions::parse_expr(ctx)?;
+
+    ctx.consume(
+        TokenType::RParen,
+        CompilationIssueCode::E0001,
+        "Expected ')'.".into(),
+    )?;
+
+    match thrustc_compile_time::fold(&expression) {
+        Some(BuiltinValue::Bool(condition)) => Ok(CompileTimeCondition::Known(condition)),
+        _ if expression.contains_deferred_builtin() => Ok(CompileTimeCondition::Deferred(
+            std::boxed::Box::new(expression),
+        )),
+        _ => Err(CompilationIssue::Error(
+            CompilationIssueCode::E0019,
+            "The compile-time condition must be a constant boolean.".into(),
+            "You should use a constant expression, like @if(isLinux()) or @if(1 + 1 == 2).".into(),
+            None,
+            if_tk.get_span(),
+        )),
+    }
 }
 
 fn parse_branch<'parser>(
@@ -228,41 +264,8 @@ fn parse_branch_discarded<'parser>(
     result
 }
 
-pub(crate) fn evaluate_condition<'parser>(
-    ctx: &mut ParserContext<'parser>,
-) -> Result<CompileTimeCondition<'parser>, CompilationIssue> {
-    let if_tk: &Token = ctx.advance()?;
-
-    ctx.consume(
-        TokenType::LParen,
-        CompilationIssueCode::E0001,
-        "Expected '('.".into(),
-    )?;
-
-    let expression: Ast = expressions::parse_expr(ctx)?;
-
-    ctx.consume(
-        TokenType::RParen,
-        CompilationIssueCode::E0001,
-        "Expected ')'.".into(),
-    )?;
-
-    match thrustc_compile_time::fold(&expression) {
-        Some(BuiltinValue::Bool(condition)) => Ok(CompileTimeCondition::Known(condition)),
-        _ if self::contains_deferred_builtin(&expression) => Ok(CompileTimeCondition::Deferred(
-            std::boxed::Box::new(expression),
-        )),
-        _ => Err(CompilationIssue::Error(
-            CompilationIssueCode::E0019,
-            "The compile-time condition must be a constant boolean.".into(),
-            "You should use a constant expression, like @if(isLinux()) or @if(1 + 1 == 2).".into(),
-            None,
-            if_tk.get_span(),
-        )),
-    }
-}
-
-pub(crate) enum CompileTimeCondition<'parser> {
+#[derive(Debug)]
+pub enum CompileTimeCondition<'parser> {
     Known(bool),
     Deferred(Box<Ast<'parser>>),
 }
@@ -279,21 +282,5 @@ impl<'parser> CompileTimeCondition<'parser> {
             ),
             Self::Deferred(ast) => *ast,
         }
-    }
-}
-
-fn contains_deferred_builtin(node: &Ast<'_>) -> bool {
-    match node {
-        Ast::Builtin {
-            builtin: AstBuiltin::DeferredCompileTime { .. },
-            ..
-        } => true,
-        Ast::Group { node, .. } => self::contains_deferred_builtin(node),
-        Ast::BinaryOp { left, right, .. } => {
-            self::contains_deferred_builtin(left) || self::contains_deferred_builtin(right)
-        }
-        Ast::UnaryOp { node, .. } => self::contains_deferred_builtin(node),
-        Ast::As { from, .. } => self::contains_deferred_builtin(from),
-        _ => false,
     }
 }

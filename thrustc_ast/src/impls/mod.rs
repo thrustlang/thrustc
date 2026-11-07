@@ -34,11 +34,11 @@ use crate::{
         ConstructorData, EnumData, EnumDataField, PropertyData, PropertyDataField, StructureData,
     },
     traits::{
-        AstAttributeExtensions, AstBaseReferenceExtensions, AstCodeBlockEntensions,
-        AstConstructorDataExtensions, AstDeclarationExtensions, AstEnumFieldsDataExtensions,
-        AstExpressionExtensions, AstGetType, AstMemoryExtensions, AstPropertyDataExtensions,
-        AstPropertyDataFieldExtensions, AstStandardExtensions, AstStatementExtensions,
-        AstStructFieldsDataExtensions, AstStructureDataExtensions,
+        AstAttributeExtensions, AstBaseReferenceExtensions, AstBuiltinExtensions,
+        AstCodeBlockEntensions, AstConstructorDataExtensions, AstDeclarationExtensions,
+        AstEnumFieldsDataExtensions, AstExpressionExtensions, AstGetType, AstMemoryExtensions,
+        AstPropertyDataExtensions, AstPropertyDataFieldExtensions, AstStandardExtensions,
+        AstStatementExtensions, AstStructFieldsDataExtensions, AstStructureDataExtensions,
     },
 };
 
@@ -561,9 +561,28 @@ impl AstMemoryExtensions for Ast<'_> {
     }
 }
 
+impl AstBuiltinExtensions for Ast<'_> {
+    #[inline]
+    fn contains_deferred_builtin(&self) -> bool {
+        match self {
+            Ast::Builtin {
+                builtin: AstBuiltin::DeferredCompileTime { .. },
+                ..
+            } => true,
+            Ast::Group { node, .. } => node.contains_deferred_builtin(),
+            Ast::BinaryOp { left, right, .. } => {
+                left.contains_deferred_builtin() || right.contains_deferred_builtin()
+            }
+            Ast::UnaryOp { node, .. } => node.contains_deferred_builtin(),
+            Ast::As { from, .. } => from.contains_deferred_builtin(),
+            _ => false,
+        }
+    }
+}
+
 impl AstPropertyDataExtensions for PropertyData {
     #[inline]
-    fn get_first_property(&self) -> Option<&crate::ast_logic_data::PropertyDataField> {
+    fn get_first_property(&self) -> Option<&PropertyDataField> {
         self.first()
     }
 }

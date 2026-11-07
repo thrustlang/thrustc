@@ -21,7 +21,7 @@ use thrustc_ast::{Ast, NodeId};
 use thrustc_attributes::ThrustAttributes;
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_parser_table::GenericCustomTypeEntry;
+use thrustc_parser_table::GenericCustomType;
 use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -85,7 +85,7 @@ pub fn build_custom_type<'parser>(
         if is_generic {
             ctx.get_mut_symbols().new_generic_custom_type(
                 name.to_string(),
-                GenericCustomTypeEntry::new(type_params, custom_type.clone()),
+                GenericCustomType::new(type_params, custom_type.clone()),
             );
         } else {
             ctx.get_mut_symbols()
@@ -97,7 +97,7 @@ pub fn build_custom_type<'parser>(
         if is_generic {
             ctx.get_mut_symbols().new_generic_custom_type(
                 name.to_string(),
-                GenericCustomTypeEntry::new(type_params, custom_type.clone()),
+                GenericCustomType::new(type_params, custom_type.clone()),
             );
         }
 

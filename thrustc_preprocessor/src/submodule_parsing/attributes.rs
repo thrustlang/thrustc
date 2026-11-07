@@ -19,13 +19,13 @@
 
 use ahash::{HashMap, HashMapExt};
 use thrustc_ast::Ast;
-use thrustc_attributes::{linkage::ThrustLinkage, ThrustAttribute, ThrustAttributes};
+use thrustc_attributes::{ThrustAttribute, ThrustAttributes, linkage::ThrustLinkage};
 use thrustc_code_location::Span;
 
-use thrustc_token::{traits::TokenExtensions, Token};
+use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::{
-    traits::{TokenTypeAttributesExtensions, TokenTypeExtensions},
     TokenType,
+    traits::{TokenTypeAttributesExtensions, TokenTypeExtensions},
 };
 use thrustc_typesystem::Type;
 
@@ -152,20 +152,6 @@ fn build_dealloc_attribute<'parser>(
     Ok(Some(access))
 }
 
-fn build_align_attribute<'parser>(parser: &mut ModuleParser<'parser>) -> Result<u64, ()> {
-    parser.consume(TokenType::LParen)?;
-
-    let expr: Ast<'_> = expressions::parse_expr(parser)?;
-
-    parser.consume(TokenType::RParen)?;
-
-    if let Ast::Integer { value, .. } = expr {
-        Ok(value)
-    } else {
-        Err(())
-    }
-}
-
 fn build_promotion_type_attribute<'parser>(
     parser: &mut ModuleParser<'parser>,
 ) -> Result<HashMap<Type, Type>, ()> {
@@ -200,6 +186,20 @@ fn build_promotion_type_attribute<'parser>(
     parser.consume(TokenType::RParen)?;
 
     Ok(promote_types)
+}
+
+fn build_align_attribute<'parser>(parser: &mut ModuleParser<'parser>) -> Result<u64, ()> {
+    parser.consume(TokenType::LParen)?;
+
+    let expr: Ast<'_> = expressions::parse_expr(parser)?;
+
+    parser.consume(TokenType::RParen)?;
+
+    if let Ast::Integer { value, .. } = expr {
+        Ok(value)
+    } else {
+        Err(())
+    }
 }
 
 fn build_linkage_attribute<'parser>(

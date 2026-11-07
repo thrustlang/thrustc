@@ -22,7 +22,7 @@ mod generic;
 mod impls;
 pub mod traits;
 
-pub use self::generic::{GenericCustomTypeEntry, GenericFunctionEntry, GenericStructEntry};
+pub use self::generic::{GenericCustomType, GenericFunction, GenericStruct};
 
 use std::path::PathBuf;
 
@@ -61,9 +61,9 @@ pub struct SymbolTable<'parser> {
     global_constants: GlobalConstants<'parser>,
     global_enums: GlobalEnums<'parser>,
 
-    generic_functions: ahash::AHashMap<String, GenericFunctionEntry>,
-    generic_structs: ahash::AHashMap<String, GenericStructEntry>,
-    generic_custom_types: ahash::AHashMap<String, GenericCustomTypeEntry>,
+    generic_functions: ahash::AHashMap<String, GenericFunction>,
+    generic_structs: ahash::AHashMap<String, GenericStruct>,
+    generic_custom_types: ahash::AHashMap<String, GenericCustomType>,
 
     local_structs: LocalStructs<'parser>,
     local_statics: LocalStatics<'parser>,
@@ -198,17 +198,17 @@ impl SymbolTable<'_> {
 
 impl<'parser> SymbolTable<'parser> {
     #[inline]
-    pub fn new_generic_function(&mut self, id: String, entry: GenericFunctionEntry) {
+    pub fn new_generic_function(&mut self, id: String, entry: GenericFunction) {
         self.generic_functions.insert(id, entry);
     }
 
     #[inline]
-    pub fn new_generic_struct(&mut self, id: String, entry: GenericStructEntry) {
+    pub fn new_generic_struct(&mut self, id: String, entry: GenericStruct) {
         self.generic_structs.insert(id, entry);
     }
 
     #[inline]
-    pub fn new_generic_custom_type(&mut self, id: String, entry: GenericCustomTypeEntry) {
+    pub fn new_generic_custom_type(&mut self, id: String, entry: GenericCustomType) {
         self.generic_custom_types.insert(id, entry);
     }
 }
@@ -232,36 +232,36 @@ impl<'parser> SymbolTable<'parser> {
 
 impl<'parser> SymbolTable<'parser> {
     #[inline]
-    pub fn iter_generic_functions(&self) -> impl Iterator<Item = (&String, &GenericFunctionEntry)> {
+    pub fn iter_generic_functions(&self) -> impl Iterator<Item = (&String, &GenericFunction)> {
         self.generic_functions.iter()
     }
 
     #[inline]
-    pub fn iter_generic_structs(&self) -> impl Iterator<Item = (&String, &GenericStructEntry)> {
+    pub fn iter_generic_structs(&self) -> impl Iterator<Item = (&String, &GenericStruct)> {
         self.generic_structs.iter()
     }
 
     #[inline]
     pub fn iter_generic_custom_types(
         &self,
-    ) -> impl Iterator<Item = (&String, &GenericCustomTypeEntry)> {
+    ) -> impl Iterator<Item = (&String, &GenericCustomType)> {
         self.generic_custom_types.iter()
     }
 }
 
 impl<'parser> SymbolTable<'parser> {
     #[inline]
-    pub fn get_generic_function(&self, id: &str) -> Option<&GenericFunctionEntry> {
+    pub fn get_generic_function(&self, id: &str) -> Option<&GenericFunction> {
         self.generic_functions.get(id)
     }
 
     #[inline]
-    pub fn get_generic_struct(&self, id: &str) -> Option<&GenericStructEntry> {
+    pub fn get_generic_struct(&self, id: &str) -> Option<&GenericStruct> {
         self.generic_structs.get(id)
     }
 
     #[inline]
-    pub fn get_generic_custom_type(&self, id: &str) -> Option<&GenericCustomTypeEntry> {
+    pub fn get_generic_custom_type(&self, id: &str) -> Option<&GenericCustomType> {
         self.generic_custom_types.get(id)
     }
 }

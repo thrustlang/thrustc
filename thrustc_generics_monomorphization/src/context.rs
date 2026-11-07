@@ -30,7 +30,7 @@ use thrustc_parser_table::SymbolTable;
 use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 
-use crate::abort::abort_compilation;
+use crate::abort;
 
 #[derive(Debug)]
 pub struct GenericsContext<'parser, 'ctx> {
@@ -84,7 +84,7 @@ impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
         self.tokens.get(*self.position).unwrap_or_else(|| {
             let span: Span = self.previous().get_span();
 
-            abort_compilation(
+            abort::abort_compilation(
                 self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to get a lexical token!",
@@ -106,7 +106,7 @@ impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
         if is_overflow {
             let span: Span = self.peek().get_span();
 
-            abort_compilation(
+            abort::abort_compilation(
                 self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to parse previous token position!",
@@ -119,7 +119,7 @@ impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
         self.tokens.get(idx).unwrap_or_else(|| {
             let span: Span = self.peek().get_span();
 
-            abort_compilation(
+            abort::abort_compilation(
                 self.diagnostician,
                 CompilationPosition::Parser,
                 "Unable to get a lexical token!",
@@ -181,12 +181,9 @@ impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
     pub fn is_eof(&mut self) -> bool {
         self.peek().kind == TokenType::Eof
     }
+}
 
-    #[inline(always)]
-    pub fn get_symbols(&self) -> &SymbolTable<'parser> {
-        self.symbols
-    }
-
+impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
     #[inline(always)]
     pub fn get_mut_symbols(&mut self) -> &mut SymbolTable<'parser> {
         self.symbols
@@ -196,12 +193,21 @@ impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
     pub fn get_mut_ast(&mut self) -> &mut Vec<Ast<'parser>> {
         self.ast
     }
+}
+
+impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
+    #[inline(always)]
+    pub fn get_symbols(&self) -> &SymbolTable<'parser> {
+        self.symbols
+    }
 
     #[inline(always)]
     pub fn get_file(&self) -> &'parser CompilationUnit {
         self.file
     }
+}
 
+impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
     #[inline(always)]
     pub fn add_error_report(&mut self, error: CompilationIssue) {
         self.errors.push(error);

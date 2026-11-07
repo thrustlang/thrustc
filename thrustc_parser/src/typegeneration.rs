@@ -48,7 +48,7 @@ use thrustc_entities::parser_entities::{
     Struct,
 };
 
-use thrustc_parser_external_table::ExternalSymbolTable;
+use thrustc_parser_external_table::ExternalParserSymbolTable;
 use thrustc_parser_table::traits::{
     ConstantSymbolExtensions, FoundSymbolEitherExtensions, FoundSymbolExtensions,
     StructSymbolExtensions,
@@ -167,7 +167,7 @@ fn build_type_inner<'parser>(
                 };
 
                 if let Some(module) =
-                    ExternalSymbolTable::new(ctx.get_modules()).resolve(&access)
+                    ExternalParserSymbolTable::new(ctx.get_modules()).resolve(&access)
                 {
                     if !module
                         .get_symbols()
@@ -291,7 +291,7 @@ fn build_type_inner<'parser>(
             match object {
                 Err(_) => {
                     if let Some((access, module, type_macro)) =
-                        crate::imported_scope::find_type_macro(ctx, name, span)?
+                        crate::macro_imports::find_type_macro(ctx, name, span)?
                     {
                         let macros: Vec<thrustc_c_transpiler_macro_api::types::Macro> =
                             module.get_macros().to_vec();
@@ -322,9 +322,9 @@ fn build_type_inner<'parser>(
                     }
 
                     if let Some((access, symbol)) =
-                        crate::imported_scope::find_symbol(ctx, name, span)?
+                        crate::macro_imports::find_symbol(ctx, name, span)?
                     {
-                        return crate::imported_scope::synthesize_type(
+                        return crate::macro_imports::synthesize_type(
                             ctx, &access, symbol, span,
                         );
                     }

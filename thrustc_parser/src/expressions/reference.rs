@@ -324,9 +324,9 @@ pub fn build_reference<'parser>(
 
         Err(error) => {
             if let Some((access, symbol)) =
-                crate::imported_scope::find_symbol(ctx, name, span)?
+                crate::macro_imports::find_symbol(ctx, name, span)?
             {
-                return crate::imported_scope::synthesize_reference(
+                return crate::macro_imports::synthesize_reference(
                     ctx, &access, symbol, span,
                 );
             }

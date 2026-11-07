@@ -22,11 +22,11 @@ use thrustc_ast::{
     ast_metadata::{ReferenceMetadata, ReferenceType, StaticMetadata},
 };
 use thrustc_attributes::traits::ThrustAttributesExtensions;
+use thrustc_c_transpiler_macro_api::types::{Macro, MacroType};
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_preprocessor::signatures::{Signature, Symbol, Variant};
-use thrustc_c_transpiler_macro_api::types::{Macro, MacroType};
 use thrustc_preprocessor::module::Module;
+use thrustc_preprocessor::signatures::{Signature, Symbol, Variant};
 use thrustc_typesystem::{
     Type,
     type_modificators::{
@@ -36,6 +36,8 @@ use thrustc_typesystem::{
 };
 
 use crate::ParserContext;
+
+pub type TypeMacroEntry<'parser> = (Vec<String>, &'parser Module, &'parser Macro);
 
 pub fn find_symbol<'parser>(
     ctx: &ParserContext<'parser>,
@@ -69,12 +71,10 @@ pub fn find_symbol<'parser>(
             continue;
         }
 
-        let candidate_access: Vec<String> = candidate_module
-            .get_alias()
-            .map_or_else(
-                || vec![candidate_module.get_name().to_string()],
-                |alias| alias.to_vec(),
-            );
+        let candidate_access: Vec<String> = candidate_module.get_alias().map_or_else(
+            || vec![candidate_module.get_name().to_string()],
+            |alias| alias.to_vec(),
+        );
 
         for symbol in candidate_module.get_symbols().iter() {
             if !symbol.public || symbol.name != name {
@@ -104,8 +104,6 @@ pub fn find_symbol<'parser>(
 
     Ok(candidates.into_iter().next())
 }
-
-pub type TypeMacroEntry<'parser> = (Vec<String>, &'parser Module, &'parser Macro);
 
 pub fn find_type_macro<'parser>(
     ctx: &ParserContext<'parser>,
@@ -138,25 +136,25 @@ pub fn find_type_macro<'parser>(
             continue;
         }
 
-        let candidate_access: Vec<String> = candidate_module
-            .get_alias()
-            .map_or_else(
-                || vec![candidate_module.get_name().to_string()],
-                |alias| alias.to_vec(),
-            );
+        let candidate_access: Vec<String> = candidate_module.get_alias().map_or_else(
+            || vec![candidate_module.get_name().to_string()],
+            |alias| alias.to_vec(),
+        );
 
         for macro_definition in candidate_module.get_macros().iter() {
-            if macro_definition.get_name() != name
-                || macro_definition.get_kind() != MacroType::Type
+            if macro_definition.get_name() != name || macro_definition.get_kind() != MacroType::Type
             {
                 continue;
             }
 
-            if candidates.iter().any(|(existing_access, existing_module, existing)| {
-                existing_access.as_slice() == candidate_access.as_slice()
-                    && existing_module.get_path() == candidate_module.get_path()
-                    && existing.get_name() == macro_definition.get_name()
-            }) {
+            if candidates
+                .iter()
+                .any(|(existing_access, existing_module, existing)| {
+                    existing_access.as_slice() == candidate_access.as_slice()
+                        && existing_module.get_path() == candidate_module.get_path()
+                        && existing.get_name() == macro_definition.get_name()
+                })
+            {
                 continue;
             }
 
@@ -210,8 +208,7 @@ pub fn synthesize_reference<'parser>(
                 name,
                 variant,
             )
-            .cloned()
-            else {
+            .cloned() else {
                 return Err(CompilationIssue::Error(
                     CompilationIssueCode::E0028,
                     format!("'{}::{}' not found.", access.join("::"), name),
@@ -277,13 +274,12 @@ pub fn synthesize_reference<'parser>(
         }
 
         Variant::Constant => {
-            let qualified_symbol: String =
-                thrustc_import::synthesis::ensure_qualified_constant(
-                    &mut ctx.import_context(),
-                    access,
-                    name,
-                    span,
-                )?;
+            let qualified_symbol: String = thrustc_import::synthesis::ensure_qualified_constant(
+                &mut ctx.import_context(),
+                access,
+                name,
+                span,
+            )?;
 
             let Some(Signature::Constant { kind, .. }) =
                 thrustc_import::synthesis::resolve_signature(
@@ -307,25 +303,18 @@ pub fn synthesize_reference<'parser>(
                 name: qualified_symbol,
                 kind,
                 span,
-                metadata: ReferenceMetadata::new(
-                    true,
-                    false,
-                    ReferenceType::Constant,
-                    false,
-                    None,
-                ),
+                metadata: ReferenceMetadata::new(true, false, ReferenceType::Constant, false, None),
                 id: NodeId::new(),
             })
         }
 
         Variant::Static => {
-            let qualified_symbol: String =
-                thrustc_import::synthesis::ensure_qualified_static(
-                    &mut ctx.import_context(),
-                    access,
-                    name,
-                    span,
-                )?;
+            let qualified_symbol: String = thrustc_import::synthesis::ensure_qualified_static(
+                &mut ctx.import_context(),
+                access,
+                name,
+                span,
+            )?;
 
             let Some(Signature::Static {
                 kind,
@@ -350,12 +339,11 @@ pub fn synthesize_reference<'parser>(
                 ));
             };
 
-            let metadata: StaticMetadata =
-                thrustc_import::synthesis::build_static_metadata(
-                    is_mutable,
-                    &attributes,
-                    &modificators,
-                );
+            let metadata: StaticMetadata = thrustc_import::synthesis::build_static_metadata(
+                is_mutable,
+                &attributes,
+                &modificators,
+            );
 
             Ok(Ast::Reference {
                 name: qualified_symbol,

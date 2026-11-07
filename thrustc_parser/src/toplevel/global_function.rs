@@ -22,7 +22,7 @@ use thrustc_attributes::{traits::ThrustAttributesExtensions, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_entities::parser_entities::{FunctionParameterNames, FunctionParametersTypes};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
-use thrustc_parser_table::GenericFunctionEntry;
+use thrustc_parser_table::GenericFunction;
 use thrustc_token::{traits::TokenExtensions, Token};
 use thrustc_token_type::{traits::TokenTypeAttributesExtensions, TokenType};
 use thrustc_typesystem::{traits::TypePointerExtensions, Type};
@@ -155,7 +155,7 @@ pub fn build_function<'parser>(
     if is_generic {
         ctx.get_mut_symbols().new_generic_function(
             name.to_string(),
-            GenericFunctionEntry::new(
+            GenericFunction::new(
                 name.to_string(),
                 type_params,
                 (

@@ -97,7 +97,7 @@ pub fn validate_version(root: &Path, version: &str) -> Result<(), StdError> {
     }
 }
 
-fn ensure_version_file(root: &Path) -> Result<(), StdError> {
+pub fn ensure_version_file(root: &Path) -> Result<(), StdError> {
     let Some(version_file) = EMBEDDED_STD_DIR.get_file(STD_VERSION_FILE_NAME) else {
         return Ok(());
     };
@@ -129,7 +129,7 @@ fn ensure_version_file(root: &Path) -> Result<(), StdError> {
     Ok(())
 }
 
-fn embedded_differs(root: &Path, directory: &Dir) -> bool {
+pub fn embedded_differs(root: &Path, directory: &Dir) -> bool {
     for entry in directory.entries() {
         match entry {
             DirEntry::Dir(subdirectory) => {
@@ -154,21 +154,7 @@ fn embedded_differs(root: &Path, directory: &Dir) -> bool {
     false
 }
 
-fn dump_version_std(root: &Path, version: &str, overwrite: bool) -> Result<(), StdError> {
-    if !root.exists() {
-        std::fs::create_dir_all(root)?;
-    }
-
-    self::ensure_version_file(root)?;
-
-    if let Some(version_dir) = EMBEDDED_STD_DIR.get_dir(format!("v{version}")) {
-        self::dump_dir_files(root, version_dir, overwrite)?;
-    }
-
-    Ok(())
-}
-
-fn dump_dir_files(root: &Path, directory: &Dir, overwrite: bool) -> Result<(), StdError> {
+pub fn dump_dir_files(root: &Path, directory: &Dir, overwrite: bool) -> Result<(), StdError> {
     for entry in directory.entries() {
         match entry {
             DirEntry::Dir(subdirectory) => {
@@ -195,9 +181,23 @@ fn dump_dir_files(root: &Path, directory: &Dir, overwrite: bool) -> Result<(), S
     Ok(())
 }
 
+pub fn dump_version_std(root: &Path, version: &str, overwrite: bool) -> Result<(), StdError> {
+    if !root.exists() {
+        std::fs::create_dir_all(root)?;
+    }
+
+    self::ensure_version_file(root)?;
+
+    if let Some(version_dir) = EMBEDDED_STD_DIR.get_dir(format!("v{version}")) {
+        self::dump_dir_files(root, version_dir, overwrite)?;
+    }
+
+    Ok(())
+}
+
 #[inline]
 pub fn resolve_std_root(custom: Option<&Path>) -> PathBuf {
-    custom.map_or_else(util::default_std_root, |path| path.to_path_buf())
+    custom.map_or_else(util::get_default_std_root, |path| path.to_path_buf())
 }
 
 #[inline]

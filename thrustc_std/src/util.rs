@@ -22,7 +22,7 @@ use std::path::PathBuf;
 pub const STD_ROOT_DIR_NAME: &str = "std";
 pub const STD_VERSION_FILE_NAME: &str = "VERSION.txt";
 
-pub fn default_std_root() -> PathBuf {
+pub fn get_default_std_root() -> PathBuf {
     match std::env::consts::FAMILY {
         "unix" => PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| {
             thrustc_logging::print_critical_error(

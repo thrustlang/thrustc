@@ -22,7 +22,7 @@ use thrustc_code_location::Span;
 use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
 #[derive(Debug, Clone)]
-pub struct GenericFunctionEntry {
+pub struct GenericFunction {
     name: String,
     type_params: Vec<String>,
     parameter_types: Vec<Type>,
@@ -35,7 +35,7 @@ pub struct GenericFunctionEntry {
 }
 
 #[derive(Debug, Clone)]
-pub struct GenericStructEntry {
+pub struct GenericStruct {
     type_params: Vec<String>,
     field_names: Vec<String>,
     field_types: Vec<Type>,
@@ -44,12 +44,12 @@ pub struct GenericStructEntry {
 }
 
 #[derive(Debug, Clone)]
-pub struct GenericCustomTypeEntry {
+pub struct GenericCustomType {
     type_params: Vec<String>,
     kind: Type,
 }
 
-impl GenericFunctionEntry {
+impl GenericFunction {
     #[inline]
     pub fn new(
         name: String,
@@ -78,7 +78,7 @@ impl GenericFunctionEntry {
     }
 }
 
-impl GenericFunctionEntry {
+impl GenericFunction {
     #[inline]
     pub fn get_name(&self) -> &String {
         &self.name
@@ -115,7 +115,7 @@ impl GenericFunctionEntry {
     }
 }
 
-impl GenericFunctionEntry {
+impl GenericFunction {
     #[inline]
     pub fn has_local_template(&self) -> bool {
         self.has_local_template
@@ -127,7 +127,7 @@ impl GenericFunctionEntry {
     }
 }
 
-impl GenericFunctionEntry {
+impl GenericFunction {
     #[inline]
     pub fn get_mut_name(&mut self) -> &mut String {
         &mut self.name
@@ -174,7 +174,7 @@ impl GenericFunctionEntry {
     }
 }
 
-impl GenericFunctionEntry {
+impl GenericFunction {
     #[inline]
     pub fn set_name(&mut self, name: String) {
         self.name = name;
@@ -221,7 +221,7 @@ impl GenericFunctionEntry {
     }
 }
 
-impl GenericStructEntry {
+impl GenericStruct {
     #[inline]
     pub fn new(
         type_params: Vec<String>,
@@ -240,7 +240,7 @@ impl GenericStructEntry {
     }
 }
 
-impl GenericStructEntry {
+impl GenericStruct {
     #[inline]
     pub fn get_type_params(&self) -> &Vec<String> {
         &self.type_params
@@ -267,7 +267,7 @@ impl GenericStructEntry {
     }
 }
 
-impl GenericStructEntry {
+impl GenericStruct {
     #[inline]
     pub fn get_mut_type_params(&mut self) -> &mut Vec<String> {
         &mut self.type_params
@@ -294,7 +294,7 @@ impl GenericStructEntry {
     }
 }
 
-impl GenericStructEntry {
+impl GenericStruct {
     #[inline]
     pub fn set_type_params(&mut self, type_params: Vec<String>) {
         self.type_params = type_params;
@@ -321,14 +321,14 @@ impl GenericStructEntry {
     }
 }
 
-impl GenericCustomTypeEntry {
+impl GenericCustomType {
     #[inline]
     pub fn new(type_params: Vec<String>, kind: Type) -> Self {
         Self { type_params, kind }
     }
 }
 
-impl GenericCustomTypeEntry {
+impl GenericCustomType {
     #[inline]
     pub fn get_type_params(&self) -> &Vec<String> {
         &self.type_params
@@ -340,7 +340,7 @@ impl GenericCustomTypeEntry {
     }
 }
 
-impl GenericCustomTypeEntry {
+impl GenericCustomType {
     #[inline]
     pub fn get_mut_type_params(&mut self) -> &mut Vec<String> {
         &mut self.type_params
@@ -352,7 +352,7 @@ impl GenericCustomTypeEntry {
     }
 }
 
-impl GenericCustomTypeEntry {
+impl GenericCustomType {
     #[inline]
     pub fn set_type_params(&mut self, type_params: Vec<String>) {
         self.type_params = type_params;

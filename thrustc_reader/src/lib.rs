@@ -82,11 +82,6 @@ fn read_file_to_string_buffered(path: &std::path::Path) -> Result<String, &str> 
     }
 }
 
-fn count_lines_exact(path: &Path) -> anyhow::Result<u64> {
-    let mut file: std::fs::File = std::fs::File::open(path)?;
-    count_lines_from_reader(&mut file)
-}
-
 fn count_lines_from_reader<R: Read>(reader: &mut R) -> anyhow::Result<u64> {
     const CHUNK_SIZE: usize = 1 << 16;
 
@@ -104,4 +99,12 @@ fn count_lines_from_reader<R: Read>(reader: &mut R) -> anyhow::Result<u64> {
     }
 
     Ok(count)
+}
+
+fn count_lines_exact(path: &Path) -> anyhow::Result<u64> {
+    let mut file: std::fs::File = std::fs::File::open(path)?;
+
+    let lines: Result<u64, anyhow::Error> = count_lines_from_reader(&mut file);
+
+    lines
 }

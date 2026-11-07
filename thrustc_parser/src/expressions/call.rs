@@ -317,7 +317,7 @@ pub fn build_call<'parser>(
 
         Err(error) => {
             if let Some((access, symbol)) =
-                crate::imported_scope::find_symbol(ctx, name, span)?
+                crate::macro_imports::find_symbol(ctx, name, span)?
             {
                 return self::build_imported_call(
                     ctx,

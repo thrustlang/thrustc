@@ -17,15 +17,15 @@
 
 */
 
-use thrustc_ast::traits::AstCodeLocation;
 use thrustc_ast::Ast;
 use thrustc_ast::NodeId;
+use thrustc_ast::traits::AstCodeLocation;
 use thrustc_code_location::Span;
 use thrustc_compile_time::{BuiltinArgument, BuiltinValue};
 use thrustc_token::traits::TokenExtensions;
 use thrustc_token_type::TokenType;
-use thrustc_typesystem::type_metadata::ArrayTypeMetadata;
 use thrustc_typesystem::Type;
+use thrustc_typesystem::type_metadata::ArrayTypeMetadata;
 
 use crate::context::PreprocessorContext;
 use crate::submodule_parsing::typegeneration;
@@ -38,7 +38,6 @@ pub fn evaluate_condition<'preprocessor>(
     parser.consume(TokenType::LParen)?;
 
     let expression: Ast<'static> = self::parse_expression(parser)?;
-
     parser.consume(TokenType::RParen)?;
 
     match thrustc_compile_time::fold(&expression) {

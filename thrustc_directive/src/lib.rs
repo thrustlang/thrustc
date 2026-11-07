@@ -1262,6 +1262,7 @@ fn parse_optimization(value: &str) -> Result<ThrustOptimization, String> {
         "O3" => Ok(ThrustOptimization::High),
         "Os" => Ok(ThrustOptimization::Size),
         "Oz" => Ok(ThrustOptimization::Zize),
+
         _ => Err(format!("Unknown optimization level: '{}'.", value)),
     }
 }
@@ -1271,6 +1272,7 @@ fn parse_reloc_model(value: &str) -> Result<ThrustRelocMode, String> {
         "dynamic-no-pic" => Ok(ThrustRelocMode::DynamicNoPic),
         "pic" => Ok(ThrustRelocMode::PIC),
         "static" => Ok(ThrustRelocMode::Static),
+
         _ => Err(format!("Unknown relocation model: '{}'.", value)),
     }
 }
@@ -1281,6 +1283,7 @@ fn parse_code_model(value: &str) -> Result<ThrustCodeModel, String> {
         "medium" => Ok(ThrustCodeModel::Medium),
         "large" => Ok(ThrustCodeModel::Large),
         "kernel" => Ok(ThrustCodeModel::Kernel),
+
         _ => Err(format!("Unknown code model: '{}'.", value)),
     }
 }
@@ -1289,6 +1292,7 @@ fn parse_dwarf(value: &str) -> Result<DwarfVersion, String> {
     match value.to_lowercase().as_str() {
         "v4" => Ok(DwarfVersion::V4),
         "v5" => Ok(DwarfVersion::V5),
+
         _ => Err(format!("Unknown Dwarf version: '{}'.", value)),
     }
 }
@@ -1306,6 +1310,7 @@ fn parse_phase(value: &str) -> Result<CompilationPhase, String> {
         "compiler-intrinsic-checking" => Ok(CompilationPhase::LLVMIntrinsicChecker),
         "compiler-callconventions-checking" => Ok(CompilationPhase::LLVMCallConventionChecker),
         "codegen" => Ok(CompilationPhase::LLVMCodegen),
+
         _ => Err(format!("Unknown compilation phase: '{}'.", value)),
     }
 }
@@ -1325,6 +1330,7 @@ fn parse_emit(value: &str) -> Result<EmitableUnit, String> {
         "ast" => Ok(EmitableUnit::Ast),
         "pretty-tokens" => Ok(EmitableUnit::TokensPretty),
         "tokens" => Ok(EmitableUnit::Tokens),
+
         _ => Err(format!("Unknown emission option: '{}'.", value)),
     }
 }
@@ -1341,6 +1347,7 @@ fn parse_print(value: &str) -> Result<PrintableUnit, String> {
         "pretty-ast" => Ok(PrintableUnit::AstPretty),
         "unchecked-ast" => Ok(PrintableUnit::UnCheckedAst),
         "ast" => Ok(PrintableUnit::Ast),
+
         _ => Err(format!("Unknown print option: '{}'.", value)),
     }
 }
@@ -1352,6 +1359,7 @@ fn parse_linkage_strategy(value: &str) -> Result<SymbolLinkageMergeStrategy, Str
         "large" => Ok(SymbolLinkageMergeStrategy::Large),
         "samesize" => Ok(SymbolLinkageMergeStrategy::SameSize),
         "noduplicates" => Ok(SymbolLinkageMergeStrategy::NoDuplicates),
+
         _ => Err(format!(
             "Unknown symbol linkage merge strategy: '{}'.",
             value
@@ -1368,6 +1376,7 @@ fn parse_pair<T: Copy>(
     match parts.as_slice() {
         [single] => parser(single).map(|parsed| (parsed, parsed)),
         [output, input] => Ok((parser(output)?, parser(input)?)),
+
         _ => Err(format!(
             "Expected one or two comma-separated values, got '{}'.",
             value
@@ -1381,6 +1390,7 @@ fn parse_denormal_value(value: &str) -> Result<DenormalFloatingPointBehavior, St
         "preserve-sign-signature" => Ok(DenormalFloatingPointBehavior::PreserveSignSignature),
         "transform-to-positive-zero" => Ok(DenormalFloatingPointBehavior::AsPositiveZero),
         "dynamic" => Ok(DenormalFloatingPointBehavior::Dynamic),
+
         _ => Err(format!(
             "Unknown denormal floating-point behavior: '{}'.",
             value
@@ -1400,6 +1410,7 @@ fn parse_denormal_32_value(
             Ok(DenormalFloatingPointBehavior32BitFloatingPoint::AsPositiveZero)
         }
         "dynamic" => Ok(DenormalFloatingPointBehavior32BitFloatingPoint::Dynamic),
+
         _ => Err(format!(
             "Unknown 32-bit denormal floating-point behavior: '{}'.",
             value
@@ -1416,6 +1427,7 @@ fn parse_sanitizer(value: &str) -> Result<Sanitizer, String> {
         "memory" => Ok(Sanitizer::Memory(config)),
         "thread" => Ok(Sanitizer::Thread(config)),
         "memtag" => Ok(Sanitizer::Memtag(config)),
+
         _ => Err(format!("Invalid sanitizer: '{}'.", value)),
     }
 }
@@ -1425,6 +1437,7 @@ fn apply_no_sanitize(directives: &mut FileDirectives, value: &str) -> Result<(),
         match item {
             "bounds" => directives.set_no_sanitize_bounds(true),
             "coverage" => directives.set_no_sanitize_coverage(true),
+
             _ => return Err(format!("Invalid sanitizer modifier: '{}'.", item)),
         }
     }
