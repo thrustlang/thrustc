@@ -34,7 +34,7 @@ pub fn build_directive<'parser>(
         "Expected 'directive' keyword.".into(),
     )?;
 
-    let span: Span = directive_tk.get_span();
+    let span: Span = directive_tk.get_code_location();
 
     let _spec_tk: &Token = ctx.consume(
         TokenType::CString,

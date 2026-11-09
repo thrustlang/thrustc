@@ -112,7 +112,7 @@ pub trait CastTypeExtensions {
 }
 
 pub trait TypeCodeLocation {
-    fn get_span(&self) -> Span;
+    fn get_code_location(&self) -> Span;
 }
 
 pub trait DereferenceExtensions {

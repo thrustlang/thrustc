@@ -121,7 +121,7 @@ pub fn validate_node<'type_checker>(
                     Some(expr),
                     None,
                     expr_metadata,
-                    expr.get_span(),
+                    expr.get_code_location(),
                     control_context,
                 ) {
                     typechecker.add_error_report(error);

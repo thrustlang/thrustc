@@ -44,7 +44,7 @@ pub fn build_enum<'parser>(
     )?;
 
     let name: &str = name_tk.get_lexeme();
-    let span: Span = name_tk.get_span();
+    let span: Span = name_tk.get_code_location();
 
     let attributes: ThrustAttributes =
         attributes::build_compiler_attributes(ctx, &[TokenType::LBrace])?;
@@ -90,7 +90,7 @@ pub fn build_enum<'parser>(
 
             data.push((name.to_string(), field_type, expr));
         } else {
-            let span: Span = ctx.advance()?.get_span();
+            let span: Span = ctx.advance()?.get_code_location();
 
             ctx.add_error_report(CompilationIssue::Error(
                 CompilationIssueCode::E0001,

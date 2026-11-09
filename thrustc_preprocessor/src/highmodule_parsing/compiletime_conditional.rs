@@ -54,7 +54,7 @@ fn parse_or(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
     let mut left: Ast<'static> = self::parse_and(parser)?;
 
     while parser.check(TokenType::Or) {
-        let span: Span = parser.peek().get_span();
+        let span: Span = parser.peek().get_code_location();
 
         parser.only_advance()?;
 
@@ -77,7 +77,7 @@ fn parse_and(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
     let mut left: Ast<'static> = self::parse_equality(parser)?;
 
     while parser.check(TokenType::And) {
-        let span: Span = parser.peek().get_span();
+        let span: Span = parser.peek().get_code_location();
 
         parser.only_advance()?;
 
@@ -101,7 +101,7 @@ fn parse_equality(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> 
 
     while parser.check(TokenType::EqEq) || parser.check(TokenType::BangEq) {
         let operator: TokenType = parser.peek().get_type();
-        let span: Span = parser.peek().get_span();
+        let span: Span = parser.peek().get_code_location();
 
         parser.only_advance()?;
 
@@ -129,7 +129,7 @@ fn parse_relational(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()
         || parser.check(TokenType::GreaterEq)
     {
         let operator: TokenType = parser.peek().get_type();
-        let span: Span = parser.peek().get_span();
+        let span: Span = parser.peek().get_code_location();
 
         parser.only_advance()?;
 
@@ -153,7 +153,7 @@ fn parse_additive(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> 
 
     while parser.check(TokenType::Plus) || parser.check(TokenType::Minus) {
         let operator: TokenType = parser.peek().get_type();
-        let span: Span = parser.peek().get_span();
+        let span: Span = parser.peek().get_code_location();
 
         parser.only_advance()?;
 
@@ -180,7 +180,7 @@ fn parse_multiplicative(parser: &mut PreprocessorContext) -> Result<Ast<'static>
         || parser.check(TokenType::Arith)
     {
         let operator: TokenType = parser.peek().get_type();
-        let span: Span = parser.peek().get_span();
+        let span: Span = parser.peek().get_code_location();
 
         parser.only_advance()?;
 
@@ -206,7 +206,7 @@ fn parse_unary(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
         || parser.check(TokenType::Plus)
     {
         let operator: TokenType = parser.peek().get_type();
-        let span: Span = parser.peek().get_span();
+        let span: Span = parser.peek().get_code_location();
 
         parser.only_advance()?;
 
@@ -228,17 +228,17 @@ fn parse_unary(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
 fn parse_primary(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
     match parser.peek().get_type() {
         TokenType::True => {
-            let span: Span = parser.advance()?.get_span();
+            let span: Span = parser.advance()?.get_code_location();
 
             Ok(Ast::new_boolean(Type::Bool { span }, 1, span))
         }
         TokenType::False => {
-            let span: Span = parser.advance()?.get_span();
+            let span: Span = parser.advance()?.get_code_location();
 
             Ok(Ast::new_boolean(Type::Bool { span }, 0, span))
         }
         TokenType::Integer => {
-            let span: Span = parser.advance()?.get_span();
+            let span: Span = parser.advance()?.get_code_location();
             let lexeme: &str = parser.previous().get_lexeme();
 
             let value: u64 = lexeme.parse::<u64>().map_err(|_| ())?;
@@ -253,7 +253,7 @@ fn parse_primary(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
 
             parser.consume(TokenType::RParen)?;
 
-            let span: Span = expression.get_span();
+            let span: Span = expression.get_code_location();
 
             Ok(Ast::Group {
                 node: expression.into(),
@@ -263,7 +263,7 @@ fn parse_primary(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
             })
         }
         TokenType::CString => {
-            let span: Span = parser.peek().get_span();
+            let span: Span = parser.peek().get_code_location();
             let content: &str = parser.advance()?.get_lexeme();
 
             let kind: Type = Type::Array {
@@ -282,7 +282,7 @@ fn parse_primary(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
 fn parse_builtin_call(parser: &mut PreprocessorContext) -> Result<Ast<'static>, ()> {
     let name_tk: &thrustc_token::Token = parser.advance()?;
     let name: String = name_tk.get_lexeme().to_string();
-    let span: Span = name_tk.get_span();
+    let span: Span = name_tk.get_code_location();
 
     let signature: thrustc_builtins::BuiltinFunctionSignature = parser
         .get_builtins()
@@ -301,7 +301,7 @@ fn parse_builtin_call(parser: &mut PreprocessorContext) -> Result<Ast<'static>, 
             if signature.is_parameter_a_type(index) {
                 let ty: Type = typegeneration::build_type(parser)?;
 
-                let type_span: Span = parser.previous().get_span();
+                let type_span: Span = parser.previous().get_code_location();
 
                 args.push(BuiltinArgument::Type {
                     ty,
@@ -311,7 +311,7 @@ fn parse_builtin_call(parser: &mut PreprocessorContext) -> Result<Ast<'static>, 
                 let argument: Ast<'static> = self::parse_expression(parser)?;
 
                 let value: BuiltinValue = thrustc_compile_time::fold(&argument).ok_or(())?;
-                let argument_span: Span = argument.get_span();
+                let argument_span: Span = argument.get_code_location();
 
                 args.push(BuiltinArgument::Value {
                     value,

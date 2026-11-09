@@ -429,7 +429,7 @@ pub fn lower_call_prologue<'abi>(
             abort::abort_codegen(
                 abi_context,
                 "Failed to get a WebAssembly ABI call argument.",
-                parameter.get_ty().get_span(),
+                parameter.get_ty().get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             )
@@ -450,7 +450,7 @@ pub fn lower_call_prologue<'abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to allocate an indirect WebAssembly ABI argument.",
-                                ty.get_span(),
+                                ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -460,7 +460,7 @@ pub fn lower_call_prologue<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to store an indirect WebAssembly ABI argument.",
-                            ty.get_span(),
+                            ty.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -485,7 +485,7 @@ pub fn lower_call_prologue<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to allocate a WebAssembly ABI singleton argument.",
-                            aggregate.get_span(),
+                            aggregate.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -497,7 +497,7 @@ pub fn lower_call_prologue<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to store a WebAssembly ABI singleton argument.",
-                            aggregate.get_span(),
+                            aggregate.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -507,7 +507,7 @@ pub fn lower_call_prologue<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to align a WebAssembly ABI singleton argument.",
-                            aggregate.get_span(),
+                            aggregate.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -519,7 +519,7 @@ pub fn lower_call_prologue<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to extract a WebAssembly ABI singleton argument.",
-                            aggregate.get_span(),
+                            aggregate.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -531,7 +531,7 @@ pub fn lower_call_prologue<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get a WebAssembly ABI singleton load.",
-                            aggregate.get_span(),
+                            aggregate.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -541,7 +541,7 @@ pub fn lower_call_prologue<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to align a WebAssembly ABI singleton load.",
-                            aggregate.get_span(),
+                            aggregate.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -586,7 +586,7 @@ pub fn lower_call_prologue<'abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to allocate a variadic WebAssembly ABI argument.",
-                                ty.get_span(),
+                                ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -598,7 +598,7 @@ pub fn lower_call_prologue<'abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to store a variadic WebAssembly ABI argument.",
-                                ty.get_span(),
+                                ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -622,7 +622,7 @@ pub fn lower_call_prologue<'abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to sign-extend a variadic WebAssembly ABI argument.",
-                                ty.get_span(),
+                                ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -637,7 +637,7 @@ pub fn lower_call_prologue<'abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to zero-extend a variadic WebAssembly ABI argument.",
-                                ty.get_span(),
+                                ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -650,7 +650,7 @@ pub fn lower_call_prologue<'abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to promote a variadic WebAssembly ABI float argument.",
-                                ty.get_span(),
+                                ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -880,7 +880,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get a direct WebAssembly ABI parameter.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -901,7 +901,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get an indirect WebAssembly ABI parameter.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -930,7 +930,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get a WebAssembly ABI singleton parameter.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -951,7 +951,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to allocate a WebAssembly ABI singleton parameter.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -963,7 +963,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to initialize a WebAssembly ABI singleton parameter.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -973,7 +973,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to align a WebAssembly ABI singleton parameter initialization.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -985,7 +985,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to reconstruct a WebAssembly ABI singleton parameter.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -995,7 +995,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to align a WebAssembly ABI singleton parameter reconstruction.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -1007,7 +1007,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to load a WebAssembly ABI singleton parameter.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -1018,7 +1018,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get a WebAssembly ABI singleton parameter load.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -1028,7 +1028,7 @@ pub fn lower_function_parameters<'abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to align a WebAssembly ABI singleton parameter load.",
-                            parameter.get_ty().get_span(),
+                            parameter.get_ty().get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -1792,7 +1792,7 @@ fn generate_type<'abi>(
                         "Failed to compile '{:?}' as a native vector element type!",
                         any
                     ),
-                    ty.get_span(),
+                    ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 ),
@@ -1802,7 +1802,7 @@ fn generate_type<'abi>(
         any => abort::abort_codegen(
             abi_context,
             &format!("Failed to compile '{}' as a WebAssembly ABI type.", any),
-            any.get_span(),
+            any.get_code_location(),
             std::path::PathBuf::from(file!()),
             line!(),
         ),

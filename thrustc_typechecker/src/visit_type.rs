@@ -36,7 +36,7 @@ fn visit_all_types_inner<'ast>(
     depth: u32,
 ) -> Option<Span> {
     if depth > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
-        return Some(ast.get_span());
+        return Some(ast.get_code_location());
     }
 
     let depth: u32 = depth.saturating_add(1);

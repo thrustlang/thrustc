@@ -23,7 +23,7 @@ use crate::{Type, traits::TypeCodeLocation};
 
 impl TypeCodeLocation for Type {
     #[inline]
-    fn get_span(&self) -> Span {
+    fn get_code_location(&self) -> Span {
         match self {
             Type::Char { span }
             | Type::S8 { span }

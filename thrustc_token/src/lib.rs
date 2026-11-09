@@ -51,7 +51,7 @@ impl TokenExtensions for Token {
     }
 
     #[inline]
-    fn get_span(&self) -> Span {
+    fn get_code_location(&self) -> Span {
         self.span
     }
 

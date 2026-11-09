@@ -42,7 +42,7 @@ pub fn parse_structure<'module_parser>(
 
     let name_tk: &Token = ctx.consume(TokenType::Identifier)?;
     let name: String = name_tk.get_lexeme().to_string();
-    let span: Span = name_tk.get_span();
+    let span: Span = name_tk.get_code_location();
 
     let has_generics: bool = ctx.check(TokenType::LBracket);
 
@@ -62,7 +62,7 @@ pub fn parse_structure<'module_parser>(
 
     while !ctx.check(TokenType::RBrace) {
         let field_name: String = ctx.consume(TokenType::Identifier)?.get_lexeme().to_string();
-        let field_span: Span = ctx.previous().get_span();
+        let field_span: Span = ctx.previous().get_code_location();
 
         ctx.consume(TokenType::Colon)?;
 

@@ -429,7 +429,7 @@ pub fn lower_anonymous_call_epilogue<'llvm_abi>(
             abort::abort_codegen(
                 abi_context,
                 "Failed to lower an anonymous function call epilogue!",
-                ret_ty.get_span(),
+                ret_ty.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             )
@@ -443,7 +443,7 @@ pub fn lower_anonymous_call_epilogue<'llvm_abi>(
             abort::abort_codegen(
                 abi_context,
                 "Failed to attach !callalign metadata",
-                ret_ty.get_span(),
+                ret_ty.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -512,7 +512,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to get the function parameter value from the function declaration for ABI lowering!",
-                    parameter_ty.get_span(),
+                    parameter_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 );
@@ -526,7 +526,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                     abort::abort_codegen(
                         abi_context,
                         "Failed to parse parameter index on Cuda ABI lowering!",
-                        parameter_ty.get_span(),
+                        parameter_ty.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -543,7 +543,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to get the function parameter value from the function declaration for ABI lowering!",
-                    parameter_ty.get_span(),
+                    parameter_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 );
@@ -557,7 +557,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                     abort::abort_codegen(
                         abi_context,
                         "Failed to parse parameter index on Cuda ABI lowering!",
-                        parameter_ty.get_span(),
+                        parameter_ty.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -590,7 +590,7 @@ pub fn generate_type<'llvm_abi>(
             any => abort::abort_codegen(
                 abi_context,
                 &format!("Failed to compile '{}' as a type!", any),
-                any.get_span(),
+                any.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             ),
@@ -608,7 +608,7 @@ pub fn generate_type<'llvm_abi>(
             any => abort::abort_codegen(
                 abi_context,
                 &format!("Failed to compile '{}' as a type!", any),
-                any.get_span(),
+                any.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             ),
@@ -691,7 +691,7 @@ pub fn generate_type<'llvm_abi>(
                         "Failed to compile '{:?}' as a native vector element type!",
                         any
                     ),
-                    ty.get_span(),
+                    ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 ),
@@ -701,7 +701,7 @@ pub fn generate_type<'llvm_abi>(
         any => abort::abort_codegen(
             abi_context,
             &format!("Failed to compile '{}' as a type!", any),
-            any.get_span(),
+            any.get_code_location(),
             std::path::PathBuf::from(file!()),
             line!(),
         ),

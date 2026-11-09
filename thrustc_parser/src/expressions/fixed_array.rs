@@ -46,7 +46,7 @@ pub fn build_fixed_array<'parser>(
         "Expected '['.".into(),
     )?;
 
-    let span: Span = array_start_tk.get_span();
+    let span: Span = array_start_tk.get_code_location();
 
     let infered_type: Option<Type> = ctx.get_type_context().get_infered_type();
     let mut array_type: Type = Type::Void { span };

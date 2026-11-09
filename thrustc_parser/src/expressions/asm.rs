@@ -36,7 +36,7 @@ pub fn build_asm_code_block<'parser>(
         "Expected 'asm' keyword.".into(),
     )?;
 
-    let span: Span = asm_tk.get_span();
+    let span: Span = asm_tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,

@@ -35,7 +35,7 @@ pub fn build_import_c<'parser>(
         "Expected 'importC' keyword.".into(),
     )?;
 
-    let span: Span = tk.get_span();
+    let span: Span = tk.get_code_location();
 
     let path_tk: &Token = ctx.consume_these(
         &[TokenType::CString, TokenType::CNString],
@@ -43,11 +43,11 @@ pub fn build_import_c<'parser>(
         "Expected string literal.".into(),
     )?;
 
-    let path_span: Span = path_tk.get_span();
+    let path_span: Span = path_tk.get_code_location();
     let path: String = path_tk.get_lexeme().trim().trim_matches('"').to_string();
 
     if ctx.check(TokenType::Only) {
-        let only_span: Span = ctx.peek().get_span();
+        let only_span: Span = ctx.peek().get_code_location();
 
         return Err(CompilationIssue::Error(
             CompilationIssueCode::E0001,

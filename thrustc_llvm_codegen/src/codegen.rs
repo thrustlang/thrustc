@@ -469,7 +469,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             }
 
             node => {
-                self.get_mut_context().mark_dbg_location(node.get_span());
+                self.get_mut_context().mark_dbg_location(node.get_code_location());
 
                 if matches!(node, Ast::Defer { .. }) {
                     self.context.push_pending_defer_node(node);
@@ -1674,7 +1674,7 @@ pub fn compile_as_value<'ctx>(
                 abort::abort_codegen(
                     context,
                     "Failed to determine whether the load operand is in memory!",
-                    source.get_span(),
+                    source.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -1783,7 +1783,7 @@ pub fn compile_as_value<'ctx>(
             abort::abort_codegen(
                 context,
                 "Unknown expression or statement!",
-                what.get_span(),
+                what.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -2000,7 +2000,7 @@ pub fn compile_constant_as_value<'ctx>(
         what => abort::abort_codegen(
             context,
             "Unknown expression or statement!",
-            what.get_span(),
+            what.get_code_location(),
             std::path::PathBuf::from(file!()),
             line!(),
         ),

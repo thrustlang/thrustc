@@ -37,7 +37,7 @@ pub fn parse_function<'module_parser>(
 
     let name_tk: &Token = ctx.consume(TokenType::Identifier)?;
     let name: String = name_tk.get_lexeme().to_string();
-    let span: Span = name_tk.get_span();
+    let span: Span = name_tk.get_code_location();
     let demangling_name: String = format!("{}.{}", ctx.get_module().get_name(), name);
 
     let has_generics: bool = ctx.check(TokenType::LBracket);
@@ -55,7 +55,7 @@ pub fn parse_function<'module_parser>(
     while !ctx.check(TokenType::RParen) {
         let param_name_tk: &Token = ctx.consume(TokenType::Identifier)?;
         let param_name: String = param_name_tk.get_lexeme().to_string();
-        let param_span: Span = param_name_tk.get_span();
+        let param_span: Span = param_name_tk.get_code_location();
 
         ctx.consume(TokenType::Colon)?;
 

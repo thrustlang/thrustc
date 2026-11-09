@@ -43,7 +43,7 @@ pub fn parse_custom_type_stmt<'parser>(
     )?;
 
     let name: &str = name_tk.get_lexeme();
-    let span: Span = name_tk.get_span();
+    let span: Span = name_tk.get_code_location();
 
     ctx.consume(
         TokenType::Eq,

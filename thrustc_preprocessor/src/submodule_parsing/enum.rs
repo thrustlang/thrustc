@@ -33,7 +33,7 @@ use crate::{
 
 pub fn parse_enum<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> Result<Symbol, ()> {
     let enum_tk: &Token = ctx.consume(TokenType::Enum)?;
-    let span: Span = enum_tk.get_span();
+    let span: Span = enum_tk.get_code_location();
 
     let name_tk: &Token = ctx.consume(TokenType::Identifier)?;
     let name: String = name_tk.get_lexeme().to_string();
@@ -59,7 +59,7 @@ pub fn parse_enum<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> Res
     while !ctx.check(TokenType::RBrace) {
         let field_tk: &Token = ctx.consume(TokenType::Identifier)?;
         let field_name: String = field_tk.get_lexeme().to_string();
-        let field_span: Span = field_tk.get_span();
+        let field_span: Span = field_tk.get_code_location();
 
         ctx.consume(TokenType::Colon)?;
         let field_type: Type = typegeneration::build_type(ctx)?;

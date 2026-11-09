@@ -30,6 +30,7 @@ main() {
     
     # Create new tag
     echo "Creating tag '$tag_name'..."
+    
     git tag "$tag_name"
     
     # Check if tag creation was successful

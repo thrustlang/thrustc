@@ -307,7 +307,7 @@ pub fn analyze<'linter>(linter: &mut Linter<'linter>, expr: &'linter Ast) {
         | Ast::Char { .. } => (),
 
         _ => {
-            let span: Span = expr.get_span();
+            let span: Span = expr.get_code_location();
 
             linter.add_bug(CompilationIssue::FrontendBug(
                 "Expression not caught".into(),

@@ -460,7 +460,7 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportC, ()>
         .trim_matches('"')
         .to_string();
 
-    let span: Span = header_path_tk.get_span();
+    let span: Span = header_path_tk.get_code_location();
 
     let import_path: PathBuf = PathBuf::from(&import_str);
     let mut header_path: PathBuf = import_path.clone();
@@ -469,7 +469,7 @@ fn parse_import_request(parser: &mut PreprocessorContext) -> Result<ImportC, ()>
     let mut parse_outside_header: bool = false;
 
     if parser.check(TokenType::Only) {
-        let only_span: Span = parser.peek().get_span();
+        let only_span: Span = parser.peek().get_code_location();
 
         parser.add_error(CompilationIssue::Error(
             CompilationIssueCode::E0035,

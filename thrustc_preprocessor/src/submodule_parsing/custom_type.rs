@@ -34,7 +34,7 @@ pub fn parse_type<'module_parser>(ctx: &mut ModuleParser<'module_parser>) -> Res
 
     let identifier_tk: &Token = ctx.consume(TokenType::Identifier)?;
     let name: String = identifier_tk.get_lexeme().to_string();
-    let span: Span = identifier_tk.get_span();
+    let span: Span = identifier_tk.get_code_location();
 
     let has_generics: bool = ctx.check(TokenType::LBracket);
 

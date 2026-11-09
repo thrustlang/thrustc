@@ -258,7 +258,7 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
     let abi_configuration: Option<thrustc_llvm_abi::LLVMABIConfiguration> =
         prototype.get_abi_configuration().cloned();
 
-    let span: Span = prototype.get_span();
+    let span: Span = prototype.get_code_location();
 
     codegen
         .get_mut_context()

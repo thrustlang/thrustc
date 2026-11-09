@@ -963,7 +963,7 @@ pub fn check_if_a_type_is_unresolved(typechecker: &mut TypeChecker, ty: &Type) {
             "Unresolved type".into(),
             "Type can't be resolved on compile time. You should check the suggestion that the compiler provide you to resolve the type.".into(),
             None,
-            ty.get_span(),
+            ty.get_code_location(),
         ));
     }
 }

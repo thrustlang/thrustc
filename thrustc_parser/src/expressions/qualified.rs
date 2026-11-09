@@ -79,7 +79,7 @@ pub fn build_qualified_expression<'parser>(
             "Expected enum field name.".into(),
         )?;
         let field_name: &str = field_tk.get_lexeme();
-        let field_span: Span = field_tk.get_span();
+        let field_span: Span = field_tk.get_code_location();
 
         let Some((_, field_type, Some(value), _)) = fields
             .iter()
@@ -530,7 +530,7 @@ fn parse_macro_arguments<'parser>(
                 "Unexpected end of file inside a C macro invocation.".into(),
                 "You should close the macro argument list with ')'.".into(),
                 None,
-                ctx.previous().get_span(),
+                ctx.previous().get_code_location(),
             ));
         }
 

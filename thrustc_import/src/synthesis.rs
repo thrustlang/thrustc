@@ -324,7 +324,7 @@ pub fn synthesize_only_import<'parser>(
                             fields.iter().map(|(name, _, _)| name.clone()).collect(),
                             fields.iter().map(|(_, ty, _)| ty.clone()).collect(),
                             metadata,
-                            kind.get_span(),
+                            kind.get_code_location(),
                         ),
                     );
 
@@ -1151,7 +1151,7 @@ fn find_deallocator_in_module<'parser>(
         let expected_arg: Type = Type::Ptr {
             subtype: Some(std::boxed::Box::new(kind.clone())),
             address_space: None,
-            span: kind.get_span(),
+            span: kind.get_code_location(),
         };
 
         if let Some(type_params) = type_params {
@@ -1177,10 +1177,10 @@ fn find_deallocator_in_module<'parser>(
                 &parameter_types,
                 &argument_types,
                 &Type::Void {
-                    span: kind.get_span(),
+                    span: kind.get_code_location(),
                 },
                 false,
-                kind.get_span(),
+                kind.get_code_location(),
             ) {
                 let generic_args: Vec<Type> = type_params
                     .iter()

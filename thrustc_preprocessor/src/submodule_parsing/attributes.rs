@@ -42,7 +42,7 @@ pub fn build_attributes<'parser>(
 
     while !limits.contains(&parser.peek().get_type()) {
         let current_tk: &Token = parser.peek();
-        let span: Span = current_tk.get_span();
+        let span: Span = current_tk.get_code_location();
 
         match current_tk.get_type() {
             TokenType::Extern => {

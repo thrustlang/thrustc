@@ -35,7 +35,7 @@ pub fn parse_return_stmt<'parser>(
         "Expected 'return' keyword.".into(),
     )?;
 
-    let span: Span = return_tk.get_span();
+    let span: Span = return_tk.get_code_location();
 
     if ctx.match_token(TokenType::SemiColon)? {
         return Ok(Ast::Return {

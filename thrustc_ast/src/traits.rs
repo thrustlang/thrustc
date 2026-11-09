@@ -36,7 +36,7 @@ pub trait AstBaseReferenceExtensions<'ast> {
 }
 
 pub trait AstCodeLocation {
-    fn get_span(&self) -> Span;
+    fn get_code_location(&self) -> Span;
 }
 
 pub trait AstStatementExtensions {

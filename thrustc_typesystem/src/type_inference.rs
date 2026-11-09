@@ -27,7 +27,7 @@ use crate::{
 
 impl InfererTypeExtensions for Type {
     fn pass_inner_type_from_type(&self, other: &Type) -> Option<Type> {
-        let span: Span = self.get_span();
+        let span: Span = self.get_code_location();
 
         let mut left: Type = self.remove_all_constant_type();
         let mut right: Type = other.remove_all_constant_type();

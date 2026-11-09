@@ -9,18 +9,21 @@ git tag --sort=-version:refname
 echo.
 
 set /p prev_tag="Enter previous tag: "
+
 if "%prev_tag%"=="" (
     echo Error: Previous tag is required.
     exit /b 1
 )
 
 git rev-parse --verify --quiet "refs/tags/%prev_tag%" >nul 2>&1
+
 if errorlevel 1 (
     echo Error: Tag '%prev_tag%' does not exist.
     exit /b 1
 )
 
 set /p tag_name="Enter new tag name: "
+
 if "%tag_name%"=="" (
     echo Error: New tag name is required.
     exit /b 1
@@ -28,15 +31,18 @@ if "%tag_name%"=="" (
 
 set range=%prev_tag%..HEAD
 set release_dir=changelogs\%tag_name%
+
 if not exist "%release_dir%" mkdir "%release_dir%"
 
 echo Generating changelog for: %range%
 git-cliff "%range%" --tag "%tag_name%" --output "%release_dir%\README.md"
 
 cargo run --quiet >nul 2>&1
+
 if errorlevel 1 (echo Warning: cargo run failed, continuing...)
 
 set help_output=
+
 for /f "delims=" %%i in ('.\target\debug\thrustc.exe --help 2^>^&1') do (
     set help_output=!help_output!%%i
 )
@@ -63,11 +69,14 @@ git add "%release_dir%\README.md" "Cargo.toml"
 git commit -m "Bumping '%tag_name%'"
 
 git tag "%tag_name%"
+
 if errorlevel 1 (
     echo Error: Failed to create tag '%tag_name%'.
     exit /b 1
 )
+
 git push origin HEAD "%tag_name%"
+
 if errorlevel 1 (
     echo Error: Failed to push to remote.
     exit /b 1

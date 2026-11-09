@@ -57,7 +57,7 @@ pub fn build_global_const<'parser>(
     let name: &str = const_tk.get_lexeme();
     let ascii_name: &str = const_tk.get_ascii_lexeme();
 
-    let span: Span = const_tk.get_span();
+    let span: Span = const_tk.get_code_location();
 
     ctx.consume(
         TokenType::Colon,

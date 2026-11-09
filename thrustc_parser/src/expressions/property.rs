@@ -54,7 +54,7 @@ pub fn build_property<'parser>(
         "Expected identifier.".into(),
     )?;
 
-    let mut span: Span = first.get_span();
+    let mut span: Span = first.get_code_location();
 
     property_names.push(first.get_lexeme());
 
@@ -65,7 +65,7 @@ pub fn build_property<'parser>(
             "Expected identifier.".into(),
         )?;
 
-        span = property.get_span();
+        span = property.get_code_location();
 
         property_names.push(property.get_lexeme());
     }
@@ -191,7 +191,7 @@ fn decompose_struct_property<'parser>(
                 Type::Ptr {
                     subtype: Some(field_type.clone().into()),
                     address_space: field_type.get_address_space(),
-                    span: field_type.get_span(),
+                    span: field_type.get_code_location(),
                 }
             } else {
                 field_type.clone()
@@ -223,7 +223,7 @@ fn decompose_struct_property<'parser>(
                     Type::Ptr {
                         subtype: Some(base_subtype.clone().into()),
                         address_space: base_subtype.get_address_space(),
-                        span: base_subtype.get_span(),
+                        span: base_subtype.get_code_location(),
                     }
                 } else {
                     base_subtype.clone()
@@ -238,7 +238,7 @@ fn decompose_struct_property<'parser>(
                 Type::Ptr {
                     subtype: Some(field_inner_type.clone().into()),
                     address_space: field_inner_type.get_address_space(),
-                    span: field_inner_type.get_span(),
+                    span: field_inner_type.get_code_location(),
                 }
             } else {
                 field_inner_type

@@ -69,7 +69,7 @@ pub fn parse_type_parameters<'parser>(
         )?;
 
         let name: String = parameter_tk.get_lexeme().to_string();
-        let span: Span = parameter_tk.get_span();
+        let span: Span = parameter_tk.get_code_location();
 
         if parameters.contains(&name) {
             return Err(CompilationIssue::Error(
@@ -236,7 +236,7 @@ fn emit_unused_type_parameter_warnings<'parser>(
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0032,
                     format!("Type parameter '{}' is never used.", parameter),
-                    entry.get_span(),
+                    entry.get_code_location(),
                 ));
             }
         }
@@ -254,7 +254,7 @@ fn emit_unused_type_parameter_warnings<'parser>(
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0032,
                     format!("Type parameter '{}' is never used.", parameter),
-                    entry.get_span(),
+                    entry.get_code_location(),
                 ));
             }
         }
@@ -270,7 +270,7 @@ fn emit_unused_type_parameter_warnings<'parser>(
                 warnings.push(CompilationIssue::Warning(
                     CompilationIssueCode::W0032,
                     format!("Type parameter '{}' is never used.", parameter),
-                    entry.get_kind().get_span(),
+                    entry.get_kind().get_code_location(),
                 ));
             }
         }
@@ -481,7 +481,7 @@ fn ensure_instantiation<'parser>(
                 kind: parameter_type.clone(),
                 position: position as u32,
                 metadata: FunctionParameterMetadata::new(parameter_type.is_ptr_like_type()),
-                span: entry.get_span(),
+                span: entry.get_code_location(),
                 id: NodeId::new(),
             },
         )
@@ -508,10 +508,10 @@ fn ensure_instantiation<'parser>(
             |module| format!("{}.{}", module.to_string_lossy(), key),
         );
 
-    attributes.push(ThrustAttribute::Public(entry.get_span()));
+    attributes.push(ThrustAttribute::Public(entry.get_code_location()));
     attributes.push(ThrustAttribute::Extern(
         demangling_name.clone(),
-        entry.get_span(),
+        entry.get_code_location(),
     ));
 
     let function: Ast<'_> = Ast::Function {
@@ -524,7 +524,7 @@ fn ensure_instantiation<'parser>(
         body: None,
         return_type,
         attributes,
-        span: entry.get_span(),
+        span: entry.get_code_location(),
         id: NodeId::new(),
     };
 

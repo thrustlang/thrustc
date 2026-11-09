@@ -721,7 +721,7 @@ pub fn apply_file_directives(
                 "Use a file-scoped compiler flag with the same spelling and value format as the CLI."
                     .into(),
                 None,
-                spec_token.get_span(),
+                spec_token.get_code_location(),
             ));
         }
     }

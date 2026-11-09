@@ -319,7 +319,7 @@ impl TypeExtensions for Type {
         Type::Ptr {
             subtype: Some(self.clone().into()),
             address_space: self.get_address_space(),
-            span: self.get_span(),
+            span: self.get_code_location(),
         }
     }
 
@@ -331,7 +331,7 @@ impl TypeExtensions for Type {
             Type::Ptr {
                 subtype: Some(self.clone().into()),
                 address_space: self.get_address_space(),
-                span: self.get_span(),
+                span: self.get_code_location(),
             }
         }
     }

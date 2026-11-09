@@ -38,7 +38,7 @@ pub fn build_compiler_intrinsic<'parser>(
         "Expected 'intrinsic' keyword.".into(),
     )?;
 
-    let span: Span = intrinsic_tk.get_span();
+    let span: Span = intrinsic_tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -88,7 +88,7 @@ pub fn build_compiler_intrinsic<'parser>(
             "Expected 'identifier'.".into(),
         )?;
 
-        let span: Span = parameter_name_tk.get_span();
+        let span: Span = parameter_name_tk.get_code_location();
 
         ctx.consume(
             TokenType::Colon,

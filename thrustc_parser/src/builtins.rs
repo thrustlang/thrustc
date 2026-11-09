@@ -79,7 +79,7 @@ pub fn build_compiler_builtin<'parser>(
         _ => {
             let token: &Token = ctx.advance()?;
             let lexeme: &str = token.get_lexeme();
-            let span: Span = token.get_span();
+            let span: Span = token.get_code_location();
 
             ctx.add_error_report(CompilationIssue::Error(
                 CompilationIssueCode::E0003,
@@ -114,7 +114,7 @@ pub fn build_atomic_ordering<'parser>(
                 "Expected an atomic ordering argument.".into(),
                 "Use atomicNone, atomicFree, atomicRelax, atomicGrab, atomicDrop, atomicSync or atomicStrict.".into(),
                 None,
-                tk.get_span(),
+                tk.get_code_location(),
             ))
         }
     };
@@ -133,7 +133,7 @@ pub fn build_arbitrary_args_start<'parser>(
         "Expected 'arbitraryArgsStart' keyword.".into(),
     )?;
 
-    let span: Span = tk.get_span();
+    let span: Span = tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -168,7 +168,7 @@ pub fn build_arbitrary_args_copy<'parser>(
         "Expected 'arbitraryArgsCopy' keyword.".into(),
     )?;
 
-    let span: Span = tk.get_span();
+    let span: Span = tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -208,7 +208,7 @@ pub fn build_arbitrary_args_end<'parser>(
         "Expected 'arbitraryArgsEnd' keyword.".into(),
     )?;
 
-    let span: Span = tk.get_span();
+    let span: Span = tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -244,7 +244,7 @@ pub fn build_arbitrary_arg_from<'parser>(
         "Expected 'arbitraryArgFrom' keyword.".into(),
     )?;
 
-    let span: Span = tk.get_span();
+    let span: Span = tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -291,7 +291,7 @@ pub fn build_arbitrary_args_count<'parser>(
         "Expected 'arbitraryArgsCount' keyword.".into(),
     )?;
 
-    let span: Span = tk.get_span();
+    let span: Span = tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -322,7 +322,7 @@ pub fn build_halloc<'parser>(
         "Expected 'halloc' keyword.".into(),
     )?;
 
-    let span: Span = halloc_tk.get_span();
+    let span: Span = halloc_tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -368,7 +368,7 @@ pub fn build_memcpy<'parser>(
         "Expected '('.".into(),
     )?;
 
-    let span: Span = memcpy_tk.get_span();
+    let span: Span = memcpy_tk.get_code_location();
 
     let source: Ast = expressions::parse_expr(ctx)?;
 
@@ -426,7 +426,7 @@ pub fn build_memmove<'parser>(
         String::from("Expected '('."),
     )?;
 
-    let span: Span = memcpy_tk.get_span();
+    let span: Span = memcpy_tk.get_code_location();
 
     let source: Ast = expressions::parse_expr(ctx)?;
 
@@ -484,7 +484,7 @@ pub fn build_memset<'parser>(
         String::from("Expected '('."),
     )?;
 
-    let span: Span = memcpy_tk.get_span();
+    let span: Span = memcpy_tk.get_code_location();
 
     let destination: Ast = expressions::parse_expr(ctx)?;
 
@@ -536,7 +536,7 @@ pub fn build_bit_size_of<'parser>(
         String::from("Expected 'bit_size_of' keyword."),
     )?;
 
-    let span: Span = sizeof_tk.get_span();
+    let span: Span = sizeof_tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -569,7 +569,7 @@ pub fn build_abi_size_of<'parser>(
         "Expected 'abi_size_of' keyword.".into(),
     )?;
 
-    let span: Span = sizeof_tk.get_span();
+    let span: Span = sizeof_tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -602,7 +602,7 @@ pub fn build_abi_align_of<'parser>(
         "Expected 'abi_align_of' keyword.".into(),
     )?;
 
-    let span: Span = sizeof_tk.get_span();
+    let span: Span = sizeof_tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -635,7 +635,7 @@ pub fn build_arbitrary_arg<'parser>(
         "Expected 'arbitraryArg' keyword.".into(),
     )?;
 
-    let span: Span = arbitrary_tk.get_span();
+    let span: Span = arbitrary_tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -671,7 +671,7 @@ pub fn build_arbitrary_args<'parser>(
         "Expected 'arbitraryArgs' keyword.".into(),
     )?;
 
-    let span: Span = arbitrary_tk.get_span();
+    let span: Span = arbitrary_tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -708,7 +708,7 @@ pub fn build_atomic_rmw<'parser>(
         format!("Expected '{}' keyword.", tk_type),
     )?;
 
-    let span: Span = tk.get_span();
+    let span: Span = tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,
@@ -758,7 +758,7 @@ pub fn build_atomic_compare_and_swap<'parser>(
         "Expected 'atomicCompareAndSwap' keyword.".into(),
     )?;
 
-    let span: Span = tk.get_span();
+    let span: Span = tk.get_code_location();
 
     ctx.consume(
         TokenType::LParen,

@@ -74,7 +74,7 @@ impl CompileTimeBuiltinFunction for FixedArraySize {
                 "The 'fixedArraySize' compiler builtin expects a fixed array type.".into(),
                 "You should pass a fixed array type, like fixedArraySize(array[u8; 4]).".into(),
                 None,
-                stripped.get_span(),
+                stripped.get_code_location(),
             )),
         }
     }

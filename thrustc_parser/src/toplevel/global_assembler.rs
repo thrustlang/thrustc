@@ -35,7 +35,7 @@ pub fn build_global_assembler<'parser>(
         "Expected 'global_asm' keyword.".into(),
     )?;
 
-    let span: Span = tk.get_span();
+    let span: Span = tk.get_code_location();
 
     let assembler_tk: &Token = ctx.consume(
         TokenType::Assembler,

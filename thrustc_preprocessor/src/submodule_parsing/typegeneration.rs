@@ -54,7 +54,7 @@ fn build_type_inner(ctx: &mut dyn TypeParseContext) -> Result<Type, ()> {
     match ctx.peek().kind {
         tk_kind if tk_kind.is_type() => {
             let tk: &Token = ctx.advance()?;
-            let span: Span = tk.get_span();
+            let span: Span = tk.get_code_location();
 
             match tk_kind {
                 _ if tk_kind.is_array() => self::parse_array_type(ctx, span),
@@ -112,7 +112,7 @@ fn build_type_inner(ctx: &mut dyn TypeParseContext) -> Result<Type, ()> {
             let identifier_tk: &Token = ctx.advance()?;
 
             let name: String = identifier_tk.get_lexeme().to_string();
-            let span: Span = identifier_tk.get_span();
+            let span: Span = identifier_tk.get_code_location();
 
             if ctx.check(TokenType::ColonColon) {
                 let mut access: Vec<String> = vec![name];
@@ -124,7 +124,7 @@ fn build_type_inner(ctx: &mut dyn TypeParseContext) -> Result<Type, ()> {
                     let part_tk: &Token = ctx.consume(TokenType::Identifier)?;
                     let part: String = part_tk.get_lexeme().to_string();
 
-                    symbol_span = part_tk.get_span();
+                    symbol_span = part_tk.get_code_location();
 
                     access.push(part);
 

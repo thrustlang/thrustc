@@ -43,7 +43,7 @@ pub fn parse_enum_stmt<'parser>(
     )?;
 
     let enum_name: &str = name.get_lexeme();
-    let span: Span = name.get_span();
+    let span: Span = name.get_code_location();
 
     let enum_attributes: ThrustAttributes =
         attributes::build_compiler_attributes(ctx, &[TokenType::LBrace])?;

@@ -41,7 +41,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
 
     let llvm_function: FunctionValue = codegen
         .get_mut_context()
-        .get_current_function(node.get_span())
+        .get_current_function(node.get_code_location())
         .get_value();
 
     let Ast::While {
@@ -54,7 +54,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
         return;
     };
 
-    let block_span: Span = block.get_span();
+    let block_span: Span = block.get_code_location();
 
     let cond: BasicBlock = block::append_block(codegen.get_context(), llvm_function);
     let body: BasicBlock = block::append_block(codegen.get_context(), llvm_function);
@@ -72,7 +72,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
             abort::abort_codegen(
                 codegen.get_mut_context(),
                 "Failed to compile while loop terminator to condition!",
-                condition.get_span(),
+                condition.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             )
@@ -120,7 +120,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
                 abort::abort_codegen(
                     codegen.get_mut_context(),
                     "Failed to compile while loop body terminator to comparison!",
-                    condition.get_span(),
+                    condition.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -227,7 +227,7 @@ fn short_circuit_comparison<'ctx>(
             abort::abort_codegen(
                 codegen.get_mut_context(),
                 "Failed to compile for loop comparison to body!",
-                condition.get_span(),
+                condition.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             )

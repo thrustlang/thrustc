@@ -73,7 +73,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    left_type.get_span(),
+                    left_type.get_code_location(),
                 ));
             }
 
@@ -83,7 +83,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -113,7 +113,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    expr_type.get_span(),
+                    expr_type.get_code_location(),
                 ));
             }
 
@@ -123,7 +123,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -139,7 +139,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -163,7 +163,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -173,7 +173,7 @@ pub fn validate_node<'type_checker>(
                 let item_type: &Type = node.get_value_type()?;
                 let base_type: Type = kind.get_fixed_array_base_type();
 
-                let span: Span = node.get_span();
+                let span: Span = node.get_code_location();
 
                 {
                     let control_context: &mut TypeCheckerControlContext =
@@ -217,7 +217,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -226,7 +226,7 @@ pub fn validate_node<'type_checker>(
                     let metadata: TypeCheckerNodeMetadata =
                         TypeCheckerNodeMetadata::new(node.is_totaly_literal_value());
                     let item_type: &Type = node.get_value_type()?;
-                    let span: Span = node.get_span();
+                    let span: Span = node.get_code_location();
 
                     {
                         let control_context: &mut TypeCheckerControlContext =
@@ -271,7 +271,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -280,7 +280,7 @@ pub fn validate_node<'type_checker>(
                     TypeCheckerNodeMetadata::new(node.is_totaly_literal_value());
                 let item_type: &Type = node.get_value_type()?;
                 let base_type: Type = kind.get_array_base_type();
-                let span: Span = node.get_span();
+                let span: Span = node.get_code_location();
 
                 if item_type.contains_void_type() || item_type.is_void_type() {
                     typechecker.add_error_report(CompilationIssue::Error(
@@ -288,7 +288,7 @@ pub fn validate_node<'type_checker>(
                         "Cannot use 'void' as a value.".into(),
                         "You should remove whatever type or value where void type belongs.".into(),
                         None,
-                        item_type.get_span(),
+                        item_type.get_code_location(),
                     ));
                 }
 
@@ -320,7 +320,7 @@ pub fn validate_node<'type_checker>(
         Ast::Index { source, index, .. } => {
             let index_type: &Type = index.get_value_type()?;
             let source_type: &Type = source.get_value_type()?;
-            let span: Span = index.get_span();
+            let span: Span = index.get_code_location();
 
             if !index_type.is_integer_type() {
                 typechecker.add_error_report(CompilationIssue::Error(
@@ -347,7 +347,7 @@ pub fn validate_node<'type_checker>(
                     "It should be an indexable type such as an array, fixed array, pointer, or structure."
                         .into(),
                     None,
-                    source.get_span(),
+                    source.get_code_location(),
                 ));
             }
 
@@ -364,7 +364,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    index_type.get_span(),
+                    index_type.get_code_location(),
                 ));
             }
 
@@ -372,7 +372,7 @@ pub fn validate_node<'type_checker>(
         }
         Ast::Property { source, data, .. } => {
             let source_type: &Type = source.get_value_type()?;
-            let source_span: Span = source.get_span();
+            let source_span: Span = source.get_code_location();
 
             if !source_type.is_struct_type() && !source_type.is_ptr_struct_type() {
                 typechecker.add_error_report(CompilationIssue::Error(
@@ -392,7 +392,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    source_type.get_span(),
+                    source_type.get_code_location(),
                 ));
             }
 
@@ -403,7 +403,7 @@ pub fn validate_node<'type_checker>(
                         "Cannot use 'void' as a value.".into(),
                         "You should remove whatever type or value where void type belongs.".into(),
                         None,
-                        ty.get_span(),
+                        ty.get_code_location(),
                     ));
                 }
 
@@ -413,7 +413,7 @@ pub fn validate_node<'type_checker>(
                         "Cannot use 'void' as a value.".into(),
                         "You should remove whatever type or value where void type belongs.".into(),
                         None,
-                        subtype.get_span(),
+                        subtype.get_code_location(),
                     ));
                 }
 
@@ -423,7 +423,7 @@ pub fn validate_node<'type_checker>(
                         format!("A structure type was expected within a structure 'struct T' type, or structure pointer 'ptr[struct T]', got '{}' type.", source_type),
                         "It should be a structure or structure pointer reference; make it match.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -433,7 +433,7 @@ pub fn validate_node<'type_checker>(
 
         Ast::Constructor { data, .. } => {
             for (_, expr, target_type, _) in data.iter() {
-                let span: Span = expr.get_span();
+                let span: Span = expr.get_code_location();
                 let from_type: &Type = expr.get_value_type()?;
 
                 let metadata: TypeCheckerNodeMetadata =
@@ -466,7 +466,7 @@ pub fn validate_node<'type_checker>(
                         "Cannot use 'void' as a value.".into(),
                         "You should remove whatever type or value where void type belongs.".into(),
                         None,
-                        target_type.get_span(),
+                        target_type.get_code_location(),
                     ));
                 }
 
@@ -476,7 +476,7 @@ pub fn validate_node<'type_checker>(
                         "Cannot use 'void' as a value.".into(),
                         "You should remove whatever type or value where void type belongs.".into(),
                         None,
-                        from_type.get_span(),
+                        from_type.get_code_location(),
                     ));
                 }
             }
@@ -528,7 +528,7 @@ pub fn validate_node<'type_checker>(
                     "Expected function reference type for call anonymously.".into(),
                     "It should be a function type refernce.".into(),
                     None,
-                    function.get_span(),
+                    function.get_code_location(),
                 ));
 
                 {
@@ -625,7 +625,7 @@ pub fn validate_node<'type_checker>(
                             Some(expr),
                             None,
                             expr_metadata,
-                            expr.get_span(),
+                            expr.get_code_location(),
                             control_context,
                         ) {
                             typechecker.add_error_report(error);
@@ -652,7 +652,7 @@ pub fn validate_node<'type_checker>(
                     "An value with memory address was expected.".into(),
                     "You should try to allocate it and pass it as a direct reference.".into(),
                     None,
-                    value.get_span(),
+                    value.get_code_location(),
                 ));
             }
 
@@ -664,7 +664,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    value_type.get_span(),
+                    value_type.get_code_location(),
                 ));
             }
 
@@ -674,7 +674,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -691,7 +691,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    source_type.get_span(),
+                    source_type.get_code_location(),
                 ));
             }
 
@@ -701,7 +701,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -731,7 +731,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    cast_type.get_span(),
+                    cast_type.get_code_location(),
                 ));
             }
 
@@ -741,7 +741,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    from_type.get_span(),
+                    from_type.get_code_location(),
                 ));
             }
 
@@ -812,7 +812,7 @@ pub fn validate_node<'type_checker>(
                         "Cannot use 'void' as a value.".into(),
                         "You should remove whatever type or value where void type belongs.".into(),
                         None,
-                        from_type.get_span(),
+                        from_type.get_code_location(),
                     ));
                 }
 
@@ -831,7 +831,7 @@ pub fn validate_node<'type_checker>(
                         Some(expression),
                         None,
                         metadata,
-                        expression.get_span(),
+                        expression.get_code_location(),
                         control_context,
                     ) {
                         typechecker.add_error_report(error);
@@ -855,7 +855,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    node_type.get_span(),
+                    node_type.get_code_location(),
                 ));
             }
 
@@ -865,7 +865,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -880,7 +880,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -893,7 +893,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -906,7 +906,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -919,7 +919,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -932,7 +932,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -945,7 +945,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -958,7 +958,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -971,7 +971,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -986,7 +986,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    expr_type.get_span(),
+                    expr_type.get_code_location(),
                 ));
             }
 
@@ -996,7 +996,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    kind.get_span(),
+                    kind.get_code_location(),
                 ));
             }
 
@@ -1004,7 +1004,7 @@ pub fn validate_node<'type_checker>(
         }
 
         _ => {
-            let span: Span = node.get_span();
+            let span: Span = node.get_code_location();
 
             typechecker.add_bug(CompilationIssue::FrontendBug(
                 "Expression not caught".into(),

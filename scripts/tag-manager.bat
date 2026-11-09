@@ -10,12 +10,14 @@ if "%tag_name%"=="" (
 )
 
 git rev-parse --git-dir >nul 2>&1
+
 if errorlevel 1 (
     echo Error: Not in a Git repository
     exit /b 1
 )
 
 git tag -l | findstr /r "^%tag_name%$" >nul 2>&1
+
 if not errorlevel 1 (
     echo Tag '%tag_name%' exists. Deleting...
     git tag -d "%tag_name%"

@@ -39,7 +39,7 @@ pub fn build_native_vector<'parser>(
         "Expected 'native' keyword.".into(),
     )?;
 
-    self::build_native_vector_after_name(ctx, native_tk.get_span())
+    self::build_native_vector_after_name(ctx, native_tk.get_code_location())
 }
 
 pub fn build_native_vector_after_name<'parser>(
@@ -180,7 +180,7 @@ fn resolve_native_vector_type(
                 format!("Expected '{}' type, got '{}' type.", first_type, item_type),
                 "Native vector elements must have the same type.".into(),
                 None,
-                item.get_span(),
+                item.get_code_location(),
             ));
         }
     }

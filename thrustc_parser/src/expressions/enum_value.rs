@@ -41,7 +41,7 @@ pub fn build_enum_value<'parser>(
         "Expected enum name.".into(),
     )?;
 
-    let field_span: Span = field_tk.get_span();
+    let field_span: Span = field_tk.get_code_location();
 
     let reference: Result<FoundSymbolId, CompilationIssue> =
         ctx.get_symbols().get_symbols_id(name, span);

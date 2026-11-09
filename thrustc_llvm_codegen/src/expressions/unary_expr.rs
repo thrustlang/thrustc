@@ -77,7 +77,7 @@ pub fn compile<'ctx>(
         what => abort::abort_codegen(
             context,
             "Failed to compile the operation!",
-            what.2.get_span(),
+            what.2.get_code_location(),
             PathBuf::from(file!()),
             line!(),
         ),
@@ -112,7 +112,7 @@ pub fn compile_const<'ctx>(
         what => abort::abort_codegen(
             context,
             "Failed to compile the operation!",
-            what.2.get_span(),
+            what.2.get_code_location(),
             PathBuf::from(file!()),
             line!(),
         ),
@@ -315,7 +315,7 @@ fn compile_increment_decrement<'ctx>(
     let value: BasicValueEnum = codegen::compile_as_value(context, expression, cast_type);
     let kind: Type = expression.get_type_for_llvm().remove_all_constant_type();
 
-    let span: Span = expression.get_span();
+    let span: Span = expression.get_code_location();
 
     match &kind {
         kind if kind.is_integer_type() => {
@@ -551,7 +551,7 @@ fn compile_logical_negation<'ctx>(
 
     let value: BasicValueEnum = codegen::compile_as_value(context, expr, cast_type);
 
-    let span: Span = expr.get_span();
+    let span: Span = expr.get_code_location();
 
     match &kind {
         kind if kind.is_bool_type() => {
@@ -609,7 +609,7 @@ fn compile_arithmetic_negation<'ctx>(
     let value: BasicValueEnum = codegen::compile_as_value(context, expr, cast_type);
     let kind: Type = expr.get_type_for_llvm().remove_all_constant_type();
 
-    let span: Span = expr.get_span();
+    let span: Span = expr.get_code_location();
 
     match &kind {
         kind if kind.is_integer_type() => {
@@ -657,7 +657,7 @@ fn compile_bitwise_not<'ctx>(
     let value: BasicValueEnum = codegen::compile_as_value(context, expr, cast_type);
     let kind: Type = expr.get_type_for_llvm().remove_all_constant_type();
 
-    let span: Span = expr.get_span();
+    let span: Span = expr.get_code_location();
 
     match &kind {
         kind if kind.is_integer_type() => {
@@ -703,7 +703,7 @@ fn compile_increment_decrement_const<'ctx>(
     let value: BasicValueEnum = codegen::compile_constant_as_value(context, expression, cast_type);
 
     let kind: Type = expression.get_type_for_llvm().remove_all_constant_type();
-    let span: Span = expression.get_span();
+    let span: Span = expression.get_code_location();
 
     match &kind {
         kind if kind.is_integer_type() => {
@@ -770,7 +770,7 @@ fn compile_logical_negation_const<'ctx>(
     let value: BasicValueEnum = codegen::compile_constant_as_value(context, expr, cast_type);
 
     let kind: Type = expr.get_type_for_llvm().remove_all_constant_type();
-    let span: Span = expr.get_span();
+    let span: Span = expr.get_code_location();
 
     match &kind {
         kind if kind.is_bool_type() => {
@@ -809,7 +809,7 @@ fn compile_arithmetic_negation_const<'ctx>(
                 abort::abort_codegen(
                     context,
                     "Failed to compile the operation!",
-                    expr.get_span(),
+                    expr.get_code_location(),
                     PathBuf::from(file!()),
                     line!(),
                 )
@@ -832,7 +832,7 @@ fn compile_arithmetic_bitwise_not_const<'ctx>(
         _ => abort::abort_codegen(
             context,
             "Failed to compile the operation!",
-            expr.get_span(),
+            expr.get_code_location(),
             PathBuf::from(file!()),
             line!(),
         ),
@@ -847,7 +847,7 @@ fn compile_native_vector<'ctx>(
     let operator: &TokenType = unary.0;
     let kind: &Type = unary.1;
     let node: &Ast = unary.2;
-    let span: Span = node.get_span();
+    let span: Span = node.get_code_location();
 
     let value: BasicValueEnum = codegen::compile_as_value(context, node, None);
     let vector: VectorValue = value.into_vector_value();
@@ -925,7 +925,7 @@ fn compile_native_vector_constant<'ctx>(
     let operator: &TokenType = unary.0;
     let kind: &Type = unary.1;
     let node: &Ast = unary.2;
-    let span: Span = node.get_span();
+    let span: Span = node.get_code_location();
 
     let value: BasicValueEnum = codegen::compile_constant_as_value(context, node, kind);
     let vector: VectorValue = value.into_vector_value();

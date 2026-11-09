@@ -47,7 +47,7 @@ pub fn check_for_multiple_terminators(scoper: &mut Scoper, node: &Ast) {
                 "Multiple unreachable instructions; only one is allowed.".into(),
                 "Remove all; keep one.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
     }
@@ -65,7 +65,7 @@ pub fn check_for_multiple_terminators(scoper: &mut Scoper, node: &Ast) {
                 "Multiple terminator instructions; only one is allowed.".into(),
                 "Remove all; keep one.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
     }
@@ -83,7 +83,7 @@ pub fn check_for_multiple_terminators(scoper: &mut Scoper, node: &Ast) {
                 "Multiple loop controller instructions; only one is allowed.".into(),
                 "Remove all; keep one.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
     }
@@ -101,7 +101,7 @@ pub fn check_for_multiple_terminators(scoper: &mut Scoper, node: &Ast) {
                 "Multiple loop controller instructions; only one is allowed.".into(),
                 "Remove all; keep one.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
     }
@@ -119,7 +119,7 @@ pub fn check_for_multiple_terminators(scoper: &mut Scoper, node: &Ast) {
                 "Multiple loop controller instructions; only one is allowed.".into(),
                 "Remove all; keep one.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
     }
@@ -137,7 +137,7 @@ pub fn check_for_multiple_terminators(scoper: &mut Scoper, node: &Ast) {
                 "Multiple loop controller instructions; only one is allowed.".into(),
                 "Remove all; keep one.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
     }
@@ -174,7 +174,7 @@ pub fn check_for_unreachable_code_instructions<'ast>(scoper: &mut Scoper, node: 
                 "Instruction will never be executed.".to_string(),
                 "Remove it.".into(),
                 None,
-                unreachable_node.get_span(),
+                unreachable_node.get_code_location(),
             ));
         }
     }
@@ -270,7 +270,7 @@ pub fn check_for_unreachable_code_instructions<'ast>(scoper: &mut Scoper, node: 
                 "Instruction will never be executed.".to_string(),
                 "Remove it.".into(),
                 None,
-                unreachable_node.get_span(),
+                unreachable_node.get_code_location(),
             ));
         }
     }

@@ -509,7 +509,7 @@ impl<'parser> ParserContext<'parser> {
     #[must_use]
     pub fn peek(&mut self) -> &'parser Token {
         self.tokens.get(self.position).unwrap_or_else(|| {
-            let span: Span = self.previous().get_span();
+            let span: Span = self.previous().get_code_location();
 
             abort::abort_compilation(
                 self.get_mut_diagnostician(),
@@ -531,7 +531,7 @@ impl<'parser> ParserContext<'parser> {
         let idx: usize = index.0;
 
         if is_overflow {
-            let span: Span = self.peek().get_span();
+            let span: Span = self.peek().get_code_location();
 
             abort::abort_compilation(
                 &mut self.diagnostician,
@@ -544,7 +544,7 @@ impl<'parser> ParserContext<'parser> {
         }
 
         self.tokens.get(idx).unwrap_or_else(|| {
-            let span: Span = self.peek().get_span();
+            let span: Span = self.peek().get_code_location();
 
             abort::abort_compilation(
                 &mut self.diagnostician,
@@ -627,7 +627,7 @@ impl<'parser> ParserContext<'parser> {
             help,
             "You should make it match.".into(),
             None,
-            self.previous().get_span(),
+            self.previous().get_code_location(),
         ))
     }
 
@@ -647,7 +647,7 @@ impl<'parser> ParserContext<'parser> {
             help,
             "You should make it match.".into(),
             None,
-            self.previous().get_span(),
+            self.previous().get_code_location(),
         ))
     }
 
@@ -677,7 +677,7 @@ impl<'parser> ParserContext<'parser> {
                 "EOF has been reached.".into(),
                 "EOF".into(),
                 None,
-                self.peek().get_span(),
+                self.peek().get_code_location(),
             ))
         }
     }
@@ -693,7 +693,7 @@ impl<'parser> ParserContext<'parser> {
                 "EOF has been reached.".into(),
                 "EOF".into(),
                 None,
-                self.peek().get_span(),
+                self.peek().get_code_location(),
             ))
         }
     }
@@ -707,7 +707,7 @@ impl<'parser> ParserContext<'parser> {
         control.increase_expression_depth();
 
         if control.get_expression_depth() > thrustc_constants::COMPILER_TOO_MANY_EXPRESSION_DEPTH {
-            let span: Span = self.peek().get_span();
+            let span: Span = self.peek().get_code_location();
 
             return Err(CompilationIssue::Error(
                 CompilationIssueCode::E0037,
@@ -733,7 +733,7 @@ impl<'parser> ParserContext<'parser> {
         control.increase_type_depth();
 
         if control.get_type_depth() > thrustc_constants::COMPILER_TOO_MANY_TYPE_DEPTH {
-            let span: Span = self.peek().get_span();
+            let span: Span = self.peek().get_code_location();
 
             return Err(CompilationIssue::Error(
                 CompilationIssueCode::E0037,
@@ -759,7 +759,7 @@ impl<'parser> ParserContext<'parser> {
         control.increase_block_depth();
 
         if control.get_block_depth() > thrustc_constants::COMPILER_TOO_MANY_BLOCK_DEPTH {
-            let span: Span = self.peek().get_span();
+            let span: Span = self.peek().get_code_location();
 
             return Err(CompilationIssue::Error(
                 CompilationIssueCode::E0037,

@@ -188,7 +188,7 @@ impl<'linter> Linter<'linter> {
                 "Too many depth for a node.".into(),
                 "You should remove the code nesting".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
 
             return;
@@ -451,7 +451,7 @@ impl<'linter> Linter<'linter> {
 
             expr => {
                 if self::expr_has_no_effect(expr) {
-                    let span: Span = expr.get_span();
+                    let span: Span = expr.get_code_location();
 
                     self.add_warning(CompilationIssue::Warning(
                         CompilationIssueCode::W0028,
@@ -476,7 +476,7 @@ impl<'linter> Linter<'linter> {
                 "Too many depth for a node.".into(),
                 "You should remove the code nesting".into(),
                 None,
-                expr.get_span(),
+                expr.get_code_location(),
             ));
 
             return;
@@ -564,7 +564,7 @@ impl Linter<'_> {
                         HashMap::with_capacity(100);
 
                     for (field_name, _, expr) in data.iter() {
-                        let expr_span: Span = expr.get_span();
+                        let expr_span: Span = expr.get_code_location();
 
                         converted_fields.insert(field_name, (expr_span, false));
                     }
@@ -639,7 +639,7 @@ impl Linter<'_> {
         };
 
         if let Some(promote_attr) = attributes.get_attr(ThrustAttributeComparator::Promote) {
-            let span: Span = promote_attr.get_span();
+            let span: Span = promote_attr.get_code_location();
 
             self.add_warning(CompilationIssue::Warning(
                 CompilationIssueCode::W0019,
@@ -650,7 +650,7 @@ impl Linter<'_> {
         }
 
         if let Some(asm_syntax_attr) = attributes.get_attr(ThrustAttributeComparator::AsmSyntax) {
-            let span: Span = asm_syntax_attr.get_span();
+            let span: Span = asm_syntax_attr.get_code_location();
 
             self.add_warning(CompilationIssue::Warning(
                 CompilationIssueCode::W0019,
@@ -662,7 +662,7 @@ impl Linter<'_> {
 
         if let Some(asm_align_attr) = attributes.get_attr(ThrustAttributeComparator::AsmAlignStack)
         {
-            let span: Span = asm_align_attr.get_span();
+            let span: Span = asm_align_attr.get_code_location();
 
             self.add_warning(CompilationIssue::Warning(
                 CompilationIssueCode::W0019,
@@ -673,7 +673,7 @@ impl Linter<'_> {
         }
 
         if let Some(asm_throw_attr) = attributes.get_attr(ThrustAttributeComparator::AsmThrow) {
-            let span: Span = asm_throw_attr.get_span();
+            let span: Span = asm_throw_attr.get_code_location();
 
             self.add_warning(CompilationIssue::Warning(
                 CompilationIssueCode::W0019,
@@ -686,7 +686,7 @@ impl Linter<'_> {
         if let Some(asm_side_effects_attr) =
             attributes.get_attr(ThrustAttributeComparator::AsmSideEffects)
         {
-            let span: Span = asm_side_effects_attr.get_span();
+            let span: Span = asm_side_effects_attr.get_code_location();
 
             self.add_warning(CompilationIssue::Warning(
                 CompilationIssueCode::W0019,

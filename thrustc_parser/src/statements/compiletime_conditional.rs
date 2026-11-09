@@ -31,7 +31,7 @@ use crate::{ParserContext, expressions, statements, statements::code_block};
 pub fn build_compiletime_conditional<'parser>(
     ctx: &mut ParserContext<'parser>,
 ) -> Result<Ast<'parser>, CompilationIssue> {
-    let span: Span = ctx.peek().get_span();
+    let span: Span = ctx.peek().get_code_location();
 
     let first_condition: CompileTimeCondition<'parser> = self::evaluate_condition(ctx)?;
 
@@ -147,7 +147,7 @@ fn parse_deferred_compiletime_conditional<'parser>(
         }
 
         if ctx.check(TokenType::ElseAttribute) && ctx.check_to(TokenType::If, 1) {
-            let else_span: Span = ctx.peek().get_span();
+            let else_span: Span = ctx.peek().get_code_location();
 
             ctx.consume(
                 TokenType::ElseAttribute,
@@ -170,7 +170,7 @@ fn parse_deferred_compiletime_conditional<'parser>(
         }
 
         if ctx.check(TokenType::ElseAttribute) {
-            let else_span: Span = ctx.peek().get_span();
+            let else_span: Span = ctx.peek().get_code_location();
 
             ctx.consume(
                 TokenType::ElseAttribute,
@@ -235,7 +235,7 @@ pub(crate) fn evaluate_condition<'parser>(
             "The compile-time condition must be a constant boolean.".into(),
             "You should use a constant expression, like @if(isLinux()) or @if(1 + 1 == 2).".into(),
             None,
-            if_tk.get_span(),
+            if_tk.get_code_location(),
         )),
     }
 }

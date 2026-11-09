@@ -130,7 +130,7 @@ impl Type {
                     return Some(Type::NativeVector {
                         element_type: std::boxed::Box::new(left_element),
                         element_count: left_count,
-                        span: self.get_span(),
+                        span: self.get_code_location(),
                     });
                 }
 
@@ -138,7 +138,7 @@ impl Type {
                     return Some(Type::NativeVector {
                         element_type: std::boxed::Box::new(left_element),
                         element_count: left_count,
-                        span: self.get_span(),
+                        span: self.get_code_location(),
                     });
                 }
 
@@ -146,7 +146,7 @@ impl Type {
                     return Some(Type::NativeVector {
                         element_type: std::boxed::Box::new(left_element),
                         element_count: left_count,
-                        span: self.get_span(),
+                        span: self.get_code_location(),
                     });
                 }
 
@@ -156,13 +156,13 @@ impl Type {
                         || left_element.is_bool_type())
                 {
                     return Some(Type::Bool {
-                        span: self.get_span(),
+                        span: self.get_code_location(),
                     });
                 }
 
                 if is_logical && left_element.is_bool_type() {
                     return Some(Type::Bool {
-                        span: self.get_span(),
+                        span: self.get_code_location(),
                     });
                 }
 
@@ -178,7 +178,7 @@ impl Type {
                     return Some(Type::NativeVector {
                         element_type: std::boxed::Box::new(element),
                         element_count: count,
-                        span: self.get_span(),
+                        span: self.get_code_location(),
                     });
                 }
 
@@ -186,7 +186,7 @@ impl Type {
                     return Some(Type::NativeVector {
                         element_type: std::boxed::Box::new(element),
                         element_count: count,
-                        span: self.get_span(),
+                        span: self.get_code_location(),
                     });
                 }
 
@@ -194,7 +194,7 @@ impl Type {
                     return Some(Type::NativeVector {
                         element_type: std::boxed::Box::new(element),
                         element_count: count,
-                        span: self.get_span(),
+                        span: self.get_code_location(),
                     });
                 }
 
@@ -204,13 +204,13 @@ impl Type {
                         || element.is_bool_type())
                 {
                     return Some(Type::Bool {
-                        span: self.get_span(),
+                        span: self.get_code_location(),
                     });
                 }
 
                 if is_logical && element.is_bool_type() {
                     return Some(Type::Bool {
-                        span: self.get_span(),
+                        span: self.get_code_location(),
                     });
                 }
 
@@ -226,7 +226,7 @@ impl Type {
                     return Some(Type::NativeVector {
                         element_type: std::boxed::Box::new(element),
                         element_count: count,
-                        span: other.get_span(),
+                        span: other.get_code_location(),
                     });
                 }
 
@@ -234,7 +234,7 @@ impl Type {
                     return Some(Type::NativeVector {
                         element_type: std::boxed::Box::new(element),
                         element_count: count,
-                        span: other.get_span(),
+                        span: other.get_code_location(),
                     });
                 }
 
@@ -242,7 +242,7 @@ impl Type {
                     return Some(Type::NativeVector {
                         element_type: std::boxed::Box::new(element),
                         element_count: count,
-                        span: other.get_span(),
+                        span: other.get_code_location(),
                     });
                 }
 
@@ -252,13 +252,13 @@ impl Type {
                         || element.is_bool_type())
                 {
                     return Some(Type::Bool {
-                        span: other.get_span(),
+                        span: other.get_code_location(),
                     });
                 }
 
                 if is_logical && element.is_bool_type() {
                     return Some(Type::Bool {
-                        span: other.get_span(),
+                        span: other.get_code_location(),
                     });
                 }
 
@@ -277,20 +277,20 @@ impl Type {
                 Some(Type::NativeVector {
                     element_type: std::boxed::Box::new(element),
                     element_count: count,
-                    span: self.get_span(),
+                    span: self.get_code_location(),
                 })
             }
 
             TokenType::Not if element.is_integer_type() => Some(Type::NativeVector {
                 element_type: std::boxed::Box::new(element),
                 element_count: count,
-                span: self.get_span(),
+                span: self.get_code_location(),
             }),
 
             TokenType::Bang if element.is_bool_type() => Some(Type::NativeVector {
                 element_type: std::boxed::Box::new(element),
                 element_count: count,
-                span: self.get_span(),
+                span: self.get_code_location(),
             }),
 
             _ => None,

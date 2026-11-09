@@ -52,10 +52,10 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
 
     let llvm_function: FunctionValue = codegen
         .get_mut_context()
-        .get_current_function(node.get_span())
+        .get_current_function(node.get_code_location())
         .get_value();
 
-    let block_span: Span = then_branch.get_span();
+    let block_span: Span = then_branch.get_code_location();
 
     let then_block: BasicBlock = block::append_block(codegen.get_context(), llvm_function);
     let merge_block: BasicBlock = block::append_block(codegen.get_context(), llvm_function);
@@ -131,7 +131,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
                     line!(),
                 )
             })
-            .get_span();
+            .get_code_location();
 
         self::compile_elseif(
             codegen,
@@ -180,7 +180,7 @@ fn compile_elseif<'ctx>(
             continue;
         };
 
-        let block_span: Span = block.get_span();
+        let block_span: Span = block.get_code_location();
         let is_last: bool = idx == else_if.len().saturating_sub(1);
 
         llvm_builder.position_at_end(current);
@@ -211,7 +211,7 @@ fn compile_elseif<'ctx>(
                     abort::abort_codegen(
                         codegen.get_mut_context(),
                         "Failed to elif terminator!",
-                        block.get_span(),
+                        block.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -236,7 +236,7 @@ pub fn compile_else<'ctx>(
         return;
     };
 
-    let block_span: Span = block.get_span();
+    let block_span: Span = block.get_code_location();
 
     llvm_builder.position_at_end(next);
 
@@ -348,7 +348,7 @@ fn short_circuit_comparison<'ctx>(
             abort::abort_codegen(
                 codegen.get_mut_context(),
                 "Failed to compile for loop comparison to body!",
-                condition.get_span(),
+                condition.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             )

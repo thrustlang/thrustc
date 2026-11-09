@@ -136,7 +136,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                 "Too many depth for a node.".into(),
                 "You should remove the code nesting".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
 
             return Ok(());
@@ -214,7 +214,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
             Ast::Enum { data, .. } => {
                 {
                     for (_, _, expr) in data.iter() {
-                        let span: Span = expr.get_span();
+                        let span: Span = expr.get_code_location();
 
                         if !expr.is_constant_value() {
                             self.add_error(CompilationIssue::Error(
@@ -234,7 +234,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
             }
             Ast::Static { value, .. } => {
                 if let Some(value) = value {
-                    let span: Span = value.get_span();
+                    let span: Span = value.get_code_location();
 
                     if !value.is_constant_value() {
                         self.add_error(CompilationIssue::Error(
@@ -252,7 +252,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                 Ok(())
             }
             Ast::Const { value, .. } => {
-                let span: Span = value.get_span();
+                let span: Span = value.get_code_location();
 
                 if !value.is_constant_value() {
                     self.add_error(CompilationIssue::Error(
@@ -286,7 +286,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                 "Too many depth for a node.".into(),
                 "You should remove the code nesting".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
 
             return Ok(());
@@ -304,7 +304,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
             Ast::Enum { data, .. } => {
                 {
                     for (_, _, expr) in data.iter() {
-                        let span: Span = expr.get_span();
+                        let span: Span = expr.get_code_location();
 
                         if !expr.is_constant_value() {
                             self.add_error(CompilationIssue::Error(
@@ -330,7 +330,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                             "Expected constant expression.".into(),
                             "You should pass a constant expression.".into(),
                             None,
-                            value.get_span(),
+                            value.get_code_location(),
                         ));
                     }
 
@@ -340,7 +340,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                 Ok(())
             }
             Ast::Const { value, .. } => {
-                let span: Span = value.get_span();
+                let span: Span = value.get_code_location();
 
                 if !value.is_constant_value() {
                     self.add_error(CompilationIssue::Error(
@@ -461,7 +461,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                                 "You should try to allocate it and pass it as a direct reference."
                                     .into(),
                                 None,
-                                source.get_span(),
+                                source.get_code_location(),
                             ));
                         }
                     }
@@ -474,7 +474,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                         "An reference with memory address was expected.".into(),
                         "You should try to allocate it and pass it as a direct reference.".into(),
                         None,
-                        source.get_span(),
+                        source.get_code_location(),
                     ));
                 }
 
@@ -484,7 +484,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                         "An value with memory address was expected.".into(),
                         "You should try to allocate it and pass it as a direct reference.".into(),
                         None,
-                        source.get_span(),
+                        source.get_code_location(),
                     ));
                 }
 
@@ -497,7 +497,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                                     "Missing mutability.'".into(),
                                     "You should mark it as mutable using 'mut' keyword".into(),
                                     None,
-                                    source.get_span(),
+                                    source.get_code_location(),
                                 ));
                             }
 
@@ -509,7 +509,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                                     "You should remove the assignment or use a mutable variable instead."
                                         .into(),
                                     None,
-                                    source.get_span(),
+                                    source.get_code_location(),
                                 ));
                             }
                         }
@@ -565,7 +565,7 @@ impl<'analyzer> GeneralAnalyzer<'analyzer> {
                 "Too many depth for a node.".into(),
                 "You should remove the code nesting".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
 
             return Ok(());

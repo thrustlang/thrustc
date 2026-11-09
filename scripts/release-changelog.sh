@@ -51,10 +51,12 @@ if [ -n "$help_output" ]; then
 fi
 
 version=$(echo "$tag_name" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+
 if [ -z "$version" ]; then
     echo "Error: Could not extract a version number (x.y.z) from tag '${tag_name}'."
     exit 1
 fi
+
 awk -v ver="$version" '
     /^\[workspace\.package\]/ { inpkg=1; print; next }
     /^\[/ { inpkg=0; print; next }

@@ -36,7 +36,7 @@ pub fn equality_precedence<'parser>(
     if ctx.match_token(TokenType::BangEq)? || ctx.match_token(TokenType::EqEq)? {
         let operator_tk: &Token = ctx.previous();
         let operator: TokenType = operator_tk.kind;
-        let span: Span = operator_tk.get_span();
+        let span: Span = operator_tk.get_code_location();
 
         let right: Ast = precedences::cmp::cmp_precedence(ctx)?;
 

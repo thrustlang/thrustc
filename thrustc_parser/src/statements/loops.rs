@@ -38,7 +38,7 @@ pub fn parse_for_loop_stmt<'parser>(
         "Expected 'for' keyword.".into(),
     )?;
 
-    let span: Span = for_tk.get_span();
+    let span: Span = for_tk.get_code_location();
 
     if ctx.check(TokenType::LBrace) {
         let body: Ast<'_> = code_block::parse_code_block_stmt(ctx)?;
@@ -109,7 +109,7 @@ pub fn parse_loop_stmt<'parser>(
         "Expected 'loop' keyword.".into(),
     )?;
 
-    let span: Span = loop_tk.get_span();
+    let span: Span = loop_tk.get_code_location();
 
     let body: Ast = if ctx.check(TokenType::LBrace) {
         code_block::parse_code_block_stmt(ctx)?
@@ -134,7 +134,7 @@ pub fn parse_while_loop_stmt<'parser>(
         "Expected 'while' keyword.".into(),
     )?;
 
-    let span: Span = while_tk.get_span();
+    let span: Span = while_tk.get_code_location();
 
     if ctx.check(TokenType::Var) {
         ctx.get_mut_symbols().begin_scope();

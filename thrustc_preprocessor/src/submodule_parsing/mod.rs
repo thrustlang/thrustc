@@ -50,7 +50,7 @@ pub fn parse_generic_parameters(ctx: &mut ModuleParser) -> Result<Option<Vec<Str
     while !ctx.check(TokenType::RBracket) {
         let parameter_tk: &Token = ctx.consume(TokenType::Identifier)?;
         let name: String = parameter_tk.get_lexeme().to_string();
-        let span: Span = parameter_tk.get_span();
+        let span: Span = parameter_tk.get_code_location();
 
         parameters.push(name.clone());
 

@@ -49,7 +49,7 @@ pub fn build_function<'parser>(
 
     let ascii_name: &str = function_name_tk.get_ascii_lexeme();
 
-    let span: Span = function_name_tk.get_span();
+    let span: Span = function_name_tk.get_code_location();
 
     let has_generics: bool = ctx.check(TokenType::LBracket);
 
@@ -86,7 +86,7 @@ pub fn build_function<'parser>(
 
         let name: &str = parameter_name_tk.get_lexeme();
         let ascii_name: &str = parameter_name_tk.get_ascii_lexeme();
-        let span: Span = parameter_name_tk.get_span();
+        let span: Span = parameter_name_tk.get_code_location();
 
         ctx.consume(
             TokenType::Colon,
@@ -136,9 +136,9 @@ pub fn build_function<'parser>(
         let peeked_type: TokenType = peeked.get_type();
 
         let span: Span = if peeked_type.is_attribute() {
-            peeked.get_span()
+            peeked.get_code_location()
         } else {
-            ctx.previous().get_span()
+            ctx.previous().get_code_location()
         };
 
         Type::Void { span }

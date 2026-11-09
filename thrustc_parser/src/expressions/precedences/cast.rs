@@ -38,7 +38,7 @@ pub fn cast_precedence<'parser>(
     let mut expression: Ast = precedences::indexation::index_precedence(ctx)?;
 
     if ctx.match_token(TokenType::As)? {
-        let span: Span = ctx.previous().get_span();
+        let span: Span = ctx.previous().get_code_location();
 
         let cast: Type = typegeneration::build_type(ctx, false)?;
 

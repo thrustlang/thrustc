@@ -292,7 +292,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Functions that execute before the entry point should not return anything.".into(),
                             "You should rewrite it to return a void type.".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
 
@@ -302,7 +302,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Functions that run before the entry point must be public.".into(),
                             "Add '@public' attribute.".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
 
@@ -312,7 +312,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Functions that run before the entry point cannot be external.".into(),
                             "You should remove it.".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
 
@@ -323,7 +323,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                                 .into(),
                             "You should remove it.".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 }
@@ -335,7 +335,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Functions that execute after the entry point should not return anything.".into(),
                             "You should rewrite to return a void type.".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
 
@@ -345,7 +345,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Functions that run after the entry point must be public.".into(),
                             "Add '@public' attribute.".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
 
@@ -355,7 +355,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Functions that run after the entry point cannot be external.".into(),
                             "You should remove it.".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
 
@@ -366,7 +366,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                                 .into(),
                             "You should remove it.".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 }
@@ -378,7 +378,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Deallocator functions should not return anything.".into(),
                             "Use a void return type.".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
 
@@ -388,7 +388,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Deallocator functions should have exactly one parameter.".into(),
                             "Use one parameter with pointer type, such as ptr[T].".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     } else if !parameter_types[0].is_ptr_type() {
                         self.add_error(CompilationIssue::Error(
@@ -396,7 +396,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Deallocator function parameter should be a pointer.".into(),
                             "Use one parameter with pointer type, such as ptr[T].".into(),
                             None,
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 }
@@ -407,7 +407,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         "Attribute conflict".into(),
                         "Repetitive attributes are disallowed. Remove each one.".into(),
                         None,
-                        attr.get_span(),
+                        attr.get_code_location(),
                     ));
                 });
             }
@@ -432,7 +432,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         "Attribute conflict".into(),
                         "Repetitive attributes are disallowed. Remove each one.".into(),
                         None,
-                        attr.get_span(),
+                        attr.get_code_location(),
                     ));
                 });
             }
@@ -453,7 +453,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Invalid memory aligment".into(),
                             "The specified memory alignment should be power of two.".into(),
                             None,
-                            align_attribute.get_span(),
+                            align_attribute.get_code_location(),
                         ));
                     }
 
@@ -463,7 +463,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Invalid memory aligment".into(),
                             "The specified memory alignment supasses 128 of aligment limit. Reduce it.".into(),
                             None,
-                            align_attribute.get_span(),
+                            align_attribute.get_code_location(),
                         ));
                     }
                 }
@@ -477,7 +477,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         "Attribute conflict".into(),
                         "Repetitive attributes are disallowed. Remove each one.".into(),
                         None,
-                        attr.get_span(),
+                        attr.get_code_location(),
                     ));
                 });
             }
@@ -536,7 +536,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         "Attribute conflict".into(),
                         "Repetitive attributes are disallowed. Remove each one.".into(),
                         None,
-                        attr.get_span(),
+                        attr.get_code_location(),
                     ));
                 });
             }
@@ -560,7 +560,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Invalid memory aligment".into(),
                             "The specified memory alignment should be power of two.".into(),
                             None,
-                            align_attribute.get_span(),
+                            align_attribute.get_code_location(),
                         ));
                     }
 
@@ -570,7 +570,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Invalid memory aligment".into(),
                             "The specified memory alignment supasses 128 of aligment limit. Reduce it.".into(),
                             None,
-                            align_attribute.get_span(),
+                            align_attribute.get_code_location(),
                         ));
                     }
                 }
@@ -581,7 +581,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         "Attribute conflict".into(),
                         "Repetitive attributes are disallowed. Remove each one.".into(),
                         None,
-                        attr.get_span(),
+                        attr.get_code_location(),
                     ));
                 });
             }
@@ -605,7 +605,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Invalid memory aligment".into(),
                             "The specified memory alignment should be power of two.".into(),
                             None,
-                            align_attribute.get_span(),
+                            align_attribute.get_code_location(),
                         ));
                     }
 
@@ -615,7 +615,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                             "Invalid memory aligment".into(),
                             "The specified memory alignment supasses 128 of aligment limit. Reduce it.".into(),
                             None,
-                            align_attribute.get_span(),
+                            align_attribute.get_code_location(),
                         ));
                     }
                 }
@@ -626,7 +626,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         "Attribute conflict".into(),
                         "Repetitive attributes are disallowed. Remove each one.".into(),
                         None,
-                        attr.get_span(),
+                        attr.get_code_location(),
                     ));
                 });
             }
@@ -642,7 +642,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         "Attribute conflict".into(),
                         "Repetitive attributes are disallowed. Remove each one.".into(),
                         None,
-                        attr.get_span(),
+                        attr.get_code_location(),
                     ));
                 });
             }
@@ -762,7 +762,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         self.add_warning(CompilationIssue::Warning(
                             CompilationIssueCode::W0001,
                             "This attribute is not applicable for functions.".into(),
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 });
@@ -773,7 +773,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         self.add_warning(CompilationIssue::Warning(
                             CompilationIssueCode::W0001,
                             "This attribute is not applicable for a intrinsic.".into(),
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 });
@@ -784,7 +784,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         self.add_warning(CompilationIssue::Warning(
                             CompilationIssueCode::W0001,
                             "This attribute is not applicable for constants.".into(),
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 });
@@ -795,7 +795,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         self.add_warning(CompilationIssue::Warning(
                             CompilationIssueCode::W0001,
                             "This attribute is not applicable for assembler functions.".into(),
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 });
@@ -806,7 +806,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         self.add_warning(CompilationIssue::Warning(
                             CompilationIssueCode::W0001,
                             "This attribute is not applicable for enumerations.".into(),
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 });
@@ -817,7 +817,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         self.add_warning(CompilationIssue::Warning(
                             CompilationIssueCode::W0001,
                             "This attribute is not applicable for static symbols.".into(),
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 });
@@ -828,7 +828,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         self.add_warning(CompilationIssue::Warning(
                             CompilationIssueCode::W0001,
                             "This attribute is not applicable for structures.".into(),
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 });
@@ -839,7 +839,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                         self.add_warning(CompilationIssue::Warning(
                             CompilationIssueCode::W0001,
                             "This attribute is not applicable for local variable.".into(),
-                            attr.get_span(),
+                            attr.get_code_location(),
                         ));
                     }
                 });
@@ -1083,7 +1083,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                     "The @noArgCount attribute requires a variadic function.".into(),
                     "Add the '@arbitraryArgs' attribute or remove '@noArgCount'.".into(),
                     None,
-                    attr.get_span(),
+                    attr.get_code_location(),
                 ));
             }
 
@@ -1098,7 +1098,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             self.add_warning(CompilationIssue::Warning(
                 CompilationIssueCode::W0033,
                 "Variadic function carries a hidden argument count; add @noArgCount if it forwards arbitraryArgs() to an FFI variadic.".into(),
-                attr.get_span(),
+                attr.get_code_location(),
             ));
         }
     }

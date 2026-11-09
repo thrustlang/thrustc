@@ -526,7 +526,7 @@ impl SystemVABITypeClass {
                     "Unsupported type for x86 System V ABI classification: '{}'.",
                     any
                 ),
-                any.get_span(),
+                any.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             ),
@@ -679,9 +679,9 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                             return SystemVABIType::Coerce(ty, layout.width);
                         }
 
-                        let first_integer_ty: Type = integer_chunk_type(64, ty.get_span());
+                        let first_integer_ty: Type = integer_chunk_type(64, ty.get_code_location());
                         let second_integer_ty: Type =
-                            integer_chunk_type(layout.width.saturating_sub(64), ty.get_span());
+                            integer_chunk_type(layout.width.saturating_sub(64), ty.get_code_location());
 
                         return SystemVABIType::DecomposeAndExpand(
                             vec![first_integer_ty, second_integer_ty],
@@ -700,11 +700,11 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                     if is_float {
                         let first_float_ty: Type = if let Type::F32 { .. } = array_fixed_ty {
                             Type::F32 {
-                                span: ty.get_span(),
+                                span: ty.get_code_location(),
                             }
                         } else {
                             Type::F64 {
-                                span: ty.get_span(),
+                                span: ty.get_code_location(),
                             }
                         };
 
@@ -767,11 +767,11 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                             return SystemVABIType::Coerce(ty, layout.width);
                         }
 
-                        let first_integer_ty: Type = integer_chunk_type(64, ty.get_span());
+                        let first_integer_ty: Type = integer_chunk_type(64, ty.get_code_location());
 
                         // REASON: clang System-V ABI = i64 + i32 e.g
                         let second_integer_ty: Type =
-                            integer_chunk_type(layout.width.saturating_sub(64), ty.get_span());
+                            integer_chunk_type(layout.width.saturating_sub(64), ty.get_code_location());
 
                         return SystemVABIType::DecomposeAndExpand(
                             vec![first_integer_ty, second_integer_ty],
@@ -796,11 +796,11 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                     if is_float {
                         let first_float_ty: Type = if let Type::F32 { .. } = array_fixed_ty {
                             Type::F32 {
-                                span: ty.get_span(),
+                                span: ty.get_code_location(),
                             }
                         } else {
                             Type::F64 {
-                                span: ty.get_span(),
+                                span: ty.get_code_location(),
                             }
                         };
 
@@ -830,11 +830,11 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                     if is_float {
                         let first_float_ty: Type = if let Type::F32 { .. } = array_fixed_ty {
                             Type::F32 {
-                                span: ty.get_span(),
+                                span: ty.get_code_location(),
                             }
                         } else {
                             Type::F64 {
-                                span: ty.get_span(),
+                                span: ty.get_code_location(),
                             }
                         };
 
@@ -1072,7 +1072,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                     abort::abort_codegen(
                         abi_context,
                         "Failed to get the parameter value from the function declaration for System V ABI!",
-                        ty.get_span(),
+                        ty.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -1098,7 +1098,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                     abort::abort_codegen(
                         abi_context,
                         "Failed to get the parameter value from the function declaration for System V ABI!",
-                        ty.get_span(),
+                        ty.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -1121,7 +1121,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to allocate memory for a coerced parameter in System V ABI!",
-                                original_ty.get_span(),
+                                original_ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -1137,7 +1137,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to store a coerced parameter value in memory for System V ABI!",
-                                original_ty.get_span(),
+                                original_ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -1147,7 +1147,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to set the alignment of a store instruction for a coerced parameter in System V ABI!",
-                                original_ty.get_span(),
+                                original_ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -1159,7 +1159,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to load a coerced parameter from memory for System V ABI!",
-                                original_ty.get_span(),
+                                original_ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -1182,7 +1182,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                     abort::abort_codegen(
                         abi_context,
                         "Failed to get the coerced parameter value from the function declaration for System V ABI!",
-                        original_ty.get_span(),
+                        original_ty.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -1208,7 +1208,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                     abort::abort_codegen(
                         abi_context,
                         "Failed to get the parameter value from the function declaration for System V ABI!",
-                        ty.get_span(),
+                        ty.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -1242,7 +1242,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to allocate memory for a decomposed and expanded parameter in System V ABI!",
-                            old_type.get_span(),
+                            old_type.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -1260,7 +1260,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to build a GEP instruction for a decomposed and expanded parameter in System V ABI!",
-                                    old_type.get_span(),
+                                    old_type.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 )
@@ -1270,7 +1270,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to store a decomposed and expanded parameter value in memory for System V ABI!",
-                                    old_type.get_span(),
+                                    old_type.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 )
@@ -1280,7 +1280,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to set the alignment of a store instruction for a decomposed and expanded parameter in System V ABI!",
-                                old_type.get_span(),
+                                old_type.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -1289,7 +1289,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to get the decomposed and expanded parameter value from the function declaration for System V ABI!",
-                                old_type.get_span(),
+                                old_type.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             );
@@ -1314,7 +1314,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to allocate memory for a decomposed and expanded parameter in System V ABI!",
-                                old_type.get_span(),
+                                old_type.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -1334,7 +1334,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                     abort::abort_codegen(
                                         abi_context,
                                         "Failed to store a decomposed and expanded parameter value in memory for System V ABI!",
-                                        old_type.get_span(),
+                                        old_type.get_code_location(),
                                         std::path::PathBuf::from(file!()),
                                         line!(),
                                     )
@@ -1344,7 +1344,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                     abort::abort_codegen(
                                         abi_context,
                                         "Failed to set the alignment of a store instruction for a decomposed and expanded parameter in System V ABI!",
-                                        old_type.get_span(),
+                                        old_type.get_code_location(),
                                         std::path::PathBuf::from(file!()),
                                         line!(),
                                     )
@@ -1353,7 +1353,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to get the decomposed and expanded parameter value from the function declaration for System V ABI!",
-                                old_type.get_span(),
+                                old_type.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             );
@@ -1368,7 +1368,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to store a decomposed and expanded parameter value in memory for System V ABI!",
-                                    old_type.get_span(),
+                                    old_type.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 )
@@ -1378,7 +1378,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to set the alignment of a store instruction for a decomposed and expanded parameter in System V ABI!",
-                                    old_type.get_span(),
+                                    old_type.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 )
@@ -1398,7 +1398,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                     abort::abort_codegen(
                                         abi_context,
                                         "Failed to build a GEP instruction for the second element of a decomposed and expanded array parameter in System V ABI!",
-                                        old_type.get_span(),
+                                        old_type.get_code_location(),
                                         std::path::PathBuf::from(file!()),
                                         line!(),
                                     )
@@ -1410,7 +1410,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                         abort::abort_codegen(
                                             abi_context,
                                             "Failed to store the second element of a decomposed and expanded array parameter in memory for System V ABI!",
-                                            old_type.get_span(),
+                                            old_type.get_code_location(),
                                             std::path::PathBuf::from(file!()),
                                             line!(),
                                         )
@@ -1420,7 +1420,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                         abort::abort_codegen(
                                             abi_context,
                                             "Failed to set the alignment of a store instruction for the second element of a decomposed and expanded array parameter in System V ABI!",
-                                            old_type.get_span(),
+                                            old_type.get_code_location(),
                                             std::path::PathBuf::from(file!()),
                                             line!(),
                                         )
@@ -1437,7 +1437,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to get the second decomposed and expanded parameter value from the function declaration for System V ABI!",
-                                    old_type.get_span(),
+                                    old_type.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 );
@@ -1446,7 +1446,7 @@ pub fn lower_function_parameters<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to get the decomposed and expanded parameter value from the function declaration for System V ABI!",
-                                old_type.get_span(),
+                                old_type.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             );
@@ -1551,7 +1551,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to allocate memory for a coerced argument in System V ABI!",
-                            original_ty.get_span(),
+                            original_ty.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -1567,7 +1567,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to store a coerced argument value in memory for System V ABI!",
-                            original_ty.get_span(),
+                            original_ty.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -1577,7 +1577,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to set the alignment of a store instruction for a coerced argument in System V ABI!",
-                            original_ty.get_span(),
+                            original_ty.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -1589,7 +1589,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to load a coerced argument from memory for System V ABI!",
-                            original_ty.get_span(),
+                            original_ty.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -1619,7 +1619,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                     abort::abort_codegen(
                         abi_context,
                         "Failed to configure a big return on System V ABI lowering!",
-                        ty.get_span(),
+                        ty.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -1632,7 +1632,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to get the function parameter value from the function declaration for ABI lowering!",
-                                    ty.get_span(),
+                                    ty.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 );
@@ -1655,7 +1655,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                     abort::abort_codegen(
                                         abi_context,
                                         "Failed to parse parameter index on System-V ABI lowering!",
-                                        ty.get_span(),
+                                        ty.get_code_location(),
                                         std::path::PathBuf::from(file!()),
                                         line!(),
                                     )
@@ -1668,7 +1668,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                     abort::abort_codegen(
                                         abi_context,
                                         "Failed to set parameter memory alignment on System-V ABI lowering!",
-                                        ty.get_span(),
+                                        ty.get_code_location(),
                                         std::path::PathBuf::from(file!()),
                                         line!(),
                                     )
@@ -1686,7 +1686,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                         abort::abort_codegen(
                                             abi_context,
                                             "Failed to compile allocate a paramater onto the stack!",
-                                            ty.get_span(),
+                                            ty.get_code_location(),
                                             std::path::PathBuf::from(file!()),
                                             line!(),
                                         )
@@ -1701,7 +1701,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                         abort::abort_codegen(
                                             abi_context,
                                             "Failed to set type alignment!",
-                                            ty.get_span(),
+                                            ty.get_code_location(),
                                             std::path::PathBuf::from(file!()),
                                             line!(),
                                         );
@@ -1714,7 +1714,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                         abort::abort_codegen(
                                             abi_context,
                                             "Failed to store a value in memory!",
-                                            ty.get_span(),
+                                            ty.get_code_location(),
                                             std::path::PathBuf::from(file!()),
                                             line!(),
                                         );
@@ -1725,7 +1725,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                         abort::abort_codegen(
                                             abi_context,
                                             "Failed to get the function parameter value from the function declaration for ABI lowering!",
-                                            ty.get_span(),
+                                            ty.get_code_location(),
                                             std::path::PathBuf::from(file!()),
                                             line!(),
                                         );
@@ -1747,7 +1747,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                                 abort::abort_codegen(
                                                     abi_context,
                                                     "Failed to parse parameter index on System-V ABI lowering!",
-                                                    ty.get_span(),
+                                                    ty.get_code_location(),
                                                     std::path::PathBuf::from(file!()),
                                                     line!(),
                                                 )
@@ -1761,7 +1761,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                             abort::abort_codegen(
                                                 abi_context,
                                                 "Failed to set parameter memory alignment on System-V ABI lowering!",
-                                                ty.get_span(),
+                                                ty.get_code_location(),
                                                 std::path::PathBuf::from(file!()),
                                                 line!(),
                                             )
@@ -1782,7 +1782,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to compile allocate a paramater onto the stack!",
-                                    ty.get_span(),
+                                    ty.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 )
@@ -1797,7 +1797,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to set type alignment!",
-                                    ty.get_span(),
+                                    ty.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 );
@@ -1810,7 +1810,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to store a value in memory!",
-                                    ty.get_span(),
+                                    ty.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 );
@@ -1823,7 +1823,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to get the function parameter value from the function declaration for ABI lowering!",
-                                    ty.get_span(),
+                                    ty.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 );
@@ -1842,7 +1842,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                     abort::abort_codegen(
                                         abi_context,
                                         "Failed to parse parameter index on System-V ABI lowering!",
-                                        ty.get_span(),
+                                        ty.get_code_location(),
                                         std::path::PathBuf::from(file!()),
                                         line!(),
                                     )
@@ -1855,7 +1855,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                     abort::abort_codegen(
                                         abi_context,
                                         "Failed to set parameter memory alignment on System-V ABI lowering!",
-                                        ty.get_span(),
+                                        ty.get_code_location(),
                                         std::path::PathBuf::from(file!()),
                                         line!(),
                                     )
@@ -1892,7 +1892,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Expected a struct value to decompose and expand, but got a non-struct value!",
-                            old_type.get_span(),
+                            old_type.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         );
@@ -1910,7 +1910,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to extract a value from a struct!",
-                                    old_type.get_span(),
+                                    old_type.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 );
@@ -1929,7 +1929,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Expected an array value to decompose and expand, but got a non-array value!",
-                            old_type.get_span(),
+                            old_type.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         );
@@ -1941,7 +1941,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to allocate memory for a decomposed and expanded array parameter in System V ABI!",
-                                old_type.get_span(),
+                                old_type.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -1959,7 +1959,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to store an array value in memory for System V ABI!",
-                                old_type.get_span(),
+                                old_type.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -1969,7 +1969,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to set the alignment of a store instruction for a decomposed and expanded array parameter in System V ABI!",
-                            old_type.get_span(),
+                            old_type.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         )
@@ -1980,7 +1980,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to get the first decomposed type for an array decomposition and expansion!",
-                                old_type.get_span(),
+                                old_type.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -1998,7 +1998,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to load a decomposed and expanded array element from memory for System V ABI!",
-                                    old_type.get_span(),
+                                    old_type.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 )
@@ -2016,7 +2016,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to get the first decomposed type for an array decomposition and expansion!",
-                                old_type.get_span(),
+                                old_type.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -2026,7 +2026,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to get the second decomposed type for an array decomposition and expansion!",
-                                old_type.get_span(),
+                                old_type.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -2051,7 +2051,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to load a decomposed and expanded array element from memory for System V ABI!",
-                                    old_type.get_span(),
+                                    old_type.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 )
@@ -2068,7 +2068,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                             llvm_builder,
                             llvm_context,
                             ptr,
-                            old_type.get_span(),
+                            old_type.get_code_location(),
                         );
 
                         let ptr_to_second_element: PointerValue<'_> = unsafe {
@@ -2076,7 +2076,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to build a GEP instruction to get the second element of a decomposed and expanded array parameter in System V ABI!",
-                                    old_type.get_span(),
+                                    old_type.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 )
@@ -2088,7 +2088,7 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                                 abort::abort_codegen(
                                     abi_context,
                                     "Failed to load a decomposed and expanded array element from memory for System V ABI!",
-                                    old_type.get_span(),
+                                    old_type.get_code_location(),
                                     std::path::PathBuf::from(file!()),
                                     line!(),
                                 )
@@ -2144,7 +2144,7 @@ pub fn lower_system_v_call_epilogue<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to allocate memory for a coerced return value in System V ABI!",
-                    original_ty.get_span(),
+                    original_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -2160,7 +2160,7 @@ pub fn lower_system_v_call_epilogue<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to store a coerced return value in memory for System V ABI!",
-                    original_ty.get_span(),
+                    original_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -2172,7 +2172,7 @@ pub fn lower_system_v_call_epilogue<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to set alignment to an instruction!",
-                    original_ty.get_span(),
+                    original_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -2184,7 +2184,7 @@ pub fn lower_system_v_call_epilogue<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to load a coerced return value from memory for System V ABI!",
-                    original_ty.get_span(),
+                    original_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -2195,7 +2195,7 @@ pub fn lower_system_v_call_epilogue<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to set alignment to an instruction!",
-                    original_ty.get_span(),
+                    original_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -2343,7 +2343,7 @@ pub fn lower_function_terminator<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to allocate memory for a coerced return value in System V ABI!",
-                    original_ty.get_span(),
+                    original_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -2360,7 +2360,7 @@ pub fn lower_function_terminator<'llvm_abi>(
                     abort::abort_codegen(
                         abi_context,
                         "Failed to load a pointed coerced return value for System V ABI!",
-                        original_ty.get_span(),
+                        original_ty.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -2371,7 +2371,7 @@ pub fn lower_function_terminator<'llvm_abi>(
                     abort::abort_codegen(
                         abi_context,
                         "Failed to set alignment to an instruction!",
-                        original_ty.get_span(),
+                        original_ty.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     )
@@ -2389,7 +2389,7 @@ pub fn lower_function_terminator<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to store a coerced return value in memory for System V ABI!",
-                    original_ty.get_span(),
+                    original_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -2401,7 +2401,7 @@ pub fn lower_function_terminator<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to set alignment to an instruction!",
-                    original_ty.get_span(),
+                    original_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -2417,7 +2417,7 @@ pub fn lower_function_terminator<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to load a coerced integer return value from memory for System V ABI!",
-                    original_ty.get_span(),
+                    original_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -2428,7 +2428,7 @@ pub fn lower_function_terminator<'llvm_abi>(
                 abort::abort_codegen(
                     abi_context,
                     "Failed to set alignment to an instruction!",
-                    original_ty.get_span(),
+                    original_ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -3057,7 +3057,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get the function parameter value from the function declaration for ABI lowering!",
-                            ty.get_span(),
+                            ty.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         );
@@ -3080,7 +3080,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to parse parameter index on System-V ABI lowering!",
-                                ty.get_span(),
+                                ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -3093,7 +3093,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to set parameter memory alignment on System-V ABI lowering!",
-                                ty.get_span(),
+                                ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -3106,7 +3106,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                         abort::abort_codegen(
                             abi_context,
                             "Failed to get the function parameter value from the function declaration for ABI lowering!",
-                            ty.get_span(),
+                            ty.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         );
@@ -3125,7 +3125,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to parse parameter index on System-V ABI lowering!",
-                                ty.get_span(),
+                                ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -3138,7 +3138,7 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
                             abort::abort_codegen(
                                 abi_context,
                                 "Failed to set parameter memory alignment on System-V ABI lowering!",
-                                ty.get_span(),
+                                ty.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             )
@@ -3173,7 +3173,7 @@ pub fn generate_type<'llvm_abi>(
             any => abort::abort_codegen(
                 abi_context,
                 &format!("Failed to compile '{}' as a type!", any),
-                any.get_span(),
+                any.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             ),
@@ -3191,7 +3191,7 @@ pub fn generate_type<'llvm_abi>(
             any => abort::abort_codegen(
                 abi_context,
                 &format!("Failed to compile '{}' as a type!", any),
-                any.get_span(),
+                any.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             ),
@@ -3275,7 +3275,7 @@ pub fn generate_type<'llvm_abi>(
                         "Failed to compile '{:?}' as a native vector element type!",
                         any
                     ),
-                    ty.get_span(),
+                    ty.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 ),
@@ -3285,7 +3285,7 @@ pub fn generate_type<'llvm_abi>(
         any => abort::abort_codegen(
             abi_context,
             &format!("Failed to compile '{}' as a type!", any),
-            any.get_span(),
+            any.get_code_location(),
             std::path::PathBuf::from(file!()),
             line!(),
         ),

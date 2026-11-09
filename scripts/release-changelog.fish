@@ -43,10 +43,12 @@ if test -n "$help_output"
 end
 
 set pkg_version (string match -r '[0-9]+\.[0-9]+\.[0-9]+' "$tag_name")
+
 if test -z "$pkg_version"
     echo "Error: Could not extract a version number (x.y.z) from tag '$tag_name'."
     exit 1
 end
+
 awk -v ver="$pkg_version" '
     /^\[workspace\.package\]/ { inpkg=1; print; next }
     /^\[/ { inpkg=0; print; next }
@@ -62,6 +64,7 @@ or begin
     echo "Error: Failed to create tag '$tag_name'."
     exit 1
 end
+
 git push origin HEAD $tag_name
 or begin
     echo "Error: Failed to push to remote."

@@ -49,7 +49,7 @@ pub fn equal_precedence<'parser>(
         || ctx.match_token(TokenType::RShiftEq)?
     {
         let operator_tk = ctx.previous();
-        let span: Span = ctx.previous().get_span();
+        let span: Span = ctx.previous().get_code_location();
 
         if operator_tk.get_type() != TokenType::Eq
             && matches!(expression, Ast::Group { .. } | Ast::Deref { .. })

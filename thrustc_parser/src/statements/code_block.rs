@@ -47,7 +47,7 @@ pub fn parse_code_block_stmt<'parser>(
         "Expected '{'.".into(),
     )?;
 
-    let span: Span = block_tk.get_span();
+    let span: Span = block_tk.get_code_location();
 
     ctx.begin_scope();
     ctx.get_mut_symbols().begin_scope();
@@ -118,7 +118,7 @@ pub fn parse_code_block_without_start_stmt<'parser>(
         "Expected '}'.".into(),
     )?;
 
-    let span: Span = block_tk.get_span();
+    let span: Span = block_tk.get_code_location();
 
     ctx.get_mut_symbols().end_scope();
     ctx.end_scope();

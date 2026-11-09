@@ -55,7 +55,7 @@ pub fn build_constructor<'parser>(
 
     let mut access: Vec<String> = Vec::with_capacity(u8::MAX as usize);
     let mut symbol: &str = first_tk.get_lexeme();
-    let mut span: Span = first_tk.get_span();
+    let mut span: Span = first_tk.get_code_location();
     let mut qualified: bool = false;
 
     if ctx.check(TokenType::ColonColon) {
@@ -77,7 +77,7 @@ pub fn build_constructor<'parser>(
             }
 
             symbol = part_tk.get_lexeme();
-            span = part_tk.get_span();
+            span = part_tk.get_code_location();
             break;
         }
     }
@@ -326,7 +326,7 @@ pub fn build_constructor<'parser>(
 
         if ctx.match_token(TokenType::Identifier)? {
             let field_tk: &Token = ctx.previous();
-            let field_span: Span = field_tk.get_span();
+            let field_span: Span = field_tk.get_code_location();
             let field_name: &str = field_tk.get_lexeme();
 
             ctx.consume(

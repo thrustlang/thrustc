@@ -44,7 +44,7 @@ pub fn compile<'ctx>(
     let source_type: Type = source.get_type_for_llvm().remove_all_constant_type();
 
     if source_type.is_native_vector_type() {
-        let span: Span = index.get_span();
+        let span: Span = index.get_code_location();
         let index_type: Type = Type::U32 { span };
 
         context.add_codegen_location(CodeGenLocation::RValue);
@@ -77,7 +77,7 @@ pub fn compile<'ctx>(
         let infered_inner_type: Type = ptr_type.get_inferer_inner_type();
 
         let ordered_indexes: Vec<IntValue> = {
-            let span: Span = index.get_span();
+            let span: Span = index.get_code_location();
 
             let has_inferer_inner_type: bool = ptr_type.has_infered_inner_type();
 
@@ -97,7 +97,7 @@ pub fn compile<'ctx>(
                     context,
                     &base_type,
                     0,
-                    index.get_span(),
+                    index.get_code_location(),
                 );
 
                 let depth_type: Type = Type::U32 { span };
@@ -120,7 +120,7 @@ pub fn compile<'ctx>(
                     context,
                     &base_type,
                     0,
-                    index.get_span(),
+                    index.get_code_location(),
                 );
 
                 let depth_type: Type = Type::U32 { span };
@@ -136,7 +136,7 @@ pub fn compile<'ctx>(
             indexes
         };
 
-        let span: Span = source.get_span();
+        let span: Span = source.get_code_location();
 
         let ptr: PointerValue<'_> =
             memory::gep_anon(context, ptr_value, ptr_type, &ordered_indexes, span);

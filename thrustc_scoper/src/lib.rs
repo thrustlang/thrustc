@@ -95,7 +95,7 @@ impl<'scoper> Scoper<'scoper> {
                 "Statements and expressions are not allowed at module scope.".into(),
                 "Remove it from this scope.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
 
@@ -166,7 +166,7 @@ impl<'scoper> Scoper<'scoper> {
                 "Too many depth for a node.".into(),
                 "You should remove the code nesting".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
 
             return;
@@ -184,7 +184,7 @@ impl<'scoper> Scoper<'scoper> {
                 "Function is only allowed at module scope.".into(),
                 "Remove it from this scope.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
 
@@ -194,7 +194,7 @@ impl<'scoper> Scoper<'scoper> {
                 "Assembler function is only allowed at module scope.".into(),
                 "Remove it from this scope.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
 
@@ -204,7 +204,7 @@ impl<'scoper> Scoper<'scoper> {
                 "Type is only allowed at module scope.".into(),
                 "Remove it from this scope.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
 
@@ -214,7 +214,7 @@ impl<'scoper> Scoper<'scoper> {
                 "Global assembler is only allowed at module scope.".into(),
                 "Remove it from this scope.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
 
@@ -224,7 +224,7 @@ impl<'scoper> Scoper<'scoper> {
                 "Enum is only allowed at module scope.".into(),
                 "Remove it from this scope.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
 
@@ -234,7 +234,7 @@ impl<'scoper> Scoper<'scoper> {
                 "Module importation is only allowed at module scope.".into(),
                 "Remove it from this scope.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
 
@@ -244,7 +244,7 @@ impl<'scoper> Scoper<'scoper> {
                 "Compiler intrinsic is only allowed at module scope.".into(),
                 "Remove it from this scope.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
 
@@ -381,7 +381,7 @@ impl<'scoper> Scoper<'scoper> {
                     "Loop control statement outside of a loop.".into(),
                     "It should be inside a loop. Reposition inside it.".into(),
                     None,
-                    node.get_span(),
+                    node.get_code_location(),
                 ));
             }
             Ast::Return { span, .. } if !self.get_context().is_inside_function() => {

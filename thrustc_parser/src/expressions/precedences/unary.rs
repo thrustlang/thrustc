@@ -37,7 +37,7 @@ pub fn unary_precedence<'parser>(
     if ctx.match_token(TokenType::Bang)? {
         let operator_tk: &Token = ctx.previous();
         let operator: TokenType = operator_tk.kind;
-        let span: Span = operator_tk.get_span();
+        let span: Span = operator_tk.get_code_location();
 
         let expr: Ast = precedences::indirect_call::indirect_precedence(ctx)?;
         let expr_type: &Type = expr.get_value_type()?;
@@ -61,7 +61,7 @@ pub fn unary_precedence<'parser>(
     if ctx.match_token(TokenType::Minus)? {
         let operator_tk: &Token = ctx.previous();
         let operator: TokenType = operator_tk.kind;
-        let span: Span = operator_tk.get_span();
+        let span: Span = operator_tk.get_code_location();
 
         let expr: Ast = precedences::indirect_call::indirect_precedence(ctx)?;
         let expr_type: &Type = expr.get_value_type()?;
@@ -83,7 +83,7 @@ pub fn unary_precedence<'parser>(
     if ctx.match_token(TokenType::Not)? {
         let operator_tk: &Token = ctx.previous();
         let operator: TokenType = operator_tk.kind;
-        let span: Span = operator_tk.get_span();
+        let span: Span = operator_tk.get_code_location();
 
         let expr: Ast = precedences::indirect_call::indirect_precedence(ctx)?;
         let expr_type: Type = expr.get_value_type()?.clone();
@@ -103,7 +103,7 @@ pub fn unary_precedence<'parser>(
     if ctx.match_token(TokenType::PlusPlus)? {
         let operator_tk: &Token = ctx.previous();
         let operator: TokenType = operator_tk.kind;
-        let span: Span = operator_tk.get_span();
+        let span: Span = operator_tk.get_code_location();
 
         let expr: Ast = expressions::parse_expr(ctx)?;
 
@@ -159,7 +159,7 @@ pub fn unary_precedence<'parser>(
     if ctx.match_token(TokenType::MinusMinus)? {
         let operator_tk: &Token = ctx.previous();
         let operator: TokenType = operator_tk.kind;
-        let span: Span = operator_tk.get_span();
+        let span: Span = operator_tk.get_code_location();
 
         let expr: Ast = expressions::parse_expr(ctx)?;
 

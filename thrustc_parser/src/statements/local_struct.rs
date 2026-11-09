@@ -59,7 +59,7 @@ pub fn parse_structure_stmt<'parser>(
     )?;
 
     let name: &str = name_tk.get_lexeme();
-    let span: Span = name_tk.get_span();
+    let span: Span = name_tk.get_code_location();
 
     let metadata: StructTypeMetadata = StructTypeMetadata::new(modificator);
 
@@ -79,7 +79,7 @@ pub fn parse_structure_stmt<'parser>(
             )?;
 
             let field_name: &str = field_tk.get_lexeme();
-            let field_span: Span = field_tk.get_span();
+            let field_span: Span = field_tk.get_code_location();
 
             ctx.consume(
                 TokenType::Colon,

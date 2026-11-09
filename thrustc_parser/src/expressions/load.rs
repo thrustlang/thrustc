@@ -32,7 +32,7 @@ pub fn build_load<'parser>(
     ctx: &mut ParserContext<'parser>,
 ) -> Result<Ast<'parser>, CompilationIssue> {
     let initial_load_tk: &Token = ctx.advance()?;
-    let span: Span = initial_load_tk.get_span();
+    let span: Span = initial_load_tk.get_code_location();
 
     let modificators: Modificators =
         modificators::build_statement_modificator(ctx, &[TokenType::Identifier])?;

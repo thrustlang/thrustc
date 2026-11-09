@@ -41,7 +41,7 @@ pub fn parse_constant<'module_parser>(
 
     let identifier_tk: &Token = ctx.consume(TokenType::Identifier)?;
     let name: String = identifier_tk.get_lexeme().to_string();
-    let span: Span = identifier_tk.get_span();
+    let span: Span = identifier_tk.get_code_location();
 
     ctx.consume(TokenType::Colon)?;
 

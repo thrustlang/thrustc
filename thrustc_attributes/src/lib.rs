@@ -263,7 +263,7 @@ impl ThrustAttribute {
 
 impl ThrustAttribute {
     #[inline]
-    pub fn get_span(&self) -> Span {
+    pub fn get_code_location(&self) -> Span {
         match self {
             ThrustAttribute::Extern(_, span) => *span,
             ThrustAttribute::Convention(_, span) => *span,
@@ -461,7 +461,7 @@ impl ThrustAttributesExtensions for ThrustAttributes {
     #[inline]
     fn match_attr(&self, cmp: ThrustAttributeComparator) -> Option<Span> {
         if let Some(attr_found) = self.iter().find(|attr| attr.as_attr_cmp() == cmp) {
-            return Some(attr_found.get_span());
+            return Some(attr_found.get_code_location());
         }
 
         None

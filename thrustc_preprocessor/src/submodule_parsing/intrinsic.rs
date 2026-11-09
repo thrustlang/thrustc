@@ -34,7 +34,7 @@ pub fn parse_intrinsic<'module_parser>(
     ctx: &mut ModuleParser<'module_parser>,
 ) -> Result<Symbol, ()> {
     let intrinsic_tk: &Token = ctx.consume(TokenType::Intrinsic)?;
-    let span: Span = intrinsic_tk.get_span();
+    let span: Span = intrinsic_tk.get_code_location();
 
     ctx.consume(TokenType::LParen)?;
 
@@ -53,7 +53,7 @@ pub fn parse_intrinsic<'module_parser>(
     while !ctx.check(TokenType::RParen) {
         let param_name_tk: &Token = ctx.consume(TokenType::Identifier)?;
         let param_name: String = param_name_tk.get_lexeme().to_string();
-        let param_span: Span = param_name_tk.get_span();
+        let param_span: Span = param_name_tk.get_code_location();
 
         ctx.consume(TokenType::Colon)?;
 

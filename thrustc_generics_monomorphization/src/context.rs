@@ -82,7 +82,7 @@ impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
     #[must_use]
     pub fn peek(&mut self) -> &'parser Token {
         self.tokens.get(*self.position).unwrap_or_else(|| {
-            let span: Span = self.previous().get_span();
+            let span: Span = self.previous().get_code_location();
 
             abort::abort_compilation(
                 self.diagnostician,
@@ -104,7 +104,7 @@ impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
         let idx: usize = index.0;
 
         if is_overflow {
-            let span: Span = self.peek().get_span();
+            let span: Span = self.peek().get_code_location();
 
             abort::abort_compilation(
                 self.diagnostician,
@@ -117,7 +117,7 @@ impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
         }
 
         self.tokens.get(idx).unwrap_or_else(|| {
-            let span: Span = self.peek().get_span();
+            let span: Span = self.peek().get_code_location();
 
             abort::abort_compilation(
                 self.diagnostician,
@@ -156,7 +156,7 @@ impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
             help,
             "You should make it match.".into(),
             None,
-            self.previous().get_span(),
+            self.previous().get_code_location(),
         ))
     }
 
@@ -171,7 +171,7 @@ impl<'parser, 'ctx> GenericsContext<'parser, 'ctx> {
                 "EOF has been reached.".into(),
                 "EOF".into(),
                 None,
-                self.peek().get_span(),
+                self.peek().get_code_location(),
             ))
         }
     }

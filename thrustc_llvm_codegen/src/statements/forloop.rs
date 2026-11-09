@@ -41,7 +41,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
 
     let llvm_function: FunctionValue = codegen
         .get_mut_context()
-        .get_current_function(node.get_span())
+        .get_current_function(node.get_code_location())
         .get_value();
 
     let Ast::For {
@@ -56,7 +56,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
         return;
     };
 
-    let block_span: Span = block.get_span();
+    let block_span: Span = block.get_code_location();
 
     let start: BasicBlock = block::append_block(codegen.get_context(), llvm_function);
     let cond: BasicBlock = block::append_block(codegen.get_context(), llvm_function);
@@ -92,7 +92,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
             abort::abort_codegen(
                 codegen.get_mut_context(),
                 "Failed to compile for loop start to condition!",
-                block.get_span(),
+                block.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             )
@@ -130,7 +130,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
 
     if codegen
         .get_mut_context()
-        .get_last_builder_block(actions.get_span())
+        .get_last_builder_block(actions.get_code_location())
         .get_terminator()
         .is_none()
     {
@@ -140,7 +140,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
                 abort::abort_codegen(
                     codegen.get_mut_context(),
                     "Failed to compile for loop action to condition!",
-                    actions.get_span(),
+                    actions.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -188,7 +188,7 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
                 abort::abort_codegen(
                     codegen.get_mut_context(),
                     "Failed to compile for loop body terminator to actions!",
-                    condition.get_span(),
+                    condition.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 )
@@ -297,7 +297,7 @@ fn short_circuit_comparison<'ctx>(
             abort::abort_codegen(
                 codegen.get_mut_context(),
                 "Failed to compile for loop comparison to body!",
-                condition.get_span(),
+                condition.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             )

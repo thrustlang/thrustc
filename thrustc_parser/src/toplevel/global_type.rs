@@ -45,7 +45,7 @@ pub fn build_custom_type<'parser>(
     )?;
 
     let name: &str = name_tk.get_lexeme();
-    let span: Span = name_tk.get_span();
+    let span: Span = name_tk.get_code_location();
 
     let has_generics: bool = ctx.check(TokenType::LBracket);
 

@@ -42,7 +42,7 @@ pub fn build_embedded<'parser>(
     )?;
 
     let lexeme: &str = name_tk.get_lexeme();
-    let span: Span = name_tk.get_span();
+    let span: Span = name_tk.get_code_location();
 
     ctx.consume_these(
         &[TokenType::CNString, TokenType::CString],

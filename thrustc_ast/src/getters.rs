@@ -230,14 +230,14 @@ impl AstGetType for Ast<'_> {
                 "Expected a value, not anything else.".into(),
                 "It should be an expression!".into(),
                 None,
-                self.get_span(),
+                self.get_code_location(),
             )),
         }
     }
 }
 
 impl AstCodeLocation for Ast<'_> {
-    fn get_span(&self) -> Span {
+    fn get_code_location(&self) -> Span {
         match self {
             // Primitive values and literals
             Ast::Integer { span, .. } => *span,

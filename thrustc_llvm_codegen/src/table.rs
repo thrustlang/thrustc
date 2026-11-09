@@ -107,7 +107,7 @@ impl<'ctx> LLVMSymbolsTable<'ctx> {
         if let Some(function) = self.functions.get(name) {
             return SymbolAllocated::new_function(
                 function.get_value().as_global_value().as_pointer_value(),
-                function.get_span(),
+                function.get_code_location(),
             );
         }
 

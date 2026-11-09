@@ -131,7 +131,7 @@ impl MacroToken {
     }
 
     #[inline]
-    pub fn get_span(&self) -> Option<&MacroSpan> {
+    pub fn get_code_location(&self) -> Option<&MacroSpan> {
         self.span.as_ref()
     }
 

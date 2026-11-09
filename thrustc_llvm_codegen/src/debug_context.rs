@@ -138,7 +138,7 @@ impl<'a, 'ctx> LLVMDebugContext<'a, 'ctx> {
         let name: &str = function.get_name();
         let return_type: &Type = function.get_return_type();
         let parameter_types: Vec<Type> = function.get_parameters_types();
-        let span: Span = function.get_span();
+        let span: Span = function.get_code_location();
         let line: u32 = span.get_line();
 
         let llvm_return_type: Option<BasicTypeEnum<'_>> = if !return_type.is_void_type() {

@@ -48,7 +48,7 @@ pub fn compile<'ctx>(
         abort::abort_codegen(
             context,
             "Failed to compile the property!",
-            source.get_span(),
+            source.get_code_location(),
             std::path::PathBuf::from(file!()),
             line!(),
         )
@@ -87,7 +87,7 @@ fn compile_deref_property<'ctx>(
         return ptr;
     }
 
-    let span: Span = source.get_span();
+    let span: Span = source.get_code_location();
 
     let value_type: Type = data
         .last()
@@ -112,7 +112,7 @@ fn compile_extract_property<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder = context.get_llvm_builder();
 
-    let span: Span = source.get_span();
+    let span: Span = source.get_code_location();
 
     let mut property: BasicValueEnum = {
         let value: BasicValueEnum = codegen::compile_as_value(context, source, None);
@@ -169,7 +169,7 @@ fn compile_gep_property<'ctx>(
 ) -> BasicValueEnum<'ctx> {
     let llvm_builder: &Builder = context.get_llvm_builder();
 
-    let span: Span = source.get_span();
+    let span: Span = source.get_code_location();
 
     let source_is_pointer: bool = source.get_type_for_llvm().is_ptr_like_type();
 

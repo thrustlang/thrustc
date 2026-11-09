@@ -48,7 +48,7 @@ pub fn build_import<'parser>(
             "Expected an identifier.".into(),
         )?;
 
-        let mut identifier_span: Span = first_tk.get_span();
+        let mut identifier_span: Span = first_tk.get_code_location();
         path_segments.push(first_tk.get_lexeme().to_string());
 
         while ctx.check(TokenType::ColonColon) {
@@ -60,7 +60,7 @@ pub fn build_import<'parser>(
                 "Expected an identifier after the path separator.".into(),
             )?;
 
-            identifier_span = part_tk.get_span();
+            identifier_span = part_tk.get_code_location();
             path_segments.push(part_tk.get_lexeme().to_string());
         }
 
@@ -72,7 +72,7 @@ pub fn build_import<'parser>(
             "Expected string literal.".into(),
         )?;
 
-        span = tk.get_span();
+        span = tk.get_code_location();
         string_path = Some(tk.get_lexeme().to_string());
     };
 

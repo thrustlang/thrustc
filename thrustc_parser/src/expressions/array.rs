@@ -40,7 +40,7 @@ pub fn build_array<'parser>(
         "Expected '['.".into(),
     )?;
 
-    let span: Span = tk.get_span();
+    let span: Span = tk.get_code_location();
 
     let infered_type: Option<Type> = ctx.get_mut_type_context().get_infered_type();
     let mut array_type: Type = Type::Void { span };

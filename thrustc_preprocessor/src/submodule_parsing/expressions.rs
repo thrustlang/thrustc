@@ -39,7 +39,7 @@ fn parse_or(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
     let mut left: Ast<'static> = self::parse_and(ctx)?;
 
     while ctx.check(TokenType::Or) {
-        let span: Span = ctx.peek().get_span();
+        let span: Span = ctx.peek().get_code_location();
 
         ctx.only_advance()?;
 
@@ -62,7 +62,7 @@ fn parse_and(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
     let mut left: Ast<'static> = self::parse_equality(ctx)?;
 
     while ctx.check(TokenType::And) {
-        let span: Span = ctx.peek().get_span();
+        let span: Span = ctx.peek().get_code_location();
 
         ctx.only_advance()?;
 
@@ -86,7 +86,7 @@ fn parse_equality(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
 
     while ctx.check(TokenType::EqEq) || ctx.check(TokenType::BangEq) {
         let operator: TokenType = ctx.peek().get_type();
-        let span: Span = ctx.peek().get_span();
+        let span: Span = ctx.peek().get_code_location();
 
         ctx.only_advance()?;
 
@@ -114,7 +114,7 @@ fn parse_relational(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
         || ctx.check(TokenType::GreaterEq)
     {
         let operator: TokenType = ctx.peek().get_type();
-        let span: Span = ctx.peek().get_span();
+        let span: Span = ctx.peek().get_code_location();
 
         ctx.only_advance()?;
 
@@ -138,7 +138,7 @@ fn parse_additive(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
 
     while ctx.check(TokenType::Plus) || ctx.check(TokenType::Minus) {
         let operator: TokenType = ctx.peek().get_type();
-        let span: Span = ctx.peek().get_span();
+        let span: Span = ctx.peek().get_code_location();
 
         ctx.only_advance()?;
 
@@ -162,7 +162,7 @@ fn parse_multiplicative(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> 
 
     while ctx.check(TokenType::Star) || ctx.check(TokenType::Slash) || ctx.check(TokenType::Arith) {
         let operator: TokenType = ctx.peek().get_type();
-        let span: Span = ctx.peek().get_span();
+        let span: Span = ctx.peek().get_code_location();
 
         ctx.only_advance()?;
 
@@ -188,7 +188,7 @@ fn parse_unary(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
         || ctx.check(TokenType::Plus)
     {
         let operator: TokenType = ctx.peek().get_type();
-        let span: Span = ctx.peek().get_span();
+        let span: Span = ctx.peek().get_code_location();
 
         ctx.only_advance()?;
 
@@ -210,18 +210,18 @@ fn parse_unary(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
 fn parse_primary(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
     match ctx.peek().get_type() {
         TokenType::True => {
-            let span: Span = ctx.advance()?.get_span();
+            let span: Span = ctx.advance()?.get_code_location();
 
             Ok(Ast::new_boolean(Type::Bool { span }, 1, span))
         }
         TokenType::False => {
-            let span: Span = ctx.advance()?.get_span();
+            let span: Span = ctx.advance()?.get_code_location();
 
             Ok(Ast::new_boolean(Type::Bool { span }, 0, span))
         }
         TokenType::Integer => {
             let tk: &Token = ctx.advance()?;
-            let span: Span = tk.get_span();
+            let span: Span = tk.get_code_location();
 
             let (kind, value): (Type, u64) = reinterpret::integer(tk.get_lexeme(), span)?;
 
@@ -229,7 +229,7 @@ fn parse_primary(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
         }
         TokenType::Float => {
             let tk: &Token = ctx.advance()?;
-            let span: Span = tk.get_span();
+            let span: Span = tk.get_code_location();
 
             let (kind, value): (Type, f64) = reinterpret::floating_point(tk.get_lexeme(), span)?;
 
@@ -237,7 +237,7 @@ fn parse_primary(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
         }
         TokenType::Char => {
             let tk: &Token = ctx.advance()?;
-            let span: Span = tk.get_span();
+            let span: Span = tk.get_code_location();
 
             Ok(Ast::new_char(
                 Type::Char { span },
@@ -246,7 +246,7 @@ fn parse_primary(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
             ))
         }
         TokenType::NullPtr => {
-            let span: Span = ctx.advance()?.get_span();
+            let span: Span = ctx.advance()?.get_code_location();
 
             Ok(Ast::new_nullptr(span))
         }
@@ -257,7 +257,7 @@ fn parse_primary(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
 
             ctx.consume(TokenType::RParen)?;
 
-            let span: Span = expression.get_span();
+            let span: Span = expression.get_code_location();
 
             Ok(Ast::Group {
                 node: expression.into(),
@@ -270,7 +270,7 @@ fn parse_primary(ctx: &mut ModuleParser<'_>) -> Result<Ast<'static>, ()> {
             let (name, span): (String, Span) = {
                 let tk: &Token = ctx.advance()?;
 
-                (tk.get_lexeme().to_string(), tk.get_span())
+                (tk.get_lexeme().to_string(), tk.get_code_location())
             };
 
             if ctx.check(TokenType::ColonColon) {
@@ -304,7 +304,7 @@ fn parse_builtin_call(
         let argument: BuiltinArgument =
             if index < expected_parameters && signature.is_parameter_a_type(index) {
                 let ty: Type = typegeneration::build_type(ctx)?;
-                let argument_span: Span = ctx.previous().get_span();
+                let argument_span: Span = ctx.previous().get_code_location();
 
                 BuiltinArgument::Type {
                     ty,
@@ -313,7 +313,7 @@ fn parse_builtin_call(
             } else {
                 let expr: Ast<'static> = self::parse_expr(ctx)?;
                 let value: BuiltinValue = thrustc_compile_time::fold(&expr).ok_or(())?;
-                let argument_span: Span = expr.get_span();
+                let argument_span: Span = expr.get_code_location();
 
                 BuiltinArgument::Value {
                     value,

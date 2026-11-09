@@ -51,7 +51,7 @@ pub fn check_target_type_support<'type_checker>(
                 "Unsupported type".into(),
                 "Type isn't supported on the current target architecture.".into(),
                 None,
-                ty.get_span(),
+                ty.get_code_location(),
             ));
         }
     }
@@ -73,7 +73,7 @@ pub fn check_target_type_support<'type_checker>(
                 "Unsupported type".into(),
                 "Type isn't supported on the current target architecture.".into(),
                 None,
-                ty.get_span(),
+                ty.get_code_location(),
             ));
         }
     }

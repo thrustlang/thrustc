@@ -332,7 +332,7 @@ impl MacroNodeMetadata {
     }
 
     #[inline]
-    pub fn get_span(&self) -> Span {
+    pub fn get_code_location(&self) -> Span {
         self.span
     }
 }

@@ -66,7 +66,7 @@ pub fn build_builtin_call<'parser>(
         let (argument, deferred_argument): (BuiltinArgument, DeferredBuiltinArgument<'parser>) =
             if index < expected_parameters && signature.is_parameter_a_type(index) {
                 let ty: Type = typegeneration::build_type(ctx, true)?;
-                let argument_span: Span = ctx.previous().get_span();
+                let argument_span: Span = ctx.previous().get_code_location();
 
                 let mut hints: std::collections::HashSet<String> =
                     std::collections::HashSet::with_capacity(u8::MAX as usize);
@@ -88,7 +88,7 @@ pub fn build_builtin_call<'parser>(
                 )
             } else {
                 let expr: Ast<'_> = expressions::parse_expr(ctx)?;
-                let argument_span: Span = expr.get_span();
+                let argument_span: Span = expr.get_code_location();
 
                 let argument: BuiltinArgument = match thrustc_compile_time::fold(&expr) {
                     Some(value) => BuiltinArgument::Value {

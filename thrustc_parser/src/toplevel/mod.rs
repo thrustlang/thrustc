@@ -72,7 +72,7 @@ pub fn parse<'parser>(ctx: &mut ParserContext<'parser>) -> Result<Ast<'parser>, 
                 "Expected a top entity, not a statement and never an expression.".into(),
                 "You should remove it from this scope.".into(),
                 None,
-                any.get_span(),
+                any.get_code_location(),
             ))
         }
     };

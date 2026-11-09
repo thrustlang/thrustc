@@ -45,7 +45,7 @@ pub fn parse_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
         parser.consume_these(&[TokenType::CString, TokenType::CNString])?;
 
     let import_str: &str = module_path_tk.get_lexeme();
-    let span: Span = module_path_tk.get_span();
+    let span: Span = module_path_tk.get_code_location();
 
     let mut module_path: PathBuf = PathBuf::from(import_str);
 
@@ -241,7 +241,7 @@ fn parse_std_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
     let mut access: Vec<String> = Vec::with_capacity(4);
 
     let first_tk: &Token = parser.consume(TokenType::Identifier)?;
-    let first_span: Span = first_tk.get_span();
+    let first_span: Span = first_tk.get_code_location();
 
     access.push(first_tk.get_lexeme().to_string());
 
@@ -251,7 +251,7 @@ fn parse_std_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
         parser.only_advance()?;
 
         let part_tk: &Token = parser.consume(TokenType::Identifier)?;
-        last_span = part_tk.get_span();
+        last_span = part_tk.get_code_location();
         access.push(part_tk.get_lexeme().to_string());
     }
 

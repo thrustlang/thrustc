@@ -38,7 +38,7 @@ pub fn build_conditional<'parser>(
         "Expected 'if' keyword.".into(),
     )?;
 
-    let span: Span = if_tk.get_span();
+    let span: Span = if_tk.get_code_location();
 
     let condition: Ast = expressions::parse_expr(ctx)?;
 
@@ -73,7 +73,7 @@ pub fn build_conditional<'parser>(
             )?;
         }
 
-        let span: Span = ctx.previous().get_span();
+        let span: Span = ctx.previous().get_code_location();
 
         let condition: Ast = expressions::parse_expr(ctx)?;
 
@@ -95,7 +95,7 @@ pub fn build_conditional<'parser>(
     }
 
     if ctx.match_token(TokenType::Else)? {
-        let span: Span = ctx.previous().get_span();
+        let span: Span = ctx.previous().get_code_location();
 
         let else_body: Ast = if ctx.check(TokenType::LBrace) {
             code_block::parse_code_block_stmt(ctx)?

@@ -62,7 +62,7 @@ pub fn parse_call_arguments<'parser>(
             )?;
 
             let name: &str = name_tk.get_lexeme();
-            let name_span: Span = name_tk.get_span();
+            let name_span: Span = name_tk.get_code_location();
 
             ctx.consume(
                 TokenType::Eq,
@@ -80,7 +80,7 @@ pub fn parse_call_arguments<'parser>(
                     "A positional argument cannot follow a named argument.".into(),
                     "You should place all positional arguments before the named ones.".into(),
                     None,
-                    ctx.peek().get_span(),
+                    ctx.peek().get_code_location(),
                 ));
             }
 
@@ -595,7 +595,7 @@ pub fn build_anonymous_call<'parser>(
         "Expected '('.".into(),
     )?;
 
-    let span: Span = expr.get_span();
+    let span: Span = expr.get_code_location();
 
     let arguments: ParsedCallArguments = self::parse_call_arguments(ctx)?;
 

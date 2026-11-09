@@ -60,7 +60,7 @@ pub fn build_global_static<'parser>(
     let name: &str = static_tk.get_lexeme();
     let ascii_name: &str = static_tk.get_ascii_lexeme();
 
-    let span: Span = static_tk.get_span();
+    let span: Span = static_tk.get_code_location();
 
     ctx.consume(
         TokenType::Colon,

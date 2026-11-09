@@ -68,14 +68,14 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    return_type.get_span(),
+                    return_type.get_code_location(),
                 ));
             }
 
             {
                 for node in parameters.iter() {
                     let type_: &Type = node.get_any_type();
-                    let span: Span = node.get_span();
+                    let span: Span = node.get_code_location();
 
                     if type_.contains_void_type() || type_.is_void_type() {
                         typechecker.add_error_report(CompilationIssue::Error(
@@ -123,7 +123,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    return_type.get_span(),
+                    return_type.get_code_location(),
                 ));
             }
 
@@ -133,14 +133,14 @@ pub fn validate_node<'type_checker>(
                     "@noReturn intrinsic must have a void return type.".into(),
                     "A function that never returns cannot produce a value.".into(),
                     None,
-                    return_type.get_span(),
+                    return_type.get_code_location(),
                 ));
             }
 
             {
                 for node in parameters.iter() {
                     let type_: &Type = node.get_any_type();
-                    let span: Span = node.get_span();
+                    let span: Span = node.get_code_location();
 
                     if type_.contains_void_type() || type_.is_void_type() {
                         typechecker.add_error_report(CompilationIssue::Error(
@@ -200,7 +200,7 @@ pub fn validate_node<'type_checker>(
             {
                 for node in parameters.iter() {
                     let type_: &Type = node.get_any_type();
-                    let span: Span = node.get_span();
+                    let span: Span = node.get_code_location();
 
                     if !type_.is_function_reference_type()
                         && (type_.contains_void_type() || type_.is_void_type())
@@ -223,7 +223,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    return_type.get_span(),
+                    return_type.get_code_location(),
                 ));
             }
 
@@ -235,7 +235,7 @@ pub fn validate_node<'type_checker>(
                     "@noReturn function must have a void return type.".into(),
                     "A function that never returns cannot produce a value.".into(),
                     None,
-                    return_type.get_span(),
+                    return_type.get_code_location(),
                 ));
             }
 
@@ -279,7 +279,7 @@ pub fn validate_node<'type_checker>(
         }
 
         _ => {
-            let span: Span = node.get_span();
+            let span: Span = node.get_code_location();
 
             typechecker.add_bug(CompilationIssue::FrontendBug(
                 "Expression not caught".into(),

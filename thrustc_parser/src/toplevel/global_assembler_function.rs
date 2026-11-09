@@ -59,7 +59,7 @@ pub fn build_assembler_function<'parser>(
     let asm_function_name: &str = asm_function_name_tk.get_lexeme();
     let asm_function_ascii_name: &str = asm_function_name_tk.get_ascii_lexeme();
 
-    let span: Span = asm_function_name_tk.get_span();
+    let span: Span = asm_function_name_tk.get_code_location();
 
     let mut parameters: Vec<Ast> = Vec::with_capacity(u8::MAX as usize);
     let mut parameters_types: Vec<Type> = Vec::with_capacity(u8::MAX as usize);
@@ -72,7 +72,7 @@ pub fn build_assembler_function<'parser>(
         }
 
         let parameter_type: Type = typegeneration::build_type(ctx, false)?;
-        let parameter_span: Span = parameter_type.get_span();
+        let parameter_span: Span = parameter_type.get_code_location();
 
         parameters_types.push(parameter_type.clone());
 

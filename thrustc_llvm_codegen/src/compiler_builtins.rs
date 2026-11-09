@@ -220,7 +220,7 @@ pub fn compile<'ctx>(
         } => {
             let llvm_builder: &Builder = context.get_llvm_builder();
 
-            let src_span: Span = source.get_span();
+            let src_span: Span = source.get_code_location();
             let cast_type: Option<&Type> = Some(&Type::Ptr {
                 subtype: None,
                 address_space: None,
@@ -230,7 +230,7 @@ pub fn compile<'ctx>(
             let src: PointerValue =
                 codegen::compile_as_ptr_value(context, source, cast_type).into_pointer_value();
 
-            let dest_span: Span = destination.get_span();
+            let dest_span: Span = destination.get_code_location();
             let cast_type: Option<&Type> = Some(&Type::Ptr {
                 subtype: None,
                 address_space: None,
@@ -274,7 +274,7 @@ pub fn compile<'ctx>(
         } => {
             let llvm_builder: &Builder = context.get_llvm_builder();
 
-            let src_span: Span = source.get_span();
+            let src_span: Span = source.get_code_location();
             let cast_type: Option<&Type> = Some(&Type::Ptr {
                 subtype: None,
                 address_space: None,
@@ -284,7 +284,7 @@ pub fn compile<'ctx>(
             let src: PointerValue =
                 codegen::compile_as_ptr_value(context, source, cast_type).into_pointer_value();
 
-            let dest_span: Span = destination.get_span();
+            let dest_span: Span = destination.get_code_location();
             let cast_type: Option<&Type> = Some(&Type::Ptr {
                 subtype: None,
                 address_space: None,
@@ -328,7 +328,7 @@ pub fn compile<'ctx>(
         } => {
             let llvm_builder: &Builder = context.get_llvm_builder();
 
-            let dest_span: Span = destination.get_span();
+            let dest_span: Span = destination.get_code_location();
             let cast_type: Option<&Type> = Some(&Type::Ptr {
                 subtype: None,
                 address_space: None,

@@ -120,7 +120,7 @@ impl CompileTimeBuiltinFunction for FieldCount {
                 "The 'fieldCount' compiler builtin expects a struct type argument.".into(),
                 "You should pass a struct type to 'fieldCount', like fieldCount(MyStruct).".into(),
                 None,
-                stripped.get_span(),
+                stripped.get_code_location(),
             )),
         }
     }

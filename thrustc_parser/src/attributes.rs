@@ -40,7 +40,7 @@ pub fn build_compiler_attributes<'parser>(
 
     while !limits.contains(&ctx.peek().get_type()) {
         let current_tk: &Token = ctx.peek();
-        let span: Span = current_tk.get_span();
+        let span: Span = current_tk.get_code_location();
 
         match current_tk.get_type() {
             TokenType::Extern => {
@@ -186,7 +186,7 @@ fn build_dealloc_attribute<'parser>(
     )?;
     let mut access: Vec<String> = vec![first_tk.get_lexeme().to_string()];
     let mut symbol: &'parser str = first_tk.get_lexeme();
-    let mut symbol_span: Span = first_tk.get_span();
+    let mut symbol_span: Span = first_tk.get_code_location();
 
     while ctx.match_token(TokenType::ColonColon)? {
         let part_tk: &Token = ctx.consume(
@@ -197,7 +197,7 @@ fn build_dealloc_attribute<'parser>(
 
         access.push(part_tk.get_lexeme().to_string());
         symbol = part_tk.get_lexeme();
-        symbol_span = part_tk.get_span();
+        symbol_span = part_tk.get_code_location();
     }
 
     ctx.consume(
@@ -245,7 +245,7 @@ fn build_align_attribute<'parser>(
             "Expected literal unsigned integer.".into(),
             "You should try to pass a unsigned integer type.".into(),
             None,
-            expr.get_span(),
+            expr.get_code_location(),
         ))
     }
 }
@@ -268,7 +268,7 @@ fn build_promotion_type_attribute<'parser>(
                 "Expected a type to promote!".into(),
                 "You should indicate the type to be promoted.".into(),
                 None,
-                ctx.peek().get_span(),
+                ctx.peek().get_code_location(),
             ));
         }
 
@@ -286,7 +286,7 @@ fn build_promotion_type_attribute<'parser>(
                 "Expected a promotion type representation!".into(),
                 "You should indicate the type promoted representation.".into(),
                 None,
-                ctx.peek().get_span(),
+                ctx.peek().get_code_location(),
             ));
         }
 

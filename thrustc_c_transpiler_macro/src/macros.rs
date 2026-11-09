@@ -107,7 +107,7 @@ impl MacroStatementTranslation {
 
 impl MacroStatementTranslation {
     #[inline]
-    fn get_span(&self) -> Span {
+    fn get_code_location(&self) -> Span {
         self.span
     }
 
@@ -158,7 +158,7 @@ fn build_statement_macro_function(
             name,
             parameters,
             args,
-            translation.get_span(),
+            translation.get_code_location(),
             translation.get_translator(),
         )?,
     };

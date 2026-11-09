@@ -134,7 +134,7 @@ pub fn validate_node<'type_checker>(
                     "Cannot use 'void' as a value.".into(),
                     "You should remove whatever type or value where void type belongs.".into(),
                     None,
-                    ty.get_span(),
+                    ty.get_code_location(),
                 ));
             }
 
@@ -186,13 +186,13 @@ pub fn validate_memmove<'type_checker>(
     size: &'type_checker Ast,
 ) -> Result<(), CompilationIssue> {
     let source_type: &Type = source.get_value_type()?;
-    let source_span: Span = source.get_span();
+    let source_span: Span = source.get_code_location();
 
     let destination_type: &Type = destination.get_value_type()?;
-    let destination_span: Span = destination.get_span();
+    let destination_span: Span = destination.get_code_location();
 
     let size_type: &Type = size.get_value_type()?;
-    let size_span: Span = size.get_span();
+    let size_span: Span = size.get_code_location();
 
     if source_type.contains_void_type() || source_type.is_void_type() {
         typechecker.add_error_report(CompilationIssue::Error(
@@ -200,7 +200,7 @@ pub fn validate_memmove<'type_checker>(
             "Cannot use 'void' as a value.".into(),
             "You should remove whatever type or value where void type belongs.".into(),
             None,
-            source_type.get_span(),
+            source_type.get_code_location(),
         ));
     }
 
@@ -210,7 +210,7 @@ pub fn validate_memmove<'type_checker>(
             "Cannot use 'void' as a value.".into(),
             "You should remove whatever type or value where void type belongs.".into(),
             None,
-            destination_type.get_span(),
+            destination_type.get_code_location(),
         ));
     }
 
@@ -220,7 +220,7 @@ pub fn validate_memmove<'type_checker>(
             "Cannot use 'void' as a value.".into(),
             "You should remove whatever type or value where void type belongs.".into(),
             None,
-            size_type.get_span(),
+            size_type.get_code_location(),
         ));
     }
 
@@ -268,13 +268,13 @@ pub fn validate_memcpy<'type_checker>(
     size: &'type_checker Ast,
 ) -> Result<(), CompilationIssue> {
     let source_type: &Type = source.get_value_type()?;
-    let source_span: Span = source.get_span();
+    let source_span: Span = source.get_code_location();
 
     let destination_type: &Type = destination.get_value_type()?;
-    let destination_span: Span = destination.get_span();
+    let destination_span: Span = destination.get_code_location();
 
     let size_type: &Type = size.get_value_type()?;
-    let size_span: Span = size.get_span();
+    let size_span: Span = size.get_code_location();
 
     if source_type.contains_void_type() || source_type.is_void_type() {
         typechecker.add_error_report(CompilationIssue::Error(
@@ -282,7 +282,7 @@ pub fn validate_memcpy<'type_checker>(
             "Cannot use 'void' as a value.".into(),
             "You should remove whatever type or value where void type belongs.".into(),
             None,
-            source_type.get_span(),
+            source_type.get_code_location(),
         ));
     }
 
@@ -292,7 +292,7 @@ pub fn validate_memcpy<'type_checker>(
             "Cannot use 'void' as a value.".into(),
             "You should remove whatever type or value where void type belongs.".into(),
             None,
-            destination_type.get_span(),
+            destination_type.get_code_location(),
         ));
     }
 
@@ -302,7 +302,7 @@ pub fn validate_memcpy<'type_checker>(
             "Cannot use 'void' as a value.".into(),
             "You should remove whatever type or value where void type belongs.".into(),
             None,
-            size_type.get_span(),
+            size_type.get_code_location(),
         ));
     }
 
@@ -350,13 +350,13 @@ pub fn validate_memset<'type_checker>(
     size: &'type_checker Ast,
 ) -> Result<(), CompilationIssue> {
     let destination_type: &Type = destination.get_value_type()?;
-    let destination_span: Span = destination.get_span();
+    let destination_span: Span = destination.get_code_location();
 
     let new_size_type: &Type = new_size.get_value_type()?;
-    let new_size_span: Span = new_size.get_span();
+    let new_size_span: Span = new_size.get_code_location();
 
     let size_type: &Type = size.get_value_type()?;
-    let size_span: Span = size.get_span();
+    let size_span: Span = size.get_code_location();
 
     if destination_type.contains_void_type() || destination_type.is_void_type() {
         typechecker.add_error_report(CompilationIssue::Error(
@@ -364,7 +364,7 @@ pub fn validate_memset<'type_checker>(
             "Cannot use 'void' as a value.".into(),
             "You should remove whatever type or value where void type belongs.".into(),
             None,
-            destination_type.get_span(),
+            destination_type.get_code_location(),
         ));
     }
 
@@ -374,7 +374,7 @@ pub fn validate_memset<'type_checker>(
             "Cannot use 'void' as a value.".into(),
             "You should remove whatever type or value where void type belongs.".into(),
             None,
-            new_size_type.get_span(),
+            new_size_type.get_code_location(),
         ));
     }
 
@@ -384,7 +384,7 @@ pub fn validate_memset<'type_checker>(
             "Cannot use 'void' as a value.".into(),
             "You should remove whatever type or value where void type belongs.".into(),
             None,
-            size_type.get_span(),
+            size_type.get_code_location(),
         ));
     }
 

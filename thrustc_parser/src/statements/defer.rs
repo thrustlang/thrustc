@@ -35,7 +35,7 @@ pub fn parse_post_executation_stmt<'parser>(
         "Expected 'defer'.".into(),
     )?;
 
-    let span: Span = defer_tk.get_span();
+    let span: Span = defer_tk.get_code_location();
 
     let node: Ast<'_> = if ctx.check(TokenType::LBrace) {
         code_block::parse_code_block_stmt(ctx)?

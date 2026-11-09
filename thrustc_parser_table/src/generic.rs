@@ -110,7 +110,7 @@ impl GenericFunction {
     }
 
     #[inline]
-    pub fn get_span(&self) -> Span {
+    pub fn get_code_location(&self) -> Span {
         self.span
     }
 }
@@ -262,7 +262,7 @@ impl GenericStruct {
     }
 
     #[inline]
-    pub fn get_span(&self) -> Span {
+    pub fn get_code_location(&self) -> Span {
         self.span
     }
 }

@@ -35,14 +35,14 @@ pub fn compile<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, node: &'ctx Ast<'ctx>)
 
     let llvm_function: FunctionValue = codegen
         .get_mut_context()
-        .get_current_function(node.get_span())
+        .get_current_function(node.get_code_location())
         .get_value();
 
     let Ast::Loop { block, span, .. } = node else {
         return;
     };
 
-    let block_span: Span = block.get_span();
+    let block_span: Span = block.get_code_location();
 
     let start: BasicBlock = block::append_block(codegen.get_context(), llvm_function);
     let exit: BasicBlock = block::append_block(codegen.get_context(), llvm_function);

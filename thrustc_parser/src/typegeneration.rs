@@ -76,7 +76,7 @@ fn build_type_inner<'parser>(
     match ctx.peek().get_type() {
         tk_kind if tk_kind.is_type() => {
             let tk: &Token = ctx.advance()?;
-            let span: Span = tk.get_span();
+            let span: Span = tk.get_code_location();
 
             match tk_kind {
                 _ if tk_kind.is_array() => self::parse_array_type(ctx, span),
@@ -141,7 +141,7 @@ fn build_type_inner<'parser>(
             let identifier_tk: &Token = ctx.advance()?;
 
             let name: &'parser str = identifier_tk.get_lexeme();
-            let span: Span = identifier_tk.get_span();
+            let span: Span = identifier_tk.get_code_location();
 
             if ctx.match_token(TokenType::ColonColon)? {
                 let mut access: Vec<String> = vec![name.to_string()];
@@ -157,7 +157,7 @@ fn build_type_inner<'parser>(
 
                     let part: &'parser str = part_tk.get_lexeme();
 
-                    symbol_span = part_tk.get_span();
+                    symbol_span = part_tk.get_code_location();
 
                     if ctx.match_token(TokenType::ColonColon)? {
                         access.push(part.to_string());
@@ -458,7 +458,7 @@ fn build_type_inner<'parser>(
             format!("Unknown type '{}'.", any),
             "You should make sure that it exist at this scope.".into(),
             None,
-            ctx.peek().get_span(),
+            ctx.peek().get_code_location(),
         )),
     }
 }

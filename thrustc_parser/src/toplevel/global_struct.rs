@@ -52,7 +52,7 @@ pub fn build_structure<'parser>(
     )?;
 
     let name: &str = name_tk.get_lexeme();
-    let span: Span = name_tk.get_span();
+    let span: Span = name_tk.get_code_location();
 
     let has_generics: bool = ctx.check(TokenType::LBracket);
 
@@ -94,7 +94,7 @@ pub fn build_structure<'parser>(
             )?;
 
             let field_name: &str = field_tk.get_lexeme();
-            let field_span: Span = field_tk.get_span();
+            let field_span: Span = field_tk.get_code_location();
 
             ctx.consume(
                 TokenType::Colon,

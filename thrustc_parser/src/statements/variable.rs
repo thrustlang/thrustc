@@ -53,7 +53,7 @@ pub fn build_variable_stmt<'parser>(
 
     let name: &str = local_tk.get_lexeme();
     let ascii_name: &str = local_tk.get_ascii_lexeme();
-    let span: Span = local_tk.get_span();
+    let span: Span = local_tk.get_code_location();
 
     let mut attributes: ThrustAttributes =
         attributes::build_compiler_attributes(ctx, &[TokenType::Colon])?;

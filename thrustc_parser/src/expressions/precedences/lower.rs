@@ -65,7 +65,7 @@ pub fn lower_precedence<'parser>(
                 "Expected '('.".into(),
             )?;
 
-            let span: Span = lparen_tk.get_span();
+            let span: Span = lparen_tk.get_code_location();
 
             let expr: Ast = expressions::parse_expr(ctx)?;
             let expr_type: Type = expr.get_value_type()?.clone();
@@ -79,7 +79,7 @@ pub fn lower_precedence<'parser>(
             if ctx.match_token(TokenType::PlusPlus)? || ctx.match_token(TokenType::MinusMinus)? {
                 let operator_tk: &Token = ctx.previous();
                 let operator: TokenType = operator_tk.kind;
-                let operator_span: Span = operator_tk.get_span();
+                let operator_span: Span = operator_tk.get_code_location();
 
                 let place: Ast = match expr {
                     Ast::Reference { .. }
@@ -125,7 +125,7 @@ pub fn lower_precedence<'parser>(
 
             let tk_type: TokenType = tk.get_type();
             let content: &str = tk.get_lexeme();
-            let span: Span = tk.get_span();
+            let span: Span = tk.get_code_location();
 
             let mut cstring_type: Type = Type::Const(
                 Type::Array {
@@ -220,7 +220,7 @@ pub fn lower_precedence<'parser>(
 
         TokenType::Char => {
             let tk: &Token = ctx.advance()?;
-            let span: Span = tk.get_span();
+            let span: Span = tk.get_code_location();
 
             Ast::new_char(Type::Char { span }, tk.get_lexeme_first_byte(), span)
         }
@@ -231,7 +231,7 @@ pub fn lower_precedence<'parser>(
             let tk: &Token = ctx.advance()?;
 
             let integer: &str = tk.get_lexeme();
-            let span: Span = tk.get_span();
+            let span: Span = tk.get_code_location();
 
             let parsed_integer: (Type, u64) = reinterpret::integer(integer, span)?;
 
@@ -245,7 +245,7 @@ pub fn lower_precedence<'parser>(
             let tk: &Token = ctx.advance()?;
 
             let float: &str = tk.get_lexeme();
-            let span: Span = tk.get_span();
+            let span: Span = tk.get_code_location();
 
             let parsed_float: (Type, f64) = reinterpret::floating_point(float, span)?;
 
@@ -259,7 +259,7 @@ pub fn lower_precedence<'parser>(
             let tk: &Token = ctx.advance()?;
 
             let name: &'parser str = tk.get_lexeme();
-            let span: Span = tk.get_span();
+            let span: Span = tk.get_code_location();
 
             if name == "native" && ctx.check(TokenType::LBracket) {
                 native_vector::build_native_vector_after_name(ctx, span)?
@@ -300,7 +300,7 @@ pub fn lower_precedence<'parser>(
 
                     let part: &'parser str = part_tk.get_lexeme();
 
-                    symbol_span = part_tk.get_span();
+                    symbol_span = part_tk.get_code_location();
 
                     if ctx.match_token(TokenType::ColonColon)? {
                         access.push(part.to_string());
@@ -316,7 +316,7 @@ pub fn lower_precedence<'parser>(
         }
 
         TokenType::Reference => {
-            let span: Span = ctx.advance()?.get_span();
+            let span: Span = ctx.advance()?.get_code_location();
 
             let expr: Ast = expressions::parse_expr(ctx)?;
             let expr_type: &Type = expr.get_value_type()?;
@@ -330,19 +330,19 @@ pub fn lower_precedence<'parser>(
         }
 
         TokenType::True => {
-            let span: Span = ctx.advance()?.get_span();
+            let span: Span = ctx.advance()?.get_code_location();
 
             Ast::new_boolean(Type::Bool { span }, 1, span)
         }
 
         TokenType::False => {
-            let span: Span = ctx.advance()?.get_span();
+            let span: Span = ctx.advance()?.get_code_location();
 
             Ast::new_boolean(Type::Bool { span }, 0, span)
         }
 
         TokenType::Unreachable => {
-            let span: Span = ctx.advance()?.get_span();
+            let span: Span = ctx.advance()?.get_code_location();
 
             Ast::new_unreacheable(Type::Void { span }, span)
         }
@@ -351,7 +351,7 @@ pub fn lower_precedence<'parser>(
 
         _ => {
             let previous: &Token = ctx.advance()?;
-            let span: Span = previous.get_span();
+            let span: Span = previous.get_code_location();
 
             ctx.add_error_report(CompilationIssue::Error(
                 CompilationIssueCode::E0001,

@@ -101,7 +101,7 @@ pub enum Signature {
 
 impl Signature {
     #[inline]
-    pub fn get_span(&self) -> Span {
+    pub fn get_code_location(&self) -> Span {
         match self {
             Signature::Function { span, .. } => *span,
             Signature::CompilerIntrinsic { span, .. } => *span,

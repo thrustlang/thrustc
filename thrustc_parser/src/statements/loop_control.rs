@@ -35,7 +35,7 @@ pub fn parse_continue_stmt<'parser>(
         "Expected 'continue' keyword.".into(),
     )?;
 
-    let span: Span = continue_tk.get_span();
+    let span: Span = continue_tk.get_code_location();
 
     ctx.consume(
         TokenType::SemiColon,
@@ -59,7 +59,7 @@ pub fn parse_break_stmt<'parser>(
         "Expected 'break' keyword.".into(),
     )?;
 
-    let span: Span = break_tk.get_span();
+    let span: Span = break_tk.get_code_location();
 
     ctx.consume(
         TokenType::SemiColon,
@@ -83,7 +83,7 @@ pub fn parse_continueall_stmt<'parser>(
         "Expected 'continueall' keyword.".into(),
     )?;
 
-    let span: Span = continueall_tk.get_span();
+    let span: Span = continueall_tk.get_code_location();
 
     ctx.consume(
         TokenType::SemiColon,
@@ -107,7 +107,7 @@ pub fn parse_breakall_stmt<'parser>(
         "Expected 'breakall' keyword.".into(),
     )?;
 
-    let span: Span = breakall_tk.get_span();
+    let span: Span = breakall_tk.get_code_location();
 
     ctx.consume(
         TokenType::SemiColon,

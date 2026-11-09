@@ -41,7 +41,7 @@ pub fn cmp_precedence<'parser>(
         let operator_tk: &Token = ctx.previous();
 
         let operator: TokenType = operator_tk.get_type();
-        let span: Span = operator_tk.get_span();
+        let span: Span = operator_tk.get_code_location();
 
         let right: Ast = precedences::term::term_precedence(ctx)?;
 

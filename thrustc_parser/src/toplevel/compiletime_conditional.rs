@@ -30,7 +30,7 @@ use crate::{ParserContext, synchronize};
 pub fn build_compiletime_declaration<'parser>(
     ctx: &mut ParserContext<'parser>,
 ) -> Result<Ast<'parser>, CompilationIssue> {
-    let span: Span = ctx.peek().get_span();
+    let span: Span = ctx.peek().get_code_location();
 
     let first_condition: bool =
         self::expect_known_condition(compiletime_conditional::evaluate_condition(ctx)?, span)?;

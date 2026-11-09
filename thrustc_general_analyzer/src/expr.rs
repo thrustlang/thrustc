@@ -55,7 +55,7 @@ pub fn validate_node<'analyzer>(
                         "You should remove the compound assignment or use a mutable variable instead."
                             .into(),
                         None,
-                        left.get_span(),
+                        left.get_code_location(),
                     ));
                 }
             }
@@ -111,7 +111,7 @@ pub fn validate_node<'analyzer>(
                     "An reference with memory address was expected.".into(),
                     "You should try to allocate it and pass it as a direct reference.".into(),
                     None,
-                    source.get_span(),
+                    source.get_code_location(),
                 ));
             }
 
@@ -123,7 +123,7 @@ pub fn validate_node<'analyzer>(
                     "An value with memory address was expected.".into(),
                     "You should try to allocate it and pass it as a direct reference.".into(),
                     None,
-                    source.get_span(),
+                    source.get_code_location(),
                 ));
             }
 
@@ -141,7 +141,7 @@ pub fn validate_node<'analyzer>(
                     "An reference with memory address was expected.".into(),
                     "You should try to allocate it and pass it as a direct reference.".into(),
                     None,
-                    source.get_span(),
+                    source.get_code_location(),
                 ));
             }
 
@@ -153,7 +153,7 @@ pub fn validate_node<'analyzer>(
                     "An value with memory address was expected.".into(),
                     "You should try to allocate it and pass it as a direct reference.".into(),
                     None,
-                    source.get_span(),
+                    source.get_code_location(),
                 ));
             }
 
@@ -341,7 +341,7 @@ pub fn validate_node<'analyzer>(
         | Ast::Char { .. } => Ok(()),
 
         _ => {
-            let span: Span = node.get_span();
+            let span: Span = node.get_code_location();
 
             analyzer.add_bug(CompilationIssue::FrontendBug(
                 "Expression not caught".into(),

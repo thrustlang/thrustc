@@ -79,7 +79,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                                 "Expected a parameter.".into(),
                                 "You should remove it.".into(),
                                 None,
-                                node.get_span(),
+                                node.get_code_location(),
                             ));
                         }
 
@@ -100,7 +100,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                                 "Expected a parameter.".into(),
                                 "You should remove it.".into(),
                                 None,
-                                node.get_span(),
+                                node.get_code_location(),
                             ));
                         }
 
@@ -116,7 +116,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                                 "Expected a parameter.".into(),
                                 "You should remove it.".into(),
                                 None,
-                                node.get_span(),
+                                node.get_code_location(),
                             ));
                         }
 
@@ -154,7 +154,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a valid AST node, not an invalid one.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
 
@@ -164,7 +164,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a top entity, not a statement, and never an expression.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -198,7 +198,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                             .into(),
                         "An initialized variable must not be flagged as uninitialized.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
 
@@ -352,7 +352,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a group expression with an inherited type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
 
@@ -376,7 +376,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a literal fixed array value with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -397,7 +397,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a literal array value with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -425,7 +425,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                             "Nested native vectors are not supported.".into(),
                             "You should use an array/fixed array of NativeVector values, or a NativeVector of pointers.".into(),
                             None,
-                            node.get_span(),
+                            node.get_code_location(),
                         ));
                     }
                 } else {
@@ -434,7 +434,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a literal native vector value with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -466,7 +466,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a literal string with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -503,7 +503,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Invalid cast metadata: constant flag does not match its source.".into(),
                         "The constant flag must reflect whether the source is constant.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
 
@@ -577,7 +577,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                     "Expected a valid AST node, not an invalid one.".into(),
                     "You should remove it.".into(),
                     None,
-                    node.get_span(),
+                    node.get_code_location(),
                 ));
             }
 
@@ -587,7 +587,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                     "Expected an expression, not a C import.".into(),
                     "You should remove it.".into(),
                     None,
-                    node.get_span(),
+                    node.get_code_location(),
                 ));
             }
 
@@ -601,7 +601,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a literal string with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -614,7 +614,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a literal character with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -627,7 +627,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a literal boolean value with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -640,7 +640,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a literal integer value with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -653,7 +653,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a literal float value with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -666,7 +666,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a literal null pointer value with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -679,7 +679,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         "Expected a struct type with a valid type.".into(),
                         "You should remove it.".into(),
                         None,
-                        node.get_span(),
+                        node.get_code_location(),
                     ));
                 }
             }
@@ -737,7 +737,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                                 "Local, static and constant references are always allocated."
                                     .into(),
                                 None,
-                                node.get_span(),
+                                node.get_code_location(),
                             ));
                         }
                     }
@@ -751,7 +751,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                                 "A parameter reference is allocated only when it is pointer-like."
                                     .into(),
                                 None,
-                                node.get_span(),
+                                node.get_code_location(),
                             ));
                         }
                     }
@@ -777,7 +777,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                         .into(),
                     "Parameters are mutable only when they are pointer-like.".into(),
                     None,
-                    node.get_span(),
+                    node.get_code_location(),
                 ));
             }
         }
@@ -790,7 +790,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 "Expected a statement, not an expression, and never a top entity.".into(),
                 "You should remove it.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
     }
@@ -802,7 +802,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 "Expected a statement or a expression, and never a top entity.".into(),
                 "You should remove it.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
     }
@@ -814,7 +814,7 @@ impl<'ast_verifier> AstVerifier<'ast_verifier> {
                 "Expected a expression, not a statement, and never a top entity.".into(),
                 "You should remove it.".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
         }
     }

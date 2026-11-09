@@ -132,7 +132,7 @@ pub fn compile_as_function_type<'ctx>(
                 abort::abort_codegen(
                     context,
                     "Failed to compile as a function type, expected an ABI!",
-                    kind.get_span(),
+                    kind.get_code_location(),
                     PathBuf::from(file!()),
                     line!(),
                 )
@@ -154,7 +154,7 @@ pub fn compile_as_function_type<'ctx>(
                 abort::abort_codegen(
                     context,
                     "Failed to compile as a function type, failed to decompose function type using the ABI!",
-                    kind.get_span(),
+                    kind.get_code_location(),
                     PathBuf::from(file!()),
                     line!(),
                 )
@@ -214,7 +214,7 @@ pub fn generate_type<'ctx>(
             any => abort::abort_codegen(
                 context,
                 &format!("Failed to compile '{}' as a type!", any),
-                any.get_span(),
+                any.get_code_location(),
                 PathBuf::from(file!()),
                 line!(),
             ),
@@ -232,7 +232,7 @@ pub fn generate_type<'ctx>(
             any => abort::abort_codegen(
                 context,
                 &format!("Failed to compile '{}' as a type!", any),
-                any.get_span(),
+                any.get_code_location(),
                 PathBuf::from(file!()),
                 line!(),
             ),
@@ -303,13 +303,13 @@ pub fn generate_type<'ctx>(
             ..
         } => {
             let vector_type: BasicTypeEnum = self::generate_type(context, element_type);
-            self::generate_native_vector_type(context, vector_type, *element_count, kind.get_span())
+            self::generate_native_vector_type(context, vector_type, *element_count, kind.get_code_location())
         }
 
         any => abort::abort_codegen(
             context,
             &format!("Failed to compile '{}' as a type!", any),
-            any.get_span(),
+            any.get_code_location(),
             PathBuf::from(file!()),
             line!(),
         ),
@@ -340,7 +340,7 @@ pub fn generate_dereference_type<'ctx>(
             any => abort::abort_codegen(
                 context,
                 &format!("Failed to compile '{}' as a type!", any),
-                any.get_span(),
+                any.get_code_location(),
                 PathBuf::from(file!()),
                 line!(),
             ),
@@ -358,7 +358,7 @@ pub fn generate_dereference_type<'ctx>(
             any => abort::abort_codegen(
                 context,
                 &format!("Failed to compile '{}' as a type!", any),
-                any.get_span(),
+                any.get_code_location(),
                 PathBuf::from(file!()),
                 line!(),
             ),
@@ -412,13 +412,13 @@ pub fn generate_dereference_type<'ctx>(
             ..
         } => {
             let vector_type: BasicTypeEnum = self::generate_dereference_type(context, element_type);
-            self::generate_native_vector_type(context, vector_type, *element_count, kind.get_span())
+            self::generate_native_vector_type(context, vector_type, *element_count, kind.get_code_location())
         }
 
         any => abort::abort_codegen(
             context,
             &format!("Failed to compile '{}' as a type!", any),
-            any.get_span(),
+            any.get_code_location(),
             PathBuf::from(file!()),
             line!(),
         ),
@@ -531,7 +531,7 @@ pub fn compile_as_dbg_type<'ctx>(
                 abort::abort_codegen_dbg(
                     context,
                     &format!("Failed to compile '{}' as a debuggable type!", from_type),
-                    from_type.get_span(),
+                    from_type.get_code_location(),
                     PathBuf::from(file!()),
                     line!(),
                 )
@@ -553,7 +553,7 @@ pub fn compile_as_dbg_type<'ctx>(
                     abort::abort_codegen_dbg(
                         context,
                         &format!("Failed to compile '{}' as a debuggable type!", from_type),
-                        from_type.get_span(),
+                        from_type.get_code_location(),
                         PathBuf::from(file!()),
                         line!(),
                     )
@@ -569,7 +569,7 @@ pub fn compile_as_dbg_type<'ctx>(
                     abort::abort_codegen_dbg(
                         context,
                         &format!("Failed to compile '{}' as a debuggable type!", from_type),
-                        from_type.get_span(),
+                        from_type.get_code_location(),
                         PathBuf::from(file!()),
                         line!(),
                     )
@@ -594,7 +594,7 @@ pub fn compile_as_dbg_type<'ctx>(
                 .map(|field_type| self::compile_as_dbg_type(context, from_type, field_type))
                 .collect();
 
-            let line: u32 = from_type.get_span().get_line();
+            let line: u32 = from_type.get_code_location().get_line();
 
             context
                 .get_debug_builder()
@@ -618,7 +618,7 @@ pub fn compile_as_dbg_type<'ctx>(
         _ => abort::abort_codegen_dbg(
             context,
             &format!("Failed to compile '{}' as a debuggable type!", from_type),
-            from_type.get_span(),
+            from_type.get_code_location(),
             PathBuf::from(file!()),
             line!(),
         ),

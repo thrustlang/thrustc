@@ -213,7 +213,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                                 Some(expr),
                                 None,
                                 metadata,
-                                expr.get_span(),
+                                expr.get_code_location(),
                                 control_context,
                             )?;
 
@@ -276,7 +276,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         Some(value),
                         None,
                         metadata,
-                        node.get_span(),
+                        node.get_code_location(),
                         control_context,
                     ) {
                         self.add_error_report(error);
@@ -333,7 +333,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         Some(value),
                         None,
                         metadata,
-                        node.get_span(),
+                        node.get_code_location(),
                         control_context,
                     ) {
                         self.add_error_report(error);
@@ -362,7 +362,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 "Too many depth for a node.".into(),
                 "You should remove the code nesting".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
 
             return Ok(());
@@ -404,7 +404,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                                 Some(expr),
                                 None,
                                 metadata,
-                                expr.get_span(),
+                                expr.get_code_location(),
                                 control_context,
                             ) {
                                 self.add_error_report(error);
@@ -454,7 +454,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         Some(value),
                         None,
                         metadata,
-                        node.get_span(),
+                        node.get_code_location(),
                         control_context,
                     ) {
                         self.add_error_report(error);
@@ -498,7 +498,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         Some(value),
                         None,
                         metadata,
-                        node.get_span(),
+                        node.get_code_location(),
                         control_context,
                     ) {
                         self.add_error_report(error);
@@ -546,7 +546,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         Some(value),
                         None,
                         type_metadata,
-                        node.get_span(),
+                        node.get_code_location(),
                         control_context,
                     ) {
                         self.add_error_report(error);
@@ -592,7 +592,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 let metadata: TypeCheckerNodeMetadata =
                     TypeCheckerNodeMetadata::new(condition.is_totaly_literal_value());
 
-                let span: Span = condition.get_span();
+                let span: Span = condition.get_code_location();
 
                 {
                     let control_context: &mut TypeCheckerControlContext =
@@ -635,7 +635,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 let metadata: TypeCheckerNodeMetadata =
                     TypeCheckerNodeMetadata::new(condition.is_totaly_literal_value());
 
-                let span: Span = condition.get_span();
+                let span: Span = condition.get_code_location();
 
                 {
                     let control_context: &mut TypeCheckerControlContext =
@@ -644,7 +644,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                     control_context.reset_checking_depth();
 
                     let target_type: Type = Type::Bool {
-                        span: condition.get_span(),
+                        span: condition.get_code_location(),
                     };
 
                     if let Err(error) = type_checking::check_type_together(
@@ -682,7 +682,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 let metadata: TypeCheckerNodeMetadata =
                     TypeCheckerNodeMetadata::new(condition.is_totaly_literal_value());
 
-                let span: Span = condition.get_span();
+                let span: Span = condition.get_code_location();
 
                 {
                     let control_context: &mut TypeCheckerControlContext =
@@ -724,7 +724,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 let metadata: TypeCheckerNodeMetadata =
                     TypeCheckerNodeMetadata::new(condition.is_totaly_literal_value());
 
-                let span: Span = condition.get_span();
+                let span: Span = condition.get_code_location();
 
                 {
                     let control_context: &mut TypeCheckerControlContext =
@@ -778,7 +778,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                         "Terminator is outside a function.".into(),
                         "It should be inside a function. Reposition inside it.".into(),
                         None,
-                        expr.get_span(),
+                        expr.get_code_location(),
                     ));
                 };
 
@@ -873,7 +873,7 @@ impl<'type_checker> TypeChecker<'type_checker> {
                 "Too many depth for a node.".into(),
                 "You should remove the code nesting".into(),
                 None,
-                node.get_span(),
+                node.get_code_location(),
             ));
 
             return Ok(());

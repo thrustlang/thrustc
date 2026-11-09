@@ -40,7 +40,7 @@ pub fn build_index<'parser>(
     let index_type: &Type = source_expr.get_value_type()?;
     let index_expr: Ast = expressions::parse_expr(ctx)?;
 
-    let span: Span = index_expr.get_span();
+    let span: Span = index_expr.get_code_location();
 
     ctx.consume(
         TokenType::RBracket,

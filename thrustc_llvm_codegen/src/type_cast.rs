@@ -285,7 +285,7 @@ pub fn compile_type_cast<'ctx>(
                                     "Failed to cast '{}' type to '{}' type.",
                                     from_type, target_type
                                 ),
-                                expr.get_span(),
+                                expr.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             );
@@ -300,7 +300,7 @@ pub fn compile_type_cast<'ctx>(
                                     "Failed to cast '{}' type to '{}' type.",
                                     from_type, target_type
                                 ),
-                                expr.get_span(),
+                                expr.get_code_location(),
                                 std::path::PathBuf::from(file!()),
                                 line!(),
                             );
@@ -316,7 +316,7 @@ pub fn compile_type_cast<'ctx>(
                                 "Failed to cast '{}' type to '{}' type.",
                                 from_type, target_type
                             ),
-                            expr.get_span(),
+                            expr.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         );
@@ -331,7 +331,7 @@ pub fn compile_type_cast<'ctx>(
                                 "Failed to cast '{}' type to '{}' type.",
                                 from_type, target_type
                             ),
-                            expr.get_span(),
+                            expr.get_code_location(),
                             std::path::PathBuf::from(file!()),
                             line!(),
                         );
@@ -352,7 +352,7 @@ pub fn compile_type_cast<'ctx>(
                             "Failed to cast '{}' type to '{}' type.",
                             from_type, target_type
                         ),
-                        expr.get_span(),
+                        expr.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     );
@@ -377,7 +377,7 @@ pub fn compile_type_cast<'ctx>(
                         "Failed to cast '{}' type to '{}' type.",
                         from_type, target_type
                     ),
-                    expr.get_span(),
+                    expr.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 );
@@ -402,7 +402,7 @@ pub fn compile_type_cast<'ctx>(
                         "Failed to cast '{}' type to '{}' type.",
                         from_type, target_type
                     ),
-                    expr.get_span(),
+                    expr.get_code_location(),
                     std::path::PathBuf::from(file!()),
                     line!(),
                 );
@@ -419,7 +419,7 @@ pub fn compile_type_cast<'ctx>(
                             "Failed to cast '{}' type to '{}' type.",
                             from_type, target_type
                         ),
-                        expr.get_span(),
+                        expr.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     );
@@ -433,7 +433,7 @@ pub fn compile_type_cast<'ctx>(
                     "Failed to cast '{}' type to '{}' type.",
                     from_type, target_type
                 ),
-                expr.get_span(),
+                expr.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -461,7 +461,7 @@ pub fn compile_type_cast<'ctx>(
                             "Failed to cast '{}' type to '{}' type.",
                             from_type, target_type
                         ),
-                        expr.get_span(),
+                        expr.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     );
@@ -475,7 +475,7 @@ pub fn compile_type_cast<'ctx>(
                     "Failed to cast '{}' type to '{}' type.",
                     from_type, target_type
                 ),
-                expr.get_span(),
+                expr.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -499,7 +499,7 @@ pub fn compile_type_cast<'ctx>(
                             "Failed to cast '{}' type to '{}' type.",
                             from_type, target_type
                         ),
-                        expr.get_span(),
+                        expr.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     );
@@ -512,7 +512,7 @@ pub fn compile_type_cast<'ctx>(
                     "Failed to cast '{}' type to '{}' type.",
                     from_type, target_type
                 ),
-                expr.get_span(),
+                expr.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -546,7 +546,7 @@ pub fn compile_type_cast<'ctx>(
                             "Failed to cast '{}' type to '{}' type.",
                             from_type, target_type
                         ),
-                        expr.get_span(),
+                        expr.get_code_location(),
                         std::path::PathBuf::from(file!()),
                         line!(),
                     );
@@ -559,7 +559,7 @@ pub fn compile_type_cast<'ctx>(
                     "Failed to cast '{}' type to '{}' type.",
                     from_type, target_type
                 ),
-                expr.get_span(),
+                expr.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -572,7 +572,7 @@ pub fn compile_type_cast<'ctx>(
             "Failed to cast '{}' type to '{}' type.",
             from_type, target_type
         ),
-        expr.get_span(),
+        expr.get_code_location(),
         std::path::PathBuf::from(file!()),
         line!(),
     );
@@ -619,7 +619,7 @@ pub fn compile_constant_type_cast<'ctx>(
                     "Failed to cast '{}' type to '{}' type.",
                     from_type, target_type
                 ),
-                expr.get_span(),
+                expr.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -645,7 +645,7 @@ pub fn compile_constant_type_cast<'ctx>(
                     "Failed to cast '{}' type to '{}' type.",
                     from_type, target_type
                 ),
-                expr.get_span(),
+                expr.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -670,7 +670,7 @@ pub fn compile_constant_type_cast<'ctx>(
                     "Failed to cast '{}' type to '{}' type.",
                     from_type, target_type
                 ),
-                expr.get_span(),
+                expr.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -683,7 +683,7 @@ pub fn compile_constant_type_cast<'ctx>(
             "Failed to cast '{}' type to '{}' type.",
             from_type, target_type
         ),
-        expr.get_span(),
+        expr.get_code_location(),
         std::path::PathBuf::from(file!()),
         line!(),
     );
@@ -726,7 +726,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
         abort::abort_codegen(
             context,
             "Failed to extract constant value from a supposed constant value!",
-            target_type.get_span(),
+            target_type.get_code_location(),
             std::path::PathBuf::from(file!()),
             line!(),
         );
@@ -739,7 +739,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
             abort::abort_codegen(
                 context,
                 "Failed to extract constant value from a supposed constant value!",
-                target_type.get_span(),
+                target_type.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -770,7 +770,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
         abort::abort_codegen(
             context,
             "Failed to extract constant value from a supposed constant value!",
-            target_type.get_span(),
+            target_type.get_code_location(),
             std::path::PathBuf::from(file!()),
             line!(),
         );
@@ -784,7 +784,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
             abort::abort_codegen(
                 context,
                 "Failed to extract constant value from a supposed constant value!",
-                target_type.get_span(),
+                target_type.get_code_location(),
                 std::path::PathBuf::from(file!()),
                 line!(),
             );
@@ -798,7 +798,7 @@ pub fn compile_constant_numeric_cast<'ctx>(
     abort::abort_codegen(
         context,
         "Failed to cast a constant numeric value!",
-        target_type.get_span(),
+        target_type.get_code_location(),
         std::path::PathBuf::from(file!()),
         line!(),
     );

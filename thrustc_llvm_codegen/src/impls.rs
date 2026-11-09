@@ -200,7 +200,7 @@ impl<'ctx> LLVMFunctionExtensions<'ctx> for LLVMFunction<'ctx> {
     }
 
     #[inline]
-    fn get_span(&self) -> Span {
+    fn get_code_location(&self) -> Span {
         self.7
     }
 }
@@ -237,7 +237,7 @@ impl<'ctx> LLVMDBGFunctionExtensions<'ctx> for LLVMDBGFunction<'ctx> {
     }
 
     #[inline]
-    fn get_span(&self) -> Span {
+    fn get_code_location(&self) -> Span {
         self.6
     }
 }

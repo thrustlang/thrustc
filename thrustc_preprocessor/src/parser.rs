@@ -330,7 +330,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
         let idx: usize = index.0;
 
         if is_overflow {
-            let span: Span = self.peek().get_span();
+            let span: Span = self.peek().get_code_location();
 
             abort::abort_compilation(
                 &mut self.diagnostician,
@@ -341,7 +341,7 @@ impl<'module_parser> ModuleParser<'module_parser> {
                 line!(),
             )
         } else {
-            let span: Span = self.peek().get_span();
+            let span: Span = self.peek().get_code_location();
 
             self.tokens.get(idx).unwrap_or_else(|| {
                 abort::abort_compilation(
