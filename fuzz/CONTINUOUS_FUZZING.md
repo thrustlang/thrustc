@@ -9,7 +9,7 @@
 One-shot fuzzers (`cargo fuzz-<target>-<mode>`) stop at the first crash. The continuous supervisor saves each crash to the logs and restarts the fuzzer.
 
 > [!IMPORTANT]
-> A nightly toolchain and `cargo-fuzz` are required. The supervisor and the `reproduce` binary read the channel from `fuzz/rust-toolchain.toml` and run `cargo +nightly fuzz run ...`, so they can be launched from the repository root. The full list of prerequisites is in [COMPILER_FUZZING.md](../COMPILER_FUZZING.md#prerequisites).
+> A nightly toolchain and `cargo-fuzz` are required. The supervisor and the `reproduce` binary read the channel from `fuzz/rust-toolchain.toml` and run `cargo +nightly fuzz run ...`, so they can be launched from the repository root. The full list of prerequisites is in [FUZZING.md](../FUZZING.md#prerequisites).
 
 ## Requirements
 

@@ -171,15 +171,15 @@ See [Thrust Programming Language - Commit Conventions](https://github.com/thrust
 
 ## Compiler diagnostics
 
-Examples of the compiler diagnostics you can find in thrustc are in [Thrust Programming Language - Compiler Diagnostics](https://github.com/thrustlang/thrustc/blob/master/COMPILER_DIAGNOSTICS.md).
+Examples of the compiler diagnostics you can find in thrustc are in [Thrust Programming Language - Compiler Diagnostics](https://github.com/thrustlang/thrustc/blob/master/DIAGNOSTICS.md).
 
 ## Compiler fuzzing
 
-See [Thrust Programming Language - Compiler Fuzzing](https://github.com/thrustlang/thrustc/blob/master/COMPILER_FUZZING.md) for how to fuzz the compiler with stable and unstable features.
+See [Thrust Programming Language - Compiler Fuzzing](https://github.com/thrustlang/thrustc/blob/master/FUZZING.md) for how to fuzz the compiler with stable and unstable features.
 
 ## Compiler releasing
 
-See [Thrust Programming Language - Compiler Releasing](https://github.com/thrustlang/thrustc/blob/master/COMPILER_RELEASING.md) for how a new compiler version is released.
+See [Thrust Programming Language - Compiler Releasing](https://github.com/thrustlang/thrustc/blob/master/RELEASING.md) for how a new compiler version is released.
 
 ## Code of conduct
 
