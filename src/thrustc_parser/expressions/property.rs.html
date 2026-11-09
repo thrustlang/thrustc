@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a>        <span class="string">"Expected identifier."</span>.into(),
 <a href=#55 id=55 data-nosnippet>55</a>    )<span class="question-mark">?</span>;
 <a href=#56 id=56 data-nosnippet>56</a>
-<a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">let </span><span class="kw-2">mut </span>span: Span = first.get_span();
+<a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">let </span><span class="kw-2">mut </span>span: Span = first.get_code_location();
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a>    property_names.push(first.get_lexeme());
 <a href=#60 id=60 data-nosnippet>60</a>
@@ -65,7 +65,7 @@
 <a href=#65 id=65 data-nosnippet>65</a>            <span class="string">"Expected identifier."</span>.into(),
 <a href=#66 id=66 data-nosnippet>66</a>        )<span class="question-mark">?</span>;
 <a href=#67 id=67 data-nosnippet>67</a>
-<a href=#68 id=68 data-nosnippet>68</a>        span = property.get_span();
+<a href=#68 id=68 data-nosnippet>68</a>        span = property.get_code_location();
 <a href=#69 id=69 data-nosnippet>69</a>
 <a href=#70 id=70 data-nosnippet>70</a>        property_names.push(property.get_lexeme());
 <a href=#71 id=71 data-nosnippet>71</a>    }
@@ -191,7 +191,7 @@
 <a href=#191 id=191 data-nosnippet>191</a>                Type::Ptr {
 <a href=#192 id=192 data-nosnippet>192</a>                    subtype: <span class="prelude-val">Some</span>(field_type.clone().into()),
 <a href=#193 id=193 data-nosnippet>193</a>                    address_space: field_type.get_address_space(),
-<a href=#194 id=194 data-nosnippet>194</a>                    span: field_type.get_span(),
+<a href=#194 id=194 data-nosnippet>194</a>                    span: field_type.get_code_location(),
 <a href=#195 id=195 data-nosnippet>195</a>                }
 <a href=#196 id=196 data-nosnippet>196</a>            } <span class="kw">else </span>{
 <a href=#197 id=197 data-nosnippet>197</a>                field_type.clone()
@@ -223,7 +223,7 @@
 <a href=#223 id=223 data-nosnippet>223</a>                    Type::Ptr {
 <a href=#224 id=224 data-nosnippet>224</a>                        subtype: <span class="prelude-val">Some</span>(base_subtype.clone().into()),
 <a href=#225 id=225 data-nosnippet>225</a>                        address_space: base_subtype.get_address_space(),
-<a href=#226 id=226 data-nosnippet>226</a>                        span: base_subtype.get_span(),
+<a href=#226 id=226 data-nosnippet>226</a>                        span: base_subtype.get_code_location(),
 <a href=#227 id=227 data-nosnippet>227</a>                    }
 <a href=#228 id=228 data-nosnippet>228</a>                } <span class="kw">else </span>{
 <a href=#229 id=229 data-nosnippet>229</a>                    base_subtype.clone()
@@ -238,7 +238,7 @@
 <a href=#238 id=238 data-nosnippet>238</a>                Type::Ptr {
 <a href=#239 id=239 data-nosnippet>239</a>                    subtype: <span class="prelude-val">Some</span>(field_inner_type.clone().into()),
 <a href=#240 id=240 data-nosnippet>240</a>                    address_space: field_inner_type.get_address_space(),
-<a href=#241 id=241 data-nosnippet>241</a>                    span: field_inner_type.get_span(),
+<a href=#241 id=241 data-nosnippet>241</a>                    span: field_inner_type.get_code_location(),
 <a href=#242 id=242 data-nosnippet>242</a>                }
 <a href=#243 id=243 data-nosnippet>243</a>            } <span class="kw">else </span>{
 <a href=#244 id=244 data-nosnippet>244</a>                field_inner_type

@@ -134,7 +134,7 @@
 <a href=#134 id=134 data-nosnippet>134</a>                    <span class="string">"Cannot use 'void' as a value."</span>.into(),
 <a href=#135 id=135 data-nosnippet>135</a>                    <span class="string">"You should remove whatever type or value where void type belongs."</span>.into(),
 <a href=#136 id=136 data-nosnippet>136</a>                    <span class="prelude-val">None</span>,
-<a href=#137 id=137 data-nosnippet>137</a>                    ty.get_span(),
+<a href=#137 id=137 data-nosnippet>137</a>                    ty.get_code_location(),
 <a href=#138 id=138 data-nosnippet>138</a>                ));
 <a href=#139 id=139 data-nosnippet>139</a>            }
 <a href=#140 id=140 data-nosnippet>140</a>
@@ -186,13 +186,13 @@
 <a href=#186 id=186 data-nosnippet>186</a>    size: <span class="kw-2">&amp;</span><span class="lifetime">'type_checker </span>Ast,
 <a href=#187 id=187 data-nosnippet>187</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilationIssue&gt; {
 <a href=#188 id=188 data-nosnippet>188</a>    <span class="kw">let </span>source_type: <span class="kw-2">&amp;</span>Type = source.get_value_type()<span class="question-mark">?</span>;
-<a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">let </span>source_span: Span = source.get_span();
+<a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">let </span>source_span: Span = source.get_code_location();
 <a href=#190 id=190 data-nosnippet>190</a>
 <a href=#191 id=191 data-nosnippet>191</a>    <span class="kw">let </span>destination_type: <span class="kw-2">&amp;</span>Type = destination.get_value_type()<span class="question-mark">?</span>;
-<a href=#192 id=192 data-nosnippet>192</a>    <span class="kw">let </span>destination_span: Span = destination.get_span();
+<a href=#192 id=192 data-nosnippet>192</a>    <span class="kw">let </span>destination_span: Span = destination.get_code_location();
 <a href=#193 id=193 data-nosnippet>193</a>
 <a href=#194 id=194 data-nosnippet>194</a>    <span class="kw">let </span>size_type: <span class="kw-2">&amp;</span>Type = size.get_value_type()<span class="question-mark">?</span>;
-<a href=#195 id=195 data-nosnippet>195</a>    <span class="kw">let </span>size_span: Span = size.get_span();
+<a href=#195 id=195 data-nosnippet>195</a>    <span class="kw">let </span>size_span: Span = size.get_code_location();
 <a href=#196 id=196 data-nosnippet>196</a>
 <a href=#197 id=197 data-nosnippet>197</a>    <span class="kw">if </span>source_type.contains_void_type() || source_type.is_void_type() {
 <a href=#198 id=198 data-nosnippet>198</a>        typechecker.add_error_report(CompilationIssue::Error(
@@ -200,7 +200,7 @@
 <a href=#200 id=200 data-nosnippet>200</a>            <span class="string">"Cannot use 'void' as a value."</span>.into(),
 <a href=#201 id=201 data-nosnippet>201</a>            <span class="string">"You should remove whatever type or value where void type belongs."</span>.into(),
 <a href=#202 id=202 data-nosnippet>202</a>            <span class="prelude-val">None</span>,
-<a href=#203 id=203 data-nosnippet>203</a>            source_type.get_span(),
+<a href=#203 id=203 data-nosnippet>203</a>            source_type.get_code_location(),
 <a href=#204 id=204 data-nosnippet>204</a>        ));
 <a href=#205 id=205 data-nosnippet>205</a>    }
 <a href=#206 id=206 data-nosnippet>206</a>
@@ -210,7 +210,7 @@
 <a href=#210 id=210 data-nosnippet>210</a>            <span class="string">"Cannot use 'void' as a value."</span>.into(),
 <a href=#211 id=211 data-nosnippet>211</a>            <span class="string">"You should remove whatever type or value where void type belongs."</span>.into(),
 <a href=#212 id=212 data-nosnippet>212</a>            <span class="prelude-val">None</span>,
-<a href=#213 id=213 data-nosnippet>213</a>            destination_type.get_span(),
+<a href=#213 id=213 data-nosnippet>213</a>            destination_type.get_code_location(),
 <a href=#214 id=214 data-nosnippet>214</a>        ));
 <a href=#215 id=215 data-nosnippet>215</a>    }
 <a href=#216 id=216 data-nosnippet>216</a>
@@ -220,7 +220,7 @@
 <a href=#220 id=220 data-nosnippet>220</a>            <span class="string">"Cannot use 'void' as a value."</span>.into(),
 <a href=#221 id=221 data-nosnippet>221</a>            <span class="string">"You should remove whatever type or value where void type belongs."</span>.into(),
 <a href=#222 id=222 data-nosnippet>222</a>            <span class="prelude-val">None</span>,
-<a href=#223 id=223 data-nosnippet>223</a>            size_type.get_span(),
+<a href=#223 id=223 data-nosnippet>223</a>            size_type.get_code_location(),
 <a href=#224 id=224 data-nosnippet>224</a>        ));
 <a href=#225 id=225 data-nosnippet>225</a>    }
 <a href=#226 id=226 data-nosnippet>226</a>
@@ -268,13 +268,13 @@
 <a href=#268 id=268 data-nosnippet>268</a>    size: <span class="kw-2">&amp;</span><span class="lifetime">'type_checker </span>Ast,
 <a href=#269 id=269 data-nosnippet>269</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilationIssue&gt; {
 <a href=#270 id=270 data-nosnippet>270</a>    <span class="kw">let </span>source_type: <span class="kw-2">&amp;</span>Type = source.get_value_type()<span class="question-mark">?</span>;
-<a href=#271 id=271 data-nosnippet>271</a>    <span class="kw">let </span>source_span: Span = source.get_span();
+<a href=#271 id=271 data-nosnippet>271</a>    <span class="kw">let </span>source_span: Span = source.get_code_location();
 <a href=#272 id=272 data-nosnippet>272</a>
 <a href=#273 id=273 data-nosnippet>273</a>    <span class="kw">let </span>destination_type: <span class="kw-2">&amp;</span>Type = destination.get_value_type()<span class="question-mark">?</span>;
-<a href=#274 id=274 data-nosnippet>274</a>    <span class="kw">let </span>destination_span: Span = destination.get_span();
+<a href=#274 id=274 data-nosnippet>274</a>    <span class="kw">let </span>destination_span: Span = destination.get_code_location();
 <a href=#275 id=275 data-nosnippet>275</a>
 <a href=#276 id=276 data-nosnippet>276</a>    <span class="kw">let </span>size_type: <span class="kw-2">&amp;</span>Type = size.get_value_type()<span class="question-mark">?</span>;
-<a href=#277 id=277 data-nosnippet>277</a>    <span class="kw">let </span>size_span: Span = size.get_span();
+<a href=#277 id=277 data-nosnippet>277</a>    <span class="kw">let </span>size_span: Span = size.get_code_location();
 <a href=#278 id=278 data-nosnippet>278</a>
 <a href=#279 id=279 data-nosnippet>279</a>    <span class="kw">if </span>source_type.contains_void_type() || source_type.is_void_type() {
 <a href=#280 id=280 data-nosnippet>280</a>        typechecker.add_error_report(CompilationIssue::Error(
@@ -282,7 +282,7 @@
 <a href=#282 id=282 data-nosnippet>282</a>            <span class="string">"Cannot use 'void' as a value."</span>.into(),
 <a href=#283 id=283 data-nosnippet>283</a>            <span class="string">"You should remove whatever type or value where void type belongs."</span>.into(),
 <a href=#284 id=284 data-nosnippet>284</a>            <span class="prelude-val">None</span>,
-<a href=#285 id=285 data-nosnippet>285</a>            source_type.get_span(),
+<a href=#285 id=285 data-nosnippet>285</a>            source_type.get_code_location(),
 <a href=#286 id=286 data-nosnippet>286</a>        ));
 <a href=#287 id=287 data-nosnippet>287</a>    }
 <a href=#288 id=288 data-nosnippet>288</a>
@@ -292,7 +292,7 @@
 <a href=#292 id=292 data-nosnippet>292</a>            <span class="string">"Cannot use 'void' as a value."</span>.into(),
 <a href=#293 id=293 data-nosnippet>293</a>            <span class="string">"You should remove whatever type or value where void type belongs."</span>.into(),
 <a href=#294 id=294 data-nosnippet>294</a>            <span class="prelude-val">None</span>,
-<a href=#295 id=295 data-nosnippet>295</a>            destination_type.get_span(),
+<a href=#295 id=295 data-nosnippet>295</a>            destination_type.get_code_location(),
 <a href=#296 id=296 data-nosnippet>296</a>        ));
 <a href=#297 id=297 data-nosnippet>297</a>    }
 <a href=#298 id=298 data-nosnippet>298</a>
@@ -302,7 +302,7 @@
 <a href=#302 id=302 data-nosnippet>302</a>            <span class="string">"Cannot use 'void' as a value."</span>.into(),
 <a href=#303 id=303 data-nosnippet>303</a>            <span class="string">"You should remove whatever type or value where void type belongs."</span>.into(),
 <a href=#304 id=304 data-nosnippet>304</a>            <span class="prelude-val">None</span>,
-<a href=#305 id=305 data-nosnippet>305</a>            size_type.get_span(),
+<a href=#305 id=305 data-nosnippet>305</a>            size_type.get_code_location(),
 <a href=#306 id=306 data-nosnippet>306</a>        ));
 <a href=#307 id=307 data-nosnippet>307</a>    }
 <a href=#308 id=308 data-nosnippet>308</a>
@@ -350,13 +350,13 @@
 <a href=#350 id=350 data-nosnippet>350</a>    size: <span class="kw-2">&amp;</span><span class="lifetime">'type_checker </span>Ast,
 <a href=#351 id=351 data-nosnippet>351</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilationIssue&gt; {
 <a href=#352 id=352 data-nosnippet>352</a>    <span class="kw">let </span>destination_type: <span class="kw-2">&amp;</span>Type = destination.get_value_type()<span class="question-mark">?</span>;
-<a href=#353 id=353 data-nosnippet>353</a>    <span class="kw">let </span>destination_span: Span = destination.get_span();
+<a href=#353 id=353 data-nosnippet>353</a>    <span class="kw">let </span>destination_span: Span = destination.get_code_location();
 <a href=#354 id=354 data-nosnippet>354</a>
 <a href=#355 id=355 data-nosnippet>355</a>    <span class="kw">let </span>new_size_type: <span class="kw-2">&amp;</span>Type = new_size.get_value_type()<span class="question-mark">?</span>;
-<a href=#356 id=356 data-nosnippet>356</a>    <span class="kw">let </span>new_size_span: Span = new_size.get_span();
+<a href=#356 id=356 data-nosnippet>356</a>    <span class="kw">let </span>new_size_span: Span = new_size.get_code_location();
 <a href=#357 id=357 data-nosnippet>357</a>
 <a href=#358 id=358 data-nosnippet>358</a>    <span class="kw">let </span>size_type: <span class="kw-2">&amp;</span>Type = size.get_value_type()<span class="question-mark">?</span>;
-<a href=#359 id=359 data-nosnippet>359</a>    <span class="kw">let </span>size_span: Span = size.get_span();
+<a href=#359 id=359 data-nosnippet>359</a>    <span class="kw">let </span>size_span: Span = size.get_code_location();
 <a href=#360 id=360 data-nosnippet>360</a>
 <a href=#361 id=361 data-nosnippet>361</a>    <span class="kw">if </span>destination_type.contains_void_type() || destination_type.is_void_type() {
 <a href=#362 id=362 data-nosnippet>362</a>        typechecker.add_error_report(CompilationIssue::Error(
@@ -364,7 +364,7 @@
 <a href=#364 id=364 data-nosnippet>364</a>            <span class="string">"Cannot use 'void' as a value."</span>.into(),
 <a href=#365 id=365 data-nosnippet>365</a>            <span class="string">"You should remove whatever type or value where void type belongs."</span>.into(),
 <a href=#366 id=366 data-nosnippet>366</a>            <span class="prelude-val">None</span>,
-<a href=#367 id=367 data-nosnippet>367</a>            destination_type.get_span(),
+<a href=#367 id=367 data-nosnippet>367</a>            destination_type.get_code_location(),
 <a href=#368 id=368 data-nosnippet>368</a>        ));
 <a href=#369 id=369 data-nosnippet>369</a>    }
 <a href=#370 id=370 data-nosnippet>370</a>
@@ -374,7 +374,7 @@
 <a href=#374 id=374 data-nosnippet>374</a>            <span class="string">"Cannot use 'void' as a value."</span>.into(),
 <a href=#375 id=375 data-nosnippet>375</a>            <span class="string">"You should remove whatever type or value where void type belongs."</span>.into(),
 <a href=#376 id=376 data-nosnippet>376</a>            <span class="prelude-val">None</span>,
-<a href=#377 id=377 data-nosnippet>377</a>            new_size_type.get_span(),
+<a href=#377 id=377 data-nosnippet>377</a>            new_size_type.get_code_location(),
 <a href=#378 id=378 data-nosnippet>378</a>        ));
 <a href=#379 id=379 data-nosnippet>379</a>    }
 <a href=#380 id=380 data-nosnippet>380</a>
@@ -384,7 +384,7 @@
 <a href=#384 id=384 data-nosnippet>384</a>            <span class="string">"Cannot use 'void' as a value."</span>.into(),
 <a href=#385 id=385 data-nosnippet>385</a>            <span class="string">"You should remove whatever type or value where void type belongs."</span>.into(),
 <a href=#386 id=386 data-nosnippet>386</a>            <span class="prelude-val">None</span>,
-<a href=#387 id=387 data-nosnippet>387</a>            size_type.get_span(),
+<a href=#387 id=387 data-nosnippet>387</a>            size_type.get_code_location(),
 <a href=#388 id=388 data-nosnippet>388</a>        ));
 <a href=#389 id=389 data-nosnippet>389</a>    }
 <a href=#390 id=390 data-nosnippet>390</a>

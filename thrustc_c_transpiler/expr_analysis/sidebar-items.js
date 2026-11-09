@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["analyze_nested_scalar_array_type","clean_expression_wrappers","resolve_expression_type"]};
+window.SIDEBAR_ITEMS = {"fn":["analyze_nested_scalar_array_type","clean_expression_wrappers","expression_produces_condition","try_resolve_expression_type"]};

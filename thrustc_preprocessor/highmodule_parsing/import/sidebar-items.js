@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["parse_import","parse_only_list","parse_std_import"]};
+window.SIDEBAR_ITEMS = {"fn":["parse_import","parse_only","parse_std_import"]};

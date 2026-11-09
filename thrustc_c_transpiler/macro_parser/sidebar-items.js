@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["DeclaratorShape","MacroParser"],"type":["MultiDeclEntry","SplitDecl"]};

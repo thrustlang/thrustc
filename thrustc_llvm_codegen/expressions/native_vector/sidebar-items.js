@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["compile","compile_constant"]};
+window.SIDEBAR_ITEMS = {"fn":["compile","compile_constant","expand_scalar_to_vector","expand_scalar_to_vector_constant","reduce_bool_vector","reduce_bool_vector_constant"]};

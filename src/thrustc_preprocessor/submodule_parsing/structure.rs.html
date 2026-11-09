@@ -42,7 +42,7 @@
 <a href=#42 id=42 data-nosnippet>42</a>
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="kw">let </span>name_tk: <span class="kw-2">&amp;</span>Token = ctx.consume(TokenType::Identifier)<span class="question-mark">?</span>;
 <a href=#44 id=44 data-nosnippet>44</a>    <span class="kw">let </span>name: String = name_tk.get_lexeme().to_string();
-<a href=#45 id=45 data-nosnippet>45</a>    <span class="kw">let </span>span: Span = name_tk.get_span();
+<a href=#45 id=45 data-nosnippet>45</a>    <span class="kw">let </span>span: Span = name_tk.get_code_location();
 <a href=#46 id=46 data-nosnippet>46</a>
 <a href=#47 id=47 data-nosnippet>47</a>    <span class="kw">let </span>has_generics: bool = ctx.check(TokenType::LBracket);
 <a href=#48 id=48 data-nosnippet>48</a>
@@ -62,7 +62,7 @@
 <a href=#62 id=62 data-nosnippet>62</a>
 <a href=#63 id=63 data-nosnippet>63</a>    <span class="kw">while </span>!ctx.check(TokenType::RBrace) {
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">let </span>field_name: String = ctx.consume(TokenType::Identifier)<span class="question-mark">?</span>.get_lexeme().to_string();
-<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">let </span>field_span: Span = ctx.previous().get_span();
+<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">let </span>field_span: Span = ctx.previous().get_code_location();
 <a href=#66 id=66 data-nosnippet>66</a>
 <a href=#67 id=67 data-nosnippet>67</a>        ctx.consume(TokenType::Colon)<span class="question-mark">?</span>;
 <a href=#68 id=68 data-nosnippet>68</a>

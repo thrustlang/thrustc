@@ -18,7 +18,7 @@
 <a href=#18 id=18 data-nosnippet>18</a>*/
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span>thrustc_ast::ast_builtins::{AstBuiltin, DeferredBuiltinArgument};
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_ast::traits::AstCodeLocation;
+<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>thrustc_ast::traits::{AstBuiltinExtensions, AstCodeLocation};
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>thrustc_ast::{Ast, NodeId};
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span>thrustc_builtins::BuiltinFunctionSignature;
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>thrustc_code_location::Span;
@@ -66,7 +66,7 @@
 <a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">let </span>(argument, deferred_argument): (BuiltinArgument, DeferredBuiltinArgument&lt;<span class="lifetime">'parser</span>&gt;) =
 <a href=#67 id=67 data-nosnippet>67</a>            <span class="kw">if </span>index &lt; expected_parameters &amp;&amp; signature.is_parameter_a_type(index) {
 <a href=#68 id=68 data-nosnippet>68</a>                <span class="kw">let </span>ty: Type = typegeneration::build_type(ctx, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
-<a href=#69 id=69 data-nosnippet>69</a>                <span class="kw">let </span>argument_span: Span = ctx.previous().get_span();
+<a href=#69 id=69 data-nosnippet>69</a>                <span class="kw">let </span>argument_span: Span = ctx.previous().get_code_location();
 <a href=#70 id=70 data-nosnippet>70</a>
 <a href=#71 id=71 data-nosnippet>71</a>                <span class="kw">let </span><span class="kw-2">mut </span>hints: std::collections::HashSet&lt;String&gt; =
 <a href=#72 id=72 data-nosnippet>72</a>                    std::collections::HashSet::with_capacity(u8::MAX <span class="kw">as </span>usize);
@@ -88,14 +88,14 @@
 <a href=#88 id=88 data-nosnippet>88</a>                )
 <a href=#89 id=89 data-nosnippet>89</a>            } <span class="kw">else </span>{
 <a href=#90 id=90 data-nosnippet>90</a>                <span class="kw">let </span>expr: Ast&lt;<span class="lifetime">'_</span>&gt; = expressions::parse_expr(ctx)<span class="question-mark">?</span>;
-<a href=#91 id=91 data-nosnippet>91</a>                <span class="kw">let </span>argument_span: Span = expr.get_span();
+<a href=#91 id=91 data-nosnippet>91</a>                <span class="kw">let </span>argument_span: Span = expr.get_code_location();
 <a href=#92 id=92 data-nosnippet>92</a>
 <a href=#93 id=93 data-nosnippet>93</a>                <span class="kw">let </span>argument: BuiltinArgument = <span class="kw">match </span>thrustc_compile_time::fold(<span class="kw-2">&amp;</span>expr) {
 <a href=#94 id=94 data-nosnippet>94</a>                    <span class="prelude-val">Some</span>(value) =&gt; BuiltinArgument::Value {
 <a href=#95 id=95 data-nosnippet>95</a>                        value,
 <a href=#96 id=96 data-nosnippet>96</a>                        span: argument_span,
 <a href=#97 id=97 data-nosnippet>97</a>                    },
-<a href=#98 id=98 data-nosnippet>98</a>                    <span class="prelude-val">None </span><span class="kw">if </span><span class="self">self</span>::contains_deferred_builtin(<span class="kw-2">&amp;</span>expr) =&gt; {
+<a href=#98 id=98 data-nosnippet>98</a>                    <span class="prelude-val">None </span><span class="kw">if </span>expr.contains_deferred_builtin() =&gt; {
 <a href=#99 id=99 data-nosnippet>99</a>                        should_defer = <span class="bool-val">true</span>;
 <a href=#100 id=100 data-nosnippet>100</a>
 <a href=#101 id=101 data-nosnippet>101</a>                        BuiltinArgument::Value {
@@ -174,20 +174,4 @@
 <a href=#174 id=174 data-nosnippet>174</a>
 <a href=#175 id=175 data-nosnippet>175</a>    ctx.evaluate_builtin(name, <span class="kw-2">&amp;</span>args, span)
 <a href=#176 id=176 data-nosnippet>176</a>}
-<a href=#177 id=177 data-nosnippet>177</a>
-<a href=#178 id=178 data-nosnippet>178</a><span class="kw">fn </span>contains_deferred_builtin(node: <span class="kw-2">&amp;</span>Ast&lt;<span class="lifetime">'_</span>&gt;) -&gt; bool {
-<a href=#179 id=179 data-nosnippet>179</a>    <span class="kw">match </span>node {
-<a href=#180 id=180 data-nosnippet>180</a>        Ast::Builtin {
-<a href=#181 id=181 data-nosnippet>181</a>            builtin: AstBuiltin::DeferredCompileTime { .. },
-<a href=#182 id=182 data-nosnippet>182</a>            ..
-<a href=#183 id=183 data-nosnippet>183</a>        } =&gt; <span class="bool-val">true</span>,
-<a href=#184 id=184 data-nosnippet>184</a>        Ast::Group { node, .. } =&gt; <span class="self">self</span>::contains_deferred_builtin(node),
-<a href=#185 id=185 data-nosnippet>185</a>        Ast::BinaryOp { left, right, .. } =&gt; {
-<a href=#186 id=186 data-nosnippet>186</a>            <span class="self">self</span>::contains_deferred_builtin(left) || <span class="self">self</span>::contains_deferred_builtin(right)
-<a href=#187 id=187 data-nosnippet>187</a>        }
-<a href=#188 id=188 data-nosnippet>188</a>        Ast::UnaryOp { node, .. } =&gt; <span class="self">self</span>::contains_deferred_builtin(node),
-<a href=#189 id=189 data-nosnippet>189</a>        Ast::As { from, .. } =&gt; <span class="self">self</span>::contains_deferred_builtin(from),
-<a href=#190 id=190 data-nosnippet>190</a>        <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
-<a href=#191 id=191 data-nosnippet>191</a>    }
-<a href=#192 id=192 data-nosnippet>192</a>}
 </code></pre></div></section></main></body></html>

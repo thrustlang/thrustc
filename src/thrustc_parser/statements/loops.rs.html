@@ -38,7 +38,7 @@
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="string">"Expected 'for' keyword."</span>.into(),
 <a href=#39 id=39 data-nosnippet>39</a>    )<span class="question-mark">?</span>;
 <a href=#40 id=40 data-nosnippet>40</a>
-<a href=#41 id=41 data-nosnippet>41</a>    <span class="kw">let </span>span: Span = for_tk.get_span();
+<a href=#41 id=41 data-nosnippet>41</a>    <span class="kw">let </span>span: Span = for_tk.get_code_location();
 <a href=#42 id=42 data-nosnippet>42</a>
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="kw">if </span>ctx.check(TokenType::LBrace) {
 <a href=#44 id=44 data-nosnippet>44</a>        <span class="kw">let </span>body: Ast&lt;<span class="lifetime">'_</span>&gt; = code_block::parse_code_block_stmt(ctx)<span class="question-mark">?</span>;
@@ -109,7 +109,7 @@
 <a href=#109 id=109 data-nosnippet>109</a>        <span class="string">"Expected 'loop' keyword."</span>.into(),
 <a href=#110 id=110 data-nosnippet>110</a>    )<span class="question-mark">?</span>;
 <a href=#111 id=111 data-nosnippet>111</a>
-<a href=#112 id=112 data-nosnippet>112</a>    <span class="kw">let </span>span: Span = loop_tk.get_span();
+<a href=#112 id=112 data-nosnippet>112</a>    <span class="kw">let </span>span: Span = loop_tk.get_code_location();
 <a href=#113 id=113 data-nosnippet>113</a>
 <a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">let </span>body: Ast = <span class="kw">if </span>ctx.check(TokenType::LBrace) {
 <a href=#115 id=115 data-nosnippet>115</a>        code_block::parse_code_block_stmt(ctx)<span class="question-mark">?
@@ -134,7 +134,7 @@
 <a href=#134 id=134 data-nosnippet>134</a>        <span class="string">"Expected 'while' keyword."</span>.into(),
 <a href=#135 id=135 data-nosnippet>135</a>    )<span class="question-mark">?</span>;
 <a href=#136 id=136 data-nosnippet>136</a>
-<a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">let </span>span: Span = while_tk.get_span();
+<a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">let </span>span: Span = while_tk.get_code_location();
 <a href=#138 id=138 data-nosnippet>138</a>
 <a href=#139 id=139 data-nosnippet>139</a>    <span class="kw">if </span>ctx.check(TokenType::Var) {
 <a href=#140 id=140 data-nosnippet>140</a>        ctx.get_mut_symbols().begin_scope();

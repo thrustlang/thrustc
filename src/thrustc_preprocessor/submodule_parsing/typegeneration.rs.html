@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a>    <span class="kw">match </span>ctx.peek().kind {
 <a href=#55 id=55 data-nosnippet>55</a>        tk_kind <span class="kw">if </span>tk_kind.is_type() =&gt; {
 <a href=#56 id=56 data-nosnippet>56</a>            <span class="kw">let </span>tk: <span class="kw-2">&amp;</span>Token = ctx.advance()<span class="question-mark">?</span>;
-<a href=#57 id=57 data-nosnippet>57</a>            <span class="kw">let </span>span: Span = tk.get_span();
+<a href=#57 id=57 data-nosnippet>57</a>            <span class="kw">let </span>span: Span = tk.get_code_location();
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a>            <span class="kw">match </span>tk_kind {
 <a href=#60 id=60 data-nosnippet>60</a>                <span class="kw">_ if </span>tk_kind.is_array() =&gt; <span class="self">self</span>::parse_array_type(ctx, span),
@@ -112,7 +112,7 @@
 <a href=#112 id=112 data-nosnippet>112</a>            <span class="kw">let </span>identifier_tk: <span class="kw-2">&amp;</span>Token = ctx.advance()<span class="question-mark">?</span>;
 <a href=#113 id=113 data-nosnippet>113</a>
 <a href=#114 id=114 data-nosnippet>114</a>            <span class="kw">let </span>name: String = identifier_tk.get_lexeme().to_string();
-<a href=#115 id=115 data-nosnippet>115</a>            <span class="kw">let </span>span: Span = identifier_tk.get_span();
+<a href=#115 id=115 data-nosnippet>115</a>            <span class="kw">let </span>span: Span = identifier_tk.get_code_location();
 <a href=#116 id=116 data-nosnippet>116</a>
 <a href=#117 id=117 data-nosnippet>117</a>            <span class="kw">if </span>ctx.check(TokenType::ColonColon) {
 <a href=#118 id=118 data-nosnippet>118</a>                <span class="kw">let </span><span class="kw-2">mut </span>access: Vec&lt;String&gt; = <span class="macro">vec!</span>[name];
@@ -124,7 +124,7 @@
 <a href=#124 id=124 data-nosnippet>124</a>                    <span class="kw">let </span>part_tk: <span class="kw-2">&amp;</span>Token = ctx.consume(TokenType::Identifier)<span class="question-mark">?</span>;
 <a href=#125 id=125 data-nosnippet>125</a>                    <span class="kw">let </span>part: String = part_tk.get_lexeme().to_string();
 <a href=#126 id=126 data-nosnippet>126</a>
-<a href=#127 id=127 data-nosnippet>127</a>                    symbol_span = part_tk.get_span();
+<a href=#127 id=127 data-nosnippet>127</a>                    symbol_span = part_tk.get_code_location();
 <a href=#128 id=128 data-nosnippet>128</a>
 <a href=#129 id=129 data-nosnippet>129</a>                    access.push(part);
 <a href=#130 id=130 data-nosnippet>130</a>

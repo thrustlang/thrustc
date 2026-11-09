@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["handle_emit_c_bindings_thrust","handle_translate_c_to_thrust","translate_c_to_thrust"]};
+window.SIDEBAR_ITEMS = {"fn":["emit_c_bindings_thrust","start_translate_c_to_thrust","translate_c_to_thrust"]};

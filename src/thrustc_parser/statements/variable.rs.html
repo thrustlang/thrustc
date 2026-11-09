@@ -53,7 +53,7 @@
 <a href=#53 id=53 data-nosnippet>53</a>
 <a href=#54 id=54 data-nosnippet>54</a>    <span class="kw">let </span>name: <span class="kw-2">&amp;</span>str = local_tk.get_lexeme();
 <a href=#55 id=55 data-nosnippet>55</a>    <span class="kw">let </span>ascii_name: <span class="kw-2">&amp;</span>str = local_tk.get_ascii_lexeme();
-<a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">let </span>span: Span = local_tk.get_span();
+<a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">let </span>span: Span = local_tk.get_code_location();
 <a href=#57 id=57 data-nosnippet>57</a>
 <a href=#58 id=58 data-nosnippet>58</a>    <span class="kw">let </span><span class="kw-2">mut </span>attributes: ThrustAttributes =
 <a href=#59 id=59 data-nosnippet>59</a>        attributes::build_compiler_attributes(ctx, <span class="kw-2">&amp;</span>[TokenType::Colon])<span class="question-mark">?</span>;
@@ -186,7 +186,7 @@
 <a href=#186 id=186 data-nosnippet>186</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
 <a href=#187 id=187 data-nosnippet>187</a>    }
 <a href=#188 id=188 data-nosnippet>188</a>
-<a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">let _ </span>= thrustc_import_synthesis::synthesis::ensure_deallocator_for_type(
+<a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">let _ </span>= thrustc_import::synthesis::ensure_deallocator_for_type(
 <a href=#190 id=190 data-nosnippet>190</a>        <span class="kw-2">&amp;mut </span>ctx.import_context(),
 <a href=#191 id=191 data-nosnippet>191</a>        kind,
 <a href=#192 id=192 data-nosnippet>192</a>        attr_span,

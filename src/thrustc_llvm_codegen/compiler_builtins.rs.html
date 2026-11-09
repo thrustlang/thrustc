@@ -220,7 +220,7 @@
 <a href=#220 id=220 data-nosnippet>220</a>        } =&gt; {
 <a href=#221 id=221 data-nosnippet>221</a>            <span class="kw">let </span>llvm_builder: <span class="kw-2">&amp;</span>Builder = context.get_llvm_builder();
 <a href=#222 id=222 data-nosnippet>222</a>
-<a href=#223 id=223 data-nosnippet>223</a>            <span class="kw">let </span>src_span: Span = source.get_span();
+<a href=#223 id=223 data-nosnippet>223</a>            <span class="kw">let </span>src_span: Span = source.get_code_location();
 <a href=#224 id=224 data-nosnippet>224</a>            <span class="kw">let </span>cast_type: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Type&gt; = <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Type::Ptr {
 <a href=#225 id=225 data-nosnippet>225</a>                subtype: <span class="prelude-val">None</span>,
 <a href=#226 id=226 data-nosnippet>226</a>                address_space: <span class="prelude-val">None</span>,
@@ -230,7 +230,7 @@
 <a href=#230 id=230 data-nosnippet>230</a>            <span class="kw">let </span>src: PointerValue =
 <a href=#231 id=231 data-nosnippet>231</a>                codegen::compile_as_ptr_value(context, source, cast_type).into_pointer_value();
 <a href=#232 id=232 data-nosnippet>232</a>
-<a href=#233 id=233 data-nosnippet>233</a>            <span class="kw">let </span>dest_span: Span = destination.get_span();
+<a href=#233 id=233 data-nosnippet>233</a>            <span class="kw">let </span>dest_span: Span = destination.get_code_location();
 <a href=#234 id=234 data-nosnippet>234</a>            <span class="kw">let </span>cast_type: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Type&gt; = <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Type::Ptr {
 <a href=#235 id=235 data-nosnippet>235</a>                subtype: <span class="prelude-val">None</span>,
 <a href=#236 id=236 data-nosnippet>236</a>                address_space: <span class="prelude-val">None</span>,
@@ -274,7 +274,7 @@
 <a href=#274 id=274 data-nosnippet>274</a>        } =&gt; {
 <a href=#275 id=275 data-nosnippet>275</a>            <span class="kw">let </span>llvm_builder: <span class="kw-2">&amp;</span>Builder = context.get_llvm_builder();
 <a href=#276 id=276 data-nosnippet>276</a>
-<a href=#277 id=277 data-nosnippet>277</a>            <span class="kw">let </span>src_span: Span = source.get_span();
+<a href=#277 id=277 data-nosnippet>277</a>            <span class="kw">let </span>src_span: Span = source.get_code_location();
 <a href=#278 id=278 data-nosnippet>278</a>            <span class="kw">let </span>cast_type: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Type&gt; = <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Type::Ptr {
 <a href=#279 id=279 data-nosnippet>279</a>                subtype: <span class="prelude-val">None</span>,
 <a href=#280 id=280 data-nosnippet>280</a>                address_space: <span class="prelude-val">None</span>,
@@ -284,7 +284,7 @@
 <a href=#284 id=284 data-nosnippet>284</a>            <span class="kw">let </span>src: PointerValue =
 <a href=#285 id=285 data-nosnippet>285</a>                codegen::compile_as_ptr_value(context, source, cast_type).into_pointer_value();
 <a href=#286 id=286 data-nosnippet>286</a>
-<a href=#287 id=287 data-nosnippet>287</a>            <span class="kw">let </span>dest_span: Span = destination.get_span();
+<a href=#287 id=287 data-nosnippet>287</a>            <span class="kw">let </span>dest_span: Span = destination.get_code_location();
 <a href=#288 id=288 data-nosnippet>288</a>            <span class="kw">let </span>cast_type: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Type&gt; = <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Type::Ptr {
 <a href=#289 id=289 data-nosnippet>289</a>                subtype: <span class="prelude-val">None</span>,
 <a href=#290 id=290 data-nosnippet>290</a>                address_space: <span class="prelude-val">None</span>,
@@ -328,7 +328,7 @@
 <a href=#328 id=328 data-nosnippet>328</a>        } =&gt; {
 <a href=#329 id=329 data-nosnippet>329</a>            <span class="kw">let </span>llvm_builder: <span class="kw-2">&amp;</span>Builder = context.get_llvm_builder();
 <a href=#330 id=330 data-nosnippet>330</a>
-<a href=#331 id=331 data-nosnippet>331</a>            <span class="kw">let </span>dest_span: Span = destination.get_span();
+<a href=#331 id=331 data-nosnippet>331</a>            <span class="kw">let </span>dest_span: Span = destination.get_code_location();
 <a href=#332 id=332 data-nosnippet>332</a>            <span class="kw">let </span>cast_type: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Type&gt; = <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Type::Ptr {
 <a href=#333 id=333 data-nosnippet>333</a>                subtype: <span class="prelude-val">None</span>,
 <a href=#334 id=334 data-nosnippet>334</a>                address_space: <span class="prelude-val">None</span>,

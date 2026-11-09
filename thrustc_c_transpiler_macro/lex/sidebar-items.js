@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["escape_string_for_thrust_literal"]};

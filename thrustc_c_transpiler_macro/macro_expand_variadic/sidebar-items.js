@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["apply_gnu_comma_swallow","expand_va_opt","join_variadic_arguments","normalize_variadic_body_for_classification","substitute_variadic_parameter_tokens","validate_variadic_body"]};

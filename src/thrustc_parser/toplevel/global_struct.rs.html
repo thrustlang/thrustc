@@ -31,7 +31,7 @@
 <a href=#31 id=31 data-nosnippet>31</a>};
 <a href=#32 id=32 data-nosnippet>32</a>
 <a href=#33 id=33 data-nosnippet>33</a><span class="kw">use </span>thrustc_ast::traits::AstStructureDataExtensions;
-<a href=#34 id=34 data-nosnippet>34</a><span class="kw">use </span>thrustc_parser_table::GenericStructEntry;
+<a href=#34 id=34 data-nosnippet>34</a><span class="kw">use </span>thrustc_parser_table::GenericStruct;
 <a href=#35 id=35 data-nosnippet>35</a>
 <a href=#36 id=36 data-nosnippet>36</a><span class="kw">use crate</span>::{attributes, modificators, typegeneration, ParserContext};
 <a href=#37 id=37 data-nosnippet>37</a>
@@ -52,7 +52,7 @@
 <a href=#52 id=52 data-nosnippet>52</a>    )<span class="question-mark">?</span>;
 <a href=#53 id=53 data-nosnippet>53</a>
 <a href=#54 id=54 data-nosnippet>54</a>    <span class="kw">let </span>name: <span class="kw-2">&amp;</span>str = name_tk.get_lexeme();
-<a href=#55 id=55 data-nosnippet>55</a>    <span class="kw">let </span>span: Span = name_tk.get_span();
+<a href=#55 id=55 data-nosnippet>55</a>    <span class="kw">let </span>span: Span = name_tk.get_code_location();
 <a href=#56 id=56 data-nosnippet>56</a>
 <a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">let </span>has_generics: bool = ctx.check(TokenType::LBracket);
 <a href=#58 id=58 data-nosnippet>58</a>
@@ -94,7 +94,7 @@
 <a href=#94 id=94 data-nosnippet>94</a>            )<span class="question-mark">?</span>;
 <a href=#95 id=95 data-nosnippet>95</a>
 <a href=#96 id=96 data-nosnippet>96</a>            <span class="kw">let </span>field_name: <span class="kw-2">&amp;</span>str = field_tk.get_lexeme();
-<a href=#97 id=97 data-nosnippet>97</a>            <span class="kw">let </span>field_span: Span = field_tk.get_span();
+<a href=#97 id=97 data-nosnippet>97</a>            <span class="kw">let </span>field_span: Span = field_tk.get_code_location();
 <a href=#98 id=98 data-nosnippet>98</a>
 <a href=#99 id=99 data-nosnippet>99</a>            ctx.consume(
 <a href=#100 id=100 data-nosnippet>100</a>                TokenType::Colon,
@@ -157,7 +157,7 @@
 <a href=#157 id=157 data-nosnippet>157</a>        <span class="kw">if </span>is_generic {
 <a href=#158 id=158 data-nosnippet>158</a>            ctx.get_mut_symbols().new_generic_struct(
 <a href=#159 id=159 data-nosnippet>159</a>                name.to_string(),
-<a href=#160 id=160 data-nosnippet>160</a>                GenericStructEntry::new(
+<a href=#160 id=160 data-nosnippet>160</a>                GenericStruct::new(
 <a href=#161 id=161 data-nosnippet>161</a>                    type_params,
 <a href=#162 id=162 data-nosnippet>162</a>                    data.<span class="number">1
 <a href=#163 id=163 data-nosnippet>163</a>                        </span>.iter()
@@ -180,7 +180,7 @@
 <a href=#180 id=180 data-nosnippet>180</a>        <span class="kw">if </span>is_generic {
 <a href=#181 id=181 data-nosnippet>181</a>            ctx.get_mut_symbols().new_generic_struct(
 <a href=#182 id=182 data-nosnippet>182</a>                name.to_string(),
-<a href=#183 id=183 data-nosnippet>183</a>                GenericStructEntry::new(
+<a href=#183 id=183 data-nosnippet>183</a>                GenericStruct::new(
 <a href=#184 id=184 data-nosnippet>184</a>                    type_params,
 <a href=#185 id=185 data-nosnippet>185</a>                    data.<span class="number">1
 <a href=#186 id=186 data-nosnippet>186</a>                        </span>.iter()

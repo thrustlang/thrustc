@@ -38,7 +38,7 @@
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="string">"Expected 'if' keyword."</span>.into(),
 <a href=#39 id=39 data-nosnippet>39</a>    )<span class="question-mark">?</span>;
 <a href=#40 id=40 data-nosnippet>40</a>
-<a href=#41 id=41 data-nosnippet>41</a>    <span class="kw">let </span>span: Span = if_tk.get_span();
+<a href=#41 id=41 data-nosnippet>41</a>    <span class="kw">let </span>span: Span = if_tk.get_code_location();
 <a href=#42 id=42 data-nosnippet>42</a>
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="kw">let </span>condition: Ast = expressions::parse_expr(ctx)<span class="question-mark">?</span>;
 <a href=#44 id=44 data-nosnippet>44</a>
@@ -73,7 +73,7 @@
 <a href=#73 id=73 data-nosnippet>73</a>            )<span class="question-mark">?</span>;
 <a href=#74 id=74 data-nosnippet>74</a>        }
 <a href=#75 id=75 data-nosnippet>75</a>
-<a href=#76 id=76 data-nosnippet>76</a>        <span class="kw">let </span>span: Span = ctx.previous().get_span();
+<a href=#76 id=76 data-nosnippet>76</a>        <span class="kw">let </span>span: Span = ctx.previous().get_code_location();
 <a href=#77 id=77 data-nosnippet>77</a>
 <a href=#78 id=78 data-nosnippet>78</a>        <span class="kw">let </span>condition: Ast = expressions::parse_expr(ctx)<span class="question-mark">?</span>;
 <a href=#79 id=79 data-nosnippet>79</a>
@@ -95,7 +95,7 @@
 <a href=#95 id=95 data-nosnippet>95</a>    }
 <a href=#96 id=96 data-nosnippet>96</a>
 <a href=#97 id=97 data-nosnippet>97</a>    <span class="kw">if </span>ctx.match_token(TokenType::Else)<span class="question-mark">? </span>{
-<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">let </span>span: Span = ctx.previous().get_span();
+<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">let </span>span: Span = ctx.previous().get_code_location();
 <a href=#99 id=99 data-nosnippet>99</a>
 <a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>else_body: Ast = <span class="kw">if </span>ctx.check(TokenType::LBrace) {
 <a href=#101 id=101 data-nosnippet>101</a>            code_block::parse_code_block_stmt(ctx)<span class="question-mark">?

@@ -82,27 +82,30 @@
 <a href=#82 id=82 data-nosnippet>82</a>    }
 <a href=#83 id=83 data-nosnippet>83</a>}
 <a href=#84 id=84 data-nosnippet>84</a>
-<a href=#85 id=85 data-nosnippet>85</a><span class="kw">fn </span>count_lines_exact(path: <span class="kw-2">&amp;</span>Path) -&gt; anyhow::Result&lt;u64&gt; {
-<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">let </span><span class="kw-2">mut </span>file: std::fs::File = std::fs::File::open(path)<span class="question-mark">?</span>;
-<a href=#87 id=87 data-nosnippet>87</a>    count_lines_from_reader(<span class="kw-2">&amp;mut </span>file)
-<a href=#88 id=88 data-nosnippet>88</a>}
-<a href=#89 id=89 data-nosnippet>89</a>
-<a href=#90 id=90 data-nosnippet>90</a><span class="kw">fn </span>count_lines_from_reader&lt;R: Read&gt;(reader: <span class="kw-2">&amp;mut </span>R) -&gt; anyhow::Result&lt;u64&gt; {
-<a href=#91 id=91 data-nosnippet>91</a>    <span class="kw">const </span>CHUNK_SIZE: usize = <span class="number">1 </span>&lt;&lt; <span class="number">16</span>;
-<a href=#92 id=92 data-nosnippet>92</a>
-<a href=#93 id=93 data-nosnippet>93</a>    <span class="kw">let </span><span class="kw-2">mut </span>buffer: [u8; CHUNK_SIZE] = [<span class="number">0u8</span>; CHUNK_SIZE];
-<a href=#94 id=94 data-nosnippet>94</a>    <span class="kw">let </span><span class="kw-2">mut </span>count: u64 = <span class="number">0</span>;
-<a href=#95 id=95 data-nosnippet>95</a>
-<a href=#96 id=96 data-nosnippet>96</a>    <span class="kw">loop </span>{
-<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">let </span>bytes_read: usize = reader.read(<span class="kw-2">&amp;mut </span>buffer)<span class="question-mark">?</span>;
-<a href=#98 id=98 data-nosnippet>98</a>
-<a href=#99 id=99 data-nosnippet>99</a>        <span class="kw">if </span>bytes_read == <span class="number">0 </span>{
-<a href=#100 id=100 data-nosnippet>100</a>            <span class="kw">break</span>;
-<a href=#101 id=101 data-nosnippet>101</a>        }
-<a href=#102 id=102 data-nosnippet>102</a>
-<a href=#103 id=103 data-nosnippet>103</a>        count = count.saturating_add(bytecount::count(<span class="kw-2">&amp;</span>buffer[..bytes_read], <span class="string">b'\n'</span>) <span class="kw">as </span>u64);
-<a href=#104 id=104 data-nosnippet>104</a>    }
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a>    <span class="prelude-val">Ok</span>(count)
-<a href=#107 id=107 data-nosnippet>107</a>}
+<a href=#85 id=85 data-nosnippet>85</a><span class="kw">fn </span>count_lines_from_reader&lt;R: Read&gt;(reader: <span class="kw-2">&amp;mut </span>R) -&gt; anyhow::Result&lt;u64&gt; {
+<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">const </span>CHUNK_SIZE: usize = <span class="number">1 </span>&lt;&lt; <span class="number">16</span>;
+<a href=#87 id=87 data-nosnippet>87</a>
+<a href=#88 id=88 data-nosnippet>88</a>    <span class="kw">let </span><span class="kw-2">mut </span>buffer: [u8; CHUNK_SIZE] = [<span class="number">0u8</span>; CHUNK_SIZE];
+<a href=#89 id=89 data-nosnippet>89</a>    <span class="kw">let </span><span class="kw-2">mut </span>count: u64 = <span class="number">0</span>;
+<a href=#90 id=90 data-nosnippet>90</a>
+<a href=#91 id=91 data-nosnippet>91</a>    <span class="kw">loop </span>{
+<a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">let </span>bytes_read: usize = reader.read(<span class="kw-2">&amp;mut </span>buffer)<span class="question-mark">?</span>;
+<a href=#93 id=93 data-nosnippet>93</a>
+<a href=#94 id=94 data-nosnippet>94</a>        <span class="kw">if </span>bytes_read == <span class="number">0 </span>{
+<a href=#95 id=95 data-nosnippet>95</a>            <span class="kw">break</span>;
+<a href=#96 id=96 data-nosnippet>96</a>        }
+<a href=#97 id=97 data-nosnippet>97</a>
+<a href=#98 id=98 data-nosnippet>98</a>        count = count.saturating_add(bytecount::count(<span class="kw-2">&amp;</span>buffer[..bytes_read], <span class="string">b'\n'</span>) <span class="kw">as </span>u64);
+<a href=#99 id=99 data-nosnippet>99</a>    }
+<a href=#100 id=100 data-nosnippet>100</a>
+<a href=#101 id=101 data-nosnippet>101</a>    <span class="prelude-val">Ok</span>(count)
+<a href=#102 id=102 data-nosnippet>102</a>}
+<a href=#103 id=103 data-nosnippet>103</a>
+<a href=#104 id=104 data-nosnippet>104</a><span class="kw">fn </span>count_lines_exact(path: <span class="kw-2">&amp;</span>Path) -&gt; anyhow::Result&lt;u64&gt; {
+<a href=#105 id=105 data-nosnippet>105</a>    <span class="kw">let </span><span class="kw-2">mut </span>file: std::fs::File = std::fs::File::open(path)<span class="question-mark">?</span>;
+<a href=#106 id=106 data-nosnippet>106</a>
+<a href=#107 id=107 data-nosnippet>107</a>    <span class="kw">let </span>lines: <span class="prelude-ty">Result</span>&lt;u64, anyhow::Error&gt; = count_lines_from_reader(<span class="kw-2">&amp;mut </span>file);
+<a href=#108 id=108 data-nosnippet>108</a>
+<a href=#109 id=109 data-nosnippet>109</a>    lines
+<a href=#110 id=110 data-nosnippet>110</a>}
 </code></pre></div></section></main></body></html>

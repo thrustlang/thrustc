@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["lex"],"struct":["ATOMIC","ATTRIBUTES","BUILTINS","KEYWORDS","TYPES"]};
+window.SIDEBAR_ITEMS = {"constant":["UNSTABLE_LEXEMES"],"fn":["lex"],"struct":["ATOMIC","ATTRIBUTES","BUILTINS","KEYWORDS","TYPES"]};

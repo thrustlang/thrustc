@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["CanonicalBuiltin","HeapOperation"]};
+window.SIDEBAR_ITEMS = {"enum":["Builtin","HeapOperation"]};

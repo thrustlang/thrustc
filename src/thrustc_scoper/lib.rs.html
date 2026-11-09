@@ -95,7 +95,7 @@
 <a href=#95 id=95 data-nosnippet>95</a>                <span class="string">"Statements and expressions are not allowed at module scope."</span>.into(),
 <a href=#96 id=96 data-nosnippet>96</a>                <span class="string">"Remove it from this scope."</span>.into(),
 <a href=#97 id=97 data-nosnippet>97</a>                <span class="prelude-val">None</span>,
-<a href=#98 id=98 data-nosnippet>98</a>                node.get_span(),
+<a href=#98 id=98 data-nosnippet>98</a>                node.get_code_location(),
 <a href=#99 id=99 data-nosnippet>99</a>            ));
 <a href=#100 id=100 data-nosnippet>100</a>        }
 <a href=#101 id=101 data-nosnippet>101</a>
@@ -166,7 +166,7 @@
 <a href=#166 id=166 data-nosnippet>166</a>                <span class="string">"Too many depth for a node."</span>.into(),
 <a href=#167 id=167 data-nosnippet>167</a>                <span class="string">"You should remove the code nesting"</span>.into(),
 <a href=#168 id=168 data-nosnippet>168</a>                <span class="prelude-val">None</span>,
-<a href=#169 id=169 data-nosnippet>169</a>                node.get_span(),
+<a href=#169 id=169 data-nosnippet>169</a>                node.get_code_location(),
 <a href=#170 id=170 data-nosnippet>170</a>            ));
 <a href=#171 id=171 data-nosnippet>171</a>
 <a href=#172 id=172 data-nosnippet>172</a>            <span class="kw">return</span>;
@@ -184,7 +184,7 @@
 <a href=#184 id=184 data-nosnippet>184</a>                <span class="string">"Function is only allowed at module scope."</span>.into(),
 <a href=#185 id=185 data-nosnippet>185</a>                <span class="string">"Remove it from this scope."</span>.into(),
 <a href=#186 id=186 data-nosnippet>186</a>                <span class="prelude-val">None</span>,
-<a href=#187 id=187 data-nosnippet>187</a>                node.get_span(),
+<a href=#187 id=187 data-nosnippet>187</a>                node.get_code_location(),
 <a href=#188 id=188 data-nosnippet>188</a>            ));
 <a href=#189 id=189 data-nosnippet>189</a>        }
 <a href=#190 id=190 data-nosnippet>190</a>
@@ -194,7 +194,7 @@
 <a href=#194 id=194 data-nosnippet>194</a>                <span class="string">"Assembler function is only allowed at module scope."</span>.into(),
 <a href=#195 id=195 data-nosnippet>195</a>                <span class="string">"Remove it from this scope."</span>.into(),
 <a href=#196 id=196 data-nosnippet>196</a>                <span class="prelude-val">None</span>,
-<a href=#197 id=197 data-nosnippet>197</a>                node.get_span(),
+<a href=#197 id=197 data-nosnippet>197</a>                node.get_code_location(),
 <a href=#198 id=198 data-nosnippet>198</a>            ));
 <a href=#199 id=199 data-nosnippet>199</a>        }
 <a href=#200 id=200 data-nosnippet>200</a>
@@ -204,7 +204,7 @@
 <a href=#204 id=204 data-nosnippet>204</a>                <span class="string">"Type is only allowed at module scope."</span>.into(),
 <a href=#205 id=205 data-nosnippet>205</a>                <span class="string">"Remove it from this scope."</span>.into(),
 <a href=#206 id=206 data-nosnippet>206</a>                <span class="prelude-val">None</span>,
-<a href=#207 id=207 data-nosnippet>207</a>                node.get_span(),
+<a href=#207 id=207 data-nosnippet>207</a>                node.get_code_location(),
 <a href=#208 id=208 data-nosnippet>208</a>            ));
 <a href=#209 id=209 data-nosnippet>209</a>        }
 <a href=#210 id=210 data-nosnippet>210</a>
@@ -214,7 +214,7 @@
 <a href=#214 id=214 data-nosnippet>214</a>                <span class="string">"Global assembler is only allowed at module scope."</span>.into(),
 <a href=#215 id=215 data-nosnippet>215</a>                <span class="string">"Remove it from this scope."</span>.into(),
 <a href=#216 id=216 data-nosnippet>216</a>                <span class="prelude-val">None</span>,
-<a href=#217 id=217 data-nosnippet>217</a>                node.get_span(),
+<a href=#217 id=217 data-nosnippet>217</a>                node.get_code_location(),
 <a href=#218 id=218 data-nosnippet>218</a>            ));
 <a href=#219 id=219 data-nosnippet>219</a>        }
 <a href=#220 id=220 data-nosnippet>220</a>
@@ -224,7 +224,7 @@
 <a href=#224 id=224 data-nosnippet>224</a>                <span class="string">"Enum is only allowed at module scope."</span>.into(),
 <a href=#225 id=225 data-nosnippet>225</a>                <span class="string">"Remove it from this scope."</span>.into(),
 <a href=#226 id=226 data-nosnippet>226</a>                <span class="prelude-val">None</span>,
-<a href=#227 id=227 data-nosnippet>227</a>                node.get_span(),
+<a href=#227 id=227 data-nosnippet>227</a>                node.get_code_location(),
 <a href=#228 id=228 data-nosnippet>228</a>            ));
 <a href=#229 id=229 data-nosnippet>229</a>        }
 <a href=#230 id=230 data-nosnippet>230</a>
@@ -234,7 +234,7 @@
 <a href=#234 id=234 data-nosnippet>234</a>                <span class="string">"Module importation is only allowed at module scope."</span>.into(),
 <a href=#235 id=235 data-nosnippet>235</a>                <span class="string">"Remove it from this scope."</span>.into(),
 <a href=#236 id=236 data-nosnippet>236</a>                <span class="prelude-val">None</span>,
-<a href=#237 id=237 data-nosnippet>237</a>                node.get_span(),
+<a href=#237 id=237 data-nosnippet>237</a>                node.get_code_location(),
 <a href=#238 id=238 data-nosnippet>238</a>            ));
 <a href=#239 id=239 data-nosnippet>239</a>        }
 <a href=#240 id=240 data-nosnippet>240</a>
@@ -244,7 +244,7 @@
 <a href=#244 id=244 data-nosnippet>244</a>                <span class="string">"Compiler intrinsic is only allowed at module scope."</span>.into(),
 <a href=#245 id=245 data-nosnippet>245</a>                <span class="string">"Remove it from this scope."</span>.into(),
 <a href=#246 id=246 data-nosnippet>246</a>                <span class="prelude-val">None</span>,
-<a href=#247 id=247 data-nosnippet>247</a>                node.get_span(),
+<a href=#247 id=247 data-nosnippet>247</a>                node.get_code_location(),
 <a href=#248 id=248 data-nosnippet>248</a>            ));
 <a href=#249 id=249 data-nosnippet>249</a>        }
 <a href=#250 id=250 data-nosnippet>250</a>
@@ -381,7 +381,7 @@
 <a href=#381 id=381 data-nosnippet>381</a>                    <span class="string">"Loop control statement outside of a loop."</span>.into(),
 <a href=#382 id=382 data-nosnippet>382</a>                    <span class="string">"It should be inside a loop. Reposition inside it."</span>.into(),
 <a href=#383 id=383 data-nosnippet>383</a>                    <span class="prelude-val">None</span>,
-<a href=#384 id=384 data-nosnippet>384</a>                    node.get_span(),
+<a href=#384 id=384 data-nosnippet>384</a>                    node.get_code_location(),
 <a href=#385 id=385 data-nosnippet>385</a>                ));
 <a href=#386 id=386 data-nosnippet>386</a>            }
 <a href=#387 id=387 data-nosnippet>387</a>            Ast::Return { span, .. } <span class="kw">if </span>!<span class="self">self</span>.get_context().is_inside_function() =&gt; {

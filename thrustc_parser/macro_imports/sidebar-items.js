@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["find_symbol","find_type_macro","synthesize_reference","synthesize_type"],"type":["TypeMacroEntry"]};

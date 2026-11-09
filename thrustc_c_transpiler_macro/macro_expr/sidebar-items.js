@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["lower","lower_function_body","lower_initializer"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build_builtin_call","contains_deferred_builtin"]};
+window.SIDEBAR_ITEMS = {"fn":["build_builtin_call"]};

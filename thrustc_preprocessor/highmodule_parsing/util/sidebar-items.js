@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["clang_commands","detect_clang_resource_include_dir","detect_host_system_include_dirs","verbose_include_dirs"]};

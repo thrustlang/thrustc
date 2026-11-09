@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build_qualified_expression","build_qualified_generic_call"]};
+window.SIDEBAR_ITEMS = {"fn":["build_qualified_expression","build_qualified_generic_call","build_qualified_macro","parse_macro_arguments"]};

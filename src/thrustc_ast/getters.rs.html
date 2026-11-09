@@ -230,14 +230,14 @@
 <a href=#230 id=230 data-nosnippet>230</a>                <span class="string">"Expected a value, not anything else."</span>.into(),
 <a href=#231 id=231 data-nosnippet>231</a>                <span class="string">"It should be an expression!"</span>.into(),
 <a href=#232 id=232 data-nosnippet>232</a>                <span class="prelude-val">None</span>,
-<a href=#233 id=233 data-nosnippet>233</a>                <span class="self">self</span>.get_span(),
+<a href=#233 id=233 data-nosnippet>233</a>                <span class="self">self</span>.get_code_location(),
 <a href=#234 id=234 data-nosnippet>234</a>            )),
 <a href=#235 id=235 data-nosnippet>235</a>        }
 <a href=#236 id=236 data-nosnippet>236</a>    }
 <a href=#237 id=237 data-nosnippet>237</a>}
 <a href=#238 id=238 data-nosnippet>238</a>
 <a href=#239 id=239 data-nosnippet>239</a><span class="kw">impl </span>AstCodeLocation <span class="kw">for </span>Ast&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#240 id=240 data-nosnippet>240</a>    <span class="kw">fn </span>get_span(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Span {
+<a href=#240 id=240 data-nosnippet>240</a>    <span class="kw">fn </span>get_code_location(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Span {
 <a href=#241 id=241 data-nosnippet>241</a>        <span class="kw">match </span><span class="self">self </span>{
 <a href=#242 id=242 data-nosnippet>242</a>            <span class="comment">// Primitive values and literals
 <a href=#243 id=243 data-nosnippet>243</a>            </span>Ast::Integer { span, .. } =&gt; <span class="kw-2">*</span>span,

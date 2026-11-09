@@ -39,7 +39,7 @@
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="kw">let </span><span class="kw-2">mut </span>left: Ast&lt;<span class="lifetime">'static</span>&gt; = <span class="self">self</span>::parse_and(ctx)<span class="question-mark">?</span>;
 <a href=#40 id=40 data-nosnippet>40</a>
 <a href=#41 id=41 data-nosnippet>41</a>    <span class="kw">while </span>ctx.check(TokenType::Or) {
-<a href=#42 id=42 data-nosnippet>42</a>        <span class="kw">let </span>span: Span = ctx.peek().get_span();
+<a href=#42 id=42 data-nosnippet>42</a>        <span class="kw">let </span>span: Span = ctx.peek().get_code_location();
 <a href=#43 id=43 data-nosnippet>43</a>
 <a href=#44 id=44 data-nosnippet>44</a>        ctx.only_advance()<span class="question-mark">?</span>;
 <a href=#45 id=45 data-nosnippet>45</a>
@@ -62,7 +62,7 @@
 <a href=#62 id=62 data-nosnippet>62</a>    <span class="kw">let </span><span class="kw-2">mut </span>left: Ast&lt;<span class="lifetime">'static</span>&gt; = <span class="self">self</span>::parse_equality(ctx)<span class="question-mark">?</span>;
 <a href=#63 id=63 data-nosnippet>63</a>
 <a href=#64 id=64 data-nosnippet>64</a>    <span class="kw">while </span>ctx.check(TokenType::And) {
-<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">let </span>span: Span = ctx.peek().get_span();
+<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">let </span>span: Span = ctx.peek().get_code_location();
 <a href=#66 id=66 data-nosnippet>66</a>
 <a href=#67 id=67 data-nosnippet>67</a>        ctx.only_advance()<span class="question-mark">?</span>;
 <a href=#68 id=68 data-nosnippet>68</a>
@@ -86,7 +86,7 @@
 <a href=#86 id=86 data-nosnippet>86</a>
 <a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">while </span>ctx.check(TokenType::EqEq) || ctx.check(TokenType::BangEq) {
 <a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>operator: TokenType = ctx.peek().get_type();
-<a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>span: Span = ctx.peek().get_span();
+<a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>span: Span = ctx.peek().get_code_location();
 <a href=#90 id=90 data-nosnippet>90</a>
 <a href=#91 id=91 data-nosnippet>91</a>        ctx.only_advance()<span class="question-mark">?</span>;
 <a href=#92 id=92 data-nosnippet>92</a>
@@ -114,7 +114,7 @@
 <a href=#114 id=114 data-nosnippet>114</a>        || ctx.check(TokenType::GreaterEq)
 <a href=#115 id=115 data-nosnippet>115</a>    {
 <a href=#116 id=116 data-nosnippet>116</a>        <span class="kw">let </span>operator: TokenType = ctx.peek().get_type();
-<a href=#117 id=117 data-nosnippet>117</a>        <span class="kw">let </span>span: Span = ctx.peek().get_span();
+<a href=#117 id=117 data-nosnippet>117</a>        <span class="kw">let </span>span: Span = ctx.peek().get_code_location();
 <a href=#118 id=118 data-nosnippet>118</a>
 <a href=#119 id=119 data-nosnippet>119</a>        ctx.only_advance()<span class="question-mark">?</span>;
 <a href=#120 id=120 data-nosnippet>120</a>
@@ -138,7 +138,7 @@
 <a href=#138 id=138 data-nosnippet>138</a>
 <a href=#139 id=139 data-nosnippet>139</a>    <span class="kw">while </span>ctx.check(TokenType::Plus) || ctx.check(TokenType::Minus) {
 <a href=#140 id=140 data-nosnippet>140</a>        <span class="kw">let </span>operator: TokenType = ctx.peek().get_type();
-<a href=#141 id=141 data-nosnippet>141</a>        <span class="kw">let </span>span: Span = ctx.peek().get_span();
+<a href=#141 id=141 data-nosnippet>141</a>        <span class="kw">let </span>span: Span = ctx.peek().get_code_location();
 <a href=#142 id=142 data-nosnippet>142</a>
 <a href=#143 id=143 data-nosnippet>143</a>        ctx.only_advance()<span class="question-mark">?</span>;
 <a href=#144 id=144 data-nosnippet>144</a>
@@ -162,7 +162,7 @@
 <a href=#162 id=162 data-nosnippet>162</a>
 <a href=#163 id=163 data-nosnippet>163</a>    <span class="kw">while </span>ctx.check(TokenType::Star) || ctx.check(TokenType::Slash) || ctx.check(TokenType::Arith) {
 <a href=#164 id=164 data-nosnippet>164</a>        <span class="kw">let </span>operator: TokenType = ctx.peek().get_type();
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">let </span>span: Span = ctx.peek().get_span();
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">let </span>span: Span = ctx.peek().get_code_location();
 <a href=#166 id=166 data-nosnippet>166</a>
 <a href=#167 id=167 data-nosnippet>167</a>        ctx.only_advance()<span class="question-mark">?</span>;
 <a href=#168 id=168 data-nosnippet>168</a>
@@ -188,7 +188,7 @@
 <a href=#188 id=188 data-nosnippet>188</a>        || ctx.check(TokenType::Plus)
 <a href=#189 id=189 data-nosnippet>189</a>    {
 <a href=#190 id=190 data-nosnippet>190</a>        <span class="kw">let </span>operator: TokenType = ctx.peek().get_type();
-<a href=#191 id=191 data-nosnippet>191</a>        <span class="kw">let </span>span: Span = ctx.peek().get_span();
+<a href=#191 id=191 data-nosnippet>191</a>        <span class="kw">let </span>span: Span = ctx.peek().get_code_location();
 <a href=#192 id=192 data-nosnippet>192</a>
 <a href=#193 id=193 data-nosnippet>193</a>        ctx.only_advance()<span class="question-mark">?</span>;
 <a href=#194 id=194 data-nosnippet>194</a>
@@ -210,18 +210,18 @@
 <a href=#210 id=210 data-nosnippet>210</a><span class="kw">fn </span>parse_primary(ctx: <span class="kw-2">&amp;mut </span>ModuleParser&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Ast&lt;<span class="lifetime">'static</span>&gt;, ()&gt; {
 <a href=#211 id=211 data-nosnippet>211</a>    <span class="kw">match </span>ctx.peek().get_type() {
 <a href=#212 id=212 data-nosnippet>212</a>        TokenType::True =&gt; {
-<a href=#213 id=213 data-nosnippet>213</a>            <span class="kw">let </span>span: Span = ctx.advance()<span class="question-mark">?</span>.get_span();
+<a href=#213 id=213 data-nosnippet>213</a>            <span class="kw">let </span>span: Span = ctx.advance()<span class="question-mark">?</span>.get_code_location();
 <a href=#214 id=214 data-nosnippet>214</a>
 <a href=#215 id=215 data-nosnippet>215</a>            <span class="prelude-val">Ok</span>(Ast::new_boolean(Type::Bool { span }, <span class="number">1</span>, span))
 <a href=#216 id=216 data-nosnippet>216</a>        }
 <a href=#217 id=217 data-nosnippet>217</a>        TokenType::False =&gt; {
-<a href=#218 id=218 data-nosnippet>218</a>            <span class="kw">let </span>span: Span = ctx.advance()<span class="question-mark">?</span>.get_span();
+<a href=#218 id=218 data-nosnippet>218</a>            <span class="kw">let </span>span: Span = ctx.advance()<span class="question-mark">?</span>.get_code_location();
 <a href=#219 id=219 data-nosnippet>219</a>
 <a href=#220 id=220 data-nosnippet>220</a>            <span class="prelude-val">Ok</span>(Ast::new_boolean(Type::Bool { span }, <span class="number">0</span>, span))
 <a href=#221 id=221 data-nosnippet>221</a>        }
 <a href=#222 id=222 data-nosnippet>222</a>        TokenType::Integer =&gt; {
 <a href=#223 id=223 data-nosnippet>223</a>            <span class="kw">let </span>tk: <span class="kw-2">&amp;</span>Token = ctx.advance()<span class="question-mark">?</span>;
-<a href=#224 id=224 data-nosnippet>224</a>            <span class="kw">let </span>span: Span = tk.get_span();
+<a href=#224 id=224 data-nosnippet>224</a>            <span class="kw">let </span>span: Span = tk.get_code_location();
 <a href=#225 id=225 data-nosnippet>225</a>
 <a href=#226 id=226 data-nosnippet>226</a>            <span class="kw">let </span>(kind, value): (Type, u64) = reinterpret::integer(tk.get_lexeme(), span)<span class="question-mark">?</span>;
 <a href=#227 id=227 data-nosnippet>227</a>
@@ -229,7 +229,7 @@
 <a href=#229 id=229 data-nosnippet>229</a>        }
 <a href=#230 id=230 data-nosnippet>230</a>        TokenType::Float =&gt; {
 <a href=#231 id=231 data-nosnippet>231</a>            <span class="kw">let </span>tk: <span class="kw-2">&amp;</span>Token = ctx.advance()<span class="question-mark">?</span>;
-<a href=#232 id=232 data-nosnippet>232</a>            <span class="kw">let </span>span: Span = tk.get_span();
+<a href=#232 id=232 data-nosnippet>232</a>            <span class="kw">let </span>span: Span = tk.get_code_location();
 <a href=#233 id=233 data-nosnippet>233</a>
 <a href=#234 id=234 data-nosnippet>234</a>            <span class="kw">let </span>(kind, value): (Type, f64) = reinterpret::floating_point(tk.get_lexeme(), span)<span class="question-mark">?</span>;
 <a href=#235 id=235 data-nosnippet>235</a>
@@ -237,7 +237,7 @@
 <a href=#237 id=237 data-nosnippet>237</a>        }
 <a href=#238 id=238 data-nosnippet>238</a>        TokenType::Char =&gt; {
 <a href=#239 id=239 data-nosnippet>239</a>            <span class="kw">let </span>tk: <span class="kw-2">&amp;</span>Token = ctx.advance()<span class="question-mark">?</span>;
-<a href=#240 id=240 data-nosnippet>240</a>            <span class="kw">let </span>span: Span = tk.get_span();
+<a href=#240 id=240 data-nosnippet>240</a>            <span class="kw">let </span>span: Span = tk.get_code_location();
 <a href=#241 id=241 data-nosnippet>241</a>
 <a href=#242 id=242 data-nosnippet>242</a>            <span class="prelude-val">Ok</span>(Ast::new_char(
 <a href=#243 id=243 data-nosnippet>243</a>                Type::Char { span },
@@ -246,7 +246,7 @@
 <a href=#246 id=246 data-nosnippet>246</a>            ))
 <a href=#247 id=247 data-nosnippet>247</a>        }
 <a href=#248 id=248 data-nosnippet>248</a>        TokenType::NullPtr =&gt; {
-<a href=#249 id=249 data-nosnippet>249</a>            <span class="kw">let </span>span: Span = ctx.advance()<span class="question-mark">?</span>.get_span();
+<a href=#249 id=249 data-nosnippet>249</a>            <span class="kw">let </span>span: Span = ctx.advance()<span class="question-mark">?</span>.get_code_location();
 <a href=#250 id=250 data-nosnippet>250</a>
 <a href=#251 id=251 data-nosnippet>251</a>            <span class="prelude-val">Ok</span>(Ast::new_nullptr(span))
 <a href=#252 id=252 data-nosnippet>252</a>        }
@@ -257,7 +257,7 @@
 <a href=#257 id=257 data-nosnippet>257</a>
 <a href=#258 id=258 data-nosnippet>258</a>            ctx.consume(TokenType::RParen)<span class="question-mark">?</span>;
 <a href=#259 id=259 data-nosnippet>259</a>
-<a href=#260 id=260 data-nosnippet>260</a>            <span class="kw">let </span>span: Span = expression.get_span();
+<a href=#260 id=260 data-nosnippet>260</a>            <span class="kw">let </span>span: Span = expression.get_code_location();
 <a href=#261 id=261 data-nosnippet>261</a>
 <a href=#262 id=262 data-nosnippet>262</a>            <span class="prelude-val">Ok</span>(Ast::Group {
 <a href=#263 id=263 data-nosnippet>263</a>                node: expression.into(),
@@ -270,7 +270,7 @@
 <a href=#270 id=270 data-nosnippet>270</a>            <span class="kw">let </span>(name, span): (String, Span) = {
 <a href=#271 id=271 data-nosnippet>271</a>                <span class="kw">let </span>tk: <span class="kw-2">&amp;</span>Token = ctx.advance()<span class="question-mark">?</span>;
 <a href=#272 id=272 data-nosnippet>272</a>
-<a href=#273 id=273 data-nosnippet>273</a>                (tk.get_lexeme().to_string(), tk.get_span())
+<a href=#273 id=273 data-nosnippet>273</a>                (tk.get_lexeme().to_string(), tk.get_code_location())
 <a href=#274 id=274 data-nosnippet>274</a>            };
 <a href=#275 id=275 data-nosnippet>275</a>
 <a href=#276 id=276 data-nosnippet>276</a>            <span class="kw">if </span>ctx.check(TokenType::ColonColon) {
@@ -304,7 +304,7 @@
 <a href=#304 id=304 data-nosnippet>304</a>        <span class="kw">let </span>argument: BuiltinArgument =
 <a href=#305 id=305 data-nosnippet>305</a>            <span class="kw">if </span>index &lt; expected_parameters &amp;&amp; signature.is_parameter_a_type(index) {
 <a href=#306 id=306 data-nosnippet>306</a>                <span class="kw">let </span>ty: Type = typegeneration::build_type(ctx)<span class="question-mark">?</span>;
-<a href=#307 id=307 data-nosnippet>307</a>                <span class="kw">let </span>argument_span: Span = ctx.previous().get_span();
+<a href=#307 id=307 data-nosnippet>307</a>                <span class="kw">let </span>argument_span: Span = ctx.previous().get_code_location();
 <a href=#308 id=308 data-nosnippet>308</a>
 <a href=#309 id=309 data-nosnippet>309</a>                BuiltinArgument::Type {
 <a href=#310 id=310 data-nosnippet>310</a>                    ty,
@@ -313,7 +313,7 @@
 <a href=#313 id=313 data-nosnippet>313</a>            } <span class="kw">else </span>{
 <a href=#314 id=314 data-nosnippet>314</a>                <span class="kw">let </span>expr: Ast&lt;<span class="lifetime">'static</span>&gt; = <span class="self">self</span>::parse_expr(ctx)<span class="question-mark">?</span>;
 <a href=#315 id=315 data-nosnippet>315</a>                <span class="kw">let </span>value: BuiltinValue = thrustc_compile_time::fold(<span class="kw-2">&amp;</span>expr).ok_or(())<span class="question-mark">?</span>;
-<a href=#316 id=316 data-nosnippet>316</a>                <span class="kw">let </span>argument_span: Span = expr.get_span();
+<a href=#316 id=316 data-nosnippet>316</a>                <span class="kw">let </span>argument_span: Span = expr.get_code_location();
 <a href=#317 id=317 data-nosnippet>317</a>
 <a href=#318 id=318 data-nosnippet>318</a>                BuiltinArgument::Value {
 <a href=#319 id=319 data-nosnippet>319</a>                    value,

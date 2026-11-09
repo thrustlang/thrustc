@@ -35,7 +35,7 @@
 <a href=#35 id=35 data-nosnippet>35</a>        <span class="string">"Expected 'continue' keyword."</span>.into(),
 <a href=#36 id=36 data-nosnippet>36</a>    )<span class="question-mark">?</span>;
 <a href=#37 id=37 data-nosnippet>37</a>
-<a href=#38 id=38 data-nosnippet>38</a>    <span class="kw">let </span>span: Span = continue_tk.get_span();
+<a href=#38 id=38 data-nosnippet>38</a>    <span class="kw">let </span>span: Span = continue_tk.get_code_location();
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a>    ctx.consume(
 <a href=#41 id=41 data-nosnippet>41</a>        TokenType::SemiColon,
@@ -59,7 +59,7 @@
 <a href=#59 id=59 data-nosnippet>59</a>        <span class="string">"Expected 'break' keyword."</span>.into(),
 <a href=#60 id=60 data-nosnippet>60</a>    )<span class="question-mark">?</span>;
 <a href=#61 id=61 data-nosnippet>61</a>
-<a href=#62 id=62 data-nosnippet>62</a>    <span class="kw">let </span>span: Span = break_tk.get_span();
+<a href=#62 id=62 data-nosnippet>62</a>    <span class="kw">let </span>span: Span = break_tk.get_code_location();
 <a href=#63 id=63 data-nosnippet>63</a>
 <a href=#64 id=64 data-nosnippet>64</a>    ctx.consume(
 <a href=#65 id=65 data-nosnippet>65</a>        TokenType::SemiColon,
@@ -83,7 +83,7 @@
 <a href=#83 id=83 data-nosnippet>83</a>        <span class="string">"Expected 'continueall' keyword."</span>.into(),
 <a href=#84 id=84 data-nosnippet>84</a>    )<span class="question-mark">?</span>;
 <a href=#85 id=85 data-nosnippet>85</a>
-<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">let </span>span: Span = continueall_tk.get_span();
+<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">let </span>span: Span = continueall_tk.get_code_location();
 <a href=#87 id=87 data-nosnippet>87</a>
 <a href=#88 id=88 data-nosnippet>88</a>    ctx.consume(
 <a href=#89 id=89 data-nosnippet>89</a>        TokenType::SemiColon,
@@ -107,7 +107,7 @@
 <a href=#107 id=107 data-nosnippet>107</a>        <span class="string">"Expected 'breakall' keyword."</span>.into(),
 <a href=#108 id=108 data-nosnippet>108</a>    )<span class="question-mark">?</span>;
 <a href=#109 id=109 data-nosnippet>109</a>
-<a href=#110 id=110 data-nosnippet>110</a>    <span class="kw">let </span>span: Span = breakall_tk.get_span();
+<a href=#110 id=110 data-nosnippet>110</a>    <span class="kw">let </span>span: Span = breakall_tk.get_code_location();
 <a href=#111 id=111 data-nosnippet>111</a>
 <a href=#112 id=112 data-nosnippet>112</a>    ctx.consume(
 <a href=#113 id=113 data-nosnippet>113</a>        TokenType::SemiColon,

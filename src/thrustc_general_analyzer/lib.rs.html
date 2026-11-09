@@ -136,7 +136,7 @@
 <a href=#136 id=136 data-nosnippet>136</a>                <span class="string">"Too many depth for a node."</span>.into(),
 <a href=#137 id=137 data-nosnippet>137</a>                <span class="string">"You should remove the code nesting"</span>.into(),
 <a href=#138 id=138 data-nosnippet>138</a>                <span class="prelude-val">None</span>,
-<a href=#139 id=139 data-nosnippet>139</a>                node.get_span(),
+<a href=#139 id=139 data-nosnippet>139</a>                node.get_code_location(),
 <a href=#140 id=140 data-nosnippet>140</a>            ));
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
@@ -214,7 +214,7 @@
 <a href=#214 id=214 data-nosnippet>214</a>            Ast::Enum { data, .. } =&gt; {
 <a href=#215 id=215 data-nosnippet>215</a>                {
 <a href=#216 id=216 data-nosnippet>216</a>                    <span class="kw">for </span>(<span class="kw">_</span>, <span class="kw">_</span>, expr) <span class="kw">in </span>data.iter() {
-<a href=#217 id=217 data-nosnippet>217</a>                        <span class="kw">let </span>span: Span = expr.get_span();
+<a href=#217 id=217 data-nosnippet>217</a>                        <span class="kw">let </span>span: Span = expr.get_code_location();
 <a href=#218 id=218 data-nosnippet>218</a>
 <a href=#219 id=219 data-nosnippet>219</a>                        <span class="kw">if </span>!expr.is_constant_value() {
 <a href=#220 id=220 data-nosnippet>220</a>                            <span class="self">self</span>.add_error(CompilationIssue::Error(
@@ -234,7 +234,7 @@
 <a href=#234 id=234 data-nosnippet>234</a>            }
 <a href=#235 id=235 data-nosnippet>235</a>            Ast::Static { value, .. } =&gt; {
 <a href=#236 id=236 data-nosnippet>236</a>                <span class="kw">if let </span><span class="prelude-val">Some</span>(value) = value {
-<a href=#237 id=237 data-nosnippet>237</a>                    <span class="kw">let </span>span: Span = value.get_span();
+<a href=#237 id=237 data-nosnippet>237</a>                    <span class="kw">let </span>span: Span = value.get_code_location();
 <a href=#238 id=238 data-nosnippet>238</a>
 <a href=#239 id=239 data-nosnippet>239</a>                    <span class="kw">if </span>!value.is_constant_value() {
 <a href=#240 id=240 data-nosnippet>240</a>                        <span class="self">self</span>.add_error(CompilationIssue::Error(
@@ -252,7 +252,7 @@
 <a href=#252 id=252 data-nosnippet>252</a>                <span class="prelude-val">Ok</span>(())
 <a href=#253 id=253 data-nosnippet>253</a>            }
 <a href=#254 id=254 data-nosnippet>254</a>            Ast::Const { value, .. } =&gt; {
-<a href=#255 id=255 data-nosnippet>255</a>                <span class="kw">let </span>span: Span = value.get_span();
+<a href=#255 id=255 data-nosnippet>255</a>                <span class="kw">let </span>span: Span = value.get_code_location();
 <a href=#256 id=256 data-nosnippet>256</a>
 <a href=#257 id=257 data-nosnippet>257</a>                <span class="kw">if </span>!value.is_constant_value() {
 <a href=#258 id=258 data-nosnippet>258</a>                    <span class="self">self</span>.add_error(CompilationIssue::Error(
@@ -286,7 +286,7 @@
 <a href=#286 id=286 data-nosnippet>286</a>                <span class="string">"Too many depth for a node."</span>.into(),
 <a href=#287 id=287 data-nosnippet>287</a>                <span class="string">"You should remove the code nesting"</span>.into(),
 <a href=#288 id=288 data-nosnippet>288</a>                <span class="prelude-val">None</span>,
-<a href=#289 id=289 data-nosnippet>289</a>                node.get_span(),
+<a href=#289 id=289 data-nosnippet>289</a>                node.get_code_location(),
 <a href=#290 id=290 data-nosnippet>290</a>            ));
 <a href=#291 id=291 data-nosnippet>291</a>
 <a href=#292 id=292 data-nosnippet>292</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
@@ -304,7 +304,7 @@
 <a href=#304 id=304 data-nosnippet>304</a>            Ast::Enum { data, .. } =&gt; {
 <a href=#305 id=305 data-nosnippet>305</a>                {
 <a href=#306 id=306 data-nosnippet>306</a>                    <span class="kw">for </span>(<span class="kw">_</span>, <span class="kw">_</span>, expr) <span class="kw">in </span>data.iter() {
-<a href=#307 id=307 data-nosnippet>307</a>                        <span class="kw">let </span>span: Span = expr.get_span();
+<a href=#307 id=307 data-nosnippet>307</a>                        <span class="kw">let </span>span: Span = expr.get_code_location();
 <a href=#308 id=308 data-nosnippet>308</a>
 <a href=#309 id=309 data-nosnippet>309</a>                        <span class="kw">if </span>!expr.is_constant_value() {
 <a href=#310 id=310 data-nosnippet>310</a>                            <span class="self">self</span>.add_error(CompilationIssue::Error(
@@ -330,7 +330,7 @@
 <a href=#330 id=330 data-nosnippet>330</a>                            <span class="string">"Expected constant expression."</span>.into(),
 <a href=#331 id=331 data-nosnippet>331</a>                            <span class="string">"You should pass a constant expression."</span>.into(),
 <a href=#332 id=332 data-nosnippet>332</a>                            <span class="prelude-val">None</span>,
-<a href=#333 id=333 data-nosnippet>333</a>                            value.get_span(),
+<a href=#333 id=333 data-nosnippet>333</a>                            value.get_code_location(),
 <a href=#334 id=334 data-nosnippet>334</a>                        ));
 <a href=#335 id=335 data-nosnippet>335</a>                    }
 <a href=#336 id=336 data-nosnippet>336</a>
@@ -340,7 +340,7 @@
 <a href=#340 id=340 data-nosnippet>340</a>                <span class="prelude-val">Ok</span>(())
 <a href=#341 id=341 data-nosnippet>341</a>            }
 <a href=#342 id=342 data-nosnippet>342</a>            Ast::Const { value, .. } =&gt; {
-<a href=#343 id=343 data-nosnippet>343</a>                <span class="kw">let </span>span: Span = value.get_span();
+<a href=#343 id=343 data-nosnippet>343</a>                <span class="kw">let </span>span: Span = value.get_code_location();
 <a href=#344 id=344 data-nosnippet>344</a>
 <a href=#345 id=345 data-nosnippet>345</a>                <span class="kw">if </span>!value.is_constant_value() {
 <a href=#346 id=346 data-nosnippet>346</a>                    <span class="self">self</span>.add_error(CompilationIssue::Error(
@@ -461,7 +461,7 @@
 <a href=#461 id=461 data-nosnippet>461</a>                                "You should try to allocate it and pass it as a direct reference."
 <a href=#462 id=462 data-nosnippet>462</a>                                    .into(),
 <a href=#463 id=463 data-nosnippet>463</a>                                None,
-<a href=#464 id=464 data-nosnippet>464</a>                                source.get_span(),
+<a href=#464 id=464 data-nosnippet>464</a>                                source.get_code_location(),
 <a href=#465 id=465 data-nosnippet>465</a>                            ));
 <a href=#466 id=466 data-nosnippet>466</a>                        }
 <a href=#467 id=467 data-nosnippet>467</a>                    }
@@ -474,7 +474,7 @@
 <a href=#474 id=474 data-nosnippet>474</a>                        <span class="string">"An reference with memory address was expected."</span>.into(),
 <a href=#475 id=475 data-nosnippet>475</a>                        <span class="string">"You should try to allocate it and pass it as a direct reference."</span>.into(),
 <a href=#476 id=476 data-nosnippet>476</a>                        <span class="prelude-val">None</span>,
-<a href=#477 id=477 data-nosnippet>477</a>                        source.get_span(),
+<a href=#477 id=477 data-nosnippet>477</a>                        source.get_code_location(),
 <a href=#478 id=478 data-nosnippet>478</a>                    ));
 <a href=#479 id=479 data-nosnippet>479</a>                }
 <a href=#480 id=480 data-nosnippet>480</a>
@@ -484,7 +484,7 @@
 <a href=#484 id=484 data-nosnippet>484</a>                        <span class="string">"An value with memory address was expected."</span>.into(),
 <a href=#485 id=485 data-nosnippet>485</a>                        <span class="string">"You should try to allocate it and pass it as a direct reference."</span>.into(),
 <a href=#486 id=486 data-nosnippet>486</a>                        <span class="prelude-val">None</span>,
-<a href=#487 id=487 data-nosnippet>487</a>                        source.get_span(),
+<a href=#487 id=487 data-nosnippet>487</a>                        source.get_code_location(),
 <a href=#488 id=488 data-nosnippet>488</a>                    ));
 <a href=#489 id=489 data-nosnippet>489</a>                }
 <a href=#490 id=490 data-nosnippet>490</a>
@@ -497,7 +497,7 @@
 <a href=#497 id=497 data-nosnippet>497</a>                                    <span class="string">"Missing mutability.'"</span>.into(),
 <a href=#498 id=498 data-nosnippet>498</a>                                    <span class="string">"You should mark it as mutable using 'mut' keyword"</span>.into(),
 <a href=#499 id=499 data-nosnippet>499</a>                                    <span class="prelude-val">None</span>,
-<a href=#500 id=500 data-nosnippet>500</a>                                    source.get_span(),
+<a href=#500 id=500 data-nosnippet>500</a>                                    source.get_code_location(),
 <a href=#501 id=501 data-nosnippet>501</a>                                ));
 <a href=#502 id=502 data-nosnippet>502</a>                            }
 <a href=#503 id=503 data-nosnippet>503</a>
@@ -509,7 +509,7 @@
 <a href=#509 id=509 data-nosnippet>509</a>                                    <span class="string">"You should remove the assignment or use a mutable variable instead."
 <a href=#510 id=510 data-nosnippet>510</a>                                        </span>.into(),
 <a href=#511 id=511 data-nosnippet>511</a>                                    <span class="prelude-val">None</span>,
-<a href=#512 id=512 data-nosnippet>512</a>                                    source.get_span(),
+<a href=#512 id=512 data-nosnippet>512</a>                                    source.get_code_location(),
 <a href=#513 id=513 data-nosnippet>513</a>                                ));
 <a href=#514 id=514 data-nosnippet>514</a>                            }
 <a href=#515 id=515 data-nosnippet>515</a>                        }
@@ -565,7 +565,7 @@
 <a href=#565 id=565 data-nosnippet>565</a>                <span class="string">"Too many depth for a node."</span>.into(),
 <a href=#566 id=566 data-nosnippet>566</a>                <span class="string">"You should remove the code nesting"</span>.into(),
 <a href=#567 id=567 data-nosnippet>567</a>                <span class="prelude-val">None</span>,
-<a href=#568 id=568 data-nosnippet>568</a>                node.get_span(),
+<a href=#568 id=568 data-nosnippet>568</a>                node.get_code_location(),
 <a href=#569 id=569 data-nosnippet>569</a>            ));
 <a href=#570 id=570 data-nosnippet>570</a>
 <a href=#571 id=571 data-nosnippet>571</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(());

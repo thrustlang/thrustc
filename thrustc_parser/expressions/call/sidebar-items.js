@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build_anonymous_call","build_call","build_generic_call","parse_call_arguments","reorder_call_arguments"],"struct":["ParsedCallArguments"]};
+window.SIDEBAR_ITEMS = {"fn":["build_anonymous_call","build_call","build_generic_call","build_imported_call","parse_call_arguments","reorder_call_arguments"],"struct":["ParsedCallArguments"]};

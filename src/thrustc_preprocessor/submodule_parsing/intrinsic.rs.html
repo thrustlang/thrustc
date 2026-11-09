@@ -34,7 +34,7 @@
 <a href=#34 id=34 data-nosnippet>34</a>    ctx: <span class="kw-2">&amp;mut </span>ModuleParser&lt;<span class="lifetime">'module_parser</span>&gt;,
 <a href=#35 id=35 data-nosnippet>35</a>) -&gt; <span class="prelude-ty">Result</span>&lt;Symbol, ()&gt; {
 <a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">let </span>intrinsic_tk: <span class="kw-2">&amp;</span>Token = ctx.consume(TokenType::Intrinsic)<span class="question-mark">?</span>;
-<a href=#37 id=37 data-nosnippet>37</a>    <span class="kw">let </span>span: Span = intrinsic_tk.get_span();
+<a href=#37 id=37 data-nosnippet>37</a>    <span class="kw">let </span>span: Span = intrinsic_tk.get_code_location();
 <a href=#38 id=38 data-nosnippet>38</a>
 <a href=#39 id=39 data-nosnippet>39</a>    ctx.consume(TokenType::LParen)<span class="question-mark">?</span>;
 <a href=#40 id=40 data-nosnippet>40</a>
@@ -53,7 +53,7 @@
 <a href=#53 id=53 data-nosnippet>53</a>    <span class="kw">while </span>!ctx.check(TokenType::RParen) {
 <a href=#54 id=54 data-nosnippet>54</a>        <span class="kw">let </span>param_name_tk: <span class="kw-2">&amp;</span>Token = ctx.consume(TokenType::Identifier)<span class="question-mark">?</span>;
 <a href=#55 id=55 data-nosnippet>55</a>        <span class="kw">let </span>param_name: String = param_name_tk.get_lexeme().to_string();
-<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span>param_span: Span = param_name_tk.get_span();
+<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span>param_span: Span = param_name_tk.get_code_location();
 <a href=#57 id=57 data-nosnippet>57</a>
 <a href=#58 id=58 data-nosnippet>58</a>        ctx.consume(TokenType::Colon)<span class="question-mark">?</span>;
 <a href=#59 id=59 data-nosnippet>59</a>

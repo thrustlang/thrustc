@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["STD_ROOT_DIR_NAME","STD_VERSION_FILE_NAME"],"fn":["get_default_std_root"]};

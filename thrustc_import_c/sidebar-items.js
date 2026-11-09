@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["clang_decl_index","context","diagnostics","import","model","options","parse","record_layout","type_map"]};

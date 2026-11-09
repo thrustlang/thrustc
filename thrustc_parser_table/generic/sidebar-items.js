@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["GenericCustomTypeEntry","GenericFunctionEntry","GenericStructEntry"]};
+window.SIDEBAR_ITEMS = {"struct":["GenericCustomType","GenericFunction","GenericStruct"]};

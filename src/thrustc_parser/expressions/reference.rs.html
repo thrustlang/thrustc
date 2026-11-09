@@ -287,7 +287,7 @@
 <a href=#287 id=287 data-nosnippet>287</a>                        </span>{
 <a href=#288 id=288 data-nosnippet>288</a>                            <span class="kw">let </span>operator_tk: <span class="kw-2">&amp;</span>Token = ctx.previous();
 <a href=#289 id=289 data-nosnippet>289</a>                            <span class="kw">let </span>operator: TokenType = operator_tk.get_type();
-<a href=#290 id=290 data-nosnippet>290</a>                            <span class="kw">let </span>span: Span = operator_tk.get_span();
+<a href=#290 id=290 data-nosnippet>290</a>                            <span class="kw">let </span>span: Span = operator_tk.get_code_location();
 <a href=#291 id=291 data-nosnippet>291</a>
 <a href=#292 id=292 data-nosnippet>292</a>                            <span class="kw">let </span>unaryop: Ast = Ast::UnaryOp {
 <a href=#293 id=293 data-nosnippet>293</a>                                operator,
@@ -323,9 +323,17 @@
 <a href=#323 id=323 data-nosnippet>323</a>        }
 <a href=#324 id=324 data-nosnippet>324</a>
 <a href=#325 id=325 data-nosnippet>325</a>        <span class="prelude-val">Err</span>(error) =&gt; {
-<a href=#326 id=326 data-nosnippet>326</a>            ctx.add_error_report(error);
-<a href=#327 id=327 data-nosnippet>327</a>            <span class="prelude-val">Ok</span>(Ast::invalid_ast(span))
-<a href=#328 id=328 data-nosnippet>328</a>        }
-<a href=#329 id=329 data-nosnippet>329</a>    }
-<a href=#330 id=330 data-nosnippet>330</a>}
+<a href=#326 id=326 data-nosnippet>326</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((access, symbol)) =
+<a href=#327 id=327 data-nosnippet>327</a>                <span class="kw">crate</span>::macro_imports::find_symbol(ctx, name, span)<span class="question-mark">?
+<a href=#328 id=328 data-nosnippet>328</a>            </span>{
+<a href=#329 id=329 data-nosnippet>329</a>                <span class="kw">return </span><span class="kw">crate</span>::macro_imports::synthesize_reference(
+<a href=#330 id=330 data-nosnippet>330</a>                    ctx, <span class="kw-2">&amp;</span>access, symbol, span,
+<a href=#331 id=331 data-nosnippet>331</a>                );
+<a href=#332 id=332 data-nosnippet>332</a>            }
+<a href=#333 id=333 data-nosnippet>333</a>
+<a href=#334 id=334 data-nosnippet>334</a>            ctx.add_error_report(error);
+<a href=#335 id=335 data-nosnippet>335</a>            <span class="prelude-val">Ok</span>(Ast::invalid_ast(span))
+<a href=#336 id=336 data-nosnippet>336</a>        }
+<a href=#337 id=337 data-nosnippet>337</a>    }
+<a href=#338 id=338 data-nosnippet>338</a>}
 </code></pre></div></section></main></body></html>

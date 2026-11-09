@@ -102,78 +102,78 @@
 <a href=#102 id=102 data-nosnippet>102</a>}
 <a href=#103 id=103 data-nosnippet>103</a>
 <a href=#104 id=104 data-nosnippet>104</a><span class="kw">impl</span>&lt;<span class="lifetime">'module_parser</span>&gt; ModuleParser&lt;<span class="lifetime">'module_parser</span>&gt; {
-<a href=#105 id=105 data-nosnippet>105</a>    <span class="attr">#[inline]
-<a href=#106 id=106 data-nosnippet>106</a>    </span><span class="kw">pub fn </span>get_module_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
-<a href=#107 id=107 data-nosnippet>107</a>        <span class="self">self</span>.module.get_name()
-<a href=#108 id=108 data-nosnippet>108</a>    }
+<a href=#105 id=105 data-nosnippet>105</a>    <span class="kw">pub fn </span>parse(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Module, ()&gt; {
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">while </span>!<span class="self">self</span>.is_eof() {
+<a href=#107 id=107 data-nosnippet>107</a>            <span class="kw">let _ </span>= <span class="self">self</span>.forward_declare();
+<a href=#108 id=108 data-nosnippet>108</a>        }
 <a href=#109 id=109 data-nosnippet>109</a>
-<a href=#110 id=110 data-nosnippet>110</a>    <span class="kw">pub fn </span>parse(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Module, ()&gt; {
-<a href=#111 id=111 data-nosnippet>111</a>        <span class="kw">while </span>!<span class="self">self</span>.is_eof() {
-<a href=#112 id=112 data-nosnippet>112</a>            <span class="kw">let _ </span>= <span class="self">self</span>.forward_declare();
-<a href=#113 id=113 data-nosnippet>113</a>        }
-<a href=#114 id=114 data-nosnippet>114</a>
-<a href=#115 id=115 data-nosnippet>115</a>        <span class="self">self</span>.reset_position();
+<a href=#110 id=110 data-nosnippet>110</a>        <span class="self">self</span>.reset_position();
+<a href=#111 id=111 data-nosnippet>111</a>
+<a href=#112 id=112 data-nosnippet>112</a>        <span class="kw">while </span>!<span class="self">self</span>.is_eof() {
+<a href=#113 id=113 data-nosnippet>113</a>            <span class="self">self</span>.reset_depths();
+<a href=#114 id=114 data-nosnippet>114</a>            <span class="kw">let _ </span>= <span class="self">self</span>.start();
+<a href=#115 id=115 data-nosnippet>115</a>        }
 <a href=#116 id=116 data-nosnippet>116</a>
-<a href=#117 id=117 data-nosnippet>117</a>        <span class="kw">while </span>!<span class="self">self</span>.is_eof() {
-<a href=#118 id=118 data-nosnippet>118</a>            <span class="self">self</span>.reset_depths();
-<a href=#119 id=119 data-nosnippet>119</a>            <span class="kw">let _ </span>= <span class="self">self</span>.start();
-<a href=#120 id=120 data-nosnippet>120</a>        }
+<a href=#117 id=117 data-nosnippet>117</a>        <span class="kw">let </span>warnings_to_disable: std::borrow::Cow&lt;<span class="lifetime">'_</span>, [thrustc_errors::CompilationIssueCode]&gt; =
+<a href=#118 id=118 data-nosnippet>118</a>            thrustc_directive::combine_warnings_to_disable(<span class="self">self</span>.file_options);
+<a href=#119 id=119 data-nosnippet>119</a>
+<a href=#120 id=120 data-nosnippet>120</a>        thrustc_errors::filter_warnings(<span class="kw-2">&amp;</span>warnings_to_disable, <span class="kw-2">&amp;mut </span><span class="self">self</span>.warnings);
 <a href=#121 id=121 data-nosnippet>121</a>
-<a href=#122 id=122 data-nosnippet>122</a>        <span class="kw">let </span>warnings_to_disable = thrustc_directive::combine_warnings_to_disable(<span class="self">self</span>.file_options);
-<a href=#123 id=123 data-nosnippet>123</a>
-<a href=#124 id=124 data-nosnippet>124</a>        thrustc_errors::filter_warnings(<span class="kw-2">&amp;</span>warnings_to_disable, <span class="kw-2">&amp;mut </span><span class="self">self</span>.warnings);
-<a href=#125 id=125 data-nosnippet>125</a>
-<a href=#126 id=126 data-nosnippet>126</a>        <span class="kw">for </span>warning <span class="kw">in </span><span class="self">self</span>.warnings.iter() {
-<a href=#127 id=127 data-nosnippet>127</a>            <span class="self">self</span>.diagnostician
-<a href=#128 id=128 data-nosnippet>128</a>                .dispatch_diagnostic(warning, thrustc_logging::LoggingType::Warning);
-<a href=#129 id=129 data-nosnippet>129</a>        }
-<a href=#130 id=130 data-nosnippet>130</a>
-<a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">if </span>!<span class="self">self</span>.errors.is_empty() {
-<a href=#132 id=132 data-nosnippet>132</a>            <span class="kw">for </span>error <span class="kw">in </span><span class="self">self</span>.errors.iter() {
-<a href=#133 id=133 data-nosnippet>133</a>                <span class="self">self</span>.diagnostician
-<a href=#134 id=134 data-nosnippet>134</a>                    .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
-<a href=#135 id=135 data-nosnippet>135</a>            }
-<a href=#136 id=136 data-nosnippet>136</a>
-<a href=#137 id=137 data-nosnippet>137</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(());
-<a href=#138 id=138 data-nosnippet>138</a>        }
+<a href=#122 id=122 data-nosnippet>122</a>        <span class="kw">for </span>warning <span class="kw">in </span><span class="self">self</span>.warnings.iter() {
+<a href=#123 id=123 data-nosnippet>123</a>            <span class="self">self</span>.diagnostician
+<a href=#124 id=124 data-nosnippet>124</a>                .dispatch_diagnostic(warning, thrustc_logging::LoggingType::Warning);
+<a href=#125 id=125 data-nosnippet>125</a>        }
+<a href=#126 id=126 data-nosnippet>126</a>
+<a href=#127 id=127 data-nosnippet>127</a>        <span class="kw">if </span>!<span class="self">self</span>.errors.is_empty() {
+<a href=#128 id=128 data-nosnippet>128</a>            <span class="kw">for </span>error <span class="kw">in </span><span class="self">self</span>.errors.iter() {
+<a href=#129 id=129 data-nosnippet>129</a>                <span class="self">self</span>.diagnostician
+<a href=#130 id=130 data-nosnippet>130</a>                    .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
+<a href=#131 id=131 data-nosnippet>131</a>            }
+<a href=#132 id=132 data-nosnippet>132</a>
+<a href=#133 id=133 data-nosnippet>133</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(());
+<a href=#134 id=134 data-nosnippet>134</a>        }
+<a href=#135 id=135 data-nosnippet>135</a>
+<a href=#136 id=136 data-nosnippet>136</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.module)
+<a href=#137 id=137 data-nosnippet>137</a>    }
+<a href=#138 id=138 data-nosnippet>138</a>}
 <a href=#139 id=139 data-nosnippet>139</a>
-<a href=#140 id=140 data-nosnippet>140</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.module)
-<a href=#141 id=141 data-nosnippet>141</a>    }
-<a href=#142 id=142 data-nosnippet>142</a>}
-<a href=#143 id=143 data-nosnippet>143</a>
-<a href=#144 id=144 data-nosnippet>144</a><span class="kw">impl</span>&lt;<span class="lifetime">'module_parser</span>&gt; ModuleParser&lt;<span class="lifetime">'module_parser</span>&gt; {
-<a href=#145 id=145 data-nosnippet>145</a>    <span class="attr">#[inline]
-<a href=#146 id=146 data-nosnippet>146</a>    </span><span class="kw">pub fn </span>enter_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
-<a href=#147 id=147 data-nosnippet>147</a>        <span class="self">self</span>.type_depth = <span class="self">self</span>.type_depth.saturating_add(<span class="number">1</span>);
+<a href=#140 id=140 data-nosnippet>140</a><span class="kw">impl</span>&lt;<span class="lifetime">'module_parser</span>&gt; ModuleParser&lt;<span class="lifetime">'module_parser</span>&gt; {
+<a href=#141 id=141 data-nosnippet>141</a>    <span class="attr">#[inline]
+<a href=#142 id=142 data-nosnippet>142</a>    </span><span class="kw">pub fn </span>enter_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
+<a href=#143 id=143 data-nosnippet>143</a>        <span class="self">self</span>.block_depth = <span class="self">self</span>.block_depth.saturating_add(<span class="number">1</span>);
+<a href=#144 id=144 data-nosnippet>144</a>
+<a href=#145 id=145 data-nosnippet>145</a>        <span class="kw">if </span><span class="self">self</span>.block_depth &gt; thrustc_constants::COMPILER_TOO_MANY_BLOCK_DEPTH {
+<a href=#146 id=146 data-nosnippet>146</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(());
+<a href=#147 id=147 data-nosnippet>147</a>        }
 <a href=#148 id=148 data-nosnippet>148</a>
-<a href=#149 id=149 data-nosnippet>149</a>        <span class="kw">if </span><span class="self">self</span>.type_depth &gt; thrustc_constants::COMPILER_TOO_MANY_TYPE_DEPTH {
-<a href=#150 id=150 data-nosnippet>150</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(());
-<a href=#151 id=151 data-nosnippet>151</a>        }
-<a href=#152 id=152 data-nosnippet>152</a>
-<a href=#153 id=153 data-nosnippet>153</a>        <span class="prelude-val">Ok</span>(())
-<a href=#154 id=154 data-nosnippet>154</a>    }
-<a href=#155 id=155 data-nosnippet>155</a>
-<a href=#156 id=156 data-nosnippet>156</a>    <span class="attr">#[inline]
-<a href=#157 id=157 data-nosnippet>157</a>    </span><span class="kw">pub fn </span>leave_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#158 id=158 data-nosnippet>158</a>        <span class="self">self</span>.type_depth = <span class="self">self</span>.type_depth.saturating_sub(<span class="number">1</span>);
-<a href=#159 id=159 data-nosnippet>159</a>    }
-<a href=#160 id=160 data-nosnippet>160</a>
-<a href=#161 id=161 data-nosnippet>161</a>    <span class="attr">#[inline]
-<a href=#162 id=162 data-nosnippet>162</a>    </span><span class="kw">pub fn </span>enter_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
-<a href=#163 id=163 data-nosnippet>163</a>        <span class="self">self</span>.block_depth = <span class="self">self</span>.block_depth.saturating_add(<span class="number">1</span>);
-<a href=#164 id=164 data-nosnippet>164</a>
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">if </span><span class="self">self</span>.block_depth &gt; thrustc_constants::COMPILER_TOO_MANY_BLOCK_DEPTH {
-<a href=#166 id=166 data-nosnippet>166</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(());
-<a href=#167 id=167 data-nosnippet>167</a>        }
-<a href=#168 id=168 data-nosnippet>168</a>
-<a href=#169 id=169 data-nosnippet>169</a>        <span class="prelude-val">Ok</span>(())
-<a href=#170 id=170 data-nosnippet>170</a>    }
-<a href=#171 id=171 data-nosnippet>171</a>
-<a href=#172 id=172 data-nosnippet>172</a>    <span class="attr">#[inline]
-<a href=#173 id=173 data-nosnippet>173</a>    </span><span class="kw">pub fn </span>leave_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#174 id=174 data-nosnippet>174</a>        <span class="self">self</span>.block_depth = <span class="self">self</span>.block_depth.saturating_sub(<span class="number">1</span>);
-<a href=#175 id=175 data-nosnippet>175</a>    }
-<a href=#176 id=176 data-nosnippet>176</a>
+<a href=#149 id=149 data-nosnippet>149</a>        <span class="prelude-val">Ok</span>(())
+<a href=#150 id=150 data-nosnippet>150</a>    }
+<a href=#151 id=151 data-nosnippet>151</a>
+<a href=#152 id=152 data-nosnippet>152</a>    <span class="attr">#[inline]
+<a href=#153 id=153 data-nosnippet>153</a>    </span><span class="kw">pub fn </span>leave_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#154 id=154 data-nosnippet>154</a>        <span class="self">self</span>.block_depth = <span class="self">self</span>.block_depth.saturating_sub(<span class="number">1</span>);
+<a href=#155 id=155 data-nosnippet>155</a>    }
+<a href=#156 id=156 data-nosnippet>156</a>}
+<a href=#157 id=157 data-nosnippet>157</a>
+<a href=#158 id=158 data-nosnippet>158</a><span class="kw">impl</span>&lt;<span class="lifetime">'module_parser</span>&gt; ModuleParser&lt;<span class="lifetime">'module_parser</span>&gt; {
+<a href=#159 id=159 data-nosnippet>159</a>    <span class="attr">#[inline]
+<a href=#160 id=160 data-nosnippet>160</a>    </span><span class="kw">pub fn </span>enter_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
+<a href=#161 id=161 data-nosnippet>161</a>        <span class="self">self</span>.type_depth = <span class="self">self</span>.type_depth.saturating_add(<span class="number">1</span>);
+<a href=#162 id=162 data-nosnippet>162</a>
+<a href=#163 id=163 data-nosnippet>163</a>        <span class="kw">if </span><span class="self">self</span>.type_depth &gt; thrustc_constants::COMPILER_TOO_MANY_TYPE_DEPTH {
+<a href=#164 id=164 data-nosnippet>164</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(());
+<a href=#165 id=165 data-nosnippet>165</a>        }
+<a href=#166 id=166 data-nosnippet>166</a>
+<a href=#167 id=167 data-nosnippet>167</a>        <span class="prelude-val">Ok</span>(())
+<a href=#168 id=168 data-nosnippet>168</a>    }
+<a href=#169 id=169 data-nosnippet>169</a>
+<a href=#170 id=170 data-nosnippet>170</a>    <span class="attr">#[inline]
+<a href=#171 id=171 data-nosnippet>171</a>    </span><span class="kw">pub fn </span>leave_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#172 id=172 data-nosnippet>172</a>        <span class="self">self</span>.type_depth = <span class="self">self</span>.type_depth.saturating_sub(<span class="number">1</span>);
+<a href=#173 id=173 data-nosnippet>173</a>    }
+<a href=#174 id=174 data-nosnippet>174</a>}
+<a href=#175 id=175 data-nosnippet>175</a>
+<a href=#176 id=176 data-nosnippet>176</a><span class="kw">impl</span>&lt;<span class="lifetime">'module_parser</span>&gt; ModuleParser&lt;<span class="lifetime">'module_parser</span>&gt; {
 <a href=#177 id=177 data-nosnippet>177</a>    <span class="attr">#[inline]
 <a href=#178 id=178 data-nosnippet>178</a>    </span><span class="kw">pub fn </span>reset_depths(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
 <a href=#179 id=179 data-nosnippet>179</a>        <span class="self">self</span>.type_depth = <span class="number">0</span>;
@@ -330,7 +330,7 @@
 <a href=#330 id=330 data-nosnippet>330</a>        <span class="kw">let </span>idx: usize = index.<span class="number">0</span>;
 <a href=#331 id=331 data-nosnippet>331</a>
 <a href=#332 id=332 data-nosnippet>332</a>        <span class="kw">if </span>is_overflow {
-<a href=#333 id=333 data-nosnippet>333</a>            <span class="kw">let </span>span: Span = <span class="self">self</span>.peek().get_span();
+<a href=#333 id=333 data-nosnippet>333</a>            <span class="kw">let </span>span: Span = <span class="self">self</span>.peek().get_code_location();
 <a href=#334 id=334 data-nosnippet>334</a>
 <a href=#335 id=335 data-nosnippet>335</a>            abort::abort_compilation(
 <a href=#336 id=336 data-nosnippet>336</a>                <span class="kw-2">&amp;mut </span><span class="self">self</span>.diagnostician,
@@ -341,7 +341,7 @@
 <a href=#341 id=341 data-nosnippet>341</a>                <span class="macro">line!</span>(),
 <a href=#342 id=342 data-nosnippet>342</a>            )
 <a href=#343 id=343 data-nosnippet>343</a>        } <span class="kw">else </span>{
-<a href=#344 id=344 data-nosnippet>344</a>            <span class="kw">let </span>span: Span = <span class="self">self</span>.peek().get_span();
+<a href=#344 id=344 data-nosnippet>344</a>            <span class="kw">let </span>span: Span = <span class="self">self</span>.peek().get_code_location();
 <a href=#345 id=345 data-nosnippet>345</a>
 <a href=#346 id=346 data-nosnippet>346</a>            <span class="self">self</span>.tokens.get(idx).unwrap_or_else(|| {
 <a href=#347 id=347 data-nosnippet>347</a>                abort::abort_compilation(
@@ -616,70 +616,71 @@
 <a href=#616 id=616 data-nosnippet>616</a>        <span class="self">self</span>.add_error(error)
 <a href=#617 id=617 data-nosnippet>617</a>    }
 <a href=#618 id=618 data-nosnippet>618</a>
-<a href=#619 id=619 data-nosnippet>619</a>    <span class="kw">fn </span>resolve_type_parameter(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;Span&gt; {
-<a href=#620 id=620 data-nosnippet>620</a>        <span class="self">self</span>.type_parameter_scope.resolve(name)
-<a href=#621 id=621 data-nosnippet>621</a>    }
-<a href=#622 id=622 data-nosnippet>622</a>
-<a href=#623 id=623 data-nosnippet>623</a>    <span class="kw">fn </span>resolve_named_type(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;Type&gt; {
-<a href=#624 id=624 data-nosnippet>624</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(symbol) = <span class="self">self
-<a href=#625 id=625 data-nosnippet>625</a>            </span>.get_module()
-<a href=#626 id=626 data-nosnippet>626</a>            .search_symbol(name.to_string(), Variant::CustomType)
-<a href=#627 id=627 data-nosnippet>627</a>        {
-<a href=#628 id=628 data-nosnippet>628</a>            <span class="kw">if let </span>Signature::CustomType { kind, .. } = <span class="kw-2">&amp;</span>symbol.signature {
-<a href=#629 id=629 data-nosnippet>629</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(kind.clone());
-<a href=#630 id=630 data-nosnippet>630</a>            }
-<a href=#631 id=631 data-nosnippet>631</a>        }
-<a href=#632 id=632 data-nosnippet>632</a>
-<a href=#633 id=633 data-nosnippet>633</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(symbol) = <span class="self">self
-<a href=#634 id=634 data-nosnippet>634</a>            </span>.get_module()
-<a href=#635 id=635 data-nosnippet>635</a>            .search_symbol(name.to_string(), Variant::Struct)
-<a href=#636 id=636 data-nosnippet>636</a>        {
-<a href=#637 id=637 data-nosnippet>637</a>            <span class="kw">if let </span>Signature::Struct { kind, .. } = <span class="kw-2">&amp;</span>symbol.signature {
-<a href=#638 id=638 data-nosnippet>638</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(kind.clone());
-<a href=#639 id=639 data-nosnippet>639</a>            }
-<a href=#640 id=640 data-nosnippet>640</a>        }
-<a href=#641 id=641 data-nosnippet>641</a>
-<a href=#642 id=642 data-nosnippet>642</a>        <span class="self">self</span>.get_builtins().get_type(name).cloned()
-<a href=#643 id=643 data-nosnippet>643</a>    }
-<a href=#644 id=644 data-nosnippet>644</a>
-<a href=#645 id=645 data-nosnippet>645</a>    <span class="kw">fn </span>resolve_named_generic(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;(Vec&lt;String&gt;, Type)&gt; {
-<a href=#646 id=646 data-nosnippet>646</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(symbol) = <span class="self">self
-<a href=#647 id=647 data-nosnippet>647</a>            </span>.get_module()
-<a href=#648 id=648 data-nosnippet>648</a>            .search_symbol(name.to_string(), Variant::CustomType)
-<a href=#649 id=649 data-nosnippet>649</a>        {
-<a href=#650 id=650 data-nosnippet>650</a>            <span class="kw">if let </span>Signature::CustomType {
-<a href=#651 id=651 data-nosnippet>651</a>                kind,
-<a href=#652 id=652 data-nosnippet>652</a>                type_params: <span class="prelude-val">Some</span>(type_params),
-<a href=#653 id=653 data-nosnippet>653</a>                ..
-<a href=#654 id=654 data-nosnippet>654</a>            } = <span class="kw-2">&amp;</span>symbol.signature
-<a href=#655 id=655 data-nosnippet>655</a>            {
-<a href=#656 id=656 data-nosnippet>656</a>                <span class="kw">return </span><span class="prelude-val">Some</span>((type_params.clone(), kind.clone()));
-<a href=#657 id=657 data-nosnippet>657</a>            }
-<a href=#658 id=658 data-nosnippet>658</a>        }
-<a href=#659 id=659 data-nosnippet>659</a>
-<a href=#660 id=660 data-nosnippet>660</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(symbol) = <span class="self">self
-<a href=#661 id=661 data-nosnippet>661</a>            </span>.get_module()
-<a href=#662 id=662 data-nosnippet>662</a>            .search_symbol(name.to_string(), Variant::Struct)
-<a href=#663 id=663 data-nosnippet>663</a>        {
-<a href=#664 id=664 data-nosnippet>664</a>            <span class="kw">if let </span>Signature::Struct {
-<a href=#665 id=665 data-nosnippet>665</a>                kind,
-<a href=#666 id=666 data-nosnippet>666</a>                type_params: <span class="prelude-val">Some</span>(type_params),
-<a href=#667 id=667 data-nosnippet>667</a>                ..
-<a href=#668 id=668 data-nosnippet>668</a>            } = <span class="kw-2">&amp;</span>symbol.signature
-<a href=#669 id=669 data-nosnippet>669</a>            {
-<a href=#670 id=670 data-nosnippet>670</a>                <span class="kw">return </span><span class="prelude-val">Some</span>((type_params.clone(), kind.clone()));
-<a href=#671 id=671 data-nosnippet>671</a>            }
-<a href=#672 id=672 data-nosnippet>672</a>        }
-<a href=#673 id=673 data-nosnippet>673</a>
-<a href=#674 id=674 data-nosnippet>674</a>        <span class="prelude-val">None
-<a href=#675 id=675 data-nosnippet>675</a>    </span>}
-<a href=#676 id=676 data-nosnippet>676</a>
-<a href=#677 id=677 data-nosnippet>677</a>    <span class="kw">fn </span>parse_constant_expr(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Ast&lt;<span class="lifetime">'static</span>&gt;, ()&gt; {
-<a href=#678 id=678 data-nosnippet>678</a>        submodule_parsing::expressions::parse_expr(<span class="self">self</span>)
-<a href=#679 id=679 data-nosnippet>679</a>    }
-<a href=#680 id=680 data-nosnippet>680</a>
-<a href=#681 id=681 data-nosnippet>681</a>    <span class="kw">fn </span>parse_attributes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, limits: <span class="kw-2">&amp;</span>[TokenType]) -&gt; <span class="prelude-ty">Result</span>&lt;ThrustAttributes, ()&gt; {
-<a href=#682 id=682 data-nosnippet>682</a>        submodule_parsing::attributes::build_attributes(<span class="self">self</span>, limits)
-<a href=#683 id=683 data-nosnippet>683</a>    }
-<a href=#684 id=684 data-nosnippet>684</a>}
+<a href=#619 id=619 data-nosnippet>619</a>    <span class="attr">#[inline]
+<a href=#620 id=620 data-nosnippet>620</a>    </span><span class="kw">fn </span>resolve_type_parameter(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;Span&gt; {
+<a href=#621 id=621 data-nosnippet>621</a>        <span class="self">self</span>.type_parameter_scope.resolve(name)
+<a href=#622 id=622 data-nosnippet>622</a>    }
+<a href=#623 id=623 data-nosnippet>623</a>
+<a href=#624 id=624 data-nosnippet>624</a>    <span class="kw">fn </span>resolve_named_type(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;Type&gt; {
+<a href=#625 id=625 data-nosnippet>625</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(symbol) = <span class="self">self
+<a href=#626 id=626 data-nosnippet>626</a>            </span>.get_module()
+<a href=#627 id=627 data-nosnippet>627</a>            .search_symbol(name.to_string(), Variant::CustomType)
+<a href=#628 id=628 data-nosnippet>628</a>        {
+<a href=#629 id=629 data-nosnippet>629</a>            <span class="kw">if let </span>Signature::CustomType { kind, .. } = <span class="kw-2">&amp;</span>symbol.signature {
+<a href=#630 id=630 data-nosnippet>630</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(kind.clone());
+<a href=#631 id=631 data-nosnippet>631</a>            }
+<a href=#632 id=632 data-nosnippet>632</a>        }
+<a href=#633 id=633 data-nosnippet>633</a>
+<a href=#634 id=634 data-nosnippet>634</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(symbol) = <span class="self">self
+<a href=#635 id=635 data-nosnippet>635</a>            </span>.get_module()
+<a href=#636 id=636 data-nosnippet>636</a>            .search_symbol(name.to_string(), Variant::Struct)
+<a href=#637 id=637 data-nosnippet>637</a>        {
+<a href=#638 id=638 data-nosnippet>638</a>            <span class="kw">if let </span>Signature::Struct { kind, .. } = <span class="kw-2">&amp;</span>symbol.signature {
+<a href=#639 id=639 data-nosnippet>639</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(kind.clone());
+<a href=#640 id=640 data-nosnippet>640</a>            }
+<a href=#641 id=641 data-nosnippet>641</a>        }
+<a href=#642 id=642 data-nosnippet>642</a>
+<a href=#643 id=643 data-nosnippet>643</a>        <span class="self">self</span>.get_builtins().get_type(name).cloned()
+<a href=#644 id=644 data-nosnippet>644</a>    }
+<a href=#645 id=645 data-nosnippet>645</a>
+<a href=#646 id=646 data-nosnippet>646</a>    <span class="kw">fn </span>resolve_named_generic(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;(Vec&lt;String&gt;, Type)&gt; {
+<a href=#647 id=647 data-nosnippet>647</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(symbol) = <span class="self">self
+<a href=#648 id=648 data-nosnippet>648</a>            </span>.get_module()
+<a href=#649 id=649 data-nosnippet>649</a>            .search_symbol(name.to_string(), Variant::CustomType)
+<a href=#650 id=650 data-nosnippet>650</a>        {
+<a href=#651 id=651 data-nosnippet>651</a>            <span class="kw">if let </span>Signature::CustomType {
+<a href=#652 id=652 data-nosnippet>652</a>                kind,
+<a href=#653 id=653 data-nosnippet>653</a>                type_params: <span class="prelude-val">Some</span>(type_params),
+<a href=#654 id=654 data-nosnippet>654</a>                ..
+<a href=#655 id=655 data-nosnippet>655</a>            } = <span class="kw-2">&amp;</span>symbol.signature
+<a href=#656 id=656 data-nosnippet>656</a>            {
+<a href=#657 id=657 data-nosnippet>657</a>                <span class="kw">return </span><span class="prelude-val">Some</span>((type_params.clone(), kind.clone()));
+<a href=#658 id=658 data-nosnippet>658</a>            }
+<a href=#659 id=659 data-nosnippet>659</a>        }
+<a href=#660 id=660 data-nosnippet>660</a>
+<a href=#661 id=661 data-nosnippet>661</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(symbol) = <span class="self">self
+<a href=#662 id=662 data-nosnippet>662</a>            </span>.get_module()
+<a href=#663 id=663 data-nosnippet>663</a>            .search_symbol(name.to_string(), Variant::Struct)
+<a href=#664 id=664 data-nosnippet>664</a>        {
+<a href=#665 id=665 data-nosnippet>665</a>            <span class="kw">if let </span>Signature::Struct {
+<a href=#666 id=666 data-nosnippet>666</a>                kind,
+<a href=#667 id=667 data-nosnippet>667</a>                type_params: <span class="prelude-val">Some</span>(type_params),
+<a href=#668 id=668 data-nosnippet>668</a>                ..
+<a href=#669 id=669 data-nosnippet>669</a>            } = <span class="kw-2">&amp;</span>symbol.signature
+<a href=#670 id=670 data-nosnippet>670</a>            {
+<a href=#671 id=671 data-nosnippet>671</a>                <span class="kw">return </span><span class="prelude-val">Some</span>((type_params.clone(), kind.clone()));
+<a href=#672 id=672 data-nosnippet>672</a>            }
+<a href=#673 id=673 data-nosnippet>673</a>        }
+<a href=#674 id=674 data-nosnippet>674</a>
+<a href=#675 id=675 data-nosnippet>675</a>        <span class="prelude-val">None
+<a href=#676 id=676 data-nosnippet>676</a>    </span>}
+<a href=#677 id=677 data-nosnippet>677</a>
+<a href=#678 id=678 data-nosnippet>678</a>    <span class="kw">fn </span>parse_constant_expr(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Ast&lt;<span class="lifetime">'static</span>&gt;, ()&gt; {
+<a href=#679 id=679 data-nosnippet>679</a>        submodule_parsing::expressions::parse_expr(<span class="self">self</span>)
+<a href=#680 id=680 data-nosnippet>680</a>    }
+<a href=#681 id=681 data-nosnippet>681</a>
+<a href=#682 id=682 data-nosnippet>682</a>    <span class="kw">fn </span>parse_attributes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, limits: <span class="kw-2">&amp;</span>[TokenType]) -&gt; <span class="prelude-ty">Result</span>&lt;ThrustAttributes, ()&gt; {
+<a href=#683 id=683 data-nosnippet>683</a>        submodule_parsing::attributes::build_attributes(<span class="self">self</span>, limits)
+<a href=#684 id=684 data-nosnippet>684</a>    }
+<a href=#685 id=685 data-nosnippet>685</a>}
 </code></pre></div></section></main></body></html>

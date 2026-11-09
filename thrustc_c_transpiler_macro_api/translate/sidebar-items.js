@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["translate_function_macros","translate_object_macro","translate_type_macro"]};

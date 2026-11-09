@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["C_MACRO_SYMBOL_PREFIX"],"fn":["append_translated_macro_constants","emit_function_as_macro_fn"]};

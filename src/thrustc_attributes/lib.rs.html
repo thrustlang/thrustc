@@ -263,7 +263,7 @@
 <a href=#263 id=263 data-nosnippet>263</a>
 <a href=#264 id=264 data-nosnippet>264</a><span class="kw">impl </span>ThrustAttribute {
 <a href=#265 id=265 data-nosnippet>265</a>    <span class="attr">#[inline]
-<a href=#266 id=266 data-nosnippet>266</a>    </span><span class="kw">pub fn </span>get_span(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Span {
+<a href=#266 id=266 data-nosnippet>266</a>    </span><span class="kw">pub fn </span>get_code_location(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Span {
 <a href=#267 id=267 data-nosnippet>267</a>        <span class="kw">match </span><span class="self">self </span>{
 <a href=#268 id=268 data-nosnippet>268</a>            ThrustAttribute::Extern(<span class="kw">_</span>, span) =&gt; <span class="kw-2">*</span>span,
 <a href=#269 id=269 data-nosnippet>269</a>            ThrustAttribute::Convention(<span class="kw">_</span>, span) =&gt; <span class="kw-2">*</span>span,
@@ -461,7 +461,7 @@
 <a href=#461 id=461 data-nosnippet>461</a>    <span class="attr">#[inline]
 <a href=#462 id=462 data-nosnippet>462</a>    </span><span class="kw">fn </span>match_attr(<span class="kw-2">&amp;</span><span class="self">self</span>, cmp: ThrustAttributeComparator) -&gt; <span class="prelude-ty">Option</span>&lt;Span&gt; {
 <a href=#463 id=463 data-nosnippet>463</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(attr_found) = <span class="self">self</span>.iter().find(|attr| attr.as_attr_cmp() == cmp) {
-<a href=#464 id=464 data-nosnippet>464</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(attr_found.get_span());
+<a href=#464 id=464 data-nosnippet>464</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(attr_found.get_code_location());
 <a href=#465 id=465 data-nosnippet>465</a>        }
 <a href=#466 id=466 data-nosnippet>466</a>
 <a href=#467 id=467 data-nosnippet>467</a>        <span class="prelude-val">None

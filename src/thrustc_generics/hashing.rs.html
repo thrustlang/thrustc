@@ -206,22 +206,26 @@
 <a href=#206 id=206 data-nosnippet>206</a>    output
 <a href=#207 id=207 data-nosnippet>207</a>}
 <a href=#208 id=208 data-nosnippet>208</a>
-<a href=#209 id=209 data-nosnippet>209</a><span class="kw">pub fn </span>instantiation_key(module: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;, name: <span class="kw-2">&amp;</span>str, env: <span class="kw-2">&amp;</span>TypeEnv) -&gt; String {
-<a href=#210 id=210 data-nosnippet>210</a>    <span class="kw">let </span>module: <span class="kw-2">&amp;</span>str = module.unwrap_or(<span class="string">""</span>);
-<a href=#211 id=211 data-nosnippet>211</a>    <span class="kw">let </span>content: String = <span class="macro">format!</span>(<span class="string">"{module}::{name}({})"</span>, <span class="self">self</span>::type_env_fingerprint(env));
-<a href=#212 id=212 data-nosnippet>212</a>
-<a href=#213 id=213 data-nosnippet>213</a>    <span class="macro">format!</span>(<span class="string">"__generic_{}_{:x}"</span>, name, <span class="self">self</span>::fnv1a(content.as_bytes()))
-<a href=#214 id=214 data-nosnippet>214</a>}
-<a href=#215 id=215 data-nosnippet>215</a>
-<a href=#216 id=216 data-nosnippet>216</a><span class="kw">fn </span>fnv1a(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; u64 {
-<a href=#217 id=217 data-nosnippet>217</a>    <span class="kw">let </span><span class="kw-2">mut </span>hash: u64 = <span class="number">0xcbf29ce484222325</span>;
-<a href=#218 id=218 data-nosnippet>218</a>
-<a href=#219 id=219 data-nosnippet>219</a>    <span class="kw">for </span>byte <span class="kw">in </span>bytes.iter() {
-<a href=#220 id=220 data-nosnippet>220</a>        hash ^= u64::from(<span class="kw-2">*</span>byte);
-<a href=#221 id=221 data-nosnippet>221</a>        <span class="comment">//                       1099511628211
-<a href=#222 id=222 data-nosnippet>222</a>        </span>hash = hash.wrapping_mul(<span class="number">0x100000001b3</span>);
-<a href=#223 id=223 data-nosnippet>223</a>    }
-<a href=#224 id=224 data-nosnippet>224</a>
-<a href=#225 id=225 data-nosnippet>225</a>    hash
-<a href=#226 id=226 data-nosnippet>226</a>}
+<a href=#209 id=209 data-nosnippet>209</a><span class="comment">// Builds the unique symbol name for a monomorphized generic instantiation from its type environment fingerprint.
+<a href=#210 id=210 data-nosnippet>210</a></span><span class="kw">pub fn </span>instantiation_key(module: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;, name: <span class="kw-2">&amp;</span>str, env: <span class="kw-2">&amp;</span>TypeEnv) -&gt; String {
+<a href=#211 id=211 data-nosnippet>211</a>    <span class="kw">let </span>module: <span class="kw-2">&amp;</span>str = module.unwrap_or(<span class="string">""</span>);
+<a href=#212 id=212 data-nosnippet>212</a>    <span class="kw">let </span>content: String = <span class="macro">format!</span>(<span class="string">"{module}::{name}({})"</span>, <span class="self">self</span>::type_env_fingerprint(env));
+<a href=#213 id=213 data-nosnippet>213</a>
+<a href=#214 id=214 data-nosnippet>214</a>    <span class="macro">format!</span>(<span class="string">"__generic_{}_{:x}"</span>, name, <span class="self">self</span>::fnv1a(content.as_bytes()))
+<a href=#215 id=215 data-nosnippet>215</a>}
+<a href=#216 id=216 data-nosnippet>216</a>
+<a href=#217 id=217 data-nosnippet>217</a><span class="comment">// FNV-1a 64-bit hash, public-domain algorithm by Fowler, Noll and Vo.
+<a href=#218 id=218 data-nosnippet>218</a>// See http://www.isthe.com/chongo/tech/comp/fnv/.
+<a href=#219 id=219 data-nosnippet>219</a>// Offset basis 0xcbf29ce484222325 and prime 1099511628211 (0x100000001b3); used here to suffix monomorphized symbol names.
+<a href=#220 id=220 data-nosnippet>220</a></span><span class="kw">fn </span>fnv1a(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; u64 {
+<a href=#221 id=221 data-nosnippet>221</a>    <span class="kw">let </span><span class="kw-2">mut </span>hash: u64 = <span class="number">0xcbf29ce484222325</span>;
+<a href=#222 id=222 data-nosnippet>222</a>
+<a href=#223 id=223 data-nosnippet>223</a>    <span class="kw">for </span>byte <span class="kw">in </span>bytes.iter() {
+<a href=#224 id=224 data-nosnippet>224</a>        hash ^= u64::from(<span class="kw-2">*</span>byte);
+<a href=#225 id=225 data-nosnippet>225</a>        <span class="comment">//                       1099511628211
+<a href=#226 id=226 data-nosnippet>226</a>        </span>hash = hash.wrapping_mul(<span class="number">0x100000001b3</span>);
+<a href=#227 id=227 data-nosnippet>227</a>    }
+<a href=#228 id=228 data-nosnippet>228</a>
+<a href=#229 id=229 data-nosnippet>229</a>    hash
+<a href=#230 id=230 data-nosnippet>230</a>}
 </code></pre></div></section></main></body></html>

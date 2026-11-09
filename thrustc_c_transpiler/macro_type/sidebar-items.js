@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["InferredType"],"struct":["MacroType"],"type":["TypeSlots"]};

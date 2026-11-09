@@ -35,7 +35,7 @@
 <a href=#35 id=35 data-nosnippet>35</a>        <span class="string">"Expected 'defer'."</span>.into(),
 <a href=#36 id=36 data-nosnippet>36</a>    )<span class="question-mark">?</span>;
 <a href=#37 id=37 data-nosnippet>37</a>
-<a href=#38 id=38 data-nosnippet>38</a>    <span class="kw">let </span>span: Span = defer_tk.get_span();
+<a href=#38 id=38 data-nosnippet>38</a>    <span class="kw">let </span>span: Span = defer_tk.get_code_location();
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a>    <span class="kw">let </span>node: Ast&lt;<span class="lifetime">'_</span>&gt; = <span class="kw">if </span>ctx.check(TokenType::LBrace) {
 <a href=#41 id=41 data-nosnippet>41</a>        code_block::parse_code_block_stmt(ctx)<span class="question-mark">?

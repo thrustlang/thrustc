@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Entity","MacroAst","MacroType","ThrustType"],"struct":["Constant","Macro","MacroExpansion","Variadic"]};

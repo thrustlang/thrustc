@@ -40,7 +40,7 @@
 <a href=#40 id=40 data-nosnippet>40</a>    <span class="kw">let </span>index_type: <span class="kw-2">&amp;</span>Type = source_expr.get_value_type()<span class="question-mark">?</span>;
 <a href=#41 id=41 data-nosnippet>41</a>    <span class="kw">let </span>index_expr: Ast = expressions::parse_expr(ctx)<span class="question-mark">?</span>;
 <a href=#42 id=42 data-nosnippet>42</a>
-<a href=#43 id=43 data-nosnippet>43</a>    <span class="kw">let </span>span: Span = index_expr.get_span();
+<a href=#43 id=43 data-nosnippet>43</a>    <span class="kw">let </span>span: Span = index_expr.get_code_location();
 <a href=#44 id=44 data-nosnippet>44</a>
 <a href=#45 id=45 data-nosnippet>45</a>    ctx.consume(
 <a href=#46 id=46 data-nosnippet>46</a>        TokenType::RBracket,

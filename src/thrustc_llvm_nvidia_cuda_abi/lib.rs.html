@@ -429,7 +429,7 @@
 <a href=#429 id=429 data-nosnippet>429</a>            abort::abort_codegen(
 <a href=#430 id=430 data-nosnippet>430</a>                abi_context,
 <a href=#431 id=431 data-nosnippet>431</a>                <span class="string">"Failed to lower an anonymous function call epilogue!"</span>,
-<a href=#432 id=432 data-nosnippet>432</a>                ret_ty.get_span(),
+<a href=#432 id=432 data-nosnippet>432</a>                ret_ty.get_code_location(),
 <a href=#433 id=433 data-nosnippet>433</a>                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#434 id=434 data-nosnippet>434</a>                <span class="macro">line!</span>(),
 <a href=#435 id=435 data-nosnippet>435</a>            )
@@ -443,7 +443,7 @@
 <a href=#443 id=443 data-nosnippet>443</a>            abort::abort_codegen(
 <a href=#444 id=444 data-nosnippet>444</a>                abi_context,
 <a href=#445 id=445 data-nosnippet>445</a>                <span class="string">"Failed to attach !callalign metadata"</span>,
-<a href=#446 id=446 data-nosnippet>446</a>                ret_ty.get_span(),
+<a href=#446 id=446 data-nosnippet>446</a>                ret_ty.get_code_location(),
 <a href=#447 id=447 data-nosnippet>447</a>                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#448 id=448 data-nosnippet>448</a>                <span class="macro">line!</span>(),
 <a href=#449 id=449 data-nosnippet>449</a>            );
@@ -512,7 +512,7 @@
 <a href=#512 id=512 data-nosnippet>512</a>                abort::abort_codegen(
 <a href=#513 id=513 data-nosnippet>513</a>                    abi_context,
 <a href=#514 id=514 data-nosnippet>514</a>                    <span class="string">"Failed to get the function parameter value from the function declaration for ABI lowering!"</span>,
-<a href=#515 id=515 data-nosnippet>515</a>                    parameter_ty.get_span(),
+<a href=#515 id=515 data-nosnippet>515</a>                    parameter_ty.get_code_location(),
 <a href=#516 id=516 data-nosnippet>516</a>                    std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#517 id=517 data-nosnippet>517</a>                    <span class="macro">line!</span>(),
 <a href=#518 id=518 data-nosnippet>518</a>                );
@@ -526,7 +526,7 @@
 <a href=#526 id=526 data-nosnippet>526</a>                    abort::abort_codegen(
 <a href=#527 id=527 data-nosnippet>527</a>                        abi_context,
 <a href=#528 id=528 data-nosnippet>528</a>                        <span class="string">"Failed to parse parameter index on Cuda ABI lowering!"</span>,
-<a href=#529 id=529 data-nosnippet>529</a>                        parameter_ty.get_span(),
+<a href=#529 id=529 data-nosnippet>529</a>                        parameter_ty.get_code_location(),
 <a href=#530 id=530 data-nosnippet>530</a>                        std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#531 id=531 data-nosnippet>531</a>                        <span class="macro">line!</span>(),
 <a href=#532 id=532 data-nosnippet>532</a>                    )
@@ -543,7 +543,7 @@
 <a href=#543 id=543 data-nosnippet>543</a>                abort::abort_codegen(
 <a href=#544 id=544 data-nosnippet>544</a>                    abi_context,
 <a href=#545 id=545 data-nosnippet>545</a>                    <span class="string">"Failed to get the function parameter value from the function declaration for ABI lowering!"</span>,
-<a href=#546 id=546 data-nosnippet>546</a>                    parameter_ty.get_span(),
+<a href=#546 id=546 data-nosnippet>546</a>                    parameter_ty.get_code_location(),
 <a href=#547 id=547 data-nosnippet>547</a>                    std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#548 id=548 data-nosnippet>548</a>                    <span class="macro">line!</span>(),
 <a href=#549 id=549 data-nosnippet>549</a>                );
@@ -557,7 +557,7 @@
 <a href=#557 id=557 data-nosnippet>557</a>                    abort::abort_codegen(
 <a href=#558 id=558 data-nosnippet>558</a>                        abi_context,
 <a href=#559 id=559 data-nosnippet>559</a>                        <span class="string">"Failed to parse parameter index on Cuda ABI lowering!"</span>,
-<a href=#560 id=560 data-nosnippet>560</a>                        parameter_ty.get_span(),
+<a href=#560 id=560 data-nosnippet>560</a>                        parameter_ty.get_code_location(),
 <a href=#561 id=561 data-nosnippet>561</a>                        std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#562 id=562 data-nosnippet>562</a>                        <span class="macro">line!</span>(),
 <a href=#563 id=563 data-nosnippet>563</a>                    )
@@ -590,7 +590,7 @@
 <a href=#590 id=590 data-nosnippet>590</a>            any =&gt; abort::abort_codegen(
 <a href=#591 id=591 data-nosnippet>591</a>                abi_context,
 <a href=#592 id=592 data-nosnippet>592</a>                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a type!"</span>, any),
-<a href=#593 id=593 data-nosnippet>593</a>                any.get_span(),
+<a href=#593 id=593 data-nosnippet>593</a>                any.get_code_location(),
 <a href=#594 id=594 data-nosnippet>594</a>                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#595 id=595 data-nosnippet>595</a>                <span class="macro">line!</span>(),
 <a href=#596 id=596 data-nosnippet>596</a>            ),
@@ -608,7 +608,7 @@
 <a href=#608 id=608 data-nosnippet>608</a>            any =&gt; abort::abort_codegen(
 <a href=#609 id=609 data-nosnippet>609</a>                abi_context,
 <a href=#610 id=610 data-nosnippet>610</a>                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a type!"</span>, any),
-<a href=#611 id=611 data-nosnippet>611</a>                any.get_span(),
+<a href=#611 id=611 data-nosnippet>611</a>                any.get_code_location(),
 <a href=#612 id=612 data-nosnippet>612</a>                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#613 id=613 data-nosnippet>613</a>                <span class="macro">line!</span>(),
 <a href=#614 id=614 data-nosnippet>614</a>            ),
@@ -691,7 +691,7 @@
 <a href=#691 id=691 data-nosnippet>691</a>                        <span class="string">"Failed to compile '{:?}' as a native vector element type!"</span>,
 <a href=#692 id=692 data-nosnippet>692</a>                        any
 <a href=#693 id=693 data-nosnippet>693</a>                    ),
-<a href=#694 id=694 data-nosnippet>694</a>                    ty.get_span(),
+<a href=#694 id=694 data-nosnippet>694</a>                    ty.get_code_location(),
 <a href=#695 id=695 data-nosnippet>695</a>                    std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#696 id=696 data-nosnippet>696</a>                    <span class="macro">line!</span>(),
 <a href=#697 id=697 data-nosnippet>697</a>                ),
@@ -701,7 +701,7 @@
 <a href=#701 id=701 data-nosnippet>701</a>        any =&gt; abort::abort_codegen(
 <a href=#702 id=702 data-nosnippet>702</a>            abi_context,
 <a href=#703 id=703 data-nosnippet>703</a>            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a type!"</span>, any),
-<a href=#704 id=704 data-nosnippet>704</a>            any.get_span(),
+<a href=#704 id=704 data-nosnippet>704</a>            any.get_code_location(),
 <a href=#705 id=705 data-nosnippet>705</a>            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#706 id=706 data-nosnippet>706</a>            <span class="macro">line!</span>(),
 <a href=#707 id=707 data-nosnippet>707</a>        ),

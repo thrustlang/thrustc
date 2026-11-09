@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["build_macro_table","expand_expression","expand_object","expand_statement","expand_type","restore_expr_arguments","substitute_arguments"]};

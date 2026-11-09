@@ -38,7 +38,7 @@
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="string">"Expected 'intrinsic' keyword."</span>.into(),
 <a href=#39 id=39 data-nosnippet>39</a>    )<span class="question-mark">?</span>;
 <a href=#40 id=40 data-nosnippet>40</a>
-<a href=#41 id=41 data-nosnippet>41</a>    <span class="kw">let </span>span: Span = intrinsic_tk.get_span();
+<a href=#41 id=41 data-nosnippet>41</a>    <span class="kw">let </span>span: Span = intrinsic_tk.get_code_location();
 <a href=#42 id=42 data-nosnippet>42</a>
 <a href=#43 id=43 data-nosnippet>43</a>    ctx.consume(
 <a href=#44 id=44 data-nosnippet>44</a>        TokenType::LParen,
@@ -88,7 +88,7 @@
 <a href=#88 id=88 data-nosnippet>88</a>            <span class="string">"Expected 'identifier'."</span>.into(),
 <a href=#89 id=89 data-nosnippet>89</a>        )<span class="question-mark">?</span>;
 <a href=#90 id=90 data-nosnippet>90</a>
-<a href=#91 id=91 data-nosnippet>91</a>        <span class="kw">let </span>span: Span = parameter_name_tk.get_span();
+<a href=#91 id=91 data-nosnippet>91</a>        <span class="kw">let </span>span: Span = parameter_name_tk.get_code_location();
 <a href=#92 id=92 data-nosnippet>92</a>
 <a href=#93 id=93 data-nosnippet>93</a>        ctx.consume(
 <a href=#94 id=94 data-nosnippet>94</a>            TokenType::Colon,

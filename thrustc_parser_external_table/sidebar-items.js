@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ExternalSymbolTable"]};
+window.SIDEBAR_ITEMS = {"struct":["ExternalParserSymbolTable"]};

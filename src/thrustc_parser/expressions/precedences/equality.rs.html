@@ -36,7 +36,7 @@
 <a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">if </span>ctx.match_token(TokenType::BangEq)<span class="question-mark">? </span>|| ctx.match_token(TokenType::EqEq)<span class="question-mark">? </span>{
 <a href=#37 id=37 data-nosnippet>37</a>        <span class="kw">let </span>operator_tk: <span class="kw-2">&amp;</span>Token = ctx.previous();
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="kw">let </span>operator: TokenType = operator_tk.kind;
-<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>span: Span = operator_tk.get_span();
+<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>span: Span = operator_tk.get_code_location();
 <a href=#40 id=40 data-nosnippet>40</a>
 <a href=#41 id=41 data-nosnippet>41</a>        <span class="kw">let </span>right: Ast = precedences::cmp::cmp_precedence(ctx)<span class="question-mark">?</span>;
 <a href=#42 id=42 data-nosnippet>42</a>

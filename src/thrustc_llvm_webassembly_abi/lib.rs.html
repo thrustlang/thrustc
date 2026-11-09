@@ -429,7 +429,7 @@
 <a href=#429 id=429 data-nosnippet>429</a>            abort::abort_codegen(
 <a href=#430 id=430 data-nosnippet>430</a>                abi_context,
 <a href=#431 id=431 data-nosnippet>431</a>                <span class="string">"Failed to get a WebAssembly ABI call argument."</span>,
-<a href=#432 id=432 data-nosnippet>432</a>                parameter.get_ty().get_span(),
+<a href=#432 id=432 data-nosnippet>432</a>                parameter.get_ty().get_code_location(),
 <a href=#433 id=433 data-nosnippet>433</a>                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#434 id=434 data-nosnippet>434</a>                <span class="macro">line!</span>(),
 <a href=#435 id=435 data-nosnippet>435</a>            )
@@ -450,7 +450,7 @@
 <a href=#450 id=450 data-nosnippet>450</a>                            abort::abort_codegen(
 <a href=#451 id=451 data-nosnippet>451</a>                                abi_context,
 <a href=#452 id=452 data-nosnippet>452</a>                                <span class="string">"Failed to allocate an indirect WebAssembly ABI argument."</span>,
-<a href=#453 id=453 data-nosnippet>453</a>                                ty.get_span(),
+<a href=#453 id=453 data-nosnippet>453</a>                                ty.get_code_location(),
 <a href=#454 id=454 data-nosnippet>454</a>                                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#455 id=455 data-nosnippet>455</a>                                <span class="macro">line!</span>(),
 <a href=#456 id=456 data-nosnippet>456</a>                            )
@@ -460,7 +460,7 @@
 <a href=#460 id=460 data-nosnippet>460</a>                        abort::abort_codegen(
 <a href=#461 id=461 data-nosnippet>461</a>                            abi_context,
 <a href=#462 id=462 data-nosnippet>462</a>                            <span class="string">"Failed to store an indirect WebAssembly ABI argument."</span>,
-<a href=#463 id=463 data-nosnippet>463</a>                            ty.get_span(),
+<a href=#463 id=463 data-nosnippet>463</a>                            ty.get_code_location(),
 <a href=#464 id=464 data-nosnippet>464</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#465 id=465 data-nosnippet>465</a>                            <span class="macro">line!</span>(),
 <a href=#466 id=466 data-nosnippet>466</a>                        )
@@ -485,7 +485,7 @@
 <a href=#485 id=485 data-nosnippet>485</a>                        abort::abort_codegen(
 <a href=#486 id=486 data-nosnippet>486</a>                            abi_context,
 <a href=#487 id=487 data-nosnippet>487</a>                            <span class="string">"Failed to allocate a WebAssembly ABI singleton argument."</span>,
-<a href=#488 id=488 data-nosnippet>488</a>                            aggregate.get_span(),
+<a href=#488 id=488 data-nosnippet>488</a>                            aggregate.get_code_location(),
 <a href=#489 id=489 data-nosnippet>489</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#490 id=490 data-nosnippet>490</a>                            <span class="macro">line!</span>(),
 <a href=#491 id=491 data-nosnippet>491</a>                        )
@@ -497,7 +497,7 @@
 <a href=#497 id=497 data-nosnippet>497</a>                        abort::abort_codegen(
 <a href=#498 id=498 data-nosnippet>498</a>                            abi_context,
 <a href=#499 id=499 data-nosnippet>499</a>                            <span class="string">"Failed to store a WebAssembly ABI singleton argument."</span>,
-<a href=#500 id=500 data-nosnippet>500</a>                            aggregate.get_span(),
+<a href=#500 id=500 data-nosnippet>500</a>                            aggregate.get_code_location(),
 <a href=#501 id=501 data-nosnippet>501</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#502 id=502 data-nosnippet>502</a>                            <span class="macro">line!</span>(),
 <a href=#503 id=503 data-nosnippet>503</a>                        )
@@ -507,7 +507,7 @@
 <a href=#507 id=507 data-nosnippet>507</a>                        abort::abort_codegen(
 <a href=#508 id=508 data-nosnippet>508</a>                            abi_context,
 <a href=#509 id=509 data-nosnippet>509</a>                            <span class="string">"Failed to align a WebAssembly ABI singleton argument."</span>,
-<a href=#510 id=510 data-nosnippet>510</a>                            aggregate.get_span(),
+<a href=#510 id=510 data-nosnippet>510</a>                            aggregate.get_code_location(),
 <a href=#511 id=511 data-nosnippet>511</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#512 id=512 data-nosnippet>512</a>                            <span class="macro">line!</span>(),
 <a href=#513 id=513 data-nosnippet>513</a>                        )
@@ -519,7 +519,7 @@
 <a href=#519 id=519 data-nosnippet>519</a>                        abort::abort_codegen(
 <a href=#520 id=520 data-nosnippet>520</a>                            abi_context,
 <a href=#521 id=521 data-nosnippet>521</a>                            <span class="string">"Failed to extract a WebAssembly ABI singleton argument."</span>,
-<a href=#522 id=522 data-nosnippet>522</a>                            aggregate.get_span(),
+<a href=#522 id=522 data-nosnippet>522</a>                            aggregate.get_code_location(),
 <a href=#523 id=523 data-nosnippet>523</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#524 id=524 data-nosnippet>524</a>                            <span class="macro">line!</span>(),
 <a href=#525 id=525 data-nosnippet>525</a>                        )
@@ -531,7 +531,7 @@
 <a href=#531 id=531 data-nosnippet>531</a>                        abort::abort_codegen(
 <a href=#532 id=532 data-nosnippet>532</a>                            abi_context,
 <a href=#533 id=533 data-nosnippet>533</a>                            <span class="string">"Failed to get a WebAssembly ABI singleton load."</span>,
-<a href=#534 id=534 data-nosnippet>534</a>                            aggregate.get_span(),
+<a href=#534 id=534 data-nosnippet>534</a>                            aggregate.get_code_location(),
 <a href=#535 id=535 data-nosnippet>535</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#536 id=536 data-nosnippet>536</a>                            <span class="macro">line!</span>(),
 <a href=#537 id=537 data-nosnippet>537</a>                        )
@@ -541,7 +541,7 @@
 <a href=#541 id=541 data-nosnippet>541</a>                        abort::abort_codegen(
 <a href=#542 id=542 data-nosnippet>542</a>                            abi_context,
 <a href=#543 id=543 data-nosnippet>543</a>                            <span class="string">"Failed to align a WebAssembly ABI singleton load."</span>,
-<a href=#544 id=544 data-nosnippet>544</a>                            aggregate.get_span(),
+<a href=#544 id=544 data-nosnippet>544</a>                            aggregate.get_code_location(),
 <a href=#545 id=545 data-nosnippet>545</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#546 id=546 data-nosnippet>546</a>                            <span class="macro">line!</span>(),
 <a href=#547 id=547 data-nosnippet>547</a>                        )
@@ -586,7 +586,7 @@
 <a href=#586 id=586 data-nosnippet>586</a>                            abort::abort_codegen(
 <a href=#587 id=587 data-nosnippet>587</a>                                abi_context,
 <a href=#588 id=588 data-nosnippet>588</a>                                <span class="string">"Failed to allocate a variadic WebAssembly ABI argument."</span>,
-<a href=#589 id=589 data-nosnippet>589</a>                                ty.get_span(),
+<a href=#589 id=589 data-nosnippet>589</a>                                ty.get_code_location(),
 <a href=#590 id=590 data-nosnippet>590</a>                                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#591 id=591 data-nosnippet>591</a>                                <span class="macro">line!</span>(),
 <a href=#592 id=592 data-nosnippet>592</a>                            )
@@ -598,7 +598,7 @@
 <a href=#598 id=598 data-nosnippet>598</a>                            abort::abort_codegen(
 <a href=#599 id=599 data-nosnippet>599</a>                                abi_context,
 <a href=#600 id=600 data-nosnippet>600</a>                                <span class="string">"Failed to store a variadic WebAssembly ABI argument."</span>,
-<a href=#601 id=601 data-nosnippet>601</a>                                ty.get_span(),
+<a href=#601 id=601 data-nosnippet>601</a>                                ty.get_code_location(),
 <a href=#602 id=602 data-nosnippet>602</a>                                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#603 id=603 data-nosnippet>603</a>                                <span class="macro">line!</span>(),
 <a href=#604 id=604 data-nosnippet>604</a>                            )
@@ -622,7 +622,7 @@
 <a href=#622 id=622 data-nosnippet>622</a>                            abort::abort_codegen(
 <a href=#623 id=623 data-nosnippet>623</a>                                abi_context,
 <a href=#624 id=624 data-nosnippet>624</a>                                <span class="string">"Failed to sign-extend a variadic WebAssembly ABI argument."</span>,
-<a href=#625 id=625 data-nosnippet>625</a>                                ty.get_span(),
+<a href=#625 id=625 data-nosnippet>625</a>                                ty.get_code_location(),
 <a href=#626 id=626 data-nosnippet>626</a>                                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#627 id=627 data-nosnippet>627</a>                                <span class="macro">line!</span>(),
 <a href=#628 id=628 data-nosnippet>628</a>                            )
@@ -637,7 +637,7 @@
 <a href=#637 id=637 data-nosnippet>637</a>                            abort::abort_codegen(
 <a href=#638 id=638 data-nosnippet>638</a>                                abi_context,
 <a href=#639 id=639 data-nosnippet>639</a>                                <span class="string">"Failed to zero-extend a variadic WebAssembly ABI argument."</span>,
-<a href=#640 id=640 data-nosnippet>640</a>                                ty.get_span(),
+<a href=#640 id=640 data-nosnippet>640</a>                                ty.get_code_location(),
 <a href=#641 id=641 data-nosnippet>641</a>                                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#642 id=642 data-nosnippet>642</a>                                <span class="macro">line!</span>(),
 <a href=#643 id=643 data-nosnippet>643</a>                            )
@@ -650,7 +650,7 @@
 <a href=#650 id=650 data-nosnippet>650</a>                            abort::abort_codegen(
 <a href=#651 id=651 data-nosnippet>651</a>                                abi_context,
 <a href=#652 id=652 data-nosnippet>652</a>                                <span class="string">"Failed to promote a variadic WebAssembly ABI float argument."</span>,
-<a href=#653 id=653 data-nosnippet>653</a>                                ty.get_span(),
+<a href=#653 id=653 data-nosnippet>653</a>                                ty.get_code_location(),
 <a href=#654 id=654 data-nosnippet>654</a>                                std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#655 id=655 data-nosnippet>655</a>                                <span class="macro">line!</span>(),
 <a href=#656 id=656 data-nosnippet>656</a>                            )
@@ -880,7 +880,7 @@
 <a href=#880 id=880 data-nosnippet>880</a>                        abort::abort_codegen(
 <a href=#881 id=881 data-nosnippet>881</a>                            abi_context,
 <a href=#882 id=882 data-nosnippet>882</a>                            <span class="string">"Failed to get a direct WebAssembly ABI parameter."</span>,
-<a href=#883 id=883 data-nosnippet>883</a>                            parameter.get_ty().get_span(),
+<a href=#883 id=883 data-nosnippet>883</a>                            parameter.get_ty().get_code_location(),
 <a href=#884 id=884 data-nosnippet>884</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#885 id=885 data-nosnippet>885</a>                            <span class="macro">line!</span>(),
 <a href=#886 id=886 data-nosnippet>886</a>                        )
@@ -901,7 +901,7 @@
 <a href=#901 id=901 data-nosnippet>901</a>                        abort::abort_codegen(
 <a href=#902 id=902 data-nosnippet>902</a>                            abi_context,
 <a href=#903 id=903 data-nosnippet>903</a>                            <span class="string">"Failed to get an indirect WebAssembly ABI parameter."</span>,
-<a href=#904 id=904 data-nosnippet>904</a>                            parameter.get_ty().get_span(),
+<a href=#904 id=904 data-nosnippet>904</a>                            parameter.get_ty().get_code_location(),
 <a href=#905 id=905 data-nosnippet>905</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#906 id=906 data-nosnippet>906</a>                            <span class="macro">line!</span>(),
 <a href=#907 id=907 data-nosnippet>907</a>                        )
@@ -930,7 +930,7 @@
 <a href=#930 id=930 data-nosnippet>930</a>                        abort::abort_codegen(
 <a href=#931 id=931 data-nosnippet>931</a>                            abi_context,
 <a href=#932 id=932 data-nosnippet>932</a>                            <span class="string">"Failed to get a WebAssembly ABI singleton parameter."</span>,
-<a href=#933 id=933 data-nosnippet>933</a>                            parameter.get_ty().get_span(),
+<a href=#933 id=933 data-nosnippet>933</a>                            parameter.get_ty().get_code_location(),
 <a href=#934 id=934 data-nosnippet>934</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#935 id=935 data-nosnippet>935</a>                            <span class="macro">line!</span>(),
 <a href=#936 id=936 data-nosnippet>936</a>                        )
@@ -951,7 +951,7 @@
 <a href=#951 id=951 data-nosnippet>951</a>                        abort::abort_codegen(
 <a href=#952 id=952 data-nosnippet>952</a>                            abi_context,
 <a href=#953 id=953 data-nosnippet>953</a>                            <span class="string">"Failed to allocate a WebAssembly ABI singleton parameter."</span>,
-<a href=#954 id=954 data-nosnippet>954</a>                            parameter.get_ty().get_span(),
+<a href=#954 id=954 data-nosnippet>954</a>                            parameter.get_ty().get_code_location(),
 <a href=#955 id=955 data-nosnippet>955</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#956 id=956 data-nosnippet>956</a>                            <span class="macro">line!</span>(),
 <a href=#957 id=957 data-nosnippet>957</a>                        )
@@ -963,7 +963,7 @@
 <a href=#963 id=963 data-nosnippet>963</a>                        abort::abort_codegen(
 <a href=#964 id=964 data-nosnippet>964</a>                            abi_context,
 <a href=#965 id=965 data-nosnippet>965</a>                            <span class="string">"Failed to initialize a WebAssembly ABI singleton parameter."</span>,
-<a href=#966 id=966 data-nosnippet>966</a>                            parameter.get_ty().get_span(),
+<a href=#966 id=966 data-nosnippet>966</a>                            parameter.get_ty().get_code_location(),
 <a href=#967 id=967 data-nosnippet>967</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#968 id=968 data-nosnippet>968</a>                            <span class="macro">line!</span>(),
 <a href=#969 id=969 data-nosnippet>969</a>                        )
@@ -973,7 +973,7 @@
 <a href=#973 id=973 data-nosnippet>973</a>                        abort::abort_codegen(
 <a href=#974 id=974 data-nosnippet>974</a>                            abi_context,
 <a href=#975 id=975 data-nosnippet>975</a>                            <span class="string">"Failed to align a WebAssembly ABI singleton parameter initialization."</span>,
-<a href=#976 id=976 data-nosnippet>976</a>                            parameter.get_ty().get_span(),
+<a href=#976 id=976 data-nosnippet>976</a>                            parameter.get_ty().get_code_location(),
 <a href=#977 id=977 data-nosnippet>977</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#978 id=978 data-nosnippet>978</a>                            <span class="macro">line!</span>(),
 <a href=#979 id=979 data-nosnippet>979</a>                        )
@@ -985,7 +985,7 @@
 <a href=#985 id=985 data-nosnippet>985</a>                        abort::abort_codegen(
 <a href=#986 id=986 data-nosnippet>986</a>                            abi_context,
 <a href=#987 id=987 data-nosnippet>987</a>                            <span class="string">"Failed to reconstruct a WebAssembly ABI singleton parameter."</span>,
-<a href=#988 id=988 data-nosnippet>988</a>                            parameter.get_ty().get_span(),
+<a href=#988 id=988 data-nosnippet>988</a>                            parameter.get_ty().get_code_location(),
 <a href=#989 id=989 data-nosnippet>989</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#990 id=990 data-nosnippet>990</a>                            <span class="macro">line!</span>(),
 <a href=#991 id=991 data-nosnippet>991</a>                        )
@@ -995,7 +995,7 @@
 <a href=#995 id=995 data-nosnippet>995</a>                        abort::abort_codegen(
 <a href=#996 id=996 data-nosnippet>996</a>                            abi_context,
 <a href=#997 id=997 data-nosnippet>997</a>                            <span class="string">"Failed to align a WebAssembly ABI singleton parameter reconstruction."</span>,
-<a href=#998 id=998 data-nosnippet>998</a>                            parameter.get_ty().get_span(),
+<a href=#998 id=998 data-nosnippet>998</a>                            parameter.get_ty().get_code_location(),
 <a href=#999 id=999 data-nosnippet>999</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#1000 id=1000 data-nosnippet>1000</a>                            <span class="macro">line!</span>(),
 <a href=#1001 id=1001 data-nosnippet>1001</a>                        )
@@ -1007,7 +1007,7 @@
 <a href=#1007 id=1007 data-nosnippet>1007</a>                        abort::abort_codegen(
 <a href=#1008 id=1008 data-nosnippet>1008</a>                            abi_context,
 <a href=#1009 id=1009 data-nosnippet>1009</a>                            <span class="string">"Failed to load a WebAssembly ABI singleton parameter."</span>,
-<a href=#1010 id=1010 data-nosnippet>1010</a>                            parameter.get_ty().get_span(),
+<a href=#1010 id=1010 data-nosnippet>1010</a>                            parameter.get_ty().get_code_location(),
 <a href=#1011 id=1011 data-nosnippet>1011</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#1012 id=1012 data-nosnippet>1012</a>                            <span class="macro">line!</span>(),
 <a href=#1013 id=1013 data-nosnippet>1013</a>                        )
@@ -1018,7 +1018,7 @@
 <a href=#1018 id=1018 data-nosnippet>1018</a>                        abort::abort_codegen(
 <a href=#1019 id=1019 data-nosnippet>1019</a>                            abi_context,
 <a href=#1020 id=1020 data-nosnippet>1020</a>                            <span class="string">"Failed to get a WebAssembly ABI singleton parameter load."</span>,
-<a href=#1021 id=1021 data-nosnippet>1021</a>                            parameter.get_ty().get_span(),
+<a href=#1021 id=1021 data-nosnippet>1021</a>                            parameter.get_ty().get_code_location(),
 <a href=#1022 id=1022 data-nosnippet>1022</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#1023 id=1023 data-nosnippet>1023</a>                            <span class="macro">line!</span>(),
 <a href=#1024 id=1024 data-nosnippet>1024</a>                        )
@@ -1028,7 +1028,7 @@
 <a href=#1028 id=1028 data-nosnippet>1028</a>                        abort::abort_codegen(
 <a href=#1029 id=1029 data-nosnippet>1029</a>                            abi_context,
 <a href=#1030 id=1030 data-nosnippet>1030</a>                            <span class="string">"Failed to align a WebAssembly ABI singleton parameter load."</span>,
-<a href=#1031 id=1031 data-nosnippet>1031</a>                            parameter.get_ty().get_span(),
+<a href=#1031 id=1031 data-nosnippet>1031</a>                            parameter.get_ty().get_code_location(),
 <a href=#1032 id=1032 data-nosnippet>1032</a>                            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#1033 id=1033 data-nosnippet>1033</a>                            <span class="macro">line!</span>(),
 <a href=#1034 id=1034 data-nosnippet>1034</a>                        )
@@ -1792,7 +1792,7 @@
 <a href=#1792 id=1792 data-nosnippet>1792</a>                        <span class="string">"Failed to compile '{:?}' as a native vector element type!"</span>,
 <a href=#1793 id=1793 data-nosnippet>1793</a>                        any
 <a href=#1794 id=1794 data-nosnippet>1794</a>                    ),
-<a href=#1795 id=1795 data-nosnippet>1795</a>                    ty.get_span(),
+<a href=#1795 id=1795 data-nosnippet>1795</a>                    ty.get_code_location(),
 <a href=#1796 id=1796 data-nosnippet>1796</a>                    std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#1797 id=1797 data-nosnippet>1797</a>                    <span class="macro">line!</span>(),
 <a href=#1798 id=1798 data-nosnippet>1798</a>                ),
@@ -1802,7 +1802,7 @@
 <a href=#1802 id=1802 data-nosnippet>1802</a>        any =&gt; abort::abort_codegen(
 <a href=#1803 id=1803 data-nosnippet>1803</a>            abi_context,
 <a href=#1804 id=1804 data-nosnippet>1804</a>            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a WebAssembly ABI type."</span>, any),
-<a href=#1805 id=1805 data-nosnippet>1805</a>            any.get_span(),
+<a href=#1805 id=1805 data-nosnippet>1805</a>            any.get_code_location(),
 <a href=#1806 id=1806 data-nosnippet>1806</a>            std::path::PathBuf::from(<span class="macro">file!</span>()),
 <a href=#1807 id=1807 data-nosnippet>1807</a>            <span class="macro">line!</span>(),
 <a href=#1808 id=1808 data-nosnippet>1808</a>        ),

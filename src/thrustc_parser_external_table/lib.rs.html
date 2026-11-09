@@ -23,18 +23,18 @@
 <a href=#23 id=23 data-nosnippet>23</a>};
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a><span class="attr">#[derive(Debug)]
-<a href=#26 id=26 data-nosnippet>26</a></span><span class="kw">pub struct </span>ExternalSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
+<a href=#26 id=26 data-nosnippet>26</a></span><span class="kw">pub struct </span>ExternalParserSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
 <a href=#27 id=27 data-nosnippet>27</a>    modules: <span class="kw-2">&amp;</span><span class="lifetime">'parser </span>[Module],
 <a href=#28 id=28 data-nosnippet>28</a>}
 <a href=#29 id=29 data-nosnippet>29</a>
-<a href=#30 id=30 data-nosnippet>30</a><span class="kw">impl</span>&lt;<span class="lifetime">'parser</span>&gt; ExternalSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
+<a href=#30 id=30 data-nosnippet>30</a><span class="kw">impl</span>&lt;<span class="lifetime">'parser</span>&gt; ExternalParserSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
 <a href=#31 id=31 data-nosnippet>31</a>    <span class="attr">#[inline]
 <a href=#32 id=32 data-nosnippet>32</a>    </span><span class="kw">pub fn </span>new(modules: <span class="kw-2">&amp;</span><span class="lifetime">'parser </span>[Module]) -&gt; <span class="self">Self </span>{
 <a href=#33 id=33 data-nosnippet>33</a>        <span class="self">Self </span>{ modules }
 <a href=#34 id=34 data-nosnippet>34</a>    }
 <a href=#35 id=35 data-nosnippet>35</a>}
 <a href=#36 id=36 data-nosnippet>36</a>
-<a href=#37 id=37 data-nosnippet>37</a><span class="kw">impl</span>&lt;<span class="lifetime">'parser</span>&gt; ExternalSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
+<a href=#37 id=37 data-nosnippet>37</a><span class="kw">impl</span>&lt;<span class="lifetime">'parser</span>&gt; ExternalParserSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
 <a href=#38 id=38 data-nosnippet>38</a>    <span class="kw">pub fn </span>resolve(<span class="kw-2">&amp;</span><span class="self">self</span>, access: <span class="kw-2">&amp;</span>[String]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>Module&gt; {
 <a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">for </span>module <span class="kw">in </span><span class="self">self</span>.modules.iter() {
 <a href=#40 id=40 data-nosnippet>40</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(length) = module.alias_prefix_len(access) {
@@ -62,14 +62,14 @@
 <a href=#62 id=62 data-nosnippet>62</a>    }
 <a href=#63 id=63 data-nosnippet>63</a>}
 <a href=#64 id=64 data-nosnippet>64</a>
-<a href=#65 id=65 data-nosnippet>65</a><span class="kw">impl</span>&lt;<span class="lifetime">'parser</span>&gt; ExternalSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
+<a href=#65 id=65 data-nosnippet>65</a><span class="kw">impl</span>&lt;<span class="lifetime">'parser</span>&gt; ExternalParserSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
 <a href=#66 id=66 data-nosnippet>66</a>    <span class="attr">#[inline]
 <a href=#67 id=67 data-nosnippet>67</a>    </span><span class="kw">pub fn </span>find_module(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'parser </span>Module&gt; {
 <a href=#68 id=68 data-nosnippet>68</a>        <span class="self">self</span>.modules.iter().find(|module| module.matches_name(name))
 <a href=#69 id=69 data-nosnippet>69</a>    }
 <a href=#70 id=70 data-nosnippet>70</a>}
 <a href=#71 id=71 data-nosnippet>71</a>
-<a href=#72 id=72 data-nosnippet>72</a><span class="kw">impl</span>&lt;<span class="lifetime">'parser</span>&gt; ExternalSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
+<a href=#72 id=72 data-nosnippet>72</a><span class="kw">impl</span>&lt;<span class="lifetime">'parser</span>&gt; ExternalParserSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
 <a href=#73 id=73 data-nosnippet>73</a>    <span class="kw">pub fn </span>find_symbol(
 <a href=#74 id=74 data-nosnippet>74</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#75 id=75 data-nosnippet>75</a>        access: <span class="kw-2">&amp;</span>[String],
@@ -82,7 +82,7 @@
 <a href=#82 id=82 data-nosnippet>82</a>    }
 <a href=#83 id=83 data-nosnippet>83</a>}
 <a href=#84 id=84 data-nosnippet>84</a>
-<a href=#85 id=85 data-nosnippet>85</a><span class="kw">impl</span>&lt;<span class="lifetime">'parser</span>&gt; ExternalSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
+<a href=#85 id=85 data-nosnippet>85</a><span class="kw">impl</span>&lt;<span class="lifetime">'parser</span>&gt; ExternalParserSymbolTable&lt;<span class="lifetime">'parser</span>&gt; {
 <a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">pub fn </span>search_signature(
 <a href=#87 id=87 data-nosnippet>87</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#88 id=88 data-nosnippet>88</a>        access: <span class="kw-2">&amp;</span>[String],

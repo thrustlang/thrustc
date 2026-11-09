@@ -132,7 +132,7 @@
 <a href=#132 id=132 data-nosnippet>132</a>                abort::abort_codegen(
 <a href=#133 id=133 data-nosnippet>133</a>                    context,
 <a href=#134 id=134 data-nosnippet>134</a>                    <span class="string">"Failed to compile as a function type, expected an ABI!"</span>,
-<a href=#135 id=135 data-nosnippet>135</a>                    kind.get_span(),
+<a href=#135 id=135 data-nosnippet>135</a>                    kind.get_code_location(),
 <a href=#136 id=136 data-nosnippet>136</a>                    PathBuf::from(<span class="macro">file!</span>()),
 <a href=#137 id=137 data-nosnippet>137</a>                    <span class="macro">line!</span>(),
 <a href=#138 id=138 data-nosnippet>138</a>                )
@@ -154,7 +154,7 @@
 <a href=#154 id=154 data-nosnippet>154</a>                abort::abort_codegen(
 <a href=#155 id=155 data-nosnippet>155</a>                    context,
 <a href=#156 id=156 data-nosnippet>156</a>                    <span class="string">"Failed to compile as a function type, failed to decompose function type using the ABI!"</span>,
-<a href=#157 id=157 data-nosnippet>157</a>                    kind.get_span(),
+<a href=#157 id=157 data-nosnippet>157</a>                    kind.get_code_location(),
 <a href=#158 id=158 data-nosnippet>158</a>                    PathBuf::from(<span class="macro">file!</span>()),
 <a href=#159 id=159 data-nosnippet>159</a>                    <span class="macro">line!</span>(),
 <a href=#160 id=160 data-nosnippet>160</a>                )
@@ -214,7 +214,7 @@
 <a href=#214 id=214 data-nosnippet>214</a>            any =&gt; abort::abort_codegen(
 <a href=#215 id=215 data-nosnippet>215</a>                context,
 <a href=#216 id=216 data-nosnippet>216</a>                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a type!"</span>, any),
-<a href=#217 id=217 data-nosnippet>217</a>                any.get_span(),
+<a href=#217 id=217 data-nosnippet>217</a>                any.get_code_location(),
 <a href=#218 id=218 data-nosnippet>218</a>                PathBuf::from(<span class="macro">file!</span>()),
 <a href=#219 id=219 data-nosnippet>219</a>                <span class="macro">line!</span>(),
 <a href=#220 id=220 data-nosnippet>220</a>            ),
@@ -232,7 +232,7 @@
 <a href=#232 id=232 data-nosnippet>232</a>            any =&gt; abort::abort_codegen(
 <a href=#233 id=233 data-nosnippet>233</a>                context,
 <a href=#234 id=234 data-nosnippet>234</a>                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a type!"</span>, any),
-<a href=#235 id=235 data-nosnippet>235</a>                any.get_span(),
+<a href=#235 id=235 data-nosnippet>235</a>                any.get_code_location(),
 <a href=#236 id=236 data-nosnippet>236</a>                PathBuf::from(<span class="macro">file!</span>()),
 <a href=#237 id=237 data-nosnippet>237</a>                <span class="macro">line!</span>(),
 <a href=#238 id=238 data-nosnippet>238</a>            ),
@@ -303,13 +303,13 @@
 <a href=#303 id=303 data-nosnippet>303</a>            ..
 <a href=#304 id=304 data-nosnippet>304</a>        } =&gt; {
 <a href=#305 id=305 data-nosnippet>305</a>            <span class="kw">let </span>vector_type: BasicTypeEnum = <span class="self">self</span>::generate_type(context, element_type);
-<a href=#306 id=306 data-nosnippet>306</a>            <span class="self">self</span>::generate_native_vector_type(context, vector_type, <span class="kw-2">*</span>element_count, kind.get_span())
+<a href=#306 id=306 data-nosnippet>306</a>            <span class="self">self</span>::generate_native_vector_type(context, vector_type, <span class="kw-2">*</span>element_count, kind.get_code_location())
 <a href=#307 id=307 data-nosnippet>307</a>        }
 <a href=#308 id=308 data-nosnippet>308</a>
 <a href=#309 id=309 data-nosnippet>309</a>        any =&gt; abort::abort_codegen(
 <a href=#310 id=310 data-nosnippet>310</a>            context,
 <a href=#311 id=311 data-nosnippet>311</a>            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a type!"</span>, any),
-<a href=#312 id=312 data-nosnippet>312</a>            any.get_span(),
+<a href=#312 id=312 data-nosnippet>312</a>            any.get_code_location(),
 <a href=#313 id=313 data-nosnippet>313</a>            PathBuf::from(<span class="macro">file!</span>()),
 <a href=#314 id=314 data-nosnippet>314</a>            <span class="macro">line!</span>(),
 <a href=#315 id=315 data-nosnippet>315</a>        ),
@@ -340,7 +340,7 @@
 <a href=#340 id=340 data-nosnippet>340</a>            any =&gt; abort::abort_codegen(
 <a href=#341 id=341 data-nosnippet>341</a>                context,
 <a href=#342 id=342 data-nosnippet>342</a>                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a type!"</span>, any),
-<a href=#343 id=343 data-nosnippet>343</a>                any.get_span(),
+<a href=#343 id=343 data-nosnippet>343</a>                any.get_code_location(),
 <a href=#344 id=344 data-nosnippet>344</a>                PathBuf::from(<span class="macro">file!</span>()),
 <a href=#345 id=345 data-nosnippet>345</a>                <span class="macro">line!</span>(),
 <a href=#346 id=346 data-nosnippet>346</a>            ),
@@ -358,7 +358,7 @@
 <a href=#358 id=358 data-nosnippet>358</a>            any =&gt; abort::abort_codegen(
 <a href=#359 id=359 data-nosnippet>359</a>                context,
 <a href=#360 id=360 data-nosnippet>360</a>                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a type!"</span>, any),
-<a href=#361 id=361 data-nosnippet>361</a>                any.get_span(),
+<a href=#361 id=361 data-nosnippet>361</a>                any.get_code_location(),
 <a href=#362 id=362 data-nosnippet>362</a>                PathBuf::from(<span class="macro">file!</span>()),
 <a href=#363 id=363 data-nosnippet>363</a>                <span class="macro">line!</span>(),
 <a href=#364 id=364 data-nosnippet>364</a>            ),
@@ -412,13 +412,13 @@
 <a href=#412 id=412 data-nosnippet>412</a>            ..
 <a href=#413 id=413 data-nosnippet>413</a>        } =&gt; {
 <a href=#414 id=414 data-nosnippet>414</a>            <span class="kw">let </span>vector_type: BasicTypeEnum = <span class="self">self</span>::generate_dereference_type(context, element_type);
-<a href=#415 id=415 data-nosnippet>415</a>            <span class="self">self</span>::generate_native_vector_type(context, vector_type, <span class="kw-2">*</span>element_count, kind.get_span())
+<a href=#415 id=415 data-nosnippet>415</a>            <span class="self">self</span>::generate_native_vector_type(context, vector_type, <span class="kw-2">*</span>element_count, kind.get_code_location())
 <a href=#416 id=416 data-nosnippet>416</a>        }
 <a href=#417 id=417 data-nosnippet>417</a>
 <a href=#418 id=418 data-nosnippet>418</a>        any =&gt; abort::abort_codegen(
 <a href=#419 id=419 data-nosnippet>419</a>            context,
 <a href=#420 id=420 data-nosnippet>420</a>            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a type!"</span>, any),
-<a href=#421 id=421 data-nosnippet>421</a>            any.get_span(),
+<a href=#421 id=421 data-nosnippet>421</a>            any.get_code_location(),
 <a href=#422 id=422 data-nosnippet>422</a>            PathBuf::from(<span class="macro">file!</span>()),
 <a href=#423 id=423 data-nosnippet>423</a>            <span class="macro">line!</span>(),
 <a href=#424 id=424 data-nosnippet>424</a>        ),
@@ -531,7 +531,7 @@
 <a href=#531 id=531 data-nosnippet>531</a>                abort::abort_codegen_dbg(
 <a href=#532 id=532 data-nosnippet>532</a>                    context,
 <a href=#533 id=533 data-nosnippet>533</a>                    <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a debuggable type!"</span>, from_type),
-<a href=#534 id=534 data-nosnippet>534</a>                    from_type.get_span(),
+<a href=#534 id=534 data-nosnippet>534</a>                    from_type.get_code_location(),
 <a href=#535 id=535 data-nosnippet>535</a>                    PathBuf::from(<span class="macro">file!</span>()),
 <a href=#536 id=536 data-nosnippet>536</a>                    <span class="macro">line!</span>(),
 <a href=#537 id=537 data-nosnippet>537</a>                )
@@ -553,7 +553,7 @@
 <a href=#553 id=553 data-nosnippet>553</a>                    abort::abort_codegen_dbg(
 <a href=#554 id=554 data-nosnippet>554</a>                        context,
 <a href=#555 id=555 data-nosnippet>555</a>                        <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a debuggable type!"</span>, from_type),
-<a href=#556 id=556 data-nosnippet>556</a>                        from_type.get_span(),
+<a href=#556 id=556 data-nosnippet>556</a>                        from_type.get_code_location(),
 <a href=#557 id=557 data-nosnippet>557</a>                        PathBuf::from(<span class="macro">file!</span>()),
 <a href=#558 id=558 data-nosnippet>558</a>                        <span class="macro">line!</span>(),
 <a href=#559 id=559 data-nosnippet>559</a>                    )
@@ -569,7 +569,7 @@
 <a href=#569 id=569 data-nosnippet>569</a>                    abort::abort_codegen_dbg(
 <a href=#570 id=570 data-nosnippet>570</a>                        context,
 <a href=#571 id=571 data-nosnippet>571</a>                        <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a debuggable type!"</span>, from_type),
-<a href=#572 id=572 data-nosnippet>572</a>                        from_type.get_span(),
+<a href=#572 id=572 data-nosnippet>572</a>                        from_type.get_code_location(),
 <a href=#573 id=573 data-nosnippet>573</a>                        PathBuf::from(<span class="macro">file!</span>()),
 <a href=#574 id=574 data-nosnippet>574</a>                        <span class="macro">line!</span>(),
 <a href=#575 id=575 data-nosnippet>575</a>                    )
@@ -594,7 +594,7 @@
 <a href=#594 id=594 data-nosnippet>594</a>                .map(|field_type| <span class="self">self</span>::compile_as_dbg_type(context, from_type, field_type))
 <a href=#595 id=595 data-nosnippet>595</a>                .collect();
 <a href=#596 id=596 data-nosnippet>596</a>
-<a href=#597 id=597 data-nosnippet>597</a>            <span class="kw">let </span>line: u32 = from_type.get_span().get_line();
+<a href=#597 id=597 data-nosnippet>597</a>            <span class="kw">let </span>line: u32 = from_type.get_code_location().get_line();
 <a href=#598 id=598 data-nosnippet>598</a>
 <a href=#599 id=599 data-nosnippet>599</a>            context
 <a href=#600 id=600 data-nosnippet>600</a>                .get_debug_builder()
@@ -618,7 +618,7 @@
 <a href=#618 id=618 data-nosnippet>618</a>        <span class="kw">_ </span>=&gt; abort::abort_codegen_dbg(
 <a href=#619 id=619 data-nosnippet>619</a>            context,
 <a href=#620 id=620 data-nosnippet>620</a>            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Failed to compile '{}' as a debuggable type!"</span>, from_type),
-<a href=#621 id=621 data-nosnippet>621</a>            from_type.get_span(),
+<a href=#621 id=621 data-nosnippet>621</a>            from_type.get_code_location(),
 <a href=#622 id=622 data-nosnippet>622</a>            PathBuf::from(<span class="macro">file!</span>()),
 <a href=#623 id=623 data-nosnippet>623</a>            <span class="macro">line!</span>(),
 <a href=#624 id=624 data-nosnippet>624</a>        ),
