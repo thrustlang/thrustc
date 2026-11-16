@@ -22,7 +22,7 @@ use std::sync::atomic::AtomicU64;
 use serde::Serialize;
 use thrustc_ast_external::ExternalSymbol;
 use thrustc_ast_modificators::Modificators;
-use thrustc_attributes::ThrustAttributes;
+use thrustc_attributes::{ThrustAttribute, ThrustAttributes};
 use thrustc_code_location::Span;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::Type;
@@ -695,16 +695,14 @@ fn get_unique_discriminat() -> u64 {
     NODE_DISCRIMINANT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
 }
 
-impl thrustc_errors::simd::SimdUsageAst for Ast<'_>
-{
-    fn simd_usage_span(&self) -> Option<thrustc_code_location::Span>
-    {
+impl thrustc_errors::simd::SimdUsageAst for Ast<'_> {
+    fn get_simd_usage_span(&self) -> Option<Span> {
         match self {
             Ast::Function {
                 attributes, span, ..
-            } if attributes
-                .iter()
-                .any(|attribute| matches!(attribute, thrustc_attributes::ThrustAttribute::Simd(..))) =>
+            } if attributes.iter().any(|attribute| {
+                matches!(attribute, thrustc_attributes::ThrustAttribute::Simd(..))
+            }) =>
             {
                 Some(*span)
             }
@@ -714,15 +712,64 @@ impl thrustc_errors::simd::SimdUsageAst for Ast<'_>
                 attributes,
                 span,
                 ..
-            } if attributes
-                .iter()
-                .any(|attribute| matches!(attribute, thrustc_attributes::ThrustAttribute::Simd(..)))
-                || external_name.starts_with("llvm.x86.") =>
+            } if attributes.iter().any(|attribute| {
+                matches!(attribute, thrustc_attributes::ThrustAttribute::Simd(..))
+            }) =>
             {
                 Some(*span)
             }
 
             _ => None,
         }
+    }
+
+    fn get_variadic_simd_usage_span(&self) -> Option<Span> {
+        let Ast::Function {
+            attributes,
+            parameter_types,
+            return_type,
+            span,
+            ..
+        } = self
+        else {
+            return None;
+        };
+
+        if !attributes
+            .iter()
+            .any(|attribute| matches!(attribute, ThrustAttribute::Ignore(..)))
+        {
+            return None;
+        }
+
+        let mut pending: std::vec::Vec<&Type> =
+            std::vec::Vec::with_capacity(parameter_types.len().saturating_add(1));
+
+        pending.extend(parameter_types.iter());
+        pending.push(return_type);
+
+        while let Some(kind) = pending.pop() {
+            match kind {
+                Type::NativeVector { .. } => {
+                    return Some(*span);
+                }
+
+                Type::Struct { fields, .. } => {
+                    pending.extend(fields.iter());
+                }
+
+                Type::Const(subtype, ..) => {
+                    pending.push(subtype.as_ref());
+                }
+
+                Type::FixedArray { base_type, .. } | Type::Array { base_type, .. } => {
+                    pending.push(base_type.as_ref());
+                }
+
+                _ => {}
+            }
+        }
+
+        None
     }
 }

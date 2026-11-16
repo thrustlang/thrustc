@@ -23,6 +23,7 @@ use std::collections::HashSet;
 
 use serde_json::Value;
 use thrustc_attributes::traits::ThrustAttributesExtensions;
+use thrustc_options::CompilerOptions;
 use thrustc_preprocessor::signatures::{Signature, Variant};
 
 use crate::analysis::{
@@ -30,7 +31,7 @@ use crate::analysis::{
 };
 use crate::documents::Documents;
 
-fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
+fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>, unstable: bool) {
     self::push_item(
         items,
         seen,
@@ -263,9 +264,20 @@ fn push_attributes(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         "attribute",
         None,
     );
+
+    if unstable {
+        self::push_item(
+            items,
+            seen,
+            "@simd",
+            CompletionKind::Keyword,
+            "attribute",
+            None,
+        );
+    }
 }
 
-fn push_types(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
+fn push_types(items: &mut Vec<Value>, seen: &mut HashSet<String>, unstable: bool) {
     self::push_item(
         items,
         seen,
@@ -466,14 +478,16 @@ fn push_types(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
         "type",
         None,
     );
-    self::push_item(
-        items,
-        seen,
-        "NativeVector",
-        CompletionKind::TypeParameter,
-        "type",
-        Some("NativeVector[${1:f32}; ${2:4}]"),
-    );
+    if unstable {
+        self::push_item(
+            items,
+            seen,
+            "NativeVector",
+            CompletionKind::TypeParameter,
+            "type",
+            Some("NativeVector[${1:f32}; ${2:4}]"),
+        );
+    }
     self::push_item(
         items,
         seen,
@@ -798,6 +812,7 @@ fn try_import_completion(
     seen: &mut HashSet<String>,
     uri: &str,
     document_analysis: Option<&DocumentAnalysis>,
+    compiler_options: &CompilerOptions,
     prefix: &str,
 ) -> bool {
     let line: &str = prefix.trim_start();
@@ -831,6 +846,7 @@ fn try_import_completion(
                 seen,
                 uri,
                 document_analysis,
+                compiler_options,
                 module_source,
                 after_open,
             );
@@ -852,9 +868,7 @@ fn try_import_completion(
             return true;
         }
 
-        let options: thrustc_options::CompilerOptions = thrustc_options::CompilerOptions::new();
-
-        let Ok(module) = thrustc_preprocessor::std_library::find_std_module(&access, &options)
+        let Ok(module) = thrustc_preprocessor::std_library::find_std_module(&access, compiler_options)
         else {
             return true;
         };
@@ -945,10 +959,9 @@ fn try_import_completion(
         return true;
     }
 
-    let options: thrustc_options::CompilerOptions = thrustc_options::CompilerOptions::new();
     let access: Vec<String> = parts.iter().map(|part| (*part).to_string()).collect();
 
-    let Ok(module) = thrustc_preprocessor::std_library::find_std_module(&access, &options) else {
+    let Ok(module) = thrustc_preprocessor::std_library::find_std_module(&access, compiler_options) else {
         return true;
     };
 
@@ -1058,6 +1071,7 @@ fn push_local_import_only_symbols(
     seen: &mut HashSet<String>,
     uri: &str,
     document_analysis: Option<&DocumentAnalysis>,
+    compiler_options: &CompilerOptions,
     module_source: &str,
     after_open: &str,
 ) {
@@ -1097,7 +1111,7 @@ fn push_local_import_only_symbols(
     }
 
     if symbols.is_empty() {
-        symbols = self::local_import_symbols_from_file(uri, import_path);
+        symbols = self::local_import_symbols_from_file(uri, import_path, compiler_options);
     }
 
     for symbol in symbols {
@@ -1113,7 +1127,11 @@ fn push_local_import_only_symbols(
     }
 }
 
-fn local_import_symbols_from_file(uri: &str, import_path: &str) -> Vec<Symbol> {
+fn local_import_symbols_from_file(
+    uri: &str,
+    import_path: &str,
+    options: &CompilerOptions,
+) -> Vec<Symbol> {
     let mut symbols: Vec<Symbol> = Vec::with_capacity(16);
     let document_path: std::path::PathBuf = url::Url::parse(uri)
         .ok()
@@ -1128,7 +1146,6 @@ fn local_import_symbols_from_file(uri: &str, import_path: &str) -> Vec<Symbol> {
         |name| name.to_string_lossy().to_string(),
     );
     let content: String = format!("import \"{}\";", import_path);
-    let options: thrustc_options::CompilerOptions = thrustc_options::CompilerOptions::new();
     let target_info: thrustc_typesystem::type_layout::TargetInfo =
         thrustc_typesystem::type_layout::TargetInfo::new(
             options
@@ -1141,7 +1158,7 @@ fn local_import_symbols_from_file(uri: &str, import_path: &str) -> Vec<Symbol> {
         thrustc_builtins::default_registry(target_info);
     let file: thrustc_options::CompilationUnit =
         thrustc_options::CompilationUnit::new(name, document_path, content, base_name);
-    let Ok(tokens) = thrustc_lexer::Lexer::lex_for_preprocessor(&file, &options) else {
+    let Ok(tokens) = thrustc_lexer::Lexer::lex_for_preprocessor(&file, options) else {
         return symbols;
     };
     let Ok(directives) =
@@ -1150,7 +1167,7 @@ fn local_import_symbols_from_file(uri: &str, import_path: &str) -> Vec<Symbol> {
         return symbols;
     };
     let file_options: thrustc_directive::FileOptions =
-        thrustc_directive::FileOptions::new(&options, &directives);
+        thrustc_directive::FileOptions::new(options, &directives);
     let mut preprocessor: thrustc_preprocessor::Preprocessor =
         thrustc_preprocessor::Preprocessor::new();
     let Ok(modules) = preprocessor.generate_modules(&tokens, &file_options, &file, &builtins)
@@ -1172,6 +1189,8 @@ fn local_import_symbols_from_file(uri: &str, import_path: &str) -> Vec<Symbol> {
 }
 
 pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> Vec<Value> {
+    let compiler_options: &CompilerOptions = analysis.get_options();
+    let unstable: bool = compiler_options.get_compiler_features().is_unstable_mode();
     let mut items: Vec<Value> = Vec::with_capacity(u8::MAX as usize);
     let mut seen: HashSet<String> = HashSet::with_capacity(u8::MAX as usize);
     let mut uri: Option<&str> = None;
@@ -1195,8 +1214,8 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
     }
 
     let Some(uri) = uri else {
-        self::push_keywords(&mut items, &mut seen);
-        self::push_types(&mut items, &mut seen);
+        self::push_keywords(&mut items, &mut seen, unstable);
+        self::push_types(&mut items, &mut seen, unstable);
         self::push_builtins(&mut items, &mut seen);
         self::push_top_level_templates(&mut items, &mut seen);
         self::push_statement_templates(&mut items, &mut seen);
@@ -1205,8 +1224,8 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
     };
 
     let Some(line) = line else {
-        self::push_keywords(&mut items, &mut seen);
-        self::push_types(&mut items, &mut seen);
+        self::push_keywords(&mut items, &mut seen, unstable);
+        self::push_types(&mut items, &mut seen, unstable);
         self::push_builtins(&mut items, &mut seen);
         self::push_top_level_templates(&mut items, &mut seen);
         self::push_statement_templates(&mut items, &mut seen);
@@ -1215,8 +1234,8 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
     };
 
     let Some(character) = character else {
-        self::push_keywords(&mut items, &mut seen);
-        self::push_types(&mut items, &mut seen);
+        self::push_keywords(&mut items, &mut seen, unstable);
+        self::push_types(&mut items, &mut seen, unstable);
         self::push_builtins(&mut items, &mut seen);
         self::push_top_level_templates(&mut items, &mut seen);
         self::push_statement_templates(&mut items, &mut seen);
@@ -1225,8 +1244,8 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
     };
 
     let Some(document) = documents.get(uri) else {
-        self::push_keywords(&mut items, &mut seen);
-        self::push_types(&mut items, &mut seen);
+        self::push_keywords(&mut items, &mut seen, unstable);
+        self::push_types(&mut items, &mut seen, unstable);
         self::push_builtins(&mut items, &mut seen);
         self::push_top_level_templates(&mut items, &mut seen);
         self::push_statement_templates(&mut items, &mut seen);
@@ -1247,12 +1266,19 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
     let trimmed: &str = prefix.trim_end();
     let last_word: Option<&str> = trimmed.rsplit(char::is_whitespace).next();
 
-    if self::try_import_completion(&mut items, &mut seen, uri, document_analysis, &prefix) {
+    if self::try_import_completion(
+        &mut items,
+        &mut seen,
+        uri,
+        document_analysis,
+        compiler_options,
+        &prefix,
+    ) {
         return items;
     }
 
     if trimmed.ends_with('@') || last_word.is_some_and(|last_word| last_word.starts_with('@')) {
-        self::push_attributes(&mut items, &mut seen);
+        self::push_attributes(&mut items, &mut seen, unstable);
 
         return items;
     }
@@ -1266,7 +1292,7 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
             }
         }
 
-        self::push_types(&mut items, &mut seen);
+        self::push_types(&mut items, &mut seen, unstable);
 
         if let Some(document_analysis) = document_analysis {
             self::push_type_symbols(&mut items, &mut seen, document_analysis);
@@ -1309,15 +1335,15 @@ pub fn complete(documents: &Documents, analysis: &Analysis, payload: &Value) -> 
         self::push_visible_symbols(&mut items, &mut seen, document_analysis, line);
         self::push_only_imported_symbols(&mut items, &mut seen, document_analysis);
         self::push_statement_keywords(&mut items, &mut seen);
-        self::push_expression_keywords(&mut items, &mut seen);
+        self::push_expression_keywords(&mut items, &mut seen, unstable);
         self::push_builtins(&mut items, &mut seen);
         self::push_statement_templates(&mut items, &mut seen);
 
         return items;
     }
 
-    self::push_keywords(&mut items, &mut seen);
-    self::push_types(&mut items, &mut seen);
+    self::push_keywords(&mut items, &mut seen, unstable);
+    self::push_types(&mut items, &mut seen, unstable);
     self::push_builtins(&mut items, &mut seen);
     self::push_top_level_templates(&mut items, &mut seen);
     self::push_statement_templates(&mut items, &mut seen);
@@ -2182,7 +2208,7 @@ fn try_module_type_completion(
     false
 }
 
-fn push_expression_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
+fn push_expression_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>, unstable: bool) {
     self::push_item(
         items,
         seen,
@@ -2233,14 +2259,16 @@ fn push_expression_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) 
         "keyword",
         None,
     );
-    self::push_item(
-        items,
-        seen,
-        "native",
-        CompletionKind::Keyword,
-        "keyword",
-        Some("native[$0]"),
-    );
+    if unstable {
+        self::push_item(
+            items,
+            seen,
+            "native",
+            CompletionKind::Keyword,
+            "keyword",
+            Some("native[$0]"),
+        );
+    }
     self::push_item(
         items,
         seen,
@@ -2458,9 +2486,9 @@ fn find_active_call_open(prefix: &str) -> Option<usize> {
     stack.pop()
 }
 
-fn push_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>) {
+fn push_keywords(items: &mut Vec<Value>, seen: &mut HashSet<String>, unstable: bool) {
     self::push_statement_keywords(items, seen);
-    self::push_expression_keywords(items, seen);
+    self::push_expression_keywords(items, seen, unstable);
     self::push_item(items, seen, "fn", CompletionKind::Keyword, "keyword", None);
     self::push_item(
         items,

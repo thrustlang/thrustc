@@ -25,9 +25,9 @@ use thrustc_attributes::{
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::FileOptions;
+use thrustc_errors::simd::SimdUsageAst;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::applicant::AttributeCheckerAttributeApplicant;
@@ -117,53 +117,15 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                 span,
                 ..
             } => {
-                if attributes.has_ignore_attribute()
-                    && self
-                        .options
-                        .get_llvm_backend()
-                        .get_target()
-                        .get_normalized_target_triple()
-                        .is_x86_64_arch()
+                if self
+                    .options
+                    .get_llvm_backend()
+                    .get_target()
+                    .get_normalized_target_triple()
+                    .is_x86_64_arch()
                 {
-                    let mut pending_types: Vec<&Type> =
-                        Vec::with_capacity(parameter_types.len().saturating_add(1));
-
-                    pending_types.extend(parameter_types.iter());
-                    pending_types.push(return_type);
-
-                    let mut has_simd_value: bool = false;
-
-                    while let Some(ty) = pending_types.pop() {
-                        match ty {
-                            Type::NativeVector { .. } => {
-                                has_simd_value = true;
-                                break;
-                            }
-
-                            Type::Struct { fields, .. } => {
-                                pending_types.extend(fields.iter());
-                            }
-
-                            Type::Const(subtype, ..) => {
-                                pending_types.push(subtype.as_ref());
-                            }
-
-                            Type::FixedArray { base_type, .. } => {
-                                pending_types.push(base_type.as_ref());
-                            }
-
-                            Type::Array { base_type, .. } => {
-                                pending_types.push(base_type.as_ref());
-                            }
-
-                            _ => {}
-                        }
-                    }
-
-                    if has_simd_value {
-                        self.add_error(
-                            thrustc_errors::simd::unsupported_variadic_simd_issue(*span),
-                        );
+                    if let Some(span) = node.variadic_simd_usage_span() {
+                        self.add_error(thrustc_errors::simd::unsupported_variadic_simd_issue(span));
                     }
                 }
 

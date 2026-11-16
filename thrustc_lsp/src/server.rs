@@ -61,6 +61,11 @@ pub fn run() {
                     continue;
                 };
 
+                let configuration: crate::config::LspConfiguration =
+                    crate::config::LspConfiguration::from_initialize_params(&payload);
+
+                analysis.set_options(configuration.build_compiler_options());
+
                 let response: Value = serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": id,

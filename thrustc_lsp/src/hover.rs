@@ -80,6 +80,16 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
     };
 
     let reference: String = chars[start..end].iter().collect();
+
+    if let Some(detail) = self::simd_hover_detail(&reference) {
+        return serde_json::json!({
+            "contents": {
+                "kind": "markdown",
+                "value": format!("```thrust\n{}\n```", detail)
+            }
+        });
+    }
+
     let mut detail: Option<String> = None;
 
     if let Some((module_name, symbol_name)) = reference.rsplit_once("::") {
@@ -138,8 +148,8 @@ fn select_hover_reference_range(chars: &[char], character_index: usize) -> Optio
     let mut start: usize = character_index.min(chars.len().saturating_sub(1));
     let mut end: usize = character_index.min(chars.len());
 
-    if start < chars.len() && chars[start] != '_' && !chars[start].is_ascii_alphanumeric() {
-        if start > 0 && (chars[start - 1] == '_' || chars[start - 1].is_ascii_alphanumeric()) {
+    if start < chars.len() && !self::is_hover_reference_char(chars[start]) {
+        if start > 0 && self::is_hover_reference_char(chars[start - 1]) {
             start = start.saturating_sub(1);
             end = start.saturating_add(1);
         } else {
@@ -147,21 +157,34 @@ fn select_hover_reference_range(chars: &[char], character_index: usize) -> Optio
         }
     }
 
-    while start > 0
-        && (chars[start - 1] == '_'
-            || chars[start - 1].is_ascii_alphanumeric()
-            || chars[start - 1] == ':')
-    {
+    while start > 0 && self::is_hover_reference_char(chars[start - 1]) {
         start = start.saturating_sub(1);
     }
 
-    while end < chars.len()
-        && (chars[end] == '_' || chars[end].is_ascii_alphanumeric() || chars[end] == ':')
-    {
+    while end < chars.len() && self::is_hover_reference_char(chars[end]) {
         end = end.saturating_add(1);
     }
 
     Some((start, end))
+}
+
+fn is_hover_reference_char(ch: char) -> bool {
+    ch == '_' || ch.is_ascii_alphanumeric() || ch == ':' || ch == '@'
+}
+
+fn simd_hover_detail(reference: &str) -> Option<&'static str> {
+    match reference {
+        "@simd" => Some(
+            "@simd\nMarks a function or compiler intrinsic as SIMD code. Requires unstable mode and explicit CPU features on x86 and x86_64.",
+        ),
+        "NativeVector" => Some(
+            "NativeVector[T; N]\nA fixed LLVM IR vector with N elements of type T. Requires unstable mode.",
+        ),
+        "native" => Some(
+            "native[...]\nBuilds a NativeVector value. Requires unstable mode.",
+        ),
+        _ => None,
+    }
 }
 
 fn find_field_detail(document_analysis: &DocumentAnalysis, reference: &str) -> Option<String> {

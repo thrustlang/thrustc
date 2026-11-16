@@ -33,7 +33,7 @@
     },
     "attributes": {
       "name": "entity.other.attribute-name.thrust",
-      "match": "@(?:align|optFuzzing|noUnwind|noReturn|packed|heap|dealloc|deallocator|public|entrypoint|linkage|extern|arbitraryArgs|noArgCount|hot|minSize|alwaysInline|noInline|inline|safeStack|weakStack|strongStack|preciseFloatingPoint|convention|pure|thunk|cuda|constructor|destructor|if|elif|else|promote|asmAlignStack|asmSyntax|asmThrowErrors|asmSideEffects)\\b"
+      "match": "@(?:align|simd|optFuzzing|noUnwind|noReturn|packed|heap|dealloc|deallocator|public|entrypoint|linkage|extern|arbitraryArgs|noArgCount|hot|minSize|alwaysInline|noInline|inline|safeStack|weakStack|strongStack|preciseFloatingPoint|convention|pure|thunk|cuda|constructor|destructor|if|elif|else|promote|asmAlignStack|asmSyntax|asmThrowErrors|asmSideEffects)\\b"
     },
     "strings": {
       "patterns": [
@@ -116,8 +116,16 @@
       "match": "\\b(volatile|lazyThread|atomicNone|atomicFree|atomicRelax|atomicGrab|atomicDrop|atomicSync|atomicStrict|threadInit|threadDyn|threadExec|threadLDyn)\\b"
     },
     "types": {
-      "name": "storage.type.thrust",
-      "match": "\\b(s8|s16|s32|s64|ssize|u8|u16|u32|u64|u128|usize|f32|f64|f128|f80|fppc_128|bool|char|ptr|array|NativeVector|void|Fn|CString|CNString)\\b"
+      "patterns": [
+        {
+          "name": "storage.type.thrust",
+          "match": "\\b(s8|s16|s32|s64|ssize|u8|u16|u32|u64|u128|usize|f32|f64|f128|f80|fppc_128|bool|char|ptr|array|NativeVector|void|Fn|CString|CNString)\\b"
+        },
+        {
+          "name": "storage.type.thrust",
+          "match": "\\b(?:F32x(?:4|8|16)|F64x(?:2|4|8)|[SU](?:8x(?:16|32|64)|16x(?:8|16|32)|32x(?:4|8|16)|64x(?:2|4|8)))\\b"
+        }
+      ]
     },
     "builtins": {
       "name": "support.function.builtin.thrust",

@@ -22,7 +22,8 @@ use thrustc_code_location::Span;
 use crate::{CompilationIssue, CompilationIssueCode};
 
 pub trait SimdUsageAst {
-    fn simd_usage_span(&self) -> Option<Span>;
+    fn get_simd_usage_span(&self) -> Option<Span>;
+    fn get_variadic_simd_usage_span(&self) -> Option<Span>;
 }
 
 #[inline]
@@ -31,7 +32,7 @@ where
     T: SimdUsageAst,
     F: FnOnce() -> Result<(), String>,
 {
-    let span: Span = ast.iter().find_map(|node| node.simd_usage_span())?;
+    let span: Span = ast.iter().find_map(|node| node.get_simd_usage_span())?;
     let Err(help): Result<(), String> = validate_features() else {
         return None;
     };
@@ -43,6 +44,18 @@ where
         None,
         span,
     ))
+}
+
+#[inline]
+pub fn unsupported_variadic_simd_issue_from_ast<T>(ast: &[T]) -> Option<CompilationIssue>
+where
+    T: SimdUsageAst,
+{
+    let span: Span = ast
+        .iter()
+        .find_map(|node| node.get_variadic_simd_usage_span())?;
+
+    Some(unsupported_variadic_simd_issue(span))
 }
 
 #[inline]

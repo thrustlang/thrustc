@@ -104,6 +104,7 @@ pub struct DocumentAnalysis {
 pub struct Analysis {
     documents: HashMap<String, DocumentAnalysis>,
     analyzed_documents: usize,
+    options: CompilerOptions,
 }
 
 impl CompletionKind {
@@ -531,6 +532,7 @@ impl Analysis {
         Self {
             documents: HashMap::with_capacity(u8::MAX as usize),
             analyzed_documents: 0,
+            options: CompilerOptions::new(),
         }
     }
 }
@@ -543,8 +545,8 @@ impl Analysis {
 
         let uri: &str = document.get_uri();
         let text: &str = document.get_text();
-        let document_analysis: DocumentAnalysis = self::analyze_text(uri, text);
-        let diagnostics: Vec<Value> = crate::frontend::diagnostics(uri, text);
+        let document_analysis: DocumentAnalysis = self::analyze_text(uri, text, &self.options);
+        let diagnostics: Vec<Value> = crate::frontend::diagnostics(uri, text, &self.options);
 
         self.documents.insert(uri.to_string(), document_analysis);
         self.analyzed_documents = self.analyzed_documents.saturating_add(1);
@@ -555,6 +557,16 @@ impl Analysis {
     #[inline]
     pub fn remove_document(&mut self, uri: &str) {
         self.documents.remove(uri);
+    }
+
+    #[inline]
+    pub fn set_options(&mut self, options: CompilerOptions) {
+        self.options = options;
+    }
+
+    #[inline]
+    pub fn get_options(&self) -> &CompilerOptions {
+        &self.options
     }
 }
 
@@ -587,7 +599,7 @@ impl Analysis {
     }
 }
 
-fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
+fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAnalysis {
     let lines: Vec<&str> = text.lines().collect();
     let line_depths: Vec<u64> = self::build_line_depths(&lines);
     let total_lines: u64 = lines.len().try_into().unwrap_or(u64::MAX);
@@ -596,7 +608,7 @@ fn analyze_text(uri: &str, text: &str) -> DocumentAnalysis {
     let mut structures: Vec<Structure> = Vec::with_capacity(u8::MAX as usize);
     let mut enumerations: Vec<Enumeration> = Vec::with_capacity(u8::MAX as usize);
     let mut functions: Vec<Function> = Vec::with_capacity(u8::MAX as usize);
-    let modules: Vec<ImportedModule> = self::analyze_imported_modules(uri, text);
+    let modules: Vec<ImportedModule> = self::analyze_imported_modules(uri, text, options);
 
     let mut line_index: usize = 0;
     let mut block_comment: bool = false;
@@ -1009,7 +1021,11 @@ fn convert_module_symbol(symbol: &thrustc_preprocessor::signatures::Symbol) -> O
     ))
 }
 
-fn analyze_imported_modules(uri: &str, text: &str) -> Vec<ImportedModule> {
+fn analyze_imported_modules(
+    uri: &str,
+    text: &str,
+    options: &CompilerOptions,
+) -> Vec<ImportedModule> {
     let mut modules: Vec<ImportedModule> = Vec::with_capacity(u8::MAX as usize);
     let path: PathBuf = url::Url::parse(uri)
         .ok()
@@ -1025,7 +1041,6 @@ fn analyze_imported_modules(uri: &str, text: &str) -> Vec<ImportedModule> {
         |name| name.to_string_lossy().to_string(),
     );
 
-    let options: CompilerOptions = CompilerOptions::new();
     let target_info: TargetInfo = TargetInfo::new(
         options
             .get_llvm_backend()
@@ -1036,7 +1051,7 @@ fn analyze_imported_modules(uri: &str, text: &str) -> Vec<ImportedModule> {
     let builtins: BuiltinRegistry = thrustc_builtins::default_registry(target_info);
     let file: CompilationUnit = CompilationUnit::new(name, path, text.to_string(), base_name);
 
-    let Ok(tokens) = Lexer::lex_for_preprocessor(&file, &options) else {
+    let Ok(tokens) = Lexer::lex_for_preprocessor(&file, options) else {
         return modules;
     };
 
@@ -1046,7 +1061,7 @@ fn analyze_imported_modules(uri: &str, text: &str) -> Vec<ImportedModule> {
         return modules;
     };
     let file_options: thrustc_directive::FileOptions =
-        thrustc_directive::FileOptions::new(&options, &directives);
+        thrustc_directive::FileOptions::new(options, &directives);
     let mut preprocessor: Preprocessor = Preprocessor::new();
 
     let Ok(imported) = preprocessor.generate_modules(&tokens, &file_options, &file, &builtins)

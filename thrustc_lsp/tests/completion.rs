@@ -11,6 +11,22 @@ fn complete_items_with_files(
     line: u64,
     character: u64,
 ) -> Vec<Value> {
+    self::complete_items_with_options(
+        text,
+        extra_files,
+        serde_json::json!({}),
+        line,
+        character,
+    )
+}
+
+fn complete_items_with_options(
+    text: &str,
+    extra_files: &[(&str, &str)],
+    initialization_options: Value,
+    line: u64,
+    character: u64,
+) -> Vec<Value> {
     let test_id: u128 = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
@@ -41,7 +57,9 @@ fn complete_items_with_files(
             "jsonrpc": "2.0",
             "id": 1,
             "method": "initialize",
-            "params": {}
+            "params": {
+                "initializationOptions": initialization_options
+            }
         }),
         serde_json::json!({
             "jsonrpc": "2.0",
@@ -165,7 +183,17 @@ fn complete_items_with_files(
 }
 
 fn complete_labels(text: &str, line: u64, character: u64) -> Vec<String> {
-    let items: Vec<Value> = self::complete_items(text, line, character);
+    self::complete_labels_with_options(text, serde_json::json!({}), line, character)
+}
+
+fn complete_labels_with_options(
+    text: &str,
+    initialization_options: Value,
+    line: u64,
+    character: u64,
+) -> Vec<String> {
+    let items: Vec<Value> =
+        self::complete_items_with_options(text, &[], initialization_options, line, character);
     let mut labels: Vec<String> = Vec::with_capacity(items.len());
 
     for item in &items {
@@ -200,12 +228,78 @@ fn complete_labels_with_files(
 }
 
 #[test]
-fn completes_native_vector_type_and_constructor() {
-    let type_labels: Vec<String> = self::complete_labels("fn main() s32 {\n    var value: \n}\n", 1, 15);
+fn stable_completion_hides_simd_items() {
+    let type_labels: Vec<String> =
+        self::complete_labels("fn main() s32 {\n    var value: \n}\n", 1, 15);
     let expr_labels: Vec<String> = self::complete_labels("fn main() s32 {\n    \n}\n", 1, 4);
+    let attribute_labels: Vec<String> = self::complete_labels("fn main() s32 @", 0, 15);
+
+    assert!(!type_labels.contains(&"NativeVector".to_string()));
+    assert!(!expr_labels.contains(&"native".to_string()));
+    assert!(!attribute_labels.contains(&"@simd".to_string()));
+}
+
+#[test]
+fn unstable_completion_includes_simd_items() {
+    let options: Value = serde_json::json!({
+        "mode": "unstable",
+        "cpu": "haswell",
+        "cpuFeatures": "+sse2,+avx"
+    });
+    let type_labels: Vec<String> = self::complete_labels_with_options(
+        "fn main() s32 {\n    var value: \n}\n",
+        options.clone(),
+        1,
+        15,
+    );
+    let expr_labels: Vec<String> =
+        self::complete_labels_with_options("fn main() s32 {\n    \n}\n", options.clone(), 1, 4);
+    let attribute_labels: Vec<String> =
+        self::complete_labels_with_options("fn main() s32 @", options, 0, 15);
 
     assert!(type_labels.contains(&"NativeVector".to_string()));
     assert!(expr_labels.contains(&"native".to_string()));
+    assert!(attribute_labels.contains(&"@simd".to_string()));
+}
+
+#[test]
+fn unstable_import_context_completes_std_simd_modules() {
+    let options: Value = serde_json::json!({
+        "mode": "unstable",
+        "cpuFeatures": "+sse2,+avx"
+    });
+    let labels: Vec<String> =
+        self::complete_labels_with_options("import std::simd::", options.clone(), 0, 18);
+    let nested: Vec<String> =
+        self::complete_labels_with_options("import std::intrinsics::x86_64::", options, 0, 32);
+
+    assert!(labels.contains(&"x86_64".to_string()));
+    assert!(nested.contains(&"simd".to_string()));
+}
+
+#[test]
+fn stable_import_context_hides_std_simd_modules() {
+    let labels: Vec<String> = self::complete_labels("import std::simd::", 0, 18);
+
+    assert!(!labels.contains(&"x86_64".to_string()));
+}
+
+#[test]
+fn unstable_std_simd_completion_uses_module_symbols() {
+    let options: Value = serde_json::json!({
+        "mode": "unstable",
+        "cpuFeatures": "+sse2,+avx"
+    });
+    let labels: Vec<String> = self::complete_labels_with_options(
+        "import std::simd::x86_64 as simd;\n\nfn main() s32 {\n    simd::\n}\n",
+        options,
+        3,
+        10,
+    );
+
+    assert!(labels.contains(&"F32x4".to_string()));
+    assert!(labels.contains(&"addPackedSinglePrecision128".to_string()));
+    assert!(labels.contains(&"sqrtPackedSinglePrecision128".to_string()));
 }
 
 #[test]

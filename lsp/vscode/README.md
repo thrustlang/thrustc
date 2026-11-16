@@ -144,6 +144,24 @@ You can also pass arguments to the language server:
 }
 ```
 
+## Enable unstable SIMD support
+
+SIMD syntax (`@simd`, `NativeVector`, `native[...]`, and `std::simd`) is unstable. Enable it in the language server settings:
+
+```json
+{
+  "thrust.lsp.mode": "unstable",
+  "thrust.lsp.cpu": "haswell",
+  "thrust.lsp.cpuFeatures": "+sse2,+avx,+avx2"
+}
+```
+
+`thrust.lsp.cpu` matches `-cpu`. Empty uses the host CPU.
+
+`thrust.lsp.cpuFeatures` matches `-cpu-features`. SIMD code reports `E0060` until this list is set.
+
+Restart the language server after changing `thrust.lsp.mode`.
+
 ## Build the extension from source
 
 From this directory:
@@ -162,7 +180,7 @@ code --install-extension packages/thrustlang-vscode-0.2.1.vsix
 
 ## Notes
 
-The current `thrustc_lsp` binary provides the protocol entry point, editor connection, and compiler-backed module import completion. Additional compiler-backed diagnostics, hover, definition, and document symbols are expected to connect through the compiler analysis pipeline.
+`thrustc_lsp` provides compiler-backed diagnostics, completion, hover, definition, and document symbols. Unstable language features follow `thrust.lsp.mode`.
 
 The legacy highlighting-only extension remains available at:
 

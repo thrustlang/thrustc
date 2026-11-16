@@ -12,6 +12,9 @@ export function activate(context: vscode.ExtensionContext) {
     let configuration: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("thrust");
     let command: string = configuration.get<string>("lsp.path", "thrustc_lsp");
     let args: string[] = configuration.get<string[]>("lsp.args", []);
+    let mode: string = configuration.get<string>("lsp.mode", "stable");
+    let cpu: string = configuration.get<string>("lsp.cpu", "");
+    let cpuFeatures: string = configuration.get<string>("lsp.cpuFeatures", "");
 
     let serverOptions: ServerOptions = {
         command,
@@ -28,6 +31,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     let clientOptions: LanguageClientOptions = {
         documentSelector,
+        initializationOptions: {
+            mode,
+            cpu,
+            cpuFeatures,
+        },
     };
 
     client = new LanguageClient(

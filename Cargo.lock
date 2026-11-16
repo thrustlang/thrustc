@@ -1806,6 +1806,7 @@ dependencies = [
  "rustversion",
  "serde_json",
  "thrustc_attributes",
+ "thrustc_backends",
  "thrustc_builtins",
  "thrustc_constants",
  "thrustc_directive",
@@ -1816,6 +1817,7 @@ dependencies = [
  "thrustc_parser",
  "thrustc_preprocessor",
  "thrustc_token",
+ "thrustc_token_type",
  "thrustc_typesystem",
  "url",
 ]

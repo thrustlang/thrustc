@@ -19,6 +19,7 @@
 
 pub mod analysis;
 pub mod completion;
+pub mod config;
 pub mod definition;
 pub mod document_symbol;
 pub mod documents;

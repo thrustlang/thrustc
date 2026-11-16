@@ -2,6 +2,10 @@ use serde_json::Value;
 use std::io::Write;
 
 fn diagnostics(text: &str) -> Vec<Value> {
+    self::diagnostics_with_options(text, serde_json::json!({}))
+}
+
+fn diagnostics_with_options(text: &str, initialization_options: Value) -> Vec<Value> {
     let test_id: u128 = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
@@ -22,7 +26,9 @@ fn diagnostics(text: &str) -> Vec<Value> {
             "jsonrpc": "2.0",
             "id": 1,
             "method": "initialize",
-            "params": {}
+            "params": {
+                "initializationOptions": initialization_options
+            }
         }),
         serde_json::json!({
             "jsonrpc": "2.0",
@@ -215,4 +221,73 @@ fn diagnostics_accept_braces_inside_block_comment() {
         self::diagnostics("fn main() s32 {\n    /* }]) fake delimiters */\n    return 0;\n}\n");
 
     assert!(diagnostics.is_empty());
+}
+
+#[test]
+fn stable_simd_attribute_reports_unstable_feature() {
+    let diagnostics: Vec<Value> =
+        self::diagnostics("fn main() s32 @simd {\n    return 0;\n}\n");
+
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.get("code").and_then(Value::as_str) == Some("E0001")
+    }));
+}
+
+#[test]
+fn stable_std_simd_import_reports_unstable_feature() {
+    let diagnostics: Vec<Value> =
+        self::diagnostics("import std::simd::x86_64;\n\nfn main() s32 {\n    return 0;\n}\n");
+
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.get("code").and_then(Value::as_str) == Some("E0001")
+    }));
+}
+
+#[test]
+fn unstable_simd_without_cpu_features_reports_e0060() {
+    let options: Value = serde_json::json!({
+        "mode": "unstable",
+        "cpuFeatures": ""
+    });
+    let diagnostics: Vec<Value> = self::diagnostics_with_options(
+        "fn main() s32 @simd {\n    return 0;\n}\n",
+        options,
+    );
+
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.get("code").and_then(Value::as_str) == Some("E0060")
+    }));
+}
+
+#[test]
+fn unstable_simd_with_cpu_features_omits_e0060() {
+    let options: Value = serde_json::json!({
+        "mode": "unstable",
+        "cpu": "haswell",
+        "cpuFeatures": "+sse2,+avx"
+    });
+    let diagnostics: Vec<Value> = self::diagnostics_with_options(
+        "fn main() s32 @simd {\n    return 0;\n}\n",
+        options,
+    );
+
+    assert!(!diagnostics.iter().any(|diagnostic| {
+        diagnostic.get("code").and_then(Value::as_str) == Some("E0060")
+    }));
+}
+
+#[test]
+fn unstable_variadic_simd_reports_e0061() {
+    let options: Value = serde_json::json!({
+        "mode": "unstable",
+        "cpuFeatures": "+sse2,+avx"
+    });
+    let diagnostics: Vec<Value> = self::diagnostics_with_options(
+        "fn forward(value: NativeVector[f32; 4]) void @public @arbitraryArgs @noArgCount {\n}\n",
+        options,
+    );
+
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.get("code").and_then(Value::as_str) == Some("E0061")
+    }));
 }

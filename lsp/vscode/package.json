@@ -78,6 +78,25 @@
             "type": "string"
           },
           "description": "Additional arguments passed to thrustc_lsp."
+        },
+        "thrust.lsp.mode": {
+          "type": "string",
+          "default": "stable",
+          "enum": [
+            "stable",
+            "unstable"
+          ],
+          "description": "Compiler feature mode used by thrustc_lsp."
+        },
+        "thrust.lsp.cpu": {
+          "type": "string",
+          "default": "",
+          "description": "Target CPU passed to the language server, matching -cpu. Empty uses the host CPU."
+        },
+        "thrust.lsp.cpuFeatures": {
+          "type": "string",
+          "default": "",
+          "description": "Target CPU features passed to the language server, matching -cpu-features."
         }
       }
     }

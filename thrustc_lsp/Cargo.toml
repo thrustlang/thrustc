@@ -12,6 +12,7 @@ serde_json = "1.0.149"
 url = "2"
 
 thrustc_attributes = { path = "../thrustc_attributes" }
+thrustc_backends = { path = "../thrustc_backends" }
 thrustc_builtins = { path = "../thrustc_builtins" }
 thrustc_directive = { path = "../thrustc_directive" }
 thrustc_lexer = { path = "../thrustc_lexer" }
@@ -19,6 +20,7 @@ thrustc_options = { path = "../thrustc_options" }
 thrustc_parser = { path = "../thrustc_parser" }
 thrustc_preprocessor = { path = "../thrustc_preprocessor" }
 thrustc_token = { path = "../thrustc_token" }
+thrustc_token_type = { path = "../thrustc_token_type" }
 thrustc_typesystem = { path = "../thrustc_typesystem" }
 thrustc_errors = { path = "../thrustc_errors" }
 thrustc_constants = { path = "../thrustc_constants" }
