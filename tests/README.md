@@ -1,29 +1,29 @@
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/logos/new%20logo/thrustlang-logo-banner-text-italic.png" alt= "logo" style= "width: 80%; height: 80%;"></img>
 
-# Thrust Compiler Tests
+# Thrust Compiler - tests
 
 <img src= "https://github.com/thrustlang/.github/blob/main/assets/standard-text-separator.png" alt= "standard-separator" style= "width: 1hv;"> </img>
 
-The `tests/` directory contains executable Thrust source tests used to validate the compiler pipeline.
+The `tests/` directory contains executable Thrust source tests that validate the compiler pipeline.
 
-The automation scripts live in `tests/scripts/` and are intended to be executed from the repository root.
+The automation scripts live in `tests/scripts/` and run from the repository root.
 
 ## Scripts
 
 - `tests/scripts/run-tests.py` compiles and runs the Thrust test suite.
-- `tests/scripts/create-test.py` creates new `.thrust` test files from literal content or from another file.
+- `tests/scripts/create-test.py` creates `.thrust` tests from literal content or another file.
 
-Both scripts require Python 3 and do not depend on third-party Python packages.
+Both scripts need Python 3 and use no third-party packages.
 
-## Run All Tests
+## Run all tests
 
-Build `thrustc` first and then run the full suite:
+Build `thrustc` first, then run the full suite:
 
 ```console
 $ tests/scripts/run-tests.py
 ```
 
-If `target/debug/thrustc` is already built, skip the Cargo build step:
+If `target/debug/thrustc` is already built, skip the Cargo build:
 
 ```console
 $ tests/scripts/run-tests.py --no-build
@@ -47,9 +47,9 @@ Increase per-test timeouts:
 $ tests/scripts/run-tests.py --no-build --compile-timeout 300 --run-timeout 60
 ```
 
-## Run A Subset
+## Run a subset
 
-Use `--filter` to run only tests whose relative path contains a specific substring:
+Use `--filter` to run only tests whose relative path contains a substring:
 
 ```console
 $ tests/scripts/run-tests.py --no-build --filter "std/math"
@@ -85,7 +85,7 @@ Exclude tests whose relative path contains a substring (combinable with `--filte
 $ tests/scripts/run-tests.py --no-build --filter "abi" --exclude-only "wasm"
 ```
 
-Emit compiler artifacts while running a test. This is useful for checking LLVM IR:
+Emit compiler artifacts while running a test, for example to inspect LLVM IR:
 
 ```console
 $ tests/scripts/run-tests.py --no-build --filter "typesystem/native_vector_ir_shape.thrust" --emit llvm-ir --keep-dist
@@ -93,29 +93,29 @@ $ tests/scripts/run-tests.py --no-build --filter "typesystem/native_vector_ir_sh
 
 Emitted LLVM IR is written under `tests/dist/build/<test-id>/emit/llvm-ir/`.
 
-## CLI Flags
+## CLI flags
 
-All flags of `tests/scripts/run-tests.py`:
+`run-tests.py` accepts these flags:
 
 | Flag | Default | Effect |
 |---|---|---|
-| `--compiler <path>` | `target/debug/thrustc` | Uses a prebuilt binary and skips the implicit `cargo build --bin thrustc`. Fails with `compiler not found` (exit `1`) when the binary does not exist. |
-| `--no-build` | off | Never invokes `cargo build`; uses the existing binary (or `--compiler`). |
-| `--filter <text>` | `""` | Runs only tests whose path relative to `tests/` contains the substring (case-sensitive). Applies to `.thrust` and `c_transpile` tests. |
-| `--exclude-only <text>` | `""` | Skips tests whose relative path contains the substring. Combinable with `--filter`. |
-| `--fail-fast` | off | Stops after the first failure and skips the remaining phases (including `c_transpile`). |
-| `--keep-dist` | off | Keeps `tests/dist/` after the run for debugging; otherwise it is always removed, even on failure. |
-| `--compile-timeout <s>` | `120` | Maximum seconds per compilation and per C translation. On timeout the test fails (`compile timeout after Xs` / `translate timeout ...`). |
+| `--compiler <path>` | `target/debug/thrustc` | Runs a prebuilt binary and skips the implicit `cargo build --bin thrustc`. Exits `1` with `compiler not found` when the path does not exist. |
+| `--no-build` | off | Skips `cargo build` and uses the existing binary or `--compiler`. |
+| `--filter <text>` | `""` | Runs only tests whose path relative to `tests/` contains the text (case-sensitive). Applies to `.thrust` and `c_transpile` tests. |
+| `--exclude-only <text>` | `""` | Skips tests whose relative path contains the text. Works with `--filter`. |
+| `--fail-fast` | off | Stops after the first failure and skips the remaining phases, including `c_transpile`. |
+| `--keep-dist` | off | Keeps `tests/dist/` after the run for debugging. Without it, the runner removes the directory even after a failure. |
+| `--compile-timeout <s>` | `120` | Maximum seconds per compilation and per C translation. A timeout fails the test (`compile timeout after Xs` or `translate timeout ...`). |
 | `--run-timeout <s>` | `30` | Maximum seconds per binary execution (`run timeout ...`). |
-| `--cc-args "<args>"` | `""` | Extra arguments forwarded to the external linker compiler. The runner always prepends `-o <binary>` (plus `-lm` when needed), joined with `;`. |
+| `--cc-args "<args>"` | `""` | Extra arguments for the external linker compiler. The runner always prepends `-o <binary>`, plus `-lm` when needed, and joins the arguments with `;`. |
 | `--emit <value>` | none (repeatable) | Forwards each `-emit <value>` to `thrustc`. When a positive test produces no binary but `--emit` was given, it passes as `compile emitted artifact`. |
-| `--compiler-arg <arg>` | none (repeatable) | Forwards each raw argument directly to `thrustc`, after `-std`/`-build-dir` and before `-emit`/`-mode`. |
+| `--compiler-arg <arg>` | none (repeatable) | Forwards each raw argument to `thrustc`, after `-std`/`-build-dir` and before `-emit`/`-mode`. |
 
-When no `--compiler` is given and `--no-build` is off, the runner builds `thrustc` with `cargo build --bin thrustc` from the repository root. When filters match zero tests it exits `1` with `no tests found`.
+When no `--compiler` is given and `--no-build` is off, the runner builds `thrustc` from the repository root with `cargo build --bin thrustc`. When the filters match no tests, it exits `1` with `no tests found`.
 
-## Test Layout
+## Test layout
 
-Tests are organized by feature area. Each directory holds `.thrust` roots plus importable libraries (files without `fn main`, included via `import "..."`).
+Tests are organized by feature area. Each directory contains `.thrust` test roots and importable libraries. A library is a file without `fn main` that another test includes with `import "..."`.
 
 | Directory | Contents |
 |---|---|
@@ -132,81 +132,55 @@ Tests are organized by feature area. Each directory holds `.thrust` roots plus i
 | `c_transpile/` | C-to-Thrust transpiler goldens (separate runner phase, see below). |
 | `std/` | Standard library module tests. |
 | `stress/` | Excluded from discovery (see below). |
-| other `api`-like areas (`abi/`, `asm/`, `atomics/`, `import_c/`, `sanitizers/`, `optimization/`, …) | Feature-specific end-to-end tests; `asm/`, `atomics/`, tests using `NativeVector`/`native[...]`, and `importC` compile with `-mode unstable`. |
+| Other feature areas (`abi/`, `atomics/`, `import_c/`, `sanitizers/`, `optimization/`, …) | End-to-end tests for a specific feature. |
 
-## Test Metadata
+Tests under `atomics/`, tests using `NativeVector`/`native[...]`, and tests using `importC` compile with `-mode unstable`.
 
-Tests can declare the host requirements and compiler arguments they need in comments at the top of the file.
+## Test metadata
+
+Tests can declare host requirements and compiler arguments in comments at the top of the file.
 
 | Metadata | Effect |
 |---|---|
-| `// test-requires: x86_64 avx512f` | The runner skips the test when the host architecture or a listed CPU feature is missing. A skipped test counts as passed. |
-| `// test-cpu-features: +sse2,+avx512f` | The runner adds `-cpu-features` with this value to the test compilation. |
-| `// test-expect-error: E0061` | The runner compiles the file without running it and expects the compilation to fail with that diagnostic code. The file does not need `fn main`. |
+| `// test-requires: x86_64 avx512f` | Skips the test when the host architecture or a listed CPU feature is missing. A skipped test counts as passed. |
+| `// test-cpu-features: +sse2,+avx512f` | Adds `-cpu-features <value>` to the test compilation. |
+| `// test-expect-error: E0061` | Compiles the file without running it and expects that diagnostic code. The file does not need `fn main`. |
 
-## Runner Behavior
+## Test results
 
-The runner discovers test roots by scanning `.thrust` files under `tests/` (sorted). It selects files that declare `fn main` or `test-expect-error`. Other files without `fn main` are treated as importable libraries. The following directories are never scanned: `dist`, `scripts`, `build`, `c_transpile`, `stdroot`, `stress`.
+Positive tests compile, link, run, and return exit code `0`.
 
-For each discovered test, the runner:
+Diagnostic tests fail compilation with the code listed in `test-expect-error`.
 
-- Resolves user imports written as `import "file.thrust"` recursively.
-- Adds imported user modules to the same compiler invocation as the root test.
-- Resolves `std::...` imports from the repository's `std/` directory (via `-std`), except `compiletime/if_imports`/`if_std_import*` tests, which use their local `stdroot` with `-std-version 0.1.8`.
-- Adds `-lm` automatically for tests that use `std::math`, `std::ffi::c::math`, or floating-point modulo operations.
-- Adds `-mode unstable` automatically for tests under `asm/`, `atomics/`, files or dependencies that use `NativeVector`/`native[...]`, or tests using `importC`, plus `--import-c-system-include <dir>` for each Clang system include directory it detects (via `clang -E -x c - -v`, 10s timeout).
-- Reads `test-requires` and skips the test with a pass result when the host architecture or a required CPU feature is missing.
-- Adds the value from `test-cpu-features` to the compiler command.
-- Compiles tests with `test-expect-error` without running them and checks for the expected diagnostic code.
-- Compiles with `-build-dir tests/dist/build/<test-id>` into `tests/dist/bin/<test-id>`.
-- Runs the binary from `tests/dist/run/<test-id>` so temporary runtime files stay isolated.
-- Removes `tests/dist/` when finished, unless `--keep-dist` is used.
-
-The test identifier joins the path relative to `tests/` without extension using `__` (for example `imports/only_then_full.thrust` becomes `imports__only_then_full`). Runtime variants append `__runtime` or `__translated_runtime`.
-
-The final executable path is passed through `-cc-args` because the current linker flow receives output flags through the external linker arguments.
-
-## Test Results
-
-Positive tests are expected to compile, link, run, and return exit code `0`.
-
-Tests skipped by `test-requires` count as passed.
-
-Diagnostic tests are expected to fail compilation and include the code listed in `test-expect-error`.
-
-## C Transpile Tests
+## C transpile tests
 
 Tests under `tests/c_transpile/` validate the C-to-Thrust transpiler. Each case is a C file with a sibling golden file:
 
-- `tests/c_transpile/<group>/<name>.c` — the input (plus optional `.h` helpers included via `#include`).
-- `tests/c_transpile/<group>/<name>.expected.thrust` — the exact expected translation output (mandatory; inputs without it are ignored).
+- `tests/c_transpile/<group>/<name>.c`: the input, plus optional `.h` helpers included with `#include`.
+- `tests/c_transpile/<group>/<name>.expected.thrust`: the exact expected output. A case without this file is ignored.
 
 An optional `tests/c_transpile/<group>/<name>.run.thrust` driver provides a `fn main` for runtime checks when the translated output has none.
 
 For each case the runner:
 
-1. Runs `thrustc --translate-c-to-thrust <name.c> --translate-c-out-dir tests/dist/c_transpile/<test-id>/` (bounded by `--compile-timeout`).
+1. Runs `thrustc --translate-c-to-thrust <name.c> --translate-c-out-dir tests/dist/c_transpile/<test-id>/` with `--compile-timeout` as the limit.
 2. Fails when translation fails or the `<name>.thrust` output is missing.
-3. Compares the output byte-for-byte against `<name>.expected.thrust` and fails with a unified diff on mismatch.
+3. Compares the output byte-for-byte with `<name>.expected.thrust` and prints a unified diff on a mismatch.
 4. Recompiles the translated output with `-emit ast`, unless it contains `directive`, `importC`, `union`, `enum`, or `deref ... = ...` lines.
-5. Executes it when it declares `fn main`, or concatenates it with its `.run.thrust` driver (`translated + "\n\n" + driver`) and executes that. Both runtimes must exit `0`; without `main` and without driver the test passes after translation.
+5. Runs it when it declares `fn main`, or concatenates it with its `.run.thrust` driver (`translated + "\n\n" + driver`) and runs that. Both runtimes must exit `0`. Without `main` and without a driver, the test passes after translation.
 
-There is no `--bless` flag: golden files are updated manually by translating with the new binary and copying the result over the `.expected.thrust`:
+There is no `--bless` flag. Update a golden file by translating with the new binary and copying the result over `.expected.thrust`:
 
 ```console
 $ target/debug/thrustc --translate-c-to-thrust tests/c_transpile/macros/foo.c --translate-c-out-dir /tmp/out
 $ cp /tmp/out/foo.thrust tests/c_transpile/macros/foo.expected.thrust
 ```
 
-Note: run with `--keep-dist` to inspect the generated files under `tests/dist/c_transpile/<test-id>/` before copying.
+Use `--keep-dist` to inspect generated files under `tests/dist/c_transpile/<test-id>/` before copying.
 
-Tests using `importC` (for example everything under `tests/import_c/`) compile with `-mode unstable` automatically; they assert through exit codes only and have no golden files.
+Tests using `importC` (for example, everything under `tests/import_c/`) compile with `-mode unstable`. They check behavior through exit codes and have no golden files.
 
-## Excluded Directories
-
-Entire directories are excluded from discovery: `dist`, `scripts`, `build`, `c_transpile` (covered by its own phase), `stdroot`, and `stress`.
-
-## Create A Test
+## Create a test
 
 Create a test with literal content:
 
@@ -226,18 +200,18 @@ Overwrite an existing test:
 $ tests/scripts/create-test.py -path arbitrary/new_test.thrust -content path/to/template.thrust --force
 ```
 
-Relative paths are created inside `tests/`. These two commands target the same destination:
+Relative paths are created inside `tests/`. These commands create the same file:
 
 ```console
 $ tests/scripts/create-test.py -path arbitrary/new_test.thrust -content 'fn main() s32 @public { return 0; }'
 $ tests/scripts/create-test.py -path tests/arbitrary/new_test.thrust -content 'fn main() s32 @public { return 0; }'
 ```
 
-The destination must use the `.thrust` extension and must stay inside `tests/`.
+The destination must use the `.thrust` extension and stay inside `tests/`.
 
-## Test Conventions
+## Test conventions
 
-A minimal positive test should return `0` on success:
+A minimal positive test returns `0` on success:
 
 ```thrust
 fn main() s32 @public {
@@ -261,4 +235,4 @@ If a test imports another user file, keep the import relative to the importing f
 import "module.thrust";
 ```
 
-The runner will include that dependency automatically in the compilation pipeline.
+The runner compiles that dependency with the test.
