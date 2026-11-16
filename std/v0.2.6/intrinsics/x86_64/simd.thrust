@@ -53,6 +53,95 @@ type U32x16 @public = NativeVector[u32; 16];
 type S64x8 @public = NativeVector[s64; 8];
 type U64x8 @public = NativeVector[u64; 8];
 
+// Intrinsics
+
+intrinsic("llvm.sqrt.v4f32") sqrtF32x4Native(value: F32x4) F32x4 @public @simd;
+intrinsic("llvm.fabs.v4f32") absF32x4Native(value: F32x4) F32x4 @public @simd;
+intrinsic("llvm.minimum.v4f32") minF32x4Native(left: F32x4, right: F32x4) F32x4 @public @simd;
+intrinsic("llvm.maximum.v4f32") maxF32x4Native(left: F32x4, right: F32x4) F32x4 @public @simd;
+intrinsic("llvm.sqrt.v2f64") sqrtF64x2Native(value: F64x2) F64x2 @public @simd;
+intrinsic("llvm.fabs.v2f64") absF64x2Native(value: F64x2) F64x2 @public @simd;
+intrinsic("llvm.minimum.v2f64") minF64x2Native(left: F64x2, right: F64x2) F64x2 @public @simd;
+intrinsic("llvm.maximum.v2f64") maxF64x2Native(left: F64x2, right: F64x2) F64x2 @public @simd;
+intrinsic("llvm.sqrt.v8f32") sqrtF32x8Native(value: F32x8) F32x8 @public @simd;
+intrinsic("llvm.fabs.v8f32") absF32x8Native(value: F32x8) F32x8 @public @simd;
+intrinsic("llvm.minimum.v8f32") minF32x8Native(left: F32x8, right: F32x8) F32x8 @public @simd;
+intrinsic("llvm.maximum.v8f32") maxF32x8Native(left: F32x8, right: F32x8) F32x8 @public @simd;
+intrinsic("llvm.sqrt.v4f64") sqrtF64x4Native(value: F64x4) F64x4 @public @simd;
+intrinsic("llvm.fabs.v4f64") absF64x4Native(value: F64x4) F64x4 @public @simd;
+intrinsic("llvm.minimum.v4f64") minF64x4Native(left: F64x4, right: F64x4) F64x4 @public @simd;
+intrinsic("llvm.maximum.v4f64") maxF64x4Native(left: F64x4, right: F64x4) F64x4 @public @simd;
+intrinsic("llvm.sqrt.v16f32") sqrtF32x16Native(value: F32x16) F32x16 @public @simd;
+intrinsic("llvm.fabs.v16f32") absF32x16Native(value: F32x16) F32x16 @public @simd;
+intrinsic("llvm.minimum.v16f32") minF32x16Native(left: F32x16, right: F32x16) F32x16 @public @simd;
+intrinsic("llvm.maximum.v16f32") maxF32x16Native(left: F32x16, right: F32x16) F32x16 @public @simd;
+intrinsic("llvm.sqrt.v8f64") sqrtF64x8Native(value: F64x8) F64x8 @public @simd;
+intrinsic("llvm.fabs.v8f64") absF64x8Native(value: F64x8) F64x8 @public @simd;
+intrinsic("llvm.minimum.v8f64") minF64x8Native(left: F64x8, right: F64x8) F64x8 @public @simd;
+intrinsic("llvm.maximum.v8f64") maxF64x8Native(left: F64x8, right: F64x8) F64x8 @public @simd;
+intrinsic("llvm.smin.v16i8") minS8x16Native(left: S8x16, right: S8x16) S8x16 @public @simd;
+intrinsic("llvm.smax.v16i8") maxS8x16Native(left: S8x16, right: S8x16) S8x16 @public @simd;
+intrinsic("llvm.abs.v16i8") absS8x16Native(value: S8x16, poison: bool) S8x16 @public @simd;
+intrinsic("llvm.umin.v16i8") minU8x16Native(left: U8x16, right: U8x16) U8x16 @public @simd;
+intrinsic("llvm.umax.v16i8") maxU8x16Native(left: U8x16, right: U8x16) U8x16 @public @simd;
+intrinsic("llvm.smin.v8i16") minS16x8Native(left: S16x8, right: S16x8) S16x8 @public @simd;
+intrinsic("llvm.smax.v8i16") maxS16x8Native(left: S16x8, right: S16x8) S16x8 @public @simd;
+intrinsic("llvm.abs.v8i16") absS16x8Native(value: S16x8, poison: bool) S16x8 @public @simd;
+intrinsic("llvm.umin.v8i16") minU16x8Native(left: U16x8, right: U16x8) U16x8 @public @simd;
+intrinsic("llvm.umax.v8i16") maxU16x8Native(left: U16x8, right: U16x8) U16x8 @public @simd;
+intrinsic("llvm.smin.v4i32") minS32x4Native(left: S32x4, right: S32x4) S32x4 @public @simd;
+intrinsic("llvm.smax.v4i32") maxS32x4Native(left: S32x4, right: S32x4) S32x4 @public @simd;
+intrinsic("llvm.abs.v4i32") absS32x4Native(value: S32x4, poison: bool) S32x4 @public @simd;
+intrinsic("llvm.umin.v4i32") minU32x4Native(left: U32x4, right: U32x4) U32x4 @public @simd;
+intrinsic("llvm.umax.v4i32") maxU32x4Native(left: U32x4, right: U32x4) U32x4 @public @simd;
+intrinsic("llvm.smin.v2i64") minS64x2Native(left: S64x2, right: S64x2) S64x2 @public @simd;
+intrinsic("llvm.smax.v2i64") maxS64x2Native(left: S64x2, right: S64x2) S64x2 @public @simd;
+intrinsic("llvm.abs.v2i64") absS64x2Native(value: S64x2, poison: bool) S64x2 @public @simd;
+intrinsic("llvm.umin.v2i64") minU64x2Native(left: U64x2, right: U64x2) U64x2 @public @simd;
+intrinsic("llvm.umax.v2i64") maxU64x2Native(left: U64x2, right: U64x2) U64x2 @public @simd;
+intrinsic("llvm.smin.v32i8") minS8x32Native(left: S8x32, right: S8x32) S8x32 @public @simd;
+intrinsic("llvm.smax.v32i8") maxS8x32Native(left: S8x32, right: S8x32) S8x32 @public @simd;
+intrinsic("llvm.abs.v32i8") absS8x32Native(value: S8x32, poison: bool) S8x32 @public @simd;
+intrinsic("llvm.umin.v32i8") minU8x32Native(left: U8x32, right: U8x32) U8x32 @public @simd;
+intrinsic("llvm.umax.v32i8") maxU8x32Native(left: U8x32, right: U8x32) U8x32 @public @simd;
+intrinsic("llvm.smin.v16i16") minS16x16Native(left: S16x16, right: S16x16) S16x16 @public @simd;
+intrinsic("llvm.smax.v16i16") maxS16x16Native(left: S16x16, right: S16x16) S16x16 @public @simd;
+intrinsic("llvm.abs.v16i16") absS16x16Native(value: S16x16, poison: bool) S16x16 @public @simd;
+intrinsic("llvm.umin.v16i16") minU16x16Native(left: U16x16, right: U16x16) U16x16 @public @simd;
+intrinsic("llvm.umax.v16i16") maxU16x16Native(left: U16x16, right: U16x16) U16x16 @public @simd;
+intrinsic("llvm.smin.v8i32") minS32x8Native(left: S32x8, right: S32x8) S32x8 @public @simd;
+intrinsic("llvm.smax.v8i32") maxS32x8Native(left: S32x8, right: S32x8) S32x8 @public @simd;
+intrinsic("llvm.abs.v8i32") absS32x8Native(value: S32x8, poison: bool) S32x8 @public @simd;
+intrinsic("llvm.umin.v8i32") minU32x8Native(left: U32x8, right: U32x8) U32x8 @public @simd;
+intrinsic("llvm.umax.v8i32") maxU32x8Native(left: U32x8, right: U32x8) U32x8 @public @simd;
+intrinsic("llvm.smin.v4i64") minS64x4Native(left: S64x4, right: S64x4) S64x4 @public @simd;
+intrinsic("llvm.smax.v4i64") maxS64x4Native(left: S64x4, right: S64x4) S64x4 @public @simd;
+intrinsic("llvm.abs.v4i64") absS64x4Native(value: S64x4, poison: bool) S64x4 @public @simd;
+intrinsic("llvm.umin.v4i64") minU64x4Native(left: U64x4, right: U64x4) U64x4 @public @simd;
+intrinsic("llvm.umax.v4i64") maxU64x4Native(left: U64x4, right: U64x4) U64x4 @public @simd;
+intrinsic("llvm.smin.v64i8") minS8x64Native(left: S8x64, right: S8x64) S8x64 @public @simd;
+intrinsic("llvm.smax.v64i8") maxS8x64Native(left: S8x64, right: S8x64) S8x64 @public @simd;
+intrinsic("llvm.abs.v64i8") absS8x64Native(value: S8x64, poison: bool) S8x64 @public @simd;
+intrinsic("llvm.umin.v64i8") minU8x64Native(left: U8x64, right: U8x64) U8x64 @public @simd;
+intrinsic("llvm.umax.v64i8") maxU8x64Native(left: U8x64, right: U8x64) U8x64 @public @simd;
+intrinsic("llvm.smin.v32i16") minS16x32Native(left: S16x32, right: S16x32) S16x32 @public @simd;
+intrinsic("llvm.smax.v32i16") maxS16x32Native(left: S16x32, right: S16x32) S16x32 @public @simd;
+intrinsic("llvm.abs.v32i16") absS16x32Native(value: S16x32, poison: bool) S16x32 @public @simd;
+intrinsic("llvm.umin.v32i16") minU16x32Native(left: U16x32, right: U16x32) U16x32 @public @simd;
+intrinsic("llvm.umax.v32i16") maxU16x32Native(left: U16x32, right: U16x32) U16x32 @public @simd;
+intrinsic("llvm.smin.v16i32") minS32x16Native(left: S32x16, right: S32x16) S32x16 @public @simd;
+intrinsic("llvm.smax.v16i32") maxS32x16Native(left: S32x16, right: S32x16) S32x16 @public @simd;
+intrinsic("llvm.abs.v16i32") absS32x16Native(value: S32x16, poison: bool) S32x16 @public @simd;
+intrinsic("llvm.umin.v16i32") minU32x16Native(left: U32x16, right: U32x16) U32x16 @public @simd;
+intrinsic("llvm.umax.v16i32") maxU32x16Native(left: U32x16, right: U32x16) U32x16 @public @simd;
+intrinsic("llvm.smin.v8i64") minS64x8Native(left: S64x8, right: S64x8) S64x8 @public @simd;
+intrinsic("llvm.smax.v8i64") maxS64x8Native(left: S64x8, right: S64x8) S64x8 @public @simd;
+intrinsic("llvm.abs.v8i64") absS64x8Native(value: S64x8, poison: bool) S64x8 @public @simd;
+intrinsic("llvm.umin.v8i64") minU64x8Native(left: U64x8, right: U64x8) U64x8 @public @simd;
+intrinsic("llvm.umax.v8i64") maxU64x8Native(left: U64x8, right: U64x8) U64x8 @public @simd;
+
+// Wrappers
+
 fn addF32x4(left: F32x4, right: F32x4) F32x4 @public @simd {
     return left + right;
 }
@@ -69,22 +158,18 @@ fn divF32x4(left: F32x4, right: F32x4) F32x4 @public @simd {
     return left / right;
 }
 
-intrinsic("llvm.sqrt.v4f32") sqrtF32x4Native(value: F32x4) F32x4 @public @simd;
 fn sqrtF32x4(value: F32x4) F32x4 @public @simd {
     return sqrtF32x4Native(value);
 }
 
-intrinsic("llvm.fabs.v4f32") absF32x4Native(value: F32x4) F32x4 @public @simd;
 fn absF32x4(value: F32x4) F32x4 @public @simd {
     return absF32x4Native(value);
 }
 
-intrinsic("llvm.minimum.v4f32") minF32x4Native(left: F32x4, right: F32x4) F32x4 @public @simd;
 fn minF32x4(left: F32x4, right: F32x4) F32x4 @public @simd {
     return minF32x4Native(left, right);
 }
 
-intrinsic("llvm.maximum.v4f32") maxF32x4Native(left: F32x4, right: F32x4) F32x4 @public @simd;
 fn maxF32x4(left: F32x4, right: F32x4) F32x4 @public @simd {
     return maxF32x4Native(left, right);
 }
@@ -105,22 +190,18 @@ fn divF64x2(left: F64x2, right: F64x2) F64x2 @public @simd {
     return left / right;
 }
 
-intrinsic("llvm.sqrt.v2f64") sqrtF64x2Native(value: F64x2) F64x2 @public @simd;
 fn sqrtF64x2(value: F64x2) F64x2 @public @simd {
     return sqrtF64x2Native(value);
 }
 
-intrinsic("llvm.fabs.v2f64") absF64x2Native(value: F64x2) F64x2 @public @simd;
 fn absF64x2(value: F64x2) F64x2 @public @simd {
     return absF64x2Native(value);
 }
 
-intrinsic("llvm.minimum.v2f64") minF64x2Native(left: F64x2, right: F64x2) F64x2 @public @simd;
 fn minF64x2(left: F64x2, right: F64x2) F64x2 @public @simd {
     return minF64x2Native(left, right);
 }
 
-intrinsic("llvm.maximum.v2f64") maxF64x2Native(left: F64x2, right: F64x2) F64x2 @public @simd;
 fn maxF64x2(left: F64x2, right: F64x2) F64x2 @public @simd {
     return maxF64x2Native(left, right);
 }
@@ -141,22 +222,18 @@ fn divF32x8(left: F32x8, right: F32x8) F32x8 @public @simd {
     return left / right;
 }
 
-intrinsic("llvm.sqrt.v8f32") sqrtF32x8Native(value: F32x8) F32x8 @public @simd;
 fn sqrtF32x8(value: F32x8) F32x8 @public @simd {
     return sqrtF32x8Native(value);
 }
 
-intrinsic("llvm.fabs.v8f32") absF32x8Native(value: F32x8) F32x8 @public @simd;
 fn absF32x8(value: F32x8) F32x8 @public @simd {
     return absF32x8Native(value);
 }
 
-intrinsic("llvm.minimum.v8f32") minF32x8Native(left: F32x8, right: F32x8) F32x8 @public @simd;
 fn minF32x8(left: F32x8, right: F32x8) F32x8 @public @simd {
     return minF32x8Native(left, right);
 }
 
-intrinsic("llvm.maximum.v8f32") maxF32x8Native(left: F32x8, right: F32x8) F32x8 @public @simd;
 fn maxF32x8(left: F32x8, right: F32x8) F32x8 @public @simd {
     return maxF32x8Native(left, right);
 }
@@ -177,22 +254,18 @@ fn divF64x4(left: F64x4, right: F64x4) F64x4 @public @simd {
     return left / right;
 }
 
-intrinsic("llvm.sqrt.v4f64") sqrtF64x4Native(value: F64x4) F64x4 @public @simd;
 fn sqrtF64x4(value: F64x4) F64x4 @public @simd {
     return sqrtF64x4Native(value);
 }
 
-intrinsic("llvm.fabs.v4f64") absF64x4Native(value: F64x4) F64x4 @public @simd;
 fn absF64x4(value: F64x4) F64x4 @public @simd {
     return absF64x4Native(value);
 }
 
-intrinsic("llvm.minimum.v4f64") minF64x4Native(left: F64x4, right: F64x4) F64x4 @public @simd;
 fn minF64x4(left: F64x4, right: F64x4) F64x4 @public @simd {
     return minF64x4Native(left, right);
 }
 
-intrinsic("llvm.maximum.v4f64") maxF64x4Native(left: F64x4, right: F64x4) F64x4 @public @simd;
 fn maxF64x4(left: F64x4, right: F64x4) F64x4 @public @simd {
     return maxF64x4Native(left, right);
 }
@@ -213,22 +286,18 @@ fn divF32x16(left: F32x16, right: F32x16) F32x16 @public @simd {
     return left / right;
 }
 
-intrinsic("llvm.sqrt.v16f32") sqrtF32x16Native(value: F32x16) F32x16 @public @simd;
 fn sqrtF32x16(value: F32x16) F32x16 @public @simd {
     return sqrtF32x16Native(value);
 }
 
-intrinsic("llvm.fabs.v16f32") absF32x16Native(value: F32x16) F32x16 @public @simd;
 fn absF32x16(value: F32x16) F32x16 @public @simd {
     return absF32x16Native(value);
 }
 
-intrinsic("llvm.minimum.v16f32") minF32x16Native(left: F32x16, right: F32x16) F32x16 @public @simd;
 fn minF32x16(left: F32x16, right: F32x16) F32x16 @public @simd {
     return minF32x16Native(left, right);
 }
 
-intrinsic("llvm.maximum.v16f32") maxF32x16Native(left: F32x16, right: F32x16) F32x16 @public @simd;
 fn maxF32x16(left: F32x16, right: F32x16) F32x16 @public @simd {
     return maxF32x16Native(left, right);
 }
@@ -249,22 +318,18 @@ fn divF64x8(left: F64x8, right: F64x8) F64x8 @public @simd {
     return left / right;
 }
 
-intrinsic("llvm.sqrt.v8f64") sqrtF64x8Native(value: F64x8) F64x8 @public @simd;
 fn sqrtF64x8(value: F64x8) F64x8 @public @simd {
     return sqrtF64x8Native(value);
 }
 
-intrinsic("llvm.fabs.v8f64") absF64x8Native(value: F64x8) F64x8 @public @simd;
 fn absF64x8(value: F64x8) F64x8 @public @simd {
     return absF64x8Native(value);
 }
 
-intrinsic("llvm.minimum.v8f64") minF64x8Native(left: F64x8, right: F64x8) F64x8 @public @simd;
 fn minF64x8(left: F64x8, right: F64x8) F64x8 @public @simd {
     return minF64x8Native(left, right);
 }
 
-intrinsic("llvm.maximum.v8f64") maxF64x8Native(left: F64x8, right: F64x8) F64x8 @public @simd;
 fn maxF64x8(left: F64x8, right: F64x8) F64x8 @public @simd {
     return maxF64x8Native(left, right);
 }
@@ -313,17 +378,14 @@ fn shrS8x16(value: S8x16, amount: u32) S8x16 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v16i8") minS8x16Native(left: S8x16, right: S8x16) S8x16 @public @simd;
 fn minS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
     return minS8x16Native(left, right);
 }
 
-intrinsic("llvm.smax.v16i8") maxS8x16Native(left: S8x16, right: S8x16) S8x16 @public @simd;
 fn maxS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
     return maxS8x16Native(left, right);
 }
 
-intrinsic("llvm.abs.v16i8") absS8x16Native(value: S8x16, poison: bool) S8x16 @public @simd;
 fn absS8x16(value: S8x16) S8x16 @public @simd {
     return absS8x16Native(value, false);
 }
@@ -372,12 +434,10 @@ fn shrU8x16(value: U8x16, amount: u32) U8x16 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v16i8") minU8x16Native(left: U8x16, right: U8x16) U8x16 @public @simd;
 fn minU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
     return minU8x16Native(left, right);
 }
 
-intrinsic("llvm.umax.v16i8") maxU8x16Native(left: U8x16, right: U8x16) U8x16 @public @simd;
 fn maxU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
     return maxU8x16Native(left, right);
 }
@@ -426,17 +486,14 @@ fn shrS16x8(value: S16x8, amount: u32) S16x8 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v8i16") minS16x8Native(left: S16x8, right: S16x8) S16x8 @public @simd;
 fn minS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
     return minS16x8Native(left, right);
 }
 
-intrinsic("llvm.smax.v8i16") maxS16x8Native(left: S16x8, right: S16x8) S16x8 @public @simd;
 fn maxS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
     return maxS16x8Native(left, right);
 }
 
-intrinsic("llvm.abs.v8i16") absS16x8Native(value: S16x8, poison: bool) S16x8 @public @simd;
 fn absS16x8(value: S16x8) S16x8 @public @simd {
     return absS16x8Native(value, false);
 }
@@ -485,12 +542,10 @@ fn shrU16x8(value: U16x8, amount: u32) U16x8 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v8i16") minU16x8Native(left: U16x8, right: U16x8) U16x8 @public @simd;
 fn minU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
     return minU16x8Native(left, right);
 }
 
-intrinsic("llvm.umax.v8i16") maxU16x8Native(left: U16x8, right: U16x8) U16x8 @public @simd;
 fn maxU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
     return maxU16x8Native(left, right);
 }
@@ -539,17 +594,14 @@ fn shrS32x4(value: S32x4, amount: u32) S32x4 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v4i32") minS32x4Native(left: S32x4, right: S32x4) S32x4 @public @simd;
 fn minS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
     return minS32x4Native(left, right);
 }
 
-intrinsic("llvm.smax.v4i32") maxS32x4Native(left: S32x4, right: S32x4) S32x4 @public @simd;
 fn maxS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
     return maxS32x4Native(left, right);
 }
 
-intrinsic("llvm.abs.v4i32") absS32x4Native(value: S32x4, poison: bool) S32x4 @public @simd;
 fn absS32x4(value: S32x4) S32x4 @public @simd {
     return absS32x4Native(value, false);
 }
@@ -598,12 +650,10 @@ fn shrU32x4(value: U32x4, amount: u32) U32x4 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v4i32") minU32x4Native(left: U32x4, right: U32x4) U32x4 @public @simd;
 fn minU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
     return minU32x4Native(left, right);
 }
 
-intrinsic("llvm.umax.v4i32") maxU32x4Native(left: U32x4, right: U32x4) U32x4 @public @simd;
 fn maxU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
     return maxU32x4Native(left, right);
 }
@@ -652,17 +702,14 @@ fn shrS64x2(value: S64x2, amount: u32) S64x2 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v2i64") minS64x2Native(left: S64x2, right: S64x2) S64x2 @public @simd;
 fn minS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
     return minS64x2Native(left, right);
 }
 
-intrinsic("llvm.smax.v2i64") maxS64x2Native(left: S64x2, right: S64x2) S64x2 @public @simd;
 fn maxS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
     return maxS64x2Native(left, right);
 }
 
-intrinsic("llvm.abs.v2i64") absS64x2Native(value: S64x2, poison: bool) S64x2 @public @simd;
 fn absS64x2(value: S64x2) S64x2 @public @simd {
     return absS64x2Native(value, false);
 }
@@ -711,12 +758,10 @@ fn shrU64x2(value: U64x2, amount: u32) U64x2 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v2i64") minU64x2Native(left: U64x2, right: U64x2) U64x2 @public @simd;
 fn minU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
     return minU64x2Native(left, right);
 }
 
-intrinsic("llvm.umax.v2i64") maxU64x2Native(left: U64x2, right: U64x2) U64x2 @public @simd;
 fn maxU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
     return maxU64x2Native(left, right);
 }
@@ -765,17 +810,14 @@ fn shrS8x32(value: S8x32, amount: u32) S8x32 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v32i8") minS8x32Native(left: S8x32, right: S8x32) S8x32 @public @simd;
 fn minS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
     return minS8x32Native(left, right);
 }
 
-intrinsic("llvm.smax.v32i8") maxS8x32Native(left: S8x32, right: S8x32) S8x32 @public @simd;
 fn maxS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
     return maxS8x32Native(left, right);
 }
 
-intrinsic("llvm.abs.v32i8") absS8x32Native(value: S8x32, poison: bool) S8x32 @public @simd;
 fn absS8x32(value: S8x32) S8x32 @public @simd {
     return absS8x32Native(value, false);
 }
@@ -824,12 +866,10 @@ fn shrU8x32(value: U8x32, amount: u32) U8x32 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v32i8") minU8x32Native(left: U8x32, right: U8x32) U8x32 @public @simd;
 fn minU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
     return minU8x32Native(left, right);
 }
 
-intrinsic("llvm.umax.v32i8") maxU8x32Native(left: U8x32, right: U8x32) U8x32 @public @simd;
 fn maxU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
     return maxU8x32Native(left, right);
 }
@@ -878,17 +918,14 @@ fn shrS16x16(value: S16x16, amount: u32) S16x16 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v16i16") minS16x16Native(left: S16x16, right: S16x16) S16x16 @public @simd;
 fn minS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
     return minS16x16Native(left, right);
 }
 
-intrinsic("llvm.smax.v16i16") maxS16x16Native(left: S16x16, right: S16x16) S16x16 @public @simd;
 fn maxS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
     return maxS16x16Native(left, right);
 }
 
-intrinsic("llvm.abs.v16i16") absS16x16Native(value: S16x16, poison: bool) S16x16 @public @simd;
 fn absS16x16(value: S16x16) S16x16 @public @simd {
     return absS16x16Native(value, false);
 }
@@ -937,12 +974,10 @@ fn shrU16x16(value: U16x16, amount: u32) U16x16 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v16i16") minU16x16Native(left: U16x16, right: U16x16) U16x16 @public @simd;
 fn minU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
     return minU16x16Native(left, right);
 }
 
-intrinsic("llvm.umax.v16i16") maxU16x16Native(left: U16x16, right: U16x16) U16x16 @public @simd;
 fn maxU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
     return maxU16x16Native(left, right);
 }
@@ -991,17 +1026,14 @@ fn shrS32x8(value: S32x8, amount: u32) S32x8 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v8i32") minS32x8Native(left: S32x8, right: S32x8) S32x8 @public @simd;
 fn minS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
     return minS32x8Native(left, right);
 }
 
-intrinsic("llvm.smax.v8i32") maxS32x8Native(left: S32x8, right: S32x8) S32x8 @public @simd;
 fn maxS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
     return maxS32x8Native(left, right);
 }
 
-intrinsic("llvm.abs.v8i32") absS32x8Native(value: S32x8, poison: bool) S32x8 @public @simd;
 fn absS32x8(value: S32x8) S32x8 @public @simd {
     return absS32x8Native(value, false);
 }
@@ -1050,12 +1082,10 @@ fn shrU32x8(value: U32x8, amount: u32) U32x8 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v8i32") minU32x8Native(left: U32x8, right: U32x8) U32x8 @public @simd;
 fn minU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
     return minU32x8Native(left, right);
 }
 
-intrinsic("llvm.umax.v8i32") maxU32x8Native(left: U32x8, right: U32x8) U32x8 @public @simd;
 fn maxU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
     return maxU32x8Native(left, right);
 }
@@ -1104,17 +1134,14 @@ fn shrS64x4(value: S64x4, amount: u32) S64x4 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v4i64") minS64x4Native(left: S64x4, right: S64x4) S64x4 @public @simd;
 fn minS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
     return minS64x4Native(left, right);
 }
 
-intrinsic("llvm.smax.v4i64") maxS64x4Native(left: S64x4, right: S64x4) S64x4 @public @simd;
 fn maxS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
     return maxS64x4Native(left, right);
 }
 
-intrinsic("llvm.abs.v4i64") absS64x4Native(value: S64x4, poison: bool) S64x4 @public @simd;
 fn absS64x4(value: S64x4) S64x4 @public @simd {
     return absS64x4Native(value, false);
 }
@@ -1163,12 +1190,10 @@ fn shrU64x4(value: U64x4, amount: u32) U64x4 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v4i64") minU64x4Native(left: U64x4, right: U64x4) U64x4 @public @simd;
 fn minU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
     return minU64x4Native(left, right);
 }
 
-intrinsic("llvm.umax.v4i64") maxU64x4Native(left: U64x4, right: U64x4) U64x4 @public @simd;
 fn maxU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
     return maxU64x4Native(left, right);
 }
@@ -1217,17 +1242,14 @@ fn shrS8x64(value: S8x64, amount: u32) S8x64 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v64i8") minS8x64Native(left: S8x64, right: S8x64) S8x64 @public @simd;
 fn minS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
     return minS8x64Native(left, right);
 }
 
-intrinsic("llvm.smax.v64i8") maxS8x64Native(left: S8x64, right: S8x64) S8x64 @public @simd;
 fn maxS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
     return maxS8x64Native(left, right);
 }
 
-intrinsic("llvm.abs.v64i8") absS8x64Native(value: S8x64, poison: bool) S8x64 @public @simd;
 fn absS8x64(value: S8x64) S8x64 @public @simd {
     return absS8x64Native(value, false);
 }
@@ -1276,12 +1298,10 @@ fn shrU8x64(value: U8x64, amount: u32) U8x64 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v64i8") minU8x64Native(left: U8x64, right: U8x64) U8x64 @public @simd;
 fn minU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
     return minU8x64Native(left, right);
 }
 
-intrinsic("llvm.umax.v64i8") maxU8x64Native(left: U8x64, right: U8x64) U8x64 @public @simd;
 fn maxU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
     return maxU8x64Native(left, right);
 }
@@ -1330,17 +1350,14 @@ fn shrS16x32(value: S16x32, amount: u32) S16x32 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v32i16") minS16x32Native(left: S16x32, right: S16x32) S16x32 @public @simd;
 fn minS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
     return minS16x32Native(left, right);
 }
 
-intrinsic("llvm.smax.v32i16") maxS16x32Native(left: S16x32, right: S16x32) S16x32 @public @simd;
 fn maxS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
     return maxS16x32Native(left, right);
 }
 
-intrinsic("llvm.abs.v32i16") absS16x32Native(value: S16x32, poison: bool) S16x32 @public @simd;
 fn absS16x32(value: S16x32) S16x32 @public @simd {
     return absS16x32Native(value, false);
 }
@@ -1389,12 +1406,10 @@ fn shrU16x32(value: U16x32, amount: u32) U16x32 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v32i16") minU16x32Native(left: U16x32, right: U16x32) U16x32 @public @simd;
 fn minU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
     return minU16x32Native(left, right);
 }
 
-intrinsic("llvm.umax.v32i16") maxU16x32Native(left: U16x32, right: U16x32) U16x32 @public @simd;
 fn maxU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
     return maxU16x32Native(left, right);
 }
@@ -1443,17 +1458,14 @@ fn shrS32x16(value: S32x16, amount: u32) S32x16 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v16i32") minS32x16Native(left: S32x16, right: S32x16) S32x16 @public @simd;
 fn minS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
     return minS32x16Native(left, right);
 }
 
-intrinsic("llvm.smax.v16i32") maxS32x16Native(left: S32x16, right: S32x16) S32x16 @public @simd;
 fn maxS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
     return maxS32x16Native(left, right);
 }
 
-intrinsic("llvm.abs.v16i32") absS32x16Native(value: S32x16, poison: bool) S32x16 @public @simd;
 fn absS32x16(value: S32x16) S32x16 @public @simd {
     return absS32x16Native(value, false);
 }
@@ -1502,12 +1514,10 @@ fn shrU32x16(value: U32x16, amount: u32) U32x16 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v16i32") minU32x16Native(left: U32x16, right: U32x16) U32x16 @public @simd;
 fn minU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
     return minU32x16Native(left, right);
 }
 
-intrinsic("llvm.umax.v16i32") maxU32x16Native(left: U32x16, right: U32x16) U32x16 @public @simd;
 fn maxU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
     return maxU32x16Native(left, right);
 }
@@ -1556,17 +1566,14 @@ fn shrS64x8(value: S64x8, amount: u32) S64x8 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.smin.v8i64") minS64x8Native(left: S64x8, right: S64x8) S64x8 @public @simd;
 fn minS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
     return minS64x8Native(left, right);
 }
 
-intrinsic("llvm.smax.v8i64") maxS64x8Native(left: S64x8, right: S64x8) S64x8 @public @simd;
 fn maxS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
     return maxS64x8Native(left, right);
 }
 
-intrinsic("llvm.abs.v8i64") absS64x8Native(value: S64x8, poison: bool) S64x8 @public @simd;
 fn absS64x8(value: S64x8) S64x8 @public @simd {
     return absS64x8Native(value, false);
 }
@@ -1615,13 +1622,10 @@ fn shrU64x8(value: U64x8, amount: u32) U64x8 @public @simd {
     return value >> amount;
 }
 
-intrinsic("llvm.umin.v8i64") minU64x8Native(left: U64x8, right: U64x8) U64x8 @public @simd;
 fn minU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
     return minU64x8Native(left, right);
 }
 
-intrinsic("llvm.umax.v8i64") maxU64x8Native(left: U64x8, right: U64x8) U64x8 @public @simd;
 fn maxU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
     return maxU64x8Native(left, right);
 }
-
