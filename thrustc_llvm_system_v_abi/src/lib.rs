@@ -19,6 +19,7 @@
 
 #![allow(non_camel_case_types)]
 #![allow(clippy::collapsible_match)]
+#![allow(clippy::if_same_then_else)]
 
 mod abort;
 
@@ -28,10 +29,10 @@ use inkwell::{
     builder::Builder,
     context::Context,
     targets::TargetData,
-    types::{AnyType, BasicMetadataTypeEnum, BasicType, BasicTypeEnum, FunctionType},
+    types::{AnyType, BasicMetadataTypeEnum, BasicType, BasicTypeEnum, FunctionType, VectorType},
     values::{
         BasicMetadataValueEnum, BasicValue, BasicValueEnum, CallSiteValue, FunctionValue,
-        InstructionValue, PointerValue,
+        InstructionValue, IntValue, PointerValue,
     },
 };
 use thrustc_ast::Ast;
@@ -63,6 +64,13 @@ pub struct SystemVABIContext<'system_v_abi> {
 pub enum X64ABIVariant {
     SystemV,
     Windows,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SystemVABITypeContext {
+    Arg,
+    Ret,
+    Other,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -135,11 +143,18 @@ impl SystemVABIContext<'_> {
     }
 
     #[inline]
+    pub fn get_target_triple(&self) -> &LLVMTargetTriple {
+        self.target_triple
+    }
+
+    #[inline]
     pub fn get_codegen_location(&self) -> SystemVCodeGenLocation {
         self.codegen_location
     }
 }
 
+// FLOAT, FLOAT_COMBINE and INTEGER_PER_ELEMENT mirror Zig's Class variants in src/codegen/x86_64/abi.zig.
+// https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig
 // https://gitlab.com/x86-psABIs/x86-64-ABI - System V
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SystemVABITypeClass {
@@ -151,6 +166,9 @@ pub enum SystemVABITypeClass {
     COMPLEX_X87,
     NO_CLASS,
     MEMORY,
+    FLOAT,
+    FLOAT_COMBINE,
+    INTEGER_PER_ELEMENT,
 }
 
 impl std::fmt::Display for SystemVABITypeClass {
@@ -164,6 +182,9 @@ impl std::fmt::Display for SystemVABITypeClass {
             SystemVABITypeClass::COMPLEX_X87 => "COMPLEX_X87",
             SystemVABITypeClass::NO_CLASS => "NO_CLASS",
             SystemVABITypeClass::MEMORY => "MEMORY",
+            SystemVABITypeClass::FLOAT => "FLOAT",
+            SystemVABITypeClass::FLOAT_COMBINE => "FLOAT_COMBINE",
+            SystemVABITypeClass::INTEGER_PER_ELEMENT => "INTEGER_PER_ELEMENT",
         };
 
         write!(f, "{}", class_str)
@@ -225,6 +246,50 @@ pub const SYSTEM_V_ABI_F32_F64: [SystemVABITypeClass; 8] = [
     SystemVABITypeClass::NO_CLASS,
 ];
 
+pub const SYSTEM_V_ABI_FLOAT: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::FLOAT,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+];
+
+pub const SYSTEM_V_ABI_F80: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::X87,
+    SystemVABITypeClass::X87UP,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+];
+
+pub const SYSTEM_V_ABI_COMPLEX_X87: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::X87,
+    SystemVABITypeClass::X87UP,
+    SystemVABITypeClass::X87,
+    SystemVABITypeClass::X87UP,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+];
+
+pub const SYSTEM_V_ABI_INTEGER_PER_ELEMENT: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::INTEGER_PER_ELEMENT,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+];
+
 pub const SYSTEM_V_ABI_F128: [SystemVABITypeClass; 8] = [
     SystemVABITypeClass::SSE,
     SystemVABITypeClass::SSEUP,
@@ -234,6 +299,29 @@ pub const SYSTEM_V_ABI_F128: [SystemVABITypeClass; 8] = [
     SystemVABITypeClass::NO_CLASS,
     SystemVABITypeClass::NO_CLASS,
     SystemVABITypeClass::NO_CLASS,
+];
+
+// clang/lib/CodeGen/Targets/X86.cpp:1868-1893 (LLVM 17.0.6) splits named vectors up to the AVX native width into SSE/SSEUP; apply that split only for explicit AVX or AVX-512F so enabled vectors stay in registers. https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/clang/lib/CodeGen/Targets/X86.cpp#L1868-L1893
+pub const SYSTEM_V_ABI_NATIVE_VECTOR_32B: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::SSE,
+    SystemVABITypeClass::SSEUP,
+    SystemVABITypeClass::SSEUP,
+    SystemVABITypeClass::SSEUP,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+    SystemVABITypeClass::NO_CLASS,
+];
+
+pub const SYSTEM_V_ABI_NATIVE_VECTOR_64B: [SystemVABITypeClass; 8] = [
+    SystemVABITypeClass::SSE,
+    SystemVABITypeClass::SSEUP,
+    SystemVABITypeClass::SSEUP,
+    SystemVABITypeClass::SSEUP,
+    SystemVABITypeClass::SSEUP,
+    SystemVABITypeClass::SSEUP,
+    SystemVABITypeClass::SSEUP,
+    SystemVABITypeClass::SSEUP,
 ];
 
 pub const SYSTEM_V_ABI_STACK: [SystemVABITypeClass; 8] = [
@@ -255,6 +343,10 @@ impl SystemVABITypeClass {
         current: SystemVABITypeClass,
     ) -> SystemVABITypeClass {
         if accum == current {
+            if accum == SystemVABITypeClass::FLOAT {
+                return SystemVABITypeClass::FLOAT_COMBINE;
+            }
+
             return accum;
         }
 
@@ -266,16 +358,17 @@ impl SystemVABITypeClass {
             return SystemVABITypeClass::MEMORY;
         }
 
-        if accum == SystemVABITypeClass::X87 || current == SystemVABITypeClass::X87 {
-            return SystemVABITypeClass::MEMORY;
-        }
-
-        if accum == SystemVABITypeClass::X87UP || current == SystemVABITypeClass::X87UP {
-            return SystemVABITypeClass::MEMORY;
-        }
-
         if accum == SystemVABITypeClass::INTEGER || current == SystemVABITypeClass::INTEGER {
             return SystemVABITypeClass::INTEGER;
+        }
+
+        if matches!(accum, SystemVABITypeClass::X87 | SystemVABITypeClass::X87UP)
+            || matches!(
+                current,
+                SystemVABITypeClass::X87 | SystemVABITypeClass::X87UP
+            )
+        {
+            return SystemVABITypeClass::MEMORY;
         }
 
         SystemVABITypeClass::SSE
@@ -284,6 +377,7 @@ impl SystemVABITypeClass {
     pub fn get_system_v_type_class(
         abi_context: &mut SystemVABIContext,
         ty: &Type,
+        context: SystemVABITypeContext,
     ) -> [SystemVABITypeClass; 8] {
         let type_layout: either::Either<
             thrustc_typesystem::type_layout::TypeLayout,
@@ -296,7 +390,9 @@ impl SystemVABITypeClass {
         };
 
         match ty {
-            Type::Const(subtype, ..) => Self::get_system_v_type_class(abi_context, subtype),
+            Type::Const(subtype, ..) => {
+                Self::get_system_v_type_class(abi_context, subtype, context)
+            }
 
             Type::U8 { .. }
             | Type::U16 { .. }
@@ -317,107 +413,146 @@ impl SystemVABITypeClass {
 
             Type::U128 { .. } => SYSTEM_V_ABI_TWO_INTEGERS,
 
-            Type::FX8680 { .. } => SYSTEM_V_ABI_MANTISSA,
+            Type::FX8680 { .. } => SYSTEM_V_ABI_F80,
 
-            Type::F32 { .. } | Type::F64 { .. } => SYSTEM_V_ABI_F32_F64,
+            // Zig maps f32 to FLOAT and f64 to SSE. https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig
+            Type::F32 { .. } => SYSTEM_V_ABI_FLOAT,
+
+            Type::F64 { .. } => SYSTEM_V_ABI_F32_F64,
 
             Type::F128 { .. } | Type::FPPC128 { .. } => SYSTEM_V_ABI_F128,
 
-            Type::NativeVector { .. } if layout.abi_size <= 8 => SYSTEM_V_ABI_F32_F64,
+            Type::NativeVector { element_type, .. } => {
+                let bits: u32 = layout.width;
 
-            Type::NativeVector { .. } if layout.abi_size <= 16 => SYSTEM_V_ABI_F128,
+                let is_x86_64: bool = abi_context.get_target_triple().is_x86_64_arch();
+                let has_avx: bool = abi_context.get_target_triple().get_cpu().has_avx();
+                let has_avx512f: bool = abi_context.get_target_triple().get_cpu().has_avx512f();
 
-            Type::NativeVector { .. } => SYSTEM_V_ABI_STACK,
-
-            t if t.is_ptr_like_type() => SYSTEM_V_ABI_ONE_INTEGER,
-
-            Type::FixedArray { base_type, .. } => {
-                let abi_size: u32 = layout.abi_size;
-
-                if abi_size > 16 {
-                    return SYSTEM_V_ABI_STACK;
-                }
-
-                let mut current_classes: [SystemVABITypeClass; 8] =
-                    [SystemVABITypeClass::NO_CLASS; 8];
-
-                let subty_classes: [SystemVABITypeClass; 8] =
-                    Self::get_system_v_type_class(abi_context, base_type);
-
-                for &elem_offset_bits in layout.field_offsets.iter() {
-                    let base_eightbyte: usize = ((elem_offset_bits / 8) / 8) as usize;
-
-                    for (sub_idx, _) in subty_classes.iter().enumerate() {
-                        let current_subty_class: SystemVABITypeClass = subty_classes[sub_idx];
-
-                        if matches!(current_subty_class, SystemVABITypeClass::NO_CLASS) {
-                            continue;
-                        }
-
-                        let target: usize = base_eightbyte + sub_idx;
-
-                        if target >= 8 {
-                            return SYSTEM_V_ABI_STACK;
-                        }
-
-                        current_classes[target] =
-                            Self::combine(current_classes[target], current_subty_class);
-                    }
-                }
-
-                if current_classes.contains(&SystemVABITypeClass::MEMORY) {
-                    return SYSTEM_V_ABI_STACK;
-                }
-
-                /*
-                    "if X87UP is not preceded by X87, the whole argument is passed in memory."
-                */
-                for (idx, class) in current_classes.iter().enumerate() {
-                    if matches!(class, SystemVABITypeClass::X87UP)
-                        && idx > 0
-                        && !matches!(
-                            current_classes[idx.saturating_sub(1)],
-                            SystemVABITypeClass::X87
-                        )
-                    {
+                if matches!(element_type.as_ref(), Type::Bool { .. }) {
+                    if !is_x86_64 {
                         return SYSTEM_V_ABI_STACK;
                     }
+
+                    if bits <= 32 {
+                        return SYSTEM_V_ABI_ONE_INTEGER;
+                    }
+
+                    if bits <= 64 {
+                        return SYSTEM_V_ABI_F32_F64;
+                    }
+
+                    if matches!(context, SystemVABITypeContext::Other) {
+                        return SYSTEM_V_ABI_STACK;
+                    }
+
+                    if bits <= 128 || (bits <= 256 && has_avx) || (bits <= 512 && has_avx512f) {
+                        return SYSTEM_V_ABI_INTEGER_PER_ELEMENT;
+                    }
+
+                    return SYSTEM_V_ABI_STACK;
                 }
 
-                // https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig
-                /*
+                if matches!(element_type.as_ref(), Type::FX8680 { .. }) {
+                    if !is_x86_64 {
+                        return SYSTEM_V_ABI_STACK;
+                    }
 
-                   "If the size of the aggregate exceeds two eightbytes and the first eight-
-                    byte isn’t SSE or any other eightbyte isn’t SSEUP, the whole argument
-                    is passed in memory."
+                    if bits <= 80 {
+                        return SYSTEM_V_ABI_F80;
+                    }
 
-                */
-                if abi_size > 16
-                    && (current_classes
-                        .first()
-                        .is_some_and(|c| !matches!(c, SystemVABITypeClass::SSE))
-                        || current_classes
-                            .iter()
-                            .skip(1)
-                            .any(|c| !matches!(c, SystemVABITypeClass::SSEUP)))
+                    if bits <= 160 {
+                        return SYSTEM_V_ABI_COMPLEX_X87;
+                    }
+
+                    return SYSTEM_V_ABI_STACK;
+                }
+
+                if bits <= 64 {
+                    return SYSTEM_V_ABI_F32_F64;
+                }
+
+                if bits <= 128 {
+                    return SYSTEM_V_ABI_F128;
+                }
+
+                if !is_x86_64 {
+                    return SYSTEM_V_ABI_STACK;
+                }
+
+                if matches!(context, SystemVABITypeContext::Arg) && !has_avx {
+                    return SYSTEM_V_ABI_STACK;
+                }
+
+                // ziglang/zig src/codegen/x86_64/abi.zig @ 738d2be9d6b6ef3ff3559130c05159ef53336224, vector branch: pick the register width from the vector bit size and context.
+                // Register widths: 1-2 eightbytes use XMM, 3-4 use YMM, and 5-8 use ZMM.
+                // Zig derives those counts in abi.zig lines 224-254, one eightbyte per 64 bits of vector width: https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig#L224-L254
+                // Zig takes the rule from the AMD64 psABI section 3.2.3: __m256 is four eightbytes and __m512 is eight, with the low eightbyte SSE and the rest SSEUP.
+                // https://gitlab.com/x86-psABIs/x86-64-ABI
+                // An eightbyte is one 64-bit chunk of the value; the vector bits are split into these chunks for classification.
+                // The branch requires AVX for argument vectors above 128 bits and AVX-512F above 256 bits.
+                // Fill the covered eightbytes with SSEUP and leave the remaining slots as NO_CLASS.
+                let max_eightbytes: usize = if bits <= 192 {
+                    3
+                } else if bits <= 256 {
+                    4
+                } else if bits <= 320 {
+                    5
+                } else if bits <= 384 {
+                    6
+                } else if bits <= 448 {
+                    7
+                } else if bits <= 512 {
+                    8
+                } else if matches!(context, SystemVABITypeContext::Ret)
+                    && bits
+                        <= if has_avx512f {
+                            2048
+                        } else if has_avx {
+                            1024
+                        } else {
+                            512
+                        }
+                {
+                    8
+                } else {
+                    return SYSTEM_V_ABI_STACK;
+                };
+
+                if max_eightbytes > 4
+                    && matches!(context, SystemVABITypeContext::Arg)
+                    && !has_avx512f
                 {
                     return SYSTEM_V_ABI_STACK;
                 }
 
-                for (idx, _) in current_classes.clone().iter().enumerate() {
-                    if matches!(current_classes[idx], SystemVABITypeClass::SSEUP) && idx > 0 {
-                        match current_classes[idx.saturating_sub(1)] {
-                            SystemVABITypeClass::SSE | SystemVABITypeClass::SSEUP => {
-                                continue;
-                            }
-                            _ => {
-                                current_classes[idx] = SystemVABITypeClass::SSE;
-                            }
-                        }
-                    }
+                let mut classes: [SystemVABITypeClass; 8] = [SystemVABITypeClass::NO_CLASS; 8];
+
+                classes[0] = SystemVABITypeClass::SSE;
+
+                for class in classes.iter_mut().take(max_eightbytes).skip(1) {
+                    *class = SystemVABITypeClass::SSEUP;
                 }
 
-                current_classes
+                classes
+            }
+
+            t if t.is_ptr_like_type() => SYSTEM_V_ABI_ONE_INTEGER,
+
+            // Zig classifies arrays up to 16 bytes as INTEGER and sends larger arrays to memory. https://github.com/ziglang/zig/blob/738d2be9d6b6ef3ff3559130c05159ef53336224/src/codegen/x86_64/abi.zig
+            Type::FixedArray { .. } => {
+                let abi_size: u32 = layout.abi_size;
+
+                if abi_size <= 8 {
+                    return SYSTEM_V_ABI_ONE_INTEGER;
+                }
+
+                if abi_size <= 16 {
+                    return SYSTEM_V_ABI_TWO_INTEGERS;
+                }
+
+                SYSTEM_V_ABI_STACK
             }
 
             Type::Struct {
@@ -428,7 +563,7 @@ impl SystemVABITypeClass {
 
                 let abi_size: u32 = layout.abi_size;
 
-                if abi_size > 16 {
+                if abi_size > 64 {
                     return SYSTEM_V_ABI_STACK;
                 }
 
@@ -440,8 +575,11 @@ impl SystemVABITypeClass {
                     [SystemVABITypeClass::NO_CLASS; 8];
 
                 for (i, field_type) in fields.iter().enumerate() {
-                    let field_classes: [SystemVABITypeClass; 8] =
-                        Self::get_system_v_type_class(abi_context, field_type);
+                    let field_classes: [SystemVABITypeClass; 8] = Self::get_system_v_type_class(
+                        abi_context,
+                        field_type,
+                        SystemVABITypeContext::Other,
+                    );
 
                     let field_offset_bytes: u32 =
                         layout.field_offsets.get(i).copied().unwrap_or(0) / 8;
@@ -496,10 +634,12 @@ impl SystemVABITypeClass {
                     && (current_classes
                         .first()
                         .is_some_and(|c| !matches!(c, SystemVABITypeClass::SSE))
-                        || current_classes
-                            .iter()
-                            .skip(1)
-                            .any(|c| !matches!(c, SystemVABITypeClass::SSEUP)))
+                        || current_classes.iter().skip(1).any(|c| {
+                            !matches!(
+                                c,
+                                SystemVABITypeClass::SSEUP | SystemVABITypeClass::NO_CLASS
+                            )
+                        }))
                 {
                     return SYSTEM_V_ABI_STACK;
                 }
@@ -514,6 +654,23 @@ impl SystemVABITypeClass {
                                 current_classes[idx] = SystemVABITypeClass::SSE;
                             }
                         }
+                    }
+                }
+
+                if matches!(
+                    context,
+                    SystemVABITypeContext::Arg | SystemVABITypeContext::Ret
+                ) && abi_size > 16
+                {
+                    let has_avx: bool = abi_context.get_target_triple().get_cpu().has_avx();
+                    let has_avx512f: bool = abi_context.get_target_triple().get_cpu().has_avx512f();
+
+                    if !has_avx {
+                        return SYSTEM_V_ABI_STACK;
+                    }
+
+                    if abi_size > 32 && !has_avx512f {
+                        return SYSTEM_V_ABI_STACK;
                     }
                 }
 
@@ -540,6 +697,8 @@ pub enum SystemVABIType<'llvm_abi> {
     ToMemory(&'llvm_abi Type),
     Coerce(&'llvm_abi Type, u32),
     DecomposeAndExpand(Vec<Type>, SystemVABITypeDecomposeAndExpandVariant),
+    IntegerPerElement(&'llvm_abi Type, u32),
+    CoerceFloatCombine(&'llvm_abi Type, u32),
     Ignore,
 }
 
@@ -601,6 +760,16 @@ impl SystemVABIType<'_> {
     pub fn is_coerce(&self) -> bool {
         matches!(self, SystemVABIType::Coerce(..))
     }
+
+    #[inline]
+    pub fn is_integer_per_element(&self) -> bool {
+        matches!(self, SystemVABIType::IntegerPerElement(..))
+    }
+
+    #[inline]
+    pub fn is_coerce_float_combine(&self) -> bool {
+        matches!(self, SystemVABIType::CoerceFloatCombine(..))
+    }
 }
 
 impl<'llvm_abi> SystemVABIType<'llvm_abi> {
@@ -650,6 +819,39 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
             return SystemVABIType::ToMemory(ty);
         }
 
+        if let Type::Struct { fields, .. } = &non_constant_ty {
+            if used > 0
+                && fields
+                    .iter()
+                    .all(|field| matches!(field.remove_all_constant_type(), Type::F32 { .. }))
+                && classes[..used]
+                    .iter()
+                    .all(|class| *class == SystemVABITypeClass::FLOAT_COMBINE)
+            {
+                return SystemVABIType::CoerceFloatCombine(ty, used as u32);
+            }
+        }
+
+        let is_sse_aggregate: bool = matches!(
+            non_constant_ty,
+            Type::NativeVector { .. } | Type::Struct { .. }
+        );
+
+        if is_sse_aggregate
+            && used > 0
+            && classes[..used].iter().all(|class| {
+                matches!(
+                    class,
+                    SystemVABITypeClass::SSE
+                        | SystemVABITypeClass::SSEUP
+                        | SystemVABITypeClass::FLOAT
+                        | SystemVABITypeClass::FLOAT_COMBINE
+                )
+            })
+        {
+            return SystemVABIType::Same(ty);
+        }
+
         match used {
             1 => match classes[0] {
                 SystemVABITypeClass::INTEGER if non_constant_ty.is_fixed_array_type() => {
@@ -680,8 +882,10 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                         }
 
                         let first_integer_ty: Type = integer_chunk_type(64, ty.get_code_location());
-                        let second_integer_ty: Type =
-                            integer_chunk_type(layout.width.saturating_sub(64), ty.get_code_location());
+                        let second_integer_ty: Type = integer_chunk_type(
+                            layout.width.saturating_sub(64),
+                            ty.get_code_location(),
+                        );
 
                         return SystemVABIType::DecomposeAndExpand(
                             vec![first_integer_ty, second_integer_ty],
@@ -728,11 +932,23 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
 
                 SystemVABITypeClass::MEMORY => SystemVABIType::ToMemory(ty),
                 SystemVABITypeClass::INTEGER
-                    if non_constant_ty.is_struct_type() || non_constant_ty.is_fixed_array_type() =>
+                    if non_constant_ty.is_struct_type()
+                        || non_constant_ty.is_fixed_array_type() =>
                 {
                     SystemVABIType::Coerce(ty, layout.width)
                 }
-                SystemVABITypeClass::INTEGER | SystemVABITypeClass::SSE => SystemVABIType::Same(ty),
+                SystemVABITypeClass::INTEGER
+                | SystemVABITypeClass::SSE
+                | SystemVABITypeClass::FLOAT
+                | SystemVABITypeClass::FLOAT_COMBINE => SystemVABIType::Same(ty),
+
+                SystemVABITypeClass::INTEGER_PER_ELEMENT => {
+                    if let Type::NativeVector { element_count, .. } = &non_constant_ty {
+                        SystemVABIType::IntegerPerElement(ty, *element_count)
+                    } else {
+                        SystemVABIType::ToMemory(ty)
+                    }
+                }
 
                 _ => SystemVABIType::Same(ty),
             },
@@ -770,8 +986,10 @@ impl<'llvm_abi> SystemVABIType<'llvm_abi> {
                         let first_integer_ty: Type = integer_chunk_type(64, ty.get_code_location());
 
                         // REASON: clang System-V ABI = i64 + i32 e.g
-                        let second_integer_ty: Type =
-                            integer_chunk_type(layout.width.saturating_sub(64), ty.get_code_location());
+                        let second_integer_ty: Type = integer_chunk_type(
+                            layout.width.saturating_sub(64),
+                            ty.get_code_location(),
+                        );
 
                         return SystemVABIType::DecomposeAndExpand(
                             vec![first_integer_ty, second_integer_ty],
@@ -932,6 +1150,22 @@ pub enum SystemVABIFunctionTypeArgumentConfiguration<'llvm_abi> {
         variant: SystemVABITypeDecomposeAndExpandVariant,
         index: usize,
     },
+    IntegerPerElement {
+        name: &'llvm_abi str,
+        ascii_name: &'llvm_abi str,
+        ty: &'llvm_abi Type,
+        element_count: u32,
+        first_index: usize,
+        index: usize,
+    },
+    CoerceFloatCombine {
+        name: &'llvm_abi str,
+        ascii_name: &'llvm_abi str,
+        ty: &'llvm_abi Type,
+        chunk_count: u32,
+        first_index: usize,
+        index: usize,
+    },
     Coerce {
         name: &'llvm_abi str,
         ascii_name: &'llvm_abi str,
@@ -1041,6 +1275,8 @@ pub fn lower_function_parameters<'llvm_abi>(
         SystemVABIFunctionTypeArgumentConfiguration::Coerce { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::IntegerPerElement { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::CoerceFloatCombine { index, .. } => *index,
     });
 
     let mut processed_parameters: Vec<(
@@ -1103,6 +1339,103 @@ pub fn lower_function_parameters<'llvm_abi>(
                         line!(),
                     )
                 }
+            }
+
+            SystemVABIFunctionTypeArgumentConfiguration::CoerceFloatCombine {
+                name,
+                ascii_name,
+                ty,
+                chunk_count,
+                first_index,
+                ..
+            } => {
+                let original_llvm_ty: BasicTypeEnum<'_> =
+                    self::generate_type(llvm_context, abi_context, ty);
+                let ptr: PointerValue<'_> =
+                    llvm_builder.build_alloca(original_llvm_ty, "").unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to allocate memory for a float-combine parameter in System V ABI!",
+                            ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let chunk_ty: VectorType<'_> = llvm_context.f32_type().vec_type(2);
+                let chunk_ptr_ty = llvm_context.ptr_type(AddressSpace::default());
+                let chunk_ptr: PointerValue<'_> = llvm_builder
+                    .build_pointer_cast(ptr, chunk_ptr_ty, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to cast a float-combine parameter pointer in System V ABI!",
+                            ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                for chunk in 0..*chunk_count {
+                    let chunk_index: IntValue<'_> =
+                        llvm_context.i32_type().const_int(chunk as u64, false);
+                    let slot: PointerValue<'_> = unsafe {
+                        llvm_builder.build_in_bounds_gep(chunk_ty, chunk_ptr, &[chunk_index], "")
+                    }
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to address a float-combine parameter chunk in System V ABI!",
+                            ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                    let parameter_index: usize = first_index.saturating_add(chunk as usize);
+
+                    let Some(chunk_value) = function_parameters.get(parameter_index) else {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to get a float-combine parameter chunk in System V ABI!",
+                            ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    };
+
+                    llvm_builder
+                        .build_store(slot, *chunk_value)
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to store a float-combine parameter chunk in System V ABI!",
+                                ty.get_code_location(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+                }
+
+                let value: BasicValueEnum<'_> = llvm_builder
+                    .build_load(original_llvm_ty, ptr, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to load a float-combine parameter in System V ABI!",
+                            ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                processed_parameters.push((
+                    name,
+                    ascii_name,
+                    ty,
+                    SystemVABIFunctionParameterConfiguration::Normal,
+                    value,
+                ));
             }
 
             SystemVABIFunctionTypeArgumentConfiguration::Coerce {
@@ -1213,6 +1546,61 @@ pub fn lower_function_parameters<'llvm_abi>(
                         line!(),
                     )
                 }
+            }
+
+            SystemVABIFunctionTypeArgumentConfiguration::IntegerPerElement {
+                name,
+                ascii_name,
+                ty,
+                element_count,
+                first_index,
+                ..
+            } => {
+                let vector_type: BasicTypeEnum<'_> =
+                    self::generate_type(llvm_context, abi_context, ty);
+                let mut vector_value: inkwell::values::VectorValue<'_> =
+                    vector_type.into_vector_type().get_undef();
+
+                // lane = element
+
+                for lane in 0..*element_count {
+                    let parameter_index: usize = first_index.saturating_add(lane as usize);
+
+                    let Some(lane_value) = function_parameters.get(parameter_index) else {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to get an integer-per-element parameter value from the function declaration for System V ABI!",
+                            ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        );
+                    };
+
+                    vector_value = llvm_builder
+                        .build_insert_element(
+                            vector_value,
+                            *lane_value,
+                            llvm_context.i32_type().const_int(lane as u64, false),
+                            "",
+                        )
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to build a vector element for an integer-per-element parameter in System V ABI!",
+                                ty.get_code_location(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+                }
+
+                processed_parameters.push((
+                    name,
+                    ascii_name,
+                    ty,
+                    SystemVABIFunctionParameterConfiguration::Normal,
+                    vector_value.as_basic_value_enum(),
+                ));
             }
 
             SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
@@ -1519,6 +1907,8 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
         SystemVABIFunctionTypeArgumentConfiguration::Coerce { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::IntegerPerElement { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::CoerceFloatCombine { index, .. } => *index,
     });
 
     assert!(args.len() == ordered_configuration.len());
@@ -1871,6 +2261,111 @@ pub fn lower_system_v_call_prologue<'llvm_abi>(
                 processed_args.push((arg_value).into());
             }
 
+            SystemVABIFunctionTypeArgumentConfiguration::CoerceFloatCombine {
+                ty,
+                chunk_count,
+                ..
+            } => {
+                let original_llvm_ty: BasicTypeEnum<'_> =
+                    self::generate_type(llvm_context, abi_context, ty);
+                let ptr: PointerValue<'_> =
+                    llvm_builder.build_alloca(original_llvm_ty, "").unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to allocate memory for a float-combine argument in System V ABI!",
+                            ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                llvm_builder
+                    .build_store(ptr, *arg_value)
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to store a float-combine argument in System V ABI!",
+                            ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let chunk_ty: VectorType<'_> = llvm_context.f32_type().vec_type(2);
+                let chunk_ptr_ty = llvm_context.ptr_type(AddressSpace::default());
+                let chunk_ptr: PointerValue<'_> = llvm_builder
+                    .build_pointer_cast(ptr, chunk_ptr_ty, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to cast a float-combine argument pointer in System V ABI!",
+                            ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                for chunk in 0..*chunk_count {
+                    let chunk_index: IntValue<'_> =
+                        llvm_context.i32_type().const_int(chunk as u64, false);
+                    let slot: PointerValue<'_> = unsafe {
+                        llvm_builder.build_in_bounds_gep(chunk_ty, chunk_ptr, &[chunk_index], "")
+                    }
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to address a float-combine argument chunk in System V ABI!",
+                            ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                    let chunk_value: BasicValueEnum<'_> = llvm_builder
+                        .build_load(chunk_ty, slot, "")
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to load a float-combine argument chunk in System V ABI!",
+                                ty.get_code_location(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                    processed_args.push(chunk_value.into());
+                }
+            }
+
+            SystemVABIFunctionTypeArgumentConfiguration::IntegerPerElement {
+                ty,
+                element_count,
+                ..
+            } => {
+                let vector_value: inkwell::values::VectorValue<'_> =
+                    (*arg_value).into_vector_value();
+
+                for lane in 0..*element_count {
+                    let lane_value: BasicValueEnum<'_> = llvm_builder
+                        .build_extract_element(
+                            vector_value,
+                            llvm_context.i32_type().const_int(lane as u64, false),
+                            "",
+                        )
+                        .unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Failed to extract a vector element for an integer-per-element argument in System V ABI!",
+                                ty.get_code_location(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+
+                    processed_args.push(lane_value.into());
+                }
+            }
+
             SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand {
                 old_type,
                 array_decomposed_types,
@@ -2123,6 +2618,120 @@ pub fn lower_system_v_call_epilogue<'llvm_abi>(
     let function_value: FunctionValue<'_> = callsite.get_called_fn_value();
     let is_void_type: bool = function_value.get_type().get_return_type().is_none();
 
+    if let Some(SystemVABIType::CoerceFloatCombine(original_ty, chunk_count)) =
+        configuration.return_type()
+    {
+        let returned_value: BasicValueEnum<'_> =
+            callsite.try_as_basic_value().left().unwrap_or_else(|| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to compile lower a float-combine return value!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        let original_llvm_ty: BasicTypeEnum<'_> =
+            self::generate_type(llvm_context, abi_context, original_ty);
+
+        let ptr: PointerValue<'_> = llvm_builder
+            .build_alloca(original_llvm_ty, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to allocate memory for a float-combine return value in System V ABI!",
+                    original_ty.get_code_location(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        let chunk_ty: VectorType<'_> = llvm_context.f32_type().vec_type(2);
+        let chunk_ptr_ty = llvm_context.ptr_type(AddressSpace::default());
+        let chunk_ptr: PointerValue<'_> = llvm_builder
+            .build_pointer_cast(ptr, chunk_ptr_ty, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to cast a float-combine return pointer in System V ABI!",
+                    original_ty.get_code_location(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        if *chunk_count == 1 {
+            llvm_builder
+                .build_store(chunk_ptr, returned_value)
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to store a float-combine return chunk in System V ABI!",
+                        original_ty.get_code_location(),
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+        } else {
+            let returned_struct: inkwell::values::StructValue<'_> =
+                returned_value.into_struct_value();
+
+            for chunk in 0..*chunk_count {
+                let chunk_value: BasicValueEnum<'_> = llvm_builder
+                    .build_extract_value(returned_struct, chunk, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to extract a float-combine return chunk in System V ABI!",
+                            original_ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                let chunk_index: IntValue<'_> =
+                    llvm_context.i32_type().const_int(chunk as u64, false);
+                let slot: PointerValue<'_> = unsafe {
+                    llvm_builder.build_in_bounds_gep(chunk_ty, chunk_ptr, &[chunk_index], "")
+                }
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to address a float-combine return chunk in System V ABI!",
+                        original_ty.get_code_location(),
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+
+                llvm_builder
+                    .build_store(slot, chunk_value)
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to store a float-combine return chunk in System V ABI!",
+                            original_ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+            }
+        }
+
+        return llvm_builder
+            .build_load(original_llvm_ty, ptr, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to load a float-combine return value in System V ABI!",
+                    original_ty.get_code_location(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+    }
+
     if let Some(SystemVABIType::Coerce(original_ty, _)) = configuration.return_type() {
         let returned_value: BasicValueEnum<'_> =
             callsite.try_as_basic_value().left().unwrap_or_else(|| {
@@ -2327,6 +2936,137 @@ pub fn lower_function_terminator<'llvm_abi>(
     return_value: Option<BasicValueEnum<'llvm_abi>>,
     span: Span,
 ) -> bool {
+    if let Some(SystemVABIType::CoerceFloatCombine(original_ty, chunk_count)) =
+        configuration.return_type()
+    {
+        let Some(return_value) = return_value else {
+            return false;
+        };
+
+        let original_llvm_ty: BasicTypeEnum<'_> =
+            self::generate_type(llvm_context, abi_context, original_ty);
+        let ptr: PointerValue<'_> = llvm_builder
+            .build_alloca(original_llvm_ty, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to allocate memory for a float-combine return value in System V ABI!",
+                    original_ty.get_code_location(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        llvm_builder
+            .build_store(ptr, return_value)
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to store a float-combine return value in System V ABI!",
+                    original_ty.get_code_location(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        let chunk_ty: VectorType<'_> = llvm_context.f32_type().vec_type(2);
+        let chunk_ptr_ty = llvm_context.ptr_type(AddressSpace::default());
+        let chunk_ptr: PointerValue<'_> = llvm_builder
+            .build_pointer_cast(ptr, chunk_ptr_ty, "")
+            .unwrap_or_else(|_| {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to cast a float-combine return pointer in System V ABI!",
+                    original_ty.get_code_location(),
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                )
+            });
+
+        if *chunk_count == 1 {
+            let chunk_value: BasicValueEnum<'_> = llvm_builder
+                .build_load(chunk_ty, chunk_ptr, "")
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to load a float-combine return chunk in System V ABI!",
+                        original_ty.get_code_location(),
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+
+            if llvm_builder.build_return(Some(&chunk_value)).is_err() {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to compile a float-combine return terminator in System V ABI!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            }
+        } else {
+            let chunk_types: Vec<BasicTypeEnum<'_>> =
+                (0..*chunk_count).map(|_| chunk_ty.into()).collect();
+            let return_struct_ty = llvm_context.struct_type(&chunk_types, false);
+            let mut return_struct = return_struct_ty.get_undef();
+
+            for chunk in 0..*chunk_count {
+                let chunk_index: IntValue<'_> =
+                    llvm_context.i32_type().const_int(chunk as u64, false);
+                let slot: PointerValue<'_> = unsafe {
+                    llvm_builder.build_in_bounds_gep(chunk_ty, chunk_ptr, &[chunk_index], "")
+                }
+                .unwrap_or_else(|_| {
+                    abort::abort_codegen(
+                        abi_context,
+                        "Failed to address a float-combine return chunk in System V ABI!",
+                        original_ty.get_code_location(),
+                        std::path::PathBuf::from(file!()),
+                        line!(),
+                    )
+                });
+
+                let chunk_value: BasicValueEnum<'_> = llvm_builder
+                    .build_load(chunk_ty, slot, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to load a float-combine return chunk in System V ABI!",
+                            original_ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    });
+
+                return_struct = llvm_builder
+                    .build_insert_value(return_struct, chunk_value, chunk, "")
+                    .unwrap_or_else(|_| {
+                        abort::abort_codegen(
+                            abi_context,
+                            "Failed to build a float-combine return struct in System V ABI!",
+                            original_ty.get_code_location(),
+                            std::path::PathBuf::from(file!()),
+                            line!(),
+                        )
+                    })
+                    .into_struct_value();
+            }
+
+            if llvm_builder.build_return(Some(&return_struct)).is_err() {
+                abort::abort_codegen(
+                    abi_context,
+                    "Failed to compile a float-combine return terminator in System V ABI!",
+                    span,
+                    std::path::PathBuf::from(file!()),
+                    line!(),
+                );
+            }
+        }
+
+        return true;
+    }
+
     if let Some(SystemVABIType::Coerce(original_ty, coerced_width_bits)) =
         configuration.return_type()
     {
@@ -2685,7 +3425,11 @@ pub fn generate_function_type<'llvm_abi>(
 
     if !return_type.is_void_type() {
         let return_ty_classes: [SystemVABITypeClass; 8] =
-            SystemVABITypeClass::get_system_v_type_class(abi_context, return_type);
+            SystemVABITypeClass::get_system_v_type_class(
+                abi_context,
+                return_type,
+                SystemVABITypeContext::Ret,
+            );
 
         let abi_return_ty_: SystemVABIType = SystemVABIType::class_to_general_abi_strategy(
             abi_context,
@@ -2693,7 +3437,11 @@ pub fn generate_function_type<'llvm_abi>(
             return_type,
         );
 
-        abi_return_ty = abi_return_ty_;
+        abi_return_ty = if abi_return_ty_.is_integer_per_element() {
+            SystemVABIType::ToMemory(return_type)
+        } else {
+            abi_return_ty_
+        };
         configuration.set_return_type(Some(abi_return_ty.clone()));
 
         if abi_return_ty.is_to_memory() {
@@ -2730,7 +3478,11 @@ pub fn generate_function_type<'llvm_abi>(
                 ..
             } => {
                 let ty_classes: [SystemVABITypeClass; 8] =
-                    SystemVABITypeClass::get_system_v_type_class(abi_context, ty);
+                    SystemVABITypeClass::get_system_v_type_class(
+                        abi_context,
+                        ty,
+                        SystemVABITypeContext::Arg,
+                    );
 
                 let abi_ty: SystemVABIType =
                     SystemVABIType::class_to_general_abi_strategy(abi_context, &ty_classes, ty);
@@ -2807,6 +3559,58 @@ pub fn generate_function_type<'llvm_abi>(
                             .push(llvm_context.ptr_type(AddressSpace::default()).into());
                     }
 
+                    SystemVABIType::IntegerPerElement(vector_ty, element_count) => {
+                        let Type::NativeVector { element_type, .. } = vector_ty else {
+                            abort::abort_codegen(
+                                abi_context,
+                                "Expected a NativeVector to lower an integer-per-element argument!",
+                                vector_ty.get_code_location(),
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            );
+                        };
+
+                        let first_index: usize = llvm_parameters_types.len();
+                        let element_llvm_ty: BasicTypeEnum<'_> =
+                            self::generate_type(llvm_context, abi_context, element_type);
+
+                        for _ in 0..element_count {
+                            llvm_parameters_types.push(element_llvm_ty.into());
+                        }
+
+                        configuration_parameter_types.push(
+                            SystemVABIFunctionTypeArgumentConfiguration::IntegerPerElement {
+                                name,
+                                ascii_name,
+                                ty,
+                                element_count,
+                                first_index,
+                                index: idx,
+                            },
+                        );
+                    }
+
+                    SystemVABIType::CoerceFloatCombine(original_ty, chunk_count) => {
+                        let first_index: usize = llvm_parameters_types.len();
+                        let chunk_ty: BasicTypeEnum<'_> =
+                            llvm_context.f32_type().vec_type(2).into();
+
+                        for _ in 0..chunk_count {
+                            llvm_parameters_types.push(chunk_ty.into());
+                        }
+
+                        configuration_parameter_types.push(
+                            SystemVABIFunctionTypeArgumentConfiguration::CoerceFloatCombine {
+                                name,
+                                ascii_name,
+                                ty: original_ty,
+                                chunk_count,
+                                first_index,
+                                index: idx,
+                            },
+                        );
+                    }
+
                     SystemVABIType::DecomposeAndExpand(field_types, ref variant) => {
                         if variant.is_decompose_and_expand_structure() {
                             let mut decomposed_types: Vec<BasicMetadataTypeEnum> = Vec::new();
@@ -2822,6 +3626,7 @@ pub fn generate_function_type<'llvm_abi>(
                                     SystemVABITypeClass::get_system_v_type_class(
                                         abi_context,
                                         field_type,
+                                        SystemVABITypeContext::Other,
                                     );
 
                                 let abi_ty: SystemVABIType =
@@ -2966,6 +3771,24 @@ pub fn generate_function_type<'llvm_abi>(
                 )
             }
 
+            SystemVABIType::CoerceFloatCombine(_, chunk_count) => {
+                let chunk_ty: BasicTypeEnum<'_> = llvm_context.f32_type().vec_type(2).into();
+
+                let llvm_return_ty: BasicTypeEnum<'_> = if chunk_count == 1 {
+                    chunk_ty
+                } else {
+                    let chunk_types: Vec<BasicTypeEnum<'_>> =
+                        (0..chunk_count).map(|_| chunk_ty).collect();
+
+                    llvm_context.struct_type(&chunk_types, false).into()
+                };
+
+                (
+                    llvm_return_ty.fn_type(&llvm_parameters_types, is_variatic),
+                    configuration,
+                )
+            }
+
             SystemVABIType::Coerce(_, coerced_width_bits) => {
                 let llvm_return_ty: BasicTypeEnum<'_> = llvm_context
                     .custom_width_int_type(coerced_width_bits)
@@ -2977,7 +3800,7 @@ pub fn generate_function_type<'llvm_abi>(
                 )
             }
 
-            SystemVABIType::ToMemory(..) => {
+            SystemVABIType::IntegerPerElement(..) | SystemVABIType::ToMemory(..) => {
                 if is_memory_return {
                     (
                         llvm_context
@@ -3026,12 +3849,16 @@ pub fn lower_function_parameter_conventions<'llvm_abi>(
         SystemVABIFunctionTypeArgumentConfiguration::Coerce { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::Ignore { index, .. } => *index,
         SystemVABIFunctionTypeArgumentConfiguration::DecomposeAndExpand { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::IntegerPerElement { index, .. } => *index,
+        SystemVABIFunctionTypeArgumentConfiguration::CoerceFloatCombine { index, .. } => *index,
     });
 
     for parameter_configuration in ordered_configurations.iter() {
         match parameter_configuration {
             SystemVABIFunctionTypeArgumentConfiguration::Ignore { .. } => {}
             SystemVABIFunctionTypeArgumentConfiguration::Same { .. } => {}
+            SystemVABIFunctionTypeArgumentConfiguration::IntegerPerElement { .. } => {}
+            SystemVABIFunctionTypeArgumentConfiguration::CoerceFloatCombine { .. } => {}
             SystemVABIFunctionTypeArgumentConfiguration::Coerce { .. } => {}
 
             SystemVABIFunctionTypeArgumentConfiguration::ToMemory {
@@ -3319,4 +4146,270 @@ pub fn address_space_to_normal<'llvm_abi>(
                 line!(),
             );
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use thrustc_llvm_target_triple::LLVMTargetCPU;
+
+    fn classify_type_on_linux(
+        ty: &Type,
+        is_x86_64: bool,
+        has_avx: bool,
+        has_avx512f: bool,
+    ) -> [SystemVABITypeClass; 8] {
+        let target: &str = if is_x86_64 {
+            "x86_64-unknown-linux-gnu"
+        } else {
+            "aarch64-unknown-linux-gnu"
+        };
+
+        let features: String = match (has_avx, has_avx512f) {
+            (true, true) => "+avx,+avx512f".to_string(),
+            (true, false) => "+avx".to_string(),
+            (false, true) => "+avx512f".to_string(),
+            (false, false) => String::new(),
+        };
+
+        let cpu: LLVMTargetCPU = LLVMTargetCPU::new("test".to_string(), features);
+        let target_triple: LLVMTargetTriple =
+            LLVMTargetTriple::new_with_cpu(target.to_string(), cpu);
+        let target_info: TargetInfo = TargetInfo::new(target_triple.clone());
+        let target_data: TargetData = TargetData::create(
+            "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128",
+        );
+        let file: CompilationUnit = CompilationUnit::new(
+            "test.thrust".to_string(),
+            std::path::PathBuf::from("test.thrust"),
+            String::new(),
+            "test".to_string(),
+        );
+
+        let options: CompilerOptions = CompilerOptions::new();
+
+        let mut abi_context: SystemVABIContext<'_> = SystemVABIContext::new(
+            &file,
+            &options,
+            &target_triple,
+            target_info,
+            &target_data,
+            SystemVCodeGenLocation::None,
+        );
+
+        SystemVABITypeClass::get_system_v_type_class(
+            &mut abi_context,
+            ty,
+            SystemVABITypeContext::Arg,
+        )
+    }
+
+    fn classify_native_vector_on_linux(
+        abi_size: u32,
+        is_x86_64: bool,
+        has_avx: bool,
+        has_avx512f: bool,
+    ) -> [SystemVABITypeClass; 8] {
+        let span: Span = Span::nothing();
+
+        let element_type: Type = Type::F32 { span };
+        let element_count: u32 = abi_size / 4;
+        let ty: Type = Type::NativeVector {
+            element_type: Box::new(element_type),
+            element_count,
+            span,
+        };
+
+        self::classify_type_on_linux(&ty, is_x86_64, has_avx, has_avx512f)
+    }
+
+    fn classify_single_vector_struct_on_linux(
+        abi_size: u32,
+        is_x86_64: bool,
+        has_avx: bool,
+        has_avx512f: bool,
+    ) -> [SystemVABITypeClass; 8] {
+        let span: Span = Span::nothing();
+
+        let element_type: Type = Type::F32 { span };
+        let element_count: u32 = abi_size / 4;
+        let vector_type: Type = Type::NativeVector {
+            element_type: Box::new(element_type),
+            element_count,
+            span,
+        };
+        let ty: Type = Type::Struct {
+            name: "V".to_string(),
+            fields: vec![vector_type],
+            metadata: Default::default(),
+            span,
+        };
+
+        self::classify_type_on_linux(&ty, is_x86_64, has_avx, has_avx512f)
+    }
+
+    // clang/lib/CodeGen/Targets/X86.cpp:1868-1893 (LLVM 17.0.6) gates named 256-bit vectors on AVX. https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/clang/lib/CodeGen/Targets/X86.cpp#L1868-L1893
+    // The test pins the explicit AVX check, so AVX-512F alone cannot enable 32-byte register passing.
+    #[test]
+    fn native_vector_32b_needs_explicit_avx() {
+        assert_eq!(
+            self::classify_native_vector_on_linux(32, true, true, false),
+            SYSTEM_V_ABI_NATIVE_VECTOR_32B
+        );
+
+        assert_eq!(
+            self::classify_native_vector_on_linux(32, true, false, true),
+            SYSTEM_V_ABI_STACK
+        );
+
+        assert_eq!(
+            self::classify_native_vector_on_linux(32, false, true, true),
+            SYSTEM_V_ABI_STACK
+        );
+    }
+
+    // clang/lib/CodeGen/Targets/X86.cpp:1868-1893 (LLVM 17.0.6) gates named 512-bit vectors on AVX-512F. https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/clang/lib/CodeGen/Targets/X86.cpp#L1868-L1893
+    // The test pins that gate without treating AVX as enough for 64-byte register passing.
+    #[test]
+    fn native_vector_64b_needs_explicit_avx512f() {
+        assert_eq!(
+            self::classify_native_vector_on_linux(64, true, true, true),
+            SYSTEM_V_ABI_NATIVE_VECTOR_64B
+        );
+
+        assert_eq!(
+            self::classify_native_vector_on_linux(64, true, true, false),
+            SYSTEM_V_ABI_STACK
+        );
+
+        assert_eq!(
+            self::classify_native_vector_on_linux(64, false, true, true),
+            SYSTEM_V_ABI_STACK
+        );
+    }
+
+    // clang/lib/CodeGen/Targets/X86.cpp:1868-1893 (LLVM 17.0.6) splits wider named vectors into SSEUP chunks. https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/clang/lib/CodeGen/Targets/X86.cpp#L1868-L1893
+    // The test covers the intermediate widths that AVX and AVX-512F enable.
+    #[test]
+    fn native_vector_intermediate_sizes_use_sseup() {
+        let classes_24: [SystemVABITypeClass; 8] =
+            self::classify_native_vector_on_linux(24, true, true, false);
+
+        assert_eq!(classes_24[0], SystemVABITypeClass::SSE);
+
+        assert_eq!(
+            classes_24[1..3],
+            [SystemVABITypeClass::SSEUP, SystemVABITypeClass::SSEUP]
+        );
+
+        assert_eq!(classes_24[3], SystemVABITypeClass::NO_CLASS);
+
+        let classes_40: [SystemVABITypeClass; 8] =
+            self::classify_native_vector_on_linux(40, true, true, true);
+
+        assert_eq!(
+            classes_40[1..5],
+            [
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP
+            ]
+        );
+
+        assert_eq!(classes_40[5], SystemVABITypeClass::NO_CLASS);
+
+        let classes_48: [SystemVABITypeClass; 8] =
+            self::classify_native_vector_on_linux(48, true, true, true);
+
+        assert_eq!(
+            classes_48[1..6],
+            [
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP
+            ]
+        );
+
+        assert_eq!(classes_48[6], SystemVABITypeClass::NO_CLASS);
+
+        let classes_56: [SystemVABITypeClass; 8] =
+            self::classify_native_vector_on_linux(56, true, true, true);
+
+        assert_eq!(
+            classes_56[1..7],
+            [
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP,
+                SystemVABITypeClass::SSEUP
+            ]
+        );
+
+        assert_eq!(classes_56[7], SystemVABITypeClass::NO_CLASS);
+    }
+
+    // clang/lib/CodeGen/Targets/X86.cpp:1868-1893 (LLVM 17.0.6) keeps unsupported widths in memory. https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/clang/lib/CodeGen/Targets/X86.cpp#L1868-L1893
+    // The test pins the feature and architecture gates for intermediate widths.
+    #[test]
+    fn native_vector_intermediate_sizes_require_features() {
+        assert_eq!(
+            self::classify_native_vector_on_linux(24, true, false, true),
+            SYSTEM_V_ABI_STACK
+        );
+
+        assert_eq!(
+            self::classify_native_vector_on_linux(40, true, true, false),
+            SYSTEM_V_ABI_STACK
+        );
+
+        assert_eq!(
+            self::classify_native_vector_on_linux(48, true, true, false),
+            SYSTEM_V_ABI_STACK
+        );
+
+        assert_eq!(
+            self::classify_native_vector_on_linux(56, false, true, true),
+            SYSTEM_V_ABI_STACK
+        );
+    }
+
+    // clang/lib/CodeGen/Targets/X86.cpp:1868-1869 (LLVM 17.0.6) handles 128-bit vectors without AVX. https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/clang/lib/CodeGen/Targets/X86.cpp#L1868-L1869
+    // The test keeps that path independent from the new width checks.
+    #[test]
+    fn native_vector_16b_is_unchanged() {
+        assert_eq!(
+            self::classify_native_vector_on_linux(16, false, false, false),
+            SYSTEM_V_ABI_F128
+        );
+    }
+
+    // clang/lib/CodeGen/Targets/X86.cpp:1868-1893 (LLVM 17.0.6) classifies the vector field as the struct ABI. https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/clang/lib/CodeGen/Targets/X86.cpp#L1868-L1893
+    // The test covers the single-vector struct that the high-level wrapper needs.
+    #[test]
+    fn single_vector_struct_uses_vector_classes() {
+        assert_eq!(
+            self::classify_single_vector_struct_on_linux(32, true, true, false),
+            SYSTEM_V_ABI_NATIVE_VECTOR_32B
+        );
+
+        assert_eq!(
+            self::classify_single_vector_struct_on_linux(64, true, true, true),
+            SYSTEM_V_ABI_NATIVE_VECTOR_64B
+        );
+
+        assert_eq!(
+            self::classify_single_vector_struct_on_linux(64, true, false, true),
+            SYSTEM_V_ABI_STACK
+        );
+
+        assert_eq!(
+            self::classify_single_vector_struct_on_linux(32, true, false, true),
+            SYSTEM_V_ABI_STACK
+        );
+    }
 }

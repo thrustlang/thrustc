@@ -22,13 +22,35 @@ use thrustc_llvm_target_triple::LLVMTargetTriple;
 
 #[derive(Debug)]
 pub struct LLVMTarget {
-    pub arch: String,
-    pub target_triple: TargetTriple,
-    pub normalized_target_triple: LLVMTargetTriple,
-    pub target_triple_darwin_variant: Option<TargetTriple>,
-    pub macos_version: Option<String>,
-    pub ios_version: Option<String>,
-    pub cuda_version: Option<String>,
+    arch: String,
+    target_triple: TargetTriple,
+    normalized_target_triple: LLVMTargetTriple,
+    target_triple_darwin_variant: Option<TargetTriple>,
+    macos_version: Option<String>,
+    ios_version: Option<String>,
+    cuda_version: Option<String>,
+}
+
+impl LLVMTarget {
+    pub fn new(
+        arch: String,
+        target_triple: TargetTriple,
+        normalized_target_triple: LLVMTargetTriple,
+        target_triple_darwin_variant: Option<TargetTriple>,
+        macos_version: Option<String>,
+        ios_version: Option<String>,
+        cuda_version: Option<String>,
+    ) -> Self {
+        Self {
+            arch,
+            target_triple,
+            normalized_target_triple,
+            target_triple_darwin_variant,
+            macos_version,
+            ios_version,
+            cuda_version,
+        }
+    }
 }
 
 impl LLVMTarget {
@@ -101,15 +123,30 @@ impl LLVMTarget {
 
 impl LLVMTarget {
     #[inline]
-    pub fn set_arch(&mut self, arch: String) {
-        self.arch = arch;
+    pub fn get_mut_normalized_target_triple(&mut self) -> &mut LLVMTargetTriple {
+        &mut self.normalized_target_triple
     }
+}
 
+impl LLVMTarget {
     #[inline]
     pub fn set_target_triple(&mut self, raw_target_triple: String) {
+        let cpu: thrustc_llvm_target_triple::LLVMTargetCPU =
+            self.normalized_target_triple.get_cpu().clone();
+
         self.target_triple = TargetTriple::create(&raw_target_triple);
-        self.normalized_target_triple =
-            LLVMTargetTriple::new(self.target_triple.as_str().to_string_lossy().to_string())
+
+        self.normalized_target_triple = LLVMTargetTriple::new_with_cpu(
+            self.target_triple.as_str().to_string_lossy().to_string(),
+            cpu,
+        );
+    }
+}
+
+impl LLVMTarget {
+    #[inline]
+    pub fn set_arch(&mut self, arch: String) {
+        self.arch = arch;
     }
 
     #[inline]

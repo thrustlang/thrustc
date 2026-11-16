@@ -1158,3 +1158,14 @@ pub fn print_host_target_triple() -> ! {
 
     std::process::exit(1)
 }
+
+pub fn print_host_cpu_features() -> ! {
+    let features: String = TargetMachine::get_host_cpu_features().to_string();
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stdout,
+        features.trim(),
+    );
+
+    std::process::exit(0)
+}

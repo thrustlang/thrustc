@@ -694,3 +694,35 @@ fn get_unique_discriminat() -> u64 {
 
     NODE_DISCRIMINANT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
 }
+
+impl thrustc_errors::simd::SimdUsageAst for Ast<'_>
+{
+    fn simd_usage_span(&self) -> Option<thrustc_code_location::Span>
+    {
+        match self {
+            Ast::Function {
+                attributes, span, ..
+            } if attributes
+                .iter()
+                .any(|attribute| matches!(attribute, thrustc_attributes::ThrustAttribute::Simd(..))) =>
+            {
+                Some(*span)
+            }
+
+            Ast::CompilerIntrinsic {
+                external_name,
+                attributes,
+                span,
+                ..
+            } if attributes
+                .iter()
+                .any(|attribute| matches!(attribute, thrustc_attributes::ThrustAttribute::Simd(..)))
+                || external_name.starts_with("llvm.x86.") =>
+            {
+                Some(*span)
+            }
+
+            _ => None,
+        }
+    }
+}

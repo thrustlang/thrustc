@@ -49,6 +49,7 @@ pub struct PreprocessorContext<'preprocessor> {
     builtins: &'preprocessor BuiltinRegistry,
     current: usize,
     type_depth: u32,
+    discovery: bool,
 }
 
 impl<'preprocessor> PreprocessorContext<'preprocessor> {
@@ -59,6 +60,7 @@ impl<'preprocessor> PreprocessorContext<'preprocessor> {
         visited: HashSet<PathBuf>,
         registry: crate::registry::SharedModuleRegistry,
         builtins: &'preprocessor BuiltinRegistry,
+        discovery: bool,
     ) -> Self {
         Self {
             tokens,
@@ -73,6 +75,7 @@ impl<'preprocessor> PreprocessorContext<'preprocessor> {
             builtins,
             current: 0,
             type_depth: 0,
+            discovery,
         }
     }
 }
@@ -85,16 +88,20 @@ impl PreprocessorContext<'_> {
 
             thrustc_errors::filter_warnings(&warnings_to_disable, &mut self.warnings);
 
-            for warning in self.warnings.iter() {
-                self.diagnostician
-                    .dispatch_diagnostic(warning, thrustc_logging::LoggingType::Warning);
+            if !self.discovery {
+                for warning in self.warnings.iter() {
+                    self.diagnostician
+                        .dispatch_diagnostic(warning, thrustc_logging::LoggingType::Warning);
+                }
             }
         }
 
         if !self.errors.is_empty() {
-            for error in self.errors.iter() {
-                self.diagnostician
-                    .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
+            if !self.discovery {
+                for error in self.errors.iter() {
+                    self.diagnostician
+                        .dispatch_diagnostic(error, thrustc_logging::LoggingType::Error);
+                }
             }
 
             return Err(());

@@ -63,6 +63,28 @@ impl<'preprocessor> Preprocessor {
         file: &CompilationUnit,
         builtins: &'preprocessor BuiltinRegistry,
     ) -> Result<&[Module], ()> {
+        self.generate_modules_with_mode(tokens, options, file, builtins, false)
+    }
+
+    // Discovery pass: keep parse and import errors for the real compilation pass to report once.
+    pub fn discover_modules(
+        &mut self,
+        tokens: &'preprocessor [Token],
+        options: &'preprocessor FileOptions<'preprocessor, 'preprocessor>,
+        file: &CompilationUnit,
+        builtins: &'preprocessor BuiltinRegistry,
+    ) -> Result<&[Module], ()> {
+        self.generate_modules_with_mode(tokens, options, file, builtins, true)
+    }
+
+    fn generate_modules_with_mode(
+        &mut self,
+        tokens: &'preprocessor [Token],
+        options: &'preprocessor FileOptions<'preprocessor, 'preprocessor>,
+        file: &CompilationUnit,
+        builtins: &'preprocessor BuiltinRegistry,
+        discovery: bool,
+    ) -> Result<&[Module], ()> {
         let file_path: std::path::PathBuf = file.get_path().to_path_buf();
 
         let mut visited: HashSet<std::path::PathBuf> = HashSet::with_capacity(u8::MAX as usize);
@@ -73,7 +95,7 @@ impl<'preprocessor> Preprocessor {
         );
 
         let mut context: PreprocessorContext<'_> =
-            PreprocessorContext::new(tokens, options, file, visited, registry, builtins);
+            PreprocessorContext::new(tokens, options, file, visited, registry, builtins, discovery);
 
         let mut merged: ahash::AHashMap<(std::path::PathBuf, Option<Vec<String>>), usize> =
             ahash::AHashMap::with_capacity(u8::MAX as usize);
@@ -96,7 +118,10 @@ impl<'preprocessor> Preprocessor {
                 match highmodule_parsing::import::parse_import(&mut context) {
                     Ok(Some(module)) => self.merge_module(&mut merged, module),
                     Ok(None) => (),
-                    Err(()) => return Err(()),
+                    Err(()) => {
+                        context.check_status()?;
+                        return Err(());
+                    }
                 }
 
                 continue;

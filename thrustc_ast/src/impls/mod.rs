@@ -463,6 +463,13 @@ impl AstCodeBlockEntensions for Ast<'_> {
                     return true;
                 }
 
+                if let Ast::Loop { block, .. } = node {
+                    // loops without end is considered as an terminator.
+                    if !block.has_loop_escape(0) {
+                        return true;
+                    }
+                }
+
                 if let Ast::If {
                     then_branch,
                     else_if_branch,
@@ -501,6 +508,76 @@ impl AstCodeBlockEntensions for Ast<'_> {
         }
 
         false
+    }
+
+    #[inline]
+    fn has_loop_escape(&self, depth: usize) -> bool {
+        match self {
+            Ast::Break { .. } => depth == 0,
+            Ast::BreakAll { .. } => true,
+            Ast::Continue { .. } | Ast::ContinueAll { .. } => false,
+            Ast::Loop { block, .. } => block.has_loop_escape(depth.saturating_add(1)),
+            Ast::While {
+                variable,
+                condition,
+                block,
+                ..
+            } => {
+                variable
+                    .as_ref()
+                    .is_some_and(|node| node.has_loop_escape(depth.saturating_add(1)))
+                    || condition.has_loop_escape(depth.saturating_add(1))
+                    || block.has_loop_escape(depth.saturating_add(1))
+            }
+            Ast::For {
+                local,
+                condition,
+                actions,
+                block,
+                ..
+            } => {
+                local.has_loop_escape(depth.saturating_add(1))
+                    || condition.has_loop_escape(depth.saturating_add(1))
+                    || actions.has_loop_escape(depth.saturating_add(1))
+                    || block.has_loop_escape(depth.saturating_add(1))
+            }
+            Ast::Block { nodes, post, .. } => {
+                nodes.iter().any(|node| node.has_loop_escape(depth))
+                    || post.iter().any(|node| node.has_loop_escape(depth))
+            }
+            Ast::If {
+                then_branch,
+                else_if_branch,
+                else_branch,
+                ..
+            } => {
+                then_branch.has_loop_escape(depth)
+                    || else_if_branch
+                        .iter()
+                        .any(|node| node.has_loop_escape(depth))
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|node| node.has_loop_escape(depth))
+            }
+            Ast::Elif { block, .. } => block.has_loop_escape(depth),
+            Ast::Else { block, .. } => block.has_loop_escape(depth),
+            Ast::CompileTimeIf {
+                then_branch,
+                else_if_branch,
+                else_branch,
+                ..
+            } => {
+                then_branch.has_loop_escape(depth)
+                    || else_if_branch
+                        .iter()
+                        .any(|node| node.has_loop_escape(depth))
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|node| node.has_loop_escape(depth))
+            }
+            Ast::Defer { node, .. } => node.has_loop_escape(depth),
+            _ => false,
+        }
     }
 }
 

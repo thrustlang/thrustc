@@ -1,0 +1,20 @@
+// test-requires: x86_64 avx512f
+// test-cpu-features: +sse2,+avx512f
+
+fn addVectors(
+    left: NativeVector[f32; 16],
+    right: NativeVector[f32; 16]
+) NativeVector[f32; 16] @public @simd {
+    return left + right;
+}
+
+fn main() s32 @public {
+    var left: NativeVector[f32; 16] = native[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0];
+    var right: NativeVector[f32; 16] = native[16.0, 15.0, 14.0, 13.0, 12.0, 11.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0];
+    var result: NativeVector[f32; 16] = addVectors(left, right);
+
+    if result[0] != 17.0 { return 1; }
+    if result[15] != 17.0 { return 2; }
+
+    return 0;
+}

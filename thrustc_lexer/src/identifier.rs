@@ -27,6 +27,33 @@ use crate::Lexer;
 use ahash::AHashMap as HashMap;
 use lazy_static::lazy_static;
 
+const UNSTABLE_COMPILER_FEATURES_LEXEMES: &[&str] = &[
+    "asm",
+    "global_asm",
+    "native",
+    "embedded",
+    "importC",
+    "NativeVector",
+    "@simd",
+    "@promote",
+    "@asmAlignStack",
+    "@asmSyntax",
+    "@asmThrowErrors",
+    "@asmSideEffects",
+    "atomicStore",
+    "atomicAdd",
+    "atomicSubtract",
+    "atomicAnd",
+    "atomicNand",
+    "atomicOr",
+    "atomicXor",
+    "atomicSignedMaximum",
+    "atomicSignedMinimum",
+    "atomicUnsignedMaximum",
+    "atomicUnsignedMinimum",
+    "atomicCompareAndSwap",
+];
+
 lazy_static! {
     pub static ref ATOMIC: HashMap<&'static str, TokenType> = {
         let mut atomic: HashMap<&'static str, TokenType> = HashMap::with_capacity(u8::MAX as usize);
@@ -87,6 +114,7 @@ lazy_static! {
         attributes.insert("@destructor", TokenType::Destructor);
         attributes.insert("@dealloc", TokenType::Dealloc);
         attributes.insert("@deallocator", TokenType::Deallocator);
+        attributes.insert("@simd", TokenType::Simd);
 
         attributes.insert("@if", TokenType::IfAttribute);
         attributes.insert("@elif", TokenType::ElifAttribute);
@@ -246,32 +274,6 @@ lazy_static! {
     };
 }
 
-const UNSTABLE_LEXEMES: &[&str] = &[
-    "asm",
-    "global_asm",
-    "native",
-    "embedded",
-    "importC",
-    "NativeVector",
-    "@promote",
-    "@asmAlignStack",
-    "@asmSyntax",
-    "@asmThrowErrors",
-    "@asmSideEffects",
-    "atomicStore",
-    "atomicAdd",
-    "atomicSubtract",
-    "atomicAnd",
-    "atomicNand",
-    "atomicOr",
-    "atomicXor",
-    "atomicSignedMaximum",
-    "atomicSignedMinimum",
-    "atomicUnsignedMaximum",
-    "atomicUnsignedMinimum",
-    "atomicCompareAndSwap",
-];
-
 pub fn lex(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
     while lexer.is_identifier_boundary(lexer.peek()) {
         lexer.advance_only();
@@ -280,7 +282,7 @@ pub fn lex(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
     let lexem: String = lexer.lexeme();
 
     if thrustc_backends::get_compiler_features().is_stable_mode()
-        && UNSTABLE_LEXEMES.contains(&lexem.as_str())
+        && UNSTABLE_COMPILER_FEATURES_LEXEMES.contains(&lexem.as_str())
     {
         lexer.end_span();
 

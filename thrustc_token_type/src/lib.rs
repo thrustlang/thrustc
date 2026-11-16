@@ -114,6 +114,7 @@ pub enum TokenType {
     Pure,
     Cuda,
     Thunk,
+    Simd,
     Constructor,
     Destructor,
     Dealloc,

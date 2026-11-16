@@ -29,9 +29,11 @@ thrustc_directive = { path = "../thrustc_directive" }
 thrustc_constants = { path = "../thrustc_constants" }
 thrustc_token = { path = "../thrustc_token" }
 thrustc_diagnostician = { path = "../thrustc_diagnostician" }
+thrustc_errors = { path = "../thrustc_errors" }
 thrustc_lexer = { path = "../thrustc_lexer" }
 thrustc_parser = { path = "../thrustc_parser" }
 thrustc_ast = { path = "../thrustc_ast" }
+thrustc_attributes = { path = "../thrustc_attributes" }
 thrustc_options = { path = "../thrustc_options" }
 thrustc_semantic_analysis = { path = "../thrustc_semantic_analysis" }
 thrustc_llvm_codegen = { path = "../thrustc_llvm_codegen" }

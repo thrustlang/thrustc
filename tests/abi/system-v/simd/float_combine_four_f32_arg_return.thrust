@@ -1,0 +1,22 @@
+// test-requires: x86_64
+
+struct Four @public {
+    a: f32,
+    b: f32,
+    c: f32,
+    d: f32
+}
+
+fn identity(value: Four) Four @public {
+    return value;
+}
+
+fn main() s32 @public {
+    var input: Four = new Four { a: 1.0, b: 2.0, c: 3.0, d: 4.0 };
+    var result: Four = identity(input);
+
+    if result->a != 1.0 { return 1; }
+    if result->d != 4.0 { return 2; }
+
+    return 0;
+}

@@ -1,0 +1,31 @@
+// test-requires: x86_64 avx
+// test-cpu-features: +sse2,+avx
+
+struct Inner @public {
+    value: NativeVector[f32; 8]
+}
+
+struct Outer @public {
+    inner: Inner,
+    tag: s32
+}
+
+fn identity(value: Outer) Outer @public {
+    return value;
+}
+
+fn main() s32 @public {
+    var input: Outer = new Outer {
+        inner: new Inner { value: native[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0] },
+        tag: 7
+    };
+    var result: Outer = identity(input);
+
+    var value: NativeVector[f32; 8] = result->inner.value;
+
+    if value[0] != 1.0 { return 1; }
+    if value[7] != 8.0 { return 2; }
+    if result->tag != 7 { return 3; }
+
+    return 0;
+}

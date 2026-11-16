@@ -1,0 +1,1545 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+import std::intrinsics::x86_64::simd as x86_64simd_api;
+
+// Float vectors
+
+type F32x4 @public = NativeVector[f32; 4];
+type F64x2 @public = NativeVector[f64; 2];
+type F32x8 @public = NativeVector[f32; 8];
+type F64x4 @public = NativeVector[f64; 4];
+type F32x16 @public = NativeVector[f32; 16];
+type F64x8 @public = NativeVector[f64; 8];
+
+// Integer vectors
+
+type S8x16 @public = NativeVector[s8; 16];
+type U8x16 @public = NativeVector[u8; 16];
+type S16x8 @public = NativeVector[s16; 8];
+type U16x8 @public = NativeVector[u16; 8];
+type S32x4 @public = NativeVector[s32; 4];
+type U32x4 @public = NativeVector[u32; 4];
+type S64x2 @public = NativeVector[s64; 2];
+type U64x2 @public = NativeVector[u64; 2];
+type S8x32 @public = NativeVector[s8; 32];
+type U8x32 @public = NativeVector[u8; 32];
+type S16x16 @public = NativeVector[s16; 16];
+type U16x16 @public = NativeVector[u16; 16];
+type S32x8 @public = NativeVector[s32; 8];
+type U32x8 @public = NativeVector[u32; 8];
+type S64x4 @public = NativeVector[s64; 4];
+type U64x4 @public = NativeVector[u64; 4];
+type S8x64 @public = NativeVector[s8; 64];
+type U8x64 @public = NativeVector[u8; 64];
+type S16x32 @public = NativeVector[s16; 32];
+type U16x32 @public = NativeVector[u16; 32];
+type S32x16 @public = NativeVector[s32; 16];
+type U32x16 @public = NativeVector[u32; 16];
+type S64x8 @public = NativeVector[s64; 8];
+type U64x8 @public = NativeVector[u64; 8];
+
+fn addPackedSinglePrecision128(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return x86_64simd_api::addF32x4(left, right);
+}
+
+fn subPackedSinglePrecision128(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return x86_64simd_api::subF32x4(left, right);
+}
+
+fn mulPackedSinglePrecision128(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return x86_64simd_api::mulF32x4(left, right);
+}
+
+fn divPackedSinglePrecision128(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return x86_64simd_api::divF32x4(left, right);
+}
+
+fn minPackedSinglePrecision128(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return x86_64simd_api::minF32x4(left, right);
+}
+
+fn maxPackedSinglePrecision128(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return x86_64simd_api::maxF32x4(left, right);
+}
+
+fn sqrtPackedSinglePrecision128(value: F32x4) F32x4 @public @simd {
+    return x86_64simd_api::sqrtF32x4(value);
+}
+
+fn absPackedSinglePrecision128(value: F32x4) F32x4 @public @simd {
+    return x86_64simd_api::absF32x4(value);
+}
+
+fn addPackedDoublePrecision128(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return x86_64simd_api::addF64x2(left, right);
+}
+
+fn subPackedDoublePrecision128(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return x86_64simd_api::subF64x2(left, right);
+}
+
+fn mulPackedDoublePrecision128(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return x86_64simd_api::mulF64x2(left, right);
+}
+
+fn divPackedDoublePrecision128(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return x86_64simd_api::divF64x2(left, right);
+}
+
+fn minPackedDoublePrecision128(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return x86_64simd_api::minF64x2(left, right);
+}
+
+fn maxPackedDoublePrecision128(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return x86_64simd_api::maxF64x2(left, right);
+}
+
+fn sqrtPackedDoublePrecision128(value: F64x2) F64x2 @public @simd {
+    return x86_64simd_api::sqrtF64x2(value);
+}
+
+fn absPackedDoublePrecision128(value: F64x2) F64x2 @public @simd {
+    return x86_64simd_api::absF64x2(value);
+}
+
+fn addPackedSinglePrecision256(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return x86_64simd_api::addF32x8(left, right);
+}
+
+fn subPackedSinglePrecision256(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return x86_64simd_api::subF32x8(left, right);
+}
+
+fn mulPackedSinglePrecision256(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return x86_64simd_api::mulF32x8(left, right);
+}
+
+fn divPackedSinglePrecision256(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return x86_64simd_api::divF32x8(left, right);
+}
+
+fn minPackedSinglePrecision256(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return x86_64simd_api::minF32x8(left, right);
+}
+
+fn maxPackedSinglePrecision256(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return x86_64simd_api::maxF32x8(left, right);
+}
+
+fn sqrtPackedSinglePrecision256(value: F32x8) F32x8 @public @simd {
+    return x86_64simd_api::sqrtF32x8(value);
+}
+
+fn absPackedSinglePrecision256(value: F32x8) F32x8 @public @simd {
+    return x86_64simd_api::absF32x8(value);
+}
+
+fn addPackedDoublePrecision256(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return x86_64simd_api::addF64x4(left, right);
+}
+
+fn subPackedDoublePrecision256(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return x86_64simd_api::subF64x4(left, right);
+}
+
+fn mulPackedDoublePrecision256(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return x86_64simd_api::mulF64x4(left, right);
+}
+
+fn divPackedDoublePrecision256(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return x86_64simd_api::divF64x4(left, right);
+}
+
+fn minPackedDoublePrecision256(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return x86_64simd_api::minF64x4(left, right);
+}
+
+fn maxPackedDoublePrecision256(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return x86_64simd_api::maxF64x4(left, right);
+}
+
+fn sqrtPackedDoublePrecision256(value: F64x4) F64x4 @public @simd {
+    return x86_64simd_api::sqrtF64x4(value);
+}
+
+fn absPackedDoublePrecision256(value: F64x4) F64x4 @public @simd {
+    return x86_64simd_api::absF64x4(value);
+}
+
+fn addPackedSinglePrecision512(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return x86_64simd_api::addF32x16(left, right);
+}
+
+fn subPackedSinglePrecision512(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return x86_64simd_api::subF32x16(left, right);
+}
+
+fn mulPackedSinglePrecision512(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return x86_64simd_api::mulF32x16(left, right);
+}
+
+fn divPackedSinglePrecision512(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return x86_64simd_api::divF32x16(left, right);
+}
+
+fn minPackedSinglePrecision512(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return x86_64simd_api::minF32x16(left, right);
+}
+
+fn maxPackedSinglePrecision512(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return x86_64simd_api::maxF32x16(left, right);
+}
+
+fn sqrtPackedSinglePrecision512(value: F32x16) F32x16 @public @simd {
+    return x86_64simd_api::sqrtF32x16(value);
+}
+
+fn absPackedSinglePrecision512(value: F32x16) F32x16 @public @simd {
+    return x86_64simd_api::absF32x16(value);
+}
+
+fn addPackedDoublePrecision512(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return x86_64simd_api::addF64x8(left, right);
+}
+
+fn subPackedDoublePrecision512(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return x86_64simd_api::subF64x8(left, right);
+}
+
+fn mulPackedDoublePrecision512(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return x86_64simd_api::mulF64x8(left, right);
+}
+
+fn divPackedDoublePrecision512(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return x86_64simd_api::divF64x8(left, right);
+}
+
+fn minPackedDoublePrecision512(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return x86_64simd_api::minF64x8(left, right);
+}
+
+fn maxPackedDoublePrecision512(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return x86_64simd_api::maxF64x8(left, right);
+}
+
+fn sqrtPackedDoublePrecision512(value: F64x8) F64x8 @public @simd {
+    return x86_64simd_api::sqrtF64x8(value);
+}
+
+fn absPackedDoublePrecision512(value: F64x8) F64x8 @public @simd {
+    return x86_64simd_api::absF64x8(value);
+}
+
+fn addPackedSignedInt8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::addS8x16(left, right);
+}
+
+fn subPackedSignedInt8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::subS8x16(left, right);
+}
+
+fn mulPackedSignedInt8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::mulS8x16(left, right);
+}
+
+fn divPackedSignedInt8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::divS8x16(left, right);
+}
+
+fn andPackedSignedInt8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::andS8x16(left, right);
+}
+
+fn orPackedSignedInt8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::orS8x16(left, right);
+}
+
+fn xorPackedSignedInt8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::xorS8x16(left, right);
+}
+
+fn minPackedSignedInt8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::minS8x16(left, right);
+}
+
+fn maxPackedSignedInt8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::maxS8x16(left, right);
+}
+
+fn notPackedSignedInt8x16(value: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::notS8x16(value);
+}
+
+fn negPackedSignedInt8x16(value: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::negS8x16(value);
+}
+
+fn shlPackedSignedInt8x16(value: S8x16, amount: u32) S8x16 @public @simd {
+    return x86_64simd_api::shlS8x16(value, amount);
+}
+
+fn shrPackedSignedInt8x16(value: S8x16, amount: u32) S8x16 @public @simd {
+    return x86_64simd_api::shrS8x16(value, amount);
+}
+
+fn absPackedSignedInt8x16(value: S8x16) S8x16 @public @simd {
+    return x86_64simd_api::absS8x16(value);
+}
+
+fn addPackedUnsignedInt8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::addU8x16(left, right);
+}
+
+fn subPackedUnsignedInt8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::subU8x16(left, right);
+}
+
+fn mulPackedUnsignedInt8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::mulU8x16(left, right);
+}
+
+fn divPackedUnsignedInt8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::divU8x16(left, right);
+}
+
+fn andPackedUnsignedInt8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::andU8x16(left, right);
+}
+
+fn orPackedUnsignedInt8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::orU8x16(left, right);
+}
+
+fn xorPackedUnsignedInt8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::xorU8x16(left, right);
+}
+
+fn minPackedUnsignedInt8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::minU8x16(left, right);
+}
+
+fn maxPackedUnsignedInt8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::maxU8x16(left, right);
+}
+
+fn notPackedUnsignedInt8x16(value: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::notU8x16(value);
+}
+
+fn negPackedUnsignedInt8x16(value: U8x16) U8x16 @public @simd {
+    return x86_64simd_api::negU8x16(value);
+}
+
+fn shlPackedUnsignedInt8x16(value: U8x16, amount: u32) U8x16 @public @simd {
+    return x86_64simd_api::shlU8x16(value, amount);
+}
+
+fn shrPackedUnsignedInt8x16(value: U8x16, amount: u32) U8x16 @public @simd {
+    return x86_64simd_api::shrU8x16(value, amount);
+}
+
+fn addPackedSignedInt16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::addS16x8(left, right);
+}
+
+fn subPackedSignedInt16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::subS16x8(left, right);
+}
+
+fn mulPackedSignedInt16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::mulS16x8(left, right);
+}
+
+fn divPackedSignedInt16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::divS16x8(left, right);
+}
+
+fn andPackedSignedInt16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::andS16x8(left, right);
+}
+
+fn orPackedSignedInt16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::orS16x8(left, right);
+}
+
+fn xorPackedSignedInt16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::xorS16x8(left, right);
+}
+
+fn minPackedSignedInt16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::minS16x8(left, right);
+}
+
+fn maxPackedSignedInt16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::maxS16x8(left, right);
+}
+
+fn notPackedSignedInt16x8(value: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::notS16x8(value);
+}
+
+fn negPackedSignedInt16x8(value: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::negS16x8(value);
+}
+
+fn shlPackedSignedInt16x8(value: S16x8, amount: u32) S16x8 @public @simd {
+    return x86_64simd_api::shlS16x8(value, amount);
+}
+
+fn shrPackedSignedInt16x8(value: S16x8, amount: u32) S16x8 @public @simd {
+    return x86_64simd_api::shrS16x8(value, amount);
+}
+
+fn absPackedSignedInt16x8(value: S16x8) S16x8 @public @simd {
+    return x86_64simd_api::absS16x8(value);
+}
+
+fn addPackedUnsignedInt16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::addU16x8(left, right);
+}
+
+fn subPackedUnsignedInt16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::subU16x8(left, right);
+}
+
+fn mulPackedUnsignedInt16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::mulU16x8(left, right);
+}
+
+fn divPackedUnsignedInt16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::divU16x8(left, right);
+}
+
+fn andPackedUnsignedInt16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::andU16x8(left, right);
+}
+
+fn orPackedUnsignedInt16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::orU16x8(left, right);
+}
+
+fn xorPackedUnsignedInt16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::xorU16x8(left, right);
+}
+
+fn minPackedUnsignedInt16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::minU16x8(left, right);
+}
+
+fn maxPackedUnsignedInt16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::maxU16x8(left, right);
+}
+
+fn notPackedUnsignedInt16x8(value: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::notU16x8(value);
+}
+
+fn negPackedUnsignedInt16x8(value: U16x8) U16x8 @public @simd {
+    return x86_64simd_api::negU16x8(value);
+}
+
+fn shlPackedUnsignedInt16x8(value: U16x8, amount: u32) U16x8 @public @simd {
+    return x86_64simd_api::shlU16x8(value, amount);
+}
+
+fn shrPackedUnsignedInt16x8(value: U16x8, amount: u32) U16x8 @public @simd {
+    return x86_64simd_api::shrU16x8(value, amount);
+}
+
+fn addPackedSignedInt32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::addS32x4(left, right);
+}
+
+fn subPackedSignedInt32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::subS32x4(left, right);
+}
+
+fn mulPackedSignedInt32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::mulS32x4(left, right);
+}
+
+fn divPackedSignedInt32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::divS32x4(left, right);
+}
+
+fn andPackedSignedInt32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::andS32x4(left, right);
+}
+
+fn orPackedSignedInt32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::orS32x4(left, right);
+}
+
+fn xorPackedSignedInt32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::xorS32x4(left, right);
+}
+
+fn minPackedSignedInt32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::minS32x4(left, right);
+}
+
+fn maxPackedSignedInt32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::maxS32x4(left, right);
+}
+
+fn notPackedSignedInt32x4(value: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::notS32x4(value);
+}
+
+fn negPackedSignedInt32x4(value: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::negS32x4(value);
+}
+
+fn shlPackedSignedInt32x4(value: S32x4, amount: u32) S32x4 @public @simd {
+    return x86_64simd_api::shlS32x4(value, amount);
+}
+
+fn shrPackedSignedInt32x4(value: S32x4, amount: u32) S32x4 @public @simd {
+    return x86_64simd_api::shrS32x4(value, amount);
+}
+
+fn absPackedSignedInt32x4(value: S32x4) S32x4 @public @simd {
+    return x86_64simd_api::absS32x4(value);
+}
+
+fn addPackedUnsignedInt32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::addU32x4(left, right);
+}
+
+fn subPackedUnsignedInt32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::subU32x4(left, right);
+}
+
+fn mulPackedUnsignedInt32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::mulU32x4(left, right);
+}
+
+fn divPackedUnsignedInt32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::divU32x4(left, right);
+}
+
+fn andPackedUnsignedInt32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::andU32x4(left, right);
+}
+
+fn orPackedUnsignedInt32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::orU32x4(left, right);
+}
+
+fn xorPackedUnsignedInt32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::xorU32x4(left, right);
+}
+
+fn minPackedUnsignedInt32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::minU32x4(left, right);
+}
+
+fn maxPackedUnsignedInt32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::maxU32x4(left, right);
+}
+
+fn notPackedUnsignedInt32x4(value: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::notU32x4(value);
+}
+
+fn negPackedUnsignedInt32x4(value: U32x4) U32x4 @public @simd {
+    return x86_64simd_api::negU32x4(value);
+}
+
+fn shlPackedUnsignedInt32x4(value: U32x4, amount: u32) U32x4 @public @simd {
+    return x86_64simd_api::shlU32x4(value, amount);
+}
+
+fn shrPackedUnsignedInt32x4(value: U32x4, amount: u32) U32x4 @public @simd {
+    return x86_64simd_api::shrU32x4(value, amount);
+}
+
+fn addPackedSignedInt64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::addS64x2(left, right);
+}
+
+fn subPackedSignedInt64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::subS64x2(left, right);
+}
+
+fn mulPackedSignedInt64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::mulS64x2(left, right);
+}
+
+fn divPackedSignedInt64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::divS64x2(left, right);
+}
+
+fn andPackedSignedInt64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::andS64x2(left, right);
+}
+
+fn orPackedSignedInt64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::orS64x2(left, right);
+}
+
+fn xorPackedSignedInt64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::xorS64x2(left, right);
+}
+
+fn minPackedSignedInt64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::minS64x2(left, right);
+}
+
+fn maxPackedSignedInt64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::maxS64x2(left, right);
+}
+
+fn notPackedSignedInt64x2(value: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::notS64x2(value);
+}
+
+fn negPackedSignedInt64x2(value: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::negS64x2(value);
+}
+
+fn shlPackedSignedInt64x2(value: S64x2, amount: u32) S64x2 @public @simd {
+    return x86_64simd_api::shlS64x2(value, amount);
+}
+
+fn shrPackedSignedInt64x2(value: S64x2, amount: u32) S64x2 @public @simd {
+    return x86_64simd_api::shrS64x2(value, amount);
+}
+
+fn absPackedSignedInt64x2(value: S64x2) S64x2 @public @simd {
+    return x86_64simd_api::absS64x2(value);
+}
+
+fn addPackedUnsignedInt64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::addU64x2(left, right);
+}
+
+fn subPackedUnsignedInt64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::subU64x2(left, right);
+}
+
+fn mulPackedUnsignedInt64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::mulU64x2(left, right);
+}
+
+fn divPackedUnsignedInt64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::divU64x2(left, right);
+}
+
+fn andPackedUnsignedInt64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::andU64x2(left, right);
+}
+
+fn orPackedUnsignedInt64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::orU64x2(left, right);
+}
+
+fn xorPackedUnsignedInt64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::xorU64x2(left, right);
+}
+
+fn minPackedUnsignedInt64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::minU64x2(left, right);
+}
+
+fn maxPackedUnsignedInt64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::maxU64x2(left, right);
+}
+
+fn notPackedUnsignedInt64x2(value: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::notU64x2(value);
+}
+
+fn negPackedUnsignedInt64x2(value: U64x2) U64x2 @public @simd {
+    return x86_64simd_api::negU64x2(value);
+}
+
+fn shlPackedUnsignedInt64x2(value: U64x2, amount: u32) U64x2 @public @simd {
+    return x86_64simd_api::shlU64x2(value, amount);
+}
+
+fn shrPackedUnsignedInt64x2(value: U64x2, amount: u32) U64x2 @public @simd {
+    return x86_64simd_api::shrU64x2(value, amount);
+}
+
+fn addPackedSignedInt8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::addS8x32(left, right);
+}
+
+fn subPackedSignedInt8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::subS8x32(left, right);
+}
+
+fn mulPackedSignedInt8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::mulS8x32(left, right);
+}
+
+fn divPackedSignedInt8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::divS8x32(left, right);
+}
+
+fn andPackedSignedInt8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::andS8x32(left, right);
+}
+
+fn orPackedSignedInt8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::orS8x32(left, right);
+}
+
+fn xorPackedSignedInt8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::xorS8x32(left, right);
+}
+
+fn minPackedSignedInt8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::minS8x32(left, right);
+}
+
+fn maxPackedSignedInt8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::maxS8x32(left, right);
+}
+
+fn notPackedSignedInt8x32(value: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::notS8x32(value);
+}
+
+fn negPackedSignedInt8x32(value: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::negS8x32(value);
+}
+
+fn shlPackedSignedInt8x32(value: S8x32, amount: u32) S8x32 @public @simd {
+    return x86_64simd_api::shlS8x32(value, amount);
+}
+
+fn shrPackedSignedInt8x32(value: S8x32, amount: u32) S8x32 @public @simd {
+    return x86_64simd_api::shrS8x32(value, amount);
+}
+
+fn absPackedSignedInt8x32(value: S8x32) S8x32 @public @simd {
+    return x86_64simd_api::absS8x32(value);
+}
+
+fn addPackedUnsignedInt8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::addU8x32(left, right);
+}
+
+fn subPackedUnsignedInt8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::subU8x32(left, right);
+}
+
+fn mulPackedUnsignedInt8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::mulU8x32(left, right);
+}
+
+fn divPackedUnsignedInt8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::divU8x32(left, right);
+}
+
+fn andPackedUnsignedInt8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::andU8x32(left, right);
+}
+
+fn orPackedUnsignedInt8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::orU8x32(left, right);
+}
+
+fn xorPackedUnsignedInt8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::xorU8x32(left, right);
+}
+
+fn minPackedUnsignedInt8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::minU8x32(left, right);
+}
+
+fn maxPackedUnsignedInt8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::maxU8x32(left, right);
+}
+
+fn notPackedUnsignedInt8x32(value: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::notU8x32(value);
+}
+
+fn negPackedUnsignedInt8x32(value: U8x32) U8x32 @public @simd {
+    return x86_64simd_api::negU8x32(value);
+}
+
+fn shlPackedUnsignedInt8x32(value: U8x32, amount: u32) U8x32 @public @simd {
+    return x86_64simd_api::shlU8x32(value, amount);
+}
+
+fn shrPackedUnsignedInt8x32(value: U8x32, amount: u32) U8x32 @public @simd {
+    return x86_64simd_api::shrU8x32(value, amount);
+}
+
+fn addPackedSignedInt16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::addS16x16(left, right);
+}
+
+fn subPackedSignedInt16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::subS16x16(left, right);
+}
+
+fn mulPackedSignedInt16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::mulS16x16(left, right);
+}
+
+fn divPackedSignedInt16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::divS16x16(left, right);
+}
+
+fn andPackedSignedInt16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::andS16x16(left, right);
+}
+
+fn orPackedSignedInt16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::orS16x16(left, right);
+}
+
+fn xorPackedSignedInt16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::xorS16x16(left, right);
+}
+
+fn minPackedSignedInt16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::minS16x16(left, right);
+}
+
+fn maxPackedSignedInt16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::maxS16x16(left, right);
+}
+
+fn notPackedSignedInt16x16(value: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::notS16x16(value);
+}
+
+fn negPackedSignedInt16x16(value: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::negS16x16(value);
+}
+
+fn shlPackedSignedInt16x16(value: S16x16, amount: u32) S16x16 @public @simd {
+    return x86_64simd_api::shlS16x16(value, amount);
+}
+
+fn shrPackedSignedInt16x16(value: S16x16, amount: u32) S16x16 @public @simd {
+    return x86_64simd_api::shrS16x16(value, amount);
+}
+
+fn absPackedSignedInt16x16(value: S16x16) S16x16 @public @simd {
+    return x86_64simd_api::absS16x16(value);
+}
+
+fn addPackedUnsignedInt16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::addU16x16(left, right);
+}
+
+fn subPackedUnsignedInt16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::subU16x16(left, right);
+}
+
+fn mulPackedUnsignedInt16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::mulU16x16(left, right);
+}
+
+fn divPackedUnsignedInt16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::divU16x16(left, right);
+}
+
+fn andPackedUnsignedInt16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::andU16x16(left, right);
+}
+
+fn orPackedUnsignedInt16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::orU16x16(left, right);
+}
+
+fn xorPackedUnsignedInt16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::xorU16x16(left, right);
+}
+
+fn minPackedUnsignedInt16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::minU16x16(left, right);
+}
+
+fn maxPackedUnsignedInt16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::maxU16x16(left, right);
+}
+
+fn notPackedUnsignedInt16x16(value: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::notU16x16(value);
+}
+
+fn negPackedUnsignedInt16x16(value: U16x16) U16x16 @public @simd {
+    return x86_64simd_api::negU16x16(value);
+}
+
+fn shlPackedUnsignedInt16x16(value: U16x16, amount: u32) U16x16 @public @simd {
+    return x86_64simd_api::shlU16x16(value, amount);
+}
+
+fn shrPackedUnsignedInt16x16(value: U16x16, amount: u32) U16x16 @public @simd {
+    return x86_64simd_api::shrU16x16(value, amount);
+}
+
+fn addPackedSignedInt32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::addS32x8(left, right);
+}
+
+fn subPackedSignedInt32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::subS32x8(left, right);
+}
+
+fn mulPackedSignedInt32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::mulS32x8(left, right);
+}
+
+fn divPackedSignedInt32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::divS32x8(left, right);
+}
+
+fn andPackedSignedInt32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::andS32x8(left, right);
+}
+
+fn orPackedSignedInt32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::orS32x8(left, right);
+}
+
+fn xorPackedSignedInt32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::xorS32x8(left, right);
+}
+
+fn minPackedSignedInt32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::minS32x8(left, right);
+}
+
+fn maxPackedSignedInt32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::maxS32x8(left, right);
+}
+
+fn notPackedSignedInt32x8(value: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::notS32x8(value);
+}
+
+fn negPackedSignedInt32x8(value: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::negS32x8(value);
+}
+
+fn shlPackedSignedInt32x8(value: S32x8, amount: u32) S32x8 @public @simd {
+    return x86_64simd_api::shlS32x8(value, amount);
+}
+
+fn shrPackedSignedInt32x8(value: S32x8, amount: u32) S32x8 @public @simd {
+    return x86_64simd_api::shrS32x8(value, amount);
+}
+
+fn absPackedSignedInt32x8(value: S32x8) S32x8 @public @simd {
+    return x86_64simd_api::absS32x8(value);
+}
+
+fn addPackedUnsignedInt32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::addU32x8(left, right);
+}
+
+fn subPackedUnsignedInt32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::subU32x8(left, right);
+}
+
+fn mulPackedUnsignedInt32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::mulU32x8(left, right);
+}
+
+fn divPackedUnsignedInt32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::divU32x8(left, right);
+}
+
+fn andPackedUnsignedInt32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::andU32x8(left, right);
+}
+
+fn orPackedUnsignedInt32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::orU32x8(left, right);
+}
+
+fn xorPackedUnsignedInt32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::xorU32x8(left, right);
+}
+
+fn minPackedUnsignedInt32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::minU32x8(left, right);
+}
+
+fn maxPackedUnsignedInt32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::maxU32x8(left, right);
+}
+
+fn notPackedUnsignedInt32x8(value: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::notU32x8(value);
+}
+
+fn negPackedUnsignedInt32x8(value: U32x8) U32x8 @public @simd {
+    return x86_64simd_api::negU32x8(value);
+}
+
+fn shlPackedUnsignedInt32x8(value: U32x8, amount: u32) U32x8 @public @simd {
+    return x86_64simd_api::shlU32x8(value, amount);
+}
+
+fn shrPackedUnsignedInt32x8(value: U32x8, amount: u32) U32x8 @public @simd {
+    return x86_64simd_api::shrU32x8(value, amount);
+}
+
+fn addPackedSignedInt64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::addS64x4(left, right);
+}
+
+fn subPackedSignedInt64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::subS64x4(left, right);
+}
+
+fn mulPackedSignedInt64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::mulS64x4(left, right);
+}
+
+fn divPackedSignedInt64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::divS64x4(left, right);
+}
+
+fn andPackedSignedInt64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::andS64x4(left, right);
+}
+
+fn orPackedSignedInt64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::orS64x4(left, right);
+}
+
+fn xorPackedSignedInt64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::xorS64x4(left, right);
+}
+
+fn minPackedSignedInt64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::minS64x4(left, right);
+}
+
+fn maxPackedSignedInt64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::maxS64x4(left, right);
+}
+
+fn notPackedSignedInt64x4(value: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::notS64x4(value);
+}
+
+fn negPackedSignedInt64x4(value: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::negS64x4(value);
+}
+
+fn shlPackedSignedInt64x4(value: S64x4, amount: u32) S64x4 @public @simd {
+    return x86_64simd_api::shlS64x4(value, amount);
+}
+
+fn shrPackedSignedInt64x4(value: S64x4, amount: u32) S64x4 @public @simd {
+    return x86_64simd_api::shrS64x4(value, amount);
+}
+
+fn absPackedSignedInt64x4(value: S64x4) S64x4 @public @simd {
+    return x86_64simd_api::absS64x4(value);
+}
+
+fn addPackedUnsignedInt64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::addU64x4(left, right);
+}
+
+fn subPackedUnsignedInt64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::subU64x4(left, right);
+}
+
+fn mulPackedUnsignedInt64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::mulU64x4(left, right);
+}
+
+fn divPackedUnsignedInt64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::divU64x4(left, right);
+}
+
+fn andPackedUnsignedInt64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::andU64x4(left, right);
+}
+
+fn orPackedUnsignedInt64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::orU64x4(left, right);
+}
+
+fn xorPackedUnsignedInt64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::xorU64x4(left, right);
+}
+
+fn minPackedUnsignedInt64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::minU64x4(left, right);
+}
+
+fn maxPackedUnsignedInt64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::maxU64x4(left, right);
+}
+
+fn notPackedUnsignedInt64x4(value: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::notU64x4(value);
+}
+
+fn negPackedUnsignedInt64x4(value: U64x4) U64x4 @public @simd {
+    return x86_64simd_api::negU64x4(value);
+}
+
+fn shlPackedUnsignedInt64x4(value: U64x4, amount: u32) U64x4 @public @simd {
+    return x86_64simd_api::shlU64x4(value, amount);
+}
+
+fn shrPackedUnsignedInt64x4(value: U64x4, amount: u32) U64x4 @public @simd {
+    return x86_64simd_api::shrU64x4(value, amount);
+}
+
+fn addPackedSignedInt8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::addS8x64(left, right);
+}
+
+fn subPackedSignedInt8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::subS8x64(left, right);
+}
+
+fn mulPackedSignedInt8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::mulS8x64(left, right);
+}
+
+fn divPackedSignedInt8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::divS8x64(left, right);
+}
+
+fn andPackedSignedInt8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::andS8x64(left, right);
+}
+
+fn orPackedSignedInt8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::orS8x64(left, right);
+}
+
+fn xorPackedSignedInt8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::xorS8x64(left, right);
+}
+
+fn minPackedSignedInt8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::minS8x64(left, right);
+}
+
+fn maxPackedSignedInt8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::maxS8x64(left, right);
+}
+
+fn notPackedSignedInt8x64(value: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::notS8x64(value);
+}
+
+fn negPackedSignedInt8x64(value: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::negS8x64(value);
+}
+
+fn shlPackedSignedInt8x64(value: S8x64, amount: u32) S8x64 @public @simd {
+    return x86_64simd_api::shlS8x64(value, amount);
+}
+
+fn shrPackedSignedInt8x64(value: S8x64, amount: u32) S8x64 @public @simd {
+    return x86_64simd_api::shrS8x64(value, amount);
+}
+
+fn absPackedSignedInt8x64(value: S8x64) S8x64 @public @simd {
+    return x86_64simd_api::absS8x64(value);
+}
+
+fn addPackedUnsignedInt8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::addU8x64(left, right);
+}
+
+fn subPackedUnsignedInt8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::subU8x64(left, right);
+}
+
+fn mulPackedUnsignedInt8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::mulU8x64(left, right);
+}
+
+fn divPackedUnsignedInt8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::divU8x64(left, right);
+}
+
+fn andPackedUnsignedInt8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::andU8x64(left, right);
+}
+
+fn orPackedUnsignedInt8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::orU8x64(left, right);
+}
+
+fn xorPackedUnsignedInt8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::xorU8x64(left, right);
+}
+
+fn minPackedUnsignedInt8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::minU8x64(left, right);
+}
+
+fn maxPackedUnsignedInt8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::maxU8x64(left, right);
+}
+
+fn notPackedUnsignedInt8x64(value: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::notU8x64(value);
+}
+
+fn negPackedUnsignedInt8x64(value: U8x64) U8x64 @public @simd {
+    return x86_64simd_api::negU8x64(value);
+}
+
+fn shlPackedUnsignedInt8x64(value: U8x64, amount: u32) U8x64 @public @simd {
+    return x86_64simd_api::shlU8x64(value, amount);
+}
+
+fn shrPackedUnsignedInt8x64(value: U8x64, amount: u32) U8x64 @public @simd {
+    return x86_64simd_api::shrU8x64(value, amount);
+}
+
+fn addPackedSignedInt16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::addS16x32(left, right);
+}
+
+fn subPackedSignedInt16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::subS16x32(left, right);
+}
+
+fn mulPackedSignedInt16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::mulS16x32(left, right);
+}
+
+fn divPackedSignedInt16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::divS16x32(left, right);
+}
+
+fn andPackedSignedInt16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::andS16x32(left, right);
+}
+
+fn orPackedSignedInt16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::orS16x32(left, right);
+}
+
+fn xorPackedSignedInt16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::xorS16x32(left, right);
+}
+
+fn minPackedSignedInt16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::minS16x32(left, right);
+}
+
+fn maxPackedSignedInt16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::maxS16x32(left, right);
+}
+
+fn notPackedSignedInt16x32(value: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::notS16x32(value);
+}
+
+fn negPackedSignedInt16x32(value: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::negS16x32(value);
+}
+
+fn shlPackedSignedInt16x32(value: S16x32, amount: u32) S16x32 @public @simd {
+    return x86_64simd_api::shlS16x32(value, amount);
+}
+
+fn shrPackedSignedInt16x32(value: S16x32, amount: u32) S16x32 @public @simd {
+    return x86_64simd_api::shrS16x32(value, amount);
+}
+
+fn absPackedSignedInt16x32(value: S16x32) S16x32 @public @simd {
+    return x86_64simd_api::absS16x32(value);
+}
+
+fn addPackedUnsignedInt16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::addU16x32(left, right);
+}
+
+fn subPackedUnsignedInt16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::subU16x32(left, right);
+}
+
+fn mulPackedUnsignedInt16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::mulU16x32(left, right);
+}
+
+fn divPackedUnsignedInt16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::divU16x32(left, right);
+}
+
+fn andPackedUnsignedInt16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::andU16x32(left, right);
+}
+
+fn orPackedUnsignedInt16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::orU16x32(left, right);
+}
+
+fn xorPackedUnsignedInt16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::xorU16x32(left, right);
+}
+
+fn minPackedUnsignedInt16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::minU16x32(left, right);
+}
+
+fn maxPackedUnsignedInt16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::maxU16x32(left, right);
+}
+
+fn notPackedUnsignedInt16x32(value: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::notU16x32(value);
+}
+
+fn negPackedUnsignedInt16x32(value: U16x32) U16x32 @public @simd {
+    return x86_64simd_api::negU16x32(value);
+}
+
+fn shlPackedUnsignedInt16x32(value: U16x32, amount: u32) U16x32 @public @simd {
+    return x86_64simd_api::shlU16x32(value, amount);
+}
+
+fn shrPackedUnsignedInt16x32(value: U16x32, amount: u32) U16x32 @public @simd {
+    return x86_64simd_api::shrU16x32(value, amount);
+}
+
+fn addPackedSignedInt32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::addS32x16(left, right);
+}
+
+fn subPackedSignedInt32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::subS32x16(left, right);
+}
+
+fn mulPackedSignedInt32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::mulS32x16(left, right);
+}
+
+fn divPackedSignedInt32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::divS32x16(left, right);
+}
+
+fn andPackedSignedInt32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::andS32x16(left, right);
+}
+
+fn orPackedSignedInt32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::orS32x16(left, right);
+}
+
+fn xorPackedSignedInt32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::xorS32x16(left, right);
+}
+
+fn minPackedSignedInt32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::minS32x16(left, right);
+}
+
+fn maxPackedSignedInt32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::maxS32x16(left, right);
+}
+
+fn notPackedSignedInt32x16(value: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::notS32x16(value);
+}
+
+fn negPackedSignedInt32x16(value: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::negS32x16(value);
+}
+
+fn shlPackedSignedInt32x16(value: S32x16, amount: u32) S32x16 @public @simd {
+    return x86_64simd_api::shlS32x16(value, amount);
+}
+
+fn shrPackedSignedInt32x16(value: S32x16, amount: u32) S32x16 @public @simd {
+    return x86_64simd_api::shrS32x16(value, amount);
+}
+
+fn absPackedSignedInt32x16(value: S32x16) S32x16 @public @simd {
+    return x86_64simd_api::absS32x16(value);
+}
+
+fn addPackedUnsignedInt32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::addU32x16(left, right);
+}
+
+fn subPackedUnsignedInt32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::subU32x16(left, right);
+}
+
+fn mulPackedUnsignedInt32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::mulU32x16(left, right);
+}
+
+fn divPackedUnsignedInt32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::divU32x16(left, right);
+}
+
+fn andPackedUnsignedInt32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::andU32x16(left, right);
+}
+
+fn orPackedUnsignedInt32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::orU32x16(left, right);
+}
+
+fn xorPackedUnsignedInt32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::xorU32x16(left, right);
+}
+
+fn minPackedUnsignedInt32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::minU32x16(left, right);
+}
+
+fn maxPackedUnsignedInt32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::maxU32x16(left, right);
+}
+
+fn notPackedUnsignedInt32x16(value: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::notU32x16(value);
+}
+
+fn negPackedUnsignedInt32x16(value: U32x16) U32x16 @public @simd {
+    return x86_64simd_api::negU32x16(value);
+}
+
+fn shlPackedUnsignedInt32x16(value: U32x16, amount: u32) U32x16 @public @simd {
+    return x86_64simd_api::shlU32x16(value, amount);
+}
+
+fn shrPackedUnsignedInt32x16(value: U32x16, amount: u32) U32x16 @public @simd {
+    return x86_64simd_api::shrU32x16(value, amount);
+}
+
+fn addPackedSignedInt64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::addS64x8(left, right);
+}
+
+fn subPackedSignedInt64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::subS64x8(left, right);
+}
+
+fn mulPackedSignedInt64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::mulS64x8(left, right);
+}
+
+fn divPackedSignedInt64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::divS64x8(left, right);
+}
+
+fn andPackedSignedInt64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::andS64x8(left, right);
+}
+
+fn orPackedSignedInt64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::orS64x8(left, right);
+}
+
+fn xorPackedSignedInt64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::xorS64x8(left, right);
+}
+
+fn minPackedSignedInt64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::minS64x8(left, right);
+}
+
+fn maxPackedSignedInt64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::maxS64x8(left, right);
+}
+
+fn notPackedSignedInt64x8(value: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::notS64x8(value);
+}
+
+fn negPackedSignedInt64x8(value: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::negS64x8(value);
+}
+
+fn shlPackedSignedInt64x8(value: S64x8, amount: u32) S64x8 @public @simd {
+    return x86_64simd_api::shlS64x8(value, amount);
+}
+
+fn shrPackedSignedInt64x8(value: S64x8, amount: u32) S64x8 @public @simd {
+    return x86_64simd_api::shrS64x8(value, amount);
+}
+
+fn absPackedSignedInt64x8(value: S64x8) S64x8 @public @simd {
+    return x86_64simd_api::absS64x8(value);
+}
+
+fn addPackedUnsignedInt64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::addU64x8(left, right);
+}
+
+fn subPackedUnsignedInt64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::subU64x8(left, right);
+}
+
+fn mulPackedUnsignedInt64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::mulU64x8(left, right);
+}
+
+fn divPackedUnsignedInt64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::divU64x8(left, right);
+}
+
+fn andPackedUnsignedInt64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::andU64x8(left, right);
+}
+
+fn orPackedUnsignedInt64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::orU64x8(left, right);
+}
+
+fn xorPackedUnsignedInt64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::xorU64x8(left, right);
+}
+
+fn minPackedUnsignedInt64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::minU64x8(left, right);
+}
+
+fn maxPackedUnsignedInt64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::maxU64x8(left, right);
+}
+
+fn notPackedUnsignedInt64x8(value: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::notU64x8(value);
+}
+
+fn negPackedUnsignedInt64x8(value: U64x8) U64x8 @public @simd {
+    return x86_64simd_api::negU64x8(value);
+}
+
+fn shlPackedUnsignedInt64x8(value: U64x8, amount: u32) U64x8 @public @simd {
+    return x86_64simd_api::shlU64x8(value, amount);
+}
+
+fn shrPackedUnsignedInt64x8(value: U64x8, amount: u32) U64x8 @public @simd {
+    return x86_64simd_api::shrU64x8(value, amount);
+}
+

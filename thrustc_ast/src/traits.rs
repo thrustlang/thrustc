@@ -23,8 +23,8 @@ use thrustc_errors::CompilationIssue;
 use thrustc_token_type::TokenType;
 use thrustc_typesystem::{Type, type_metadata::StructTypeMetadata};
 
-use crate::ast_logic_data::{EnumDataField, PropertyDataField, StructureDataFields};
 use crate::Ast;
+use crate::ast_logic_data::{EnumDataField, PropertyDataField, StructureDataFields};
 
 pub trait AstGetType {
     fn get_any_type(&self) -> &Type;
@@ -99,7 +99,9 @@ pub trait AstLiteralExtensions {
 
 pub trait AstCodeBlockEntensions {
     fn is_empty_code_block(&self) -> bool;
+
     fn has_terminator(&self) -> bool;
+    fn has_loop_escape(&self, depth: usize) -> bool;
 }
 
 pub trait AstMemoryExtensions {

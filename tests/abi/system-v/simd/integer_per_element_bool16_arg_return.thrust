@@ -1,0 +1,17 @@
+// test-requires: x86_64
+// Clang cannot represent vectors of bool, so this case has no .c.clang reference.
+
+fn identity(value: NativeVector[bool; 16]) NativeVector[bool; 16] @public {
+    return value;
+}
+
+fn main() s32 @public {
+    var input: NativeVector[bool; 16] = native[true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false];
+    var result: NativeVector[bool; 16] = identity(input);
+
+    if result[0] != true { return 1; }
+    if result[1] != false { return 2; }
+    if result[15] != false { return 3; }
+
+    return 0;
+}

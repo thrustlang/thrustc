@@ -1,0 +1,95 @@
+/*
+ * Pointer-valued locals must be loaded when cast to another pointer, integer,
+ * or CString. Array and fixed-array casts keep their address semantics.
+ */
+
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0024";
+directive "--disable-warnings=W0030";
+
+fn pointerIdentity() s32 {
+    var value: s32 = 42;
+    var p: ptr[s32] = ref value;
+    var casted: ptr = p as ptr;
+
+    if casted != ((ref value) as ptr) { return 1; }
+
+    return 0;
+}
+
+fn pointerToInteger() s32 {
+    var value: s32 = 7;
+    var p: ptr[s32] = ref value;
+    var rawAddress: usize = p as usize;
+    var expected: usize = (ref value) as usize;
+
+    if rawAddress != expected { return 1; }
+
+    return 0;
+}
+
+fn returnLocalPointer(value: ptr) ptr {
+    var local: ptr = value;
+
+    return local as ptr;
+}
+
+fn pointerReturn() s32 {
+    var value: s32 = 11;
+    var p: ptr = ref value;
+
+    if returnLocalPointer(p) != p { return 1; }
+
+    return 0;
+}
+
+fn cstringToPtr(value: CString) ptr[char] {
+    return value as ptr[char];
+}
+
+fn localPointerToCString(value: ptr[char]) CString {
+    var local: ptr[char] = value;
+
+    return local as CString;
+}
+
+fn pointerToCString() s32 {
+    var text: CString = "hello";
+    var expected: ptr[char] = cstringToPtr(text);
+    var stored: CString = localPointerToCString(expected);
+    var readBack: ptr[char] = cstringToPtr(stored);
+
+    if readBack != expected { return 1; }
+
+    return 0;
+}
+
+fn cstringArgument() s32 {
+    var text: CString = "hello";
+
+    if cstringToPtr(text)->[0] != 'h' { return 1; }
+
+    return 0;
+}
+
+fn fixedArrayDecay() s32 {
+    var bytes: array[u8; 4] = fixed[65, 66, 67, 0];
+    var p: ptr[u8] = bytes as ptr[u8];
+
+    if p->[0] != 65 { return 1; }
+
+    return 0;
+}
+
+fn main() s32 @public {
+    if pointerIdentity() != 0 { return 1; }
+    if pointerToInteger() != 0 { return 2; }
+    if pointerReturn() != 0 { return 3; }
+    if pointerToCString() != 0 { return 4; }
+    if cstringArgument() != 0 { return 5; }
+    if fixedArrayDecay() != 0 { return 6; }
+
+    return 0;
+}

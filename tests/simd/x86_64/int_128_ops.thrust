@@ -1,0 +1,200 @@
+// test-requires: x86_64
+// test-cpu-features: +sse2
+
+import std::simd::x86_64 as simd;
+
+fn main() s32 @public {
+    var as8x16: simd::S8x16 = native[8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    var bs8x16: simd::S8x16 = native[2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    var adds8x16: simd::S8x16 = simd::addPackedSignedInt8x16(as8x16, bs8x16);
+    var subs8x16: simd::S8x16 = simd::subPackedSignedInt8x16(as8x16, bs8x16);
+    var muls8x16: simd::S8x16 = simd::mulPackedSignedInt8x16(as8x16, bs8x16);
+    var divs8x16: simd::S8x16 = simd::divPackedSignedInt8x16(as8x16, bs8x16);
+    var ands8x16: simd::S8x16 = simd::andPackedSignedInt8x16(as8x16, bs8x16);
+    var ors8x16: simd::S8x16 = simd::orPackedSignedInt8x16(as8x16, bs8x16);
+    var xors8x16: simd::S8x16 = simd::xorPackedSignedInt8x16(as8x16, bs8x16);
+    var mins8x16: simd::S8x16 = simd::minPackedSignedInt8x16(as8x16, bs8x16);
+    var maxs8x16: simd::S8x16 = simd::maxPackedSignedInt8x16(as8x16, bs8x16);
+
+    if adds8x16[0] != 10 { return 1; }
+    if subs8x16[0] != 6 { return 2; }
+    if muls8x16[0] != 16 { return 3; }
+    if divs8x16[0] != 4 { return 4; }
+    if ands8x16[0] != 0 { return 5; }
+    if ors8x16[0] != 10 { return 6; }
+    if xors8x16[0] != 10 { return 7; }
+    if mins8x16[0] != 2 { return 8; }
+    if maxs8x16[0] != 8 { return 9; }
+
+    var negs8x16: simd::S8x16 = simd::negPackedSignedInt8x16(as8x16);
+    var abss8x16: simd::S8x16 = simd::absPackedSignedInt8x16(negs8x16);
+    if abss8x16[0] != 8 { return 10; }
+
+    var au8x16: simd::U8x16 = native[8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    var bu8x16: simd::U8x16 = native[2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    var addu8x16: simd::U8x16 = simd::addPackedUnsignedInt8x16(au8x16, bu8x16);
+    var subu8x16: simd::U8x16 = simd::subPackedUnsignedInt8x16(au8x16, bu8x16);
+    var mulu8x16: simd::U8x16 = simd::mulPackedUnsignedInt8x16(au8x16, bu8x16);
+    var divu8x16: simd::U8x16 = simd::divPackedUnsignedInt8x16(au8x16, bu8x16);
+    var andu8x16: simd::U8x16 = simd::andPackedUnsignedInt8x16(au8x16, bu8x16);
+    var oru8x16: simd::U8x16 = simd::orPackedUnsignedInt8x16(au8x16, bu8x16);
+    var xoru8x16: simd::U8x16 = simd::xorPackedUnsignedInt8x16(au8x16, bu8x16);
+    var minu8x16: simd::U8x16 = simd::minPackedUnsignedInt8x16(au8x16, bu8x16);
+    var maxu8x16: simd::U8x16 = simd::maxPackedUnsignedInt8x16(au8x16, bu8x16);
+
+    if addu8x16[0] != 10 { return 11; }
+    if subu8x16[0] != 6 { return 12; }
+    if mulu8x16[0] != 16 { return 13; }
+    if divu8x16[0] != 4 { return 14; }
+    if andu8x16[0] != 0 { return 15; }
+    if oru8x16[0] != 10 { return 16; }
+    if xoru8x16[0] != 10 { return 17; }
+    if minu8x16[0] != 2 { return 18; }
+    if maxu8x16[0] != 8 { return 19; }
+
+    var as16x8: simd::S16x8 = native[8, 1, 1, 1, 1, 1, 1, 1];
+    var bs16x8: simd::S16x8 = native[2, 1, 1, 1, 1, 1, 1, 1];
+    var adds16x8: simd::S16x8 = simd::addPackedSignedInt16x8(as16x8, bs16x8);
+    var subs16x8: simd::S16x8 = simd::subPackedSignedInt16x8(as16x8, bs16x8);
+    var muls16x8: simd::S16x8 = simd::mulPackedSignedInt16x8(as16x8, bs16x8);
+    var divs16x8: simd::S16x8 = simd::divPackedSignedInt16x8(as16x8, bs16x8);
+    var ands16x8: simd::S16x8 = simd::andPackedSignedInt16x8(as16x8, bs16x8);
+    var ors16x8: simd::S16x8 = simd::orPackedSignedInt16x8(as16x8, bs16x8);
+    var xors16x8: simd::S16x8 = simd::xorPackedSignedInt16x8(as16x8, bs16x8);
+    var mins16x8: simd::S16x8 = simd::minPackedSignedInt16x8(as16x8, bs16x8);
+    var maxs16x8: simd::S16x8 = simd::maxPackedSignedInt16x8(as16x8, bs16x8);
+
+    if adds16x8[0] != 10 { return 20; }
+    if subs16x8[0] != 6 { return 21; }
+    if muls16x8[0] != 16 { return 22; }
+    if divs16x8[0] != 4 { return 23; }
+    if ands16x8[0] != 0 { return 24; }
+    if ors16x8[0] != 10 { return 25; }
+    if xors16x8[0] != 10 { return 26; }
+    if mins16x8[0] != 2 { return 27; }
+    if maxs16x8[0] != 8 { return 28; }
+
+    var negs16x8: simd::S16x8 = simd::negPackedSignedInt16x8(as16x8);
+    var abss16x8: simd::S16x8 = simd::absPackedSignedInt16x8(negs16x8);
+    if abss16x8[0] != 8 { return 29; }
+
+    var au16x8: simd::U16x8 = native[8, 1, 1, 1, 1, 1, 1, 1];
+    var bu16x8: simd::U16x8 = native[2, 1, 1, 1, 1, 1, 1, 1];
+    var addu16x8: simd::U16x8 = simd::addPackedUnsignedInt16x8(au16x8, bu16x8);
+    var subu16x8: simd::U16x8 = simd::subPackedUnsignedInt16x8(au16x8, bu16x8);
+    var mulu16x8: simd::U16x8 = simd::mulPackedUnsignedInt16x8(au16x8, bu16x8);
+    var divu16x8: simd::U16x8 = simd::divPackedUnsignedInt16x8(au16x8, bu16x8);
+    var andu16x8: simd::U16x8 = simd::andPackedUnsignedInt16x8(au16x8, bu16x8);
+    var oru16x8: simd::U16x8 = simd::orPackedUnsignedInt16x8(au16x8, bu16x8);
+    var xoru16x8: simd::U16x8 = simd::xorPackedUnsignedInt16x8(au16x8, bu16x8);
+    var minu16x8: simd::U16x8 = simd::minPackedUnsignedInt16x8(au16x8, bu16x8);
+    var maxu16x8: simd::U16x8 = simd::maxPackedUnsignedInt16x8(au16x8, bu16x8);
+
+    if addu16x8[0] != 10 { return 30; }
+    if subu16x8[0] != 6 { return 31; }
+    if mulu16x8[0] != 16 { return 32; }
+    if divu16x8[0] != 4 { return 33; }
+    if andu16x8[0] != 0 { return 34; }
+    if oru16x8[0] != 10 { return 35; }
+    if xoru16x8[0] != 10 { return 36; }
+    if minu16x8[0] != 2 { return 37; }
+    if maxu16x8[0] != 8 { return 38; }
+
+    var as32x4: simd::S32x4 = native[8, 1, 1, 1];
+    var bs32x4: simd::S32x4 = native[2, 1, 1, 1];
+    var adds32x4: simd::S32x4 = simd::addPackedSignedInt32x4(as32x4, bs32x4);
+    var subs32x4: simd::S32x4 = simd::subPackedSignedInt32x4(as32x4, bs32x4);
+    var muls32x4: simd::S32x4 = simd::mulPackedSignedInt32x4(as32x4, bs32x4);
+    var divs32x4: simd::S32x4 = simd::divPackedSignedInt32x4(as32x4, bs32x4);
+    var ands32x4: simd::S32x4 = simd::andPackedSignedInt32x4(as32x4, bs32x4);
+    var ors32x4: simd::S32x4 = simd::orPackedSignedInt32x4(as32x4, bs32x4);
+    var xors32x4: simd::S32x4 = simd::xorPackedSignedInt32x4(as32x4, bs32x4);
+    var mins32x4: simd::S32x4 = simd::minPackedSignedInt32x4(as32x4, bs32x4);
+    var maxs32x4: simd::S32x4 = simd::maxPackedSignedInt32x4(as32x4, bs32x4);
+
+    if adds32x4[0] != 10 { return 39; }
+    if subs32x4[0] != 6 { return 40; }
+    if muls32x4[0] != 16 { return 41; }
+    if divs32x4[0] != 4 { return 42; }
+    if ands32x4[0] != 0 { return 43; }
+    if ors32x4[0] != 10 { return 44; }
+    if xors32x4[0] != 10 { return 45; }
+    if mins32x4[0] != 2 { return 46; }
+    if maxs32x4[0] != 8 { return 47; }
+
+    var negs32x4: simd::S32x4 = simd::negPackedSignedInt32x4(as32x4);
+    var abss32x4: simd::S32x4 = simd::absPackedSignedInt32x4(negs32x4);
+    if abss32x4[0] != 8 { return 48; }
+
+    var au32x4: simd::U32x4 = native[8, 1, 1, 1];
+    var bu32x4: simd::U32x4 = native[2, 1, 1, 1];
+    var addu32x4: simd::U32x4 = simd::addPackedUnsignedInt32x4(au32x4, bu32x4);
+    var subu32x4: simd::U32x4 = simd::subPackedUnsignedInt32x4(au32x4, bu32x4);
+    var mulu32x4: simd::U32x4 = simd::mulPackedUnsignedInt32x4(au32x4, bu32x4);
+    var divu32x4: simd::U32x4 = simd::divPackedUnsignedInt32x4(au32x4, bu32x4);
+    var andu32x4: simd::U32x4 = simd::andPackedUnsignedInt32x4(au32x4, bu32x4);
+    var oru32x4: simd::U32x4 = simd::orPackedUnsignedInt32x4(au32x4, bu32x4);
+    var xoru32x4: simd::U32x4 = simd::xorPackedUnsignedInt32x4(au32x4, bu32x4);
+    var minu32x4: simd::U32x4 = simd::minPackedUnsignedInt32x4(au32x4, bu32x4);
+    var maxu32x4: simd::U32x4 = simd::maxPackedUnsignedInt32x4(au32x4, bu32x4);
+
+    if addu32x4[0] != 10 { return 49; }
+    if subu32x4[0] != 6 { return 50; }
+    if mulu32x4[0] != 16 { return 51; }
+    if divu32x4[0] != 4 { return 52; }
+    if andu32x4[0] != 0 { return 53; }
+    if oru32x4[0] != 10 { return 54; }
+    if xoru32x4[0] != 10 { return 55; }
+    if minu32x4[0] != 2 { return 56; }
+    if maxu32x4[0] != 8 { return 57; }
+
+    var as64x2: simd::S64x2 = native[8, 1];
+    var bs64x2: simd::S64x2 = native[2, 1];
+    var adds64x2: simd::S64x2 = simd::addPackedSignedInt64x2(as64x2, bs64x2);
+    var subs64x2: simd::S64x2 = simd::subPackedSignedInt64x2(as64x2, bs64x2);
+    var muls64x2: simd::S64x2 = simd::mulPackedSignedInt64x2(as64x2, bs64x2);
+    var divs64x2: simd::S64x2 = simd::divPackedSignedInt64x2(as64x2, bs64x2);
+    var ands64x2: simd::S64x2 = simd::andPackedSignedInt64x2(as64x2, bs64x2);
+    var ors64x2: simd::S64x2 = simd::orPackedSignedInt64x2(as64x2, bs64x2);
+    var xors64x2: simd::S64x2 = simd::xorPackedSignedInt64x2(as64x2, bs64x2);
+    var mins64x2: simd::S64x2 = simd::minPackedSignedInt64x2(as64x2, bs64x2);
+    var maxs64x2: simd::S64x2 = simd::maxPackedSignedInt64x2(as64x2, bs64x2);
+
+    if adds64x2[0] != 10 { return 58; }
+    if subs64x2[0] != 6 { return 59; }
+    if muls64x2[0] != 16 { return 60; }
+    if divs64x2[0] != 4 { return 61; }
+    if ands64x2[0] != 0 { return 62; }
+    if ors64x2[0] != 10 { return 63; }
+    if xors64x2[0] != 10 { return 64; }
+    if mins64x2[0] != 2 { return 65; }
+    if maxs64x2[0] != 8 { return 66; }
+
+    var negs64x2: simd::S64x2 = simd::negPackedSignedInt64x2(as64x2);
+    var abss64x2: simd::S64x2 = simd::absPackedSignedInt64x2(negs64x2);
+    if abss64x2[0] != 8 { return 67; }
+
+    var au64x2: simd::U64x2 = native[8, 1];
+    var bu64x2: simd::U64x2 = native[2, 1];
+    var addu64x2: simd::U64x2 = simd::addPackedUnsignedInt64x2(au64x2, bu64x2);
+    var subu64x2: simd::U64x2 = simd::subPackedUnsignedInt64x2(au64x2, bu64x2);
+    var mulu64x2: simd::U64x2 = simd::mulPackedUnsignedInt64x2(au64x2, bu64x2);
+    var divu64x2: simd::U64x2 = simd::divPackedUnsignedInt64x2(au64x2, bu64x2);
+    var andu64x2: simd::U64x2 = simd::andPackedUnsignedInt64x2(au64x2, bu64x2);
+    var oru64x2: simd::U64x2 = simd::orPackedUnsignedInt64x2(au64x2, bu64x2);
+    var xoru64x2: simd::U64x2 = simd::xorPackedUnsignedInt64x2(au64x2, bu64x2);
+    var minu64x2: simd::U64x2 = simd::minPackedUnsignedInt64x2(au64x2, bu64x2);
+    var maxu64x2: simd::U64x2 = simd::maxPackedUnsignedInt64x2(au64x2, bu64x2);
+
+    if addu64x2[0] != 10 { return 68; }
+    if subu64x2[0] != 6 { return 69; }
+    if mulu64x2[0] != 16 { return 70; }
+    if divu64x2[0] != 4 { return 71; }
+    if andu64x2[0] != 0 { return 72; }
+    if oru64x2[0] != 10 { return 73; }
+    if xoru64x2[0] != 10 { return 74; }
+    if minu64x2[0] != 2 { return 75; }
+    if maxu64x2[0] != 8 { return 76; }
+
+    return 0;
+}

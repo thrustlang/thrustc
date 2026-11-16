@@ -64,6 +64,7 @@ pub enum ThrustAttribute {
     Align(u64, Span),
     Pure(Span),
     Thunk(Span),
+    Simd(Span),
 
     // LLVM Structure Modificator
     Packed(Span),
@@ -114,6 +115,7 @@ pub enum ThrustAttributeComparator {
     Align,
     Pure,
     Thunk,
+    Simd,
     Promote,
 
     Packed,
@@ -158,6 +160,11 @@ impl ThrustAttribute {
     #[inline]
     pub fn is_public_attribute(&self) -> bool {
         matches!(self, ThrustAttribute::Public(..))
+    }
+
+    #[inline]
+    pub fn is_simd_attribute(&self) -> bool {
+        matches!(self, ThrustAttribute::Simd(..))
     }
 
     #[inline]
@@ -296,6 +303,7 @@ impl ThrustAttribute {
             ThrustAttribute::Align(_, span) => *span,
             ThrustAttribute::Pure(span) => *span,
             ThrustAttribute::Thunk(span) => *span,
+            ThrustAttribute::Simd(span) => *span,
             ThrustAttribute::Constructor(span) => *span,
             ThrustAttribute::Destructor(span) => *span,
             ThrustAttribute::Cuda(span) => *span,
@@ -328,6 +336,7 @@ pub fn as_attribute(token_type: TokenType, span: Span) -> Option<ThrustAttribute
         TokenType::OptFuzzing => Some(ThrustAttribute::OptFuzzing(span)),
         TokenType::Pure => Some(ThrustAttribute::Pure(span)),
         TokenType::Thunk => Some(ThrustAttribute::Thunk(span)),
+        TokenType::Simd => Some(ThrustAttribute::Simd(span)),
         TokenType::EntryPoint => Some(ThrustAttribute::EntryPoint(span)),
         TokenType::Constructor => Some(ThrustAttribute::Constructor(span)),
         TokenType::Destructor => Some(ThrustAttribute::Destructor(span)),
@@ -459,6 +468,11 @@ impl ThrustAttributesExtensions for ThrustAttributes {
     }
 
     #[inline]
+    fn has_simd_attribute(&self) -> bool {
+        self.iter().any(|attr| attr.is_simd_attribute())
+    }
+
+    #[inline]
     fn match_attr(&self, cmp: ThrustAttributeComparator) -> Option<Span> {
         if let Some(attr_found) = self.iter().find(|attr| attr.as_attr_cmp() == cmp) {
             return Some(attr_found.get_code_location());
@@ -512,6 +526,7 @@ impl ThrustAttributeComparatorExtensions for ThrustAttribute {
             ThrustAttribute::Align(..) => ThrustAttributeComparator::Align,
             ThrustAttribute::Pure(..) => ThrustAttributeComparator::Pure,
             ThrustAttribute::Thunk(..) => ThrustAttributeComparator::Thunk,
+            ThrustAttribute::Simd(..) => ThrustAttributeComparator::Simd,
             ThrustAttribute::Constructor(..) => ThrustAttributeComparator::Constructor,
             ThrustAttribute::Destructor(..) => ThrustAttributeComparator::Destructor,
             ThrustAttribute::Promote(..) => ThrustAttributeComparator::Promote,

@@ -155,7 +155,9 @@ impl CommandLine {
             self.analyze(argument);
         }
 
-        self.validate_extra();
+        self.prepare();
+
+        self.validate();
 
         self.handle_emit_c_bindings_thrust();
         self.handle_translate_c_to_thrust();
@@ -187,7 +189,14 @@ impl CommandLine {
 
 impl CommandLine {
     #[inline]
-    fn validate_extra(&mut self) {
+    fn prepare(&mut self) {
+        self.get_mut_options()
+            .get_mut_llvm_backend()
+            .sync_normalized_target_triple_with_cpu_target();
+    }
+
+    #[inline]
+    fn validate(&mut self) {
         if !self.get_options().get_llvm_backend().is_execution_in_jit() {
             self.get_mut_options()
                 .get_mut_linking_compilers_configuration()
@@ -1424,6 +1433,11 @@ impl CommandLine {
             "--print-host-target-triple" => {
                 self.advance();
                 llvm::info::print_host_target_triple();
+            }
+
+            "--print-host-cpu-features" => {
+                self.advance();
+                llvm::info::print_host_cpu_features();
             }
 
             "--print-supported-cpus" => {

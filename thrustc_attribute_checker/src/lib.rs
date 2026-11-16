@@ -19,14 +19,15 @@
 
 use thrustc_ast::Ast;
 use thrustc_attributes::{
-    traits::{ThrustAttributeComparatorExtensions, ThrustAttributesExtensions},
     ThrustAttribute, ThrustAttributeComparator, ThrustAttributes,
+    traits::{ThrustAttributeComparatorExtensions, ThrustAttributesExtensions},
 };
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::FileOptions;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
+use thrustc_typesystem::Type;
 use thrustc_typesystem::traits::TypeIsExtensions;
 
 use crate::applicant::AttributeCheckerAttributeApplicant;
@@ -116,6 +117,56 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                 span,
                 ..
             } => {
+                if attributes.has_ignore_attribute()
+                    && self
+                        .options
+                        .get_llvm_backend()
+                        .get_target()
+                        .get_normalized_target_triple()
+                        .is_x86_64_arch()
+                {
+                    let mut pending_types: Vec<&Type> =
+                        Vec::with_capacity(parameter_types.len().saturating_add(1));
+
+                    pending_types.extend(parameter_types.iter());
+                    pending_types.push(return_type);
+
+                    let mut has_simd_value: bool = false;
+
+                    while let Some(ty) = pending_types.pop() {
+                        match ty {
+                            Type::NativeVector { .. } => {
+                                has_simd_value = true;
+                                break;
+                            }
+
+                            Type::Struct { fields, .. } => {
+                                pending_types.extend(fields.iter());
+                            }
+
+                            Type::Const(subtype, ..) => {
+                                pending_types.push(subtype.as_ref());
+                            }
+
+                            Type::FixedArray { base_type, .. } => {
+                                pending_types.push(base_type.as_ref());
+                            }
+
+                            Type::Array { base_type, .. } => {
+                                pending_types.push(base_type.as_ref());
+                            }
+
+                            _ => {}
+                        }
+                    }
+
+                    if has_simd_value {
+                        self.add_error(
+                            thrustc_errors::simd::unsupported_variadic_simd_issue(*span),
+                        );
+                    }
+                }
+
                 if body.is_some() && attributes.has_extern_attribute() {
                     if let Some(span) = attributes.match_attr(ThrustAttributeComparator::Extern) {
                         self.add_error(CompilationIssue::Error(
@@ -680,6 +731,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             ThrustAttributeComparator::Cuda,
             ThrustAttributeComparator::Promote,
             ThrustAttributeComparator::Deallocator,
+            ThrustAttributeComparator::Simd,
         ];
 
         const VALID_INTRINSIC_ATTRIBUTES: &[ThrustAttributeComparator] = &[
@@ -700,6 +752,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             ThrustAttributeComparator::StrongStack,
             ThrustAttributeComparator::PreciseFloats,
             ThrustAttributeComparator::Linkage,
+            ThrustAttributeComparator::Simd,
         ];
 
         const VALID_ASSEMBLER_FUNCTION_ATTRIBUTES: &[ThrustAttributeComparator] = &[
@@ -856,7 +909,10 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
             && !attributes.has_public_attribute()
             && !matches!(
                 applicant,
-                AttributeCheckerAttributeApplicant::Function { has_body: false, .. }
+                AttributeCheckerAttributeApplicant::Function {
+                    has_body: false,
+                    ..
+                }
             )
         {
             if let Some(span) = attributes.match_attr(ThrustAttributeComparator::Extern) {
@@ -1070,10 +1126,7 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
 }
 
 impl<'attr_checker> AttributeChecker<'attr_checker> {
-    fn check_variadic_argument_count(
-        &mut self,
-        attributes: &ThrustAttributes,
-    ) {
+    fn check_variadic_argument_count(&mut self, attributes: &ThrustAttributes) {
         let is_variadic: bool = attributes.has_ignore_attribute();
 
         if !is_variadic {

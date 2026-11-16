@@ -1,0 +1,34 @@
+// test-expect-error: E0061
+// test-requires: x86_64
+// test-cpu-features: +sse2,+avx
+
+// Negative fixture: x86_64 System V cannot pass NativeVector by value through a variadic function.
+// Run thrustc manually with -mode unstable and explicit CPU features; this file intentionally has no main.
+
+struct V @public {
+    value: NativeVector[f32; 8]
+}
+
+struct A @public {
+    values: array[NativeVector[f32; 8]; 2]
+}
+
+struct W @public {
+    left: V,
+    right: V
+}
+
+fn forwardVector(values: NativeVector[f32; 8]) void @public @arbitraryArgs @noArgCount {
+}
+
+fn forwardStruct(value: V) void @public @arbitraryArgs @noArgCount {
+}
+
+fn forwardNested(value: W) void @public @arbitraryArgs @noArgCount {
+}
+
+fn forwardArray(values: array[NativeVector[f32; 8]; 2]) void @public @arbitraryArgs @noArgCount {
+}
+
+fn forwardStructArray(value: A) void @public @arbitraryArgs @noArgCount {
+}

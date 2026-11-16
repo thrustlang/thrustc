@@ -1182,6 +1182,18 @@ pub fn show_help() -> ! {
         &format!(
             "{} {} {}\n",
             "•".bold(),
+            "--print-host-cpu-features"
+                .custom_color((141, 141, 142))
+                .bold(),
+            "Show the host CPU features used by the compiler.",
+        ),
+    );
+
+    thrustc_logging::write(
+        thrustc_logging::OutputIn::Stderr,
+        &format!(
+            "{} {} {}\n",
+            "•".bold(),
             "--print-opt-passes".custom_color((141, 141, 142)).bold(),
             "Show all available optimization passes through '--opt-passes=p{passname, passname}'.",
         ),

@@ -22,11 +22,80 @@ use inkwell::targets::{TargetMachine, TargetTriple};
 mod impls;
 pub mod traits;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LLVMARMABI {
-    APCS,
-    AAPCS,
-    AAPCSVFP,
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct LLVMTargetCPU {
+    name: String,
+    features: String,
+}
+
+impl LLVMTargetCPU {
+    #[inline]
+    pub fn new(name: String, features: String) -> Self {
+        Self { name, features }
+    }
+}
+
+impl LLVMTargetCPU {
+    #[inline]
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    #[inline]
+    pub fn get_features(&self) -> &str {
+        &self.features
+    }
+}
+
+impl LLVMTargetCPU {
+    #[inline]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    #[inline]
+    pub fn set_features(&mut self, features: String) {
+        self.features = features;
+    }
+}
+
+impl LLVMTargetCPU {
+    #[inline]
+    pub fn has_feature(&self, feature: &str) -> bool {
+        self.features
+            .split(',')
+            .rev()
+            .map(str::trim)
+            .find_map(|entry| {
+                if entry.is_empty() {
+                    return None;
+                }
+
+                if let Some(name) = entry.strip_prefix('-') {
+                    return name.eq_ignore_ascii_case(feature).then_some(false);
+                }
+
+                let name: &str = entry.strip_prefix('+').unwrap_or(entry);
+
+                name.eq_ignore_ascii_case(feature).then_some(true)
+            })
+            .unwrap_or(false)
+    }
+
+    #[inline]
+    pub fn has_avx(&self) -> bool {
+        self.has_feature("avx")
+    }
+
+    #[inline]
+    pub fn has_avx2(&self) -> bool {
+        self.has_feature("avx2")
+    }
+
+    #[inline]
+    pub fn has_avx512f(&self) -> bool {
+        self.has_feature("avx512f")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -35,6 +104,7 @@ pub struct LLVMTargetTriple {
     vendor: String,
     os: String,
     abi: String,
+    cpu: LLVMTargetCPU,
 }
 
 impl LLVMTargetTriple {
@@ -65,7 +135,15 @@ impl LLVMTargetTriple {
             vendor,
             os,
             abi,
+            cpu: LLVMTargetCPU::default(),
         }
+    }
+
+    #[inline]
+    pub fn new_with_cpu(target_triple: String, cpu: LLVMTargetCPU) -> Self {
+        let mut triple: Self = Self::new(target_triple);
+        triple.set_cpu(cpu);
+        triple
     }
 
     pub fn generate_default_from_llvm() -> Self {
@@ -97,6 +175,7 @@ impl LLVMTargetTriple {
             vendor,
             os,
             abi,
+            cpu: LLVMTargetCPU::default(),
         }
     }
 }
@@ -108,6 +187,23 @@ impl LLVMTargetTriple {
 
         matches!(components.len(), 3..=5)
             && components.iter().all(|component| !component.is_empty())
+    }
+}
+
+impl LLVMTargetTriple {
+    #[inline]
+    pub fn set_cpu(&mut self, cpu: LLVMTargetCPU) {
+        self.cpu = cpu;
+    }
+}
+
+impl LLVMTargetTriple {
+    #[inline]
+    pub fn has_same_platform(&self, other: &Self) -> bool {
+        self.arch == other.arch
+            && self.vendor == other.vendor
+            && self.os == other.os
+            && self.abi == other.abi
     }
 }
 
@@ -130,6 +226,11 @@ impl LLVMTargetTriple {
     #[inline]
     pub fn get_vendor(&self) -> &str {
         &self.vendor
+    }
+
+    #[inline]
+    pub fn get_cpu(&self) -> &LLVMTargetCPU {
+        &self.cpu
     }
 }
 
@@ -834,5 +935,43 @@ impl LLVMTargetTriple {
 impl Default for LLVMTargetTriple {
     fn default() -> Self {
         Self::new("unknown-unknown-unknown-unknown".to_string())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LLVMARMABI {
+    APCS,
+    AAPCS,
+    AAPCSVFP,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LLVMTargetCPU;
+
+    #[test]
+    fn cpu_features_use_the_last_entry() {
+        let cpu: LLVMTargetCPU = LLVMTargetCPU::new("test".into(), "+avx,-avx,+avx2".into());
+
+        assert!(!cpu.has_avx());
+        assert!(cpu.has_avx2());
+    }
+
+    #[test]
+    fn cpu_features_do_not_resolve_implications() {
+        // it should be have +avx
+        let cpu: LLVMTargetCPU = LLVMTargetCPU::new("test".into(), "+avx512f".into());
+
+        assert!(cpu.has_avx512f());
+        assert!(!cpu.has_avx2());
+        assert!(!cpu.has_avx());
+    }
+
+    #[test]
+    fn cpu_features_accept_bare_names() {
+        // it is not case sensivit with '-' or '+' prefixes.
+        let cpu: LLVMTargetCPU = LLVMTargetCPU::new("test".into(), "avx".into());
+
+        assert!(cpu.has_avx());
     }
 }

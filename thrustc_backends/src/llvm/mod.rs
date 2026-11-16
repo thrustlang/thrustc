@@ -33,7 +33,7 @@ use crate::llvm::{
 use super::{ThrustCodeModel, ThrustOptimization, ThrustRelocMode};
 
 use inkwell::targets::{CodeModel, RelocMode, TargetMachine};
-use thrustc_llvm_target_triple::LLVMTargetTriple;
+use thrustc_llvm_target_triple::{LLVMTargetCPU as LLVMTargetCPUInfo, LLVMTargetTriple};
 
 #[derive(Debug)]
 pub struct LLVMBackend {
@@ -92,16 +92,16 @@ impl LLVMBackend {
                 .to_string(),
         );
 
-        Self {
-            target: LLVMTarget {
+        let mut backend: Self = Self {
+            target: LLVMTarget::new(
                 arch,
                 target_triple,
                 normalized_target_triple,
-                target_triple_darwin_variant: None,
-                macos_version: None,
-                ios_version: None,
-                cuda_version: None,
-            },
+                None,
+                None,
+                None,
+                None,
+            ),
             target_cpu: LLVMTargetCPU {
                 target_cpu: TargetMachine::get_host_cpu_name().to_string(),
                 target_cpu_features: TargetMachine::get_host_cpu_features().to_string(),
@@ -141,7 +141,66 @@ impl LLVMBackend {
 
             disable_all_sanitizers: false,
             disable_safe_math: false,
+        };
+
+        backend.sync_normalized_target_triple_with_cpu_target();
+
+        backend
+    }
+}
+
+impl LLVMBackend {
+    // it synchronize the normalized target triple LLVMTargetTriple within CPU target and features. (simd preparation)
+    pub fn sync_normalized_target_triple_with_cpu_target(&mut self) {
+        let (cpu, features): (&str, &str) = self.get_cross_target_cpu();
+
+        let cpu: String = cpu.to_string();
+        let features: String = features.to_string();
+
+        self.target
+            .get_mut_normalized_target_triple()
+            .set_cpu(LLVMTargetCPUInfo::new(cpu, features));
+    }
+}
+
+impl LLVMBackend {
+    pub fn get_normalized_target_triple_with_cpu(&self) -> LLVMTargetTriple {
+        let (cpu, features): (&str, &str) = self.get_cross_target_cpu();
+
+        let mut target_triple: LLVMTargetTriple =
+            self.target.get_normalized_target_triple().clone();
+
+        target_triple.set_cpu(LLVMTargetCPUInfo::new(
+            cpu.to_string(),
+            features.to_string(),
+        ));
+
+        target_triple
+    }
+
+    pub fn validate_cpu_features(&self) -> Result<(), String> {
+        let target_triple: &LLVMTargetTriple = self.target.get_normalized_target_triple();
+
+        if !target_triple.is_x86_arch() && !target_triple.is_x86_64_arch() {
+            return Ok(());
         }
+
+        let (_, features): (&str, &str) = self.get_cross_target_cpu();
+
+        if features.trim().is_empty() {
+            return Err(
+                "Pass '-cpu-features' with the full list, for example '+sse2,+avx,+avx2'.".into(),
+            );
+        }
+
+        if features.split(',').any(|feature| feature.trim().is_empty()) {
+            return Err(
+                "The CPU feature list contains an empty entry. Remove the empty entries from '-cpu-features'."
+                    .into(),
+            );
+        }
+
+        Ok(())
     }
 }
 
@@ -447,9 +506,7 @@ impl LLVMBackend {
         let host_target_triple: LLVMTargetTriple = LLVMTargetTriple::generate_default_from_llvm();
         let target_triple: &LLVMTargetTriple = self.target.get_normalized_target_triple();
 
-        let host_architecture: &str = host_target_triple.get_arch();
-        let target_architecture: &str = target_triple.get_arch();
-        let is_cross_compilation: bool = host_architecture != target_architecture;
+        let is_cross_compilation: bool = !host_target_triple.has_same_platform(target_triple);
 
         let cpu: &str = if is_cross_compilation && !self.target_cpu.target_cpu_configured {
             "generic"

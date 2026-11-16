@@ -1,0 +1,9 @@
+// test-requires: x86_64
+
+fn identity(value: NativeVector[f80; 2]) NativeVector[f80; 2] @public {
+    return value;
+}
+
+fn main() s32 @public {
+    return 0;
+}

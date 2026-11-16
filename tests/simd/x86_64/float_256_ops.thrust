@@ -1,0 +1,48 @@
+// test-requires: x86_64 avx
+// test-cpu-features: +sse2,+avx
+
+import std::simd::x86_64 as simd;
+
+fn main() s32 @public {
+    var af32x8: simd::F32x8 = native[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
+    var bf32x8: simd::F32x8 = native[8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0];
+    var addf32x8: simd::F32x8 = simd::addPackedSinglePrecision256(af32x8, bf32x8);
+    var subf32x8: simd::F32x8 = simd::subPackedSinglePrecision256(af32x8, bf32x8);
+    var mulf32x8: simd::F32x8 = simd::mulPackedSinglePrecision256(af32x8, bf32x8);
+    var divf32x8: simd::F32x8 = simd::divPackedSinglePrecision256(af32x8, bf32x8);
+    var sqrtf32x8: simd::F32x8 = simd::sqrtPackedSinglePrecision256(af32x8);
+    var minf32x8: simd::F32x8 = simd::minPackedSinglePrecision256(af32x8, bf32x8);
+    var maxf32x8: simd::F32x8 = simd::maxPackedSinglePrecision256(af32x8, bf32x8);
+    var absf32x8: simd::F32x8 = simd::absPackedSinglePrecision256(af32x8);
+
+    if addf32x8[0] != 9.0 { return 1; }
+    if subf32x8[0] != -7.0 { return 2; }
+    if mulf32x8[0] != 8.0 { return 3; }
+    if divf32x8[0] != 0.125 { return 4; }
+    if sqrtf32x8[0] != 1.0 { return 5; }
+    if minf32x8[0] != 1.0 { return 6; }
+    if maxf32x8[0] != 8.0 { return 7; }
+    if absf32x8[0] != 1.0 { return 8; }
+
+    var af64x4: simd::F64x4 = native[1.0, 2.0, 3.0, 4.0];
+    var bf64x4: simd::F64x4 = native[4.0, 3.0, 2.0, 1.0];
+    var addf64x4: simd::F64x4 = simd::addPackedDoublePrecision256(af64x4, bf64x4);
+    var subf64x4: simd::F64x4 = simd::subPackedDoublePrecision256(af64x4, bf64x4);
+    var mulf64x4: simd::F64x4 = simd::mulPackedDoublePrecision256(af64x4, bf64x4);
+    var divf64x4: simd::F64x4 = simd::divPackedDoublePrecision256(af64x4, bf64x4);
+    var sqrtf64x4: simd::F64x4 = simd::sqrtPackedDoublePrecision256(af64x4);
+    var minf64x4: simd::F64x4 = simd::minPackedDoublePrecision256(af64x4, bf64x4);
+    var maxf64x4: simd::F64x4 = simd::maxPackedDoublePrecision256(af64x4, bf64x4);
+    var absf64x4: simd::F64x4 = simd::absPackedDoublePrecision256(af64x4);
+
+    if addf64x4[0] != 5.0 { return 9; }
+    if subf64x4[0] != -3.0 { return 10; }
+    if mulf64x4[0] != 4.0 { return 11; }
+    if divf64x4[0] != 0.25 { return 12; }
+    if sqrtf64x4[0] != 1.0 { return 13; }
+    if minf64x4[0] != 1.0 { return 14; }
+    if maxf64x4[0] != 4.0 { return 15; }
+    if absf64x4[0] != 1.0 { return 16; }
+
+    return 0;
+}

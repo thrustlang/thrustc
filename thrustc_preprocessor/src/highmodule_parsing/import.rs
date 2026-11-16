@@ -307,7 +307,20 @@ fn parse_std_import<'preprocessor>(
 
             Ok(Some(module))
         }
-        Err(()) => {
+
+        Err(std_library::StdModuleError::Unstable) => {
+            parser.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                format!("The '{}' module is unstable.", access.join("::")),
+                "You must pass '-mode unstable' to access it.".into(),
+                None,
+                last_span,
+            ));
+
+            Err(())
+        }
+
+        Err(std_library::StdModuleError::NotFound) => {
             parser.add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0035,
                 format!(

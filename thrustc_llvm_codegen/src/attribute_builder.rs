@@ -221,6 +221,7 @@ impl<'ctx> AttributeBuilder {
                 | LLVMAttribute::Ignore
                 | LLVMAttribute::NoArgCount
                 | LLVMAttribute::NoReturn
+                | LLVMAttribute::Simd
                 | LLVMAttribute::Align(..)
                 | LLVMAttribute::Promote(..)
                 | LLVMAttribute::Packed
@@ -394,6 +395,7 @@ impl<'ctx> AttributeBuilder {
                 | LLVMAttribute::Ignore
                 | LLVMAttribute::NoArgCount
                 | LLVMAttribute::NoReturn
+                | LLVMAttribute::Simd
                 | LLVMAttribute::Align(..)
                 | LLVMAttribute::Promote(..)
                 | LLVMAttribute::Packed
@@ -446,6 +448,7 @@ impl<'ctx> AttributeBuilder {
                         | LLVMAttribute::OptFuzzing
                         | LLVMAttribute::Pure
                         | LLVMAttribute::Thunk
+                        | LLVMAttribute::Simd
                         | LLVMAttribute::Promote(..)
                         | LLVMAttribute::Packed
                         | LLVMAttribute::Stack

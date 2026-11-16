@@ -441,7 +441,13 @@ pub fn compile_type_cast<'ctx>(
     }
 
     if from_type.is_ptr_like_type() && target_type.is_integer_type() {
-        let code_location: CodeGenLocation = context.get_codegen_location();
+        let code_location: CodeGenLocation = if from_type.is_ptr_type()
+            || from_type.is_function_reference_type()
+        {
+            CodeGenLocation::RValue
+        } else {
+            context.get_codegen_location()
+        };
 
         context.add_codegen_location(code_location);
         let from_value: BasicValueEnum = codegen::compile_as_ptr_value(context, expr, None);
@@ -526,7 +532,13 @@ pub fn compile_type_cast<'ctx>(
         || from_type.is_fixed_array_type())
         && target_type.is_ptr_like_type()
     {
-        let code_location: CodeGenLocation = context.get_codegen_location();
+        let code_location: CodeGenLocation = if from_type.is_ptr_type()
+            || from_type.is_function_reference_type()
+        {
+            CodeGenLocation::RValue
+        } else {
+            context.get_codegen_location()
+        };
 
         context.add_codegen_location(code_location);
         let value: BasicValueEnum = codegen::compile_as_ptr_value(context, expr, None);

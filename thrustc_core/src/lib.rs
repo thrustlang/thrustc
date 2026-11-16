@@ -29,6 +29,7 @@ pub mod starter;
 pub mod utils;
 pub mod validate;
 
+use inkwell::OptimizationLevel;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::execution_engine::ExecutionEngine;
@@ -39,15 +40,14 @@ use inkwell::targets::Target;
 use inkwell::targets::TargetData;
 use inkwell::targets::TargetMachine;
 use inkwell::targets::TargetTriple;
-use inkwell::OptimizationLevel;
 
 use thrustc_ast::Ast;
+use thrustc_backends::ThrustOptimization;
+use thrustc_backends::llvm::LLVMBackend;
+use thrustc_backends::llvm::Sanitizer;
 use thrustc_backends::llvm::jit;
 use thrustc_backends::llvm::jit::JITConfiguration;
 use thrustc_backends::llvm::target::LLVMTarget;
-use thrustc_backends::llvm::LLVMBackend;
-use thrustc_backends::llvm::Sanitizer;
-use thrustc_backends::ThrustOptimization;
 use thrustc_builtins::BuiltinRegistry;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::{FileDirectives, FileOptions};
@@ -61,11 +61,11 @@ use thrustc_llvm_codegen::optimizer::LLVMOptimizerFlags;
 use thrustc_llvm_codegen::optimizer::LLVMOptimizerPasses;
 use thrustc_llvm_compiler_intrinsic_checker::LLVMIntrinsicChecker;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
-use thrustc_options::linkage::LinkingCompilersConfiguration;
 use thrustc_options::CompilationPhase;
 use thrustc_options::CompilationUnit;
 use thrustc_options::CompilerOptions;
 use thrustc_options::Emited;
+use thrustc_options::linkage::LinkingCompilersConfiguration;
 use thrustc_parser::Parser;
 use thrustc_parser::ParserContext;
 use thrustc_preprocessor::Preprocessor;
@@ -162,84 +162,10 @@ impl ThrustCompiler<'_> {
     }
 }
 
-impl<'thrustc> ThrustCompiler<'thrustc> {
-    fn compile_aot_llvm(&mut self) -> CompileTime {
-        cleaner::auto_clean(self.get_compilation_options());
-
-        self.discover_std();
-
-        if self.compile_imported_std().is_err() {
-            return (
-                true,
-                self.thrustc_time,
-                self.thrustc_frontend_time,
-                self.thrustc_backend_time,
-                self.linking_time,
-            );
-        }
-
-        let mut it_failed: bool = false;
-
-        for file in self.unready.iter() {
-            it_failed |= self.compile_file_with_llvm_aot(file).is_err();
-        }
-
-        it_failed = it_failed || self.reprocess_pending_instantiations().is_err();
-
-        let output_requested: bool = self.get_compilation_options().was_printed()
-            || self.get_compilation_options().was_emited()
-            || self.file_output_requested;
-
-        it_failed = it_failed || (self.get_compiled_files().is_empty() && !output_requested);
-
-        if it_failed {
-            return (
-                it_failed,
-                self.thrustc_time,
-                self.thrustc_frontend_time,
-                self.thrustc_backend_time,
-                self.linking_time,
-            );
-        }
-
-        if output_requested {
-            return (
-                false,
-                self.thrustc_time,
-                self.thrustc_frontend_time,
-                self.thrustc_backend_time,
-                self.linking_time,
-            );
-        }
-
-        starter::linking_phase(self.get_compilation_options(), self.get_compiled_files());
-
-        let linking_compiler_config: &LinkingCompilersConfiguration =
-            self.options.get_linking_compilers_configuration();
-
-        if linking_compiler_config.get_use_clang() {
-            it_failed = linkage::link_with_clang(self).is_err();
-        } else if linking_compiler_config.get_use_gcc() {
-            it_failed = linkage::link_with_gcc(self).is_err();
-        } else {
-            thrustc_logging::print_warning(
-                thrustc_logging::LoggingType::Warning,
-                "Unknown linking method, ignoring linking.",
-            );
-        }
-
-        (
-            it_failed,
-            self.thrustc_time,
-            self.thrustc_frontend_time,
-            self.thrustc_backend_time,
-            self.linking_time,
-        )
-    }
-
+impl ThrustCompiler<'_> {
     fn discover_std(&mut self) {
         for file in self.unready.iter() {
-            let Ok(tokens) = Lexer::lex(file, self.options) else {
+            let Ok(tokens) = Lexer::lex_for_preprocessor(file, self.options) else {
                 continue;
             };
 
@@ -256,7 +182,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
             let builtins: BuiltinRegistry = self.create_builtins_registry();
 
-            let _ = preprocessor.generate_modules(&tokens, &file_options, file, &builtins);
+            let _ = preprocessor.discover_modules(&tokens, &file_options, file, &builtins);
         }
     }
 
@@ -369,6 +295,82 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         Ok(modules)
     }
+}
+
+impl<'thrustc> ThrustCompiler<'thrustc> {
+    fn compile_aot_llvm(&mut self) -> CompileTime {
+        cleaner::auto_clean(self.get_compilation_options());
+
+        self.discover_std();
+
+        if self.compile_imported_std().is_err() {
+            return (
+                true,
+                self.thrustc_time,
+                self.thrustc_frontend_time,
+                self.thrustc_backend_time,
+                self.linking_time,
+            );
+        }
+
+        let mut it_failed: bool = false;
+
+        for file in self.unready.iter() {
+            it_failed |= self.compile_file_with_llvm_aot(file).is_err();
+        }
+
+        it_failed = it_failed || self.reprocess_pending_generics_instantiations().is_err();
+
+        let output_requested: bool = self.get_compilation_options().was_printed()
+            || self.get_compilation_options().was_emited()
+            || self.file_output_requested;
+
+        it_failed = it_failed || (self.get_compiled_files().is_empty() && !output_requested);
+
+        if it_failed {
+            return (
+                it_failed,
+                self.thrustc_time,
+                self.thrustc_frontend_time,
+                self.thrustc_backend_time,
+                self.linking_time,
+            );
+        }
+
+        if output_requested {
+            return (
+                false,
+                self.thrustc_time,
+                self.thrustc_frontend_time,
+                self.thrustc_backend_time,
+                self.linking_time,
+            );
+        }
+
+        starter::linking_phase(self.get_compilation_options(), self.get_compiled_files());
+
+        let linking_compiler_config: &LinkingCompilersConfiguration =
+            self.options.get_linking_compilers_configuration();
+
+        if linking_compiler_config.get_use_clang() {
+            it_failed = linkage::link_with_clang(self).is_err();
+        } else if linking_compiler_config.get_use_gcc() {
+            it_failed = linkage::link_with_gcc(self).is_err();
+        } else {
+            thrustc_logging::print_warning(
+                thrustc_logging::LoggingType::Warning,
+                "Unknown linking method, ignoring linking.",
+            );
+        }
+
+        (
+            it_failed,
+            self.thrustc_time,
+            self.thrustc_frontend_time,
+            self.thrustc_backend_time,
+            self.linking_time,
+        )
+    }
 
     fn compile_file_with_llvm_aot(&mut self, file: &CompilationUnit) -> Result<(), ()> {
         let file_time: std::time::Instant = std::time::Instant::now();
@@ -463,6 +465,16 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let ast: &[Ast] = parser_context.get_ast();
 
+        if let Some(issue) = thrustc_errors::simd::simd_usage_issue(ast, || {
+            self.options.get_llvm_backend().validate_cpu_features()
+        }) {
+            let mut diagnostician: Diagnostician = Diagnostician::new(file, self.options);
+
+            diagnostician.dispatch_diagnostic(&issue, thrustc_logging::LoggingType::Error);
+
+            return interrupt::archive_compilation_module(self, file, file_time);
+        }
+
         if emit::before_frontend(self, &file_options, build_dir, file, Emited::Ast(ast))? {
             return finisher::archive_compilation(self, file_time, file);
         }
@@ -537,11 +549,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let target: &LLVMTarget = llvm_backend.get_target();
         let llvm_triple: &TargetTriple = target.get_target_triple();
 
-        let llvm_target_triple_formatted: String =
-            llvm_triple.as_str().to_string_lossy().to_string();
-
         let llvm_target_triple: LLVMTargetTriple =
-            LLVMTargetTriple::new(llvm_target_triple_formatted.clone());
+            llvm_backend.get_normalized_target_triple_with_cpu();
 
         let (llvm_cpu_name, llvm_cpu_features): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
@@ -590,8 +599,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let target_data: TargetData = target_machine.get_target_data();
         let target_triple: TargetTriple = target_machine.get_triple();
 
-        let target_info: TargetInfo =
-            TargetInfo::new(LLVMTargetTriple::new(llvm_target_triple_formatted));
+        let target_info: TargetInfo = TargetInfo::new(llvm_target_triple.clone());
 
         let mut target_abi: Option<LLVMABIRepresentation> = thrustc_llvm_abi::get_abi(
             self.options.abi_configuration().specific(),
@@ -983,6 +991,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let mut builtins: BuiltinRegistry = self.create_builtins_registry();
 
         let mut preprocessor: Preprocessor = Preprocessor::new();
+
         let modules: Result<&[thrustc_preprocessor::module::Module], ()> =
             preprocessor.generate_modules(&tokens, &file_options, file, &builtins);
 
@@ -1017,6 +1026,16 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let parser_context: ParserContext = parser_result.0;
 
         let ast: &[Ast] = parser_context.get_ast();
+
+        if let Some(issue) = thrustc_errors::simd::simd_usage_issue(ast, || {
+            self.options.get_llvm_backend().validate_cpu_features()
+        }) {
+            let mut diagnostician: Diagnostician = Diagnostician::new(file, self.options);
+
+            diagnostician.dispatch_diagnostic(&issue, thrustc_logging::LoggingType::Error);
+
+            return interrupt::archive_compilation_module_jit(self, file, file_time);
+        }
 
         if print::before_frontend(self, &file_options, file, Emited::Ast(ast))? {
             return finisher::archive_compilation_module_jit(self, file_time, file);
@@ -1090,11 +1109,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let target: &LLVMTarget = llvm_backend.get_target();
         let llvm_triple: &TargetTriple = target.get_target_triple();
 
-        let llvm_target_triple_formatted: String =
-            llvm_triple.as_str().to_string_lossy().to_string();
-
         let llvm_target_triple: LLVMTargetTriple =
-            LLVMTargetTriple::new(llvm_target_triple_formatted.clone());
+            llvm_backend.get_normalized_target_triple_with_cpu();
 
         let (llvm_cpu_name, llvm_cpu_features): (&str, &str) = llvm_backend.get_cross_target_cpu();
 
@@ -1133,8 +1149,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
         let target_data: TargetData = target_machine.get_target_data();
         let target_triple: TargetTriple = target_machine.get_triple();
 
-        let target_info: TargetInfo =
-            TargetInfo::new(LLVMTargetTriple::new(llvm_target_triple_formatted));
+        let target_info: TargetInfo = TargetInfo::new(llvm_target_triple.clone());
 
         let mut target_abi: Option<LLVMABIRepresentation> = thrustc_llvm_abi::get_abi(
             self.options.abi_configuration().specific(),
@@ -1267,7 +1282,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 }
 
 impl<'thrustc> ThrustCompiler<'thrustc> {
-    fn reprocess_pending_instantiations(&mut self) -> Result<(), ()> {
+    fn reprocess_pending_generics_instantiations(&mut self) -> Result<(), ()> {
         let mut reprocesses: usize = 0;
 
         while thrustc_generics::has_pending_instantiations() && reprocesses < 1024 {
@@ -1291,13 +1306,8 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 impl<'thrustc> ThrustCompiler<'thrustc> {
     fn create_builtins_registry(&self) -> BuiltinRegistry {
         let llvm_backend: &LLVMBackend = self.options.get_llvm_backend();
-        let target: &LLVMTarget = llvm_backend.get_target();
-        let llvm_triple: &TargetTriple = target.get_target_triple();
-
-        let target_triple_formatted: String = llvm_triple.as_str().to_string_lossy().to_string();
-
         let target_info: TargetInfo =
-            TargetInfo::new(LLVMTargetTriple::new(target_triple_formatted));
+            TargetInfo::new(llvm_backend.get_normalized_target_triple_with_cpu());
 
         thrustc_builtins::default_registry(target_info)
     }
@@ -1322,10 +1332,22 @@ impl ThrustCompiler<'_> {
             return;
         }
 
+        fn contains_any_sanitzer_type(sanitizers: &[Sanitizer], sanitizer: Sanitizer) -> bool {
+            sanitizers.iter().any(|candidate| {
+                matches!(
+                    (candidate, sanitizer),
+                    (Sanitizer::Address(..), Sanitizer::Address(..))
+                        | (Sanitizer::Memory(..), Sanitizer::Memory(..))
+                        | (Sanitizer::Thread(..), Sanitizer::Thread(..))
+                        | (Sanitizer::Hwaddress(..), Sanitizer::Hwaddress(..))
+                        | (Sanitizer::Memtag(..), Sanitizer::Memtag(..))
+                )
+            })
+        }
+
         let sanitizer: Sanitizer = file_options.sanitizer();
 
-        if sanitizer.is_none() || self::contains_sanitizer_kind(&self.linked_sanitizers, sanitizer)
-        {
+        if sanitizer.is_none() || contains_any_sanitzer_type(&self.linked_sanitizers, sanitizer) {
             return;
         }
 
@@ -1336,19 +1358,6 @@ impl ThrustCompiler<'_> {
     pub fn get_linked_sanitizers(&self) -> &[Sanitizer] {
         &self.linked_sanitizers
     }
-}
-
-fn contains_sanitizer_kind(sanitizers: &[Sanitizer], sanitizer: Sanitizer) -> bool {
-    sanitizers.iter().any(|candidate| {
-        matches!(
-            (candidate, sanitizer),
-            (Sanitizer::Address(..), Sanitizer::Address(..))
-                | (Sanitizer::Memory(..), Sanitizer::Memory(..))
-                | (Sanitizer::Thread(..), Sanitizer::Thread(..))
-                | (Sanitizer::Hwaddress(..), Sanitizer::Hwaddress(..))
-                | (Sanitizer::Memtag(..), Sanitizer::Memtag(..))
-        )
-    })
 }
 
 impl ThrustCompiler<'_> {

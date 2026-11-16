@@ -115,7 +115,7 @@ When no `--compiler` is given and `--no-build` is off, the runner builds `thrust
 
 ## Test Layout
 
-Tests are organized by feature area. Each directory holds executable `.thrust` roots (files declaring `fn main`) plus importable libraries (files without `fn main`, included via `import "..."`).
+Tests are organized by feature area. Each directory holds `.thrust` roots plus importable libraries (files without `fn main`, included via `import "..."`).
 
 | Directory | Contents |
 |---|---|
@@ -134,9 +134,19 @@ Tests are organized by feature area. Each directory holds executable `.thrust` r
 | `stress/` | Excluded from discovery (see below). |
 | other `api`-like areas (`abi/`, `asm/`, `atomics/`, `import_c/`, `sanitizers/`, `optimization/`, …) | Feature-specific end-to-end tests; `asm/`, `atomics/`, tests using `NativeVector`/`native[...]`, and `importC` compile with `-mode unstable`. |
 
+## Test Metadata
+
+Tests can declare the host requirements and compiler arguments they need in comments at the top of the file.
+
+| Metadata | Effect |
+|---|---|
+| `// test-requires: x86_64 avx512f` | The runner skips the test when the host architecture or a listed CPU feature is missing. A skipped test counts as passed. |
+| `// test-cpu-features: +sse2,+avx512f` | The runner adds `-cpu-features` with this value to the test compilation. |
+| `// test-expect-error: E0061` | The runner compiles the file without running it and expects the compilation to fail with that diagnostic code. The file does not need `fn main`. |
+
 ## Runner Behavior
 
-The runner discovers test roots by scanning `.thrust` files under `tests/` (sorted) and selecting files that declare `fn main`. Files without `fn main` are treated as importable libraries, not tests. The following directories are never scanned: `dist`, `scripts`, `build`, `c_transpile`, `stdroot`, `stress`.
+The runner discovers test roots by scanning `.thrust` files under `tests/` (sorted). It selects files that declare `fn main` or `test-expect-error`. Other files without `fn main` are treated as importable libraries. The following directories are never scanned: `dist`, `scripts`, `build`, `c_transpile`, `stdroot`, `stress`.
 
 For each discovered test, the runner:
 
@@ -145,6 +155,9 @@ For each discovered test, the runner:
 - Resolves `std::...` imports from the repository's `std/` directory (via `-std`), except `compiletime/if_imports`/`if_std_import*` tests, which use their local `stdroot` with `-std-version 0.1.8`.
 - Adds `-lm` automatically for tests that use `std::math`, `std::ffi::c::math`, or floating-point modulo operations.
 - Adds `-mode unstable` automatically for tests under `asm/`, `atomics/`, files or dependencies that use `NativeVector`/`native[...]`, or tests using `importC`, plus `--import-c-system-include <dir>` for each Clang system include directory it detects (via `clang -E -x c - -v`, 10s timeout).
+- Reads `test-requires` and skips the test with a pass result when the host architecture or a required CPU feature is missing.
+- Adds the value from `test-cpu-features` to the compiler command.
+- Compiles tests with `test-expect-error` without running them and checks for the expected diagnostic code.
 - Compiles with `-build-dir tests/dist/build/<test-id>` into `tests/dist/bin/<test-id>`.
 - Runs the binary from `tests/dist/run/<test-id>` so temporary runtime files stay isolated.
 - Removes `tests/dist/` when finished, unless `--keep-dist` is used.
@@ -156,6 +169,10 @@ The final executable path is passed through `-cc-args` because the current linke
 ## Test Results
 
 Positive tests are expected to compile, link, run, and return exit code `0`.
+
+Tests skipped by `test-requires` count as passed.
+
+Diagnostic tests are expected to fail compilation and include the code listed in `test-expect-error`.
 
 ## C Transpile Tests
 

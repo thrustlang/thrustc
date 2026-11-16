@@ -19,6 +19,7 @@
 
 import argparse
 import difflib
+import platform
 import re
 import shutil
 import subprocess
@@ -26,6 +27,7 @@ import sys
 import time
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -36,6 +38,14 @@ MAIN_FUNCTION_RE: re.Pattern[str] = re.compile(r'^\s*fn\s+main\b', re.MULTILINE)
 STD_MATH_RE: re.Pattern[str] = re.compile(r'import\s+std::(?:math|ffi::c::math)\b')
 FLOAT_VALUE_RE: re.Pattern[str] = re.compile(r'\bf(?:32|64)\b|\b\d+\.\d+')
 NATIVE_VECTOR_RE: re.Pattern[str] = re.compile(r'\bNativeVector\b|\bnative\s*\[')
+TEST_REQUIRES_RE: re.Pattern[str] = re.compile(r'^\s*//\s*test-requires:\s*(.+)$', re.MULTILINE)
+TEST_CPU_FEATURES_RE: re.Pattern[str] = re.compile(r'^\s*//\s*test-cpu-features:\s*(.+)$', re.MULTILINE)
+TEST_EXPECT_ERROR_RE: re.Pattern[str] = re.compile(r'^\s*//\s*test-expect-error:\s*(E\d+)\s*$', re.MULTILINE)
+# Optional per-test metadata:
+# test-requires lists the host architecture and CPU features needed to run the test.
+# test-cpu-features passes its value to this test's -cpu-features invocation.
+# test-expect-error compiles without running and expects the listed diagnostic code.
+# A test that misses test-requires is reported as skipped and counts as passed.
 
 @dataclass
 class TestResult:
@@ -178,7 +188,7 @@ def discover_test_roots(
         if exclude_text and exclude_text in relative:
             continue
 
-        if has_main_function(path):
+        if has_main_function(path) or test_expected_error(path) is not None:
             test_roots.append(path)
 
     return test_roots
@@ -378,6 +388,78 @@ def test_identifier(test_path: Path, root: Path) -> str:
 
     return "__".join(relative.parts)
 
+@lru_cache(maxsize=None)
+def host_cpu_features(compiler: Path) -> frozenset[str]:
+    result: subprocess.CompletedProcess[str] = subprocess.run(
+        [str(compiler), "--print-host-cpu-features"],
+        cwd=compiler.parent,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    if result.returncode != 0:
+        return frozenset()
+
+    return frozenset(
+        feature.strip().lstrip("+").lower()
+        for feature in result.stdout.strip().split(",")
+        if feature.strip()
+    )
+
+def host_architecture() -> str:
+    machine: str = platform.machine().lower()
+
+    if machine in {"amd64", "x86_64"}:
+        return "x86_64"
+
+    return machine
+
+def test_requirements(test_path: Path) -> list[str]:
+    content: str = test_path.read_text(encoding="utf-8")
+    requirements: list[str] = []
+
+    for match in TEST_REQUIRES_RE.finditer(content):
+        requirements.extend(match.group(1).replace(",", " ").split())
+
+    return requirements
+
+def test_cpu_features(test_path: Path) -> list[str]:
+    content: str = test_path.read_text(encoding="utf-8")
+    match = TEST_CPU_FEATURES_RE.search(content)
+
+    if match is None:
+        return []
+
+    return ["-cpu-features", match.group(1).strip()]
+
+def test_expected_error(test_path: Path) -> str | None:
+    content: str = test_path.read_text(encoding="utf-8")
+    match = TEST_EXPECT_ERROR_RE.search(content)
+
+    if match is None:
+        return None
+
+    return match.group(1)
+
+def missing_requirements(requirements: list[str], compiler: Path) -> list[str]:
+    architecture: str = host_architecture()
+    features: frozenset[str] = host_cpu_features(compiler)
+    missing: list[str] = []
+
+    for requirement in requirements:
+        normalized: str = requirement.lower().lstrip("+")
+
+        if normalized in {"x86_64", "x86", "aarch64", "arm64"}:
+            if architecture != normalized:
+                missing.append(normalized)
+            continue
+
+        if normalized not in features:
+            missing.append(normalized)
+
+    return missing
+
 def compiler_path(args: argparse.Namespace, root: Path) -> Path:
     if args.compiler is not None:
         return args.compiler.resolve()
@@ -453,6 +535,7 @@ def compile_test(
 
     command.extend(compiletime_std_args(test_path, root))
     command.extend(args.compiler_arg)
+    command.extend(test_cpu_features(test_path))
 
     for emit in args.emit:
         command.extend(["-emit", emit])
@@ -754,6 +837,69 @@ def run_test(
 ) -> TestResult:
 
     start: float = time.monotonic()
+    missing: list[str] = missing_requirements(test_requirements(test_path), compiler)
+
+    if missing:
+        return TestResult(
+            path=test_path,
+            kind="skip",
+            passed=True,
+            compile_code=0,
+            run_code=None,
+            elapsed=time.monotonic() - start,
+            message=f"skipped: missing {', '.join(missing)}",
+            compile_stdout="",
+            compile_stderr="",
+            run_stdout="",
+            run_stderr="",
+        )
+
+    expected_error: str | None = test_expected_error(test_path)
+
+    if expected_error is not None:
+        try:
+            compile_result, _binary_path, _dependencies = compile_test(
+                test_path, compiler, root, args
+            )
+        except subprocess.TimeoutExpired as error:
+            elapsed = time.monotonic() - start
+
+            return TestResult(
+                path=test_path,
+                kind="diagnostic",
+                passed=False,
+                compile_code=-1,
+                run_code=None,
+                elapsed=elapsed,
+                message=f"diagnostic compile timeout after {args.compile_timeout:.2f}s",
+                compile_stdout=timeout_output(error.stdout),
+                compile_stderr=timeout_output(error.stderr),
+                run_stdout="",
+                run_stderr="",
+            )
+
+        output: str = compile_result.stdout + compile_result.stderr
+        passed: bool = compile_result.returncode != 0 and expected_error in output
+        elapsed = time.monotonic() - start
+        message: str = (
+            f"ok ({expected_error})"
+            if passed
+            else f"expected compile failure with {expected_error}"
+        )
+
+        return TestResult(
+            path=test_path,
+            kind="diagnostic",
+            passed=passed,
+            compile_code=compile_result.returncode,
+            run_code=None,
+            elapsed=elapsed,
+            message=message,
+            compile_stdout=compile_result.stdout,
+            compile_stderr=compile_result.stderr,
+            run_stdout="",
+            run_stderr="",
+        )
 
     try:
         compile_result, binary_path, _dependencies = compile_test(test_path, compiler, root, args)
@@ -1143,7 +1289,9 @@ def cleanup_dist(root: Path, keep_dist: bool) -> None:
 def print_test_result(result: TestResult, root: Path) -> None:
 
     relative: str = result.path.relative_to(tests_root(root)).as_posix()
-    status: Literal['FAIL', 'PASS'] = "PASS" if result.passed else "FAIL"
+    status: Literal['FAIL', 'PASS', 'SKIP'] = (
+        "SKIP" if result.kind == "skip" else "PASS" if result.passed else "FAIL"
+    )
     run_code: str = "-" if result.run_code is None else str(result.run_code)
 
     print(
@@ -1196,6 +1344,8 @@ def print_summary(results: list[TestResult], root: Path) -> None:
     failed: int = total - passed
     positives: int = sum(1 for result in results if result.kind == "positive")
     c_transpiles: int = sum(1 for result in results if result.kind == "c-transpile")
+    diagnostics: int = sum(1 for result in results if result.kind == "diagnostic")
+    skipped: int = sum(1 for result in results if result.kind == "skip")
 
     print("\nTest report", flush=True)
     print(f"total: {total}", flush=True)
@@ -1203,6 +1353,8 @@ def print_summary(results: list[TestResult], root: Path) -> None:
     print(f"failed: {failed}", flush=True)
     print(f"positive: {positives}", flush=True)
     print(f"c-transpile: {c_transpiles}", flush=True)
+    print(f"diagnostic: {diagnostics}", flush=True)
+    print(f"skipped: {skipped}", flush=True)
 
     failures: list[TestResult] = [result for result in results if not result.passed]
 

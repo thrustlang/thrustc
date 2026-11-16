@@ -58,6 +58,7 @@ impl std::fmt::Display for ThrustAttribute {
             ThrustAttribute::Align(align, ..) => write!(f, "@align({})", align),
             ThrustAttribute::Pure(..) => write!(f, "@pure"),
             ThrustAttribute::Thunk(..) => write!(f, "@thunk"),
+            ThrustAttribute::Simd(..) => write!(f, "@simd"),
             ThrustAttribute::Constructor(..) => write!(f, "@constructor"),
             ThrustAttribute::Destructor(..) => write!(f, "@destructor"),
             ThrustAttribute::Cuda(..) => write!(f, "@cuda"),

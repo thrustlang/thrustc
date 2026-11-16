@@ -1,0 +1,19 @@
+/*
+ * A break in a nested loop does not escape the outer loop.
+ */
+
+fn nested() s32 {
+    loop {
+        loop {
+            break;
+        }
+
+        return 21;
+    }
+}
+
+fn main() s32 @public {
+    if nested() != 21 { return 1; }
+
+    return 0;
+}

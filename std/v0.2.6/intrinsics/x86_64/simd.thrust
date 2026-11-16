@@ -1,0 +1,1627 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+// Float vectors
+
+type F32x4 @public = NativeVector[f32; 4];
+type F64x2 @public = NativeVector[f64; 2];
+type F32x8 @public = NativeVector[f32; 8];
+type F64x4 @public = NativeVector[f64; 4];
+type F32x16 @public = NativeVector[f32; 16];
+type F64x8 @public = NativeVector[f64; 8];
+
+// Integer vectors
+
+type S8x16 @public = NativeVector[s8; 16];
+type U8x16 @public = NativeVector[u8; 16];
+type S16x8 @public = NativeVector[s16; 8];
+type U16x8 @public = NativeVector[u16; 8];
+type S32x4 @public = NativeVector[s32; 4];
+type U32x4 @public = NativeVector[u32; 4];
+type S64x2 @public = NativeVector[s64; 2];
+type U64x2 @public = NativeVector[u64; 2];
+type S8x32 @public = NativeVector[s8; 32];
+type U8x32 @public = NativeVector[u8; 32];
+type S16x16 @public = NativeVector[s16; 16];
+type U16x16 @public = NativeVector[u16; 16];
+type S32x8 @public = NativeVector[s32; 8];
+type U32x8 @public = NativeVector[u32; 8];
+type S64x4 @public = NativeVector[s64; 4];
+type U64x4 @public = NativeVector[u64; 4];
+type S8x64 @public = NativeVector[s8; 64];
+type U8x64 @public = NativeVector[u8; 64];
+type S16x32 @public = NativeVector[s16; 32];
+type U16x32 @public = NativeVector[u16; 32];
+type S32x16 @public = NativeVector[s32; 16];
+type U32x16 @public = NativeVector[u32; 16];
+type S64x8 @public = NativeVector[s64; 8];
+type U64x8 @public = NativeVector[u64; 8];
+
+fn addF32x4(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return left + right;
+}
+
+fn subF32x4(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return left - right;
+}
+
+fn mulF32x4(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return left * right;
+}
+
+fn divF32x4(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return left / right;
+}
+
+intrinsic("llvm.sqrt.v4f32") sqrtF32x4Native(value: F32x4) F32x4 @public @simd;
+fn sqrtF32x4(value: F32x4) F32x4 @public @simd {
+    return sqrtF32x4Native(value);
+}
+
+intrinsic("llvm.fabs.v4f32") absF32x4Native(value: F32x4) F32x4 @public @simd;
+fn absF32x4(value: F32x4) F32x4 @public @simd {
+    return absF32x4Native(value);
+}
+
+intrinsic("llvm.minimum.v4f32") minF32x4Native(left: F32x4, right: F32x4) F32x4 @public @simd;
+fn minF32x4(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return minF32x4Native(left, right);
+}
+
+intrinsic("llvm.maximum.v4f32") maxF32x4Native(left: F32x4, right: F32x4) F32x4 @public @simd;
+fn maxF32x4(left: F32x4, right: F32x4) F32x4 @public @simd {
+    return maxF32x4Native(left, right);
+}
+
+fn addF64x2(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return left + right;
+}
+
+fn subF64x2(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return left - right;
+}
+
+fn mulF64x2(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return left * right;
+}
+
+fn divF64x2(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return left / right;
+}
+
+intrinsic("llvm.sqrt.v2f64") sqrtF64x2Native(value: F64x2) F64x2 @public @simd;
+fn sqrtF64x2(value: F64x2) F64x2 @public @simd {
+    return sqrtF64x2Native(value);
+}
+
+intrinsic("llvm.fabs.v2f64") absF64x2Native(value: F64x2) F64x2 @public @simd;
+fn absF64x2(value: F64x2) F64x2 @public @simd {
+    return absF64x2Native(value);
+}
+
+intrinsic("llvm.minimum.v2f64") minF64x2Native(left: F64x2, right: F64x2) F64x2 @public @simd;
+fn minF64x2(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return minF64x2Native(left, right);
+}
+
+intrinsic("llvm.maximum.v2f64") maxF64x2Native(left: F64x2, right: F64x2) F64x2 @public @simd;
+fn maxF64x2(left: F64x2, right: F64x2) F64x2 @public @simd {
+    return maxF64x2Native(left, right);
+}
+
+fn addF32x8(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return left + right;
+}
+
+fn subF32x8(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return left - right;
+}
+
+fn mulF32x8(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return left * right;
+}
+
+fn divF32x8(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return left / right;
+}
+
+intrinsic("llvm.sqrt.v8f32") sqrtF32x8Native(value: F32x8) F32x8 @public @simd;
+fn sqrtF32x8(value: F32x8) F32x8 @public @simd {
+    return sqrtF32x8Native(value);
+}
+
+intrinsic("llvm.fabs.v8f32") absF32x8Native(value: F32x8) F32x8 @public @simd;
+fn absF32x8(value: F32x8) F32x8 @public @simd {
+    return absF32x8Native(value);
+}
+
+intrinsic("llvm.minimum.v8f32") minF32x8Native(left: F32x8, right: F32x8) F32x8 @public @simd;
+fn minF32x8(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return minF32x8Native(left, right);
+}
+
+intrinsic("llvm.maximum.v8f32") maxF32x8Native(left: F32x8, right: F32x8) F32x8 @public @simd;
+fn maxF32x8(left: F32x8, right: F32x8) F32x8 @public @simd {
+    return maxF32x8Native(left, right);
+}
+
+fn addF64x4(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return left + right;
+}
+
+fn subF64x4(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return left - right;
+}
+
+fn mulF64x4(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return left * right;
+}
+
+fn divF64x4(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return left / right;
+}
+
+intrinsic("llvm.sqrt.v4f64") sqrtF64x4Native(value: F64x4) F64x4 @public @simd;
+fn sqrtF64x4(value: F64x4) F64x4 @public @simd {
+    return sqrtF64x4Native(value);
+}
+
+intrinsic("llvm.fabs.v4f64") absF64x4Native(value: F64x4) F64x4 @public @simd;
+fn absF64x4(value: F64x4) F64x4 @public @simd {
+    return absF64x4Native(value);
+}
+
+intrinsic("llvm.minimum.v4f64") minF64x4Native(left: F64x4, right: F64x4) F64x4 @public @simd;
+fn minF64x4(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return minF64x4Native(left, right);
+}
+
+intrinsic("llvm.maximum.v4f64") maxF64x4Native(left: F64x4, right: F64x4) F64x4 @public @simd;
+fn maxF64x4(left: F64x4, right: F64x4) F64x4 @public @simd {
+    return maxF64x4Native(left, right);
+}
+
+fn addF32x16(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return left + right;
+}
+
+fn subF32x16(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return left - right;
+}
+
+fn mulF32x16(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return left * right;
+}
+
+fn divF32x16(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return left / right;
+}
+
+intrinsic("llvm.sqrt.v16f32") sqrtF32x16Native(value: F32x16) F32x16 @public @simd;
+fn sqrtF32x16(value: F32x16) F32x16 @public @simd {
+    return sqrtF32x16Native(value);
+}
+
+intrinsic("llvm.fabs.v16f32") absF32x16Native(value: F32x16) F32x16 @public @simd;
+fn absF32x16(value: F32x16) F32x16 @public @simd {
+    return absF32x16Native(value);
+}
+
+intrinsic("llvm.minimum.v16f32") minF32x16Native(left: F32x16, right: F32x16) F32x16 @public @simd;
+fn minF32x16(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return minF32x16Native(left, right);
+}
+
+intrinsic("llvm.maximum.v16f32") maxF32x16Native(left: F32x16, right: F32x16) F32x16 @public @simd;
+fn maxF32x16(left: F32x16, right: F32x16) F32x16 @public @simd {
+    return maxF32x16Native(left, right);
+}
+
+fn addF64x8(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return left + right;
+}
+
+fn subF64x8(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return left - right;
+}
+
+fn mulF64x8(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return left * right;
+}
+
+fn divF64x8(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return left / right;
+}
+
+intrinsic("llvm.sqrt.v8f64") sqrtF64x8Native(value: F64x8) F64x8 @public @simd;
+fn sqrtF64x8(value: F64x8) F64x8 @public @simd {
+    return sqrtF64x8Native(value);
+}
+
+intrinsic("llvm.fabs.v8f64") absF64x8Native(value: F64x8) F64x8 @public @simd;
+fn absF64x8(value: F64x8) F64x8 @public @simd {
+    return absF64x8Native(value);
+}
+
+intrinsic("llvm.minimum.v8f64") minF64x8Native(left: F64x8, right: F64x8) F64x8 @public @simd;
+fn minF64x8(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return minF64x8Native(left, right);
+}
+
+intrinsic("llvm.maximum.v8f64") maxF64x8Native(left: F64x8, right: F64x8) F64x8 @public @simd;
+fn maxF64x8(left: F64x8, right: F64x8) F64x8 @public @simd {
+    return maxF64x8Native(left, right);
+}
+
+fn addS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return left + right;
+}
+
+fn subS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return left - right;
+}
+
+fn mulS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return left * right;
+}
+
+fn divS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return left / right;
+}
+
+fn andS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return left & right;
+}
+
+fn orS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return left | right;
+}
+
+fn xorS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return left ^ right;
+}
+
+fn notS8x16(value: S8x16) S8x16 @public @simd {
+    return ~value;
+}
+
+fn negS8x16(value: S8x16) S8x16 @public @simd {
+    return -value;
+}
+
+fn shlS8x16(value: S8x16, amount: u32) S8x16 @public @simd {
+    return value << amount;
+}
+
+fn shrS8x16(value: S8x16, amount: u32) S8x16 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v16i8") minS8x16Native(left: S8x16, right: S8x16) S8x16 @public @simd;
+fn minS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return minS8x16Native(left, right);
+}
+
+intrinsic("llvm.smax.v16i8") maxS8x16Native(left: S8x16, right: S8x16) S8x16 @public @simd;
+fn maxS8x16(left: S8x16, right: S8x16) S8x16 @public @simd {
+    return maxS8x16Native(left, right);
+}
+
+intrinsic("llvm.abs.v16i8") absS8x16Native(value: S8x16, poison: bool) S8x16 @public @simd;
+fn absS8x16(value: S8x16) S8x16 @public @simd {
+    return absS8x16Native(value, false);
+}
+
+fn addU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return left + right;
+}
+
+fn subU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return left - right;
+}
+
+fn mulU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return left * right;
+}
+
+fn divU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return left / right;
+}
+
+fn andU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return left & right;
+}
+
+fn orU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return left | right;
+}
+
+fn xorU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return left ^ right;
+}
+
+fn notU8x16(value: U8x16) U8x16 @public @simd {
+    return ~value;
+}
+
+fn negU8x16(value: U8x16) U8x16 @public @simd {
+    return -value;
+}
+
+fn shlU8x16(value: U8x16, amount: u32) U8x16 @public @simd {
+    return value << amount;
+}
+
+fn shrU8x16(value: U8x16, amount: u32) U8x16 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v16i8") minU8x16Native(left: U8x16, right: U8x16) U8x16 @public @simd;
+fn minU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return minU8x16Native(left, right);
+}
+
+intrinsic("llvm.umax.v16i8") maxU8x16Native(left: U8x16, right: U8x16) U8x16 @public @simd;
+fn maxU8x16(left: U8x16, right: U8x16) U8x16 @public @simd {
+    return maxU8x16Native(left, right);
+}
+
+fn addS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return left + right;
+}
+
+fn subS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return left - right;
+}
+
+fn mulS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return left * right;
+}
+
+fn divS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return left / right;
+}
+
+fn andS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return left & right;
+}
+
+fn orS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return left | right;
+}
+
+fn xorS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return left ^ right;
+}
+
+fn notS16x8(value: S16x8) S16x8 @public @simd {
+    return ~value;
+}
+
+fn negS16x8(value: S16x8) S16x8 @public @simd {
+    return -value;
+}
+
+fn shlS16x8(value: S16x8, amount: u32) S16x8 @public @simd {
+    return value << amount;
+}
+
+fn shrS16x8(value: S16x8, amount: u32) S16x8 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v8i16") minS16x8Native(left: S16x8, right: S16x8) S16x8 @public @simd;
+fn minS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return minS16x8Native(left, right);
+}
+
+intrinsic("llvm.smax.v8i16") maxS16x8Native(left: S16x8, right: S16x8) S16x8 @public @simd;
+fn maxS16x8(left: S16x8, right: S16x8) S16x8 @public @simd {
+    return maxS16x8Native(left, right);
+}
+
+intrinsic("llvm.abs.v8i16") absS16x8Native(value: S16x8, poison: bool) S16x8 @public @simd;
+fn absS16x8(value: S16x8) S16x8 @public @simd {
+    return absS16x8Native(value, false);
+}
+
+fn addU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return left + right;
+}
+
+fn subU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return left - right;
+}
+
+fn mulU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return left * right;
+}
+
+fn divU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return left / right;
+}
+
+fn andU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return left & right;
+}
+
+fn orU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return left | right;
+}
+
+fn xorU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return left ^ right;
+}
+
+fn notU16x8(value: U16x8) U16x8 @public @simd {
+    return ~value;
+}
+
+fn negU16x8(value: U16x8) U16x8 @public @simd {
+    return -value;
+}
+
+fn shlU16x8(value: U16x8, amount: u32) U16x8 @public @simd {
+    return value << amount;
+}
+
+fn shrU16x8(value: U16x8, amount: u32) U16x8 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v8i16") minU16x8Native(left: U16x8, right: U16x8) U16x8 @public @simd;
+fn minU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return minU16x8Native(left, right);
+}
+
+intrinsic("llvm.umax.v8i16") maxU16x8Native(left: U16x8, right: U16x8) U16x8 @public @simd;
+fn maxU16x8(left: U16x8, right: U16x8) U16x8 @public @simd {
+    return maxU16x8Native(left, right);
+}
+
+fn addS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return left + right;
+}
+
+fn subS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return left - right;
+}
+
+fn mulS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return left * right;
+}
+
+fn divS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return left / right;
+}
+
+fn andS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return left & right;
+}
+
+fn orS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return left | right;
+}
+
+fn xorS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return left ^ right;
+}
+
+fn notS32x4(value: S32x4) S32x4 @public @simd {
+    return ~value;
+}
+
+fn negS32x4(value: S32x4) S32x4 @public @simd {
+    return -value;
+}
+
+fn shlS32x4(value: S32x4, amount: u32) S32x4 @public @simd {
+    return value << amount;
+}
+
+fn shrS32x4(value: S32x4, amount: u32) S32x4 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v4i32") minS32x4Native(left: S32x4, right: S32x4) S32x4 @public @simd;
+fn minS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return minS32x4Native(left, right);
+}
+
+intrinsic("llvm.smax.v4i32") maxS32x4Native(left: S32x4, right: S32x4) S32x4 @public @simd;
+fn maxS32x4(left: S32x4, right: S32x4) S32x4 @public @simd {
+    return maxS32x4Native(left, right);
+}
+
+intrinsic("llvm.abs.v4i32") absS32x4Native(value: S32x4, poison: bool) S32x4 @public @simd;
+fn absS32x4(value: S32x4) S32x4 @public @simd {
+    return absS32x4Native(value, false);
+}
+
+fn addU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return left + right;
+}
+
+fn subU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return left - right;
+}
+
+fn mulU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return left * right;
+}
+
+fn divU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return left / right;
+}
+
+fn andU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return left & right;
+}
+
+fn orU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return left | right;
+}
+
+fn xorU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return left ^ right;
+}
+
+fn notU32x4(value: U32x4) U32x4 @public @simd {
+    return ~value;
+}
+
+fn negU32x4(value: U32x4) U32x4 @public @simd {
+    return -value;
+}
+
+fn shlU32x4(value: U32x4, amount: u32) U32x4 @public @simd {
+    return value << amount;
+}
+
+fn shrU32x4(value: U32x4, amount: u32) U32x4 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v4i32") minU32x4Native(left: U32x4, right: U32x4) U32x4 @public @simd;
+fn minU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return minU32x4Native(left, right);
+}
+
+intrinsic("llvm.umax.v4i32") maxU32x4Native(left: U32x4, right: U32x4) U32x4 @public @simd;
+fn maxU32x4(left: U32x4, right: U32x4) U32x4 @public @simd {
+    return maxU32x4Native(left, right);
+}
+
+fn addS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return left + right;
+}
+
+fn subS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return left - right;
+}
+
+fn mulS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return left * right;
+}
+
+fn divS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return left / right;
+}
+
+fn andS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return left & right;
+}
+
+fn orS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return left | right;
+}
+
+fn xorS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return left ^ right;
+}
+
+fn notS64x2(value: S64x2) S64x2 @public @simd {
+    return ~value;
+}
+
+fn negS64x2(value: S64x2) S64x2 @public @simd {
+    return -value;
+}
+
+fn shlS64x2(value: S64x2, amount: u32) S64x2 @public @simd {
+    return value << amount;
+}
+
+fn shrS64x2(value: S64x2, amount: u32) S64x2 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v2i64") minS64x2Native(left: S64x2, right: S64x2) S64x2 @public @simd;
+fn minS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return minS64x2Native(left, right);
+}
+
+intrinsic("llvm.smax.v2i64") maxS64x2Native(left: S64x2, right: S64x2) S64x2 @public @simd;
+fn maxS64x2(left: S64x2, right: S64x2) S64x2 @public @simd {
+    return maxS64x2Native(left, right);
+}
+
+intrinsic("llvm.abs.v2i64") absS64x2Native(value: S64x2, poison: bool) S64x2 @public @simd;
+fn absS64x2(value: S64x2) S64x2 @public @simd {
+    return absS64x2Native(value, false);
+}
+
+fn addU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return left + right;
+}
+
+fn subU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return left - right;
+}
+
+fn mulU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return left * right;
+}
+
+fn divU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return left / right;
+}
+
+fn andU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return left & right;
+}
+
+fn orU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return left | right;
+}
+
+fn xorU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return left ^ right;
+}
+
+fn notU64x2(value: U64x2) U64x2 @public @simd {
+    return ~value;
+}
+
+fn negU64x2(value: U64x2) U64x2 @public @simd {
+    return -value;
+}
+
+fn shlU64x2(value: U64x2, amount: u32) U64x2 @public @simd {
+    return value << amount;
+}
+
+fn shrU64x2(value: U64x2, amount: u32) U64x2 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v2i64") minU64x2Native(left: U64x2, right: U64x2) U64x2 @public @simd;
+fn minU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return minU64x2Native(left, right);
+}
+
+intrinsic("llvm.umax.v2i64") maxU64x2Native(left: U64x2, right: U64x2) U64x2 @public @simd;
+fn maxU64x2(left: U64x2, right: U64x2) U64x2 @public @simd {
+    return maxU64x2Native(left, right);
+}
+
+fn addS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return left + right;
+}
+
+fn subS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return left - right;
+}
+
+fn mulS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return left * right;
+}
+
+fn divS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return left / right;
+}
+
+fn andS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return left & right;
+}
+
+fn orS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return left | right;
+}
+
+fn xorS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return left ^ right;
+}
+
+fn notS8x32(value: S8x32) S8x32 @public @simd {
+    return ~value;
+}
+
+fn negS8x32(value: S8x32) S8x32 @public @simd {
+    return -value;
+}
+
+fn shlS8x32(value: S8x32, amount: u32) S8x32 @public @simd {
+    return value << amount;
+}
+
+fn shrS8x32(value: S8x32, amount: u32) S8x32 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v32i8") minS8x32Native(left: S8x32, right: S8x32) S8x32 @public @simd;
+fn minS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return minS8x32Native(left, right);
+}
+
+intrinsic("llvm.smax.v32i8") maxS8x32Native(left: S8x32, right: S8x32) S8x32 @public @simd;
+fn maxS8x32(left: S8x32, right: S8x32) S8x32 @public @simd {
+    return maxS8x32Native(left, right);
+}
+
+intrinsic("llvm.abs.v32i8") absS8x32Native(value: S8x32, poison: bool) S8x32 @public @simd;
+fn absS8x32(value: S8x32) S8x32 @public @simd {
+    return absS8x32Native(value, false);
+}
+
+fn addU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return left + right;
+}
+
+fn subU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return left - right;
+}
+
+fn mulU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return left * right;
+}
+
+fn divU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return left / right;
+}
+
+fn andU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return left & right;
+}
+
+fn orU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return left | right;
+}
+
+fn xorU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return left ^ right;
+}
+
+fn notU8x32(value: U8x32) U8x32 @public @simd {
+    return ~value;
+}
+
+fn negU8x32(value: U8x32) U8x32 @public @simd {
+    return -value;
+}
+
+fn shlU8x32(value: U8x32, amount: u32) U8x32 @public @simd {
+    return value << amount;
+}
+
+fn shrU8x32(value: U8x32, amount: u32) U8x32 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v32i8") minU8x32Native(left: U8x32, right: U8x32) U8x32 @public @simd;
+fn minU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return minU8x32Native(left, right);
+}
+
+intrinsic("llvm.umax.v32i8") maxU8x32Native(left: U8x32, right: U8x32) U8x32 @public @simd;
+fn maxU8x32(left: U8x32, right: U8x32) U8x32 @public @simd {
+    return maxU8x32Native(left, right);
+}
+
+fn addS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return left + right;
+}
+
+fn subS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return left - right;
+}
+
+fn mulS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return left * right;
+}
+
+fn divS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return left / right;
+}
+
+fn andS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return left & right;
+}
+
+fn orS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return left | right;
+}
+
+fn xorS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return left ^ right;
+}
+
+fn notS16x16(value: S16x16) S16x16 @public @simd {
+    return ~value;
+}
+
+fn negS16x16(value: S16x16) S16x16 @public @simd {
+    return -value;
+}
+
+fn shlS16x16(value: S16x16, amount: u32) S16x16 @public @simd {
+    return value << amount;
+}
+
+fn shrS16x16(value: S16x16, amount: u32) S16x16 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v16i16") minS16x16Native(left: S16x16, right: S16x16) S16x16 @public @simd;
+fn minS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return minS16x16Native(left, right);
+}
+
+intrinsic("llvm.smax.v16i16") maxS16x16Native(left: S16x16, right: S16x16) S16x16 @public @simd;
+fn maxS16x16(left: S16x16, right: S16x16) S16x16 @public @simd {
+    return maxS16x16Native(left, right);
+}
+
+intrinsic("llvm.abs.v16i16") absS16x16Native(value: S16x16, poison: bool) S16x16 @public @simd;
+fn absS16x16(value: S16x16) S16x16 @public @simd {
+    return absS16x16Native(value, false);
+}
+
+fn addU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return left + right;
+}
+
+fn subU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return left - right;
+}
+
+fn mulU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return left * right;
+}
+
+fn divU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return left / right;
+}
+
+fn andU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return left & right;
+}
+
+fn orU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return left | right;
+}
+
+fn xorU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return left ^ right;
+}
+
+fn notU16x16(value: U16x16) U16x16 @public @simd {
+    return ~value;
+}
+
+fn negU16x16(value: U16x16) U16x16 @public @simd {
+    return -value;
+}
+
+fn shlU16x16(value: U16x16, amount: u32) U16x16 @public @simd {
+    return value << amount;
+}
+
+fn shrU16x16(value: U16x16, amount: u32) U16x16 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v16i16") minU16x16Native(left: U16x16, right: U16x16) U16x16 @public @simd;
+fn minU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return minU16x16Native(left, right);
+}
+
+intrinsic("llvm.umax.v16i16") maxU16x16Native(left: U16x16, right: U16x16) U16x16 @public @simd;
+fn maxU16x16(left: U16x16, right: U16x16) U16x16 @public @simd {
+    return maxU16x16Native(left, right);
+}
+
+fn addS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return left + right;
+}
+
+fn subS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return left - right;
+}
+
+fn mulS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return left * right;
+}
+
+fn divS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return left / right;
+}
+
+fn andS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return left & right;
+}
+
+fn orS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return left | right;
+}
+
+fn xorS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return left ^ right;
+}
+
+fn notS32x8(value: S32x8) S32x8 @public @simd {
+    return ~value;
+}
+
+fn negS32x8(value: S32x8) S32x8 @public @simd {
+    return -value;
+}
+
+fn shlS32x8(value: S32x8, amount: u32) S32x8 @public @simd {
+    return value << amount;
+}
+
+fn shrS32x8(value: S32x8, amount: u32) S32x8 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v8i32") minS32x8Native(left: S32x8, right: S32x8) S32x8 @public @simd;
+fn minS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return minS32x8Native(left, right);
+}
+
+intrinsic("llvm.smax.v8i32") maxS32x8Native(left: S32x8, right: S32x8) S32x8 @public @simd;
+fn maxS32x8(left: S32x8, right: S32x8) S32x8 @public @simd {
+    return maxS32x8Native(left, right);
+}
+
+intrinsic("llvm.abs.v8i32") absS32x8Native(value: S32x8, poison: bool) S32x8 @public @simd;
+fn absS32x8(value: S32x8) S32x8 @public @simd {
+    return absS32x8Native(value, false);
+}
+
+fn addU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return left + right;
+}
+
+fn subU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return left - right;
+}
+
+fn mulU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return left * right;
+}
+
+fn divU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return left / right;
+}
+
+fn andU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return left & right;
+}
+
+fn orU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return left | right;
+}
+
+fn xorU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return left ^ right;
+}
+
+fn notU32x8(value: U32x8) U32x8 @public @simd {
+    return ~value;
+}
+
+fn negU32x8(value: U32x8) U32x8 @public @simd {
+    return -value;
+}
+
+fn shlU32x8(value: U32x8, amount: u32) U32x8 @public @simd {
+    return value << amount;
+}
+
+fn shrU32x8(value: U32x8, amount: u32) U32x8 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v8i32") minU32x8Native(left: U32x8, right: U32x8) U32x8 @public @simd;
+fn minU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return minU32x8Native(left, right);
+}
+
+intrinsic("llvm.umax.v8i32") maxU32x8Native(left: U32x8, right: U32x8) U32x8 @public @simd;
+fn maxU32x8(left: U32x8, right: U32x8) U32x8 @public @simd {
+    return maxU32x8Native(left, right);
+}
+
+fn addS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return left + right;
+}
+
+fn subS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return left - right;
+}
+
+fn mulS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return left * right;
+}
+
+fn divS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return left / right;
+}
+
+fn andS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return left & right;
+}
+
+fn orS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return left | right;
+}
+
+fn xorS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return left ^ right;
+}
+
+fn notS64x4(value: S64x4) S64x4 @public @simd {
+    return ~value;
+}
+
+fn negS64x4(value: S64x4) S64x4 @public @simd {
+    return -value;
+}
+
+fn shlS64x4(value: S64x4, amount: u32) S64x4 @public @simd {
+    return value << amount;
+}
+
+fn shrS64x4(value: S64x4, amount: u32) S64x4 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v4i64") minS64x4Native(left: S64x4, right: S64x4) S64x4 @public @simd;
+fn minS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return minS64x4Native(left, right);
+}
+
+intrinsic("llvm.smax.v4i64") maxS64x4Native(left: S64x4, right: S64x4) S64x4 @public @simd;
+fn maxS64x4(left: S64x4, right: S64x4) S64x4 @public @simd {
+    return maxS64x4Native(left, right);
+}
+
+intrinsic("llvm.abs.v4i64") absS64x4Native(value: S64x4, poison: bool) S64x4 @public @simd;
+fn absS64x4(value: S64x4) S64x4 @public @simd {
+    return absS64x4Native(value, false);
+}
+
+fn addU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return left + right;
+}
+
+fn subU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return left - right;
+}
+
+fn mulU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return left * right;
+}
+
+fn divU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return left / right;
+}
+
+fn andU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return left & right;
+}
+
+fn orU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return left | right;
+}
+
+fn xorU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return left ^ right;
+}
+
+fn notU64x4(value: U64x4) U64x4 @public @simd {
+    return ~value;
+}
+
+fn negU64x4(value: U64x4) U64x4 @public @simd {
+    return -value;
+}
+
+fn shlU64x4(value: U64x4, amount: u32) U64x4 @public @simd {
+    return value << amount;
+}
+
+fn shrU64x4(value: U64x4, amount: u32) U64x4 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v4i64") minU64x4Native(left: U64x4, right: U64x4) U64x4 @public @simd;
+fn minU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return minU64x4Native(left, right);
+}
+
+intrinsic("llvm.umax.v4i64") maxU64x4Native(left: U64x4, right: U64x4) U64x4 @public @simd;
+fn maxU64x4(left: U64x4, right: U64x4) U64x4 @public @simd {
+    return maxU64x4Native(left, right);
+}
+
+fn addS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return left + right;
+}
+
+fn subS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return left - right;
+}
+
+fn mulS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return left * right;
+}
+
+fn divS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return left / right;
+}
+
+fn andS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return left & right;
+}
+
+fn orS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return left | right;
+}
+
+fn xorS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return left ^ right;
+}
+
+fn notS8x64(value: S8x64) S8x64 @public @simd {
+    return ~value;
+}
+
+fn negS8x64(value: S8x64) S8x64 @public @simd {
+    return -value;
+}
+
+fn shlS8x64(value: S8x64, amount: u32) S8x64 @public @simd {
+    return value << amount;
+}
+
+fn shrS8x64(value: S8x64, amount: u32) S8x64 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v64i8") minS8x64Native(left: S8x64, right: S8x64) S8x64 @public @simd;
+fn minS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return minS8x64Native(left, right);
+}
+
+intrinsic("llvm.smax.v64i8") maxS8x64Native(left: S8x64, right: S8x64) S8x64 @public @simd;
+fn maxS8x64(left: S8x64, right: S8x64) S8x64 @public @simd {
+    return maxS8x64Native(left, right);
+}
+
+intrinsic("llvm.abs.v64i8") absS8x64Native(value: S8x64, poison: bool) S8x64 @public @simd;
+fn absS8x64(value: S8x64) S8x64 @public @simd {
+    return absS8x64Native(value, false);
+}
+
+fn addU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return left + right;
+}
+
+fn subU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return left - right;
+}
+
+fn mulU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return left * right;
+}
+
+fn divU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return left / right;
+}
+
+fn andU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return left & right;
+}
+
+fn orU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return left | right;
+}
+
+fn xorU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return left ^ right;
+}
+
+fn notU8x64(value: U8x64) U8x64 @public @simd {
+    return ~value;
+}
+
+fn negU8x64(value: U8x64) U8x64 @public @simd {
+    return -value;
+}
+
+fn shlU8x64(value: U8x64, amount: u32) U8x64 @public @simd {
+    return value << amount;
+}
+
+fn shrU8x64(value: U8x64, amount: u32) U8x64 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v64i8") minU8x64Native(left: U8x64, right: U8x64) U8x64 @public @simd;
+fn minU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return minU8x64Native(left, right);
+}
+
+intrinsic("llvm.umax.v64i8") maxU8x64Native(left: U8x64, right: U8x64) U8x64 @public @simd;
+fn maxU8x64(left: U8x64, right: U8x64) U8x64 @public @simd {
+    return maxU8x64Native(left, right);
+}
+
+fn addS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return left + right;
+}
+
+fn subS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return left - right;
+}
+
+fn mulS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return left * right;
+}
+
+fn divS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return left / right;
+}
+
+fn andS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return left & right;
+}
+
+fn orS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return left | right;
+}
+
+fn xorS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return left ^ right;
+}
+
+fn notS16x32(value: S16x32) S16x32 @public @simd {
+    return ~value;
+}
+
+fn negS16x32(value: S16x32) S16x32 @public @simd {
+    return -value;
+}
+
+fn shlS16x32(value: S16x32, amount: u32) S16x32 @public @simd {
+    return value << amount;
+}
+
+fn shrS16x32(value: S16x32, amount: u32) S16x32 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v32i16") minS16x32Native(left: S16x32, right: S16x32) S16x32 @public @simd;
+fn minS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return minS16x32Native(left, right);
+}
+
+intrinsic("llvm.smax.v32i16") maxS16x32Native(left: S16x32, right: S16x32) S16x32 @public @simd;
+fn maxS16x32(left: S16x32, right: S16x32) S16x32 @public @simd {
+    return maxS16x32Native(left, right);
+}
+
+intrinsic("llvm.abs.v32i16") absS16x32Native(value: S16x32, poison: bool) S16x32 @public @simd;
+fn absS16x32(value: S16x32) S16x32 @public @simd {
+    return absS16x32Native(value, false);
+}
+
+fn addU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return left + right;
+}
+
+fn subU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return left - right;
+}
+
+fn mulU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return left * right;
+}
+
+fn divU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return left / right;
+}
+
+fn andU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return left & right;
+}
+
+fn orU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return left | right;
+}
+
+fn xorU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return left ^ right;
+}
+
+fn notU16x32(value: U16x32) U16x32 @public @simd {
+    return ~value;
+}
+
+fn negU16x32(value: U16x32) U16x32 @public @simd {
+    return -value;
+}
+
+fn shlU16x32(value: U16x32, amount: u32) U16x32 @public @simd {
+    return value << amount;
+}
+
+fn shrU16x32(value: U16x32, amount: u32) U16x32 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v32i16") minU16x32Native(left: U16x32, right: U16x32) U16x32 @public @simd;
+fn minU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return minU16x32Native(left, right);
+}
+
+intrinsic("llvm.umax.v32i16") maxU16x32Native(left: U16x32, right: U16x32) U16x32 @public @simd;
+fn maxU16x32(left: U16x32, right: U16x32) U16x32 @public @simd {
+    return maxU16x32Native(left, right);
+}
+
+fn addS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return left + right;
+}
+
+fn subS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return left - right;
+}
+
+fn mulS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return left * right;
+}
+
+fn divS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return left / right;
+}
+
+fn andS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return left & right;
+}
+
+fn orS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return left | right;
+}
+
+fn xorS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return left ^ right;
+}
+
+fn notS32x16(value: S32x16) S32x16 @public @simd {
+    return ~value;
+}
+
+fn negS32x16(value: S32x16) S32x16 @public @simd {
+    return -value;
+}
+
+fn shlS32x16(value: S32x16, amount: u32) S32x16 @public @simd {
+    return value << amount;
+}
+
+fn shrS32x16(value: S32x16, amount: u32) S32x16 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v16i32") minS32x16Native(left: S32x16, right: S32x16) S32x16 @public @simd;
+fn minS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return minS32x16Native(left, right);
+}
+
+intrinsic("llvm.smax.v16i32") maxS32x16Native(left: S32x16, right: S32x16) S32x16 @public @simd;
+fn maxS32x16(left: S32x16, right: S32x16) S32x16 @public @simd {
+    return maxS32x16Native(left, right);
+}
+
+intrinsic("llvm.abs.v16i32") absS32x16Native(value: S32x16, poison: bool) S32x16 @public @simd;
+fn absS32x16(value: S32x16) S32x16 @public @simd {
+    return absS32x16Native(value, false);
+}
+
+fn addU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return left + right;
+}
+
+fn subU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return left - right;
+}
+
+fn mulU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return left * right;
+}
+
+fn divU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return left / right;
+}
+
+fn andU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return left & right;
+}
+
+fn orU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return left | right;
+}
+
+fn xorU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return left ^ right;
+}
+
+fn notU32x16(value: U32x16) U32x16 @public @simd {
+    return ~value;
+}
+
+fn negU32x16(value: U32x16) U32x16 @public @simd {
+    return -value;
+}
+
+fn shlU32x16(value: U32x16, amount: u32) U32x16 @public @simd {
+    return value << amount;
+}
+
+fn shrU32x16(value: U32x16, amount: u32) U32x16 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v16i32") minU32x16Native(left: U32x16, right: U32x16) U32x16 @public @simd;
+fn minU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return minU32x16Native(left, right);
+}
+
+intrinsic("llvm.umax.v16i32") maxU32x16Native(left: U32x16, right: U32x16) U32x16 @public @simd;
+fn maxU32x16(left: U32x16, right: U32x16) U32x16 @public @simd {
+    return maxU32x16Native(left, right);
+}
+
+fn addS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return left + right;
+}
+
+fn subS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return left - right;
+}
+
+fn mulS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return left * right;
+}
+
+fn divS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return left / right;
+}
+
+fn andS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return left & right;
+}
+
+fn orS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return left | right;
+}
+
+fn xorS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return left ^ right;
+}
+
+fn notS64x8(value: S64x8) S64x8 @public @simd {
+    return ~value;
+}
+
+fn negS64x8(value: S64x8) S64x8 @public @simd {
+    return -value;
+}
+
+fn shlS64x8(value: S64x8, amount: u32) S64x8 @public @simd {
+    return value << amount;
+}
+
+fn shrS64x8(value: S64x8, amount: u32) S64x8 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.smin.v8i64") minS64x8Native(left: S64x8, right: S64x8) S64x8 @public @simd;
+fn minS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return minS64x8Native(left, right);
+}
+
+intrinsic("llvm.smax.v8i64") maxS64x8Native(left: S64x8, right: S64x8) S64x8 @public @simd;
+fn maxS64x8(left: S64x8, right: S64x8) S64x8 @public @simd {
+    return maxS64x8Native(left, right);
+}
+
+intrinsic("llvm.abs.v8i64") absS64x8Native(value: S64x8, poison: bool) S64x8 @public @simd;
+fn absS64x8(value: S64x8) S64x8 @public @simd {
+    return absS64x8Native(value, false);
+}
+
+fn addU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return left + right;
+}
+
+fn subU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return left - right;
+}
+
+fn mulU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return left * right;
+}
+
+fn divU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return left / right;
+}
+
+fn andU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return left & right;
+}
+
+fn orU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return left | right;
+}
+
+fn xorU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return left ^ right;
+}
+
+fn notU64x8(value: U64x8) U64x8 @public @simd {
+    return ~value;
+}
+
+fn negU64x8(value: U64x8) U64x8 @public @simd {
+    return -value;
+}
+
+fn shlU64x8(value: U64x8, amount: u32) U64x8 @public @simd {
+    return value << amount;
+}
+
+fn shrU64x8(value: U64x8, amount: u32) U64x8 @public @simd {
+    return value >> amount;
+}
+
+intrinsic("llvm.umin.v8i64") minU64x8Native(left: U64x8, right: U64x8) U64x8 @public @simd;
+fn minU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return minU64x8Native(left, right);
+}
+
+intrinsic("llvm.umax.v8i64") maxU64x8Native(left: U64x8, right: U64x8) U64x8 @public @simd;
+fn maxU64x8(left: U64x8, right: U64x8) U64x8 @public @simd {
+    return maxU64x8Native(left, right);
+}
+

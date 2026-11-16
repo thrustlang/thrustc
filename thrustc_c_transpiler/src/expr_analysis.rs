@@ -92,6 +92,7 @@ pub fn try_resolve_expression_type<'clang>(
     resolved
 }
 
+// scalar constant nested array is like: [{123, 123, 123, 123}, {123, 123, 123, 123}}
 pub fn analyze_nested_scalar_array_type(ty: &clang::Type<'_>) -> Option<(bool, Vec<usize>)> {
     let canonical: clang::Type<'_> = ty.get_canonical_type();
 

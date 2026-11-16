@@ -64,15 +64,21 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
     fn setup_target_specific_metadata_or_attributes(&self) {
         let options: &CompilerOptions = self.get_codegen_context().get_compiler_options();
         let llvm_backend: &LLVMBackend = options.get_llvm_backend();
-        let file_options = self.get_codegen_context().get_file_options();
+        let file_options: &thrustc_directive::FileOptions<'_, '_> =
+            self.get_codegen_context().get_file_options();
 
         {
-            let (cpu, features): (&str, &str) = llvm_backend.get_cross_target_cpu();
+            let target_triple: thrustc_llvm_target_triple::LLVMTargetTriple =
+                llvm_backend.get_normalized_target_triple_with_cpu();
 
-            let features_attr: Attribute = self
-                .get_codegen_context()
-                .get_llvm_context()
-                .create_string_attribute("target-features", features);
+            let cpu: &str = target_triple.get_cpu().get_name();
+            let features: &str = target_triple.get_cpu().get_features();
+
+            let features_attr: Option<Attribute> = (!features.is_empty()).then(|| {
+                self.get_codegen_context()
+                    .get_llvm_context()
+                    .create_string_attribute("target-features", features)
+            });
 
             let target_cpu_attr: Attribute = self
                 .get_codegen_context()
@@ -88,7 +94,10 @@ impl<'a, 'ctx> LLVMMetadata<'a, 'ctx> {
                 for function in self.get_codegen_context().get_llvm_module().get_functions() {
                     function.add_attribute(AttributeLoc::Function, target_cpu_attr);
                     function.add_attribute(AttributeLoc::Function, tune_cpu_attr);
-                    function.add_attribute(AttributeLoc::Function, features_attr);
+
+                    if let Some(features_attr) = features_attr {
+                        function.add_attribute(AttributeLoc::Function, features_attr);
+                    }
 
                     if !file_options.omit_trapping_math() {
                         let no_trapping_math_attr: Attribute = self

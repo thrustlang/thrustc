@@ -1,0 +1,43 @@
+/*
+ * A non-escaping loop terminates the function: control never falls through.
+ */
+
+fn pick(value: s32) s32 {
+    loop {
+        if value > 0 {
+            return value;
+        }
+
+        return -value;
+    }
+}
+
+fn stop() void {
+    loop {
+        return;
+    }
+}
+
+fn countToThree() s32 {
+    var index: s32 = 0;
+
+    loop {
+        index = index + 1;
+
+        if index < 3 {
+            continue;
+        }
+
+        return index;
+    }
+}
+
+fn main() s32 @public {
+    if pick(7) != 7 { return 1; }
+    if pick(-3) != 3 { return 2; }
+    if countToThree() != 3 { return 3; }
+
+    stop();
+
+    return 0;
+}

@@ -19,6 +19,8 @@
 
 #![allow(clippy::result_unit_err)]
 
+pub mod simd;
+
 use colored::Colorize;
 
 use thrustc_code_location::Span;
@@ -63,9 +65,9 @@ lazy_static::lazy_static! {
     pub static ref COMPILATION_ISSUE_CODE_EXPLANATIONS: ahash::AHashMap<CompilationIssueCode, &'static str> = {
         let mut explanations: ahash::AHashMap<CompilationIssueCode, &'static str> = ahash::AHashMap::with_capacity(u8::MAX as usize);
 
-        explanations.insert(CompilationIssueCode::E0001, r##"A token did not match the grammar the compiler expected at that position. The parser reads the source from left to right and, at each step, knows which token must come next. When a different token appears, the compilation stops.
+        explanations.insert(CompilationIssueCode::E0001, r##"The parser expected a different token at this position. It reads the source from left to right and knows which token must come next. Compilation stops when another token appears.
 
-Most of the time the cause is a missing separator, a misspelled keyword, or a malformed literal. The message names the token the parser was waiting for. Look at the reported location and fix the code around it.
+The cause is usually a missing separator, a misspelled keyword, or a malformed literal. The message names the token the parser expected. Check the reported location and fix the code around it.
 
 Incorrect:
 """
@@ -105,9 +107,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0003, r##"A compiler builtin is a function the compiler provides and evaluates at compile time. Each builtin has a fixed name registered in the compiler. When a name that is not registered is called as a builtin, the reference cannot be resolved.
+        explanations.insert(CompilationIssueCode::E0003, r##"A compiler builtin is a function the compiler provides and evaluates at compile time. Builtins have fixed names. If the name is not registered, the call cannot be resolved.
 
-Check the spelling of the builtin and use a name that exists in the compiler registry.
+Check the spelling and use a registered builtin.
 
 Incorrect:
 """
@@ -157,9 +159,9 @@ Correct:
 global_asm("nop");
 """##);
 
-        explanations.insert(CompilationIssueCode::E0006, r##"Some positions require a value known at compile time. Constant and static initializers, array sizes, and the arguments of constant-folding builtins all need a constant expression. A runtime value, such as a function parameter or a variable read, does not satisfy this requirement.
+        explanations.insert(CompilationIssueCode::E0006, r##"Some positions require a value known at compile time: constant and static initializers, array sizes, and the arguments of constant-folding builtins. A runtime value, such as a function parameter or a variable read, is not constant.
 
-Replace the runtime expression with a constant one.
+Replace the runtime expression with a constant expression.
 
 Incorrect:
 """
@@ -178,9 +180,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0007, r##"A reference points to a memory location. When the code needs a reference that is backed by an address, the expression must name a value that actually lives in memory. Taking the address of a temporary, like the result of an arithmetic expression, produces a reference without a stable address.
+        explanations.insert(CompilationIssueCode::E0007, r##"A reference points to a memory location. The expression after `ref` must name a value stored in memory. The result of an arithmetic expression is a temporary, so it has no stable address.
 
-Store the value in a variable first and take the address of the variable.
+Store the value in a variable and take the address of that variable.
 
 Incorrect:
 """
@@ -200,9 +202,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0008, r##"Operations that read or write through memory need an lvalue: a value with a stable memory address. A pure value, such as a literal or the result of an arithmetic expression, has no address and cannot be indexed or dereferenced.
+        explanations.insert(CompilationIssueCode::E0008, r##"Operations that read or write through memory need an lvalue: a value with a stable memory address. A pure value, such as a literal or an arithmetic result, has no address, so it cannot be indexed or dereferenced.
 
-Use a variable or an array element that lives in memory instead of the pure value.
+Use a variable or an array element.
 
 Incorrect:
 """
@@ -222,9 +224,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0010, r##"This code is reserved. The current compiler does not emit it. It is meant to describe operations whose behavior the language does not define, such as signed integer overflow, division by zero, or access outside the bounds of an array. When it becomes active, the compiler will reject code that performs these operations.
+        explanations.insert(CompilationIssueCode::E0010, r##"This code is reserved for future use. The current compiler does not emit it. Once active, it will report operations the language leaves undefined, such as signed integer overflow, division by zero, or an out-of-bounds array access.
 
-Keep arithmetic inside the defined range of the type.
+Keep arithmetic within the range of the type.
 
 Incorrect:
 """
@@ -245,9 +247,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0011, r##"A declaration requires an attribute that was not provided. A function without a body that calls into foreign code needs the @extern attribute, and an external assembler function needs the @asmSyntax attribute. The compiler names the attribute that is missing.
+        explanations.insert(CompilationIssueCode::E0011, r##"A declaration is missing a required attribute. A function without a body that calls foreign code needs @extern. An external assembler function needs @asmSyntax. The diagnostic names the missing attribute.
 
-Add the attribute that the diagnostic asks for.
+Add that attribute.
 
 Incorrect:
 """
@@ -260,9 +262,9 @@ Correct:
 fn printf(fmt: const array[char]) s32 @public @extern("printf") @convention("C");
 """##);
 
-        explanations.insert(CompilationIssueCode::E0012, r##"An attribute was written with a value that is not valid. The compiler checks the arguments of each attribute and reports when they do not follow the expected form. Invalid alignment values, unknown assembler syntax, and mutually exclusive constructor and destructor attributes are examples of this error.
+        explanations.insert(CompilationIssueCode::E0012, r##"An attribute has an invalid value. The compiler checks each attribute argument and rejects values that do not match the expected form. Examples include an invalid alignment, an unknown assembler syntax, and conflicting constructor and destructor attributes.
 
-Write the attribute with a value the compiler accepts.
+Use a value the compiler accepts.
 
 Incorrect:
 """
@@ -281,9 +283,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0013, r##"An attribute was applied in a place where it is not allowed. The compiler validates each attribute against the declaration that carries it and the values around it. A foreign function with a body, a local constant with public visibility, or a constructor that returns a value are all rejected.
+        explanations.insert(CompilationIssueCode::E0013, r##"An attribute is not allowed on this declaration. The compiler checks each attribute against the declaration and its context. It rejects, for example, a foreign function with a body, a local constant marked @public, and a constructor that returns a value.
 
-Remove the attribute or change the declaration so the attribute is valid there.
+Remove the attribute or change the declaration.
 
 Incorrect:
 """
@@ -298,7 +300,7 @@ Correct:
 fn printf(fmt: const array[char]) s32 @public @extern("printf") @convention("C");
 """##);
 
-        explanations.insert(CompilationIssueCode::E0014, r##"A statement placed after a terminator will never run. A terminator ends the flow of a block: return, unreachable, break, continue, or a branch where every path ends in a terminator. Code that follows it is dead and the compiler rejects it. Remove the statement or move it before the terminator.
+        explanations.insert(CompilationIssueCode::E0014, r##"A statement after a terminator never runs. A terminator is a return, unreachable, break, continue, or a branch whose paths all end in one. The compiler rejects code after it. Move the statement before the terminator or remove it.
 
 Incorrect:
 """
@@ -317,7 +319,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0015, r##"A block can only have one terminator. A second return, unreachable instruction, or loop control instruction in the same block is rejected because the first one already ends the block. Remove all but one.
+        explanations.insert(CompilationIssueCode::E0015, r##"A block can have only one terminator. The first return, unreachable, break, or continue already ends the block, so the compiler rejects another one. Remove the extra terminator.
 
 Incorrect:
 """
@@ -335,9 +337,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0016, r##"Every declaration has a scope where it belongs. Functions, types, enums, imports, intrinsics and global assembly only exist at module scope. Statements and expressions do not exist at module scope; they live inside functions. Using a declaration in the wrong scope is an error.
+        explanations.insert(CompilationIssueCode::E0016, r##"Functions, types, enums, imports, intrinsics, and global assembly belong at module scope. Statements and expressions belong inside functions. The compiler rejects a declaration in the wrong scope.
 
-Move the declaration to the scope the compiler expects.
+Move it to the expected scope.
 
 Incorrect:
 """
@@ -361,9 +363,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0017, r##"This code is reserved. The current compiler reports loop control outside of a loop as E0018. This code describes break and continue statements used where no loop is open. Loop control only makes sense inside a loop body.
+        explanations.insert(CompilationIssueCode::E0017, r##"This code is reserved for future use. The current compiler reports loop control outside a loop as E0018. It will describe break and continue used where no loop is open. Loop control is valid only inside a loop body.
 
-Move the loop control inside the loop it belongs to.
+Move it into the loop.
 
 Incorrect:
 """
@@ -384,9 +386,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0018, r##"A terminator or loop control statement was used outside the construct it belongs to. break, breakall, continue and continueall are only valid inside a loop. return is only valid inside a function. Using them elsewhere is an error.
+        explanations.insert(CompilationIssueCode::E0018, r##"A terminator or loop control statement is outside the construct where it can appear. break, breakall, continue, and continueall are valid only inside a loop. return is valid only inside a function.
 
-Move the statement inside the loop or function it belongs to.
+Move the statement into the loop or function.
 
 Incorrect:
 """
@@ -407,9 +409,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0019, r##"A type was used in a way the compiler does not allow. This is a general error that covers many situations: void used as a value, an operand of the wrong type for a builtin or an operation, a return that does not match the declared type, a staticAssert whose condition is false, and an invoked compileError.
+        explanations.insert(CompilationIssueCode::E0019, r##"The compiler found a general type error. Examples include using void as a value, passing the wrong operand type to a builtin or operator, returning a value that does not match the declared type, a false staticAssert, and an invoked compileError.
 
-The message points at the value and the type involved. Fix the code so the types follow the rules of the operation.
+The message names the value and its type. Fix the code so the types follow the operation.
 
 Incorrect:
 """
@@ -428,7 +430,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0020, r##"A value of one type was used where another type is required. The compiler compares the expected type with the type of the provided value and stops when they are not the same. Make the value match the expected type.
+        explanations.insert(CompilationIssueCode::E0020, r##"A value has a different type from the one expected. The compiler compares the expected type with the provided value and stops when they differ. Make the value match the expected type.
 
 Incorrect:
 """
@@ -447,7 +449,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0021, r##"Two types are structurally equal but carry different attributes. Structure metadata and function reference modifiers are part of the type. When code expects a type with one set of attributes and receives a type with another, the comparison fails even though the layout is the same. Make the attributes match.
+        explanations.insert(CompilationIssueCode::E0021, r##"Two types are structurally equal but have different attributes. Structure metadata and function reference modifiers are part of the type. When code expects one set of attributes and receives another, the comparison fails even though the layout is the same. Make the attributes match.
 
 Incorrect:
 """
@@ -481,7 +483,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0022, r##"A function call must provide the number of arguments the signature declares. When the call passes a different total, the compiler reports the expected count and the received count. A variadic function declared with @arbitraryArgs is exempt from this rule. Fill the call with the missing arguments or remove the extras.
+        explanations.insert(CompilationIssueCode::E0022, r##"A call must pass the number of arguments the signature declares. The compiler reports the expected and received counts. A variadic function declared with @arbitraryArgs is exempt. Add the missing arguments or remove the extras.
 
 Incorrect:
 """
@@ -506,7 +508,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0023, r##"A call provides the right number of arguments, but the types are not in the order the signature declares. The compiler lists the expected types so the call can be reordered. Put each argument in the position that matches its type.
+        explanations.insert(CompilationIssueCode::E0023, r##"A call has the right number of arguments, but their types do not match the parameter order. The compiler lists the expected types. Put each argument in the position that matches its type.
 
 Incorrect:
 """
@@ -544,7 +546,7 @@ Correct:
 fn compute(value: f64) f64 @public @extern("compute") @convention("C");
 """##);
 
-        explanations.insert(CompilationIssueCode::E0025, r##"An intrinsic declaration names an LLVM intrinsic that the compiler does not recognize. The name must match an intrinsic the compiler knows. Check the spelling and use the exact LLVM name.
+        explanations.insert(CompilationIssueCode::E0025, r##"An intrinsic declaration names an LLVM intrinsic that the compiler does not recognize. Check the spelling and use the exact LLVM name.
 
 Incorrect:
 """
@@ -557,7 +559,7 @@ Correct:
 intrinsic("llvm.sqrt.f64") mySqrt(value: f64) f64 @public;
 """##);
 
-        explanations.insert(CompilationIssueCode::E0026, r##"A struct constructor provides more fields than the struct type defines. Each struct field can be set once, and no field that is not part of the struct can be set. Remove the extra field.
+        explanations.insert(CompilationIssueCode::E0026, r##"A struct constructor sets more fields than the struct defines. Each field can be set once, and only fields declared by the struct can be set. Remove the extra field.
 
 Incorrect:
 """
@@ -615,7 +617,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0028, r##"A name was referenced that does not exist in the current scope. The reference can point to a local, a parameter, a constant, a static, a function, or an imported symbol. If the name is not in any of those tables, the reference cannot be resolved. Declare the name or correct the spelling.
+        explanations.insert(CompilationIssueCode::E0028, r##"A name does not exist in the current scope. It may refer to a local, parameter, constant, static, function, or imported symbol, but none of those declarations is visible here. Declare the name or correct the spelling.
 
 Incorrect:
 """
@@ -634,7 +636,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0029, r##"This code is reserved. The current compiler reports import failures as E0035. This code describes an import that cannot be resolved: a path that does not exist, a file with an invalid extension, or a standard library module that is not part of the current version. Fix the import so it points to a real module.
+        explanations.insert(CompilationIssueCode::E0029, r##"This code is reserved for future use. The current compiler reports import failures as E0035. It will describe an import that cannot be resolved, such as a path that does not exist, a file with an invalid extension, or a standard library module missing from the current version. Fix the import so it points to a real module.
 
 Incorrect:
 """
@@ -647,7 +649,7 @@ Correct:
 import "module.thrust";
 """##);
 
-        explanations.insert(CompilationIssueCode::E0030, r##"An operator was applied to operand types it does not support. Bitwise operations require integers, logical operations require booleans, and arithmetic operations require numeric values. When the operand types do not follow the rule of the operator, the operation is rejected. Change the operand or the operator.
+        explanations.insert(CompilationIssueCode::E0030, r##"An operator received operand types it does not support. Bitwise operators require integers, logical operators require booleans, and arithmetic operators require numeric values. The compiler rejects an operation when its operands do not fit the operator. Change an operand or use another operator.
 
 Incorrect:
 """
@@ -669,7 +671,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0031, r##"An operator was used that the typechecker does not recognize as a valid arithmetic or logical operation. The operator and its operand types fall outside every rule the compiler defines. Change the operator to one the types support.
+        explanations.insert(CompilationIssueCode::E0031, r##"The typechecker does not recognize this operator and operand combination as an arithmetic or logical operation. Change the operator to one the types support.
 
 Incorrect:
 """
@@ -690,7 +692,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0032, r##"A cast converts a value from one type to another. Not every pair of types can be cast directly. When the compiler does not allow the conversion, the cast is rejected. Use a cast the compiler permits, or go through an intermediate type.
+        explanations.insert(CompilationIssueCode::E0032, r##"A cast converts a value from one type to another. The compiler does not allow every pair of types to be cast directly. Use a permitted cast, or go through an intermediate type.
 
 Incorrect:
 """
@@ -711,7 +713,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0033, r##"Attributes on a declaration must not contradict each other. Repeating the same attribute or combining mutually exclusive ones, like @inline with @noInline, is an error. Remove the attribute that conflicts.
+        explanations.insert(CompilationIssueCode::E0033, r##"Attributes on a declaration cannot contradict each other. Repeating an attribute or combining mutually exclusive ones, such as @inline and @noInline, is an error. Remove one of the conflicting attributes.
 
 Incorrect:
 """
@@ -728,7 +730,7 @@ fn compute(value: s32) s32 @public @inline {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0034, r##"An overloaded LLVM intrinsic must use the dotted overload form. The name carries a suffix for each overload, written as name.suffix. When the name does not contain enough segments to identify the overload, the compiler cannot resolve it. Use the full overload name.
+        explanations.insert(CompilationIssueCode::E0034, r##"An overloaded LLVM intrinsic must use the dotted overload form. The name has a suffix for each overload, written as name.suffix. If the name does not contain enough segments to identify the overload, the compiler cannot resolve it. Use the full overload name.
 
 Incorrect:
 """
@@ -741,7 +743,7 @@ Correct:
 intrinsic("llvm.memcpy.p0i8.p0i8.i64") myMemcpy(dst: ptr, src: ptr, size: usize, volatile: bool) ptr @public;
 """##);
 
-        explanations.insert(CompilationIssueCode::E0035, r##"An import could not be resolved. The compiler rejects imports of the file itself, paths that do not exist or do not point to a file, files with an invalid extension, and standard library modules that are not present in the current version. Check the path and the module name.
+        explanations.insert(CompilationIssueCode::E0035, r##"The compiler could not resolve an import. It rejects an import of the file itself, a path that does not exist or is not a file, a file with an invalid extension, and a standard library module missing from the current version. Check the path and module name.
 
 Incorrect:
 """
@@ -754,7 +756,7 @@ Correct:
 import "module.thrust";
 """##);
 
-        explanations.insert(CompilationIssueCode::E0036, r##"An assembler function signature exceeds the limit of twelve parameters, or more than twelve parameters have to be passed in registers. Assembler functions have a fixed parameter budget. Reduce the number of parameters or pass the values through pointers.
+        explanations.insert(CompilationIssueCode::E0036, r##"An assembler function has more than twelve parameters, or more than twelve of them must be passed in registers. Assembler functions allow at most twelve. Reduce the parameter count or pass values through pointers.
 
 Incorrect:
 """
@@ -767,7 +769,7 @@ Correct:
 asmfn sum(a0: s32, a1: s32, a2: s32, a3: s32) s32 @public { "" } { "" };
 """##);
 
-        explanations.insert(CompilationIssueCode::E0037, r##"Code, expressions, types, and blocks are only allowed to nest up to a fixed depth. Deeper nesting is rejected to keep the compiler bounded. Flatten the structure: split the code into smaller blocks or use helper functions.
+        explanations.insert(CompilationIssueCode::E0037, r##"Code, expressions, types, and blocks can nest only to a fixed depth. The compiler rejects deeper nesting. Split the code into smaller blocks or use helper functions.
 
 Incorrect:
 """
@@ -807,7 +809,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0039, r##"A type that the current target does not support was used. Some targets lack certain floating-point types, such as the 80-bit extended float. Check which types the target triple provides and use one of them.
+        explanations.insert(CompilationIssueCode::E0039, r##"The current target does not support this type. Some targets do not provide certain floating-point types, such as the 80-bit extended float. Use a type the target triple provides.
 
 Incorrect:
 """
@@ -826,7 +828,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0040, r##"A reference names a symbol that is not in the symbol table of the current scope. The name was never declared, or it was declared in a scope that is not visible here. Create the symbol or reference it correctly.
+        explanations.insert(CompilationIssueCode::E0040, r##"A reference names a symbol that is not visible in the current scope. The name was never declared, or it was declared in a scope that is not visible here. Declare the symbol or use a visible name.
 
 Incorrect:
 """
@@ -844,7 +846,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0041, r##"A type could not be resolved at compile time. The type still contains a placeholder that no expression or declaration filled in. Resolve the type so the compiler can determine it.
+        explanations.insert(CompilationIssueCode::E0041, r##"The compiler could not resolve a type at compile time. The type still contains a placeholder that no expression or declaration filled in. Supply the missing type information.
 
 Incorrect:
 """
@@ -863,7 +865,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0042, r##"A qualified type reference names a type that the module does not export. The compiler resolves module::Type against the exports of that module. Use a type the module actually exports.
+        explanations.insert(CompilationIssueCode::E0042, r##"A qualified type reference names a type that the module does not export. The compiler resolves module::Type against the exports of that module. Use a type the module exports.
 
 Incorrect:
 """
@@ -886,7 +888,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0043, r##"A name is exported by more than one imported module. When the name is used without qualification, the compiler cannot decide which module it comes from. Disambiguate the reference, either with a qualified access or by restricting the imports.
+        explanations.insert(CompilationIssueCode::E0043, r##"More than one imported module exports this name. Without a qualifier, the compiler cannot tell which module the name comes from. Use a qualified access or restrict the imports.
 
 Incorrect:
 """
@@ -909,7 +911,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0044, r##"A call uses a named argument that the function does not declare, or uses named arguments on a function that does not support them. Named arguments must match the parameter names of the callee. Use a declared parameter name, or fall back to positional arguments.
+        explanations.insert(CompilationIssueCode::E0044, r##"A call uses a named argument the function does not declare, or named arguments on a function that does not support them. Named arguments must match parameter names. Use a declared name or pass the argument by position.
 
 Incorrect:
 """
@@ -934,7 +936,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0045, r##"A named argument was provided twice for the same parameter, or a named argument repeats a position already filled by a positional argument. Each parameter can receive only one value. Remove the duplicated argument.
+        explanations.insert(CompilationIssueCode::E0045, r##"The call provides a named argument twice for the same parameter, or a named argument repeats a position already filled by a positional argument. Each parameter takes one value. Remove the duplicate.
 
 Incorrect:
 """
@@ -959,7 +961,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0046, r##"Positional arguments must come before named arguments in a call. A positional argument that follows a named one is rejected because it makes the order ambiguous. Place all positional arguments first.
+        explanations.insert(CompilationIssueCode::E0046, r##"Positional arguments must come before named arguments. The compiler rejects a positional argument after a named one because the order becomes ambiguous. Place all positional arguments first.
 
 Incorrect:
 """
@@ -984,7 +986,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0047, r##"The arbitraryArg and arbitraryArgs builtins read the extra arguments of a variadic function. They are only available inside a function declared with the @arbitraryArgs attribute. Add the attribute to the function or move the builtin.
+        explanations.insert(CompilationIssueCode::E0047, r##"The arbitraryArg and arbitraryArgs builtins read extra arguments passed to a variadic function. They are available only inside a function declared with @arbitraryArgs. Add the attribute to the function or move the builtin.
 
 Incorrect:
 """
@@ -1003,7 +1005,7 @@ fn variadic(first: s32) s32 @public @arbitraryArgs {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0048, r##"A builtin that depends on the host platform is not available on the current one. The hostName builtin only works on systems that provide the underlying service. Use a builtin the platform supports.
+        explanations.insert(CompilationIssueCode::E0048, r##"This builtin depends on the host platform and is not available here. hostName only works on systems that provide that service. Use a builtin the platform supports.
 
 Incorrect:
 """
@@ -1022,7 +1024,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0049, r##"A generic call or type provides more explicit type arguments than the generic declares. Each generic parameter accepts exactly one type, so passing more arguments than there are parameters is rejected. Remove the extra type arguments or declare the missing parameters.
+        explanations.insert(CompilationIssueCode::E0049, r##"A generic call or type provides more explicit type arguments than the generic declares. Each parameter takes one type. Remove the extra arguments or add the missing parameters to the generic.
 
 Incorrect:
 """
@@ -1047,7 +1049,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0050, r##"A call to a generic function provides a number of arguments that does not match the number of parameters the signature declares. The compiler compares the received count with the expected count and stops when they differ. A variadic function declared with @arbitraryArgs is exempt from this rule. Fill the call with the missing arguments or remove the extras.
+        explanations.insert(CompilationIssueCode::E0050, r##"A call to a generic function passes a different number of arguments than the signature declares. The compiler reports the expected and received counts. A variadic function declared with @arbitraryArgs is exempt. Add the missing arguments or remove the extras.
 
 Incorrect:
 """
@@ -1072,7 +1074,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0051, r##"A generic type parameter could not be inferred. The compiler needs to know the concrete type of every generic parameter, either from an explicit type argument or from the types of the arguments. When neither provides the type, the parameter stays unresolved. Provide the type explicitly between brackets or make it appear in the arguments.
+        explanations.insert(CompilationIssueCode::E0051, r##"The compiler could not infer a generic type parameter. It needs a concrete type for every parameter, either from an explicit type argument or from the argument types. When neither provides one, the parameter stays unresolved. Pass the type in brackets or make it appear in the arguments.
 
 Incorrect:
 """
@@ -1097,7 +1099,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0052, r##"A generic structure constructor provides a number of type arguments that does not match the number of type parameters the structure declares. Each generic parameter accepts exactly one type. Provide one type per generic parameter of the structure.
+        explanations.insert(CompilationIssueCode::E0052, r##"A generic structure constructor passes a different number of type arguments than the structure declares. Provide one type for each generic parameter.
 
 Incorrect:
 """
@@ -1126,7 +1128,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0053, r##"A generic type is used with a number of type arguments that does not match the number of type parameters it declares. This applies to generic structures and generic custom types referenced by name. Each generic parameter accepts exactly one type. Provide one type per generic parameter.
+        explanations.insert(CompilationIssueCode::E0053, r##"A generic type has a different number of type arguments than its declaration requires. This applies to generic structures and to generic custom types referenced by name. Provide one type for each generic parameter.
 
 Incorrect:
 """
@@ -1153,9 +1155,9 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0054, r##"A compiler directive contains an unknown flag, an invalid value, or a command-line option that cannot be applied to a single source file. Directives use command-line spelling inside a string and only file-scoped compilation options are accepted.
+        explanations.insert(CompilationIssueCode::E0054, r##"A compiler directive has an unknown flag, an invalid value, or a command-line option that cannot apply to a single source file. Directives use command-line spelling inside a string, and only file-scoped options are accepted.
 
-Use the value format shown by the command-line help. Build, target, standard-library, JIT, linker, cleanup, and process-control options must remain on the command line because they affect the complete compilation rather than one file.
+Use the format shown by the command-line help. Build, target, standard-library, JIT, linker, cleanup, and process-control options stay on the command line because they affect the whole compilation.
 
 Incorrect:
 """
@@ -1167,7 +1169,7 @@ Correct:
 directive "-opt=O2";
 """"##);
 
-        explanations.insert(CompilationIssueCode::E0055, r##"A generic declaration lists the same type parameter more than once. Each type parameter needs a distinct name so the compiler can tell them apart. Rename the duplicate so every generic parameter is unique.
+        explanations.insert(CompilationIssueCode::E0055, r##"A generic declaration lists the same type parameter more than once. Each parameter needs a distinct name. Rename the duplicate.
 
 Incorrect:
 """
@@ -1184,7 +1186,7 @@ fn pair[A, B](a: A, b: B) A @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::E0056, r##"An atomic operation requires a memory location whose declaration carries an atomic ordering. The read-modify-write builtins (atomicStore, atomicAdd, atomicSubtract, atomicAnd, atomicNand, atomicOr, atomicXor, atomicSignedMaximum, atomicSignedMinimum, atomicUnsignedMaximum, atomicUnsignedMinimum) and atomicCompareAndSwap operate atomically only when the target symbol is declared with one of the atomic ordering modificators.
+        explanations.insert(CompilationIssueCode::E0056, r##"An atomic operation needs a memory location declared with an atomic ordering. The read-modify-write builtins (atomicStore, atomicAdd, atomicSubtract, atomicAnd, atomicNand, atomicOr, atomicXor, atomicSignedMaximum, atomicSignedMinimum, atomicUnsignedMaximum, atomicUnsignedMinimum) and atomicCompareAndSwap are atomic only when the target symbol has one of the atomic ordering modificators.
 
 The atomic ordering modificators are atomicRelax, atomicGrab, atomicDrop, atomicSync, and atomicStrict. atomicNone and atomicFree do not describe an atomic memory operation. Declare the target with an atomic ordering, or use a non-atomic operation.
 
@@ -1200,7 +1202,7 @@ var atomicRelax counter: u32 = 0;
 var old: u32 = atomicAdd(counter, 1);
 """##);
 
-        explanations.insert(CompilationIssueCode::E0057, r##"A variable arguments list can only carry arguments with a scalar or pointer representation. The 'arbitraryArgFrom' builtin reads a value of a given type from a va_list with LLVM's va_arg instruction, which only supports integers, floats and pointers. Structs and arrays have no single va_arg representation, so reading them is rejected.
+        explanations.insert(CompilationIssueCode::E0057, r##"A variable arguments list can carry only arguments with a scalar or pointer representation. The 'arbitraryArgFrom' builtin reads a value from a va_list with LLVM's va_arg instruction, which supports integers, floats, and pointers. Structs and arrays have no single va_arg representation, so the compiler rejects them.
 
 Use a pointer type to receive a struct or array: pass a pointer and read it with 'ptr' or 'ptr[T]'.
 
@@ -1214,7 +1216,36 @@ Correct:
 var p: ptr[SomeStruct] = arbitraryArgFrom(args, ptr[SomeStruct]);
 """##);
 
-        explanations.insert(CompilationIssueCode::W0001, r##"An attribute was attached to a declaration kind it does not apply to. Each kind of declaration accepts a fixed set of attributes. An attribute outside that set has no meaning there and is reported as irrelevant. Remove the attribute.
+        explanations.insert(
+            CompilationIssueCode::E0060,
+            r##"SIMD code needs an explicit target CPU feature list. The compiler does not infer features from the selected CPU, so pass '-cpu-features' when SIMD code is present.
+
+List every feature the target needs. An x86_64 build, for example, can pass '+sse2,+avx,+avx2'. Empty entries are rejected. The compiler does not resolve implications or contradictory entries, so include the complete list."##,
+        );
+
+        explanations.insert(
+            CompilationIssueCode::E0061,
+            r##"SIMD values are not supported in variadic functions on x86_64 System V. The variadic path skips the System V classification that places 32-byte and 64-byte NativeVector values in registers.
+
+Pass the NativeVector through a fixed-arity function or a pointer.
+
+Incorrect:
+"""
+fn forward(values: NativeVector[f32; 8]) void @public @arbitraryArgs {
+}
+"""
+
+Correct:
+"""
+fn forwardFixed(values: NativeVector[f32; 8]) void @public {
+}
+
+fn forwardPointer(values: ptr[NativeVector[f32; 8]]) void @public @arbitraryArgs {
+}
+"""##,
+        );
+
+        explanations.insert(CompilationIssueCode::W0001, r##"An attribute does not apply to this kind of declaration. Each declaration kind accepts a fixed set of attributes. The compiler reports an attribute outside that set as irrelevant. Remove it.
 
 Incorrect:
 """
@@ -1227,7 +1258,7 @@ Correct:
 fn printf(fmt: const array[char]) s32 @public;
 """##);
 
-        explanations.insert(CompilationIssueCode::W0002, r##"A @convention attribute names a convention the compiler does not know. The compiler cannot apply it, so it falls back to the C convention and keeps going. Use a convention from the list of known values, or omit the attribute.
+        explanations.insert(CompilationIssueCode::W0002, r##"A @convention attribute names a convention the compiler does not know. The compiler cannot apply it, so it uses the C convention instead. Use a known convention or omit the attribute.
 
 Incorrect:
 """
@@ -1240,7 +1271,7 @@ Correct:
 fn compute(value: f64) f64 @public @extern("compute") @convention("C");
 """##);
 
-        explanations.insert(CompilationIssueCode::W0003, r##"A @linkage attribute names a linkage the compiler does not know. The compiler cannot apply it, so it falls back to the standard C linkage and keeps going. Use a linkage from the list of known values, or omit the attribute.
+        explanations.insert(CompilationIssueCode::W0003, r##"A @linkage attribute names a linkage the compiler does not know. The compiler cannot apply it, so it uses the standard C linkage instead. Use a known linkage or omit the attribute.
 
 Incorrect:
 """
@@ -1253,7 +1284,7 @@ Correct:
 static mut counter: u32 @public @linkage("internal") = 0;
 """##);
 
-        explanations.insert(CompilationIssueCode::W0004, r##"A linkage value contradicts the @public or @extern attribute. A public or external symbol needs non-proprietary linkage; combining it with internal or linker-private linkage fails at link time. Change the linkage or remove the visibility attribute.
+        explanations.insert(CompilationIssueCode::W0004, r##"A linkage value conflicts with @public or @extern. A public or external symbol needs non-proprietary linkage; internal or linker-private linkage fails at link time. Change the linkage or remove the visibility attribute.
 
 Incorrect:
 """
@@ -1266,7 +1297,7 @@ Correct:
 static mut counter: u32 @public @linkage("standard") = 0;
 """##);
 
-        explanations.insert(CompilationIssueCode::W0005, r##"A local variable was declared but never read afterwards. The variable occupies nothing at runtime, but it signals dead code. Remove the variable or use it.
+        explanations.insert(CompilationIssueCode::W0005, r##"A local variable is declared but never read. The variable itself has no runtime effect, but it marks dead code. Remove it or use it.
 
 Incorrect:
 """
@@ -1285,7 +1316,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0007, r##"This code is reserved. The current compiler does not emit it. It is meant to describe a low-level intermediate value that was declared but never used. A declared value that is never referenced serves no purpose. Remove it or use it.
+        explanations.insert(CompilationIssueCode::W0007, r##"This code is reserved for future use. The current compiler does not emit it. It will describe a low-level intermediate value that is declared but never used. Remove the value or use it.
 
 Incorrect:
 """
@@ -1304,7 +1335,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0008, r##"A function parameter was never read inside the function body. The parameter is part of the signature, but the body does not use it. Remove the parameter or use it.
+        explanations.insert(CompilationIssueCode::W0008, r##"A function parameter is never read in the function body. Remove the parameter or use it.
 
 Incorrect:
 """
@@ -1321,7 +1352,7 @@ fn sumar(a: s32, b: s32) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0009, r##"A static symbol was declared but never referenced. A static that nothing reads or writes serves no purpose. Remove it or use it. Statics marked @public are exempt because other modules may reference them.
+        explanations.insert(CompilationIssueCode::W0009, r##"A static symbol is never referenced. Remove it or use it. A static marked @public is exempt because another module may reference it.
 
 Incorrect:
 """
@@ -1343,7 +1374,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0010, r##"A constant was declared but never used. A constant that is never referenced serves no purpose. Remove it or use it. Constants marked @public are exempt because other modules may reference them.
+        explanations.insert(CompilationIssueCode::W0010, r##"A constant is never used. Remove it or use it. A constant marked @public is exempt because another module may reference it.
 
 Incorrect:
 """
@@ -1365,7 +1396,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0011, r##"An assembler function was declared but never called. An asmfn that nothing invokes serves no purpose. Remove it or call it. Functions marked @public are exempt because other modules may reference them.
+        explanations.insert(CompilationIssueCode::W0011, r##"An assembler function is never called. Remove it or call it. A function marked @public is exempt because another module may reference it.
 
 Incorrect:
 """
@@ -1386,7 +1417,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0012, r##"An enum type was declared but never used. An enum that nothing references serves no purpose. Remove it or use it. Enums marked @public are exempt because other modules may reference them.
+        explanations.insert(CompilationIssueCode::W0012, r##"An enum type is never used. Remove it or use it. An enum marked @public is exempt because another module may reference it.
 
 Incorrect:
 """
@@ -1408,7 +1439,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0013, r##"A field of an enum was never used. An enum field that no code reads serves no purpose. Remove the field or use it.
+        explanations.insert(CompilationIssueCode::W0013, r##"A field of an enum is never used. Remove the field or use it.
 
 Incorrect:
 """
@@ -1432,7 +1463,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0014, r##"An intrinsic was declared but never called. An intrinsic that nothing invokes serves no purpose. Remove it or call it. Intrinsics marked @public are exempt because other modules may reference them.
+        explanations.insert(CompilationIssueCode::W0014, r##"An intrinsic is never called. Remove it or call it. An intrinsic marked @public is exempt because another module may reference it.
 
 Incorrect:
 """
@@ -1454,7 +1485,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0015, r##"A struct type was declared but never used. A struct that nothing constructs or references serves no purpose. Remove it or use it. Structs marked @public are exempt because other modules may reference them.
+        explanations.insert(CompilationIssueCode::W0015, r##"A struct type is never used. Remove it or use it. A struct marked @public is exempt because another module may reference it.
 
 Incorrect:
 """
@@ -1476,7 +1507,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0016, r##"A field of a struct was never accessed. A struct field that no code reads or writes serves no purpose. Remove the field or use it.
+        explanations.insert(CompilationIssueCode::W0016, r##"A field of a struct is never accessed. Remove the field or use it.
 
 Incorrect:
 """
@@ -1499,7 +1530,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0017, r##"A function was declared but never called. A function that nothing invokes serves no purpose. Remove it or call it. Functions marked @public are exempt because other modules may reference them.
+        explanations.insert(CompilationIssueCode::W0017, r##"A function is never called. Remove it or call it. A function marked @public is exempt because another module may reference it.
 
 Incorrect:
 """
@@ -1524,7 +1555,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0018, r##"An import chain returns to a module that is already being loaded. The circular import is omitted so the compilation can continue, but the missing module may leave names undefined. Break the cycle by removing one of the imports.
+        explanations.insert(CompilationIssueCode::W0018, r##"An import chain returns to a module that is already loading. The compiler omits the circular import so compilation can continue, but names from that module may remain undefined. Remove one of the imports to break the cycle.
 
 Incorrect:
 """
@@ -1544,7 +1575,7 @@ import "module_b.thrust";
 // module_b.thrust
 """##);
 
-        explanations.insert(CompilationIssueCode::W0019, r##"A feature that is still unstable was used. Unstable features can change and may produce unexpected compiler behavior. They are intended for experimentation. Prefer the stable equivalent when one exists.
+        explanations.insert(CompilationIssueCode::W0019, r##"An unstable feature was used. Unstable features can change and may produce unexpected compiler behavior. Use a stable equivalent when one exists.
 
 Incorrect:
 """
@@ -1559,7 +1590,7 @@ fn sumar(a: s32, b: s32) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0020, r##"A variable was declared mutable but never changed. The mutability adds nothing if the value is only read. Remove the mutability or mutate the variable.
+        explanations.insert(CompilationIssueCode::W0020, r##"A variable is declared mutable but never changes. Remove the mutability or change the variable.
 
 Incorrect:
 """
@@ -1579,7 +1610,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0021, r##"A local variable has the same name as a variable declared in an enclosing scope. The new declaration hides the outer one, which is often a mistake. Rename one of the variables.
+        explanations.insert(CompilationIssueCode::W0021, r##"A local variable has the same name as a variable in an enclosing scope. The new declaration hides the outer one. Rename one of the variables.
 
 Incorrect:
 """
@@ -1606,7 +1637,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0022, r##"A variable is assigned its own value. The assignment changes nothing. Remove it.
+        explanations.insert(CompilationIssueCode::W0022, r##"A variable is assigned its own value, so the assignment changes nothing. Remove it.
 
 Incorrect:
 """
@@ -1626,7 +1657,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0023, r##"A block contains no statements. It has no effect on the program. Remove it.
+        explanations.insert(CompilationIssueCode::W0023, r##"An empty block has no effect on the program. Remove it.
 
 Incorrect:
 """
@@ -1644,7 +1675,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0024, r##"A name does not follow the naming convention of its kind. Type names use PascalCase, values use lowerCamelCase, and constants use lowerCamelCase or UPPER_SNAKE. Rename the declaration to follow the convention.
+        explanations.insert(CompilationIssueCode::W0024, r##"A name does not follow the naming convention for its declaration kind. Type names use PascalCase, values use lowerCamelCase, and constants use lowerCamelCase or UPPER_SNAKE. Rename the declaration.
 
 Incorrect:
 """
@@ -1663,7 +1694,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0025, r##"A loop has a constant true condition or no exit condition, and its body never reaches a terminator. The loop can never end. Add a condition that changes, or a break, return, or unreachable path inside the loop.
+        explanations.insert(CompilationIssueCode::W0025, r##"A loop has a constant true condition or no exit condition, and its body never reaches a terminator. It cannot end. Change the condition, or add a break, return, or unreachable path inside the loop.
 
 Incorrect:
 """
@@ -1686,7 +1717,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0026, r##"A comparison compares a value with itself. The result is always true or always false, so the comparison adds nothing. Compare the value with another value instead.
+        explanations.insert(CompilationIssueCode::W0026, r##"A comparison compares a value with itself. The result is always true or always false. Compare the value with something else.
 
 Incorrect:
 """
@@ -1711,7 +1742,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0027, r##"A value is assigned to a variable and overwritten, or the variable goes out of scope, before the value is ever read. The assignment has no effect. Remove the first assignment or read the value before overwriting it.
+        explanations.insert(CompilationIssueCode::W0027, r##"A value is assigned to a variable, then overwritten or lost when the variable goes out of scope, before the code reads it. The first assignment has no effect. Remove it or read the value before overwriting it.
 
 Incorrect:
 """
@@ -1731,7 +1762,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0028, r##"An expression statement evaluates an expression and discards the result. When the expression has no side effects, the statement does nothing. Remove it or use the result.
+        explanations.insert(CompilationIssueCode::W0028, r##"An expression statement evaluates an expression and discards the result. If the expression has no side effects, the statement does nothing. Remove it or use the result.
 
 Incorrect:
 """
@@ -1750,7 +1781,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0029, r##"A condition folds to a constant at compile time. The branch is always taken or always skipped. Use a condition that depends on a value that changes.
+        explanations.insert(CompilationIssueCode::W0029, r##"The condition is constant at compile time, so the branch is always taken or always skipped. Use a condition that depends on a changing value.
 
 Incorrect:
 """
@@ -1791,7 +1822,7 @@ fn helper() s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0031, r##"The compileWarning builtin emits a warning at compile time. The message is the string passed to the builtin. It does not stop the compilation. Remove the builtin to silence the warning, or keep it to mark a known limitation.
+        explanations.insert(CompilationIssueCode::W0031, r##"The compileWarning builtin emits a warning at compile time. The message is the string passed to it. Compilation continues. Remove the builtin to silence the warning, or keep it to mark a known limitation.
 
 Incorrect:
 """
@@ -1809,7 +1840,7 @@ fn main(argc: s32, argv: ptr[array[char]]) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0032, r##"A generic declaration lists a type parameter that is never used. The parameter appears in the brackets but never in the signature, the fields, or the body, so it has no effect on the code. Remove the parameter from the brackets or use it in the declaration.
+        explanations.insert(CompilationIssueCode::W0032, r##"A generic declaration lists a type parameter that is never used. The parameter appears in the brackets but nowhere in the declaration, so it has no effect. Remove it or use it.
 
 Incorrect:
 """
@@ -1826,9 +1857,9 @@ fn size[T](value: T) s32 @public {
 }
 """##);
 
-        explanations.insert(CompilationIssueCode::W0033, r##"A variadic function carries a hidden argument count parameter. The compiler prepends the number of extra arguments passed at the call site so the function body can query it with arbitraryArgsCount(). Functions that forward arbitraryArgs() to an FFI variadic (such as the vprintf family) must not carry this hidden parameter, because their ABI has to stay C-compatible.
+        explanations.insert(CompilationIssueCode::W0033, r##"A variadic function has a hidden argument count parameter. The compiler prepends the number of extra arguments passed at the call site, and the body can read it with arbitraryArgsCount(). A function that forwards arbitraryArgs() to an FFI variadic, such as the vprintf family, must not have this hidden parameter because its ABI has to stay C-compatible.
 
-Add the @noArgCount attribute to opt out of the hidden argument count.
+Add @noArgCount to opt out.
 
 Incorrect:
 """
@@ -1846,16 +1877,16 @@ fn print(fmt: CString) s32 @public @arbitraryArgs @noArgCount {
 
         explanations.insert(
             CompilationIssueCode::E0100,
-            r##"The compiler failed to import C declarations through `importC`. This typically means Clang reported an error (or fatal error) while parsing the header.
+            r##"The compiler could not import C declarations through `importC`. Clang probably reported an error or fatal error while parsing the header.
 
-Check the reported header path, include paths, defines, and the C standard. If the header requires system includes, ensure they are available on the machine."##,
+Check the reported header path, include paths, defines, and C standard. If the header needs system includes, make sure they are available on the machine."##,
         );
 
         explanations.insert(
             CompilationIssueCode::E0110,
-            r##"The compiler failed to translate a C source file into Thrust (`--translate-c-to-thrust`) because the C file contains a construct that the translator does not support yet.
+            r##"The compiler could not translate a C source file into Thrust (`--translate-c-to-thrust`) because the file uses a construct the translator does not support yet.
 
-Limit the C input to the supported subset or rewrite the unsupported part."##,
+Limit the C input to the supported subset or rewrite that construct."##,
         );
 
         explanations.insert(
@@ -1867,41 +1898,41 @@ Check the input file, include paths, defines, and the C standard."##,
 
         explanations.insert(
             CompilationIssueCode::E0112,
-            r##"The compiler could not infer the concrete type of a statement macro parameter while translating a C source file into Thrust (`--translate-c-to-thrust`).
+            r##"The compiler could not infer the type of a statement macro parameter while translating a C source file into Thrust (`--translate-c-to-thrust`).
 
-Give the parameter a typed context (for example a typed local declaration or a cast) so its type can be determined."##,
+Give the parameter a typed context, such as a typed local declaration or a cast, so the compiler can determine its type."##,
         );
 
         explanations.insert(
             CompilationIssueCode::W0100,
-            r##"Clang emitted a diagnostic while importing a C header with `importC`. These messages are forwarded to help debug include paths, defines, and unsupported constructs."##,
+            r##"Clang emitted a diagnostic while importing a C header with `importC`. The compiler forwards the message to help debug include paths, defines, and unsupported constructs."##,
         );
 
         explanations.insert(
             CompilationIssueCode::W0101,
-            r##"A C struct field had no name, so the importer generated a placeholder name such as `field0`. This keeps bindings usable but the field name is invented."##,
+            r##"A C struct field had no name, so the importer generated a placeholder such as `field0`. The binding works, but the field name is invented."##,
         );
 
         explanations.insert(
             CompilationIssueCode::W0102,
-            r##"A C union was skipped because unions are not supported yet by `importC`."##,
+            r##"The importer skipped a C union because `importC` does not support unions yet."##,
         );
 
         explanations.insert(
             CompilationIssueCode::W0103,
-            r##"A C struct was skipped because it contains bitfields, which are not supported yet by `importC`."##,
+            r##"The importer skipped a C struct because it contains bitfields, which `importC` does not support yet."##,
         );
 
         explanations.insert(
             CompilationIssueCode::W0104,
-            r##"A C declaration was skipped because it could not be represented safely in Thrust (unsupported type, incomplete type, or other unsupported construct)."##,
+            r##"The importer skipped a C declaration because it could not represent it safely in Thrust. The cause is an unsupported type, an incomplete type, or another unsupported construct."##,
         );
 
         explanations.insert(
             CompilationIssueCode::W0105,
-            r##"A generated Thrust binding could not preserve the exact bytes of a C macro string literal. The emitter produced a parseable string literal by interpreting the macro bytes as UTF-8 and falling back to lossy replacement for invalid sequences.
+            r##"A generated Thrust binding could not preserve the exact bytes of a C macro string literal. The emitter interpreted the macro bytes as UTF-8 and used lossy replacement for invalid sequences to produce a parseable literal.
 
-The resulting binding is valid Thrust code, but the literal content may differ from the original C macro."##,
+The binding is valid Thrust, but the literal content may differ from the original C macro."##,
         );
 
         explanations
@@ -1966,6 +1997,8 @@ pub enum CompilationIssueCode {
     E0055,
     E0056,
     E0057,
+    E0060,
+    E0061,
 
     // importC / cbindgen
     E0100,
@@ -2193,6 +2226,12 @@ impl CompilationIssueCode {
             CompilationIssueCode::E0057 => {
                 format!("INVALID VARIADIC ARGUMENT TYPE - {}", "E0057".bright_red())
             }
+            CompilationIssueCode::E0060 => {
+                format!("SIMD TARGET FEATURES MISSING - {}", "E0060".bright_red())
+            }
+            CompilationIssueCode::E0061 => {
+                format!("UNSUPPORTED SIMD VARIADIC - {}", "E0061".bright_red())
+            }
 
             CompilationIssueCode::E0100 => {
                 format!("C IMPORT FAILED - {}", "E0100".bright_red())
@@ -2400,6 +2439,8 @@ impl CompilationIssueCode {
             "E0055" => Ok(CompilationIssueCode::E0055),
             "E0056" => Ok(CompilationIssueCode::E0056),
             "E0057" => Ok(CompilationIssueCode::E0057),
+            "E0060" => Ok(CompilationIssueCode::E0060),
+            "E0061" => Ok(CompilationIssueCode::E0061),
 
             "E0100" => Ok(CompilationIssueCode::E0100),
 

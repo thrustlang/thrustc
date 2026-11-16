@@ -23,7 +23,7 @@ use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_lexer::Lexer;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_token::{traits::TokenExtensions, Token};
+use thrustc_token::{Token, traits::TokenExtensions};
 use thrustc_token_type::TokenType;
 
 use crate::{module::Module, parser::ModuleParser, std_library};
@@ -303,7 +303,20 @@ fn parse_std_import<'module_parser>(parser: &mut ModuleParser<'module_parser>) -
 
             Ok(())
         }
-        Err(()) => {
+
+        Err(std_library::StdModuleError::Unstable) => {
+            parser.add_error(CompilationIssue::Error(
+                CompilationIssueCode::E0001,
+                format!("The '{}' module is unstable.", access.join("::")),
+                "You must pass '-mode unstable' to access it.".into(),
+                None,
+                last_span,
+            ));
+
+            Err(())
+        }
+
+        Err(std_library::StdModuleError::NotFound) => {
             parser.add_error(CompilationIssue::Error(
                 CompilationIssueCode::E0035,
                 format!(

@@ -54,6 +54,7 @@ pub enum LLVMAttribute<'ctx> {
     Align(u64),
     Pure,
     Thunk,
+    Simd,
     Promote(&'ctx HashMap<Type, Type>),
 
     // LLVM Structure Modificator
@@ -203,6 +204,7 @@ pub enum LLVMAttributeComparator {
     Linkage,
     Pure,
     Thunk,
+    Simd,
     EntryPoint,
     Promote,
 
@@ -260,6 +262,7 @@ pub fn into_llvm_attribute(attribute: &ThrustAttribute) -> LLVMAttribute<'_> {
         ThrustAttribute::Align(align, ..) => LLVMAttribute::Align(*align),
         ThrustAttribute::Pure(..) => LLVMAttribute::Pure,
         ThrustAttribute::Thunk(..) => LLVMAttribute::Thunk,
+        ThrustAttribute::Simd(..) => LLVMAttribute::Simd,
         ThrustAttribute::Constructor(..) => LLVMAttribute::Constructor,
         ThrustAttribute::Destructor(..) => LLVMAttribute::Destructor,
         ThrustAttribute::Promote(promote, ..) => LLVMAttribute::Promote(promote),

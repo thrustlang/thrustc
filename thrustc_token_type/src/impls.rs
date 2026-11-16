@@ -236,6 +236,7 @@ impl TokenTypeAttributesExtensions for TokenType {
                 | TokenType::Convention
                 | TokenType::Pure
                 | TokenType::Thunk
+                | TokenType::Simd
                 | TokenType::Promote
                 | TokenType::Cuda
         )
@@ -393,6 +394,7 @@ impl std::fmt::Display for TokenType {
             TokenType::StrongStack => write!(f, "@strongStack"),
             TokenType::WeakStack => write!(f, "@weakStack"),
             TokenType::Pure => write!(f, "@pure"),
+            TokenType::Simd => write!(f, "@simd"),
             TokenType::Cuda => write!(f, "@cuda"),
             TokenType::Destructor => write!(f, "@destructor"),
             TokenType::Constructor => write!(f, "@constructor"),

@@ -1,0 +1,27 @@
+// test-requires: x86_64 avx
+// test-cpu-features: +sse2,+avx
+
+struct V @public {
+    left: NativeVector[f32; 8],
+    right: NativeVector[f32; 8]
+}
+
+fn identity(value: V) V @public {
+    return value;
+}
+
+fn main() s32 @public {
+    var input: V = new V {
+        left: native[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+        right: native[8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0]
+    };
+    var result: V = identity(input);
+
+    var left: NativeVector[f32; 8] = result->left;
+    var right: NativeVector[f32; 8] = result->right;
+
+    if left[0] != 1.0 { return 1; }
+    if right[7] != 1.0 { return 2; }
+
+    return 0;
+}

@@ -1,0 +1,16 @@
+// test-requires: x86_64 avx
+// test-cpu-features: +sse2,+avx
+// No Clang reference: C array parameters decay to pointers.
+
+fn identity(value: array[NativeVector[f32; 8]; 2]) array[NativeVector[f32; 8]; 2] @public {
+    return value;
+}
+
+fn main() s32 @public {
+    var input: array[NativeVector[f32; 8]; 2];
+    var result: array[NativeVector[f32; 8]; 2] = identity(input);
+
+    if sizeOf(result) != sizeOf(input) { return 1; }
+
+    return 0;
+}

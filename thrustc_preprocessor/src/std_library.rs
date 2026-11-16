@@ -24,10 +24,10 @@ use std::rc::Rc;
 use ahash::AHashMap as HashMap;
 use ahash::AHashSet as HashSet;
 
-use thrustc_backends::llvm::target::LLVMTarget;
 use thrustc_backends::llvm::LLVMBackend;
-use thrustc_builtins::default_registry;
+use thrustc_backends::llvm::target::LLVMTarget;
 use thrustc_builtins::BuiltinRegistry;
+use thrustc_builtins::default_registry;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_lexer::Lexer;
 use thrustc_llvm_target_triple::LLVMTargetTriple;
@@ -38,6 +38,15 @@ use thrustc_typesystem::type_layout::TargetInfo;
 use crate::module::Module;
 use crate::parser::ModuleParser;
 use crate::registry::{ModuleRegistry, SharedModuleRegistry};
+
+// SIMD std modules use NativeVector, native[...] and @simd, so they need unstable mode.
+const UNSTABLE_STD_MODULES: &[&[&str]] = &[&["simd"], &["intrinsics", "x86_64", "simd"]];
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StdModuleError {
+    NotFound,
+    Unstable,
+}
 
 #[derive(Debug)]
 pub struct StdLibrary {
@@ -60,32 +69,45 @@ thread_local! {
     static STD_BUILDING_STATE: RefCell<Option<Rc<BuildingStd>>> = const { RefCell::new(None) };
 }
 
-pub fn find_std_module(access: &[String], options: &CompilerOptions) -> Result<Module, ()> {
+pub fn find_std_module(
+    access: &[String],
+    options: &CompilerOptions,
+) -> Result<Module, StdModuleError> {
+    let relative: &[String] = if access.first().map(String::as_str) == Some("std") {
+        &access[1..]
+    } else {
+        access
+    };
+
+    if options.get_compiler_features().is_stable_mode() && self::is_unstable_std_module(relative) {
+        return Err(StdModuleError::Unstable);
+    }
+
     let building_state: Option<Rc<BuildingStd>> =
         STD_BUILDING_STATE.with(|cell| cell.borrow().as_ref().cloned());
 
     if let Some(state) = building_state {
-        return self::find_std_module_building(&state, access, options);
+        return self::find_std_module_building(&state, relative, options);
     }
 
-    self::ensure_built(options)?;
+    self::ensure_built(options).map_err(|_| StdModuleError::NotFound)?;
 
     STD_LIBRARY.with(|cell| {
         let slot: std::cell::Ref<'_, Option<StdLibrary>> = cell.borrow();
-        let library: &StdLibrary = slot.as_ref().ok_or(())?;
+        let library: &StdLibrary = slot.as_ref().ok_or(StdModuleError::NotFound)?;
 
-        let root: Rc<Module> = library.registry.borrow().find("std").ok_or(())?;
-
-        let relative: &[String] = if access.first().map(String::as_str) == Some("std") {
-            &access[1..]
-        } else {
-            access
-        };
+        let root: Rc<Module> = library
+            .registry
+            .borrow()
+            .find("std")
+            .ok_or(StdModuleError::NotFound)?;
 
         let module: Module = if relative.is_empty() {
             (*root).clone()
         } else {
-            root.find_submodule(relative.to_vec()).ok_or(())?.clone()
+            root.find_submodule(relative.to_vec())
+                .ok_or(StdModuleError::NotFound)?
+                .clone()
         };
 
         let module_path: std::path::PathBuf = module.get_path().to_path_buf();
@@ -116,17 +138,15 @@ pub fn find_std_module(access: &[String], options: &CompilerOptions) -> Result<M
 
 fn find_std_module_building(
     state: &Rc<BuildingStd>,
-    access: &[String],
+    relative: &[String],
     options: &CompilerOptions,
-) -> Result<Module, ()> {
-    let relative: &[String] = if access.first().map(String::as_str) == Some("std") {
-        &access[1..]
-    } else {
-        access
-    };
-
+) -> Result<Module, StdModuleError> {
     if relative.is_empty() {
         return Ok(state.root.borrow().clone());
+    }
+
+    if options.get_compiler_features().is_stable_mode() && self::is_unstable_std_module(relative) {
+        return Err(StdModuleError::Unstable);
     }
 
     {
@@ -137,9 +157,12 @@ fn find_std_module_building(
         }
     }
 
-    let file_path: PathBuf = self::resolve_std_path(state, relative)?;
-    let module: Module = self::ensure_parsed(state, &file_path, options)?;
-    self::attach_into_root(state, &file_path, module.clone())?;
+    let file_path: PathBuf =
+        self::resolve_std_path(state, relative).map_err(|_| StdModuleError::NotFound)?;
+    let module: Module =
+        self::ensure_parsed(state, &file_path, options).map_err(|_| StdModuleError::NotFound)?;
+    self::attach_into_root(state, &file_path, module.clone())
+        .map_err(|_| StdModuleError::NotFound)?;
 
     Ok(module)
 }
@@ -311,7 +334,11 @@ fn build_library(options: &CompilerOptions) -> Result<StdLibrary, ()> {
 
     STD_BUILDING_STATE.with(|cell| *cell.borrow_mut() = Some(state.clone()));
 
-    let result: Result<(), ()> = self::build_std_tree(&state, options);
+    let result: Result<(), ()> = {
+        let version_dir: PathBuf = state.version_dir.clone();
+
+        self::walk_and_attach(&state, &version_dir, options)
+    };
 
     STD_BUILDING_STATE.with(|cell| *cell.borrow_mut() = None);
 
@@ -324,41 +351,6 @@ fn build_library(options: &CompilerOptions) -> Result<StdLibrary, ()> {
         registry,
         imported: RefCell::new(Vec::new()),
     })
-}
-
-fn build_std_tree(state: &Rc<BuildingStd>, options: &CompilerOptions) -> Result<(), ()> {
-    let version_dir: PathBuf = state.version_dir.clone();
-    self::walk_and_attach(state, &version_dir, options)
-}
-
-fn walk_and_attach(
-    state: &Rc<BuildingStd>,
-    directory: &Path,
-    options: &CompilerOptions,
-) -> Result<(), ()> {
-    let entries: std::fs::ReadDir = std::fs::read_dir(directory).map_err(|_| ())?;
-
-    for entry in entries {
-        let entry: std::fs::DirEntry = entry.map_err(|_| ())?;
-        let path: PathBuf = entry.path();
-
-        if path.is_dir() {
-            self::walk_and_attach(state, &path, options)?;
-        } else if self::is_thrust_file(&path) {
-            let module: Module = self::ensure_parsed(state, &path, options)?;
-            self::attach_into_root(state, &path, module)?;
-        }
-    }
-
-    Ok(())
-}
-
-fn is_thrust_file(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .is_some_and(|extension| {
-            thrustc_constants::COMPILER_OWN_FILE_EXTENSIONS.contains(&extension)
-        })
 }
 
 fn parse_std_module_file(
@@ -380,13 +372,14 @@ fn parse_std_module_file(
         CompilationUnit::new(name, path.to_path_buf(), content, base_name.clone());
 
     let tokens: Vec<Token> = Lexer::lex_for_preprocessor(&file, options).map_err(|_| ())?;
-    let directives =
+    let directives: thrustc_directive::FileDirectives =
         thrustc_directive::apply_file_directives(&tokens, options.get_compiler_features())
             .map_err(|error| {
                 let mut diagnostician: Diagnostician = Diagnostician::new(&file, options);
                 diagnostician.dispatch_diagnostic(&error, thrustc_logging::LoggingType::Error);
             })?;
-    let file_options = thrustc_directive::FileOptions::new(options, &directives);
+    let file_options: thrustc_directive::FileOptions<'_, '_> =
+        thrustc_directive::FileOptions::new(options, &directives);
 
     let subparser: ModuleParser = ModuleParser::new(
         base_name,
@@ -400,6 +393,77 @@ fn parse_std_module_file(
     );
 
     subparser.parse()
+}
+
+fn walk_and_attach(
+    state: &Rc<BuildingStd>,
+    directory: &Path,
+    options: &CompilerOptions,
+) -> Result<(), ()> {
+    let entries: std::fs::ReadDir = std::fs::read_dir(directory).map_err(|_| ())?;
+
+    for entry in entries {
+        let entry: std::fs::DirEntry = entry.map_err(|_| ())?;
+        let path: PathBuf = entry.path();
+
+        if options.get_compiler_features().is_stable_mode()
+            && self::is_unstable_std_path(&state.version_dir, &path)
+        {
+            continue;
+        }
+
+        if path.is_dir() {
+            self::walk_and_attach(state, &path, options)?;
+        } else if self::is_thrust_file(&path) {
+            let module: Module = self::ensure_parsed(state, &path, options)?;
+            self::attach_into_root(state, &path, module)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn is_unstable_std_path(version_dir: &Path, path: &Path) -> bool {
+    let Ok(relative_path): Result<&Path, std::path::StripPrefixError> =
+        path.strip_prefix(version_dir)
+    else {
+        return false;
+    };
+
+    let mut components: Vec<String> = relative_path
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().into_owned())
+        .collect();
+
+    if path.is_file() {
+        if let Some(last) = components.last_mut() {
+            let stem: String = Path::new(last.as_str())
+                .file_stem()
+                .map_or_else(|| last.clone(), |stem| stem.to_string_lossy().into_owned());
+
+            *last = stem;
+        }
+    }
+
+    self::is_unstable_std_module(&components)
+}
+
+fn is_unstable_std_module(relative: &[String]) -> bool {
+    UNSTABLE_STD_MODULES.iter().any(|prefix| {
+        relative.len() >= prefix.len()
+            && relative
+                .iter()
+                .zip(prefix.iter())
+                .all(|(part, expected)| part == expected)
+    })
+}
+
+fn is_thrust_file(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            thrustc_constants::COMPILER_OWN_FILE_EXTENSIONS.contains(&extension)
+        })
 }
 
 #[cfg(test)]
@@ -419,6 +483,7 @@ mod tests {
         ));
 
         let version_dir: PathBuf = root.join("vtest");
+
         std::fs::create_dir_all(&version_dir).unwrap();
         std::fs::write(root.join("VERSION.txt"), "test\n").unwrap();
 
@@ -427,6 +492,7 @@ mod tests {
         }
 
         let mut options: CompilerOptions = CompilerOptions::new();
+
         options.set_std_root_path(root.clone());
         options.set_std_version("test".to_string());
 
@@ -435,6 +501,26 @@ mod tests {
         std::fs::remove_dir_all(&root).ok();
     }
 
+    // spec/types/primitives.md:87 marks NativeVector unstable, and SIMD std modules also use @simd. https://github.com/thrustlang/thrustc/blob/master/spec/types/primitives.md#L87
+    // The test pins the simd prefix and the low-level intrinsic path as unstable before std parsing.
+    #[test]
+    fn unstable_std_modules_match_simd_paths() {
+        assert!(super::is_unstable_std_module(&[
+            "simd".to_string(),
+            "x86_64".to_string(),
+        ]));
+        assert!(super::is_unstable_std_module(&[
+            "intrinsics".to_string(),
+            "x86_64".to_string(),
+            "simd".to_string(),
+        ]));
+        assert!(!super::is_unstable_std_module(&[
+            "intrinsics".to_string(),
+            "float".to_string(),
+        ]));
+    }
+
+    // A std module must see symbols from another std module it imports.
     #[test]
     fn std_module_can_import_another_std_module() {
         with_temp_std(

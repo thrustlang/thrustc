@@ -49,6 +49,7 @@ pub trait ThrustAttributesExtensions {
 
     fn has_cuda_attribute(&self) -> bool;
     fn has_noreturn_attribute(&self) -> bool;
+    fn has_simd_attribute(&self) -> bool;
 
     fn match_attr(&self, cmp: ThrustAttributeComparator) -> Option<Span>;
     fn get_attr(&self, cmp: ThrustAttributeComparator) -> Option<ThrustAttribute>;

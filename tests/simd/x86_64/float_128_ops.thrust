@@ -1,0 +1,48 @@
+// test-requires: x86_64
+// test-cpu-features: +sse2
+
+import std::simd::x86_64 as simd;
+
+fn main() s32 @public {
+    var af32x4: simd::F32x4 = native[1.0, 2.0, 3.0, 4.0];
+    var bf32x4: simd::F32x4 = native[4.0, 3.0, 2.0, 1.0];
+    var addf32x4: simd::F32x4 = simd::addPackedSinglePrecision128(af32x4, bf32x4);
+    var subf32x4: simd::F32x4 = simd::subPackedSinglePrecision128(af32x4, bf32x4);
+    var mulf32x4: simd::F32x4 = simd::mulPackedSinglePrecision128(af32x4, bf32x4);
+    var divf32x4: simd::F32x4 = simd::divPackedSinglePrecision128(af32x4, bf32x4);
+    var sqrtf32x4: simd::F32x4 = simd::sqrtPackedSinglePrecision128(af32x4);
+    var minf32x4: simd::F32x4 = simd::minPackedSinglePrecision128(af32x4, bf32x4);
+    var maxf32x4: simd::F32x4 = simd::maxPackedSinglePrecision128(af32x4, bf32x4);
+    var absf32x4: simd::F32x4 = simd::absPackedSinglePrecision128(af32x4);
+
+    if addf32x4[0] != 5.0 { return 1; }
+    if subf32x4[0] != -3.0 { return 2; }
+    if mulf32x4[0] != 4.0 { return 3; }
+    if divf32x4[0] != 0.25 { return 4; }
+    if sqrtf32x4[0] != 1.0 { return 5; }
+    if minf32x4[0] != 1.0 { return 6; }
+    if maxf32x4[0] != 4.0 { return 7; }
+    if absf32x4[0] != 1.0 { return 8; }
+
+    var af64x2: simd::F64x2 = native[1.0, 2.0];
+    var bf64x2: simd::F64x2 = native[2.0, 1.0];
+    var addf64x2: simd::F64x2 = simd::addPackedDoublePrecision128(af64x2, bf64x2);
+    var subf64x2: simd::F64x2 = simd::subPackedDoublePrecision128(af64x2, bf64x2);
+    var mulf64x2: simd::F64x2 = simd::mulPackedDoublePrecision128(af64x2, bf64x2);
+    var divf64x2: simd::F64x2 = simd::divPackedDoublePrecision128(af64x2, bf64x2);
+    var sqrtf64x2: simd::F64x2 = simd::sqrtPackedDoublePrecision128(af64x2);
+    var minf64x2: simd::F64x2 = simd::minPackedDoublePrecision128(af64x2, bf64x2);
+    var maxf64x2: simd::F64x2 = simd::maxPackedDoublePrecision128(af64x2, bf64x2);
+    var absf64x2: simd::F64x2 = simd::absPackedDoublePrecision128(af64x2);
+
+    if addf64x2[0] != 3.0 { return 9; }
+    if subf64x2[0] != -1.0 { return 10; }
+    if mulf64x2[0] != 2.0 { return 11; }
+    if divf64x2[0] != 0.5 { return 12; }
+    if sqrtf64x2[0] != 1.0 { return 13; }
+    if minf64x2[0] != 1.0 { return 14; }
+    if maxf64x2[0] != 2.0 { return 15; }
+    if absf64x2[0] != 1.0 { return 16; }
+
+    return 0;
+}

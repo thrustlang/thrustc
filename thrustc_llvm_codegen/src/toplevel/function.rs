@@ -502,6 +502,22 @@ pub fn compile_body<'ctx>(codegen: &mut LLVMCodegen<'_, 'ctx>, function: Functio
                         line!(),
                     )
                 });
+            } else {
+                let last_block: Option<BasicBlock> = llvm_builder.get_insert_block();
+
+                if let Some(block) = last_block {
+                    if block.get_terminator().is_none() {
+                        llvm_builder.build_unreachable().unwrap_or_else(|_| {
+                            abort::abort_codegen(
+                                codegen.get_mut_context(),
+                                "Failed to compile a unreacheable function terminator!",
+                                span,
+                                std::path::PathBuf::from(file!()),
+                                line!(),
+                            )
+                        });
+                    }
+                }
             }
         }
     }

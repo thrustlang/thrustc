@@ -1,0 +1,12 @@
+// test-requires: x86_64
+
+struct V @public {
+    value: NativeVector[f32; 8]
+}
+
+fn forward(value: ptr[V]) void @public @arbitraryArgs @noArgCount {
+}
+
+fn main() s32 @public {
+    return 0;
+}

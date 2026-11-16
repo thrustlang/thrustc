@@ -248,6 +248,7 @@ pub fn get_type<'llvm_abi>(
                 thrustc_llvm_system_v_abi::SystemVABITypeClass::get_system_v_type_class(
                     &mut abi_context,
                     ty,
+                    thrustc_llvm_system_v_abi::SystemVABITypeContext::Other,
                 );
 
             let abi_ty: SystemVABIType =

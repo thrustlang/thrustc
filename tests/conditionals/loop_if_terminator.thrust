@@ -1,0 +1,20 @@
+/*
+ * A branch ending in a non-escaping loop terminates the function.
+ */
+
+fn choose(flag: bool) s32 {
+    if flag {
+        loop {
+            return 7;
+        }
+    } else {
+        return 8;
+    }
+}
+
+fn main() s32 @public {
+    if choose(true) != 7 { return 1; }
+    if choose(false) != 8 { return 2; }
+
+    return 0;
+}

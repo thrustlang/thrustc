@@ -1,0 +1,24 @@
+// test-requires: x86_64 avx
+// test-cpu-features: +sse2,+avx
+
+struct V @public {
+    value: NativeVector[f32; 8]
+}
+
+fn identity(value: V) V @public @simd {
+    return value;
+}
+
+fn main() s32 @public {
+    var input: V = new V {
+        value: native[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    };
+    var result: V = identity(input);
+
+    var resultValue: NativeVector[f32; 8] = result->value;
+
+    if resultValue[0] != 1.0 { return 1; }
+    if resultValue[7] != 8.0 { return 2; }
+
+    return 0;
+}

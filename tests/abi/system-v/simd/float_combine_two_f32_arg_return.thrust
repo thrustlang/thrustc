@@ -1,0 +1,20 @@
+// test-requires: x86_64
+
+struct Pair @public {
+    left: f32,
+    right: f32
+}
+
+fn identity(value: Pair) Pair @public {
+    return value;
+}
+
+fn main() s32 @public {
+    var input: Pair = new Pair { left: 1.5, right: 2.5 };
+    var result: Pair = identity(input);
+
+    if result->left != 1.5 { return 1; }
+    if result->right != 2.5 { return 2; }
+
+    return 0;
+}

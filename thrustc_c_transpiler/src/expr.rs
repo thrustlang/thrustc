@@ -70,137 +70,140 @@ pub fn translate_expr(
 
             let tokens: Vec<clang::token::Token<'_>> = range.tokenize();
 
-            if let Some(first) = tokens.first() {
-                if entity.get_kind() == clang::EntityKind::StringLiteral {
-                    let mut concatenated: String = String::new();
+            let Some(first) = tokens.first() else {
+                return Ok(String::new());
+            };
 
-                    for token in tokens.iter() {
-                        let token_lexeme: String = token.get_spelling();
+            if entity.get_kind() == clang::EntityKind::StringLiteral {
+                let mut concatenated: String = String::new();
 
-                        let start: usize = token_lexeme.find('"').map_or(0, |idx| idx + 1);
-                        let end: usize = token_lexeme.rfind('"').unwrap_or(token_lexeme.len());
+                for token in tokens.iter() {
+                    let token_lexeme: String = token.get_spelling();
 
-                        if start <= end {
-                            concatenated.push_str(&token_lexeme[start..end]);
-                        }
-                    }
+                    let start: usize = token_lexeme.find('"').map_or(0, |idx| idx + 1);
+                    let end: usize = token_lexeme.rfind('"').unwrap_or(token_lexeme.len());
 
-                    return Ok(format!("\"{concatenated}\""));
-                }
-
-                let lexeme: String = first.get_spelling();
-
-                if entity.get_kind() == clang::EntityKind::CharacterLiteral {
-                    let byte: Option<u8> = match entity.evaluate() {
-                        Some(clang::EvaluationResult::SignedInteger(value)) => Some(value as u8),
-                        Some(clang::EvaluationResult::UnsignedInteger(value)) => Some(value as u8),
-                        _ => None,
-                    };
-
-                    // C character literals may use escapes Thrust does not parse identically
-                    // (hex '\x41', octal '\101', etc.), so we materialize the byte through
-                    // clang's evaluation and re-emit it as a canonical Thrust char literal,
-                    // falling back to a numeric `(N as char)` for non-printable bytes.
-                    if let Some(byte) = byte {
-                        return Ok(match byte {
-                            b'\n' => "'\\n'".to_string(),
-                            b'\t' => "'\\t'".to_string(),
-                            b'\r' => "'\\r'".to_string(),
-                            0 => "'\\0'".to_string(),
-                            b'\\' => "'\\\\'".to_string(),
-                            b'\'' => "'\\''".to_string(),
-                            b'"' => "'\\\"'".to_string(),
-                            0x20..=0x7E => format!("'{}'", byte as char),
-                            other => format!("({other} as char)"),
-                        });
+                    if start <= end {
+                        concatenated.push_str(&token_lexeme[start..end]);
                     }
                 }
 
-                if entity.get_kind() == clang::EntityKind::IntegerLiteral {
-                    let trimmed: &str = lexeme.trim_end_matches(['u', 'U', 'l', 'L']);
-
-                    let has_suffix: bool = trimmed.len() != lexeme.len();
-
-                    let is_octal: bool = trimmed.len() > 1
-                        && trimmed.starts_with('0')
-                        && !trimmed.starts_with("0x")
-                        && !trimmed.starts_with("0X")
-                        && trimmed.chars().all(|ch| ch.is_ascii_digit());
-
-                    let normalized: String = if is_octal {
-                        u64::from_str_radix(&trimmed[1..], 8)
-                            .map(|value| value.to_string())
-                            .unwrap_or_else(|_| trimmed.to_string())
-                    } else {
-                        trimmed.to_string()
-                    };
-
-                    let Some(ty) = entity.get_type() else {
-                        let message: String = match prefix.as_deref() {
-                            Some(prefix) => format!(
-                                "C translation failed:\n{prefix}Missing type for integer literal."
-                            ),
-                            None => "C translation failed:\nMissing type for integer literal."
-                                .to_string(),
-                        };
-
-                        macro_ctx.add_error(CompilationIssue::Error(
-                            CompilationIssueCode::E0110,
-                            message,
-                            "Rewrite the C input to avoid the unsupported construct.".into(),
-                            None,
-                            span,
-                        ));
-
-                        return Err(TranspilerError::Abort);
-                    };
-
-                    let type_text: String =
-                        thrustc_c_transpiler_macro::type_format::format_clang_type_thrust(
-                            &ty,
-                            macro_ctx,
-                            prefix.as_deref(),
-                            span,
-                        )?;
-
-                    if has_suffix && !type_text.is_empty() && type_text != "s32" {
-                        return Ok(format!("({normalized}) as {type_text}"));
-                    }
-
-                    return Ok(normalized);
-                }
-
-                if entity.get_kind() == clang::EntityKind::FloatingLiteral {
-                    let normalized: &str = lexeme.trim_end_matches(['f', 'F', 'l', 'L']);
-
-                    let needs_normalization: bool = normalized.starts_with('.')
-                        || normalized.ends_with('.')
-                        || normalized.contains('e')
-                        || normalized.contains('E');
-
-                    if needs_normalization
-                        && let Some(clang::EvaluationResult::Float(value)) = entity.evaluate()
-                    {
-                        let text: String = value.to_string();
-
-                        return Ok(if text.contains('.') {
-                            text
-                        } else {
-                            format!("{text}.0")
-                        });
-                    }
-
-                    return Ok(normalized.to_string());
-                }
-
-                return Ok(lexeme);
+                return Ok(format!("\"{concatenated}\""));
             }
 
-            Ok(String::new())
+            let lexeme: String = first.get_spelling();
+
+            if entity.get_kind() == clang::EntityKind::CharacterLiteral {
+                let byte: Option<u8> = match entity.evaluate() {
+                    Some(clang::EvaluationResult::SignedInteger(value)) => Some(value as u8),
+                    Some(clang::EvaluationResult::UnsignedInteger(value)) => Some(value as u8),
+                    _ => None,
+                };
+
+                // C character literals may use escapes Thrust does not parse identically
+                // (hex '\x41', octal '\101', etc.), so we materialize the byte through
+                // clang's evaluation and re-emit it as a canonical Thrust char literal,
+                // falling back to a numeric `(N as char)` for non-printable bytes.
+                if let Some(byte) = byte {
+                    return Ok(match byte {
+                        b'\n' => "'\\n'".to_string(),
+                        b'\t' => "'\\t'".to_string(),
+                        b'\r' => "'\\r'".to_string(),
+                        0 => "'\\0'".to_string(),
+                        b'\\' => "'\\\\'".to_string(),
+                        b'\'' => "'\\''".to_string(),
+                        b'"' => "'\\\"'".to_string(),
+                        0x20..=0x7E => format!("'{}'", byte as char),
+                        other => format!("({other} as char)"),
+                    });
+                }
+            }
+
+            if entity.get_kind() == clang::EntityKind::IntegerLiteral {
+                let trimmed: &str = lexeme.trim_end_matches(['u', 'U', 'l', 'L']);
+
+                let has_suffix: bool = trimmed.len() != lexeme.len();
+
+                let is_octal: bool = trimmed.len() > 1
+                    && trimmed.starts_with('0')
+                    && !trimmed.starts_with("0x")
+                    && !trimmed.starts_with("0X")
+                    && trimmed.chars().all(|ch| ch.is_ascii_digit());
+
+                let normalized: String = if is_octal {
+                    u64::from_str_radix(&trimmed[1..], 8)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|_| trimmed.to_string())
+                } else {
+                    trimmed.to_string()
+                };
+
+                let Some(ty) = entity.get_type() else {
+                    let message: String = match prefix.as_deref() {
+                        Some(prefix) => format!(
+                            "C translation failed:\n{prefix}Missing type for integer literal."
+                        ),
+                        None => {
+                            "C translation failed:\nMissing type for integer literal.".to_string()
+                        }
+                    };
+
+                    macro_ctx.add_error(CompilationIssue::Error(
+                        CompilationIssueCode::E0110,
+                        message,
+                        "Rewrite the C input to avoid the unsupported construct.".into(),
+                        None,
+                        span,
+                    ));
+
+                    return Err(TranspilerError::Abort);
+                };
+
+                let type_text: String =
+                    thrustc_c_transpiler_macro::type_format::format_clang_type_thrust(
+                        &ty,
+                        macro_ctx,
+                        prefix.as_deref(),
+                        span,
+                    )?;
+
+                if has_suffix && !type_text.is_empty() && type_text != "s32" {
+                    return Ok(format!("({normalized}) as {type_text}"));
+                }
+
+                return Ok(normalized);
+            }
+
+            if entity.get_kind() == clang::EntityKind::FloatingLiteral {
+                let normalized: &str = lexeme.trim_end_matches(['f', 'F', 'l', 'L']);
+
+                let needs_normalization: bool = normalized.starts_with('.')
+                    || normalized.ends_with('.')
+                    || normalized.contains('e')
+                    || normalized.contains('E');
+
+                if needs_normalization
+                    && let Some(clang::EvaluationResult::Float(value)) = entity.evaluate()
+                {
+                    let text: String = value.to_string();
+
+                    return Ok(if text.contains('.') {
+                        text
+                    } else {
+                        format!("{text}.0")
+                    });
+                }
+
+                return Ok(normalized.to_string());
+            }
+
+            Ok(lexeme)
         }
 
         clang::EntityKind::DeclRefExpr => {
-            Ok(self::translate_decl_ref_expr(entity, span, macro_ctx)?)
+            let ref_expr: String = self::translate_decl_ref_expr(entity, span, macro_ctx)?;
+
+            Ok(ref_expr)
         }
         clang::EntityKind::GNUNullExpr | clang::EntityKind::NullPtrLiteralExpr => {
             Ok("nullptr".into())
@@ -260,13 +263,7 @@ pub fn translate_expr(
             // en Ptr (property.rs:187-196); por eso no se emite nunca
             // fuera de AddressOf.
 
-            let operator: &str = if ctx.is_address_of() {
-                "."
-            } else {
-                debug_assert!(ctx.is_direct() || ctx.is_load());
-
-                "->"
-            };
+            let operator: &str = if ctx.is_address_of() { "." } else { "->" };
 
             let field_name: String =
                 { thrustc_c_transpiler_macro::util::normalize_to_thrust_identifier(&field_name) };
