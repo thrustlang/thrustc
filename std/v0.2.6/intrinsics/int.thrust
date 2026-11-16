@@ -178,6 +178,7 @@ fn absolute [T] (value: T) T @public {
     @if(isSameType(T, s32)) { return absS32(value, false) as T; }
     @else if(isSameType(T, s64)) { return absS64(value, false) as T; }
 }
+
 fn wrappingAddS32(left: s32, right: s32) s32 @public { return signedAddWithOverflowS32(left, right)->value; }
 fn wrappingAddU32(left: u32, right: u32) u32 @public { return unsignedAddWithOverflowU32(left, right)->value; }
 fn wrappingSubS32(left: s32, right: s32) s32 @public { return signedSubWithOverflowS32(left, right)->value; }
