@@ -19,7 +19,7 @@ pub struct Layout {
 
     pub abi_size: u32,
     pub abi_align: u32,
-
+    // llvm packed cases
     pub non_natural_align: bool,
 }
 
@@ -35,6 +35,7 @@ pub struct TypeLayout {
     pub abi_size: u32,
     pub abi_align: u32,
 
+    // llvm packed cases
     pub non_natural_align: bool,
 }
 
@@ -77,6 +78,7 @@ pub struct StructTypeLayout {
     pub abi_size: u32,
     pub abi_align: u32,
 
+    // llvm packed cases
     pub non_natural_align: bool,
 }
 
