@@ -62,9 +62,10 @@ pub fn import_statics<'clang>(var_decls: &[clang::Entity<'clang>], import_c: &mu
         };
 
         let is_mutable: bool = !matches!(kind, thrustc_typesystem::Type::Const(..));
+        let is_volatile: bool = var_ty.is_volatile_qualified();
 
         import_c
             .statics_mut()
-            .push(CImportedStatic::new(name.clone(), name, kind, is_mutable));
+            .push(CImportedStatic::new(name.clone(), name, kind, is_mutable, is_volatile));
     }
 }

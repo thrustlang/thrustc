@@ -18,6 +18,9 @@
 */
 
 use crate::macro_ast::MacroExpr;
+use crate::macro_table::MacroTable;
+use crate::macro_type::InferredType;
+use crate::macro_type::MacroValueType;
 
 use std::collections::HashMap;
 use std::marker::PhantomData;
@@ -26,17 +29,17 @@ use thrustc_errors::CompilationIssue;
 
 #[derive(Debug)]
 pub struct MacroContext<'clang> {
-    table: crate::macro_table::MacroTable,
+    table: MacroTable,
     errors: Vec<CompilationIssue>,
     warnings: Vec<CompilationIssue>,
     macros_errors: Vec<CompilationIssue>,
     expansion_stack: Vec<String>,
     temporary_counter: u64,
     pending_statements: Vec<String>,
-    type_environment: HashMap<String, crate::macro_type::InferredType>,
+    type_environment: HashMap<String, InferredType>,
     inline_bindings: HashMap<String, MacroExpr>,
-    value_types: HashMap<String, crate::macro_type::MacroValueType>,
-    record_fields: HashMap<String, HashMap<String, crate::macro_type::MacroValueType>>,
+    value_types: HashMap<String, MacroValueType>,
+    record_fields: HashMap<String, HashMap<String, MacroValueType>>,
     return_type: Option<String>,
     loop_contexts: Vec<MacroLoopContext>,
     marker: PhantomData<&'clang ()>,
@@ -84,14 +87,14 @@ impl<'clang> MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub fn get_macro_table(&self) -> &crate::macro_table::MacroTable {
+    pub fn get_macro_table(&self) -> &MacroTable {
         &self.table
     }
 }
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub fn get_mut_macro_table(&mut self) -> &mut crate::macro_table::MacroTable {
+    pub fn get_mut_macro_table(&mut self) -> &mut MacroTable {
         &mut self.table
     }
 }
@@ -132,22 +135,19 @@ impl<'clang> MacroContext<'clang> {
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub fn get_type_environment(&self) -> &HashMap<String, crate::macro_type::InferredType> {
+    pub fn get_type_environment(&self) -> &HashMap<String, InferredType> {
         &self.type_environment
     }
 }
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub fn set_type_binding(&mut self, name: String, kind: crate::macro_type::InferredType) {
+    pub fn set_type_binding(&mut self, name: String, kind: InferredType) {
         self.type_environment.insert(name, kind);
     }
 
     #[inline]
-    pub fn set_type_environment(
-        &mut self,
-        environment: HashMap<String, crate::macro_type::InferredType>,
-    ) {
+    pub fn set_type_environment(&mut self, environment: HashMap<String, InferredType>) {
         self.type_environment = environment;
     }
 
@@ -291,6 +291,20 @@ impl<'clang> MacroContext<'clang> {
 
         unique
     }
+
+    #[inline]
+    pub fn take_macros_errors(&mut self) -> Vec<CompilationIssue> {
+        std::mem::take(&mut self.macros_errors)
+    }
+
+    #[inline]
+    pub fn take_new_errors_since(&mut self, base_error_count: usize) -> Vec<CompilationIssue> {
+        if base_error_count >= self.errors.len() {
+            return Vec::new();
+        }
+
+        self.errors.split_off(base_error_count)
+    }
 }
 
 impl<'clang> MacroContext<'clang> {
@@ -305,45 +319,25 @@ impl<'clang> MacroContext<'clang> {
             self.macros_errors.push(issue);
         }
     }
-
-    #[inline]
-    pub fn take_macros_errors(&mut self) -> Vec<CompilationIssue> {
-        std::mem::take(&mut self.macros_errors)
-    }
 }
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub fn take_new_errors_since(&mut self, base_error_count: usize) -> Vec<CompilationIssue> {
-        if base_error_count >= self.errors.len() {
-            return Vec::new();
-        }
-
-        self.errors.split_off(base_error_count)
-    }
-}
-
-impl<'clang> MacroContext<'clang> {
-    #[inline]
-    pub fn get_record_field(
-        &self,
-        record: &str,
-        field: &str,
-    ) -> Option<&crate::macro_type::MacroValueType> {
+    pub fn get_record_field(&self, record: &str, field: &str) -> Option<&MacroValueType> {
         self.record_fields
             .get(record)
             .and_then(|fields| fields.get(field))
     }
 
     #[inline]
-    pub fn get_value_type(&self, name: &str) -> Option<&crate::macro_type::MacroValueType> {
+    pub fn get_value_type(&self, name: &str) -> Option<&MacroValueType> {
         self.value_types.get(name)
     }
 }
 
 impl<'clang> MacroContext<'clang> {
     #[inline]
-    pub fn set_value_type(&mut self, name: String, kind: crate::macro_type::MacroValueType) {
+    pub fn set_value_type(&mut self, name: String, kind: MacroValueType) {
         self.value_types.insert(name, kind);
     }
 
@@ -356,7 +350,7 @@ impl<'clang> MacroContext<'clang> {
     pub fn register_record_fields(
         &mut self,
         record: String,
-        fields: HashMap<String, crate::macro_type::MacroValueType>,
+        fields: HashMap<String, MacroValueType>,
     ) {
         self.record_fields.insert(record, fields);
     }

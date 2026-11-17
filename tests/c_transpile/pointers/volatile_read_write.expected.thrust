@@ -1,0 +1,16 @@
+static mut volatile global_flag: s32 @public @extern("global_flag") = 3;
+
+fn volatile_global() s32 {
+    return (global_flag) as s32;
+}
+fn volatile_read() s32 {
+    var volatile local: s32 = 5;
+    var p: ptr[s32] = ref (local);
+    return ((deref volatile (p))) as s32;
+}
+fn volatile_write(value: s32) s32 {
+    var volatile local: s32 = 0;
+    var p: ptr[s32] = ref (local);
+    p->[0] = value;
+    return (local) as s32;
+}

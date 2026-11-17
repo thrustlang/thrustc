@@ -1,0 +1,8 @@
+fn main() s32 @public {
+    var value: s32 = 10;
+
+    if store_local() != 41 { return 1; }
+    if load_add(ref (value)) != 11 { return 2; }
+
+    return 0;
+}

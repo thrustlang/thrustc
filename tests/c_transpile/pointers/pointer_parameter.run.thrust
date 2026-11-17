@@ -1,0 +1,8 @@
+fn main() s32 @public {
+    var value: s32 = 30;
+
+    if pointer_parameter(ref (value), 12) != 42 { return 1; }
+    if pointer_parameter(ref (value), 0) != 30 { return 2; }
+
+    return 0;
+}

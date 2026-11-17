@@ -78,14 +78,16 @@ impl FunctionParameterMetadata {
 pub struct PropertyMetadata {
     is_allocated: bool,
     is_deref: bool,
+    is_volatile: bool,
 }
 
 impl PropertyMetadata {
     #[inline]
-    pub fn new(is_allocated: bool, is_deref: bool) -> Self {
+    pub fn new(is_allocated: bool, is_deref: bool, is_volatile: bool) -> Self {
         Self {
             is_allocated,
             is_deref,
+            is_volatile,
         }
     }
 }
@@ -99,6 +101,11 @@ impl PropertyMetadata {
     #[inline]
     pub fn is_deref(&self) -> bool {
         self.is_deref
+    }
+
+    #[inline]
+    pub fn is_volatile(&self) -> bool {
+        self.is_volatile
     }
 }
 
@@ -107,14 +114,16 @@ impl PropertyMetadata {
 pub struct IndexMetadata {
     is_allocated: bool,
     is_deref: bool,
+    is_volatile: bool,
 }
 
 impl IndexMetadata {
     #[inline]
-    pub fn new(is_allocated: bool, is_deref: bool) -> Self {
+    pub fn new(is_allocated: bool, is_deref: bool, is_volatile: bool) -> Self {
         Self {
             is_allocated,
             is_deref,
+            is_volatile,
         }
     }
 }
@@ -128,6 +137,11 @@ impl IndexMetadata {
     #[inline]
     pub fn is_deref(&self) -> bool {
         self.is_deref
+    }
+
+    #[inline]
+    pub fn is_volatile(&self) -> bool {
+        self.is_volatile
     }
 }
 

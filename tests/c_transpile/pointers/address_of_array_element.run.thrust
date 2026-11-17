@@ -1,0 +1,7 @@
+fn main() s32 @public {
+    var xs: array[s32; 3] = fixed[10, 20, 30];
+
+    if address_of_array_element(xs as ptr[s32]) != 20 { return 1; }
+
+    return 0;
+}

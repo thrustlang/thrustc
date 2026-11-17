@@ -123,7 +123,7 @@ pub fn diagnostics(uri: &str, text: &str, options: &CompilerOptions) -> Vec<Valu
 
     let ast = parser_context.get_ast();
 
-    if let Some(issue) = thrustc_errors::simd::simd_usage_issue(ast, || {
+    if let Some(issue) = thrustc_errors::simd::check_simd_usage_issue(ast, || {
         options.get_llvm_backend().validate_cpu_features()
     }) {
         diagnostics.push(self::compilation_issue_to_diagnostic(&issue));
@@ -189,7 +189,9 @@ fn unstable_std_import_issues(
             let part: &Token = &tokens[cursor.saturating_add(1)];
 
             last_span = part.get_code_location();
+
             access.push(part.get_lexeme().to_string());
+
             cursor = cursor.saturating_add(2);
         }
 
@@ -220,6 +222,7 @@ fn compilation_issue_to_diagnostic(issue: &CompilationIssue) -> Value {
             let line: u32 = span.get_line().saturating_sub(1);
             let start: u32 = span.get_span_start();
             let end: u32 = span.get_span_end().max(start.saturating_add(1));
+
             let mut diagnostic_message: String =
                 String::with_capacity(message.len() + help.len() + 32);
 
@@ -279,6 +282,7 @@ fn compilation_issue_to_diagnostic(issue: &CompilationIssue) -> Value {
             let line: u32 = span.get_line().saturating_sub(1);
             let start: u32 = span.get_span_start();
             let end: u32 = span.get_span_end().max(start.saturating_add(1));
+
             let mut diagnostic_message: String =
                 String::with_capacity(message.len() + help.len() + 1);
 

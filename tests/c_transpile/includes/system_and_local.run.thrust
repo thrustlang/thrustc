@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if system_and_local(40) != 42 { return 1; }
+
+    return 0;
+}

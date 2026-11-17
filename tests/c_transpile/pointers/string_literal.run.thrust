@@ -1,0 +1,10 @@
+fn main() s32 @public {
+    var text: const ptr[char] = message();
+
+    if ((text->[0]) as s32) != (('h') as s32) { return 1; }
+    if ((text->[1]) as s32) != (('e') as s32) { return 2; }
+    if ((text->[4]) as s32) != (('o') as s32) { return 3; }
+    if ((text->[5]) as s32) != (0 as s32) { return 4; }
+
+    return 0;
+}

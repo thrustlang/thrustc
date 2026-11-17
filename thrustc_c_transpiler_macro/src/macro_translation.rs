@@ -17,6 +17,8 @@
 
 */
 
+use std::collections::HashMap;
+
 use thrustc_code_location::Span;
 use thrustc_compile_time::BuiltinValue;
 use thrustc_typesystem::Type;
@@ -26,8 +28,9 @@ use crate::{
     macro_context::MacroContext,
     macro_parser::MacroParser,
     macro_token::{MacroToken, MacroTokenOrigin},
-    macros::MacroKind,
+    macros::{self, MacroKind},
 };
+use crate::macro_expand::MacroExpansionContext;
 
 const C_MACRO_SYMBOL_PREFIX: &str = "__c_macro_";
 
@@ -40,6 +43,14 @@ pub fn append_translated_macro_constants(
     emitted_constants: &mut usize,
     emitted_functions: &mut usize,
 ) {
+    let mut active_macro_decls: HashMap<String, clang::Entity<'_>> = HashMap::new();
+
+    for macro_decl in macro_decls.iter() {
+        if let Some(name) = macro_decl.get_name() {
+            active_macro_decls.insert(name, *macro_decl);
+        }
+    }
+
     {
         let valid_macros = macro_decls.iter().filter_map(|macro_decl| {
             let raw_name: String = macro_decl.get_name()?;
@@ -50,6 +61,10 @@ pub fn append_translated_macro_constants(
             .filter(|(macro_decl, _)| unsafe { !macro_decl.is_function_like_macro_unchecked() });
 
         for (macro_decl, raw_name) in object_macros {
+            if active_macro_decls.get(&raw_name) != Some(macro_decl) {
+                continue;
+            }
+
             let name: String = {
                 let base: String = crate::util::normalize_to_thrust_identifier(&raw_name);
 
@@ -79,12 +94,15 @@ pub fn append_translated_macro_constants(
                     clang::EvaluationResult::SignedInteger(value) => {
                         Some((Type::S64 { span }, BuiltinValue::Integer(value as u64)))
                     }
+
                     clang::EvaluationResult::UnsignedInteger(value) => {
                         Some((Type::U64 { span }, BuiltinValue::Integer(value)))
                     }
+
                     clang::EvaluationResult::Float(value) => {
                         Some((Type::F64 { span }, BuiltinValue::Float(value)))
                     }
+
                     clang::EvaluationResult::String(value)
                     | clang::EvaluationResult::ObjCString(value) => Some((
                         Type::Array {
@@ -97,6 +115,7 @@ pub fn append_translated_macro_constants(
                         },
                         BuiltinValue::CString(value.to_bytes().to_vec()),
                     )),
+
                     _ => None,
                 };
 
@@ -131,7 +150,7 @@ pub fn append_translated_macro_constants(
         let function_macros = valid_macros
             .filter(|(macro_decl, _)| unsafe { macro_decl.is_function_like_macro_unchecked() });
 
-        let mut classified_macros = Vec::new();
+        let mut classified_macros: Vec<(clang::Entity<'_>, String, MacroKind)> = Vec::new();
 
         for (macro_decl, _) in function_macros {
             if let Some((name, kind)) = crate::macros::classify_macro_definition(macro_decl) {
@@ -139,7 +158,7 @@ pub fn append_translated_macro_constants(
             }
         }
 
-        crate::macros::reclassify_macros_calling_statements(&mut classified_macros);
+        macros::reclassify_macros_calling_statements(&mut classified_macros);
 
         ctx.get_mut_macro_table()
             .register_function_like_macros(&classified_macros);
@@ -148,6 +167,10 @@ pub fn append_translated_macro_constants(
             .register_statement_macros(&classified_macros);
 
         for (macro_decl, raw_name, kind) in classified_macros.iter() {
+            if active_macro_decls.get(raw_name) != Some(macro_decl) {
+                continue;
+            }
+
             match kind {
                 MacroKind::PureFunction {
                     parameters,
@@ -158,12 +181,25 @@ pub fn append_translated_macro_constants(
                         continue;
                     }
 
-                    let mut expansion_context: crate::macro_expand::MacroExpansionContext =
+                    let mut expansion_context: MacroExpansionContext =
                         crate::macro_expand::MacroExpansionContext::new(64, 128);
+
+                    let painted_body: Vec<MacroToken> = body
+                        .iter()
+                        .map(|token| {
+                            let mut painted: MacroToken = token.with_hidden(raw_name);
+
+                            for parameter in parameters.iter() {
+                                painted = painted.with_hidden(parameter);
+                            }
+
+                            painted
+                        })
+                        .collect();
 
                     let expanded_body: Vec<MacroToken> =
                         match crate::macro_expand::expand_function_tokens(
-                            body,
+                            &painted_body,
                             ctx.get_macro_table(),
                             &mut expansion_context,
                         ) {
@@ -187,6 +223,7 @@ pub fn append_translated_macro_constants(
                         };
 
                     let body_lexemes: Vec<String> = crate::macro_token::texts(&expanded_body);
+
                     let parsed: MacroExpr = match MacroParser::parse(&body_lexemes) {
                         Ok(parsed) => parsed,
                         Err(reason) => {

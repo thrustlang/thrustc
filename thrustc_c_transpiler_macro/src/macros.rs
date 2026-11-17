@@ -22,6 +22,14 @@ use crate::macro_context::MacroContext;
 use crate::macro_error::MacroLimit;
 use crate::macro_parser::MacroParser;
 use crate::macro_token::{MacroToken, MacroTokenOrigin};
+use crate::location::Location;
+use crate::macro_ast::MacroStmt;
+use crate::macro_ast::MacroUnOp;
+use crate::macro_expand::MacroExpansionContext;
+use crate::macro_table::MacroFunctionLikeDefinition;
+use crate::macro_table::MacroFunctionLikeKind;
+use crate::macro_token::MacroTokenKind;
+use crate::macro_type::InferredType;
 
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -138,7 +146,7 @@ fn build_statement_macro_function(
         .iter()
         .map(|parameter| {
             vec![MacroToken::new(
-                crate::macro_token::MacroTokenKind::Identifier,
+                MacroTokenKind::Identifier,
                 parameter.clone(),
                 MacroTokenOrigin::DefinitionBody,
             )]
@@ -212,7 +220,7 @@ fn translate_statement_body_and_expand(
     let renamed: Vec<MacroToken> =
         crate::macro_expand::substitute_parameter_tokens(body_tokens, parameters, args)?;
 
-    let mut expansion_context: crate::macro_expand::MacroExpansionContext =
+    let mut expansion_context: MacroExpansionContext =
         crate::macro_expand::MacroExpansionContext::new(64, 128);
 
     let expanded_tokens: Vec<MacroToken> = crate::macro_expand::expand_function_tokens(
@@ -224,10 +232,10 @@ fn translate_statement_body_and_expand(
 
     let statement_lexemes: Vec<String> = crate::macro_token::texts(&expanded_tokens);
 
-    let mut statement_parser: crate::macro_parser::MacroParser<'_> =
+    let mut statement_parser: MacroParser<'_> =
         crate::macro_parser::MacroParser::new(&statement_lexemes);
 
-    let parsed: Vec<crate::macro_ast::MacroStmt> = statement_parser.parse_statement_body().ok()?;
+    let parsed: Vec<MacroStmt> = statement_parser.parse_statement_body().ok()?;
 
     let mut lines: Vec<String> = Vec::new();
 
@@ -290,13 +298,15 @@ fn try_to_translate_expanded_statement_body(
 
     let line_tokens: Vec<MacroToken> =
         crate::macro_lex::lex_text_to_macro_tokens(&joined_lines, MacroTokenOrigin::FallbackLexed);
+
     let generalized_tokens: Vec<MacroToken> =
         self::replace_argument_token_sequences(&line_tokens, parameters, args);
+
     let template_args: Vec<Vec<MacroToken>> = parameters
         .iter()
         .map(|parameter| {
             vec![MacroToken::new(
-                crate::macro_token::MacroTokenKind::Identifier,
+                MacroTokenKind::Identifier,
                 parameter.clone(),
                 MacroTokenOrigin::DefinitionBody,
             )]
@@ -356,7 +366,7 @@ fn replace_argument_token_sequences(
             }
 
             out.push(MacroToken::new(
-                crate::macro_token::MacroTokenKind::Identifier,
+                MacroTokenKind::Identifier,
                 parameters[parameter_index].clone(),
                 MacroTokenOrigin::DefinitionBody,
             ));
@@ -470,27 +480,27 @@ fn rewrite_mutable_parameter_uses(lines: &str, mutable_parameters: &HashSet<Stri
         }
 
         out.push(MacroToken::new(
-            crate::macro_token::MacroTokenKind::Identifier,
+            MacroTokenKind::Identifier,
             token.get_text().to_string(),
             MacroTokenOrigin::FallbackLexed,
         ));
         out.push(MacroToken::new(
-            crate::macro_token::MacroTokenKind::Punctuation,
+            MacroTokenKind::Punctuation,
             "->".to_string(),
             MacroTokenOrigin::FallbackLexed,
         ));
         out.push(MacroToken::new(
-            crate::macro_token::MacroTokenKind::Punctuation,
+            MacroTokenKind::Punctuation,
             "[".to_string(),
             MacroTokenOrigin::FallbackLexed,
         ));
         out.push(MacroToken::new(
-            crate::macro_token::MacroTokenKind::Literal,
+            MacroTokenKind::Literal,
             "0".to_string(),
             MacroTokenOrigin::FallbackLexed,
         ));
         out.push(MacroToken::new(
-            crate::macro_token::MacroTokenKind::Punctuation,
+            MacroTokenKind::Punctuation,
             "]".to_string(),
             MacroTokenOrigin::FallbackLexed,
         ));
@@ -653,7 +663,7 @@ pub fn try_extract_statement_macro_call(
 
     let Some(parameters) = ctx.get_macro_table().get_parameter_names(&name) else {
         if let Some(definition) = ctx.get_macro_table().get_function_like_definition(&name)
-            && let crate::macro_table::MacroFunctionLikeKind::Unsupported(limit) =
+            && let MacroFunctionLikeKind::Unsupported(limit) =
                 definition.get_kind()
         {
             let (detail, help) = crate::macro_error::get_macro_issue_help(&name, limit);
@@ -733,7 +743,7 @@ pub fn try_extract_statement_macro_call(
 
     for arg_tokens in args.iter().take(parameters.len()) {
         let expanded_arg: Vec<MacroToken> = {
-            let mut expansion_context: crate::macro_expand::MacroExpansionContext =
+            let mut expansion_context: MacroExpansionContext =
                 crate::macro_expand::MacroExpansionContext::new(64, 128);
 
             crate::macro_expand::expand_function_tokens(
@@ -791,7 +801,7 @@ pub fn try_extract_statement_macro_call(
     }
 
     let expanded_body_tokens: Vec<MacroToken> = {
-        let mut expansion_context: crate::macro_expand::MacroExpansionContext =
+        let mut expansion_context: MacroExpansionContext =
             crate::macro_expand::MacroExpansionContext::new(64, 128);
 
         crate::macro_expand::expand_function_tokens(
@@ -850,16 +860,16 @@ pub fn try_extract_statement_macro_call(
     let mut arg_texts: Vec<String> = parsed_args
         .iter()
         .map(|parsed| {
-            crate::macro_expr::lower(ctx, parsed, crate::location::Location::RValue, "T1")
+            crate::macro_expr::lower(ctx, parsed, Location::RValue, "T1")
         })
         .collect();
 
     let body_lexemes: Vec<String> = crate::macro_token::texts(&expanded_body_tokens);
 
-    let mut body_parser: crate::macro_parser::MacroParser<'_> =
+    let mut body_parser: MacroParser<'_> =
         crate::macro_parser::MacroParser::new(&body_lexemes);
 
-    let body_statements: Vec<crate::macro_ast::MacroStmt> = match body_parser.parse_statement_body()
+    let body_statements: Vec<MacroStmt> = match body_parser.parse_statement_body()
     {
         Ok(statements) => statements,
         Err(limit) => {
@@ -879,7 +889,7 @@ pub fn try_extract_statement_macro_call(
         }
     };
 
-    let seeds: Vec<Option<crate::macro_type::InferredType>> = (0..parameters.len())
+    let seeds: Vec<Option<InferredType>> = (0..parameters.len())
         .map(|index| {
             clang_types
                 .get(index)
@@ -920,17 +930,17 @@ pub fn try_extract_statement_macro_call(
             .zip(parsed_args.iter().cloned())
             .collect();
 
-        let environment: HashMap<String, crate::macro_type::InferredType> = parameters
+        let environment: HashMap<String, InferredType> = parameters
             .iter()
             .enumerate()
             .map(|(index, parameter)| {
-                let seed: Option<crate::macro_type::InferredType> =
+                let seed: Option<InferredType> =
                     seeds.get(index).cloned().flatten();
 
-                let kind: crate::macro_type::InferredType = match seed {
-                    Some(crate::macro_type::InferredType::Pointer(_)) => {
+                let kind: InferredType = match seed {
+                    Some(InferredType::Pointer(_)) => {
                         seed.unwrap_or_else(|| {
-                            crate::macro_type::InferredType::Known(
+                            InferredType::Known(
                                 type_args
                                     .get(index)
                                     .cloned()
@@ -938,7 +948,7 @@ pub fn try_extract_statement_macro_call(
                             )
                         })
                     }
-                    _ => crate::macro_type::InferredType::Known(
+                    _ => InferredType::Known(
                         type_args
                             .get(index)
                             .cloned()
@@ -951,7 +961,7 @@ pub fn try_extract_statement_macro_call(
             .collect();
 
         let previous_return_type: Option<String> = ctx.get_return_type().map(str::to_string);
-        let previous_environment: HashMap<String, crate::macro_type::InferredType> =
+        let previous_environment: HashMap<String, InferredType> =
             ctx.get_type_environment().clone();
 
         ctx.set_inline_bindings(bindings);
@@ -1041,7 +1051,7 @@ pub fn try_extract_statement_macro_call(
                     MacroExpr::Index { .. }
                         | MacroExpr::Member { .. }
                         | MacroExpr::Unary {
-                            op: crate::macro_ast::MacroUnOp::Deref,
+                            op: MacroUnOp::Deref,
                             ..
                         }
                 )
@@ -1051,7 +1061,7 @@ pub fn try_extract_statement_macro_call(
             *argument_text = crate::macro_expr::lower(
                 ctx,
                 &parsed_args[index],
-                crate::location::Location::AddressOf,
+                Location::AddressOf,
                 "T1",
             );
 
@@ -1101,22 +1111,22 @@ pub fn try_extract_statement_macro_call(
         return None;
     }
 
-    let function_environment: HashMap<String, crate::macro_type::InferredType> = parameters
+    let function_environment: HashMap<String, InferredType> = parameters
         .iter()
         .enumerate()
         .map(|(index, parameter)| {
-            let seed: Option<crate::macro_type::InferredType> = seeds.get(index).cloned().flatten();
+            let seed: Option<InferredType> = seeds.get(index).cloned().flatten();
 
-            let inferred: crate::macro_type::InferredType = match seed {
-                Some(crate::macro_type::InferredType::Pointer(_)) => seed.unwrap_or_else(|| {
-                    crate::macro_type::InferredType::Known(
+            let inferred: InferredType = match seed {
+                Some(InferredType::Pointer(_)) => seed.unwrap_or_else(|| {
+                    InferredType::Known(
                         type_args
                             .get(index)
                             .cloned()
                             .unwrap_or_else(|| "s32".to_string()),
                     )
                 }),
-                _ => crate::macro_type::InferredType::Known(
+                _ => InferredType::Known(
                     type_args
                         .get(index)
                         .cloned()
@@ -1190,10 +1200,10 @@ pub fn try_extract_expression_macro_call(
     let key: String = crate::macro_table::MacroTable::get_location(site)?;
     let name: String = ctx.get_macro_table().find_macro_name(&key)?;
 
-    let definition: &crate::macro_table::MacroFunctionLikeDefinition =
+    let definition: &MacroFunctionLikeDefinition =
         ctx.get_macro_table().get_function_like_definition(&name)?;
 
-    if definition.get_kind() != crate::macro_table::MacroFunctionLikeKind::PureFunction {
+    if definition.get_kind() != MacroFunctionLikeKind::PureFunction {
         return None;
     }
 
@@ -1221,12 +1231,17 @@ pub fn try_extract_expression_macro_call(
         return None;
     }
 
+    let painted_body: Vec<MacroToken> = body
+        .iter()
+        .map(|token| token.with_hidden(&name))
+        .collect();
+
     let renamed: Vec<MacroToken> = if let Some(variadic) = variadic.as_ref() {
         let fixed_args: &[Vec<MacroToken>] = &args[..parameters.len()];
         let variadic_args: &[Vec<MacroToken>] = &args[parameters.len()..];
 
         crate::macro_expand_variadic::substitute_variadic_parameter_tokens(
-            &body,
+            &painted_body,
             &parameters,
             variadic.get_name(),
             fixed_args,
@@ -1234,10 +1249,10 @@ pub fn try_extract_expression_macro_call(
             variadic_args.iter().any(|argument| !argument.is_empty()),
         )?
     } else {
-        crate::macro_expand::substitute_parameter_tokens(&body, &parameters, &args)?
+        crate::macro_expand::substitute_parameter_tokens(&painted_body, &parameters, &args)?
     };
 
-    let mut expansion_context: crate::macro_expand::MacroExpansionContext =
+    let mut expansion_context: MacroExpansionContext =
         crate::macro_expand::MacroExpansionContext::new(64, 128);
 
     let expanded: Vec<MacroToken> = crate::macro_expand::expand_function_tokens(
@@ -1263,10 +1278,10 @@ pub fn try_extract_expression_macro_call(
     let clang_types: Vec<Option<clang::Type<'_>>> =
         crate::macro_lex::get_argument_clang_types(site, &arg_ranges);
 
-    let mut type_environment: HashMap<String, crate::macro_type::InferredType> = HashMap::new();
+    let mut type_environment: HashMap<String, InferredType> = HashMap::new();
 
     for (index, parameter) in parameters.iter().enumerate() {
-        let inferred: Option<crate::macro_type::InferredType> = clang_types
+        let inferred: Option<InferredType> = clang_types
             .get(index)
             .and_then(|clang_type| clang_type.as_ref())
             .and_then(|clang_type| {
@@ -1297,7 +1312,7 @@ pub fn try_extract_expression_macro_call(
     let lowered: String = crate::macro_expr::lower(
         ctx,
         &parsed,
-        crate::location::Location::RValue,
+        Location::RValue,
         &result_type,
     );
 
@@ -1540,7 +1555,7 @@ pub fn classify_macro_definition(decl: &clang::Entity<'_>) -> Option<(String, Ma
 
     let body_lexemes: Vec<String> = crate::macro_token::texts(&parse_body);
 
-    let mut body_parser: crate::macro_parser::MacroParser<'_> =
+    let mut body_parser: MacroParser<'_> =
         crate::macro_parser::MacroParser::new(&body_lexemes);
 
     if body_parser.parse_statement_body().is_ok() {

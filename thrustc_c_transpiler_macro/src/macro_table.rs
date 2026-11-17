@@ -20,19 +20,26 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
+use crate::macro_error::MacroLimit;
+use crate::macro_token::MacroToken;
+use crate::macros::MacroVariadic;
+use crate::macro_parser::MacroParser;
+use crate::macro_token::MacroTokenOrigin;
+use crate::macros::MacroKind;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MacroFunctionLikeKind {
     PureFunction,
     Statement,
-    Unsupported(crate::macro_error::MacroLimit),
+    Unsupported(MacroLimit),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MacroFunctionLikeDefinition {
     name: String,
     parameters: Vec<String>,
-    variadic: Option<crate::macros::MacroVariadic>,
-    body: Vec<crate::macro_token::MacroToken>,
+    variadic: Option<MacroVariadic>,
+    body: Vec<MacroToken>,
     kind: MacroFunctionLikeKind,
 }
 
@@ -41,8 +48,8 @@ impl MacroFunctionLikeDefinition {
     pub fn new(
         name: String,
         parameters: Vec<String>,
-        variadic: Option<crate::macros::MacroVariadic>,
-        body: Vec<crate::macro_token::MacroToken>,
+        variadic: Option<MacroVariadic>,
+        body: Vec<MacroToken>,
         kind: MacroFunctionLikeKind,
     ) -> Self {
         Self {
@@ -67,12 +74,12 @@ impl MacroFunctionLikeDefinition {
     }
 
     #[inline]
-    pub fn get_variadic(&self) -> Option<&crate::macros::MacroVariadic> {
+    pub fn get_variadic(&self) -> Option<&MacroVariadic> {
         self.variadic.as_ref()
     }
 
     #[inline]
-    pub fn get_body(&self) -> &[crate::macro_token::MacroToken] {
+    pub fn get_body(&self) -> &[MacroToken] {
         &self.body
     }
 
@@ -86,8 +93,8 @@ impl MacroFunctionLikeDefinition {
 pub struct MacroStatementDefinition {
     name: String,
     parameters: Vec<String>,
-    variadic: Option<crate::macros::MacroVariadic>,
-    body: Vec<crate::macro_token::MacroToken>,
+    variadic: Option<MacroVariadic>,
+    body: Vec<MacroToken>,
 }
 
 impl MacroStatementDefinition {
@@ -95,8 +102,8 @@ impl MacroStatementDefinition {
     pub fn new(
         name: String,
         parameters: Vec<String>,
-        variadic: Option<crate::macros::MacroVariadic>,
-        body: Vec<crate::macro_token::MacroToken>,
+        variadic: Option<MacroVariadic>,
+        body: Vec<MacroToken>,
     ) -> Self {
         Self {
             name,
@@ -119,12 +126,12 @@ impl MacroStatementDefinition {
     }
 
     #[inline]
-    pub fn get_variadic(&self) -> Option<&crate::macros::MacroVariadic> {
+    pub fn get_variadic(&self) -> Option<&MacroVariadic> {
         self.variadic.as_ref()
     }
 
     #[inline]
-    pub fn get_body(&self) -> &[crate::macro_token::MacroToken] {
+    pub fn get_body(&self) -> &[MacroToken] {
         &self.body
     }
 }
@@ -134,7 +141,7 @@ pub struct MacroTable {
     source_file: PathBuf,
     statement_macro_definitions: Vec<MacroStatementDefinition>,
     function_like_macro_definitions: HashMap<String, MacroFunctionLikeDefinition>,
-    object_macro_definitions: HashMap<String, Vec<crate::macro_token::MacroToken>>,
+    object_macro_definitions: HashMap<String, Vec<MacroToken>>,
     macro_definition_sites: HashMap<String, String>,
     macro_body_ranges: HashMap<String, (PathBuf, u32, u32)>,
     macro_expansion_sites: Vec<(String, String)>,
@@ -184,10 +191,7 @@ impl MacroTable {
     }
 
     #[inline]
-    pub fn get_variadic_parameter(
-        &self,
-        macro_name: &str,
-    ) -> Option<crate::macros::MacroVariadic> {
+    pub fn get_variadic_parameter(&self, macro_name: &str) -> Option<MacroVariadic> {
         self.statement_macro_definitions
             .iter()
             .find(|entry| entry.get_name() == macro_name)
@@ -206,7 +210,7 @@ impl MacroTable {
     pub fn get_body_macro_tokens(
         &self,
         macro_name: &str,
-    ) -> Option<Vec<crate::macro_token::MacroToken>> {
+    ) -> Option<Vec<MacroToken>> {
         self.statement_macro_definitions
             .iter()
             .find(|entry| entry.get_name() == macro_name)
@@ -235,7 +239,7 @@ impl MacroTable {
     pub fn get_object_macro_definition(
         &self,
         macro_name: &str,
-    ) -> Option<Vec<crate::macro_token::MacroToken>> {
+    ) -> Option<Vec<MacroToken>> {
         self.object_macro_definitions.get(macro_name).cloned()
     }
 }
@@ -271,53 +275,53 @@ impl MacroTable {
     #[inline]
     pub fn register_function_like_macros(
         &mut self,
-        items: &[(clang::Entity<'_>, String, crate::macros::MacroKind)],
+        items: &[(clang::Entity<'_>, String, MacroKind)],
     ) {
         for (definition, macro_name, kind) in items.iter() {
             let mut function_like_kind: MacroFunctionLikeKind = match kind {
-                crate::macros::MacroKind::Object => continue,
-                crate::macros::MacroKind::PureFunction { .. } => {
+                MacroKind::Object => continue,
+                MacroKind::PureFunction { .. } => {
                     MacroFunctionLikeKind::PureFunction
                 }
-                crate::macros::MacroKind::Statement { .. } => MacroFunctionLikeKind::Statement,
-                crate::macros::MacroKind::Unsupported(limit) => {
+                MacroKind::Statement { .. } => MacroFunctionLikeKind::Statement,
+                MacroKind::Unsupported(limit) => {
                     MacroFunctionLikeKind::Unsupported(*limit)
                 }
             };
 
             let (parameters, variadic, body): (
                 Vec<String>,
-                Option<crate::macros::MacroVariadic>,
-                Vec<crate::macro_token::MacroToken>,
+                Option<MacroVariadic>,
+                Vec<MacroToken>,
             ) = match kind {
-                crate::macros::MacroKind::PureFunction {
+                MacroKind::PureFunction {
                     parameters,
                     variadic,
                     body,
                 }
-                | crate::macros::MacroKind::Statement {
+                | MacroKind::Statement {
                     parameters,
                     variadic,
                     body,
                 } => (parameters.clone(), variadic.clone(), body.clone()),
-                crate::macros::MacroKind::Unsupported(_) => {
-                    let tokens: Vec<crate::macro_token::MacroToken> = definition
+                MacroKind::Unsupported(_) => {
+                    let tokens: Vec<MacroToken> = definition
                         .get_range()
                         .map(|range| {
                             let clang_tokens: Vec<clang::token::Token<'_>> = range.tokenize();
                             crate::macro_lex::to_macro_tokens(
                                 &clang_tokens,
-                                crate::macro_token::MacroTokenOrigin::DefinitionBody,
+                                MacroTokenOrigin::DefinitionBody,
                             )
                         })
                         .unwrap_or_default();
 
                     (Vec::new(), None, tokens)
                 }
-                crate::macros::MacroKind::Object => (Vec::new(), None, Vec::new()),
+                MacroKind::Object => (Vec::new(), None, Vec::new()),
             };
 
-            let parse_body: Vec<crate::macro_token::MacroToken> = if variadic.is_some() {
+            let parse_body: Vec<MacroToken> = if variadic.is_some() {
                 crate::macro_expand_variadic::normalize_variadic_body_for_classification(&body)
             } else {
                 body.clone()
@@ -328,14 +332,14 @@ impl MacroTable {
 
                 if crate::macro_parser::MacroParser::parse(&lexemes).is_err() {
                     function_like_kind = MacroFunctionLikeKind::Unsupported(
-                        crate::macro_error::MacroLimit::ExpressionMalformed,
+                        MacroLimit::ExpressionMalformed,
                     );
                 }
             }
 
             let statement_lexemes: Vec<String> = crate::macro_token::texts(&parse_body);
 
-            let mut statement_parser: crate::macro_parser::MacroParser<'_> =
+            let mut statement_parser: MacroParser<'_> =
                 crate::macro_parser::MacroParser::new(&statement_lexemes);
 
             if function_like_kind == MacroFunctionLikeKind::Statement
@@ -360,10 +364,10 @@ impl MacroTable {
     #[inline]
     pub fn register_statement_macros(
         &mut self,
-        items: &[(clang::Entity<'_>, String, crate::macros::MacroKind)],
+        items: &[(clang::Entity<'_>, String, MacroKind)],
     ) {
         for (definition, macro_name, kind) in items.iter() {
-            if let crate::macros::MacroKind::Statement {
+            if let MacroKind::Statement {
                 parameters,
                 variadic,
                 body,
@@ -397,7 +401,7 @@ impl MacroTable {
     pub fn register_object_macro(
         &mut self,
         macro_name: String,
-        body: Vec<crate::macro_token::MacroToken>,
+        body: Vec<MacroToken>,
     ) {
         self.object_macro_definitions.insert(macro_name, body);
     }
@@ -409,19 +413,14 @@ impl MacroTable {
         &mut self,
         macro_name: String,
         parameter_names: Vec<String>,
-        variadic: Option<crate::macros::MacroVariadic>,
-        body_tokens: Vec<crate::macro_token::MacroToken>,
+        variadic: Option<MacroVariadic>,
+        body_tokens: Vec<MacroToken>,
         definition: &clang::Entity<'_>,
     ) {
-        if self
-            .statement_macro_definitions
-            .iter()
-            .any(|entry| entry.get_name() == macro_name)
-        {
-            return;
-        }
+        self.statement_macro_definitions
+            .retain(|entry| entry.get_name() != macro_name);
 
-        let parse_body: Vec<crate::macro_token::MacroToken> = if variadic.is_some() {
+        let parse_body: Vec<MacroToken> = if variadic.is_some() {
             crate::macro_expand_variadic::normalize_variadic_body_for_classification(&body_tokens)
         } else {
             body_tokens.clone()
@@ -429,7 +428,7 @@ impl MacroTable {
 
         let statement_lexemes: Vec<String> = crate::macro_token::texts(&parse_body);
 
-        let mut statement_parser: crate::macro_parser::MacroParser<'_> =
+        let mut statement_parser: MacroParser<'_> =
             crate::macro_parser::MacroParser::new(&statement_lexemes);
 
         if statement_parser.parse_statement_body().is_err() {
@@ -467,13 +466,10 @@ impl MacroTable {
         });
 
         self.macro_definition_sites
-            .entry(macro_name.clone())
-            .or_insert(definition_site);
+            .insert(macro_name.clone(), definition_site);
 
         if let Some(range) = body_range {
-            self.macro_body_ranges
-                .entry(macro_name.clone())
-                .or_insert(range);
+            self.macro_body_ranges.insert(macro_name.clone(), range);
         }
 
         self.statement_macro_definitions

@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if two_includes(5) != 16 { return 1; }
+
+    return 0;
+}

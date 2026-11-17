@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if array_declaration() != 6 { return 1; }
+
+    return 0;
+}

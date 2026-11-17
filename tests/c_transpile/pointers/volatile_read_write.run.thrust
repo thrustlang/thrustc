@@ -1,0 +1,7 @@
+fn main() s32 @public {
+    if volatile_read() != 5 { return 1; }
+    if volatile_write(42) != 42 { return 2; }
+    if volatile_global() != 3 { return 3; }
+
+    return 0;
+}

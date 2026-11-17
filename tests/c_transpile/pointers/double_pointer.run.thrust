@@ -1,0 +1,13 @@
+fn main() s32 @public {
+    var value: s32 = 55;
+    var pointer: ptr[s32] = ref (value);
+    var pointer_pointer: ptr[ptr[s32]] = ref (pointer);
+
+    if load_double_pointer(pointer_pointer) != 55 { return 1; }
+
+    value = 99;
+
+    if load_double_pointer(pointer_pointer) != 99 { return 2; }
+
+    return 0;
+}

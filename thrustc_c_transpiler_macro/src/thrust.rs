@@ -51,7 +51,9 @@ impl Variadic {
     pub fn get_name(&self) -> &str {
         &self.name
     }
+}
 
+impl Variadic {
     #[inline]
     pub fn is_gnu_named(&self) -> bool {
         self.gnu_named

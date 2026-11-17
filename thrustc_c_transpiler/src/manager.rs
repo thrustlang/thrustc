@@ -22,6 +22,7 @@ use std::path::{Path, PathBuf};
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::ImportCOptions;
 use thrustc_options::TranslateCOptions;
+use thrustc_c_transpiler_macro::macro_context::MacroContext;
 
 use crate::context::TranspilerContext;
 use crate::options::EmitCBindingsOptions;
@@ -196,8 +197,8 @@ pub fn translate_single_c_to_thrust(
 
     let root: clang::Entity<'_> = translation_unit.get_entity();
 
-    let mut macro_ctx: thrustc_c_transpiler_macro::macro_context::MacroContext<'_> =
-        thrustc_c_transpiler_macro::macro_context::MacroContext::new(canonical_input.clone());
+    let mut macro_ctx: MacroContext<'_> =
+        MacroContext::new(canonical_input.clone());
 
     let translation: thrustc_c_transpiler_macro::error::TranspilerResult<()> =
         crate::top_level::append_translated_top_level_declarations(
@@ -338,8 +339,8 @@ pub fn emit_c_bindings_thrust(
 
     let mut out: String = String::with_capacity(32 * 1024);
 
-    let mut macro_ctx: thrustc_c_transpiler_macro::macro_context::MacroContext<'_> =
-        thrustc_c_transpiler_macro::macro_context::MacroContext::new(header.clone());
+    let mut macro_ctx: MacroContext<'_> =
+        MacroContext::new(header.clone());
 
     crate::top_level::append_imported_top_level_declarations(
         &import_context,

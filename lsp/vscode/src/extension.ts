@@ -15,6 +15,8 @@ export function activate(context: vscode.ExtensionContext) {
     let mode: string = configuration.get<string>("lsp.mode", "stable");
     let cpu: string = configuration.get<string>("lsp.cpu", "");
     let cpuFeatures: string = configuration.get<string>("lsp.cpuFeatures", "");
+    let stdVersion: string = configuration.get<string>("lsp.stdVersion", "");
+    let stdPath: string = configuration.get<string>("lsp.stdPath", "");
 
     let serverOptions: ServerOptions = {
         command,
@@ -35,6 +37,8 @@ export function activate(context: vscode.ExtensionContext) {
             mode,
             cpu,
             cpuFeatures,
+            stdVersion,
+            stdPath,
         },
     };
 

@@ -1,0 +1,10 @@
+fn __c_macro_RECURSE[T1](x: T1) T1 @alwaysInline {
+    return (((x) + RECURSE(x))) as T1;
+}
+
+fn RECURSE(x: s32) s32 {
+    return (x + 1) as s32;
+}
+fn recursion_function(x: s32) s32 {
+    return (((x) + RECURSE(x))) as s32;
+}

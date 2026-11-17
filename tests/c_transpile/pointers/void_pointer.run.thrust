@@ -1,0 +1,14 @@
+fn main() s32 @public {
+    var value: s32 = 88;
+    var pointer: ptr[s32] = ref (value);
+    var raw: ptr = pointer as ptr;
+    var result: ptr = void_pointer(raw);
+
+    if result != raw { return 1; }
+
+    var casted: ptr[s32] = result as ptr[s32];
+
+    if casted->[0] != 88 { return 2; }
+
+    return 0;
+}

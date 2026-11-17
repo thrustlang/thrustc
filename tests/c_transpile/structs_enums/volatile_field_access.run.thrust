@@ -1,0 +1,11 @@
+fn main() s32 @public {
+    var box: Box = new Box {
+        value: 0,
+        other: 0,
+    };
+
+    if field_write(ref (box), 7) != 7 { return 1; }
+    if field_read(ref (box)) != 7 { return 2; }
+
+    return 0;
+}

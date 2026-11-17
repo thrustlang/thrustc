@@ -37,10 +37,13 @@ type MacroSplittedDecl<'tokens> = Result<
 >;
 type MacroMultiDeclEntry = (String, String, Option<MacroExpr>);
 
+const MACRO_PARSE_DEPTH_LIMIT: usize = 64;
+
 #[derive(Debug)]
 pub struct MacroParser<'tokens> {
     tokens: &'tokens [String],
     position: usize,
+    depth: usize,
 }
 
 impl<'tokens> MacroParser<'tokens> {
@@ -48,6 +51,7 @@ impl<'tokens> MacroParser<'tokens> {
         Self {
             tokens,
             position: 0,
+            depth: 0,
         }
     }
 }
@@ -83,75 +87,89 @@ impl<'tokens> MacroParser<'tokens> {
 
 impl<'tokens> MacroParser<'tokens> {
     pub fn parse_statement(&mut self) -> Result<MacroStmt, MacroLimit> {
-        match self.tokens.get(self.position).map(|token| token.as_str()) {
-            Some(";") => {
-                let _: Option<&'tokens str> = self.advance();
-
-                Ok(MacroStmt::Empty)
-            }
-            Some("for") => self.parse_for(),
-            Some("while") => self.parse_while(),
-            Some("do") => self.parse_do(),
-            Some("if") => self.parse_if(),
-            Some("switch") => self.parse_switch(),
-            Some("break") => {
-                let _: Option<&'tokens str> = self.advance();
-
-                if self.position < self.tokens.len() {
-                    self.expect(";")?;
-                }
-
-                Ok(MacroStmt::Break)
-            }
-            Some("continue") => {
-                let _: Option<&'tokens str> = self.advance();
-
-                if self.position < self.tokens.len() {
-                    self.expect(";")?;
-                }
-
-                Ok(MacroStmt::Continue)
-            }
-            Some("return") => self.parse_return(),
-            Some("goto") => Err(MacroLimit::GotoUnsupported),
-            Some("case") | Some("default") => Err(MacroLimit::StatementMalformed),
-            Some("{") => {
-                let _: Option<&'tokens str> = self.advance();
-
-                let inner: Vec<MacroStmt> = self.parse_body()?;
-
-                if self
-                    .tokens
-                    .get(self.position)
-                    .is_none_or(|token| token.as_str() != "}")
-                {
-                    return Err(MacroLimit::ExpectedToken);
-                }
-
-                let _: Option<&'tokens str> = self.advance();
-
-                Ok(MacroStmt::Compound(inner))
-            }
-            Some(text)
-                if text != "else"
-                    && text != "sizeof"
-                    && self
-                        .tokens
-                        .get(self.position.saturating_add(1))
-                        .is_some_and(|next| next == ":")
-                    && text
-                        .chars()
-                        .next()
-                        .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_') =>
-            {
-                Err(MacroLimit::GotoUnsupported)
-            }
-            Some(text) if text != "else" && text != "sizeof" && Self::is_reserved_word(text) => {
-                Err(MacroLimit::UnsupportedStatementKeyword)
-            }
-            Some(_) => self.parse_decl_or_expr(),
-            None => Err(MacroLimit::UnexpectedEndOfTokens),
+        if self.depth >= MACRO_PARSE_DEPTH_LIMIT {
+            return Err(MacroLimit::ParseDepthExceeded);
         }
+
+        self.depth = self.depth.saturating_add(1);
+
+        let result: Result<MacroStmt, MacroLimit> = (|| {
+            match self.tokens.get(self.position).map(|token| token.as_str()) {
+                Some(";") => {
+                    let _: Option<&'tokens str> = self.advance();
+
+                    Ok(MacroStmt::Empty)
+                }
+                Some("for") => self.parse_for(),
+                Some("while") => self.parse_while(),
+                Some("do") => self.parse_do(),
+                Some("if") => self.parse_if(),
+                Some("switch") => self.parse_switch(),
+                Some("break") => {
+                    let _: Option<&'tokens str> = self.advance();
+
+                    if self.position < self.tokens.len() {
+                        self.expect(";")?;
+                    }
+
+                    Ok(MacroStmt::Break)
+                }
+                Some("continue") => {
+                    let _: Option<&'tokens str> = self.advance();
+
+                    if self.position < self.tokens.len() {
+                        self.expect(";")?;
+                    }
+
+                    Ok(MacroStmt::Continue)
+                }
+                Some("return") => self.parse_return(),
+                Some("goto") => Err(MacroLimit::GotoUnsupported),
+                Some("case") | Some("default") => Err(MacroLimit::StatementMalformed),
+                Some("{") => {
+                    let _: Option<&'tokens str> = self.advance();
+
+                    let inner: Vec<MacroStmt> = self.parse_body()?;
+
+                    if self
+                        .tokens
+                        .get(self.position)
+                        .is_none_or(|token| token.as_str() != "}")
+                    {
+                        return Err(MacroLimit::ExpectedToken);
+                    }
+
+                    let _: Option<&'tokens str> = self.advance();
+
+                    Ok(MacroStmt::Compound(inner))
+                }
+                Some(text)
+                    if text != "else"
+                        && text != "sizeof"
+                        && self
+                            .tokens
+                            .get(self.position.saturating_add(1))
+                            .is_some_and(|next| next == ":")
+                        && text
+                            .chars()
+                            .next()
+                            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_') =>
+                {
+                    Err(MacroLimit::GotoUnsupported)
+                }
+                Some(text)
+                    if text != "else" && text != "sizeof" && Self::is_reserved_word(text) =>
+                {
+                    Err(MacroLimit::UnsupportedStatementKeyword)
+                }
+                Some(_) => self.parse_decl_or_expr(),
+                None => Err(MacroLimit::UnexpectedEndOfTokens),
+            }
+        })();
+
+        self.depth = self.depth.saturating_sub(1);
+
+        result
     }
 }
 
@@ -436,10 +454,10 @@ impl<'tokens> MacroParser<'tokens> {
 
             let part_texts: Vec<String> = part.to_vec();
 
-            let parsed_part: crate::macro_ast::MacroExpr =
+            let parsed_part: MacroExpr =
                 MacroParser::parse(&part_texts).map_err(|_| MacroLimit::DeclaratorMalformed)?;
 
-            if let crate::macro_ast::MacroExpr::Ident(bare_name) = parsed_part {
+            if let MacroExpr::Ident(bare_name) = parsed_part {
                 let shape: DeclaratorShape = DeclaratorShape {
                     stars: 0,
                     name: bare_name,
@@ -453,7 +471,7 @@ impl<'tokens> MacroParser<'tokens> {
                 continue;
             }
 
-            let crate::macro_ast::MacroExpr::Assign { op, target, value } = parsed_part else {
+            let MacroExpr::Assign { op, target, value } = parsed_part else {
                 return Err(MacroLimit::DeclaratorMalformed);
             };
 
@@ -461,7 +479,7 @@ impl<'tokens> MacroParser<'tokens> {
                 return Err(MacroLimit::DeclaratorMalformed);
             }
 
-            let crate::macro_ast::MacroExpr::Ident(target_name) = *target else {
+            let MacroExpr::Ident(target_name) = *target else {
                 return Err(MacroLimit::DeclaratorMalformed);
             };
 
@@ -1358,29 +1376,41 @@ impl<'tokens> MacroParser<'tokens> {
 
 impl<'tokens> MacroParser<'tokens> {
     pub fn parse_assign(&mut self) -> Result<MacroExpr, MacroLimit> {
-        let target: MacroExpr = self.parse_ternary()?;
-
-        if self.peek().is_some_and(|token| {
-            matches!(
-                token,
-                "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>="
-            )
-        }) {
-            let Some(op_token) = self.advance() else {
-                return Err(MacroLimit::UnexpectedEndOfTokens);
-            };
-            let op: String = op_token.to_string();
-
-            let value: MacroExpr = self.parse_assign()?;
-
-            return Ok(MacroExpr::Assign {
-                op,
-                target: Box::new(target),
-                value: Box::new(value),
-            });
+        if self.depth >= MACRO_PARSE_DEPTH_LIMIT {
+            return Err(MacroLimit::ParseDepthExceeded);
         }
 
-        Ok(target)
+        self.depth = self.depth.saturating_add(1);
+
+        let result: Result<MacroExpr, MacroLimit> = (|| {
+            let target: MacroExpr = self.parse_ternary()?;
+
+            if self.peek().is_some_and(|token| {
+                matches!(
+                    token,
+                    "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>="
+                )
+            }) {
+                let Some(op_token) = self.advance() else {
+                    return Err(MacroLimit::UnexpectedEndOfTokens);
+                };
+                let op: String = op_token.to_string();
+
+                let value: MacroExpr = self.parse_assign()?;
+
+                return Ok(MacroExpr::Assign {
+                    op,
+                    target: Box::new(target),
+                    value: Box::new(value),
+                });
+            }
+
+            Ok(target)
+        })();
+
+        self.depth = self.depth.saturating_sub(1);
+
+        result
     }
 }
 
@@ -2139,5 +2169,23 @@ impl<'tokens> MacroParser<'tokens> {
         }
 
         Err(MacroLimit::ExpressionMalformed)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MacroParser;
+    use crate::macro_error::MacroLimit;
+
+    #[test]
+    fn parse_depth_is_limited() {
+        let mut tokens: Vec<String> = vec!["(".to_string(); 256];
+
+        tokens.push("1".to_string());
+        tokens.extend(vec![")".to_string(); 256]);
+
+        let result: Result<crate::macro_ast::MacroExpr, MacroLimit> = MacroParser::parse(&tokens);
+
+        assert!(matches!(result, Err(MacroLimit::ParseDepthExceeded)));
     }
 }

@@ -1,0 +1,8 @@
+fn main() s32 @public {
+    var xs: array[s32; 4] = fixed[4, 5, 6, 7];
+
+    if array_indexing(xs as ptr[s32], 1) != 5 { return 1; }
+    if array_indexing(xs as ptr[s32], 3) != 7 { return 2; }
+
+    return 0;
+}

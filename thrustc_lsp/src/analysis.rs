@@ -27,8 +27,8 @@ use thrustc_attributes::traits::ThrustAttributesExtensions;
 use thrustc_builtins::BuiltinRegistry;
 use thrustc_lexer::Lexer;
 use thrustc_options::{CompilationUnit, CompilerOptions};
-use thrustc_preprocessor::signatures::{Signature, Variant};
 use thrustc_preprocessor::Preprocessor;
+use thrustc_preprocessor::signatures::{Signature, Variant};
 use thrustc_typesystem::type_layout::TargetInfo;
 
 use crate::documents::Document;
@@ -193,7 +193,9 @@ impl Symbol {
     pub fn get_declaration_end(&self) -> u64 {
         self.declaration_end
     }
+}
 
+impl Symbol {
     #[inline]
     pub fn is_visible_at(&self, line: u64) -> bool {
         line >= self.scope_start && line <= self.scope_end && line >= self.declaration_line
@@ -340,7 +342,9 @@ impl Function {
     pub fn get_parameters(&self) -> &[Symbol] {
         &self.parameters
     }
+}
 
+impl Function {
     #[inline]
     pub fn is_variadic(&self) -> bool {
         self.is_variadic
@@ -553,7 +557,9 @@ impl Analysis {
 
         diagnostics
     }
+}
 
+impl Analysis {
     #[inline]
     pub fn remove_document(&mut self, uri: &str) {
         self.documents.remove(uri);
@@ -563,14 +569,14 @@ impl Analysis {
     pub fn set_options(&mut self, options: CompilerOptions) {
         self.options = options;
     }
+}
 
+impl Analysis {
     #[inline]
     pub fn get_options(&self) -> &CompilerOptions {
         &self.options
     }
-}
 
-impl Analysis {
     #[inline]
     pub fn get_document(&self, uri: &str) -> Option<&DocumentAnalysis> {
         self.documents.get(uri)
@@ -608,6 +614,7 @@ fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAna
     let mut structures: Vec<Structure> = Vec::with_capacity(u8::MAX as usize);
     let mut enumerations: Vec<Enumeration> = Vec::with_capacity(u8::MAX as usize);
     let mut functions: Vec<Function> = Vec::with_capacity(u8::MAX as usize);
+
     let modules: Vec<ImportedModule> = self::analyze_imported_modules(uri, text, options);
 
     let mut line_index: usize = 0;
@@ -631,6 +638,7 @@ fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAna
 
             if !name.is_empty() {
                 let fields: Vec<Symbol> = self::parse_struct_fields(&lines, line_index, end_line);
+
                 let mut symbol: Symbol = Symbol::new(
                     name.clone(),
                     CompletionKind::Struct,
@@ -646,6 +654,7 @@ fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAna
                     .unwrap_or(0)
                     .try_into()
                     .unwrap_or(u64::MAX);
+
                 let declaration_end: u64 =
                     declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
 
@@ -663,6 +672,7 @@ fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAna
 
             if !name.is_empty() {
                 let values: Vec<Symbol> = self::parse_enum_values(&lines, line_index, end_line);
+
                 let mut symbol: Symbol = Symbol::new(
                     name.clone(),
                     CompletionKind::Enum,
@@ -673,11 +683,13 @@ fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAna
                     total_lines,
                     line_number,
                 );
+
                 let declaration_start: u64 = raw_line
                     .find(&name)
                     .unwrap_or(0)
                     .try_into()
                     .unwrap_or(u64::MAX);
+
                 let declaration_end: u64 =
                     declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
 
@@ -696,6 +708,7 @@ fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAna
             if !name.is_empty() {
                 let parameters: Vec<Symbol> =
                     self::parse_function_parameters(trimmed, line_number, end_line);
+
                 let mut detail: String = String::with_capacity(trimmed.len());
 
                 for ch in trimmed.chars() {
@@ -708,6 +721,7 @@ fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAna
 
                 let detail: String = detail.trim().to_string();
                 let insert_text: String = format!("{}($0)", name);
+
                 let mut symbol: Symbol = Symbol::new(
                     name.clone(),
                     CompletionKind::Function,
@@ -718,11 +732,13 @@ fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAna
                     total_lines,
                     line_number,
                 );
+
                 let declaration_start: u64 = raw_line
                     .find(&name)
                     .unwrap_or(0)
                     .try_into()
                     .unwrap_or(u64::MAX);
+
                 let declaration_end: u64 =
                     declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
 
@@ -761,11 +777,13 @@ fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAna
                     total_lines,
                     line_number,
                 );
+
                 let declaration_start: u64 = raw_line
                     .find(&name)
                     .unwrap_or(0)
                     .try_into()
                     .unwrap_or(u64::MAX);
+
                 let declaration_end: u64 =
                     declaration_start.saturating_add(name.len().try_into().unwrap_or(u64::MAX));
 
@@ -792,6 +810,7 @@ fn analyze_text(uri: &str, text: &str, options: &CompilerOptions) -> DocumentAna
                 Some((_, right)) => self::clean_type(right),
                 None => String::new(),
             };
+
             let mut scope_start: u64 = 0;
             let mut scope_end: u64 = total_lines;
 

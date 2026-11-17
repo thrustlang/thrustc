@@ -1,0 +1,13 @@
+fn main() s32 @public {
+    var value: s32 = 7;
+
+    assign_through_pointer(ref (value), 42);
+
+    if value != 42 { return 1; }
+
+    assign_through_pointer(ref (value), -5);
+
+    if value != -5 { return 2; }
+
+    return 0;
+}

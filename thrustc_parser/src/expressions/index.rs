@@ -64,7 +64,7 @@ pub fn build_index<'parser>(
         }
     };
 
-    let metadata: IndexMetadata = IndexMetadata::new(true, deref);
+    let metadata: IndexMetadata = IndexMetadata::new(true, deref, false);
 
     Ok(Ast::Index {
         source: source_expr.into(),

@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if call_header(41) != 42 { return 1; }
+
+    return 0;
+}

@@ -23,7 +23,6 @@ use crate::macro_token::{MacroToken, MacroTokenKind};
 
 #[derive(Debug)]
 pub struct MacroExpansionContext {
-    active_expansions: Vec<String>,
     depth: usize,
     max_depth: usize,
     max_rescan_passes: usize,
@@ -33,7 +32,6 @@ impl MacroExpansionContext {
     #[inline]
     pub fn new(max_depth: usize, max_rescan_passes: usize) -> Self {
         Self {
-            active_expansions: Vec::new(),
             depth: 0,
             max_depth,
             max_rescan_passes,
@@ -42,30 +40,20 @@ impl MacroExpansionContext {
 }
 
 impl MacroExpansionContext {
-    fn try_enter(&mut self, macro_name: &str) -> Result<(), MacroLimit> {
-        if self.depth >= self.max_depth {
-            return Err(MacroLimit::ExpansionDepthExceeded);
-        }
-
-        if self
-            .active_expansions
-            .iter()
-            .any(|active| active.as_str() == macro_name)
-        {
-            return Err(MacroLimit::RecursiveExpansion);
-        }
-
-        self.depth = self.depth.saturating_add(1);
-        self.active_expansions.push(macro_name.to_string());
-
-        Ok(())
+    fn leave(&mut self) {
+        self.depth = self.depth.saturating_sub(1);
     }
 }
 
 impl MacroExpansionContext {
-    fn leave(&mut self) {
-        self.active_expansions.pop();
-        self.depth = self.depth.saturating_sub(1);
+    fn enter_depth(&mut self) -> Result<(), MacroLimit> {
+        if self.depth >= self.max_depth {
+            return Err(MacroLimit::ExpansionDepthExceeded);
+        }
+
+        self.depth = self.depth.saturating_add(1);
+
+        Ok(())
     }
 }
 
@@ -204,13 +192,28 @@ pub fn rescan_tokens(
                 continue;
             }
 
+            if token.is_hidden(token.get_text()) {
+                output.push(token.clone());
+                index += 1;
+                continue;
+            }
+
             let Some(definition) = table.get_function_like_definition_cloned(token.get_text())
             else {
                 if let Some(object_body) = table.get_object_macro_definition(token.get_text()) {
-                    context.try_enter(token.get_text())?;
+                    context.enter_depth()?;
+
+                    let painted_body: Vec<MacroToken> = object_body
+                        .iter()
+                        .map(|body_token| {
+                            body_token
+                                .with_hidden_set(token)
+                                .with_hidden(token.get_text())
+                        })
+                        .collect();
 
                     let rescanned_object: Result<Vec<MacroToken>, MacroLimit> =
-                        self::rescan_tokens(&object_body, table, context);
+                        self::rescan_tokens(&painted_body, table, context);
 
                     context.leave();
 
@@ -261,46 +264,53 @@ pub fn rescan_tokens(
                 return Err(MacroLimit::ArgumentCountMismatch);
             }
 
-            context.try_enter(definition.get_name())?;
+            let mut expanded_fixed_args: Vec<Vec<MacroToken>> = Vec::new();
 
-            let rescanned_result: Result<Vec<MacroToken>, MacroLimit> = {
-                let mut expanded_fixed_args: Vec<Vec<MacroToken>> = Vec::new();
+            for arg in raw_args.iter().take(fixed_parameter_count) {
+                expanded_fixed_args.push(self::rescan_tokens(arg, table, context)?);
+            }
 
-                for arg in raw_args.iter().take(fixed_parameter_count) {
-                    expanded_fixed_args.push(self::rescan_tokens(arg, table, context)?);
-                }
+            let mut expanded_variadic_args: Vec<Vec<MacroToken>> = Vec::new();
 
-                let mut expanded_variadic_args: Vec<Vec<MacroToken>> = Vec::new();
+            for arg in raw_args.iter().skip(fixed_parameter_count) {
+                expanded_variadic_args.push(self::rescan_tokens(arg, table, context)?);
+            }
 
-                for arg in raw_args.iter().skip(fixed_parameter_count) {
-                    expanded_variadic_args.push(self::rescan_tokens(arg, table, context)?);
-                }
-
-                let substituted: Vec<MacroToken> =
-                    if let Some(variadic) = definition.get_variadic() {
-                        crate::macro_expand_variadic::substitute_variadic_parameter_tokens(
-                            definition.get_body(),
-                            definition.get_parameters(),
-                            variadic.get_name(),
-                            &expanded_fixed_args,
-                            &expanded_variadic_args,
-                            raw_args
-                                .iter()
-                                .skip(fixed_parameter_count)
-                                .any(|argument| !argument.is_empty()),
-                        )
-                        .ok_or(MacroLimit::ArgumentCountMismatch)?
-                    } else {
-                        self::substitute_parameter_tokens(
-                            definition.get_body(),
-                            definition.get_parameters(),
-                            &expanded_fixed_args,
-                        )
-                        .ok_or(MacroLimit::ArgumentCountMismatch)?
-                    };
-
-                self::rescan_tokens(&substituted, table, context)
+            let substituted: Vec<MacroToken> = if let Some(variadic) = definition.get_variadic() {
+                crate::macro_expand_variadic::substitute_variadic_parameter_tokens(
+                    definition.get_body(),
+                    definition.get_parameters(),
+                    variadic.get_name(),
+                    &expanded_fixed_args,
+                    &expanded_variadic_args,
+                    raw_args
+                        .iter()
+                        .skip(fixed_parameter_count)
+                        .any(|argument| !argument.is_empty()),
+                )
+                .ok_or(MacroLimit::ArgumentCountMismatch)?
+            } else {
+                self::substitute_parameter_tokens(
+                    definition.get_body(),
+                    definition.get_parameters(),
+                    &expanded_fixed_args,
+                )
+                .ok_or(MacroLimit::ArgumentCountMismatch)?
             };
+
+            context.enter_depth()?;
+
+            let painted_body: Vec<MacroToken> = substituted
+                .iter()
+                .map(|body_token| {
+                    body_token
+                        .with_hidden_set(token)
+                        .with_hidden(definition.get_name())
+                })
+                .collect();
+
+            let rescanned_result: Result<Vec<MacroToken>, MacroLimit> =
+                self::rescan_tokens(&painted_body, table, context);
 
             context.leave();
 

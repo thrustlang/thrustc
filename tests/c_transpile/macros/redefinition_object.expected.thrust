@@ -1,0 +1,3 @@
+fn redefinition_object() s32 {
+    return (2) as s32;
+}

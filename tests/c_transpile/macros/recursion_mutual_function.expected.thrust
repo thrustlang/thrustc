@@ -1,0 +1,16 @@
+fn __c_macro_MUTUAL_A[T1](x: T1) T1 @alwaysInline {
+    return (MUTUAL_A(x)) as T1;
+}
+fn __c_macro_MUTUAL_B[T1](x: T1) T1 @alwaysInline {
+    return (MUTUAL_B(x)) as T1;
+}
+
+fn MUTUAL_A(x: s32) s32 {
+    return (x + 1) as s32;
+}
+fn MUTUAL_B(x: s32) s32 {
+    return (MUTUAL_A(x) + 2) as s32;
+}
+fn recursion_mutual(x: s32) s32 {
+    return (MUTUAL_A(x)) as s32;
+}

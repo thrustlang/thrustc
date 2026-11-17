@@ -1,0 +1,8 @@
+fn main() s32 @public {
+    var value: s32 = 42;
+    var pointer: ptr[s32] = ref (value);
+
+    if (deref volatile pointer) != 42 { return 1; }
+
+    return 0;
+}

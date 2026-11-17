@@ -18,6 +18,11 @@
 */
 
 use crate::macro_ast::{MacroExpr, MacroPostOp, MacroUnOp};
+use crate::location::Location;
+use crate::macro_ast::MacroDesignator;
+use crate::macro_context::MacroContext;
+use crate::macro_type::InferredType;
+use crate::macro_type::MacroValueType;
 
 impl MacroExpr {
     #[inline]
@@ -52,15 +57,15 @@ impl MacroExpr {
 impl MacroExpr {
     /// Returns `(is_pointer, pointee_is_pointer)` for an operand identifier.
     #[inline]
-    fn pointer_info(&self, ctx: &crate::macro_context::MacroContext<'_>) -> (bool, bool) {
-        let ty: Option<&crate::macro_type::InferredType> = self
+    fn pointer_info(&self, ctx: &MacroContext<'_>) -> (bool, bool) {
+        let ty: Option<&InferredType> = self
             .base_identifier()
             .and_then(|name| ctx.get_type_environment().get(name));
 
         match ty {
-            Some(crate::macro_type::InferredType::Pointer(inner)) => (
+            Some(InferredType::Pointer(inner)) => (
                 true,
-                matches!(inner.as_ref(), crate::macro_type::InferredType::Pointer(_)),
+                matches!(inner.as_ref(), InferredType::Pointer(_)),
             ),
             _ => (false, false),
         }
@@ -70,8 +75,8 @@ impl MacroExpr {
 impl MacroExpr {
     fn resolved_value_type(
         &self,
-        ctx: &crate::macro_context::MacroContext<'_>,
-    ) -> Option<crate::macro_type::MacroValueType> {
+        ctx: &MacroContext<'_>,
+    ) -> Option<MacroValueType> {
         match self {
             MacroExpr::Ident(name) => {
                 if let Some(binding) = ctx.get_inline_binding(name) {
@@ -88,15 +93,15 @@ impl MacroExpr {
                 .and_then(|kind| kind.index_element()),
 
             MacroExpr::Member { base, field } => {
-                let base_type: crate::macro_type::MacroValueType = base.resolved_value_type(ctx)?;
+                let base_type: MacroValueType = base.resolved_value_type(ctx)?;
 
-                let record: &crate::macro_type::MacroValueType = base_type.strip_const();
+                let record: &MacroValueType = base_type.strip_const();
 
                 let record_name: Option<&str> = match record {
-                    crate::macro_type::MacroValueType::Struct { name } => Some(name),
-                    crate::macro_type::MacroValueType::Pointer { pointee } => {
+                    MacroValueType::Struct { name } => Some(name),
+                    MacroValueType::Pointer { pointee } => {
                         match pointee.strip_const() {
-                            crate::macro_type::MacroValueType::Struct { name } => Some(name),
+                            MacroValueType::Struct { name } => Some(name),
                             _ => None,
                         }
                     }
@@ -119,7 +124,7 @@ impl MacroExpr {
             }
 
             MacroExpr::Literal(_) | MacroExpr::Null => {
-                Some(crate::macro_type::MacroValueType::Scalar)
+                Some(MacroValueType::Scalar)
             }
 
             MacroExpr::Unary { arg, .. }
@@ -138,7 +143,7 @@ impl MacroExpr {
 }
 
 impl MacroExpr {
-    fn index_is_complex(&self, ctx: &crate::macro_context::MacroContext<'_>) -> bool {
+    fn index_is_complex(&self, ctx: &MacroContext<'_>) -> bool {
         match self {
             MacroExpr::Index { .. } => true,
             MacroExpr::Ident(name) => ctx
@@ -151,7 +156,7 @@ impl MacroExpr {
 }
 
 impl MacroExpr {
-    fn lower_index_base(&self, ctx: &mut crate::macro_context::MacroContext, result_type: &str) -> String {
+    fn lower_index_base(&self, ctx: &mut MacroContext, result_type: &str) -> String {
         match self {
             MacroExpr::Ident(name) => {
                 if let Some(binding) = ctx.get_inline_binding(name).cloned() {
@@ -164,12 +169,12 @@ impl MacroExpr {
             MacroExpr::Paren(inner) => inner.lower_index_base(ctx, result_type),
 
             MacroExpr::Member { .. } => {
-                self::lower(ctx, self, crate::location::Location::RValue, result_type)
+                self::lower(ctx, self, Location::RValue, result_type)
             }
 
             _ => format!(
                 "({})",
-                self::lower(ctx, self, crate::location::Location::RValue, result_type)
+                self::lower(ctx, self, Location::RValue, result_type)
             ),
         }
     }
@@ -178,14 +183,14 @@ impl MacroExpr {
 impl MacroExpr {
     fn lower_index_address(
         &self,
-        ctx: &mut crate::macro_context::MacroContext,
+        ctx: &mut MacroContext,
         result_type: &str,
     ) -> String {
         match self {
             MacroExpr::Index { base, index } => {
                 let base_text: String = base.lower_index_address_base(ctx, result_type);
                 let index_text: String =
-                    self::lower(ctx, index, crate::location::Location::RValue, result_type);
+                    self::lower(ctx, index, Location::RValue, result_type);
 
                 format!("{base_text}[{index_text}]")
             }
@@ -196,7 +201,7 @@ impl MacroExpr {
 
     fn lower_index_address_base(
         &self,
-        ctx: &mut crate::macro_context::MacroContext,
+        ctx: &mut MacroContext,
         result_type: &str,
     ) -> String {
         match self {
@@ -209,19 +214,19 @@ impl MacroExpr {
             }
             MacroExpr::Index { .. } => self.lower_index_address(ctx, result_type),
             MacroExpr::Member { .. } => {
-                self::lower(ctx, self, crate::location::Location::RValue, result_type)
+                self::lower(ctx, self, Location::RValue, result_type)
             }
             MacroExpr::Paren(inner) => inner.lower_index_address_base(ctx, result_type),
 
-            _ => self::lower(ctx, self, crate::location::Location::AddressOf, result_type),
+            _ => self::lower(ctx, self, Location::AddressOf, result_type),
         }
     }
 }
 
 pub fn lower(
-    ctx: &mut crate::macro_context::MacroContext,
+    ctx: &mut MacroContext,
     expr: &MacroExpr,
-    location: crate::location::Location,
+    location: Location,
     result_type: &str,
 ) -> String {
     match expr {
@@ -259,13 +264,13 @@ pub fn lower(
                     return self::lower(
                         ctx,
                         arg,
-                        crate::location::Location::AddressOf,
+                        Location::AddressOf,
                         result_type,
                     );
                 }
 
                 let arg_text: String =
-                    self::lower(ctx, arg, crate::location::Location::AddressOf, result_type);
+                    self::lower(ctx, arg, Location::AddressOf, result_type);
 
                 let grouped: String = if arg.is_atomic() {
                     arg_text
@@ -277,7 +282,7 @@ pub fn lower(
             }
 
             let arg_text: String =
-                self::lower(ctx, arg, crate::location::Location::RValue, result_type);
+                self::lower(ctx, arg, Location::RValue, result_type);
 
             let grouped: String = if arg.is_atomic() {
                 arg_text.clone()
@@ -313,7 +318,7 @@ pub fn lower(
 
         MacroExpr::Postfix { op, arg } => {
             let arg_text: String =
-                self::lower(ctx, arg, crate::location::Location::RValue, result_type);
+                self::lower(ctx, arg, Location::RValue, result_type);
 
             let grouped: String = if arg.is_atomic() {
                 arg_text.clone()
@@ -340,9 +345,9 @@ pub fn lower(
 
         MacroExpr::Binary { op, left, right } => {
             let left_text: String =
-                self::lower(ctx, left, crate::location::Location::RValue, result_type);
+                self::lower(ctx, left, Location::RValue, result_type);
             let right_text: String =
-                self::lower(ctx, right, crate::location::Location::RValue, result_type);
+                self::lower(ctx, right, Location::RValue, result_type);
 
             let (left_is_pointer, left_pointee_is_pointer) = left.pointer_info(ctx);
             let (right_is_pointer, right_pointee_is_pointer) = right.pointer_info(ctx);
@@ -370,7 +375,7 @@ pub fn lower(
         MacroExpr::Comma(items) => {
             let item_texts: Vec<String> = items
                 .iter()
-                .map(|item| self::lower(ctx, item, crate::location::Location::RValue, result_type))
+                .map(|item| self::lower(ctx, item, Location::RValue, result_type))
                 .collect();
 
             format!("({})", item_texts.join(", "))
@@ -382,20 +387,20 @@ pub fn lower(
                 && target.index_is_complex(ctx)
             {
                 let target_address: String =
-                    self::lower(ctx, target, crate::location::Location::LValue, result_type);
+                    self::lower(ctx, target, Location::LValue, result_type);
                 let target_value: String =
-                    self::lower(ctx, target, crate::location::Location::RValue, result_type);
+                    self::lower(ctx, target, Location::RValue, result_type);
                 let value_text: String =
-                    self::lower(ctx, value, crate::location::Location::RValue, result_type);
+                    self::lower(ctx, value, Location::RValue, result_type);
                 let binary_operator: &str = &op[..op.len().saturating_sub(1)];
 
                 return format!("{target_address} = {target_value} {binary_operator} {value_text}");
             }
 
             let target_text: String =
-                self::lower(ctx, target, crate::location::Location::LValue, result_type);
+                self::lower(ctx, target, Location::LValue, result_type);
             let value_text: String =
-                self::lower(ctx, value, crate::location::Location::RValue, result_type);
+                self::lower(ctx, value, Location::RValue, result_type);
 
             let (is_pointer, pointee_is_pointer) = target.pointer_info(ctx);
 
@@ -426,23 +431,23 @@ pub fn lower(
                     || op == "&&"
                     || op == "||"
                 {
-                    self::lower(ctx, cond, crate::location::Location::RValue, "bool")
+                    self::lower(ctx, cond, Location::RValue, "bool")
                 } else {
                     format!(
                         "({}) != 0",
-                        self::lower(ctx, cond, crate::location::Location::RValue, "bool")
+                        self::lower(ctx, cond, Location::RValue, "bool")
                     )
                 }
             } else {
                 format!(
                     "({}) != 0",
-                    self::lower(ctx, cond, crate::location::Location::RValue, "bool")
+                    self::lower(ctx, cond, Location::RValue, "bool")
                 )
             };
 
-            let then_type: Option<crate::macro_type::InferredType> =
+            let then_type: Option<InferredType> =
                 crate::macro_type::MacroType::expression_type(ctx, then_branch);
-            let else_type: Option<crate::macro_type::InferredType> =
+            let else_type: Option<InferredType> =
                 crate::macro_type::MacroType::expression_type(ctx, else_branch);
 
             let ternary_type: String = then_type
@@ -471,13 +476,13 @@ pub fn lower(
 
         MacroExpr::Call { callee, args } => {
             let callee_text: String =
-                self::lower(ctx, callee, crate::location::Location::RValue, result_type);
+                self::lower(ctx, callee, Location::RValue, result_type);
 
             let grouped_callee: String = if let Some(name) = callee.base_identifier() {
                 self::lower(
                     ctx,
                     &MacroExpr::Ident(name.to_string()),
-                    crate::location::Location::RValue,
+                    Location::RValue,
                     result_type,
                 )
             } else {
@@ -486,7 +491,7 @@ pub fn lower(
 
             let argument_texts: Vec<String> = args
                 .iter()
-                .map(|arg| self::lower(ctx, arg, crate::location::Location::RValue, result_type))
+                .map(|arg| self::lower(ctx, arg, Location::RValue, result_type))
                 .collect();
 
             format!("{grouped_callee}({})", argument_texts.join(", "))
@@ -494,12 +499,12 @@ pub fn lower(
 
         MacroExpr::Index { base, index } => {
             let index_text: String =
-                self::lower(ctx, index, crate::location::Location::RValue, result_type);
+                self::lower(ctx, index, Location::RValue, result_type);
 
-            let base_type: Option<crate::macro_type::MacroValueType> =
+            let base_type: Option<MacroValueType> =
                 base.resolved_value_type(ctx);
 
-            let result_shape: Option<crate::macro_type::MacroValueType> =
+            let result_shape: Option<MacroValueType> =
                 base_type.as_ref().and_then(|kind| kind.index_element());
 
             let complex: bool = base.index_is_complex(ctx);
@@ -534,7 +539,7 @@ pub fn lower(
             } = base.as_ref()
             {
                 let member_source: String =
-                    self::lower(ctx, member_base, crate::location::Location::RValue, result_type);
+                    self::lower(ctx, member_base, Location::RValue, result_type);
 
                 let grouped_member: String = if member_base.is_atomic() {
                     member_source
@@ -552,7 +557,7 @@ pub fn lower(
 
         MacroExpr::Member { base, field } => {
             let base_text: String =
-                self::lower(ctx, base, crate::location::Location::RValue, result_type);
+                self::lower(ctx, base, Location::RValue, result_type);
 
             let grouped_base: String = if matches!(base.as_ref(), MacroExpr::Ident(_)) {
                 base_text
@@ -569,7 +574,7 @@ pub fn lower(
 
         MacroExpr::Cast { target, arg } => {
             let arg_text: String =
-                self::lower(ctx, arg, crate::location::Location::RValue, result_type);
+                self::lower(ctx, arg, Location::RValue, result_type);
 
             format!("({arg_text}) as {target}")
         }
@@ -597,7 +602,7 @@ pub fn lower(
 }
 
 pub fn lower_initializer(
-    ctx: &mut crate::macro_context::MacroContext,
+    ctx: &mut MacroContext,
     expr: &MacroExpr,
     target_type: &str,
 ) -> String {
@@ -606,7 +611,7 @@ pub fn lower_initializer(
             return self::lower_initializer(ctx, init, ty);
         }
 
-        return self::lower(ctx, expr, crate::location::Location::RValue, target_type);
+        return self::lower(ctx, expr, Location::RValue, target_type);
     };
 
     let array_element: Option<String> = target_type
@@ -626,11 +631,11 @@ pub fn lower_initializer(
     let fields: Vec<String> = items
         .iter()
         .map(|item| match item.get_designator() {
-            Some(crate::macro_ast::MacroDesignator::Field(field)) => {
+            Some(MacroDesignator::Field(field)) => {
                 let value: String = self::lower(
                     ctx,
                     item.get_value(),
-                    crate::location::Location::RValue,
+                    Location::RValue,
                     target_type,
                 );
 
@@ -655,7 +660,7 @@ pub fn lower_initializer(
             self::lower(
                 ctx,
                 item.get_value(),
-                crate::location::Location::RValue,
+                Location::RValue,
                 target_type,
             )
         })
@@ -665,11 +670,11 @@ pub fn lower_initializer(
 }
 
 pub fn lower_function_body(
-    ctx: &mut crate::macro_context::MacroContext,
+    ctx: &mut MacroContext,
     expr: &MacroExpr,
     return_type: &str,
 ) -> String {
-    let body_text: String = self::lower(ctx, expr, crate::location::Location::RValue, return_type);
+    let body_text: String = self::lower(ctx, expr, Location::RValue, return_type);
 
     format!("({body_text}) as {return_type}")
 }

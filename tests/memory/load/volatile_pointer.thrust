@@ -1,0 +1,10 @@
+fn main() s32 @public {
+    var value: s32 = 42;
+    var pointer: ptr[s32] = ref (value);
+    var loaded: ptr[s32] = load volatile pointer;
+
+    if loaded != pointer { return 1; }
+    if loaded->[0] != 42 { return 2; }
+
+    return 0;
+}

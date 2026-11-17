@@ -1,0 +1,7 @@
+fn main() s32 @public {
+    if function_macro(0) != 1 { return 1; }
+    if function_macro(41) != 42 { return 2; }
+    if function_macro(-1) != 0 { return 3; }
+
+    return 0;
+}

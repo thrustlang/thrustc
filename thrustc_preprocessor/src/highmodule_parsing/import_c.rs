@@ -19,7 +19,7 @@
 
 use std::path::{Path, PathBuf};
 
-use thrustc_ast_modificators::Modificators;
+use thrustc_ast_modificators::{Modificator, Modificators};
 use thrustc_attributes::ThrustAttribute;
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
@@ -402,6 +402,12 @@ fn emit_imported_symbols(
             ThrustAttribute::Extern(imported_static.external_name().to_string(), span),
         ];
 
+        let mut modificators: Modificators = Modificators::new();
+
+        if imported_static.is_volatile() {
+            modificators.push(Modificator::Volatile);
+        }
+
         let symbol: Symbol = Symbol {
             name,
             signature: Signature::Static {
@@ -409,7 +415,7 @@ fn emit_imported_symbols(
                 invalid_kind: Type::Void { span },
                 is_mutable: imported_static.is_mutable(),
                 attributes,
-                modificators: Modificators::new(),
+                modificators,
                 span,
             },
             variant: Variant::Static,

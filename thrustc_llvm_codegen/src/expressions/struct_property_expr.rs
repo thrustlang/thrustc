@@ -66,7 +66,19 @@ pub fn compile<'ctx>(
         };
 
         if metadata.is_deref() {
-            self::compile_deref_property(context, source, data, ptr)
+            let atomic_config: thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators =
+                thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators::new(
+                    metadata.is_volatile(),
+                    None,
+                );
+
+            context.push_atomic_modificators(atomic_config);
+
+            let value: BasicValueEnum = self::compile_deref_property(context, source, data, ptr);
+
+            context.pop_atomic_modificators();
+
+            value
         } else {
             ptr
         }

@@ -97,6 +97,16 @@
           "type": "string",
           "default": "",
           "description": "Target CPU features passed to the language server, matching -cpu-features."
+        },
+        "thrust.lsp.stdVersion": {
+          "type": "string",
+          "default": "",
+          "description": "Standard library version passed to the language server, matching -std-version. Empty uses the compiler version."
+        },
+        "thrust.lsp.stdPath": {
+          "type": "string",
+          "default": "",
+          "description": "Standard library root path passed to the language server, matching -std. Supports %HOME% which is replaced by the OS home path. Empty uses the default std root."
         }
       }
     }

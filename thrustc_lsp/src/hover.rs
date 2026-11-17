@@ -65,6 +65,7 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
 
     let line_index: usize = line.try_into().unwrap_or(usize::MAX);
     let character_index: usize = character.try_into().unwrap_or(usize::MAX);
+
     let Some(source_line) = document.get_text().lines().nth(line_index) else {
         return Value::Null;
     };
@@ -81,13 +82,35 @@ pub fn hover(documents: &Documents, analysis: &Analysis, payload: &Value) -> Val
 
     let reference: String = chars[start..end].iter().collect();
 
-    if let Some(detail) = self::simd_hover_detail(&reference) {
-        return serde_json::json!({
-            "contents": {
-                "kind": "markdown",
-                "value": format!("```thrust\n{}\n```", detail)
-            }
-        });
+    match reference.as_str() {
+        "@simd" => {
+            return serde_json::json!({
+                "contents": {
+                    "kind": "markdown",
+                    "value": "```thrust\n@simd\nMarks a function or compiler intrinsic as SIMD code. Requires unstable mode and explicit CPU features on x86 and x86_64.\n```"
+                }
+            });
+        }
+
+        "NativeVector" => {
+            return serde_json::json!({
+                "contents": {
+                    "kind": "markdown",
+                    "value": "```thrust\nNativeVector[T; N]\nA fixed LLVM IR vector with N elements of type T. Requires unstable mode.\n```"
+                }
+            });
+        }
+
+        "native" => {
+            return serde_json::json!({
+                "contents": {
+                    "kind": "markdown",
+                    "value": "```thrust\nnative[...]\nBuilds a NativeVector value. Requires unstable mode.\n```"
+                }
+            });
+        }
+
+        _ => {}
     }
 
     let mut detail: Option<String> = None;
@@ -168,25 +191,6 @@ fn select_hover_reference_range(chars: &[char], character_index: usize) -> Optio
     Some((start, end))
 }
 
-fn is_hover_reference_char(ch: char) -> bool {
-    ch == '_' || ch.is_ascii_alphanumeric() || ch == ':' || ch == '@'
-}
-
-fn simd_hover_detail(reference: &str) -> Option<&'static str> {
-    match reference {
-        "@simd" => Some(
-            "@simd\nMarks a function or compiler intrinsic as SIMD code. Requires unstable mode and explicit CPU features on x86 and x86_64.",
-        ),
-        "NativeVector" => Some(
-            "NativeVector[T; N]\nA fixed LLVM IR vector with N elements of type T. Requires unstable mode.",
-        ),
-        "native" => Some(
-            "native[...]\nBuilds a NativeVector value. Requires unstable mode.",
-        ),
-        _ => None,
-    }
-}
-
 fn find_field_detail(document_analysis: &DocumentAnalysis, reference: &str) -> Option<String> {
     for structure in document_analysis.get_structures() {
         let Some(field) = structure
@@ -217,4 +221,9 @@ fn find_enum_value_detail(document_analysis: &DocumentAnalysis, reference: &str)
     }
 
     None
+}
+
+#[inline]
+fn is_hover_reference_char(ch: char) -> bool {
+    ch == '_' || ch.is_ascii_alphanumeric() || ch == ':' || ch == '@'
 }

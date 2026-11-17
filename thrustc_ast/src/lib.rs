@@ -695,8 +695,8 @@ fn get_unique_discriminat() -> u64 {
     NODE_DISCRIMINANT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
 }
 
-impl thrustc_errors::simd::SimdUsageAst for Ast<'_> {
-    fn get_simd_usage_span(&self) -> Option<Span> {
+impl thrustc_errors::simd::SimdAst for Ast<'_> {
+    fn get_simd_attribute_span(&self) -> Option<Span> {
         match self {
             Ast::Function {
                 attributes, span, ..
@@ -723,7 +723,7 @@ impl thrustc_errors::simd::SimdUsageAst for Ast<'_> {
         }
     }
 
-    fn get_variadic_simd_usage_span(&self) -> Option<Span> {
+    fn get_vector_simd_span(&self) -> Option<Span> {
         let Ast::Function {
             attributes,
             parameter_types,

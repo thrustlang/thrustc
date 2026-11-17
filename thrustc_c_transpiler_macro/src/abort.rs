@@ -30,7 +30,6 @@ impl MacroContext<'_> {
         line: u32,
     ) -> ! {
         eprintln!("MACRO EXPANSION ABORT - {message}");
-
         eprintln!("  --> {span:?} at {}:{line}", file.display());
 
         let expansion_stack: &[String] = self.get_expansion_stack();

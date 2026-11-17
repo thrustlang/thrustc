@@ -19,6 +19,7 @@
 
 use thrustc_errors::CompilationIssue;
 use thrustc_logging::LoggingType;
+use thrustc_c_transpiler_macro::macro_context::MacroContext;
 
 #[derive(Debug)]
 pub struct TranspilerContext {
@@ -153,7 +154,7 @@ impl TranspilerContext {
     #[inline]
     pub fn merge_macro_context(
         &mut self,
-        context: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+        context: &mut MacroContext<'_>,
     ) {
         for issue in context.take_warnings() {
             self.add_warning(issue);

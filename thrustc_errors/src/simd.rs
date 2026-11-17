@@ -21,18 +21,19 @@ use thrustc_code_location::Span;
 
 use crate::{CompilationIssue, CompilationIssueCode};
 
-pub trait SimdUsageAst {
-    fn get_simd_usage_span(&self) -> Option<Span>;
-    fn get_variadic_simd_usage_span(&self) -> Option<Span>;
+pub trait SimdAst {
+    fn get_simd_attribute_span(&self) -> Option<Span>;
+    fn get_vector_simd_span(&self) -> Option<Span>;
 }
 
 #[inline]
-pub fn simd_usage_issue<T, F>(ast: &[T], validate_features: F) -> Option<CompilationIssue>
+pub fn check_simd_usage_issue<T, F>(ast: &[T], validate_features: F) -> Option<CompilationIssue>
 where
-    T: SimdUsageAst,
+    T: SimdAst,
     F: FnOnce() -> Result<(), String>,
 {
-    let span: Span = ast.iter().find_map(|node| node.get_simd_usage_span())?;
+    let span: Span = ast.iter().find_map(|node| node.get_simd_attribute_span())?;
+
     let Err(help): Result<(), String> = validate_features() else {
         return None;
     };
@@ -49,22 +50,15 @@ where
 #[inline]
 pub fn unsupported_variadic_simd_issue_from_ast<T>(ast: &[T]) -> Option<CompilationIssue>
 where
-    T: SimdUsageAst,
+    T: SimdAst,
 {
-    let span: Span = ast
-        .iter()
-        .find_map(|node| node.get_variadic_simd_usage_span())?;
+    let span: Span = ast.iter().find_map(|node| node.get_vector_simd_span())?;
 
-    Some(unsupported_variadic_simd_issue(span))
-}
-
-#[inline]
-pub fn unsupported_variadic_simd_issue(span: Span) -> CompilationIssue {
-    CompilationIssue::Error(
+    Some(CompilationIssue::Error(
         CompilationIssueCode::E0061,
         "SIMD values are not supported in variadic functions on x86_64 System V.".into(),
         "Pass the NativeVector through a fixed-arity function or a pointer.".into(),
         None,
         span,
-    )
+    ))
 }

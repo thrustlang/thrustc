@@ -147,8 +147,19 @@ pub fn compile<'ctx>(
             }
 
             let element_type: Type = ptr_type.calculate_index_type(1).clone();
+            let atomic_config: thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators =
+                thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators::new(
+                    metadata.is_volatile(),
+                    None,
+                );
 
-            return memory::dereference(context, ptr, &element_type, span);
+            context.push_atomic_modificators(atomic_config);
+
+            let value: BasicValueEnum = memory::dereference(context, ptr, &element_type, span);
+
+            context.pop_atomic_modificators();
+
+            return value;
         }
 
         if context.get_codegen_location().is_load_behavior() {
@@ -159,7 +170,19 @@ pub fn compile<'ctx>(
                 && !element_type.is_fixed_array_type()
                 && !element_type.is_array_type_with_inference()
             {
-                return memory::load_pointer(context, ptr, span);
+                let atomic_config: thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators =
+                    thrustc_llvm_codegen_atomic::modificators::LLVMAtomicModificators::new(
+                        metadata.is_volatile(),
+                        None,
+                    );
+
+                context.push_atomic_modificators(atomic_config);
+
+                let value: BasicValueEnum = memory::load_pointer(context, ptr, span);
+
+                context.pop_atomic_modificators();
+
+                return value;
             } else {
                 return ptr.into();
             }

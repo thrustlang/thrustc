@@ -25,10 +25,11 @@ use thrustc_typesystem::Type;
 
 use thrustc_c_transpiler_macro::error::{TranspilerError, TranspilerResult};
 use thrustc_c_transpiler_macro::location::Location;
+use thrustc_c_transpiler_macro::macro_context::MacroContext;
 
 pub fn append_translated_top_level_declarations(
     root: &clang::Entity<'_>,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
     out: &mut String,
     span: Span,
 ) -> TranspilerResult<()> {
@@ -119,7 +120,6 @@ pub fn append_translated_top_level_declarations(
     function_prototype_decls.dedup_by(|a, b| a.get_canonical_entity() == b.get_canonical_entity());
 
     macro_decls.sort_by_key(|a| a.get_name());
-    macro_decls.dedup_by(|a, b| a.get_canonical_entity() == b.get_canonical_entity());
 
     global_var_decls.sort_by_key(|a| a.get_name());
 
@@ -336,7 +336,7 @@ pub fn translate_global_initializer(
     entity: &clang::Entity<'_>,
     expected_type: &clang::Type<'_>,
     span: Span,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
 
@@ -716,7 +716,7 @@ fn translate_record_decl(
     entity: &clang::Entity<'_>,
     keyword: &str,
     span: Span,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
     let children: Vec<clang::Entity<'_>> = entity.get_children();
@@ -990,7 +990,7 @@ fn translate_record_decl(
 fn translate_global_var_decl(
     entity: &clang::Entity<'_>,
     span: Span,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
     let Some(raw_name) = entity.get_name() else {
@@ -1230,6 +1230,10 @@ fn translate_global_var_decl(
         out.push_str("mut ");
     }
 
+    if var_type.is_volatile_qualified() {
+        out.push_str("volatile ");
+    }
+
     out.push_str(&name);
     out.push_str(": ");
     out.push_str(&type_text);
@@ -1254,7 +1258,7 @@ pub fn translate_zero_initializer(
     ty: &clang::Type<'_>,
     span: Span,
     origin: Option<&clang::Entity<'_>>,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = origin.and_then(thrustc_c_transpiler_macro::macro_error::prefix);
 
@@ -1547,7 +1551,7 @@ pub fn append_imported_top_level_declarations(
     ctx: &thrustc_import_c::context::CImportContext,
     span: Span,
     out: &mut String,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) {
     {
         let mut structs: Vec<&thrustc_import_c::model::CImportedStruct> =
@@ -1726,7 +1730,7 @@ pub fn append_imported_top_level_declarations(
 fn translate_function(
     entity: &clang::Entity<'_>,
     span: Span,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
     let Some(name) = entity.get_name() else {
@@ -1912,7 +1916,7 @@ fn translate_function(
 fn translate_function_prototype(
     entity: &clang::Entity<'_>,
     span: Span,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
     let Some(raw_name) = entity.get_name() else {
@@ -2260,7 +2264,7 @@ fn translate_enum_decl(
     entity: &clang::Entity<'_>,
     fallback_name: Option<&str>,
     span: Span,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
     let Some(name) = entity

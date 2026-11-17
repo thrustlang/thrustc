@@ -469,7 +469,8 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
             }
 
             node => {
-                self.get_mut_context().mark_dbg_location(node.get_code_location());
+                self.get_mut_context()
+                    .mark_dbg_location(node.get_code_location());
 
                 if matches!(node, Ast::Defer { .. }) {
                     self.context.push_pending_defer_node(node);
@@ -1215,7 +1216,7 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
                 let value: BasicValueEnum =
                     codegen::compile_as_value(self.context, value, Some(&cast_type));
 
-                let atomic_config: Option<LLVMAtomicModificators> = match source.as_ref() {
+                let mut atomic_config: Option<LLVMAtomicModificators> = match source.as_ref() {
                     Ast::Reference { name, .. } => self
                         .context
                         .get_table()
@@ -1224,6 +1225,19 @@ impl<'a, 'ctx> LLVMCodegen<'a, 'ctx> {
 
                     _ => None,
                 };
+
+                let source_is_volatile: bool = match source.as_ref() {
+                    Ast::Property { metadata, .. } => metadata.is_volatile(),
+                    Ast::Index { metadata, .. } => metadata.is_volatile(),
+                    _ => false,
+                };
+
+                if source_is_volatile {
+                    let atomic_ord: Option<inkwell::AtomicOrdering> =
+                        atomic_config.and_then(|config| config.get_atomic_ord());
+
+                    atomic_config = Some(LLVMAtomicModificators::new(true, atomic_ord));
+                }
 
                 if let Some(config) = atomic_config {
                     self.context.push_atomic_modificators(config);
@@ -1611,8 +1625,14 @@ pub fn compile_as_value<'ctx>(
             let value_type: Type = value.get_type_for_llvm().remove_all_constant_type();
 
             if value_type.is_ptr_like_type() {
+                let mut pointer_reference: &Ast<'_> = value.as_ref();
+
+                while let Ast::Group { node, .. } = pointer_reference {
+                    pointer_reference = node.as_ref();
+                }
+
                 let should_load_pointer_reference: bool =
-                    matches!(value.as_ref(), Ast::Reference { .. })
+                    matches!(pointer_reference, Ast::Reference { .. })
                         && value_type.is_flat_ptr_type();
 
                 let dereference_pointer: BasicValueEnum = if should_load_pointer_reference {

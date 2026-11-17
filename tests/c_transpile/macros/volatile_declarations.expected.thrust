@@ -1,0 +1,10 @@
+fn volatile_declarations() s32 {
+    var value: s32 = 0;
+    __c_macro_VOLATILE_SET[s32, s32](ref (value), 42);
+    return (value) as s32;
+}
+fn __c_macro_VOLATILE_SET[T1, T2](dst: ptr[T1], value: T2) void @alwaysInline {
+    var volatile local: s32 = (value);
+    dst->[0] =  (local) as T1;
+}
+

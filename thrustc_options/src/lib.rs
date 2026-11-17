@@ -361,6 +361,7 @@ impl CompilerOptions {
     #[inline]
     pub fn set_compiler_feature_mode(&mut self, mode: CompilerFeaturesMode) {
         self.compiler_features = mode;
+
         thrustc_backends::set_compiler_features(mode);
     }
 

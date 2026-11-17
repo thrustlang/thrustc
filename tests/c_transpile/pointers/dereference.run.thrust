@@ -1,0 +1,11 @@
+fn main() s32 @public {
+    var value: s32 = 123;
+
+    if dereference(ref (value)) != 123 { return 1; }
+
+    value = 0;
+
+    if dereference(ref (value)) != 0 { return 2; }
+
+    return 0;
+}

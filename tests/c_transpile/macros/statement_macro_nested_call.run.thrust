@@ -1,0 +1,5 @@
+fn main() s32 @public {
+    if statement_macro_nested_call() != 42 { return 1; }
+
+    return 0;
+}

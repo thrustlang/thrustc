@@ -1,0 +1,10 @@
+fn main() s32 @public {
+    var value: s32 = 77;
+    var pointer: ptr[s32] = ref (value);
+    var result: ptr[s32] = pointer_return(pointer);
+
+    if result != pointer { return 1; }
+    if result->[0] != 77 { return 2; }
+
+    return 0;
+}

@@ -22,6 +22,8 @@ use std::collections::HashMap;
 use thrustc_code_location::Span;
 
 use crate::macro_ast::{ForInit, MacroExpr, MacroStmt, MacroUnOp};
+use crate::macro_ast::MacroDesignator;
+use crate::macro_context::MacroContext;
 
 type TypeSlots = HashMap<String, Option<InferredType>>;
 
@@ -72,7 +74,9 @@ impl MacroValueType {
             return Self::Const(Box::new(Self::from_text(inner)));
         }
 
-        if let Some(inner) = text.strip_prefix("array[").and_then(|value| value.strip_suffix(']'))
+        if let Some(inner) = text
+            .strip_prefix("array[")
+            .and_then(|value| value.strip_suffix(']'))
         {
             if let Some((element, len)) = inner.rsplit_once("; ") {
                 return Self::Array {
@@ -82,7 +86,10 @@ impl MacroValueType {
             }
         }
 
-        if let Some(inner) = text.strip_prefix("ptr[").and_then(|value| value.strip_suffix(']')) {
+        if let Some(inner) = text
+            .strip_prefix("ptr[")
+            .and_then(|value| value.strip_suffix(']'))
+        {
             return Self::Pointer {
                 pointee: Box::new(Self::from_text(inner)),
             };
@@ -133,7 +140,9 @@ impl MacroValueType {
             Self::Scalar | Self::Struct { .. } | Self::Const(_) => None,
         }
     }
+}
 
+impl MacroValueType {
     #[inline]
     pub fn is_array(&self) -> bool {
         matches!(self.strip_const(), Self::Array { .. })
@@ -146,11 +155,15 @@ impl MacroValueType {
 
     #[inline]
     pub fn is_pointer_or_array(&self) -> bool {
-        matches!(self.strip_const(), Self::Array { .. } | Self::Pointer { .. })
+        matches!(
+            self.strip_const(),
+            Self::Array { .. } | Self::Pointer { .. }
+        )
     }
 }
 
 impl MacroValueType {
+    #[inline]
     pub fn from_inferred_type(ty: &InferredType) -> Self {
         match ty {
             InferredType::Known(text) => Self::from_text(text),
@@ -166,8 +179,7 @@ impl MacroValueType {
         if ty.is_const_qualified() {
             let canonical: clang::Type<'_> = ty.get_canonical_type();
 
-            return Self::from_clang_type(&canonical)
-                .map(|inner| Self::Const(Box::new(inner)));
+            return Self::from_clang_type(&canonical).map(|inner| Self::Const(Box::new(inner)));
         }
 
         let canonical: clang::Type<'_> = ty.get_canonical_type();
@@ -513,9 +525,9 @@ impl MacroType {
                     {
                         let inner: &str = &text[6..text.len() - 1];
 
-                        inner.rsplit_once("; ").map(|(element, _)| {
-                            InferredType::Known(element.to_string())
-                        })
+                        inner
+                            .rsplit_once("; ")
+                            .map(|(element, _)| InferredType::Known(element.to_string()))
                     }
                     _ => None,
                 });
@@ -523,7 +535,7 @@ impl MacroType {
                 let item_expected: Option<&InferredType> = item_expected.as_ref().or(expected);
 
                 for item in items.iter() {
-                    if let Some(crate::macro_ast::MacroDesignator::Index(index)) =
+                    if let Some(MacroDesignator::Index(index)) =
                         item.get_designator()
                     {
                         Self::infer_expression(slots, index, None);
@@ -551,9 +563,7 @@ impl MacroType {
         match statement {
             MacroStmt::Empty | MacroStmt::Break | MacroStmt::Continue => {}
 
-            MacroStmt::VarDecl {
-                ty, name, init, ..
-            } => {
+            MacroStmt::VarDecl { ty, name, init, .. } => {
                 slots.insert(name.clone(), Some(InferredType::Known(ty.clone())));
 
                 if let Some(init) = init {
@@ -720,7 +730,7 @@ impl MacroType {
     /// environment, mirroring the parser's binary/unary type generation.
     #[inline]
     pub fn expression_type(
-        ctx: &crate::macro_context::MacroContext<'_>,
+        ctx: &MacroContext<'_>,
         expr: &MacroExpr,
     ) -> Option<InferredType> {
         let mut slots: TypeSlots = ctx
@@ -740,7 +750,7 @@ impl MacroType {
     /// reconstruct `ptr[T]` parameters; other types seed a plain value slot.
     #[inline]
     pub fn from_clang_type(
-        ctx: &mut crate::macro_context::MacroContext<'_>,
+        ctx: &mut MacroContext<'_>,
         ty: &clang::Type<'_>,
         span: Span,
     ) -> Option<InferredType> {

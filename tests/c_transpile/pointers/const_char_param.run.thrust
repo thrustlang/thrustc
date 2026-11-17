@@ -1,0 +1,9 @@
+fn main() s32 @public {
+    var message: const ptr[char] = "alpha" as const ptr[char];
+    var result: const ptr[char] = const_char_param(message);
+
+    if result != message { return 1; }
+    if ((result->[0]) as s32) != (('a') as s32) { return 2; }
+
+    return 0;
+}

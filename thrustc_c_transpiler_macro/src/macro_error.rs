@@ -21,6 +21,7 @@ use std::{borrow::Borrow, path::PathBuf};
 
 use thrustc_code_location::Span;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
+use crate::macro_context::MacroContext;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MacroLimit {
@@ -44,6 +45,7 @@ pub enum MacroLimit {
     ExpressionMalformed,
     StatementMalformed,
     ExpansionDepthExceeded,
+    ParseDepthExceeded,
     RecursiveExpansion,
     RescanLimitExceeded,
     InvocationMalformed,
@@ -112,6 +114,9 @@ pub fn get_macro_issue_help(name: &str, limit: MacroLimit) -> (String, String) {
         }
         MacroLimit::ExpansionDepthExceeded => {
             format!("The C macro '{name}' exceeded maximum expansion depth.")
+        }
+        MacroLimit::ParseDepthExceeded => {
+            format!("The C macro '{name}' exceeded maximum parse depth.")
         }
         MacroLimit::RecursiveExpansion => {
             format!("The C macro '{name}' recursively expands itself and cannot be lowered safely.")
@@ -190,6 +195,9 @@ pub fn get_macro_issue_help(name: &str, limit: MacroLimit) -> (String, String) {
         MacroLimit::ExpansionDepthExceeded => {
             "Reduce nested macro indirections or recursive expansion depth.".to_string()
         }
+        MacroLimit::ParseDepthExceeded => {
+            "Reduce nested macro expressions or statements.".to_string()
+        }
         MacroLimit::RecursiveExpansion => {
             "Break the recursive macro chain or replace it with non-recursive helpers.".to_string()
         }
@@ -211,7 +219,7 @@ pub fn get_macro_issue_help(name: &str, limit: MacroLimit) -> (String, String) {
 }
 
 pub fn add_macro_error(
-    ctx: &mut crate::macro_context::MacroContext<'_>,
+    ctx: &mut MacroContext<'_>,
     entity: &clang::Entity<'_>,
     macro_name: &str,
     detail: &str,
@@ -245,7 +253,7 @@ pub fn add_macro_error(
 }
 
 pub fn add_macro_parameter_type_error(
-    ctx: &mut crate::macro_context::MacroContext<'_>,
+    ctx: &mut MacroContext<'_>,
     entity: &clang::Entity<'_>,
     macro_name: &str,
     parameter: &str,
@@ -280,7 +288,7 @@ pub fn add_macro_parameter_type_error(
 }
 
 pub fn collapse_macro_site_errors(
-    ctx: &mut crate::macro_context::MacroContext<'_>,
+    ctx: &mut MacroContext<'_>,
     site: &clang::Entity<'_>,
     macro_name: &str,
     base_error_count: usize,
@@ -336,7 +344,7 @@ pub fn collapse_macro_site_errors(
 }
 
 pub fn collapse_macro_site_errors_with_failed_at(
-    ctx: &mut crate::macro_context::MacroContext<'_>,
+    ctx: &mut MacroContext<'_>,
     site: &clang::Entity<'_>,
     macro_name: &str,
     failed_child: &clang::Entity<'_>,

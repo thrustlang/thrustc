@@ -121,16 +121,19 @@ fn symbol_to_document_symbol(symbol: &Symbol, lines: &[&str], children: Vec<Valu
         .unwrap_or(0)
         .try_into()
         .unwrap_or(u64::MAX);
+
     let start: u64 = if symbol.get_declaration_start() == 0 && fallback_start != 0 {
         fallback_start
     } else {
         symbol.get_declaration_start()
     };
+
     let end: u64 = if symbol.get_declaration_end() == 0 {
         start.saturating_add(symbol.get_name().len().try_into().unwrap_or(u64::MAX))
     } else {
         symbol.get_declaration_end()
     };
+
     let kind: u64 = match symbol.get_kind() {
         CompletionKind::Function => 12,
         CompletionKind::Field => 8,

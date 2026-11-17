@@ -25,6 +25,7 @@ use thrustc_logging::{LoggingType, OutputIn};
 use thrustc_options::TranslateCOptions;
 
 use crate::context::TranspilerContext;
+use crate::options::EmitCBindingsOptions;
 use crate::unit::TranslateCUnit;
 
 pub fn emit_c_bindings_thrust(
@@ -37,7 +38,7 @@ pub fn emit_c_bindings_thrust(
         return;
     };
 
-    let mut emit_opts: crate::options::EmitCBindingsOptions =
+    let mut emit_opts: EmitCBindingsOptions =
         crate::options::EmitCBindingsOptions::new();
 
     if let Some(out_dir) = out_dir {

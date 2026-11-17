@@ -58,6 +58,7 @@ pub struct CImportedStatic {
     external_name: String,
     kind: Type,
     is_mutable: bool,
+    is_volatile: bool,
 }
 
 #[derive(Debug)]
@@ -121,12 +122,19 @@ impl CImportedTypedef {
 
 impl CImportedStatic {
     #[inline]
-    pub fn new(name: String, external_name: String, kind: Type, is_mutable: bool) -> Self {
+    pub fn new(
+        name: String,
+        external_name: String,
+        kind: Type,
+        is_mutable: bool,
+        is_volatile: bool,
+    ) -> Self {
         Self {
             name,
             external_name,
             kind,
             is_mutable,
+            is_volatile,
         }
     }
 }
@@ -257,5 +265,11 @@ impl CImportedStatic {
     #[inline]
     pub fn is_mutable(&self) -> bool {
         self.is_mutable
+    }
+}
+
+impl CImportedStatic {
+    pub fn is_volatile(&self) -> bool {
+        self.is_volatile
     }
 }

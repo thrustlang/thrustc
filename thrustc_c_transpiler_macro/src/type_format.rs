@@ -22,10 +22,11 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_typesystem::Type;
 
 use crate::error::{TranspilerError, TranspilerResult};
+use crate::macro_context::MacroContext;
 
 pub fn format_clang_type_thrust(
     ty: &clang::Type<'_>,
-    ctx: &mut crate::macro_context::MacroContext,
+    ctx: &mut MacroContext,
     prefix: Option<&str>,
     span: thrustc_code_location::Span,
 ) -> TranspilerResult<String> {
@@ -283,7 +284,7 @@ pub fn cast_expression_to_type(
     translated: String,
     expected_type: &clang::Type<'_>,
     span: thrustc_code_location::Span,
-    ctx: &mut crate::macro_context::MacroContext,
+    ctx: &mut MacroContext,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = crate::macro_error::prefix(entity);
 
@@ -461,7 +462,7 @@ pub fn cast_expression_to_type(
 
 pub fn format_parameter_type_thrust(
     ty: &clang::Type<'_>,
-    ctx: &mut crate::macro_context::MacroContext,
+    ctx: &mut MacroContext,
     prefix: Option<&str>,
     span: thrustc_code_location::Span,
 ) -> TranspilerResult<String> {
@@ -495,6 +496,7 @@ pub fn format_parameter_type_thrust(
                     None,
                     span,
                 ));
+
                 return Err(TranspilerError::Abort);
             };
 
@@ -742,7 +744,7 @@ pub fn format_type_thrust(ty: &Type) -> String {
 pub fn format_builtin_value_thrust(
     value: &BuiltinValue,
     expected_type: &Type,
-    ctx: &mut crate::macro_context::MacroContext,
+    ctx: &mut MacroContext,
 ) -> String {
     match value {
         BuiltinValue::Integer(v) => v.to_string(),

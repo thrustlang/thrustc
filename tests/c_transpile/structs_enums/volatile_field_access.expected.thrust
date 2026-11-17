@@ -1,0 +1,12 @@
+struct Box {
+    value: s32,
+    other: s32,
+}
+
+fn field_read(box: ptr[Box]) s32 {
+    return ((deref volatile (box.value))) as s32;
+}
+fn field_write(box: ptr[Box], value: s32) s32 {
+    box->value = value;
+    return ((deref volatile (box.value))) as s32;
+}

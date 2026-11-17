@@ -17,6 +17,9 @@
 
 */
 
+use std::collections::BTreeSet;
+use std::sync::Arc;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MacroTokenKind {
     Identifier,
@@ -49,6 +52,7 @@ pub struct MacroToken {
     text: String,
     span: Option<MacroSpan>,
     origin: MacroTokenOrigin,
+    hide_set: Arc<BTreeSet<String>>,
 }
 
 impl MacroSpan {
@@ -115,6 +119,7 @@ impl MacroToken {
             text,
             span: None,
             origin,
+            hide_set: Arc::new(BTreeSet::new()),
         }
     }
 }
@@ -138,6 +143,43 @@ impl MacroToken {
     #[inline]
     pub fn get_origin(&self) -> MacroTokenOrigin {
         self.origin
+    }
+}
+
+impl MacroToken {
+    #[inline]
+    pub fn is_hidden(&self, name: &str) -> bool {
+        self.hide_set.contains(name)
+    }
+}
+
+impl MacroToken {
+    pub fn with_hidden(&self, name: &str) -> Self {
+        let mut hide_set: BTreeSet<String> = (*self.hide_set).clone();
+
+        if !hide_set.contains(name) {
+            hide_set.insert(name.to_string());
+        }
+
+        let mut token: MacroToken = self.clone();
+
+        token.hide_set = Arc::new(hide_set);
+
+        token
+    }
+}
+
+impl MacroToken {
+    pub fn with_hidden_set(&self, other: &MacroToken) -> Self {
+        let mut hide_set: BTreeSet<String> = (*self.hide_set).clone();
+
+        hide_set.extend(other.hide_set.iter().cloned());
+
+        let mut token: MacroToken = self.clone();
+
+        token.hide_set = Arc::new(hide_set);
+
+        token
     }
 }
 

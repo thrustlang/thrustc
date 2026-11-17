@@ -24,6 +24,7 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
 use thrustc_c_transpiler_macro::error::{TranspilerError, TranspilerResult};
 use thrustc_c_transpiler_macro::location::Location;
+use thrustc_c_transpiler_macro::macro_context::MacroContext;
 
 use crate::abort;
 
@@ -35,7 +36,7 @@ pub fn translate_stmt(
     span: Span,
     function_return_type: Option<&str>,
     loop_continue_action: Option<&str>,
-    ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<Vec<String>> {
     let base_pending: usize = ctx.pending_statements_len();
 
@@ -205,10 +206,18 @@ pub fn translate_stmt(
                         None => None,
                     };
 
-                    if let Some(init) = init {
-                        lines.push(format!("{indent_str}var {name}: {ty_text} = {init};"));
+                    let volatile_prefix: &str = if var_ty.is_volatile_qualified() {
+                        "volatile "
                     } else {
-                        lines.push(format!("{indent_str}var {name}: {ty_text};"));
+                        ""
+                    };
+
+                    if let Some(init) = init {
+                        lines.push(format!(
+                            "{indent_str}var {volatile_prefix}{name}: {ty_text} = {init};"
+                        ));
+                    } else {
+                        lines.push(format!("{indent_str}var {volatile_prefix}{name}: {ty_text};"));
                     }
                 }
 
@@ -793,16 +802,23 @@ pub fn translate_stmt(
                         let init_expr: Option<clang::Entity<'_>> =
                             crate::top_level::find_var_initializer(var);
 
+                        let volatile_prefix: &str = if var_ty.is_volatile_qualified() {
+                            "volatile "
+                        } else {
+                            ""
+                        };
+
                         if let Some(init_expr) = init_expr {
                             let init_value: String =
                                 crate::top_level::translate_global_initializer(
                                     &init_expr, &var_ty, span, ctx,
                                 )?;
 
-                            init_header_text =
-                                Some(format!("var {name}: {ty_text} = {init_value}"));
+                            init_header_text = Some(format!(
+                                "var {volatile_prefix}{name}: {ty_text} = {init_value}"
+                            ));
                         } else {
-                            init_header_text = Some(format!("var {name}: {ty_text}"));
+                            init_header_text = Some(format!("var {volatile_prefix}{name}: {ty_text}"));
                         }
                     }
 
@@ -1200,7 +1216,7 @@ fn translate_stmt_for_macro<'clang, 'context, 'return_type, 'continue_action>(
     span: Span,
     function_return_type: Option<&'return_type str>,
     loop_continue_action: Option<&'continue_action str>,
-    ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'context>,
+    ctx: &mut MacroContext<'context>,
 ) -> Option<Vec<String>> {
     self::translate_stmt(
         entity,
@@ -1219,7 +1235,7 @@ fn translate_switch_stmt(
     span: Span,
     function_return_type: Option<&str>,
     loop_continue_action: Option<&str>,
-    ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<Vec<String>> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
     let indent_str: String = "    ".repeat(indent);
@@ -1401,7 +1417,7 @@ fn translate_return_expr(
     entity: &clang::Entity<'_>,
     span: Span,
     expected_return_type: &str,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<String> {
     if matches!(
         expected_return_type,
@@ -1449,7 +1465,7 @@ fn collect_switch_labels_and_body<'stmt>(
     span: Span,
     labels: &mut Vec<Option<String>>,
     body_nodes: &mut Vec<clang::Entity<'stmt>>,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<()> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
 
@@ -1524,7 +1540,7 @@ fn push_switch_segment<'stmt>(
     span: Span,
     function_return_type: Option<&str>,
     loop_continue_action: Option<&str>,
-    ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<()> {
     let terminates_segment: bool = current_body_nodes.last().is_some_and(|node| {
         matches!(
@@ -1575,7 +1591,7 @@ fn translate_conditional_return(
     indent: usize,
     span: Span,
     expected_return_type: &str,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext<'_>,
+    macro_ctx: &mut MacroContext<'_>,
 ) -> TranspilerResult<Vec<String>> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
     let indent_str: String = "    ".repeat(indent);

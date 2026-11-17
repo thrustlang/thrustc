@@ -25,7 +25,7 @@ use thrustc_attributes::{
 use thrustc_code_location::Span;
 use thrustc_diagnostician::Diagnostician;
 use thrustc_directive::FileOptions;
-use thrustc_errors::simd::SimdUsageAst;
+use thrustc_errors::simd::SimdAst;
 use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 use thrustc_options::{CompilationUnit, CompilerOptions};
 use thrustc_typesystem::traits::TypeIsExtensions;
@@ -124,8 +124,14 @@ impl<'attr_checker> AttributeChecker<'attr_checker> {
                     .get_normalized_target_triple()
                     .is_x86_64_arch()
                 {
-                    if let Some(span) = node.variadic_simd_usage_span() {
-                        self.add_error(thrustc_errors::simd::unsupported_variadic_simd_issue(span));
+                    if let Some(span) = node.get_vector_simd_span() {
+                        self.add_error( CompilationIssue::Error(
+                            CompilationIssueCode::E0061,
+                            "SIMD values are not supported in variadic functions on x86_64 System V.".into(),
+                            "Pass the NativeVector through a fixed-arity function or a pointer.".into(),
+                            None,
+                            span,
+                        ));
                     }
                 }
 

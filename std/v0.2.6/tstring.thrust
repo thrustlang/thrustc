@@ -813,7 +813,7 @@ fn trimEnd(text: ptr[TString]) TString @public {
     return copyByteRange(text, 0, end);
 }
 
-fn cstringLength(text: CString) usize {
+fn cstringLength(text: CString) usize @public {
     var index: usize = 0;
     var data: ptr[char] = text as ptr[char];
 
@@ -916,6 +916,7 @@ fn removeNullTerminator(text: ptr[TString]) void {
 
 fn fromCString(text: CString) TString @public {
     var length: usize = cstringLength(text);
+    
     return copyCStringRange(text, 0, length);
 }
 

@@ -17,28 +17,51 @@
 
 */
 
+use std::path::PathBuf;
+
 use serde_json::Value;
 use thrustc_backends::CompilerFeaturesMode;
 use thrustc_options::CompilerOptions;
 
 #[derive(Clone, Debug)]
-pub struct LspConfiguration {
+pub struct LSPConfiguration {
     mode: CompilerFeaturesMode,
     cpu: String,
     cpu_features: String,
+    std_version: String,
+    std_path: String,
 }
 
-impl Default for LspConfiguration {
+impl Default for LSPConfiguration {
     fn default() -> Self {
         Self {
             mode: CompilerFeaturesMode::Stable,
             cpu: String::new(),
             cpu_features: String::new(),
+            std_version: String::new(),
+            std_path: String::new(),
         }
     }
 }
 
-impl LspConfiguration {
+impl LSPConfiguration {
+    #[inline]
+    pub fn get_mode(&self) -> CompilerFeaturesMode {
+        self.mode
+    }
+
+    #[inline]
+    pub fn get_cpu(&self) -> &str {
+        &self.cpu
+    }
+
+    #[inline]
+    pub fn get_cpu_features(&self) -> &str {
+        &self.cpu_features
+    }
+}
+
+impl LSPConfiguration {
     pub fn from_initialize_params(payload: &Value) -> Self {
         let Some(options) = payload
             .get("params")
@@ -51,12 +74,14 @@ impl LspConfiguration {
             Some("unstable") => CompilerFeaturesMode::Unstable,
             _ => CompilerFeaturesMode::Stable,
         };
+
         let cpu: String = options
             .get("cpu")
             .and_then(Value::as_str)
             .map(str::trim)
             .unwrap_or_default()
             .to_string();
+
         let cpu_features: String = options
             .get("cpuFeatures")
             .and_then(Value::as_str)
@@ -64,13 +89,56 @@ impl LspConfiguration {
             .unwrap_or_default()
             .to_string();
 
+        let std_version: String = options
+            .get("stdVersion")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .unwrap_or_default()
+            .to_string();
+
+        let raw_std_path: String = options
+            .get("stdPath")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .unwrap_or_default()
+            .to_string();
+
+        let mut std_path: String = raw_std_path;
+
+        if std_path.contains("%HOME%") {
+            let home_base: String = match std::env::consts::FAMILY {
+                "unix" => std::env::var("HOME").unwrap_or_else(|_| {
+                    thrustc_logging::print_critical_error(
+                        thrustc_logging::LoggingType::Panic,
+                        "Missing $HOME environment variable. It is required to locate the standard library.",
+                    )
+                }),
+                "windows" => std::env::var("APPDATA").unwrap_or_else(|_| {
+                    thrustc_logging::print_critical_error(
+                        thrustc_logging::LoggingType::Panic,
+                        "Missing $APPDATA environment variable. It is required to locate the standard library.",
+                    )
+                }),
+                _ => thrustc_logging::print_critical_error(
+                    thrustc_logging::LoggingType::Panic,
+                    "OS unsupported for the Thrust standard library.",
+                ),
+            };
+
+            std_path = std_path.replace("%HOME%", home_base.as_str());
+        }
+
         Self {
             mode,
             cpu,
             cpu_features,
+            std_version,
+            std_path,
         }
     }
+}
 
+impl LSPConfiguration {
     pub fn build_compiler_options(&self) -> CompilerOptions {
         let mut options: CompilerOptions = CompilerOptions::new();
 
@@ -88,28 +156,37 @@ impl LspConfiguration {
             .get_mut_target_cpu()
             .set_processador_features(self.cpu_features.clone());
 
+        if !self.std_version.is_empty() {
+            options.set_std_version(self.std_version.clone());
+        }
+
+        if !self.std_path.is_empty() {
+            let std_root: PathBuf = PathBuf::from(self.std_path.clone());
+
+            options.set_std_root_path(std_root);
+        }
+
         options
     }
+}
 
+impl LSPConfiguration {
     #[inline]
-    pub fn get_mode(&self) -> CompilerFeaturesMode {
-        self.mode
+    pub fn get_std_version(&self) -> &str {
+        &self.std_version
     }
+}
 
+impl LSPConfiguration {
     #[inline]
-    pub fn get_cpu(&self) -> &str {
-        &self.cpu
-    }
-
-    #[inline]
-    pub fn get_cpu_features(&self) -> &str {
-        &self.cpu_features
+    pub fn get_std_path(&self) -> &str {
+        &self.std_path
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::LspConfiguration;
+    use super::LSPConfiguration;
     use serde_json::Value;
 
     #[test]
@@ -123,7 +200,7 @@ mod tests {
                 }
             }
         });
-        let configuration: LspConfiguration = LspConfiguration::from_initialize_params(&payload);
+        let configuration: LSPConfiguration = LSPConfiguration::from_initialize_params(&payload);
 
         assert!(configuration.get_mode().is_unstable_mode());
         assert_eq!(configuration.get_cpu(), "haswell");
@@ -140,7 +217,7 @@ mod tests {
                 }
             }
         });
-        let configuration: LspConfiguration = LspConfiguration::from_initialize_params(&payload);
+        let configuration: LSPConfiguration = LSPConfiguration::from_initialize_params(&payload);
         let options: thrustc_options::CompilerOptions = configuration.build_compiler_options();
 
         assert_eq!(

@@ -613,6 +613,10 @@ def compile_runtime_driver(
     files: list[Path] = [driver_path.resolve(), *dependencies]
     auto_cc_args: list[str] = ["-o", str(binary_path)]
     import_c_test: bool = any(uses_import_c(path) for path in files if path.exists())
+    runtime_shim_path: Path = source_test_path.with_suffix(".shim.c")
+
+    if runtime_shim_path.exists():
+        auto_cc_args.append(str(runtime_shim_path.resolve()))
 
     if needs_math_linkage(files):
         auto_cc_args.append("-lm")

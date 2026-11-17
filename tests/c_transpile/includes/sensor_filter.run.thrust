@@ -1,0 +1,7 @@
+fn main() s32 @public {
+    if sensor_sweep(4, 2) != 15 { return 1; }
+    if sensor_merge(10, 3, 4) != 35 { return 2; }
+    if sensor_calibrate(10, 3) != 0 { return 3; }
+
+    return 0;
+}

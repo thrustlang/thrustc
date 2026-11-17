@@ -1,0 +1,8 @@
+fn main() s32 @public {
+    var value: s32 = 37;
+    var p: const ptr[s32] = ref (value);
+
+    if const_pointer(p) != 37 { return 1; }
+
+    return 0;
+}

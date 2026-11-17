@@ -17,10 +17,15 @@
 
 */
 
+use crate::macro_error::MacroLimit;
+use crate::macro_token::MacroToken;
+use crate::macro_token::MacroTokenKind;
+use crate::macro_token::MacroTokenOrigin;
+
 pub fn validate_variadic_body(
-    tokens: &[crate::macro_token::MacroToken],
+    tokens: &[MacroToken],
     variadic_parameter: &str,
-) -> Result<(), crate::macro_error::MacroLimit> {
+) -> Result<(), MacroLimit> {
     let mut index: usize = 0;
 
     while index < tokens.len() {
@@ -28,13 +33,13 @@ pub fn validate_variadic_body(
             let mut open: usize = index + 1;
 
             while open < tokens.len()
-                && tokens[open].get_kind() == crate::macro_token::MacroTokenKind::Whitespace
+                && tokens[open].get_kind() == MacroTokenKind::Whitespace
             {
                 open += 1;
             }
 
             if tokens.get(open).is_none_or(|token| token.get_text() != "(") {
-                return Err(crate::macro_error::MacroLimit::VariadicOptionMalformed);
+                return Err(MacroLimit::VariadicOptionMalformed);
             }
 
             let mut depth: i32 = 1;
@@ -55,7 +60,7 @@ pub fn validate_variadic_body(
             }
 
             if close >= tokens.len() {
-                return Err(crate::macro_error::MacroLimit::VariadicOptionMalformed);
+                return Err(MacroLimit::VariadicOptionMalformed);
             }
 
             index = close + 1;
@@ -75,7 +80,7 @@ pub fn validate_variadic_body(
             let mut probe: usize = index - 1;
 
             loop {
-                if tokens[probe].get_kind() != crate::macro_token::MacroTokenKind::Whitespace {
+                if tokens[probe].get_kind() != MacroTokenKind::Whitespace {
                     previous = Some(probe);
                     break;
                 }
@@ -91,7 +96,7 @@ pub fn validate_variadic_body(
         let mut next: usize = index + 1;
 
         while next < tokens.len()
-            && tokens[next].get_kind() == crate::macro_token::MacroTokenKind::Whitespace
+            && tokens[next].get_kind() == MacroTokenKind::Whitespace
         {
             next += 1;
         }
@@ -103,7 +108,7 @@ pub fn validate_variadic_body(
             .is_some_and(|token| token.get_text() == variadic_parameter);
 
         if !previous_is_comma || !next_is_variadic {
-            return Err(crate::macro_error::MacroLimit::TokenPasting);
+            return Err(MacroLimit::TokenPasting);
         }
 
         index += 1;
@@ -113,13 +118,13 @@ pub fn validate_variadic_body(
 }
 
 pub fn normalize_variadic_body_for_classification(
-    tokens: &[crate::macro_token::MacroToken],
-) -> Vec<crate::macro_token::MacroToken> {
-    let mut out: Vec<crate::macro_token::MacroToken> = Vec::new();
+    tokens: &[MacroToken],
+) -> Vec<MacroToken> {
+    let mut out: Vec<MacroToken> = Vec::new();
     let mut index: usize = 0;
 
     while index < tokens.len() {
-        let token: &crate::macro_token::MacroToken = &tokens[index];
+        let token: &MacroToken = &tokens[index];
 
         if token.get_text() == "##" {
             index += 1;
@@ -137,7 +142,7 @@ pub fn normalize_variadic_body_for_classification(
         let mut open: usize = index + 1;
 
         while open < tokens.len()
-            && tokens[open].get_kind() == crate::macro_token::MacroTokenKind::Whitespace
+            && tokens[open].get_kind() == MacroTokenKind::Whitespace
         {
             open += 1;
         }
@@ -182,11 +187,11 @@ pub fn normalize_variadic_body_for_classification(
 }
 
 fn apply_gnu_comma_swallow(
-    tokens: &[crate::macro_token::MacroToken],
+    tokens: &[MacroToken],
     variadic_parameter: &str,
     has_variadic_content: bool,
-) -> Vec<crate::macro_token::MacroToken> {
-    let mut out: Vec<crate::macro_token::MacroToken> = Vec::new();
+) -> Vec<MacroToken> {
+    let mut out: Vec<MacroToken> = Vec::new();
     let mut index: usize = 0;
 
     while index < tokens.len() {
@@ -200,7 +205,7 @@ fn apply_gnu_comma_swallow(
         let mut hash_index: usize = index + 1;
 
         while hash_index < tokens.len()
-            && tokens[hash_index].get_kind() == crate::macro_token::MacroTokenKind::Whitespace
+            && tokens[hash_index].get_kind() == MacroTokenKind::Whitespace
         {
             hash_index += 1;
         }
@@ -218,7 +223,7 @@ fn apply_gnu_comma_swallow(
         let mut name_index: usize = hash_index + 1;
 
         while name_index < tokens.len()
-            && tokens[name_index].get_kind() == crate::macro_token::MacroTokenKind::Whitespace
+            && tokens[name_index].get_kind() == MacroTokenKind::Whitespace
         {
             name_index += 1;
         }
@@ -246,10 +251,10 @@ fn apply_gnu_comma_swallow(
 }
 
 fn expand_va_opt(
-    tokens: &[crate::macro_token::MacroToken],
+    tokens: &[MacroToken],
     has_variadic_content: bool,
-) -> Option<Vec<crate::macro_token::MacroToken>> {
-    let mut out: Vec<crate::macro_token::MacroToken> = Vec::new();
+) -> Option<Vec<MacroToken>> {
+    let mut out: Vec<MacroToken> = Vec::new();
     let mut index: usize = 0;
 
     while index < tokens.len() {
@@ -263,7 +268,7 @@ fn expand_va_opt(
         let mut open: usize = index + 1;
 
         while open < tokens.len()
-            && tokens[open].get_kind() == crate::macro_token::MacroTokenKind::Whitespace
+            && tokens[open].get_kind() == MacroTokenKind::Whitespace
         {
             open += 1;
         }
@@ -304,34 +309,45 @@ fn expand_va_opt(
 }
 
 pub fn substitute_variadic_parameter_tokens(
-    tokens: &[crate::macro_token::MacroToken],
+    tokens: &[MacroToken],
     fixed_parameters: &[String],
     variadic_parameter: &str,
-    fixed_args: &[Vec<crate::macro_token::MacroToken>],
-    variadic_args: &[Vec<crate::macro_token::MacroToken>],
+    fixed_args: &[Vec<MacroToken>],
+    variadic_args: &[Vec<MacroToken>],
     has_variadic_content: bool,
-) -> Option<Vec<crate::macro_token::MacroToken>> {
+) -> Option<Vec<MacroToken>> {
     if fixed_parameters.len() != fixed_args.len() {
         return None;
     }
 
-    let expanded_variadic: Vec<crate::macro_token::MacroToken> =
-        self::join_variadic_arguments(variadic_args);
+    let mut expanded_variadic: Vec<MacroToken> = Vec::new();
 
-    let mut expanded_tokens: Vec<crate::macro_token::MacroToken> =
+    for (index, argument) in variadic_args.iter().enumerate() {
+        if index != 0 {
+            expanded_variadic.push(crate::macro_token::MacroToken::new(
+                MacroTokenKind::Punctuation,
+                ",".to_string(),
+                MacroTokenOrigin::DefinitionBody,
+            ));
+        }
+
+        expanded_variadic.extend(argument.iter().cloned());
+    }
+
+    let mut expanded_tokens: Vec<MacroToken> =
         self::expand_va_opt(tokens, has_variadic_content)?;
 
     expanded_tokens =
         self::apply_gnu_comma_swallow(&expanded_tokens, variadic_parameter, has_variadic_content);
 
-    let mut out: Vec<crate::macro_token::MacroToken> = Vec::new();
+    let mut out: Vec<MacroToken> = Vec::new();
 
     for token in expanded_tokens.iter() {
         if token.get_text() == "##" {
             return None;
         }
 
-        if token.get_kind() == crate::macro_token::MacroTokenKind::Identifier {
+        if token.get_kind() == MacroTokenKind::Identifier {
             if let Some(index) = fixed_parameters
                 .iter()
                 .position(|parameter| parameter == token.get_text())
@@ -352,24 +368,4 @@ pub fn substitute_variadic_parameter_tokens(
     }
 
     Some(out)
-}
-
-pub fn join_variadic_arguments(
-    args: &[Vec<crate::macro_token::MacroToken>],
-) -> Vec<crate::macro_token::MacroToken> {
-    let mut out: Vec<crate::macro_token::MacroToken> = Vec::new();
-
-    for (index, argument) in args.iter().enumerate() {
-        if index != 0 {
-            out.push(crate::macro_token::MacroToken::new(
-                crate::macro_token::MacroTokenKind::Punctuation,
-                ",".to_string(),
-                crate::macro_token::MacroTokenOrigin::DefinitionBody,
-            ));
-        }
-
-        out.extend(argument.iter().cloned());
-    }
-
-    out
 }

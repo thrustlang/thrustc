@@ -22,12 +22,13 @@ use thrustc_errors::{CompilationIssue, CompilationIssueCode};
 
 use thrustc_c_transpiler_macro::error::{TranspilerError, TranspilerResult};
 use thrustc_c_transpiler_macro::location::Location;
+use thrustc_c_transpiler_macro::macro_context::MacroContext;
 
 pub fn translate_expr(
     entity: &clang::Entity<'_>,
     span: Span,
     ctx: Location,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
+    macro_ctx: &mut MacroContext,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
 
@@ -263,10 +264,19 @@ pub fn translate_expr(
             // en Ptr (property.rs:187-196); por eso no se emite nunca
             // fuera de AddressOf.
 
-            let operator: &str = if ctx.is_address_of() { "." } else { "->" };
-
             let field_name: String =
                 { thrustc_c_transpiler_macro::util::normalize_to_thrust_identifier(&field_name) };
+
+            if !ctx.is_address_of()
+                && !ctx.is_direct()
+                && entity
+                    .get_type()
+                    .is_some_and(|ty| ty.is_volatile_qualified())
+            {
+                return Ok(format!("(deref volatile ({base}.{field_name}))"));
+            }
+
+            let operator: &str = if ctx.is_address_of() { "." } else { "->" };
 
             Ok(format!("{base}{operator}{field_name}"))
         }
@@ -884,6 +894,15 @@ pub fn translate_expr(
                     }
                 }
                 "*" => {
+                    if !ctx.is_address_of()
+                        && !ctx.is_direct()
+                        && entity
+                            .get_type()
+                            .is_some_and(|ty| ty.is_volatile_qualified())
+                    {
+                        return Ok(format!("(deref volatile ({operand_text}))"));
+                    }
+
                     if let Some(pointer_target) =
                         self::translate_transform_pointer_arithmetic(operand, span, macro_ctx)
                     {
@@ -1837,6 +1856,15 @@ pub fn translate_expr(
                 }
             });
 
+            if !ctx.is_address_of()
+                && !ctx.is_direct()
+                && entity
+                    .get_type()
+                    .is_some_and(|ty| ty.is_volatile_qualified())
+            {
+                return Ok(format!("(deref volatile ({base}[{index}]))"));
+            }
+
             if uses_place_index {
                 Ok(format!("{base}[{index}]"))
             } else {
@@ -1870,7 +1898,7 @@ pub fn translate_condition_expr(
     entity: &clang::Entity<'_>,
     span: Span,
     ctx: Location,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
+    macro_ctx: &mut MacroContext,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
 
@@ -2105,7 +2133,7 @@ pub fn translate_condition_expr(
 fn try_translate_constant_nested_array(
     entity: &clang::Entity<'_>,
     span: Span,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
+    macro_ctx: &mut MacroContext,
 ) -> Option<String> {
     let mut indices_rev: Vec<clang::Entity<'_>> = Vec::new();
     let mut probe: clang::Entity<'_> = crate::expr_analysis::clean_expression_wrappers(entity);
@@ -2201,7 +2229,7 @@ fn try_translate_constant_nested_array(
 fn translate_decl_ref_expr(
     entity: &clang::Entity<'_>,
     span: Span,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
+    macro_ctx: &mut MacroContext,
 ) -> TranspilerResult<String> {
     let prefix: Option<String> = thrustc_c_transpiler_macro::macro_error::prefix(entity);
 
@@ -2304,7 +2332,7 @@ fn translate_decl_ref_expr(
 fn translate_transform_pointer_arithmetic(
     entity: &clang::Entity<'_>,
     span: Span,
-    macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
+    macro_ctx: &mut MacroContext,
 ) -> Option<String> {
     if matches!(
         entity.get_kind(),

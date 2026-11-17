@@ -23,6 +23,7 @@ use std::io::Write;
 use serde_json::Value;
 
 use crate::analysis::Analysis;
+use crate::config::LSPConfiguration;
 use crate::documents::Documents;
 
 pub fn run() {
@@ -30,7 +31,6 @@ pub fn run() {
 
     if arguments.iter().any(|argument| argument == "--version") {
         println!("{}", thrustc_constants::COMPILER_VERSION);
-
         return;
     }
 
@@ -53,6 +53,7 @@ pub fn run() {
             .get("method")
             .and_then(Value::as_str)
             .expect("LSP message must specify 'method'.");
+
         let id: Option<Value> = payload.get("id").cloned();
 
         match method {
@@ -61,8 +62,8 @@ pub fn run() {
                     continue;
                 };
 
-                let configuration: crate::config::LspConfiguration =
-                    crate::config::LspConfiguration::from_initialize_params(&payload);
+                let configuration: LSPConfiguration =
+                    LSPConfiguration::from_initialize_params(&payload);
 
                 analysis.set_options(configuration.build_compiler_options());
 
@@ -86,6 +87,7 @@ pub fn run() {
                         }
                     }
                 });
+
                 let body: String = response.to_string();
                 let header: String = format!("Content-Length: {}\r\n\r\n", body.len());
 
@@ -106,6 +108,7 @@ pub fn run() {
                     "id": id,
                     "result": null
                 });
+
                 let body: String = response.to_string();
                 let header: String = format!("Content-Length: {}\r\n\r\n", body.len());
 
@@ -130,6 +133,7 @@ pub fn run() {
                         "diagnostics": diagnostics
                     }
                 });
+
                 let body: String = notification.to_string();
                 let header: String = format!("Content-Length: {}\r\n\r\n", body.len());
 
@@ -154,6 +158,7 @@ pub fn run() {
                         "diagnostics": diagnostics
                     }
                 });
+
                 let body: String = notification.to_string();
                 let header: String = format!("Content-Length: {}\r\n\r\n", body.len());
 
@@ -177,6 +182,7 @@ pub fn run() {
                         "diagnostics": []
                     }
                 });
+
                 let body: String = notification.to_string();
                 let header: String = format!("Content-Length: {}\r\n\r\n", body.len());
 
@@ -196,6 +202,7 @@ pub fn run() {
                     "id": id,
                     "result": result
                 });
+
                 let body: String = response.to_string();
                 let header: String = format!("Content-Length: {}\r\n\r\n", body.len());
 
@@ -239,6 +246,7 @@ pub fn run() {
                         "items": items
                     }
                 });
+
                 let body: String = response.to_string();
                 let header: String = format!("Content-Length: {}\r\n\r\n", body.len());
 
@@ -259,6 +267,7 @@ pub fn run() {
                     "id": id,
                     "result": result
                 });
+
                 let body: String = response.to_string();
                 let header: String = format!("Content-Length: {}\r\n\r\n", body.len());
 
@@ -290,6 +299,7 @@ pub fn run() {
                             }
                         })
                     };
+
                     let body: String = response.to_string();
                     let header: String = format!("Content-Length: {}\r\n\r\n", body.len());
 

@@ -18,6 +18,9 @@
 */
 
 use crate::macro_token::MacroToken;
+use crate::macro_token::MacroSpan;
+use crate::macro_token::MacroTokenKind;
+use crate::macro_token::MacroTokenOrigin;
 
 pub fn lex_binary_operator(
     entity: &clang::Entity<'_>,
@@ -317,11 +320,43 @@ pub fn is_assignment_expression(entity: &clang::Entity<'_>) -> bool {
     }
 
     let tokens: Vec<String> = self::entity_lexemes(entity);
+    let mut depth: i32 = 0;
+    let mut index: usize = 0;
 
-    matches!(
-        self::extract_binary_operator_from_tokens(&tokens),
-        Some("=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=")
-    )
+    while index < tokens.len() {
+        let token: &str = tokens[index].as_str();
+
+        match token {
+            "(" | "[" | "{" => {
+                depth += 1;
+            }
+            ")" | "]" | "}" => {
+                depth -= 1;
+            }
+            _ if depth == 0 => match token {
+                "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" => {
+                    return true;
+                }
+                "=" => {
+                    let previous: Option<&str> =
+                        index.checked_sub(1).and_then(|position| tokens.get(position)).map(String::as_str);
+                    let next: Option<&str> = tokens.get(index.saturating_add(1)).map(String::as_str);
+
+                    if next != Some("=")
+                        && !matches!(previous, Some("=" | "!" | "<" | ">"))
+                    {
+                        return true;
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+
+        index = index.saturating_add(1);
+    }
+
+    false
 }
 
 pub fn entity_lexemes(entity: &clang::Entity<'_>) -> Vec<String> {
@@ -472,8 +507,8 @@ pub fn normalize_line_continuations(text: &str) -> String {
 
 pub fn to_macro_tokens(
     tokens: &[clang::token::Token<'_>],
-    origin: crate::macro_token::MacroTokenOrigin,
-) -> Vec<crate::macro_token::MacroToken> {
+    origin: MacroTokenOrigin,
+) -> Vec<MacroToken> {
     tokens
         .iter()
         .filter(|token| token.get_kind() != clang::token::TokenKind::Comment)
@@ -493,24 +528,24 @@ pub fn to_macro_tokens(
                 _ => raw,
             };
 
-            let kind: crate::macro_token::MacroTokenKind = if had_continuation {
+            let kind: MacroTokenKind = if had_continuation {
                 crate::macro_token::classify_text(&text)
             } else {
                 match token.get_kind() {
                     clang::token::TokenKind::Identifier => crate::macro_token::classify_text(&text),
-                    clang::token::TokenKind::Literal => crate::macro_token::MacroTokenKind::Literal,
+                    clang::token::TokenKind::Literal => MacroTokenKind::Literal,
                     clang::token::TokenKind::Punctuation => {
-                        crate::macro_token::MacroTokenKind::Punctuation
+                        MacroTokenKind::Punctuation
                     }
-                    clang::token::TokenKind::Keyword => crate::macro_token::MacroTokenKind::Keyword,
-                    _ => crate::macro_token::MacroTokenKind::Unknown,
+                    clang::token::TokenKind::Keyword => MacroTokenKind::Keyword,
+                    _ => MacroTokenKind::Unknown,
                 }
             };
 
             let location: clang::source::Location<'_> =
                 token.get_location().get_spelling_location();
 
-            let span: crate::macro_token::MacroSpan = crate::macro_token::MacroSpan::new(
+            let span: MacroSpan = crate::macro_token::MacroSpan::new(
                 location
                     .file
                     .map(|file| file.get_path().display().to_string()),
@@ -519,7 +554,7 @@ pub fn to_macro_tokens(
                 location.offset,
             );
 
-            let mut token: crate::macro_token::MacroToken =
+            let mut token: MacroToken =
                 crate::macro_token::MacroToken::new(kind, text, origin);
 
             token.set_span(Some(span));
@@ -531,10 +566,10 @@ pub fn to_macro_tokens(
 
 pub fn lex_text_to_macro_tokens(
     source: &str,
-    origin: crate::macro_token::MacroTokenOrigin,
-) -> Vec<crate::macro_token::MacroToken> {
+    origin: MacroTokenOrigin,
+) -> Vec<MacroToken> {
     let bytes: &[u8] = source.as_bytes();
-    let mut out: Vec<crate::macro_token::MacroToken> = Vec::new();
+    let mut out: Vec<MacroToken> = Vec::new();
     let mut index: usize = 0;
 
     while index < bytes.len() {
@@ -590,7 +625,7 @@ pub fn lex_text_to_macro_tokens(
             }
 
             out.push(crate::macro_token::MacroToken::new(
-                crate::macro_token::MacroTokenKind::Whitespace,
+                MacroTokenKind::Whitespace,
                 source[start..index].to_string(),
                 origin,
             ));
@@ -636,7 +671,7 @@ pub fn lex_text_to_macro_tokens(
             let text: String = source[start..index].to_string();
 
             out.push(crate::macro_token::MacroToken::new(
-                crate::macro_token::MacroTokenKind::Literal,
+                MacroTokenKind::Literal,
                 text,
                 origin,
             ));
@@ -677,7 +712,7 @@ pub fn lex_text_to_macro_tokens(
             }
 
             out.push(crate::macro_token::MacroToken::new(
-                crate::macro_token::MacroTokenKind::Literal,
+                MacroTokenKind::Literal,
                 source[start..index.min(bytes.len())].to_string(),
                 origin,
             ));
@@ -687,10 +722,10 @@ pub fn lex_text_to_macro_tokens(
 
         if let Some(two) = source.get(index..index + 2) {
             if crate::macro_token::classify_text(two)
-                == crate::macro_token::MacroTokenKind::Punctuation
+                == MacroTokenKind::Punctuation
             {
                 out.push(crate::macro_token::MacroToken::new(
-                    crate::macro_token::MacroTokenKind::Punctuation,
+                    MacroTokenKind::Punctuation,
                     two.to_string(),
                     origin,
                 ));
@@ -720,19 +755,19 @@ pub fn lex_text_to_macro_tokens(
     out
 }
 
-pub fn detokenize_macro_tokens(tokens: &[crate::macro_token::MacroToken]) -> String {
+pub fn detokenize_macro_tokens(tokens: &[MacroToken]) -> String {
     let mut out: String = String::new();
 
     for (index, token) in tokens.iter().enumerate() {
-        if token.get_kind() == crate::macro_token::MacroTokenKind::Whitespace {
+        if token.get_kind() == MacroTokenKind::Whitespace {
             out.push_str(token.get_text());
             continue;
         }
 
         if index > 0 {
-            let previous: &crate::macro_token::MacroToken = &tokens[index - 1];
+            let previous: &MacroToken = &tokens[index - 1];
 
-            if previous.get_kind() != crate::macro_token::MacroTokenKind::Whitespace
+            if previous.get_kind() != MacroTokenKind::Whitespace
                 && self::needs_space_between_tokens(previous.get_text(), token.get_text())
             {
                 out.push(' ');
@@ -746,7 +781,7 @@ pub fn detokenize_macro_tokens(tokens: &[crate::macro_token::MacroToken]) -> Str
 }
 
 pub type SiteCallArguments = (
-    Vec<Vec<crate::macro_token::MacroToken>>,
+    Vec<Vec<MacroToken>>,
     Vec<(u32, u32)>,
     u32,
 );
@@ -856,7 +891,7 @@ pub fn lex_site_call_arguments(site: &clang::Entity<'_>, name: &str) -> Option<S
         arg_ranges.push((argument_start, offset - 1));
     }
 
-    let mut args: Vec<Vec<crate::macro_token::MacroToken>> = Vec::new();
+    let mut args: Vec<Vec<MacroToken>> = Vec::new();
 
     for (start, end) in arg_ranges.iter() {
         if start >= end {
@@ -875,9 +910,9 @@ pub fn lex_site_call_arguments(site: &clang::Entity<'_>, name: &str) -> Option<S
             clang::source::SourceRange::new(start_location, end_location);
 
         let tokens: Vec<clang::token::Token<'_>> = arg_range.tokenize();
-        let macro_tokens: Vec<crate::macro_token::MacroToken> = self::to_macro_tokens(
+        let macro_tokens: Vec<MacroToken> = self::to_macro_tokens(
             &tokens,
-            crate::macro_token::MacroTokenOrigin::InvocationArgument,
+            MacroTokenOrigin::InvocationArgument,
         );
 
         args.push(macro_tokens);

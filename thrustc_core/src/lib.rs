@@ -465,7 +465,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let ast: &[Ast] = parser_context.get_ast();
 
-        if let Some(issue) = thrustc_errors::simd::simd_usage_issue(ast, || {
+        if let Some(issue) = thrustc_errors::simd::check_simd_usage_issue(ast, || {
             self.options.get_llvm_backend().validate_cpu_features()
         }) {
             let mut diagnostician: Diagnostician = Diagnostician::new(file, self.options);
@@ -1027,7 +1027,7 @@ impl<'thrustc> ThrustCompiler<'thrustc> {
 
         let ast: &[Ast] = parser_context.get_ast();
 
-        if let Some(issue) = thrustc_errors::simd::simd_usage_issue(ast, || {
+        if let Some(issue) = thrustc_errors::simd::check_simd_usage_issue(ast, || {
             self.options.get_llvm_backend().validate_cpu_features()
         }) {
             let mut diagnostician: Diagnostician = Diagnostician::new(file, self.options);

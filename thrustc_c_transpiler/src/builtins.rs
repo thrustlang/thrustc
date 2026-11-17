@@ -17,6 +17,8 @@
 
 */
 
+use thrustc_c_transpiler_macro::macro_context::MacroContext;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Builtin {
     MemSet,
@@ -251,7 +253,7 @@ impl HeapOperation {
         self,
         call_entity: &clang::Entity<'_>,
         pointee_type: Option<&clang::Type<'_>>,
-        macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
+        macro_ctx: &mut MacroContext,
         prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
@@ -285,7 +287,7 @@ impl HeapOperation {
     fn lower_malloc_call(
         call_entity: &clang::Entity<'_>,
         pointee_type: Option<&clang::Type<'_>>,
-        macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
+        macro_ctx: &mut MacroContext,
         prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
@@ -377,7 +379,7 @@ impl HeapOperation {
     fn sized_heap_allocate(
         sizeof_entity: &clang::Entity<'_>,
         element_count: u64,
-        macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
+        macro_ctx: &mut MacroContext,
         prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
@@ -441,7 +443,7 @@ impl HeapOperation {
 impl HeapOperation {
     fn sizeof_operand_name(
         sizeof_entity: &clang::Entity<'_>,
-        macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
+        macro_ctx: &mut MacroContext,
         prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {
@@ -549,7 +551,7 @@ impl HeapOperation {
 impl HeapOperation {
     fn format_thrust_type(
         clang_type: &clang::Type<'_>,
-        macro_ctx: &mut thrustc_c_transpiler_macro::macro_context::MacroContext,
+        macro_ctx: &mut MacroContext,
         prefix: Option<&str>,
         span: thrustc_code_location::Span,
     ) -> Option<String> {

@@ -70,13 +70,8 @@ impl Module {
         }
 
         for macro_definition in other.macros.into_iter() {
-            if self
-                .macros
-                .iter()
-                .any(|existing| existing.get_name() == macro_definition.get_name())
-            {
-                continue;
-            }
+            self.macros
+                .retain(|existing| existing.get_name() != macro_definition.get_name());
 
             self.macros.push(macro_definition);
         }
@@ -118,6 +113,9 @@ impl Module {
 
     #[inline]
     pub fn add_macro(&mut self, macro_definition: Macro) {
+        self.macros
+            .retain(|existing| existing.get_name() != macro_definition.get_name());
+
         self.macros.push(macro_definition);
     }
 }

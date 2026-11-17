@@ -78,7 +78,7 @@ pub fn build_property<'parser>(
             let kind: Type = properties.0;
             let data: PropertyData = properties.1;
 
-            let metadata: PropertyMetadata = PropertyMetadata::new(kind.is_ptr_like_type(), deref);
+            let metadata: PropertyMetadata = PropertyMetadata::new(kind.is_ptr_like_type(), deref, false);
 
             Ok(Ast::Property {
                 source: source.into(),
