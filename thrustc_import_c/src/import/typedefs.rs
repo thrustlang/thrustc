@@ -33,7 +33,7 @@ pub fn import_typedefs<'clang>(
     typedef_decls: &[clang::Entity<'clang>],
     import_c: &mut ImportC<'clang>,
 ) {
-    let span: thrustc_code_location::Span = import_c.span();
+    let span: thrustc_code_location::Span = import_c.get_span();
 
     for entity in typedef_decls.iter() {
         let Some(name) = entity.get_name() else {
@@ -41,7 +41,7 @@ pub fn import_typedefs<'clang>(
         };
 
         let Some(underlying) = entity.get_typedef_underlying_type() else {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!("C typedef '{name}' skipped: missing underlying type"),
             ));
@@ -52,259 +52,52 @@ pub fn import_typedefs<'clang>(
         let underlying_canonical: clang::Type<'clang> = underlying.get_canonical_type();
 
         if underlying_canonical.get_kind() == TypeKind::Pointer {
-            if let Some(pointee) = underlying_canonical.get_pointee_type() {
-                let pointee_kind: TypeKind = pointee.get_canonical_type().get_kind();
+            let pointer_result: Result<Option<Type>, ()> =
+                self::lower_pointer_typedef(&name, &underlying_canonical, span, import_c);
 
-                if matches!(
-                    pointee_kind,
-                    TypeKind::FunctionPrototype | TypeKind::FunctionNoPrototype
-                ) {
-                    let Some(result) = pointee.get_result_type() else {
-                        import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                            CImportDiagnosticKind::SkippedDeclaration,
-                            format!("C typedef '{name}' skipped: fn pointer missing return type"),
-                        ));
-                        continue;
-                    };
-
-                    let return_type_result: Result<Type, String> = {
-                        let (struct_cache, diagnostics) =
-                            import_c.struct_cache_and_diagnostics_mut();
-
-                        type_map::map_type(&result, span, struct_cache, diagnostics)
-                    };
-
-                    let return_type: Type = match return_type_result {
-                        Ok(ty) => ty,
-                        Err(message) => {
-                            import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                CImportDiagnosticKind::SkippedDeclaration,
-                                format!("C typedef '{name}' skipped: unsupported return type ({message})"),
-                            ));
-
-                            continue;
-                        }
-                    };
-
-                    let parameter_types_result: Result<Vec<Type>, ()> = if let Some(args) =
-                        pointee.get_argument_types()
-                    {
-                        args.into_iter().enumerate().try_fold(
-                                Vec::new(),
-                                |mut parameter_types, (idx, arg)| {
-                                    let arg_kind: TypeKind = arg.get_canonical_type().get_kind();
-
-                                    if arg_kind == TypeKind::VariableArray {
-                                        import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                            CImportDiagnosticKind::SkippedDeclaration,
-                                            format!(
-                                                "C typedef '{name}' skipped: VLA parameter {idx} is not supported"
-                                            ),
-                                        ));
-
-                                        return Err(());
-                                    }
-
-                                    if arg_kind == TypeKind::DependentSizedArray {
-                                        import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                            CImportDiagnosticKind::SkippedDeclaration,
-                                            format!(
-                                                "C typedef '{name}' skipped: dependent-sized array parameter {idx} is not supported"
-                                            ),
-                                        ));
-
-                                        return Err(());
-                                    }
-
-                                    if matches!(
-                                        arg_kind,
-                                        TypeKind::ConstantArray | TypeKind::IncompleteArray
-                                    )
-                                    {
-                                        let Some(element_type) = arg.get_element_type() else {
-                                            import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                                CImportDiagnosticKind::SkippedDeclaration,
-                                                format!(
-                                                    "C typedef '{name}' skipped: array parameter {idx} is missing an element type"
-                                                ),
-                                            ));
-
-                                            return Err(());
-                                        };
-
-                                        let arg_result: Result<Type, String> = {
-                                            let (struct_cache, diagnostics) =
-                                                import_c.struct_cache_and_diagnostics_mut();
-
-                                            crate::type_map::map_type(
-                                                &element_type,
-                                                span,
-                                                struct_cache,
-                                                diagnostics,
-                                            )
-                                        };
-
-                                        let arg_ty: Type = match arg_result {
-                                            Ok(ty) => ty,
-                                            Err(message) => {
-                                                import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                                    CImportDiagnosticKind::SkippedDeclaration,
-                                                    format!("C typedef '{name}' skipped: unsupported array parameter type ({message})"),
-                                                ));
-
-                                                return Err(());
-                                            }
-                                        };
-
-                                        parameter_types.push(Type::Ptr {
-                                            subtype: Some(Box::new(arg_ty)),
-                                            address_space: None,
-                                            span,
-                                        });
-
-                                        return Ok(parameter_types);
-                                    }
-
-                                    let arg_result: Result<Type, String> = {
-                                        let (struct_cache, diagnostics) =
-                                            import_c.struct_cache_and_diagnostics_mut();
-
-                                        crate::type_map::map_type(
-                                            &arg,
-                                            span,
-                                            struct_cache,
-                                            diagnostics,
-                                        )
-                                    };
-
-                                    let arg_ty: Type = match arg_result {
-                                        Ok(ty) => ty,
-                                        Err(message) => {
-                                            import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                                CImportDiagnosticKind::SkippedDeclaration,
-                                                format!("C typedef '{name}' skipped: unsupported parameter type ({message})"),
-                                            ));
-
-                                            return Err(());
-                                        }
-                                    };
-
-                                    parameter_types.push(arg_ty);
-
-                                    Ok(parameter_types)
-                                },
-                            )
-                    } else {
-                        Ok(Vec::new())
-                    };
-
-                    let parameter_types: Vec<Type> = match parameter_types_result {
-                        Ok(parameter_types) => parameter_types,
-                        Err(()) => continue,
-                    };
-
-                    let variadic: bool = pointee.is_variadic();
-
-                    let ty: Type = Type::Fn {
-                        return_type: Box::new(return_type),
-                        parameter_types,
-                        modificator: FunctionReferenceTypeModificator::new(
-                            LLVMFunctionReferenceTypeModificator::new(variadic),
-                            GCCFunctionReferenceTypeModificator::default(),
-                        ),
-                        span,
-                    };
-
+            match pointer_result {
+                Ok(Some(pointer_ty)) => {
                     import_c
-                        .typedefs_mut()
-                        .push(CImportedTypedef::new(name, ty));
+                        .get_mut_typedefs()
+                        .push(CImportedTypedef::new(name, pointer_ty));
 
                     continue;
                 }
+
+                Ok(None) => {}
+                Err(()) => continue,
             }
         }
 
         if underlying_canonical.get_kind() == TypeKind::Record {
-            let Some(decl) = underlying_canonical.get_declaration() else {
-                import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                    CImportDiagnosticKind::SkippedDeclaration,
-                    format!("C typedef '{name}' skipped: record without declaration"),
-                ));
+            let record_result: Result<Option<Type>, ()> =
+                self::lower_record_typedef(&name, &underlying_canonical, span, import_c);
 
-                continue;
-            };
-
-            if decl.get_kind() == clang::EntityKind::UnionDecl {
-                import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                    CImportDiagnosticKind::SkippedUnion,
-                    format!("C typedef '{name}' skipped: unions are not supported yet"),
-                ));
-
-                continue;
-            }
-
-            if decl.get_kind() == clang::EntityKind::StructDecl {
-                let definition: clang::Entity<'clang> = decl.get_definition().unwrap_or(decl);
-
-                let Some(record_ty) = definition.get_type() else {
-                    import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                        CImportDiagnosticKind::SkippedDeclaration,
-                        format!("C typedef '{name}' skipped: missing struct definition"),
-                    ));
-
-                    continue;
-                };
-
-                let Ok(struct_ty) = ({
-                    let (struct_cache, diagnostics) = import_c.struct_cache_and_diagnostics_mut();
-
-                    type_map::map_type(&record_ty, span, struct_cache, diagnostics)
-                }) else {
-                    import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                        CImportDiagnosticKind::SkippedDeclaration,
-                        format!("C typedef '{name}' skipped: unsupported struct fields"),
-                    ));
-
-                    continue;
-                };
-
-                if let Type::Struct {
-                    name: struct_name, ..
-                } = &struct_ty
-                {
-                    let canonical: clang::Entity<'clang> = decl.get_canonical_entity();
-                    let cached_struct: Option<(Vec<(String, Type)>, Type)> =
-                        import_c.struct_cache_mut().get(&canonical).cloned();
-
-                    if let Some((fields, _)) = cached_struct {
-                        if import_c.exported_structs_mut().insert(struct_name.clone()) {
-                            let metadata: StructTypeMetadata = match &struct_ty {
-                                Type::Struct { metadata, .. } => *metadata,
-                                _ => StructTypeMetadata::default(),
-                            };
-
-                            import_c.structs_mut().push(CImportedStruct::new(
-                                struct_name.clone(),
-                                fields,
-                                metadata,
-                            ));
+            match record_result {
+                Ok(Some(record_ty)) => {
+                    if let Type::Struct {
+                        name: struct_name, ..
+                    } = &record_ty
+                    {
+                        if name != *struct_name
+                            && import_c.get_mut_exported_typedefs().insert(name.clone())
+                        {
+                            import_c
+                                .get_mut_typedefs()
+                                .push(CImportedTypedef::new(name, record_ty));
                         }
                     }
 
-                    if name != *struct_name && import_c.exported_typedefs_mut().insert(name.clone())
-                    {
-                        import_c
-                            .typedefs_mut()
-                            .push(CImportedTypedef::new(name, struct_ty));
-                    }
+                    continue;
                 }
 
-                continue;
+                Ok(None) => {}
+                Err(()) => continue,
             }
         }
 
-        let type_result = {
-            let (struct_cache, diagnostics) = import_c.struct_cache_and_diagnostics_mut();
+        let type_result: Result<Type, String> = {
+            let (struct_cache, diagnostics) = import_c.get_mut_struct_cache_and_diagnostics();
 
             type_map::map_type(&underlying, span, struct_cache, diagnostics)
         };
@@ -312,7 +105,7 @@ pub fn import_typedefs<'clang>(
         let ty: Type = match type_result {
             Ok(ty) => ty,
             Err(message) => {
-                import_c.diagnostics_mut().push(CImportDiagnostic::new(
+                import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                     CImportDiagnosticKind::SkippedDeclaration,
                     format!("C typedef '{name}' skipped: unsupported type ({message})"),
                 ));
@@ -321,10 +114,245 @@ pub fn import_typedefs<'clang>(
             }
         };
 
-        if import_c.exported_typedefs_mut().insert(name.clone()) {
+        if import_c.get_mut_exported_typedefs().insert(name.clone()) {
             import_c
-                .typedefs_mut()
+                .get_mut_typedefs()
                 .push(CImportedTypedef::new(name, ty));
         }
     }
+}
+
+fn lower_pointer_typedef<'clang>(
+    name: &str,
+    underlying_canonical: &clang::Type<'clang>,
+    span: thrustc_code_location::Span,
+    import_c: &mut ImportC<'clang>,
+) -> Result<Option<Type>, ()> {
+    let Some(pointee) = underlying_canonical.get_pointee_type() else {
+        return Ok(None);
+    };
+
+    let pointee_kind: TypeKind = pointee.get_canonical_type().get_kind();
+
+    if !matches!(
+        pointee_kind,
+        TypeKind::FunctionPrototype | TypeKind::FunctionNoPrototype
+    ) {
+        return Ok(None);
+    }
+
+    let Some(result) = pointee.get_result_type() else {
+        import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+            CImportDiagnosticKind::SkippedDeclaration,
+            format!("C typedef '{name}' skipped: fn pointer missing return type"),
+        ));
+
+        return Err(());
+    };
+
+    let return_type_result: Result<Type, String> = {
+        let (struct_cache, diagnostics) = import_c.get_mut_struct_cache_and_diagnostics();
+
+        type_map::map_type(&result, span, struct_cache, diagnostics)
+    };
+
+    let return_type: Type = match return_type_result {
+        Ok(ty) => ty,
+        Err(message) => {
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+                CImportDiagnosticKind::SkippedDeclaration,
+                format!("C typedef '{name}' skipped: unsupported return type ({message})"),
+            ));
+
+            return Err(());
+        }
+    };
+
+    let mut parameter_types: Vec<Type> = Vec::new();
+
+    if let Some(args) = pointee.get_argument_types() {
+        for (idx, arg) in args.iter().enumerate() {
+            let arg_kind: TypeKind = arg.get_canonical_type().get_kind();
+
+            if arg_kind == TypeKind::VariableArray {
+                import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+                    CImportDiagnosticKind::SkippedDeclaration,
+                    format!("C typedef '{name}' skipped: VLA parameter {idx} is not supported"),
+                ));
+
+                return Err(());
+            }
+
+            if arg_kind == TypeKind::DependentSizedArray {
+                import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+                    CImportDiagnosticKind::SkippedDeclaration,
+                    format!(
+                        "C typedef '{name}' skipped: dependent-sized array parameter {idx} is not supported"
+                    ),
+                ));
+
+                return Err(());
+            }
+
+            let is_sized_array: bool = matches!(
+                arg_kind,
+                TypeKind::ConstantArray | TypeKind::IncompleteArray
+            );
+
+            let element_type: Option<clang::Type> = if is_sized_array {
+                arg.get_element_type()
+            } else {
+                None
+            };
+
+            if is_sized_array && element_type.is_none() {
+                import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+                    CImportDiagnosticKind::SkippedDeclaration,
+                    format!(
+                        "C typedef '{name}' skipped: array parameter {idx} is missing an element type"
+                    ),
+                ));
+
+                return Err(());
+            }
+
+            let source: &clang::Type = match element_type.as_ref() {
+                Some(element) => element,
+                None => arg,
+            };
+
+            let arg_result: Result<Type, String> = {
+                let (struct_cache, diagnostics) = import_c.get_mut_struct_cache_and_diagnostics();
+
+                type_map::map_type(source, span, struct_cache, diagnostics)
+            };
+
+            let mapped: Type = match arg_result {
+                Ok(ty) => ty,
+                Err(message) => {
+                    let detail: String = if is_sized_array {
+                        format!("unsupported array parameter type ({message})")
+                    } else {
+                        format!("unsupported parameter type ({message})")
+                    };
+
+                    import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+                        CImportDiagnosticKind::SkippedDeclaration,
+                        format!("C typedef '{name}' skipped: {detail}"),
+                    ));
+
+                    return Err(());
+                }
+            };
+
+            let lowered: Type = if is_sized_array {
+                Type::Ptr {
+                    subtype: Some(Box::new(mapped)),
+                    address_space: None,
+                    span,
+                }
+            } else {
+                mapped
+            };
+
+            parameter_types.push(lowered);
+        }
+    }
+
+    let variadic: bool = pointee.is_variadic();
+
+    let ty: Type = Type::Fn {
+        return_type: Box::new(return_type),
+        parameter_types,
+        modificator: FunctionReferenceTypeModificator::new(
+            LLVMFunctionReferenceTypeModificator::new(variadic),
+            GCCFunctionReferenceTypeModificator::default(),
+        ),
+        span,
+    };
+
+    Ok(Some(ty))
+}
+
+fn lower_record_typedef<'clang>(
+    name: &str,
+    underlying_canonical: &clang::Type<'clang>,
+    span: thrustc_code_location::Span,
+    import_c: &mut ImportC<'clang>,
+) -> Result<Option<Type>, ()> {
+    let Some(decl) = underlying_canonical.get_declaration() else {
+        import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+            CImportDiagnosticKind::SkippedDeclaration,
+            format!("C typedef '{name}' skipped: record without declaration"),
+        ));
+
+        return Err(());
+    };
+
+    if decl.get_kind() == clang::EntityKind::UnionDecl {
+        import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+            CImportDiagnosticKind::SkippedUnion,
+            format!("C typedef '{name}' skipped: unions are not supported yet"),
+        ));
+
+        return Err(());
+    }
+
+    if decl.get_kind() != clang::EntityKind::StructDecl {
+        return Ok(None);
+    }
+
+    let definition: clang::Entity<'clang> = decl.get_definition().unwrap_or(decl);
+
+    let Some(record_ty) = definition.get_type() else {
+        import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+            CImportDiagnosticKind::SkippedDeclaration,
+            format!("C typedef '{name}' skipped: missing struct definition"),
+        ));
+
+        return Err(());
+    };
+
+    let Ok(struct_ty) = ({
+        let (struct_cache, diagnostics) = import_c.get_mut_struct_cache_and_diagnostics();
+
+        type_map::map_type(&record_ty, span, struct_cache, diagnostics)
+    }) else {
+        import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+            CImportDiagnosticKind::SkippedDeclaration,
+            format!("C typedef '{name}' skipped: unsupported struct fields"),
+        ));
+
+        return Err(());
+    };
+
+    if let Type::Struct {
+        name: struct_name, ..
+    } = &struct_ty
+    {
+        let canonical: clang::Entity<'clang> = decl.get_canonical_entity();
+
+        let cached_struct: Option<(Vec<(String, Type)>, Type)> =
+            import_c.get_mut_struct_cache().get(&canonical).cloned();
+
+        if let Some((fields, _)) = cached_struct {
+            if import_c
+                .get_mut_exported_structs()
+                .insert(struct_name.clone())
+            {
+                let metadata: StructTypeMetadata = match &struct_ty {
+                    Type::Struct { metadata, .. } => *metadata,
+                    _ => StructTypeMetadata::default(),
+                };
+
+                import_c.get_mut_structs().push(CImportedStruct::new(
+                    struct_name.clone(),
+                    fields,
+                    metadata,
+                ));
+            }
+        }
+    }
+
+    Ok(Some(struct_ty))
 }

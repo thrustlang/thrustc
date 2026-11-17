@@ -67,99 +67,99 @@ impl CImportContext {
 
 impl CImportContext {
     #[inline]
-    pub fn header_path(&self) -> &PathBuf {
+    pub fn get_header_path(&self) -> &PathBuf {
         &self.header_path
     }
 
     #[inline]
-    pub fn span(&self) -> Span {
+    pub fn get_span(&self) -> Span {
         self.span
     }
 
     #[inline]
-    pub fn options(&self) -> &CImportOptions {
+    pub fn get_options(&self) -> &CImportOptions {
         &self.options
     }
 
     #[inline]
-    pub fn functions(&self) -> &[CImportedFunction] {
+    pub fn get_functions(&self) -> &[CImportedFunction] {
         &self.functions
     }
 
     #[inline]
-    pub fn structs(&self) -> &[CImportedStruct] {
+    pub fn get_structs(&self) -> &[CImportedStruct] {
         &self.structs
     }
 
     #[inline]
-    pub fn enums(&self) -> &[CImportedEnum] {
+    pub fn get_enums(&self) -> &[CImportedEnum] {
         &self.enums
     }
 
     #[inline]
-    pub fn typedefs(&self) -> &[CImportedTypedef] {
+    pub fn get_typedefs(&self) -> &[CImportedTypedef] {
         &self.typedefs
     }
 
     #[inline]
-    pub fn statics(&self) -> &[CImportedStatic] {
+    pub fn get_statics(&self) -> &[CImportedStatic] {
         &self.statics
     }
 
     #[inline]
-    pub fn constants(&self) -> &[CImportedConstant] {
+    pub fn get_constants(&self) -> &[CImportedConstant] {
         &self.constants
     }
 
     #[inline]
-    pub fn macros(&self) -> &[Macro] {
+    pub fn get_macros(&self) -> &[Macro] {
         &self.macros
     }
 
     #[inline]
-    pub fn diagnostics(&self) -> &[CImportDiagnostic] {
+    pub fn get_diagnostics(&self) -> &[CImportDiagnostic] {
         &self.diagnostics
     }
 }
 
 impl CImportContext {
     #[inline]
-    pub fn functions_mut(&mut self) -> &mut Vec<CImportedFunction> {
+    pub fn get_mut_functions(&mut self) -> &mut Vec<CImportedFunction> {
         &mut self.functions
     }
 
     #[inline]
-    pub fn structs_mut(&mut self) -> &mut Vec<CImportedStruct> {
+    pub fn get_mut_structs(&mut self) -> &mut Vec<CImportedStruct> {
         &mut self.structs
     }
 
     #[inline]
-    pub fn enums_mut(&mut self) -> &mut Vec<CImportedEnum> {
+    pub fn get_mut_enums(&mut self) -> &mut Vec<CImportedEnum> {
         &mut self.enums
     }
 
     #[inline]
-    pub fn typedefs_mut(&mut self) -> &mut Vec<CImportedTypedef> {
+    pub fn get_mut_typedefs(&mut self) -> &mut Vec<CImportedTypedef> {
         &mut self.typedefs
     }
 
     #[inline]
-    pub fn statics_mut(&mut self) -> &mut Vec<CImportedStatic> {
+    pub fn get_mut_statics(&mut self) -> &mut Vec<CImportedStatic> {
         &mut self.statics
     }
 
     #[inline]
-    pub fn constants_mut(&mut self) -> &mut Vec<CImportedConstant> {
+    pub fn get_mut_constants(&mut self) -> &mut Vec<CImportedConstant> {
         &mut self.constants
     }
 
     #[inline]
-    pub fn macros_mut(&mut self) -> &mut Vec<Macro> {
+    pub fn get_mut_macros(&mut self) -> &mut Vec<Macro> {
         &mut self.macros
     }
 
     #[inline]
-    pub fn diagnostics_mut(&mut self) -> &mut Vec<CImportDiagnostic> {
+    pub fn get_mut_diagnostics(&mut self) -> &mut Vec<CImportDiagnostic> {
         &mut self.diagnostics
     }
 }

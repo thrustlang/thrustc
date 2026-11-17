@@ -66,10 +66,8 @@ impl<'call_conv_checker> LLVMCallConventionsChecker<'call_conv_checker> {
 
 impl<'call_conv_checker> LLVMCallConventionsChecker<'call_conv_checker> {
     pub fn analyze(&mut self) -> bool {
-        {
-            for node in self.ast.iter() {
-                self.visit_node(node);
-            }
+        for node in self.ast.iter() {
+            self.visit_node(node);
         }
 
         self.verify()

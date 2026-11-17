@@ -88,27 +88,27 @@ impl CImportDiagnostic {
 
 impl CImportDiagnostic {
     #[inline]
-    pub fn kind(&self) -> CImportDiagnosticKind {
+    pub fn get_kind(&self) -> CImportDiagnosticKind {
         self.kind
     }
 
     #[inline]
-    pub fn message(&self) -> &str {
+    pub fn get_message(&self) -> &str {
         &self.message
     }
 
     #[inline]
-    pub fn help(&self) -> Option<&str> {
+    pub fn get_help(&self) -> Option<&str> {
         self.help.as_deref()
     }
 
     #[inline]
-    pub fn note(&self) -> Option<&str> {
+    pub fn get_note(&self) -> Option<&str> {
         self.note.as_deref()
     }
 
     #[inline]
-    pub fn span(&self) -> Option<Span> {
+    pub fn get_span(&self) -> Option<Span> {
         self.span
     }
 }

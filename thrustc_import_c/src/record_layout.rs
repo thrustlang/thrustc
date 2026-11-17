@@ -69,6 +69,7 @@ pub fn build_struct<'clang>(
     let is_packed: bool = children
         .iter()
         .any(|child| child.get_kind() == clang::EntityKind::PackedAttr);
+
     let align: Option<u64> = if children
         .iter()
         .any(|child| child.get_kind() == clang::EntityKind::AlignedAttr)
@@ -76,11 +77,7 @@ pub fn build_struct<'clang>(
         record_type.get_alignof().ok().and_then(|align| {
             let align: u64 = align.try_into().ok()?;
 
-            if align <= 1 {
-                None
-            } else {
-                Some(align)
-            }
+            if align <= 1 { None } else { Some(align) }
         })
     } else {
         None
@@ -116,9 +113,7 @@ pub fn build_struct<'clang>(
         let field_kind: clang::TypeKind = match field.get_type() {
             Some(field_ty) => field_ty.get_canonical_type().get_kind(),
             None => {
-                let field_name: String = field
-                    .get_name()
-                    .unwrap_or_else(|| format!("field{idx}"));
+                let field_name: String = field.get_name().unwrap_or_else(|| format!("field{idx}"));
 
                 return Err(format!("missing type for field '{field_name}'"));
             }

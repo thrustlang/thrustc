@@ -71,7 +71,8 @@ pub fn collect_diagnostics(
         let severity: Severity = diagnostic.get_severity();
         let text: String = diagnostic.get_text();
 
-        let expansion = diagnostic.get_location().get_expansion_location();
+        let expansion: clang::source::Location<'_> =
+            diagnostic.get_location().get_expansion_location();
 
         let prefix: String = expansion
             .file

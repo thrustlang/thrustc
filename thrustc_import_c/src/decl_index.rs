@@ -51,111 +51,109 @@ impl<'clang> ClangDeclIndex<'clang> {
 
 impl<'clang> ClangDeclIndex<'clang> {
     #[inline]
-    pub fn function_decls(&self) -> &[clang::Entity<'clang>] {
+    pub fn get_function_decls(&self) -> &[clang::Entity<'clang>] {
         &self.function_decls
     }
 
     #[inline]
-    pub fn struct_decls(&self) -> &[clang::Entity<'clang>] {
+    pub fn get_struct_decls(&self) -> &[clang::Entity<'clang>] {
         &self.struct_decls
     }
 
     #[inline]
-    pub fn var_decls(&self) -> &[clang::Entity<'clang>] {
+    pub fn get_var_decls(&self) -> &[clang::Entity<'clang>] {
         &self.var_decls
     }
 
     #[inline]
-    pub fn union_decls(&self) -> &[clang::Entity<'clang>] {
+    pub fn get_union_decls(&self) -> &[clang::Entity<'clang>] {
         &self.union_decls
     }
 
     #[inline]
-    pub fn enum_decls(&self) -> &[clang::Entity<'clang>] {
+    pub fn get_enum_decls(&self) -> &[clang::Entity<'clang>] {
         &self.enum_decls
     }
 
     #[inline]
-    pub fn typedef_decls(&self) -> &[clang::Entity<'clang>] {
+    pub fn get_typedef_decls(&self) -> &[clang::Entity<'clang>] {
         &self.typedef_decls
     }
 
     #[inline]
-    pub fn macro_decls(&self) -> &[clang::Entity<'clang>] {
+    pub fn get_macro_decls(&self) -> &[clang::Entity<'clang>] {
         &self.macro_decls
     }
 }
 
 impl<'clang> ClangDeclIndex<'clang> {
     #[inline]
-    pub fn function_decls_mut(&mut self) -> &mut Vec<clang::Entity<'clang>> {
+    pub fn get_mut_function_decls(&mut self) -> &mut Vec<clang::Entity<'clang>> {
         &mut self.function_decls
     }
 
     #[inline]
-    pub fn struct_decls_mut(&mut self) -> &mut Vec<clang::Entity<'clang>> {
+    pub fn get_mut_struct_decls(&mut self) -> &mut Vec<clang::Entity<'clang>> {
         &mut self.struct_decls
     }
 
     #[inline]
-    pub fn var_decls_mut(&mut self) -> &mut Vec<clang::Entity<'clang>> {
+    pub fn get_mut_var_decls(&mut self) -> &mut Vec<clang::Entity<'clang>> {
         &mut self.var_decls
     }
 
     #[inline]
-    pub fn union_decls_mut(&mut self) -> &mut Vec<clang::Entity<'clang>> {
+    pub fn get_mut_union_decls(&mut self) -> &mut Vec<clang::Entity<'clang>> {
         &mut self.union_decls
     }
 
     #[inline]
-    pub fn enum_decls_mut(&mut self) -> &mut Vec<clang::Entity<'clang>> {
+    pub fn get_mut_enum_decls(&mut self) -> &mut Vec<clang::Entity<'clang>> {
         &mut self.enum_decls
     }
 
     #[inline]
-    pub fn typedef_decls_mut(&mut self) -> &mut Vec<clang::Entity<'clang>> {
+    pub fn get_mut_typedef_decls(&mut self) -> &mut Vec<clang::Entity<'clang>> {
         &mut self.typedef_decls
     }
 
     #[inline]
-    pub fn macro_decls_mut(&mut self) -> &mut Vec<clang::Entity<'clang>> {
+    pub fn get_mut_macro_decls(&mut self) -> &mut Vec<clang::Entity<'clang>> {
         &mut self.macro_decls
     }
 }
 
-pub fn collect_decl_index<'clang>(
+pub fn collect_declaration_index<'clang>(
     entities: Vec<clang::Entity<'clang>>,
     import_scope: CImportScope,
     main_only_file: Option<clang::source::File<'clang>>,
 ) -> ClangDeclIndex<'clang> {
     let mut index: ClangDeclIndex<'clang> = ClangDeclIndex::new();
 
-    let mut seen_function_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
-    let mut seen_var_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
-    let mut seen_struct_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
-    let mut seen_union_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
-    let mut seen_enum_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
-    let mut seen_typedef_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
-    let mut seen_macro_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
+    let mut function_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
+    let mut var_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
+    let mut struct_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
+    let mut union_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
+    let mut enum_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
+    let mut typedef_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
+    let mut macro_decls: HashSet<clang::Entity<'clang>> = HashSet::new();
 
     for entity in entities {
-        let should_import: bool = if import_scope == CImportScope::TransitiveAll {
-            true
-        } else if import_scope == CImportScope::TransitiveNoSystem {
-            !entity.is_in_system_header()
-        } else if let Some(main_file) = main_only_file {
-            if let Some(location) = entity.get_location() {
-                if let Some(file) = location.get_file_location().file {
-                    file == main_file
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        } else {
-            false
-        };
+        let is_all: bool = import_scope == CImportScope::TransitiveAll;
+
+        let is_visible_system: bool =
+            import_scope == CImportScope::TransitiveNoSystem && !entity.is_in_system_header();
+
+        let is_main_file: bool = main_only_file.as_ref().is_some_and(|main_file| {
+            entity.get_location().is_some_and(|location| {
+                location
+                    .get_file_location()
+                    .file
+                    .is_some_and(|file| file == *main_file)
+            })
+        });
+
+        let should_import: bool = is_all || is_visible_system || is_main_file;
 
         if !should_import {
             continue;
@@ -164,55 +162,55 @@ pub fn collect_decl_index<'clang>(
         let canonical: clang::Entity<'clang> = entity.get_canonical_entity();
 
         if entity.get_kind() == EntityKind::FunctionDecl {
-            if seen_function_decls.insert(canonical) {
-                index.function_decls_mut().push(entity);
+            if function_decls.insert(canonical) {
+                index.get_mut_function_decls().push(entity);
             }
 
             continue;
         }
 
         if entity.get_kind() == EntityKind::VarDecl {
-            if seen_var_decls.insert(canonical) {
-                index.var_decls_mut().push(entity);
+            if var_decls.insert(canonical) {
+                index.get_mut_var_decls().push(entity);
             }
 
             continue;
         }
 
         if entity.get_kind() == EntityKind::StructDecl {
-            if seen_struct_decls.insert(canonical) {
-                index.struct_decls_mut().push(entity);
+            if struct_decls.insert(canonical) {
+                index.get_mut_struct_decls().push(entity);
             }
 
             continue;
         }
 
         if entity.get_kind() == EntityKind::UnionDecl {
-            if seen_union_decls.insert(canonical) {
-                index.union_decls_mut().push(entity);
+            if union_decls.insert(canonical) {
+                index.get_mut_union_decls().push(entity);
             }
 
             continue;
         }
 
         if entity.get_kind() == EntityKind::EnumDecl {
-            if seen_enum_decls.insert(canonical) {
-                index.enum_decls_mut().push(entity);
+            if enum_decls.insert(canonical) {
+                index.get_mut_enum_decls().push(entity);
             }
 
             continue;
         }
 
         if entity.get_kind() == EntityKind::TypedefDecl {
-            if seen_typedef_decls.insert(canonical) {
-                index.typedef_decls_mut().push(entity);
+            if typedef_decls.insert(canonical) {
+                index.get_mut_typedef_decls().push(entity);
             }
 
             continue;
         }
 
-        if entity.get_kind() == EntityKind::MacroDefinition && seen_macro_decls.insert(canonical) {
-            index.macro_decls_mut().push(entity);
+        if entity.get_kind() == EntityKind::MacroDefinition && macro_decls.insert(canonical) {
+            index.get_mut_macro_decls().push(entity);
         }
     }
 

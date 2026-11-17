@@ -30,15 +30,16 @@ pub fn import_structs<'clang>(
     union_decls: &[clang::Entity<'clang>],
     import_c: &mut ImportC<'clang>,
 ) {
-    let span: thrustc_code_location::Span = import_c.span();
+    let span: thrustc_code_location::Span = import_c.get_span();
 
     for entity in struct_decls.iter() {
         let canonical_decl: clang::Entity<'clang> = entity.get_canonical_entity();
+
         let definition: clang::Entity<'clang> =
             canonical_decl.get_definition().unwrap_or(canonical_decl);
 
         if !definition.is_definition() {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!(
                     "C struct '{}' skipped: incomplete type",
@@ -50,7 +51,7 @@ pub fn import_structs<'clang>(
         }
 
         let Some(ty) = definition.get_type() else {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!(
                     "C struct '{}' skipped: missing type",
@@ -61,10 +62,10 @@ pub fn import_structs<'clang>(
         };
 
         let Ok(_) = ({
-            let (struct_cache, diagnostics) = import_c.struct_cache_and_diagnostics_mut();
+            let (struct_cache, diagnostics) = import_c.get_mut_struct_cache_and_diagnostics();
             type_map::map_type(&ty, span, struct_cache, diagnostics)
         }) else {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!(
                     "C struct '{}' skipped: unsupported field types",
@@ -75,7 +76,11 @@ pub fn import_structs<'clang>(
             continue;
         };
 
-        let Some((fields, kind)) = import_c.struct_cache_mut().get(&canonical_decl).cloned() else {
+        let Some((fields, kind)) = import_c
+            .get_mut_struct_cache()
+            .get(&canonical_decl)
+            .cloned()
+        else {
             continue;
         };
 
@@ -95,26 +100,26 @@ pub fn import_structs<'clang>(
                 }),
         };
 
-        if import_c.exported_structs_mut().insert(name.clone()) {
+        if import_c.get_mut_exported_structs().insert(name.clone()) {
             let metadata: StructTypeMetadata = match &kind {
                 Type::Struct { metadata, .. } => *metadata,
                 _ => StructTypeMetadata::default(),
             };
 
             import_c
-                .structs_mut()
+                .get_mut_structs()
                 .push(CImportedStruct::new(name, fields, metadata));
         }
     }
 
     for entity in union_decls.iter() {
         if let Some(name) = entity.get_name() {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedUnion,
                 format!("C union '{name}' skipped: unions are not supported yet"),
             ));
         } else {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedUnion,
                 "C union '<anonymous>' skipped: unions are not supported yet".into(),
             ));

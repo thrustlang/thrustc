@@ -33,7 +33,7 @@ pub fn import_enums<'clang>(
     typedef_decls: &[clang::Entity<'clang>],
     import_c: &mut ImportC<'clang>,
 ) {
-    let span: thrustc_code_location::Span = import_c.span();
+    let span: thrustc_code_location::Span = import_c.get_span();
 
     let mut exported_enums: HashSet<String> = HashSet::new();
     let mut enum_name_override: HashMap<clang::Entity<'clang>, String> = HashMap::new();
@@ -58,7 +58,7 @@ pub fn import_enums<'clang>(
         let definition: clang::Entity<'clang> = entity.get_definition().unwrap_or(*entity);
 
         let Some(underlying) = definition.get_enum_underlying_type() else {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 "C enum skipped: missing underlying type".into(),
             ));
@@ -68,15 +68,16 @@ pub fn import_enums<'clang>(
 
         #[allow(clippy::blocks_in_conditions)]
         let underlying_type: Type = match {
-            let (struct_cache, diagnostics) = import_c.struct_cache_and_diagnostics_mut();
+            let (struct_cache, diagnostics) = import_c.get_mut_struct_cache_and_diagnostics();
             type_map::map_type(&underlying, span, struct_cache, diagnostics)
         } {
             Ok(ty) => ty,
             Err(message) => {
-                import_c.diagnostics_mut().push(CImportDiagnostic::new(
+                import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                     CImportDiagnosticKind::SkippedDeclaration,
                     format!("C enum skipped: unsupported underlying type ({message})"),
                 ));
+
                 continue;
             }
         };
@@ -97,6 +98,7 @@ pub fn import_enums<'clang>(
             .collect();
 
         let canonical_enum: clang::Entity<'clang> = entity.get_canonical_entity();
+
         let exported_name: Option<String> = enum_name_override
             .get(&canonical_enum)
             .cloned()
@@ -104,7 +106,7 @@ pub fn import_enums<'clang>(
 
         if let Some(name) = exported_name {
             if exported_enums.insert(name.clone()) {
-                import_c.enums_mut().push(CImportedEnum::new(
+                import_c.get_mut_enums().push(CImportedEnum::new(
                     name,
                     underlying_type.clone(),
                     fields,
@@ -112,7 +114,7 @@ pub fn import_enums<'clang>(
             }
         } else {
             for (field_name, value) in fields {
-                import_c.constants_mut().push(CImportedConstant::new(
+                import_c.get_mut_constants().push(CImportedConstant::new(
                     field_name,
                     underlying_type.clone(),
                     BuiltinValue::Integer(value),

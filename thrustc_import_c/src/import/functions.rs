@@ -29,7 +29,7 @@ pub fn import_functions<'clang>(
     function_decls: &[clang::Entity<'clang>],
     import_c: &mut ImportC<'clang>,
 ) {
-    let span: thrustc_code_location::Span = import_c.span();
+    let span: thrustc_code_location::Span = import_c.get_span();
 
     for entity in function_decls.iter() {
         let canonical_decl: clang::Entity<'clang> = entity.get_canonical_entity();
@@ -47,7 +47,7 @@ pub fn import_functions<'clang>(
             resolved_decl.get_storage_class(),
             Some(StorageClass::Static | StorageClass::PrivateExtern)
         ) {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!(
                     "C function '{name}' skipped: static/private storage functions are not importable"
@@ -64,7 +64,7 @@ pub fn import_functions<'clang>(
             resolved_decl.get_linkage(),
             Some(Linkage::Internal | Linkage::Automatic | Linkage::UniqueExternal)
         ) {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!("C function '{name}' skipped: function does not have external C linkage"),
             ));
@@ -79,7 +79,7 @@ pub fn import_functions<'clang>(
             resolved_decl.get_language(),
             Some(Language::Cpp | Language::ObjectiveC | Language::Swift)
         ) {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!(
                     "C function '{name}' skipped: only C declarations are supported by importC"
@@ -90,7 +90,7 @@ pub fn import_functions<'clang>(
         }
 
         if canonical_decl.is_inline_function() || resolved_decl.is_inline_function() {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!("C function '{name}' skipped: inline-only functions are not importable"),
             ));
@@ -123,8 +123,9 @@ pub fn import_functions<'clang>(
                 CallingConvention::AapcsVfp => "ARM_AAPCS_VFP".into(),
                 CallingConvention::IntelOcl => "Intel_OCL_BI".into(),
                 CallingConvention::RegCall => "X86RegCall".into(),
+
                 other => {
-                    import_c.diagnostics_mut().push(CImportDiagnostic::new(
+                    import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                         CImportDiagnosticKind::UnsupportedCallingConvention,
                         format!(
                             "C function '{name}' skipped: unsupported calling convention {other:?}"
@@ -140,7 +141,7 @@ pub fn import_functions<'clang>(
             .get_result_type()
             .or_else(|| resolved_decl.get_result_type())
         else {
-            import_c.diagnostics_mut().push(CImportDiagnostic::new(
+            import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                 CImportDiagnosticKind::SkippedDeclaration,
                 format!("C function '{name}' skipped: missing result type"),
             ));
@@ -149,7 +150,7 @@ pub fn import_functions<'clang>(
         };
 
         let return_type_result: Result<Type, String> = {
-            let (struct_cache, diagnostics) = import_c.struct_cache_and_diagnostics_mut();
+            let (struct_cache, diagnostics) = import_c.get_mut_struct_cache_and_diagnostics();
 
             type_map::map_type(&result_type, span, struct_cache, diagnostics)
         };
@@ -157,7 +158,7 @@ pub fn import_functions<'clang>(
         let return_type: Type = match return_type_result {
             Ok(ty) => ty,
             Err(message) => {
-                import_c.diagnostics_mut().push(CImportDiagnostic::new(
+                import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
                     CImportDiagnosticKind::SkippedDeclaration,
                     format!("C function '{name}' skipped: {message}"),
                 ));
@@ -166,125 +167,10 @@ pub fn import_functions<'clang>(
             }
         };
 
-        let parameters_result: Result<(Vec<Type>, Vec<String>), ()> = if let Some(arguments) =
-            canonical_decl
-                .get_arguments()
-                .or_else(|| resolved_decl.get_arguments())
-        {
-            arguments.iter().enumerate().try_fold(
-                    (Vec::new(), Vec::new()),
-                    |(mut parameter_types, mut parameter_names), (idx, argument)| {
-                        let arg_name: String =
-                            argument.get_name().unwrap_or_else(|| format!("arg{idx}"));
-
-                        let Some(arg_ty) = argument.get_type() else {
-                            import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                CImportDiagnosticKind::SkippedDeclaration,
-                                format!(
-                                    "C function '{name}' skipped: missing type for parameter '{arg_name}'"
-                                ),
-                            ));
-
-                            return Err(());
-                        };
-
-                        let arg_kind: TypeKind = arg_ty.get_canonical_type().get_kind();
-
-                        if arg_kind == TypeKind::VariableArray {
-                            import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                CImportDiagnosticKind::SkippedDeclaration,
-                                format!(
-                                    "C function '{name}' skipped: parameter '{arg_name}' uses a VLA, which is not supported"
-                                ),
-                            ));
-
-                            return Err(());
-                        }
-
-                        if arg_kind == TypeKind::DependentSizedArray {
-                            import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                CImportDiagnosticKind::SkippedDeclaration,
-                                format!(
-                                    "C function '{name}' skipped: parameter '{arg_name}' uses a dependent-sized array, which is not supported"
-                                ),
-                            ));
-
-                            return Err(());
-                        }
-
-                        if matches!(arg_kind, TypeKind::ConstantArray | TypeKind::IncompleteArray) {
-                            let Some(element_type) = arg_ty.get_element_type() else {
-                                import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                    CImportDiagnosticKind::SkippedDeclaration,
-                                    format!(
-                                        "C function '{name}' skipped: parameter '{arg_name}' array is missing an element type"
-                                    ),
-                                ));
-
-                                return Err(());
-                            };
-
-                            let arg_ty_result: Result<Type, String> = {
-                                let (struct_cache, diagnostics) =
-                                    import_c.struct_cache_and_diagnostics_mut();
-
-                                type_map::map_type(&element_type, span, struct_cache, diagnostics)
-                            };
-
-                            let arg_ty: Type = match arg_ty_result {
-                                Ok(ty) => Type::Ptr {
-                                    subtype: Some(Box::new(ty)),
-                                    address_space: None,
-                                    span,
-                                },
-                                Err(message) => {
-                                    import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                        CImportDiagnosticKind::SkippedDeclaration,
-                                        format!("C function '{name}' skipped: parameter '{arg_name}' array element type is unsupported ({message})"),
-                                    ));
-
-                                    return Err(());
-                                }
-                            };
-
-                            parameter_names.push(arg_name);
-                            parameter_types.push(arg_ty);
-
-                            return Ok((parameter_types, parameter_names));
-                        }
-
-                        let arg_ty_result: Result<Type, String> = {
-                            let (struct_cache, diagnostics) =
-                                import_c.struct_cache_and_diagnostics_mut();
-
-                            type_map::map_type(&arg_ty, span, struct_cache, diagnostics)
-                        };
-
-                        let arg_ty: Type = match arg_ty_result {
-                            Ok(ty) => ty,
-                            Err(message) => {
-                                import_c.diagnostics_mut().push(CImportDiagnostic::new(
-                                    CImportDiagnosticKind::SkippedDeclaration,
-                                    format!("C function '{name}' skipped: parameter '{arg_name}' has unsupported type ({message})"),
-                                ));
-
-                                return Err(());
-                            }
-                        };
-
-                        parameter_names.push(arg_name);
-                        parameter_types.push(arg_ty);
-
-                        Ok((parameter_types, parameter_names))
-                    },
-                )
-        } else {
-            Ok((Vec::new(), Vec::new()))
-        };
-
-        let (parameter_types, parameter_names): (Vec<Type>, Vec<String>) = match parameters_result {
-            Ok(parameters) => parameters,
-            Err(()) => continue,
+        let Some((parameter_types, parameter_names)): Option<(Vec<Type>, Vec<String>)> =
+            self::lower_function_parameters(&canonical_decl, &resolved_decl, &name, span, import_c)
+        else {
+            continue;
         };
 
         let variadic: bool = canonical_decl
@@ -292,7 +178,7 @@ pub fn import_functions<'clang>(
             .or_else(|| resolved_decl.get_type())
             .is_some_and(|ty| ty.is_variadic());
 
-        import_c.functions_mut().push(CImportedFunction::new(
+        import_c.get_mut_functions().push(CImportedFunction::new(
             name.clone(),
             name,
             convention,
@@ -302,4 +188,118 @@ pub fn import_functions<'clang>(
             variadic,
         ));
     }
+}
+
+fn lower_single_parameter<'clang>(
+    argument: &clang::Entity<'clang>,
+    index: usize,
+    name: &str,
+    span: thrustc_code_location::Span,
+    import_c: &mut ImportC<'clang>,
+) -> Result<(String, Type), String> {
+    let arg_name: String = argument.get_name().unwrap_or_else(|| format!("arg{index}"));
+
+    let Some(arg_ty) = argument.get_type() else {
+        return Err(format!(
+            "C function '{name}' skipped: missing type for parameter '{arg_name}'"
+        ));
+    };
+
+    let arg_kind: TypeKind = arg_ty.get_canonical_type().get_kind();
+
+    let is_sized_array: bool = matches!(
+        arg_kind,
+        TypeKind::ConstantArray | TypeKind::IncompleteArray
+    );
+
+    if arg_kind == TypeKind::VariableArray {
+        return Err(format!(
+            "C function '{name}' skipped: parameter '{arg_name}' uses a VLA, which is not supported"
+        ));
+    }
+
+    if arg_kind == TypeKind::DependentSizedArray {
+        return Err(format!(
+            "C function '{name}' skipped: parameter '{arg_name}' uses a dependent-sized array, which is not supported"
+        ));
+    }
+
+    if is_sized_array {
+        let Some(element_type) = arg_ty.get_element_type() else {
+            return Err(format!(
+                "C function '{name}' skipped: parameter '{arg_name}' array is missing an element type"
+            ));
+        };
+
+        let arg_ty_result: Result<Type, String> = {
+            let (struct_cache, diagnostics) = import_c.get_mut_struct_cache_and_diagnostics();
+
+            type_map::map_type(&element_type, span, struct_cache, diagnostics)
+        };
+
+        return match arg_ty_result {
+            Ok(ty) => Ok((
+                arg_name,
+                Type::Ptr {
+                    subtype: Some(Box::new(ty)),
+                    address_space: None,
+                    span,
+                },
+            )),
+            Err(message) => Err(format!(
+                "C function '{name}' skipped: parameter '{arg_name}' array element type is unsupported ({message})"
+            )),
+        };
+    }
+
+    let arg_ty_result: Result<Type, String> = {
+        let (struct_cache, diagnostics) = import_c.get_mut_struct_cache_and_diagnostics();
+
+        type_map::map_type(&arg_ty, span, struct_cache, diagnostics)
+    };
+
+    match arg_ty_result {
+        Ok(ty) => Ok((arg_name, ty)),
+        Err(message) => Err(format!(
+            "C function '{name}' skipped: parameter '{arg_name}' has unsupported type ({message})"
+        )),
+    }
+}
+
+fn lower_function_parameters<'clang>(
+    canonical_decl: &clang::Entity<'clang>,
+    resolved_decl: &clang::Entity<'clang>,
+    name: &str,
+    span: thrustc_code_location::Span,
+    import_c: &mut ImportC<'clang>,
+) -> Option<(Vec<Type>, Vec<String>)> {
+    let Some(arguments) = canonical_decl
+        .get_arguments()
+        .or_else(|| resolved_decl.get_arguments())
+    else {
+        return Some((Vec::new(), Vec::new()));
+    };
+
+    let mut parameter_types: Vec<Type> = Vec::new();
+    let mut parameter_names: Vec<String> = Vec::new();
+
+    for (idx, argument) in arguments.iter().enumerate() {
+        let (arg_name, arg_ty): (String, Type) =
+            match self::lower_single_parameter(argument, idx, name, span, import_c) {
+                Ok(lowered) => lowered,
+                Err(message) => {
+                    import_c.get_mut_diagnostics().push(CImportDiagnostic::new(
+                        CImportDiagnosticKind::SkippedDeclaration,
+                        message,
+                    ));
+
+                    return None;
+                }
+            };
+
+        parameter_names.push(arg_name);
+        parameter_types.push(arg_ty);
+    }
+
+    Some((parameter_types, parameter_names))
 }

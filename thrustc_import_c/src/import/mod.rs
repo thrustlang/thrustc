@@ -39,7 +39,7 @@ use crate::model::{
 };
 use crate::options::CImportScope;
 use crate::record_layout::StructCache;
-use crate::{clang_decl_index, parse};
+use crate::{decl_index, parse};
 
 #[derive(Debug)]
 pub struct ImportC<'clang> {
@@ -80,84 +80,84 @@ impl<'clang> ImportC<'clang> {
 
 impl<'clang> ImportC<'clang> {
     #[inline]
-    pub fn span(&self) -> Span {
+    pub fn get_span(&self) -> Span {
         self.span
     }
 }
 
 impl<'clang> ImportC<'clang> {
     #[inline]
-    pub fn functions_mut(&mut self) -> &mut Vec<CImportedFunction> {
+    pub fn get_mut_functions(&mut self) -> &mut Vec<CImportedFunction> {
         &mut self.functions
     }
 
     #[inline]
-    pub fn structs_mut(&mut self) -> &mut Vec<CImportedStruct> {
+    pub fn get_mut_structs(&mut self) -> &mut Vec<CImportedStruct> {
         &mut self.structs
     }
 
     #[inline]
-    pub fn enums_mut(&mut self) -> &mut Vec<CImportedEnum> {
+    pub fn get_mut_enums(&mut self) -> &mut Vec<CImportedEnum> {
         &mut self.enums
     }
 
     #[inline]
-    pub fn typedefs_mut(&mut self) -> &mut Vec<CImportedTypedef> {
+    pub fn get_mut_typedefs(&mut self) -> &mut Vec<CImportedTypedef> {
         &mut self.typedefs
     }
 
     #[inline]
-    pub fn statics_mut(&mut self) -> &mut Vec<CImportedStatic> {
+    pub fn get_mut_statics(&mut self) -> &mut Vec<CImportedStatic> {
         &mut self.statics
     }
 
     #[inline]
-    pub fn constants_mut(&mut self) -> &mut Vec<CImportedConstant> {
+    pub fn get_mut_constants(&mut self) -> &mut Vec<CImportedConstant> {
         &mut self.constants
     }
 
     #[inline]
-    pub fn macros_mut(&mut self) -> &mut Vec<Macro> {
+    pub fn get_mut_macros(&mut self) -> &mut Vec<Macro> {
         &mut self.macros
     }
 
     #[inline]
-    pub fn diagnostics_mut(&mut self) -> &mut Vec<CImportDiagnostic> {
+    pub fn get_mut_diagnostics(&mut self) -> &mut Vec<CImportDiagnostic> {
         &mut self.diagnostics
     }
 
     #[inline]
-    pub fn struct_cache_and_diagnostics_mut(
+    pub fn get_mut_struct_cache_and_diagnostics(
         &mut self,
     ) -> (&mut StructCache<'clang>, &mut Vec<CImportDiagnostic>) {
         (&mut self.struct_cache, &mut self.diagnostics)
     }
 
     #[inline]
-    pub fn struct_cache_mut(&mut self) -> &mut StructCache<'clang> {
+    pub fn get_mut_struct_cache(&mut self) -> &mut StructCache<'clang> {
         &mut self.struct_cache
     }
 
     #[inline]
-    pub fn exported_structs_mut(&mut self) -> &mut HashSet<String> {
+    pub fn get_mut_exported_structs(&mut self) -> &mut HashSet<String> {
         &mut self.exported_structs
     }
 
     #[inline]
-    pub fn exported_typedefs_mut(&mut self) -> &mut HashSet<String> {
+    pub fn get_mut_exported_typedefs(&mut self) -> &mut HashSet<String> {
         &mut self.exported_typedefs
     }
 }
 
 pub fn run_import_c(context: &mut CImportContext) -> Result<(), String> {
-    let header_path: PathBuf = context.header_path().clone();
-    let span: Span = context.span();
+    let header_path: PathBuf = context.get_header_path().clone();
+    let span: Span = context.get_span();
 
     let clang: Clang = Clang::new().map_err(|_| "Failed to initialize libclang".to_string())?;
     let index: Index = Index::new(&clang, false, false);
 
     let args: Vec<&str> = context
-        .options()
+        .get_options()
         .clang_args()
         .iter()
         .map(String::as_str)
@@ -183,7 +183,7 @@ pub fn run_import_c(context: &mut CImportContext) -> Result<(), String> {
     let (diagnostics, has_errors): (Vec<CImportDiagnostic>, bool) = parse::collect_diagnostics(&tu);
 
     if has_errors {
-        *context.diagnostics_mut() = diagnostics;
+        *context.get_mut_diagnostics() = diagnostics;
 
         return Err(format!(
             "Clang reported errors while parsing '{}'.",
@@ -191,7 +191,7 @@ pub fn run_import_c(context: &mut CImportContext) -> Result<(), String> {
         ));
     }
 
-    let import_scope: CImportScope = context.options().import_scope();
+    let import_scope: CImportScope = context.get_options().import_scope();
 
     let main_only_file: Option<clang::source::File<'_>> = parse::resolve_main_only_file(
         import_scope,
@@ -201,7 +201,7 @@ pub fn run_import_c(context: &mut CImportContext) -> Result<(), String> {
         &wrapper_path,
     );
 
-    let decl_index: clang_decl_index::ClangDeclIndex<'_> = clang_decl_index::collect_decl_index(
+    let decl_index: decl_index::ClangDeclIndex<'_> = decl_index::collect_declaration_index(
         tu.get_entity().get_children(),
         import_scope,
         main_only_file,
@@ -209,22 +209,22 @@ pub fn run_import_c(context: &mut CImportContext) -> Result<(), String> {
 
     let mut import_c: ImportC<'_> = ImportC::new(span);
 
-    *import_c.diagnostics_mut() = diagnostics;
+    *import_c.get_mut_diagnostics() = diagnostics;
 
     self::records::import_structs(
-        decl_index.struct_decls(),
-        decl_index.union_decls(),
+        decl_index.get_struct_decls(),
+        decl_index.get_union_decls(),
         &mut import_c,
     );
-    self::macros::import_macros(decl_index.macro_decls(), &mut import_c);
+    self::macros::import_macros(decl_index.get_macro_decls(), &mut import_c);
     self::enums::import_enums(
-        decl_index.enum_decls(),
-        decl_index.typedef_decls(),
+        decl_index.get_enum_decls(),
+        decl_index.get_typedef_decls(),
         &mut import_c,
     );
-    self::typedefs::import_typedefs(decl_index.typedef_decls(), &mut import_c);
-    self::statics::import_statics(decl_index.var_decls(), &mut import_c);
-    self::functions::import_functions(decl_index.function_decls(), &mut import_c);
+    self::typedefs::import_typedefs(decl_index.get_typedef_decls(), &mut import_c);
+    self::statics::import_statics(decl_index.get_var_decls(), &mut import_c);
+    self::functions::import_functions(decl_index.get_function_decls(), &mut import_c);
 
     let ImportC {
         functions,
@@ -245,14 +245,14 @@ pub fn run_import_c(context: &mut CImportContext) -> Result<(), String> {
         .filter(|constant| exported_constants.insert(constant.name().to_string()))
         .collect();
 
-    *context.functions_mut() = functions;
-    *context.structs_mut() = structs;
-    *context.enums_mut() = enums;
-    *context.typedefs_mut() = typedefs;
-    *context.statics_mut() = statics;
-    *context.constants_mut() = constants;
-    *context.macros_mut() = macros;
-    *context.diagnostics_mut() = diagnostics;
+    *context.get_mut_functions() = functions;
+    *context.get_mut_structs() = structs;
+    *context.get_mut_enums() = enums;
+    *context.get_mut_typedefs() = typedefs;
+    *context.get_mut_statics() = statics;
+    *context.get_mut_constants() = constants;
+    *context.get_mut_macros() = macros;
+    *context.get_mut_diagnostics() = diagnostics;
 
     Ok(())
 }

@@ -163,8 +163,8 @@ fn emit_import_diagnostics(
     context: &thrustc_import_c::context::CImportContext,
     span: Span,
 ) {
-    for diagnostic in context.diagnostics() {
-        let code: CompilationIssueCode = match diagnostic.kind() {
+    for diagnostic in context.get_diagnostics() {
+        let code: CompilationIssueCode = match diagnostic.get_kind() {
             thrustc_import_c::diagnostics::CImportDiagnosticKind::ClangDiagnostic => {
                 CompilationIssueCode::W0100
             }
@@ -187,30 +187,30 @@ fn emit_import_diagnostics(
             }
         };
 
-        if diagnostic.kind()
+        if diagnostic.get_kind()
             == thrustc_import_c::diagnostics::CImportDiagnosticKind::UnsupportedCallingConvention
         {
             parser.add_error(CompilationIssue::Error(
                 code,
-                diagnostic.message().to_string(),
+                diagnostic.get_message().to_string(),
                 diagnostic
-                    .help()
+                    .get_help()
                     .unwrap_or(
                         "Use a function with a calling convention that Thrust can import, or remove the importC dependency on that declaration.",
                     )
                     .to_string(),
-                diagnostic.note().map(str::to_string),
-                diagnostic.span().unwrap_or(span),
+                diagnostic.get_note().map(str::to_string),
+                diagnostic.get_span().unwrap_or(span),
             ));
         } else {
-            let mut message: String = diagnostic.message().to_string();
+            let mut message: String = diagnostic.get_message().to_string();
 
-            if let Some(help) = diagnostic.help() {
+            if let Some(help) = diagnostic.get_help() {
                 message.push_str("\nhelp: ");
                 message.push_str(help);
             }
 
-            if let Some(note) = diagnostic.note() {
+            if let Some(note) = diagnostic.get_note() {
                 message.push_str("\nnote: ");
                 message.push_str(note);
             }
@@ -218,7 +218,7 @@ fn emit_import_diagnostics(
             parser.add_warning(CompilationIssue::Warning(
                 code,
                 message,
-                diagnostic.span().unwrap_or(span),
+                diagnostic.get_span().unwrap_or(span),
             ));
         }
     }
@@ -229,11 +229,11 @@ fn emit_imported_symbols(
     context: &thrustc_import_c::context::CImportContext,
     span: Span,
 ) {
-    for macro_definition in context.macros() {
+    for macro_definition in context.get_macros() {
         module.add_macro(macro_definition.clone());
     }
 
-    for function in context.functions() {
+    for function in context.get_functions() {
         let name: String = function.name().to_string();
 
         let mut parameters: Vec<(String, Type, Span)> =
@@ -278,7 +278,7 @@ fn emit_imported_symbols(
         module.add_symbol(symbol);
     }
 
-    for record in context.structs() {
+    for record in context.get_structs() {
         let name: String = record.name().to_string();
 
         let mut fields: Vec<(String, Type, Span)> = Vec::with_capacity(record.fields().len());
@@ -314,7 +314,7 @@ fn emit_imported_symbols(
         module.add_symbol(symbol);
     }
 
-    for imported_enum in context.enums() {
+    for imported_enum in context.get_enums() {
         let name: String = imported_enum.name().to_string();
         let underlying_type: Type = imported_enum.underlying_type().clone();
 
@@ -373,7 +373,7 @@ fn emit_imported_symbols(
         }
     }
 
-    for imported_type in context.typedefs() {
+    for imported_type in context.get_typedefs() {
         let name: String = imported_type.name().to_string();
         let ty: Type = imported_type.ty().clone();
 
@@ -393,7 +393,7 @@ fn emit_imported_symbols(
         module.add_symbol(symbol);
     }
 
-    for imported_static in context.statics() {
+    for imported_static in context.get_statics() {
         let name: String = imported_static.name().to_string();
         let kind: Type = imported_static.kind().clone();
 
@@ -425,7 +425,7 @@ fn emit_imported_symbols(
         module.add_symbol(symbol);
     }
 
-    for constant in context.constants() {
+    for constant in context.get_constants() {
         let name: String = constant.name().to_string();
         let kind: Type = constant.kind().clone();
         let value: thrustc_compile_time::BuiltinValue = constant.value().clone();
@@ -733,17 +733,17 @@ fn synthesize_imported_header(
             "Pass '--import-c-system-include <dir>' or '--import-c-include <dir>' so Clang can resolve the header and its dependencies.".into()
         };
 
-        let has_diagnostics: bool = !context.diagnostics().is_empty();
+        let has_diagnostics: bool = !context.get_diagnostics().is_empty();
 
         let looks_like_outside_header: bool =
             import_str.ends_with(".h") && !import_str.contains(std::path::MAIN_SEPARATOR);
 
-        let diagnostic_count: usize = context.diagnostics().len();
+        let diagnostic_count: usize = context.get_diagnostics().len();
 
         let joined: String = context
-            .diagnostics()
+            .get_diagnostics()
             .iter()
-            .map(|diagnostic| diagnostic.message().to_string())
+            .map(|diagnostic| diagnostic.get_message().to_string())
             .collect::<Vec<String>>()
             .join("\n");
 

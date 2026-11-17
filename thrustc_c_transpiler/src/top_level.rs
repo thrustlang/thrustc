@@ -1555,7 +1555,7 @@ pub fn append_imported_top_level_declarations(
 ) {
     {
         let mut structs: Vec<&thrustc_import_c::model::CImportedStruct> =
-            ctx.structs().iter().collect();
+            ctx.get_structs().iter().collect();
 
         structs.sort_by(|a, b| a.name().cmp(b.name()));
 
@@ -1601,7 +1601,7 @@ pub fn append_imported_top_level_declarations(
 
     {
         let mut typedefs: Vec<&thrustc_import_c::model::CImportedTypedef> =
-            ctx.typedefs().iter().collect();
+            ctx.get_typedefs().iter().collect();
 
         typedefs.sort_by(|a, b| a.name().cmp(b.name()));
 
@@ -1619,7 +1619,7 @@ pub fn append_imported_top_level_declarations(
     }
 
     {
-        let mut enums: Vec<&thrustc_import_c::model::CImportedEnum> = ctx.enums().iter().collect();
+        let mut enums: Vec<&thrustc_import_c::model::CImportedEnum> = ctx.get_enums().iter().collect();
 
         enums.sort_by(|a, b| a.name().cmp(b.name()));
 
@@ -1648,7 +1648,7 @@ pub fn append_imported_top_level_declarations(
 
     {
         let mut consts: Vec<&thrustc_import_c::model::CImportedConstant> =
-            ctx.constants().iter().collect();
+            ctx.get_constants().iter().collect();
 
         consts.sort_by(|a, b| a.name().cmp(b.name()));
 
@@ -1676,7 +1676,7 @@ pub fn append_imported_top_level_declarations(
 
     {
         let mut funcs: Vec<&thrustc_import_c::model::CImportedFunction> =
-            ctx.functions().iter().collect();
+            ctx.get_functions().iter().collect();
 
         funcs.sort_by(|a, b| a.name().cmp(b.name()));
 

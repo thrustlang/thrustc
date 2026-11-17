@@ -294,8 +294,8 @@ pub fn emit_c_bindings_thrust(
         return TranslateCUnit::new(None, None, context);
     }
 
-    for diagnostic in import_context.diagnostics() {
-        let code: CompilationIssueCode = match diagnostic.kind() {
+    for diagnostic in import_context.get_diagnostics() {
+        let code: CompilationIssueCode = match diagnostic.get_kind() {
             thrustc_import_c::diagnostics::CImportDiagnosticKind::ClangDiagnostic => {
                 CompilationIssueCode::W0100
             }
@@ -318,14 +318,14 @@ pub fn emit_c_bindings_thrust(
             }
         };
 
-        let mut message: String = diagnostic.message().to_string();
+        let mut message: String = diagnostic.get_message().to_string();
 
-        if let Some(help) = diagnostic.help() {
+        if let Some(help) = diagnostic.get_help() {
             message.push_str("\nhelp: ");
             message.push_str(help);
         }
 
-        if let Some(note) = diagnostic.note() {
+        if let Some(note) = diagnostic.get_note() {
             message.push_str("\nnote: ");
             message.push_str(note);
         }
@@ -333,7 +333,7 @@ pub fn emit_c_bindings_thrust(
         context.add_warning(CompilationIssue::Warning(
             code,
             message,
-            diagnostic.span().unwrap_or(span),
+            diagnostic.get_span().unwrap_or(span),
         ));
     }
 

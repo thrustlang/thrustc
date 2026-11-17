@@ -101,6 +101,7 @@ pub fn lex(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
     }
 
     let content_start: usize = lexer.current;
+
     let mut content_end: usize = lexer.current;
     let mut depth: usize = 1;
 
@@ -140,6 +141,7 @@ pub fn lex(lexer: &mut Lexer) -> Result<(), CompilationIssue> {
     }
 
     let raw_content: String = String::from_iter(lexer.code[content_start..content_end].iter());
+
     let mut assembler: String = String::with_capacity(raw_content.len());
     let mut line_position: usize = 0;
 
