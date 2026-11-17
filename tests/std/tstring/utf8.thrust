@@ -4,6 +4,7 @@
  * Returns 0 on success, non-zero on failure.
  */
 
+import std::cstring;
 import std::tstring;
 
 fn main() s32 @public {
@@ -68,9 +69,15 @@ fn main() s32 @public {
     if tstring::get(ref text, 7) != '\0' { return 37; }
     if !tstring::hasIndex(ref text, 6) { return 38; }
     if tstring::hasIndex(ref text, 7) { return 39; }
-    if tstring::indexOf(ref text, "ñ") != 2 { return 40; }
-    if tstring::indexOf(ref text, "ana") != 4 { return 41; }
-    if tstring::indexOf(ref text, "zz") != tstring::len(ref text) { return 42; }
+    var firstTilde: cstring::SearchResult = tstring::indexOf(ref text, "ñ");
+    if !(firstTilde->found) || firstTilde->index != 2 { return 40; }
+
+    var secondAna: cstring::SearchResult = tstring::indexOf(ref text, "ana");
+    if !(secondAna->found) || secondAna->index != 4 { return 41; }
+
+    var missing: cstring::SearchResult = tstring::indexOf(ref text, "zz");
+    if missing->found { return 42; }
+    if missing->index != tstring::len(ref text) { return 43; }
 
     tstring::dropTString(ref builtCopy);
     tstring::dropTString(ref built);

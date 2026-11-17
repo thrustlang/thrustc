@@ -25,6 +25,7 @@ directive "--disable-warnings=W0020";
 directive "--disable-warnings=W0029";
 directive "--disable-warnings=W0030";
 
+import std::cstring;
 import std::mem;
 import std::random;
 import std::tstring;
@@ -293,7 +294,7 @@ fn getKeySize [K, V] (map: ptr[HashMap[K, V]], key: ptr) usize {
      * based on string content. TString follows the same rule through tstring::len.
      */
     if map->keyMode == KEY_MODE_CSTRING {
-        return cstringLength(key as CString);
+        return cstring::lengthRaw(key as ptr[char]);
     }
 
     if map->keyMode == KEY_MODE_TSTRING {
@@ -393,17 +394,6 @@ fn ensureCapacity [K, V] (target: ptr[HashMap[K, V]]) void {
     }
 }
 
-fn cstringLength(text: CString) usize {
-    var index: usize = 0;
-    var data: ptr[char] = text as ptr[char];
-
-    while data->[index] != '\0' {
-        index = index + 1;
-    }
-
-    return index;
-}
-
 fn readU64LittleEndian(data: ptr[u8], offset: usize) u64 {
     return (data->[offset] as u64)
         | ((data->[offset + 1] as u64) << 8)
@@ -437,7 +427,12 @@ fn entryKeyEquals [K, V] (entry: ptr[HashMapEntry[V]], map: ptr[HashMap[K, V]], 
         return false;
     }
 
-    return mem::compareMemory(entry->key, keyDataPointer(map, key), keySize) == 0;
+    return cstring::equalsRange(
+        entry->key as ptr[char],
+        entry->keySize,
+        keyDataPointer(map, key) as ptr[char],
+        keySize
+    );
 }
 
 fn copyKey [K, V] (map: ptr[HashMap[K, V]], key: ptr, keySize: usize) ptr {

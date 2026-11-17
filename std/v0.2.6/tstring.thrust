@@ -24,6 +24,7 @@ directive "--disable-warnings=W0020";
 directive "--disable-warnings=W0028";
 directive "--disable-warnings=W0030";
 
+import std::cstring;
 import std::collections::vector as vec;
 
 type UnicodeCodePoint @public = u32;
@@ -111,49 +112,21 @@ fn decodeNextData(data: ptr[char], length: usize, index: usize, outCodePoint: pt
     return nextIndex;
 }
 
-fn indexOf(text: ptr[TString], value: CString) usize @public {
-    var valueLength: usize = cstringLength(value);
+fn indexOf(text: ptr[TString], value: CString) cstring::SearchResult @public {
+    var valueLength: usize = cstring::length(value);
     var textLength: usize = len(text);
     var valueData: ptr[char] = value as ptr[char];
     var textData: ptr[char] = vec::getDataPointer[char](text.buffer);
-    var start: usize = 0;
-    var index: usize;
-    var matches: bool;
 
-    if valueLength == 0 {
-        return 0;
-    }
-
-    if valueLength > textLength {
-        return textLength;
-    }
-
-    while start + valueLength <= textLength {
-        index = 0;
-        matches = true;
-
-        while index < valueLength && matches {
-            if textData->[start + index] != valueData->[index] {
-                matches = false;
-            }
-
-            index = index + 1;
-        }
-
-        if matches {
-            return start;
-        }
-
-        start = start + 1;
-    }
-
-    return textLength;
+    return cstring::indexOfRange(textData, textLength, valueData, valueLength);
 }
 
 fn split(text: ptr[TString], delimiter: CString) vec::Vector[TString] @public {
     var result := vec::withCapacity[TString](4);
-    var delimiterLength: usize = cstringLength(delimiter);
+    var delimiterLength: usize = cstring::length(delimiter);
+    var delimiterData: ptr[char] = delimiter as ptr[char];
     var textLength: usize = len(text);
+    var textData: ptr[char] = vec::getDataPointer[char](text.buffer);
     var start: usize = 0;
     var index: usize = 0;
 
@@ -169,7 +142,7 @@ fn split(text: ptr[TString], delimiter: CString) vec::Vector[TString] @public {
     }
 
     while index + delimiterLength <= textLength {
-        if equalsRange(text, index, delimiter, delimiterLength) {
+        if cstring::equalsAt(textData, index, delimiterData, delimiterLength) {
             vec::push[TString](ref result, copyByteRange(text, start, index));
             index = index + delimiterLength;
             start = index;
@@ -245,8 +218,8 @@ fn splitLines(text: ptr[TString]) vec::Vector[TString] @public {
 
 fn replaceAll(text: ptr[TString], from: CString, to: CString) TString @public {
     var result := buildWithCapacity(len(text));
-    var fromLength: usize = cstringLength(from);
-    var toLength: usize = cstringLength(to);
+    var fromLength: usize = cstring::length(from);
+    var toLength: usize = cstring::length(to);
     var textLength: usize = len(text);
     var index: usize = 0;
     var data: ptr[char] = vec::getDataPointer[char](text.buffer);
@@ -256,7 +229,7 @@ fn replaceAll(text: ptr[TString], from: CString, to: CString) TString @public {
     while index < textLength {
         if fromLength > 0
             && index + fromLength <= textLength
-            && equalsRange(text, index, from, fromLength)
+            && cstring::equalsAt(data, index, from as ptr[char], fromLength)
         {
             appendRawCString(ref result, to, toLength);
             index = index + fromLength;
@@ -298,28 +271,12 @@ fn splitWhitespace(text: ptr[TString]) vec::Vector[TString] @public {
 }
 
 fn endsWith(text: ptr[TString], suffix: CString) bool @public {
-    var suffixLength: usize = cstringLength(suffix);
+    var suffixLength: usize = cstring::length(suffix);
     var textLength: usize = len(text);
-    var index: usize = 0;
     var suffixData: ptr[char] = suffix as ptr[char];
     var textData: ptr[char] = vec::getDataPointer[char](text.buffer);
-    var start: usize;
 
-    if suffixLength > textLength {
-        return false;
-    }
-
-    start = textLength - suffixLength;
-
-    while index < suffixLength {
-        if textData->[start + index] != suffixData->[index] {
-            return false;
-        }
-
-        index = index + 1;
-    }
-
-    return true;
+    return cstring::endsWithRange(textData, textLength, suffixData, suffixLength);
 }
 
 fn toUpperCaseASCII(text: ptr[TString]) TString @public {
@@ -397,28 +354,13 @@ fn isAlphanumeric(text: ptr[TString]) bool @public {
     return true;
 }
 
-fn lastIndexOf(text: ptr[TString], value: CString) usize @public {
-    var valueLength: usize = cstringLength(value);
+fn lastIndexOf(text: ptr[TString], value: CString) cstring::SearchResult @public {
+    var valueLength: usize = cstring::length(value);
     var textLength: usize = len(text);
-    var index: usize = textLength;
+    var valueData: ptr[char] = value as ptr[char];
+    var textData: ptr[char] = vec::getDataPointer[char](text.buffer);
 
-    if valueLength == 0 {
-        return textLength;
-    }
-
-    if valueLength > textLength {
-        return textLength;
-    }
-
-    while index >= valueLength {
-        index = index - 1;
-
-        if equalsRange(text, index, value, valueLength) {
-            return index;
-        }
-    }
-
-    return textLength;
+    return cstring::lastIndexOfRange(textData, textLength, valueData, valueLength);
 }
 
 fn isAlphabetic(text: ptr[TString]) bool @public {
@@ -490,25 +432,12 @@ fn equals(left: ptr[TString], right: ptr[TString]) bool @public {
 }
 
 fn countOccurrences(text: ptr[TString], value: CString) usize @public {
-    var valueLength: usize = cstringLength(value);
+    var valueLength: usize = cstring::length(value);
     var textLength: usize = len(text);
-    var index: usize = 0;
-    var count: usize = 0;
+    var valueData: ptr[char] = value as ptr[char];
+    var textData: ptr[char] = vec::getDataPointer[char](text.buffer);
 
-    if valueLength == 0 {
-        return 0;
-    }
-
-    while index + valueLength <= textLength {
-        if equalsRange(text, index, value, valueLength) {
-            count = count + 1;
-            index = index + valueLength;
-        } else {
-            index = index + 1;
-        }
-    }
-
-    return count;
+    return cstring::countOccurrencesRange(textData, textLength, valueData, valueLength);
 }
 
 fn isNumeric(text: ptr[TString]) bool @public {
@@ -534,28 +463,15 @@ fn isNumeric(text: ptr[TString]) bool @public {
 }
 
 fn startsWith(text: ptr[TString], prefix: CString) bool @public {
-    var prefixLength: usize = cstringLength(prefix);
-    var index: usize = 0;
+    var prefixLength: usize = cstring::length(prefix);
     var prefixData: ptr[char] = prefix as ptr[char];
     var textData: ptr[char] = vec::getDataPointer[char](text.buffer);
 
-    if prefixLength > len(text) {
-        return false;
-    }
-
-    while index < prefixLength {
-        if textData->[index] != prefixData->[index] {
-            return false;
-        }
-
-        index = index + 1;
-    }
-
-    return true;
+    return cstring::startsWithRange(textData, len(text), prefixData, prefixLength);
 }
 
 fn isValidUTF8(text: CString) bool @public {
-    var length: usize = cstringLength(text);
+    var length: usize = cstring::length(text);
     var index: usize = 0;
     var data: ptr[char] = text as ptr[char];
     var codePoint: UnicodeCodePoint = 0;
@@ -654,7 +570,7 @@ fn reverse(text: ptr[TString]) TString @public {
 
 fn appendCString(text: ptr[TString], value: CString) void @public {
     var textLength: usize = len(text);
-    var length: usize = cstringLength(value);
+    var length: usize = cstring::length(value);
     var index: usize = 0;
     var data: ptr[char] = value as ptr[char];
 
@@ -752,21 +668,6 @@ fn isASCII(text: ptr[TString]) bool @public {
     return true;
 }
 
-fn equalsRange(text: ptr[TString], index: usize, value: CString, valueLength: usize) bool {
-    var data: ptr[char] = vec::getDataPointer[char](text.buffer);
-    var valueData: ptr[char] = value as ptr[char];
-    var offset: usize = 0;
-
-    while offset < valueLength {
-        if data->[index + offset] != valueData->[offset] {
-            return false;
-        }
-
-        offset = offset + 1;
-    }
-
-    return true;
-}
 fn isCharBoundary(text: ptr[TString], index: usize) bool @public {
     if index == 0 || index == len(text) {
         return true;
@@ -814,14 +715,7 @@ fn trimEnd(text: ptr[TString]) TString @public {
 }
 
 fn cstringLength(text: CString) usize @public {
-    var index: usize = 0;
-    var data: ptr[char] = text as ptr[char];
-
-    while data->[index] != '\0' {
-        index = index + 1;
-    }
-
-    return index;
+    return cstring::length(text);
 }
 
 fn len(text: ptr[TString]) usize @public {
@@ -855,7 +749,7 @@ fn decodeNext(text: ptr[TString], index: usize, outCodePoint: ptr[UnicodeCodePoi
 }
 
 fn removePrefix(text: ptr[TString], prefix: CString) TString @public {
-    var prefixLength: usize = cstringLength(prefix);
+    var prefixLength: usize = cstring::length(prefix);
 
     if startsWith(text, prefix) {
         return copyByteRange(text, prefixLength, len(text));
@@ -865,7 +759,7 @@ fn removePrefix(text: ptr[TString], prefix: CString) TString @public {
 }
 
 fn removeSuffix(text: ptr[TString], suffix: CString) TString @public {
-    var suffixLength: usize = cstringLength(suffix);
+    var suffixLength: usize = cstring::length(suffix);
 
     if endsWith(text, suffix) {
         return copyByteRange(text, 0, len(text) - suffixLength);
@@ -915,8 +809,8 @@ fn removeNullTerminator(text: ptr[TString]) void {
 }
 
 fn fromCString(text: CString) TString @public {
-    var length: usize = cstringLength(text);
-    
+    var length: usize = cstring::length(text);
+
     return copyCStringRange(text, 0, length);
 }
 
@@ -947,7 +841,7 @@ fn reserve(text: ptr[TString], requestedCapacity: usize) void @public {
 }
 
 fn contains(text: ptr[TString], value: CString) bool @public {
-    return indexOf(text, value) != len(text) || cstringLength(value) == 0;
+    return indexOf(text, value)->found;
 }
 
 fn pushUnicodeCodePoint(text: ptr[TString], codePoint: UnicodeCodePoint) bool @public {

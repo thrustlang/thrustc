@@ -1,0 +1,440 @@
+/*
+
+    Copyright (C) 2026  Thrust Programming Language
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0017";
+directive "--disable-warnings=W0020";
+directive "--disable-warnings=W0028";
+directive "--disable-warnings=W0030";
+
+struct SearchResult @public {
+    found: bool,
+    index: usize
+}
+
+fn lastIndexOfRange(value: ptr[char], valueLength: usize, needle: ptr[char], needleLength: usize) SearchResult @public {
+    var index: usize = 0;
+    var offset: usize;
+    var matches: bool;
+
+    if needleLength == 0 {
+        return new SearchResult {
+            found: true,
+            index: valueLength
+        };
+    }
+
+    if needleLength > valueLength {
+        return new SearchResult {
+            found: false,
+            index: valueLength
+        };
+    }
+
+    index = valueLength - needleLength;
+
+    loop {
+        offset = 0;
+        matches = true;
+
+        while offset < needleLength && matches {
+            if value->[index + offset] != needle->[offset] {
+                matches = false;
+            }
+
+            offset = offset + 1;
+        }
+
+        if matches {
+            return new SearchResult {
+                found: true,
+                index: index
+            };
+        }
+
+        if index == 0 {
+            break;
+        }
+
+        index = index - 1;
+    }
+
+    return new SearchResult {
+        found: false,
+        index: valueLength
+    };
+}
+
+fn indexOfRange(value: ptr[char], valueLength: usize, needle: ptr[char], needleLength: usize) SearchResult @public {
+    var start: usize = 0;
+    var index: usize;
+    var matches: bool;
+
+    if needleLength == 0 {
+        return new SearchResult {
+            found: true,
+            index: 0
+        };
+    }
+
+    if needleLength > valueLength {
+        return new SearchResult {
+            found: false,
+            index: valueLength
+        };
+    }
+
+    while start + needleLength <= valueLength {
+        index = 0;
+        matches = true;
+
+        while index < needleLength && matches {
+            if value->[start + index] != needle->[index] {
+                matches = false;
+            }
+
+            index = index + 1;
+        }
+
+        if matches {
+            return new SearchResult {
+                found: true,
+                index: start
+            };
+        }
+
+        start = start + 1;
+    }
+
+    return new SearchResult {
+        found: false,
+        index: valueLength
+    };
+}
+
+fn compareRange(left: ptr[char], leftLength: usize, right: ptr[char], rightLength: usize) s32 @public {
+    var index: usize = 0;
+    var limit: usize = leftLength;
+
+    if rightLength < limit {
+        limit = rightLength;
+    }
+
+    while index < limit {
+        var leftByte: u8 = left->[index] as u8;
+        var rightByte: u8 = right->[index] as u8;
+
+        if leftByte < rightByte {
+            return -1;
+        }
+
+        if leftByte > rightByte {
+            return 1;
+        }
+
+        index = index + 1;
+    }
+
+    if leftLength < rightLength {
+        return -1;
+    }
+
+    if leftLength > rightLength {
+        return 1;
+    }
+
+    return 0;
+}
+
+fn countOccurrencesRange(value: ptr[char], valueLength: usize, needle: ptr[char], needleLength: usize) usize @public {
+    var index: usize = 0;
+    var offset: usize;
+    var count: usize = 0;
+    var matches: bool;
+
+    if needleLength == 0 {
+        return 0;
+    }
+
+    while index + needleLength <= valueLength {
+        offset = 0;
+        matches = true;
+
+        while offset < needleLength && matches {
+            if value->[index + offset] != needle->[offset] {
+                matches = false;
+            }
+
+            offset = offset + 1;
+        }
+
+        if matches {
+            count = count + 1;
+            index = index + needleLength;
+        } else {
+            index = index + 1;
+        }
+    }
+
+    return count;
+}
+
+fn pushRangeAt(destination: ptr[char], capacity: usize, offset: usize, source: ptr[char], length: usize) usize @public {
+    var writeIndex: usize = offset;
+    var sourceIndex: usize = 0;
+
+    if capacity == 0 {
+        return offset;
+    }
+
+    if writeIndex >= capacity {
+        writeIndex = capacity - 1;
+    }
+
+    while writeIndex + 1 < capacity && sourceIndex < length {
+        destination->[writeIndex] = source->[sourceIndex];
+        writeIndex = writeIndex + 1;
+        sourceIndex = sourceIndex + 1;
+    }
+
+    destination->[writeIndex] = '\0';
+
+    return writeIndex;
+}
+
+fn endsWithRange(value: ptr[char], valueLength: usize, suffix: ptr[char], suffixLength: usize) bool @public {
+    var index: usize = 0;
+    var start: usize;
+
+    if suffixLength > valueLength {
+        return false;
+    }
+
+    start = valueLength - suffixLength;
+
+    while index < suffixLength {
+        if value->[start + index] != suffix->[index] {
+            return false;
+        }
+
+        index = index + 1;
+    }
+
+    return true;
+}
+
+fn lastIndexOfCharRange(value: ptr[char], valueLength: usize, needle: char) SearchResult @public {
+    var index: usize = valueLength;
+
+    while index > 0 {
+        index = index - 1;
+
+        if value->[index] == needle {
+            return new SearchResult {
+                found: true,
+                index: index
+            };
+        }
+    }
+
+    return new SearchResult {
+        found: false,
+        index: valueLength
+    };
+}
+
+fn indexOfCharRange(value: ptr[char], valueLength: usize, needle: char) SearchResult @public {
+    var index: usize = 0;
+
+    while index < valueLength {
+        if value->[index] == needle {
+            return new SearchResult {
+                found: true,
+                index: index
+            };
+        }
+
+        index = index + 1;
+    }
+
+    return new SearchResult {
+        found: false,
+        index: valueLength
+    };
+}
+
+fn startsWithRange(value: ptr[char], valueLength: usize, prefix: ptr[char], prefixLength: usize) bool @public {
+    var index: usize = 0;
+
+    if prefixLength > valueLength {
+        return false;
+    }
+
+    while index < prefixLength {
+        if value->[index] != prefix->[index] {
+            return false;
+        }
+
+        index = index + 1;
+    }
+
+    return true;
+}
+
+fn equalsRange(left: ptr[char], leftLength: usize, right: ptr[char], rightLength: usize) bool @public {
+    var index: usize = 0;
+
+    if leftLength != rightLength {
+        return false;
+    }
+
+    while index < leftLength {
+        if left->[index] != right->[index] {
+            return false;
+        }
+
+        index = index + 1;
+    }
+
+    return true;
+}
+
+fn equalsAt(value: ptr[char], offset: usize, other: ptr[char], length: usize) bool @public {
+    var index: usize = 0;
+
+    while index < length {
+        if value->[offset + index] != other->[index] {
+            return false;
+        }
+
+        index = index + 1;
+    }
+
+    return true;
+}
+
+fn ensureTerminated(value: ptr[char], capacity: usize) bool @public {
+    if capacity == 0 {
+        return false;
+    }
+
+    if lengthBounded(value, capacity) < capacity {
+        return true;
+    }
+
+    value[capacity - 1] = '\0';
+
+    return false;
+}
+
+fn lengthBounded(value: ptr[char], maximum: usize) usize @public {
+    var index: usize = 0;
+
+    while index < maximum && value->[index] != '\0' {
+        index = index + 1;
+    }
+
+    return index;
+}
+
+fn lengthRaw(value: ptr[char]) usize @public {
+    var index: usize = 0;
+
+    while value->[index] != '\0' {
+        index = index + 1;
+    }
+
+    return index;
+}
+
+fn isTerminated(value: ptr[char], capacity: usize) bool @public {
+    if capacity == 0 {
+        return false;
+    }
+
+    return lengthBounded(value, capacity) < capacity;
+}
+
+fn countOccurrences(value: CString, needle: CString) usize @public {
+    var valueLength: usize = length(value);
+    var needleLength: usize = length(needle);
+
+    return countOccurrencesRange(value as ptr[char], valueLength, needle as ptr[char], needleLength);
+}
+
+fn pushAt(destination: ptr[char], capacity: usize, offset: usize, source: ptr[char]) usize @public {
+    return pushRangeAt(destination, capacity, offset, source, lengthRaw(source));
+}
+
+fn lastIndexOf(value: CString, needle: CString) SearchResult @public {
+    return lastIndexOfRange(value as ptr[char], length(value), needle as ptr[char], length(needle));
+}
+
+fn copyRange(destination: ptr[char], capacity: usize, source: ptr[char], length: usize) usize @public {
+    return pushRangeAt(destination, capacity, 0, source, length);
+}
+
+fn indexOf(value: CString, needle: CString) SearchResult @public {
+    return indexOfRange(value as ptr[char], length(value), needle as ptr[char], length(needle));
+}
+
+fn startsWith(value: CString, prefix: CString) bool @public {
+    return startsWithRange(value as ptr[char], length(value), prefix as ptr[char], length(prefix));
+}
+
+fn endsWith(value: CString, suffix: CString) bool @public {
+    return endsWithRange(value as ptr[char], length(value), suffix as ptr[char], length(suffix));
+}
+
+fn compare(left: CString, right: CString) s32 @public {
+    return compareRange(left as ptr[char], length(left), right as ptr[char], length(right));
+}
+
+fn equals(left: CString, right: CString) bool @public {
+    return equalsRange(left as ptr[char], length(left), right as ptr[char], length(right));
+}
+
+fn lastIndexOfChar(value: CString, needle: char) SearchResult @public {
+    return lastIndexOfCharRange(value as ptr[char], length(value), needle);
+}
+
+fn indexOfChar(value: CString, needle: char) SearchResult @public {
+    return indexOfCharRange(value as ptr[char], length(value), needle);
+}
+
+fn copy(destination: ptr[char], capacity: usize, source: ptr[char]) usize @public {
+    return pushAt(destination, capacity, 0, source);
+}
+
+fn contains(value: CString, needle: CString) bool @public {
+    return indexOf(value, needle)->found;
+}
+
+fn terminateAt(destination: ptr[char], index: usize) void @public {
+    destination->[index] = '\0';
+}
+
+fn length(value: CString) usize @public {
+    return lengthRaw(value as ptr[char]);
+}
+
+fn isEmpty(value: CString) bool @public {
+    return length(value) == 0;
+}

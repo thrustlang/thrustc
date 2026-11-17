@@ -1,0 +1,120 @@
+/*
+ * Exercises std::cstring length, comparison, search, copy and termination.
+ * Returns 0 on success, non-zero on failure.
+ */
+
+directive "--disable-warnings=W0015";
+directive "--disable-warnings=W0016";
+directive "--disable-warnings=W0020";
+
+import std::cstring;
+
+fn main() s32 @public {
+    if cstring::length("hello") != 5 { return 1; }
+    if cstring::length("") != 0 { return 2; }
+    if !cstring::isEmpty("") { return 3; }
+    if cstring::isEmpty("x") { return 4; }
+
+    if cstring::lengthBounded("hello" as ptr[char], 3) != 3 { return 5; }
+    if cstring::lengthBounded("hello" as ptr[char], 8) != 5 { return 6; }
+
+    if !cstring::equals("hello", "hello") { return 7; }
+    if cstring::equals("hello", "hell") { return 8; }
+    if cstring::compare("abc", "abd") >= 0 { return 9; }
+    if cstring::compare("abd", "abc") <= 0 { return 10; }
+    if cstring::compare("abc", "abc") != 0 { return 11; }
+
+    if !cstring::startsWith("hello", "he") { return 12; }
+    if cstring::startsWith("hello", "lo") { return 13; }
+    if !cstring::endsWith("hello", "lo") { return 14; }
+    if cstring::endsWith("hello", "he") { return 15; }
+    if !cstring::startsWith("hello", "") { return 16; }
+    if !cstring::endsWith("hello", "") { return 17; }
+
+    var first: cstring::SearchResult = cstring::indexOf("banana", "na");
+    if !(first->found) || first->index != 2 { return 18; }
+
+    var last: cstring::SearchResult = cstring::lastIndexOf("banana", "na");
+    if !(last->found) || last->index != 4 { return 19; }
+
+    var missing: cstring::SearchResult = cstring::indexOf("banana", "zz");
+    if missing->found || missing->index != 6 { return 20; }
+
+    var missingLast: cstring::SearchResult = cstring::lastIndexOf("banana", "zz");
+    if missingLast->found || missingLast->index != 6 { return 21; }
+
+    var emptyFirst: cstring::SearchResult = cstring::indexOf("banana", "");
+    if !(emptyFirst->found) || emptyFirst->index != 0 { return 22; }
+
+    var emptyLast: cstring::SearchResult = cstring::lastIndexOf("banana", "");
+    if !(emptyLast->found) || emptyLast->index != 6 { return 23; }
+
+    if !cstring::contains("banana", "nan") { return 24; }
+    if cstring::contains("banana", "zz") { return 25; }
+    if !cstring::contains("banana", "") { return 26; }
+    if cstring::countOccurrences("banana", "na") != 2 { return 27; }
+    if cstring::countOccurrences("banana", "ana") != 1 { return 28; }
+    if cstring::countOccurrences("banana", "") != 0 { return 29; }
+
+    var charFirst: cstring::SearchResult = cstring::indexOfChar("banana", 'n');
+    if !(charFirst->found) || charFirst->index != 2 { return 30; }
+
+    var charLast: cstring::SearchResult = cstring::lastIndexOfChar("banana", 'n');
+    if !(charLast->found) || charLast->index != 4 { return 31; }
+
+    var charMissing: cstring::SearchResult = cstring::indexOfChar("banana", 'z');
+    if charMissing->found || charMissing->index != 6 { return 32; }
+
+    var buffer: array[char; 8];
+    var copied: usize = cstring::copy((ref buffer) as ptr[char], 8, "hello" as ptr[char]);
+
+    if copied != 5 { return 33; }
+    if cstring::lengthRaw((ref buffer) as ptr[char]) != 5 { return 34; }
+    if !cstring::isTerminated((ref buffer) as ptr[char], 8) { return 35; }
+
+    var pushed: usize = cstring::pushAt((ref buffer) as ptr[char], 8, 2, "p!" as ptr[char]);
+
+    if pushed != 4 { return 36; }
+    if cstring::lengthRaw((ref buffer) as ptr[char]) != 4 { return 37; }
+    if !cstring::equals("hep!", (ref buffer) as CString) { return 38; }
+
+    var pushedRange: usize = cstring::pushRangeAt((ref buffer) as ptr[char], 8, 4, "world" as ptr[char], 3);
+
+    if pushedRange != 7 { return 39; }
+    if !cstring::equals("hep!wor", (ref buffer) as CString) { return 40; }
+
+    var truncated: usize = cstring::copy((ref buffer) as ptr[char], 4, "abcdef" as ptr[char]);
+
+    if truncated != 3 { return 41; }
+    if !cstring::equals("abc", (ref buffer) as CString) { return 42; }
+
+    var zero: usize = cstring::copy((ref buffer) as ptr[char], 0, "abc" as ptr[char]);
+
+    if zero != 0 { return 43; }
+
+    var raw: array[char; 4];
+    raw[0] = 'a';
+    raw[1] = 'b';
+    raw[2] = 'c';
+    raw[3] = 'd';
+
+    if cstring::isTerminated((ref raw) as ptr[char], 4) { return 44; }
+    if cstring::ensureTerminated((ref raw) as ptr[char], 4) { return 45; }
+    if !cstring::isTerminated((ref raw) as ptr[char], 4) { return 46; }
+    if cstring::lengthRaw((ref raw) as ptr[char]) != 3 { return 47; }
+
+    cstring::terminateAt((ref raw) as ptr[char], 1);
+
+    if cstring::lengthRaw((ref raw) as ptr[char]) != 1 { return 48; }
+    if !cstring::equals("a", (ref raw) as CString) { return 49; }
+
+    var whole: cstring::SearchResult = cstring::lastIndexOf("abc", "abc");
+
+    if !(whole->found) || whole->index != 0 { return 50; }
+
+    var wholeFirst: cstring::SearchResult = cstring::indexOf("abc", "abc");
+
+    if !(wholeFirst->found) || wholeFirst->index != 0 { return 51; }
+
+    return 0;
+}

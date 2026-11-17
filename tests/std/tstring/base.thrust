@@ -4,6 +4,7 @@
  * Returns 0 on success, non-zero on failure.
  */
 
+import std::cstring;
 import std::tstring;
 
 fn main() s32 @public {
@@ -86,12 +87,25 @@ fn main() s32 @public {
     if tstring::get(ref hello, 4) != 'o' { return 43; }
     if tstring::get(ref hello, 5) != '\0' { return 44; }
 
-    if tstring::indexOf(ref hello, "") != 0 { return 45; }
-    if tstring::indexOf(ref hello, "h") != 0 { return 46; }
-    if tstring::indexOf(ref hello, "ell") != 1 { return 47; }
-    if tstring::indexOf(ref hello, "lo") != 3 { return 48; }
-    if tstring::indexOf(ref hello, "zz") != tstring::len(ref hello) { return 49; }
-    if tstring::indexOf(ref empty, "x") != 0 { return 50; }
+    var emptyValue: cstring::SearchResult = tstring::indexOf(ref hello, "");
+    if !(emptyValue->found) || emptyValue->index != 0 { return 45; }
+
+    var firstH: cstring::SearchResult = tstring::indexOf(ref hello, "h");
+    if !(firstH->found) || firstH->index != 0 { return 46; }
+
+    var middle: cstring::SearchResult = tstring::indexOf(ref hello, "ell");
+    if !(middle->found) || middle->index != 1 { return 47; }
+
+    var lastTwo: cstring::SearchResult = tstring::indexOf(ref hello, "lo");
+    if !(lastTwo->found) || lastTwo->index != 3 { return 48; }
+
+    var missing: cstring::SearchResult = tstring::indexOf(ref hello, "zz");
+    if missing->found { return 49; }
+    if missing->index != tstring::len(ref hello) { return 50; }
+
+    var missingEmpty: cstring::SearchResult = tstring::indexOf(ref empty, "x");
+    if missingEmpty->found { return 51; }
+    if missingEmpty->index != 0 { return 52; }
 
     tstring::dropTString(ref lower);
     tstring::dropTString(ref upper);
